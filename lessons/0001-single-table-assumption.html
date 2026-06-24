@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 001 — The Single-Table Assumption</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<article>
+  <h1>The Single-Table Assumption</h1>
+  <p class="subtitle">Lesson 001 · Phase 1 · ~15 min</p>
+
+  <p>
+    Your contrarian bet targets <em>relational</em> deep learning — but almost every tabular
+    library, Kaggle notebook, and production pipeline starts from the same hidden contract:
+    <strong>one row = one training example, columns = features</strong>. Before RDL can win,
+    you need to see exactly what that contract costs.
+  </p>
+
+  <h2>What tabular ML actually eats</h2>
+  <p>
+    scikit-learn, XGBoost, and neural tabular models expect a matrix <code>X</code> and a
+    vector <code>y</code>. Real companies store data in many linked tables — customers,
+    orders, products, sessions. Someone must <strong>join, aggregate, and featurize</strong>
+    those tables into one flat file. That work is feature engineering.
+  </p>
+
+  <div class="callout">
+    <strong>Fey et al. (ICML 2024):</strong> feature engineering on relational data is
+    “slow, error prone and leads to suboptimal models” because no standard learner consumes
+    multiple connected tables end-to-end.
+    <br>
+    <a href="https://proceedings.mlr.press/v235/fey24a.html">Position: Relational Deep Learning</a>
+  </div>
+
+  <h2>Three ways the assumption breaks</h2>
+  <ol>
+    <li>
+      <strong>Lost structure.</strong> Primary–foreign key links encode who bought what, who
+      knows whom, which event belongs to which user. Flattening collapses that graph into
+      hand-picked aggregates (<code>count_orders_30d</code>, <code>avg_session_length</code>).
+    </li>
+    <li>
+      <strong>Leakage risk.</strong> A careless join can smuggle future information into
+      features. Temporal relational data needs time-respecting splits — the REG in RDL marks
+      what was known when.
+    </li>
+    <li>
+      <strong>Suboptimal signal.</strong> RelBench’s user study found GNNs on the full
+      relational graph matched or beat an experienced data scientist’s manual features while
+      cutting human effort by an order of magnitude
+      (<a href="https://arxiv.org/abs/2407.08570">Robinson et al., NeurIPS 2024</a>).
+      That is the gap your thesis bets on.
+    </li>
+  </ol>
+
+  <h2>Where you are in the arc</h2>
+  <p>
+    You already think like a practitioner — grouped CV, structural missingness, pipelines.
+    Phase 1 still matters: you must be able to <em>fairly</em> beat flat-table baselines before
+    claiming relational models are undervalued. See the
+    <a href="../reference/study-roadmap.html">study roadmap</a>.
+  </p>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read the abstract and Section 1 of
+    <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al. — Relational Deep Learning (ICML 2024)</a>.
+    Stop when you reach the relational entity graph figure — that is Lesson 002.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Anything unclear — why joins leak, what a REG is,
+    how this connects to your homework pipelines — ask in chat. That is what the agent is for.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../reference/curriculum.html">Expert Curriculum — full 6-year plan</a></li>
+      <li><a href="../reference/study-roadmap.html">Study Roadmap (summary)</a></li>
+      <li><a href="../MISSION.md">Mission</a></li>
+      <li><a href="../RESOURCES.md">Resources</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why does standard tabular ML force feature engineering on relational databases?",
+    options: [
+      { label: "Learners need one flat matrix", value: "a" },
+      { label: "SQL joins are always too slow", value: "b" },
+      { label: "Tree models cannot count rows", value: "c" },
+      { label: "Labels live in other schemas", value: "d" }
+    ],
+    correct: "a",
+    explain: "Gradient boosting and most tabular APIs consume a single design matrix X — so multi-table data must be joined and aggregated first."
+  });
+</script>
+</body>
+</html>
