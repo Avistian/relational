@@ -6,4 +6,6 @@ when you've forgotten it. Newest at the bottom.
 
 | Term | Your definition | First mastered | Lesson |
 |------|-----------------|----------------|--------|
-| Single-table assumption | Treating one flat design matrix as the whole world, discarding the relational structure that joins destroy. | — | 001 |
+| Single-table assumption | Tabular learners need a design matrix and label vector — they don't consume raw tables, so relational data must be flattened first. | 2026-06-24 | 001 |
+| Design matrix | The feature matrix **X** where each row is one training example and each column is one feature. | — | 002 |
+| Label vector | The target **y** aligned row-for-row with **X** — what the model predicts. | — | 002 |

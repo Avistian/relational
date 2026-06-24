@@ -23,6 +23,14 @@
 - Added a **Verified paper index** appendix to CURRICULUM.md and a **currency rule** (re-search arXiv each quarter; only add SOTA / failure-mode / baseline papers).
 - Critical framing added up top: GBDTs + RealMLP/TabM still win single-table under temporal splits; thesis lives at the *relational* frontier.
 
+## Session 3 — 2026-06-24
+
+- User started Lesson 001; completed comprehension check-in.
+- Strong on temporal leakage; baseline-fairness intuition present.
+- Retrieval gap closed: design matrix + label vector (structural forcing mechanism).
+- **Lesson 001 complete** (2026-06-24).
+- Lesson 002 published: design matrix & leakage join sketch.
+
 ## Paper progress
 
 Track with ✓ as completed:
