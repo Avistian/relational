@@ -2,9 +2,41 @@
 
 Agent-facing plan for lesson sequencing. The student-facing version is [reference/curriculum.html](./reference/curriculum.html).
 
-**Pace:** ~1 hour/day **baseline** (minimum on typical days) · ~360 hours/year at baseline · 6 years to research-grade expertise at that pace. Extra study time accelerates depth and checkpoint quality, not year-skipping.  
-**Lesson numbering:** Year N → lessons `(N-1)*40 + 001` … `(N-1)*40 + 040` (approx.)  
-**Rule:** Finish each quarter checkpoint before advancing. Papers are read in publication order within each year.
+**Pace:** ~1 hour/day **baseline** (minimum on typical days) · ~360 hours/year · ~2,160 hours over 6 years.
+
+### Why 240 units take 6 years (read this if the math looks off)
+
+A common, correct objection: *240 lessons ÷ 365 days ≈ 0.66 years — so at one lesson/day this is an 8-month plan, not a 6-year one.* That objection is right about **lessons** and wrong about **mastery**. The fix is to stop treating a numbered row as "one day."
+
+**A unit ≠ a day.** Each numbered row below is a **unit** = one concept *plus its lab/reproduction work plus its quiz*. Units are not uniform in size:
+
+| Unit type | Sessions to finish | Where |
+|-----------|--------------------|-------|
+| Concept lesson (read + quiz) | 1–3 sessions | dense in Y1–Y2 |
+| Reproduction / lab unit (train, tune, re-run, debug) | 5–20 sessions | dominant in Y3–Y5 |
+| Checkpoint / exit exam | 3–8 sessions | end of each quarter/year |
+| Research unit (experiment + write) | 10–40+ sessions | Y6 (mostly *not* lessons) |
+
+**Where the ~2,160 hours actually go** (lessons are ~6% of the clock):
+
+| Activity | ≈ hours | Share |
+|----------|---------|-------|
+| Lesson content itself (240 × ~0.5h) | ~120 | ~6% |
+| Deep primary-paper reading (60+ papers, harder each year) | ~350 | ~16% |
+| **Hands-on labs & reproduction** (GNNs, RelBench runs, tuning) | ~900 | ~42% |
+| Checkpoints + year exit exams | ~150 | ~7% |
+| Spaced retrieval / review | ~150 | ~7% |
+| **Year 6 original research** (experiments + writing) | ~400 | ~19% |
+
+**Density curve (front-loaded learning, back-loaded research):**
+- **Y1–Y2** — concept-dense. Units arrive fast (~2–3/week). This is the only phase where "lessons/week" is the right mental model.
+- **Y3–Y4** — reproduction-dominated. ~1 unit/week; each unit is days of training/debugging, not a reading.
+- **Y5–Y6** — research-dominated. The ~80 units here are *milestones* spanning weeks each; the calendar is set by experiments and writing, not lessons.
+
+So the 6 years are paced by **skill acquisition (labs/reproduction) and the final research project**, not by lesson count. If you only consumed the 240 lessons at 2–3/week, you'd "finish reading" in ~2 years — and still not be able to reproduce RelBench or run a fair benchmark. The extra four years are where expertise actually forms.
+
+**Lesson numbering:** Year N → units `(N-1)*40 + 001` … `(N-1)*40 + 040` (approx.)  
+**Rule:** Finish each quarter checkpoint before advancing. Papers are read in publication order within each year. A unit is "done" when its lab runs and its quiz/checkpoint is passed — not when the reading is skimmed.
 
 > **Critical framing (read first).** This is a *fast-moving* field. Two truths must coexist in your head the whole way:
 > 1. **GBDTs are not dead.** As of 2024–2026, tuned tree ensembles + strong-default MLPs (RealMLP, TabM) still win or tie on most *single-table* industrial data, especially under temporal splits (TabReD, TabArena). Do not let the relational thesis make you sloppy about this.
@@ -390,9 +422,10 @@ On days with extra time, add minutes to **Practice** first, then **Input** (pape
 
 ## Lesson production schedule (for agent)
 
-- Produce **1 lesson HTML per lecture row** as the student reaches it (~2–3 lessons/week at 1h/day including reading).
+- Produce **1 lesson HTML per lecture row** as the student reaches it. Realistic cadence is **front-loaded**: ~2–3 lessons/week in Y1–Y2 (concept-dense), ~1/week in Y3–Y4 (reproduction units span multiple sessions), and sparse milestone lessons in Y5–Y6 (research-dominated). Do **not** pace lesson production at a fixed weekly rate across all years.
+- A lesson HTML covers the *concept*; the unit isn't complete until the student finishes the lab/reproduction it points to (often days of work in later years).
 - Each lesson: one concept, one quiz, one primary paper link, one lab step.
-- Every 10 lessons: checkpoint lesson with longer exercise.
+- Every 10 units: checkpoint lesson with longer exercise.
 - Update [[GLOSSARY.md]] when user demonstrates term mastery.
 - Track paper completion in [[NOTES.md]] with `✓ paper-id` lines.
 
