@@ -6,6 +6,12 @@ Agent-facing plan for lesson sequencing. The student-facing version is [referenc
 **Lesson numbering:** Year N → lessons `(N-1)*40 + 001` … `(N-1)*40 + 040` (approx.)  
 **Rule:** Finish each quarter checkpoint before advancing. Papers are read in publication order within each year.
 
+> **Critical framing (read first).** This is a *fast-moving* field. Two truths must coexist in your head the whole way:
+> 1. **GBDTs are not dead.** As of 2024–2026, tuned tree ensembles + strong-default MLPs (RealMLP, TabM) still win or tie on most *single-table* industrial data, especially under temporal splits (TabReD, TabArena). Do not let the relational thesis make you sloppy about this.
+> 2. **The action has moved to two frontiers:** (a) tabular *foundation models* via in-context learning (TabPFN v2, TabICL), and (b) *relational* deep learning + relational foundation models (RelBench, RelGNN, RelGT, Griffin, RDB-PFN). Your thesis lives at frontier (b).
+>
+> Every architecture below is taught **with its failure mode**, not as hype. A model earns a lesson only if it changed the SOTA, exposed a real limitation, or is a baseline you must beat. See [arXiv IDs in RESOURCES.md](./RESOURCES.md).
+
 ---
 
 ## Year 1 — Tabular Foundations (Lessons 001–040)
@@ -80,66 +86,73 @@ Agent-facing plan for lesson sequencing. The student-facing version is [referenc
 
 ## Year 2 — Advanced Tabular Deep Learning (Lessons 041–080)
 
-**Goal:** Know every major neural tabular architecture, when it wins, and why it still often loses to trees on single tables.
+**Goal:** Know every major neural tabular architecture and tabular foundation model, when each wins, and exactly why strong trees/MLPs still often win on single tables. This is the year that makes you *honest* about baselines.
 
 ### Q1 · Neural tabular architectures (041–050)
+**Papers (chronological):** Popov 2019 (NODE) · Arik 2019 (TabNet) · Huang 2020 (TabTransformer) · Gorishniy 2021 (FT-Transformer/ResNet) · Somepalli 2021 (SAINT) · Wang 2021 (DCNv2) · Chen 2023 (ExcelFormer) · Chen 2023 (Trompt)
+
 | # | Topic | Paper | Lab |
 |---|-------|-------|-----|
-| 041 | Deep tabular history | Gorishnaya et al. 2021 full | rtdl repo setup |
-| 042 | TabNet | Arik & Pfister 2019/2020 | Train TabNet |
-| 043 | TabTransformer | Huang et al. 2020 | Compare to MLP |
-| 044 | FT-Transformer | Gorishnaya et al. 2021 §3.3 | Train FT-T |
-| 045 | SAINT / attention variants | Somepalli et al. 2021 | Read + compare table |
-| 046 | NODE & piecewise networks | Popov et al. 2019 | When irregular functions help |
-| 047 | DCN & explicit crosses | Wang et al. 2021 | Feature crosses |
-| 048 | Deep ensemble vs trees | Grinsztajn 2022 revisit | Same protocol comparison |
-| 049 | Tabular DL survey skim | Borisov et al. 2024 or Shwartz-Ziv 2022 | Map architecture families |
-| 050 | **Q1 checkpoint** | Gorishnaya 2021 | FT-T vs XGB on 3 datasets |
+| 041 | Deep tabular landscape & rtdl | Gorishniy et al. 2021 full | rtdl repo setup |
+| 042 | MLP & ResNet baselines (do these first) | Gorishniy 2021 §3.2 | Train ResNet baseline |
+| 043 | TabNet (sequential attention) | Arik & Pfister 2019 | Train + read masks |
+| 044 | NODE (differentiable trees) | Popov et al. 2019 | When irregular functions help |
+| 045 | TabTransformer (contextual embeddings) | Huang et al. 2020 | Categorical embeddings |
+| 046 | FT-Transformer ★ | Gorishniy 2021 §3.3 | Train FT-T |
+| 047 | SAINT (row+col attention) | Somepalli et al. 2021 | Inter-sample attention |
+| 048 | DCNv2 & explicit feature crosses | Wang et al. 2021 | Cross network |
+| 049 | ExcelFormer & Trompt (GBDT-surpassing claims) | Chen 2023 · Chen 2023 | Read critically: claims vs protocol |
+| 050 | **Q1 checkpoint** | Gorishniy 2021 | FT-T vs XGB on 3 datasets, same protocol |
 
-**Papers (chronological):** Arik 2019 · Huang 2020 · Popov 2019 · Gorishnaya 2021 · Somepalli 2021 · Wang 2021
+### Q2 · Modern tabular DL & the honest baseline (051–060)
+**Papers (chronological):** Grinsztajn 2022 (revisit) · TabR (Gorishniy 2023) · RealMLP/"Better by Default" (Holzmüller 2024) · TabReD (Rubachev 2024) · TabM (Gorishniy 2024) · TabArena (Erickson 2025)
 
-### Q2 · Foundation tabular models (051–060)
 | # | Topic | Paper | Lab |
 |---|-------|-------|-----|
-| 051 | In-context learning for ML | Müller et al. 2022 (PFNs) | Concept: prior-fitting |
-| 052 | TabPFN v1 | Hollmann et al. 2022 | Run TabPFN |
-| 053 | TabPFN Nature | Hollmann et al. 2024 (Nature) | Compare to 4h tuned XGB |
-| 054 | Synthetic pre-training priors | Hollmann 2022 §4 | What prior encodes |
-| 055 | Limits of TabPFN | Nature paper limitations | When PFN fails |
-| 056 | Transfer & fine-tuning tabular | Recent TabPFN follow-ups | Fine-tune experiment |
-| 057 | LLMs on tables (critical view) | Gorishnaya / survey LLM section | Serialize vs structure |
-| 058 | Single-table ceiling | Synthesis lecture | Write: what's fundamentally missing |
-| 059 | Bridge to graphs | Fey 2024 §2–3 preview | Why rows aren't enough |
-| 060 | **Q2 checkpoint** | Hollmann 2024 | TabPFN vs your Y1 baseline |
+| 051 | Why trees still win (revisit) | Grinsztajn 2022 §5 | Re-derive 3 biases |
+| 052 | TabR — retrieval-augmented DL ★ | Gorishniy 2023 (2307.14338) | kNN-attention component |
+| 053 | RealMLP & strong defaults ★ | Holzmüller 2024 (2407.04491) | RealMLP vs tuned XGB |
+| 054 | TabM — parameter-efficient ensembling ★ | Gorishniy 2024 (2410.24210) | Train TabM (current best DL baseline) |
+| 055 | The temporal-split reality | TabReD (2406.19380) | Random vs time split flips rankings |
+| 056 | Living benchmark literacy | TabArena (2506.16791) | Read leaderboard methodology |
+| 057 | Ensembling across model families | TabArena §results | Build cross-model ensemble |
+| 058 | Surveys & taxonomy | Borisov 2021 (2110.01889) · survey 2410.12034 | Map architecture families |
+| 059 | Validation-set overfitting | TabArena critique | Diagnose overfit ensemble |
+| 060 | **Q2 checkpoint** | TabM + RealMLP | Beat your Y1 XGB with a tuned DL model — or document why you can't |
 
-**Papers:** Müller 2022 · Hollmann 2022 · Hollmann 2024 (Nature)
+### Q3 · Tabular foundation models & in-context learning (061–070)
+**Papers (chronological):** Müller 2022 (PFN) · Hollmann 2022 (TabPFN v1) · LoCalPFN (Thomas 2024) · Drift-Resilient TabPFN (Helli 2024) · Hollmann 2025 (TabPFN v2, Nature) · TabICL (Qu 2025) · "Closer Look at TabPFN v2" (Ye 2025) · open-environment eval (Cheng 2025)
 
-### Q3 · Representation & self-supervision on tables (061–070)
 | # | Topic | Paper | Lab |
 |---|-------|-------|-----|
-| 061 | VIME / masked tabular | Yoon et al. 2020 | Masked pretraining concept |
-| 062 | SCARF / contrastive tabular | Bahri et al. 2021 | Contrastive views |
-| 063 | SubTab | Ucar et al. 2021 | Multi-view SSL |
-| 064 | When SSL helps tabular | Survey + your homework VIME notes | SSL ablation design |
-| 065 | PyTorch Frame preview | Hu et al. 2024 | Read row encoder design |
-| 066 | Heterogeneous column types | PyTorch Frame docs | Encode mixed schema |
-| 067 | Stacking encoders + heads | RDL preview | Encoder → predictor pattern |
-| 068 | Benchmark hygiene | Re-read Grinsztajn protocol | Same splits across models |
-| 069 | Error analysis | — | Confusion / calibration study |
-| 070 | **Q3 checkpoint** | Hu 2024 (PyTorch Frame) | Implement row encoder stub |
+| 061 | Prior-Data Fitted Networks | Müller et al. 2022 | Concept: learning Bayesian inference |
+| 062 | TabPFN v1 (≤1K rows) | Hollmann et al. 2022 | Run TabPFN v1 |
+| 063 | What the synthetic SCM prior encodes | Hollmann 2022 §4 | Inspect prior samples |
+| 064 | TabPFN v2 (Nature) ★ | Hollmann et al. 2025 (Nature) | Compare to 4h-tuned GBDT |
+| 065 | How TabPFN v2 handles heterogeneity | Ye et al. 2025 (2502.17361) | Feature-extractor mode |
+| 066 | TabICL — scaling ICL to 500K rows ★ | Qu et al. 2025 (2502.05564) | Column-then-row attention |
+| 067 | Retrieval + fine-tuning PFNs | LoCalPFN (2406.05207) | Local calibration |
+| 068 | Distribution shift & PFNs | Drift-Resilient TabPFN (2411.10634) | Temporal shift test |
+| 069 | **Critical:** where TabPFN v2 breaks | Cheng et al. 2025 (2505.16226) | Open-environment failure cases |
+| 070 | **Q3 checkpoint** | Hollmann 2025 + TabICL | TabPFN v2 vs TabM vs XGB on 5 datasets |
 
-**Papers:** Yoon 2020 · Bahri 2021 · Hu et al. 2024 (PyTorch Frame)
+### Q4 · Self-supervision, encoders & the bridge to relational (071–080)
+**Papers:** Yoon 2020 (VIME) · Bahri 2021 (SCARF) · Ucar 2021 (SubTab) · Hu et al. 2024 (PyTorch Frame) · CARTE/cross-table transfer (skim)
 
-### Q4 · Year 2 synthesis (071–080)
-| 071–074 | Reproduce rtdl leaderboard entry | Gorishnaya 2021 | Full reproduction |
-| 075 | Write: neural tabular decision tree | — | When to use which arch |
-| 076 | Prepare for graph phase | Gilmer 2017 preview | Message passing intro |
-| 077 | Math: adjacency & propagation | Kipf 2017 §2 | Manual one-hop aggregate |
-| 078 | Relational preview | Schlichtkrull 2018 abstract | R-GCN motivation |
-| 079 | Year 2 essay | — | Single-table limits |
-| 080 | **Year 2 exit exam** | All Y2 papers | Teach-back: 3 inductive biases + TabPFN |
+| # | Topic | Paper | Lab |
+|---|-------|-------|-----|
+| 071 | VIME — masked tabular SSL | Yoon et al. 2020 | Masked pretraining |
+| 072 | SCARF / SubTab — contrastive & multi-view | Bahri 2021 · Ucar 2021 | Contrastive views |
+| 073 | When SSL actually helps | Survey + your homework VIME notes | SSL ablation design |
+| 074 | Cross-table transfer (CARTE etc.) | Literature skim | Schema-agnostic embeddings |
+| 075 | PyTorch Frame — the row encoder ★ | Hu et al. 2024 (2402.05964) | Encode mixed-type schema |
+| 076 | Encoder → predictor stack | RDL preview | Encoder → head pattern |
+| 077 | **Single-table ceiling** (synthesis) | — | Write: what rows-only models cannot represent |
+| 078 | Bridge: message passing preview | Gilmer 2017 · Kipf 2017 §2 | Manual one-hop aggregate |
+| 079 | Year 2 essay | — | Neural-tabular decision tree: when which model |
+| 080 | **Year 2 exit exam** | All Y2 papers | Teach-back: 3 biases + TabM + TabPFN v2 + TabICL |
 
-**Year 2 exit criterion:** Train FT-Transformer and TabPFN; articulate single-table ceiling in writing.
+**Year 2 exit criterion:** Train and fairly compare FT-Transformer, TabM, and TabPFN v2 against a tuned GBDT under both random *and* temporal splits; articulate in writing why single-table models plateau and where ICL helps.
 
 ---
 
@@ -233,18 +246,18 @@ Agent-facing plan for lesson sequencing. The student-facing version is [referenc
 | 140 | **Q2 checkpoint** | — | Match published GNN baseline on 2 tasks |
 
 ### Q3 · Advanced RDL methods (141–150)
-**Papers (2024–2025):** RelGNN (Chen 2025) · RelGT (Dwivedi 2025) · RDL survey (2025)
+**Papers (chronological):** ContextGNN (Yuan 2024) · RelGNN (Chen 2025, ICML) · Griffin (Wang 2025, ICML) · RelGT (Dwivedi 2025, ICLR 2026) · RDL survey (2025)
 
-| 141 | Composite message passing | Chen 2025 RelGNN | Atomic routes concept |
-| 142 | RelGNN reproduction | Chen 2025 | Run on RelBench subset |
-| 143 | Relational Graph Transformer | Dwivedi 2025 RelGT | Hybrid attention |
-| 144 | Many-to-many edges | Chen 2025 §motivation | Schema pathology |
-| 145 | Survey: next-gen architectures | arXiv 2506.16654 | Map open problems |
-| 146 | LLM + RDL (critical) | Survey §4.2 | When text helps / hurts |
-| 147 | Ablation discipline | — | Encoder vs MP vs data |
-| 148 | Write reproduction report | — | Match or explain gap |
-| 149 | Identify weakest RelBench tasks | — | Where thesis might fail |
-| 150 | **Q3 checkpoint** | Chen 2025 or RelGT | SOTA or near-SOTA on 1 task |
+| 141 | Composite message passing ★ | Chen 2025 RelGNN (2502.06784) | Atomic routes concept |
+| 142 | Many-to-many edge pathology | Chen 2025 §motivation | Why vanilla GNNs lose signal |
+| 143 | RelGNN reproduction | Chen 2025 | Run on RelBench subset |
+| 144 | ContextGNN — beyond two-tower recsys ★ | Yuan 2024 (2411.19513) | Pair-wise + two-tower fusion |
+| 145 | Relational Graph Transformer ★ | Dwivedi 2025 RelGT (2505.10960) | Multi-element tokenization |
+| 146 | GNN vs Graph-Transformer on REG | RelGT §results | Same tasks, two paradigms |
+| 147 | Survey: next-gen architectures | arXiv 2506.16654 | Map open problems |
+| 148 | Ablation discipline | — | Encoder vs MP vs data contribution |
+| 149 | Identify weakest RelBench tasks | — | Where the thesis might fail |
+| 150 | **Q3 checkpoint** | RelGNN or RelGT | SOTA or near-SOTA on 1 task; written reproduction report |
 
 ### Q4 · RDL expertise (151–160)
 | 151–154 | Multi-task RelBench portfolio | — | 5 tasks, one report |
@@ -264,18 +277,18 @@ Agent-facing plan for lesson sequencing. The student-facing version is [referenc
 **Goal:** Pre-training, in-context relational learning, cross-database generalization.
 
 ### Q1 · Foundation model concepts (161–170)
-**Papers:** Müller 2022 PFN · Hollmann 2024 · Zahradník 2023 · Fey survey 2025 §FM
+**Papers (chronological):** Bommasani 2021 (FM definition) · Zahradník 2023 (vision) · Griffin (Wang 2025) · KumoRFM (2025, industry) · RDB-PFN (Wang 2026) · Fey survey 2025 §FM
 
-| 161 | What is a foundation model | Bommasani 2021 (FM definition) | Scope for relational |
-| 162 | Pre-training on many databases | Zahradník 2023 §3 | Schema diversity |
+| 161 | What is a foundation model | Bommasani 2021 | Scope for relational |
+| 162 | The relational FM vision | Zahradník 2023 (2305.15321) | LM + GNN pre-training |
 | 163 | LM encoders for rows | Zahradník 2023 §4 | Text vs typed columns |
-| 164 | GNN over pre-encoded nodes | Zahradník 2023 Fig. 1 | Combined architecture |
-| 165 | Self-supervised tasks on REG | Fey 2024 FM section | Masking / link prediction |
-| 166 | In-context relational learning | KumoRFM docs / papers | Few-shot task adaptation |
-| 167 | Griffin & open alternatives | Literature search | Reproduce what's public |
-| 168 | Cross-database generalization | Zahradník 2023 §experiments | Zero-shot schema |
-| 169 | Scaling laws (relational) | Survey 2025 | Open questions |
-| 170 | **Q1 checkpoint** | Zahradník 2023 full | Written FM design doc |
+| 164 | Griffin — graph-centric RDB FM ★ | Wang 2025 (2505.05568) | Unified encoder/decoder, cross-attention |
+| 165 | KumoRFM — in-context relational learner | KumoRFM tech report (2025) | Few-shot task adaptation (proprietary) |
+| 166 | RDB-PFN — synthetic-prior relational FM ★ | Wang 2026 (2603.03805) | Relational Prior Generator; reproduce (open code) |
+| 167 | Tabular FM → relational FM transfer | TabPFN v2 + TabICL recap | What carries over from Year 2 |
+| 168 | Cross-database generalization | Griffin + RDB-PFN experiments | Zero-/few-shot on unseen schema |
+| 169 | Scaling laws & open questions | Survey 2025 | What's unknown |
+| 170 | **Q1 checkpoint** | Zahradník + Griffin + RDB-PFN | Written FM design doc comparing the three |
 
 ### Q2 · Building pre-training pipelines (171–180)
 | 171 | Corpus of databases | — | Curate or use RelBench multi-DB |
@@ -290,14 +303,14 @@ Agent-facing plan for lesson sequencing. The student-facing version is [referenc
 | 180 | **Q2 checkpoint** | — | Fine-tune public encoder on 1 DB |
 
 ### Q3 · Research frontier mapping (181–190)
-| 181 | RelBench v2 / updates | arXiv 2602.12606 | New tasks & databases |
-| 182 | RelGNN + FM combination | — | Hypothesis generation |
-| 183 | RelGT + pre-training | — | Architecture research gap |
-| 184 | Tabular FM → relational FM | — | Transfer lessons from TabPFN |
-| 185 | Causal & relational data | — | When correlation ≠ strategy |
+| 181 | RelBench v2 / autocomplete tasks | RelBench v2 (2602.12606) · RelGT-AC (2606.03040) | New tasks & databases |
+| 182 | RDB-PFN + composite message passing | RDB-PFN × RelGNN | Hypothesis generation |
+| 183 | Graph-Transformer + pre-training | RelGT × Griffin | Architecture research gap |
+| 184 | Latest relational Graph-Transformers | GelGT (2605.15575) | Long-range dependency fixes |
+| 185 | Causal & relational data | — | When correlation ≠ deployable strategy |
 | 186 | Production constraints | Huyen | Latency, freshness, monitoring |
-| 187 | Ethics & privacy on REG | — | Node-level privacy |
-| 188 | Literature review skill | — | Systematic paper tracking |
+| 187 | Ethics & privacy on REG | — | Node-level privacy, leakage |
+| 188 | Systematic literature tracking | — | arXiv alerts, RelBench leaderboard, paper log |
 | 189 | Identify 3 open problems | Survey 2025 | Rank by tractability |
 | 190 | **Q3 checkpoint** | — | Research gap document (5 pages) |
 
@@ -367,7 +380,7 @@ On days with extra time, add minutes to **Practice** first, then **Input** (pape
 | Phase | Retrieval (15m) | Input (25m) | Practice (20m) |
 |-------|-----------------|-------------|------------------|
 | Y1 tabular | Quiz prior lesson | sklearn/XGB reading or lesson | Notebook cell |
-| Y2 neural tabular | Architecture recall | Paper section | rtdl / TabPFN run |
+| Y2 neural tabular | Architecture recall | Paper section | TabM / TabPFN v2 / TabICL run |
 | Y3 graphs | MPNN equation | GNN paper | PyG implementation |
 | Y4 RDL | REG sketch from memory | RelBench / RDL paper | RelBench training run |
 | Y5 FM | Pre-training objective | Zahradník / survey | Fine-tune experiment |
@@ -382,3 +395,77 @@ On days with extra time, add minutes to **Practice** first, then **Input** (pape
 - Every 10 lessons: checkpoint lesson with longer exercise.
 - Update [[GLOSSARY.md]] when user demonstrates term mastery.
 - Track paper completion in [[NOTES.md]] with `✓ paper-id` lines.
+
+---
+
+## Verified paper index (arXiv IDs)
+
+Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication order within each year.
+
+### Year 1 — Tabular foundations
+- Chen & Guestrin 2016 — XGBoost — `1603.02754` ★
+- Ke et al. 2017 — LightGBM — `1711.08251` (NeurIPS)
+- Prokhorenkova et al. 2018 — CatBoost — `1706.09516`
+- Grinsztajn et al. 2022 — Why trees beat DL — `2207.08815` ★
+- Kapoor & Narayanan 2022 — Leakage & reproducibility — `2207.07048`
+
+### Year 2 — Advanced tabular DL
+- Arik & Pfister 2019 — TabNet — `1908.07442`
+- Popov et al. 2019 — NODE — `1909.06312`
+- Huang et al. 2020 — TabTransformer — `2012.06678`
+- Yoon et al. 2020 — VIME — (NeurIPS; see proceedings)
+- Gorishniy et al. 2021 — FT-Transformer / Revisiting DL — `2106.11959` ★
+- Somepalli et al. 2021 — SAINT — `2106.01342`
+- Bahri et al. 2021 — SCARF — `2106.15147`
+- Wang et al. 2021 — DCNv2 — `2008.13535`
+- Borisov et al. 2021 — DL & tabular survey — `2110.01889`
+- Müller et al. 2022 — PFNs (Transformers Can Do Bayesian Inference) — `2112.10510`
+- Hollmann et al. 2022 — TabPFN v1 — `2207.01848` ★
+- ExcelFormer — Chen et al. 2023 — `2301.02819`
+- Trompt — Chen et al. 2023 — `2305.18446`
+- TabR — Gorishniy et al. 2023 — `2307.14338` ★ (retrieval-augmented)
+- PyTorch Frame — Hu et al. 2024 — `2402.05964` ★ (row encoder for RDL)
+- LoCalPFN — Thomas et al. 2024 — `2406.05207`
+- TabReD — Rubachev et al. 2024 — `2406.19380` ★ (industry, temporal splits)
+- RealMLP / Better by Default — Holzmüller et al. 2024 — `2407.04491` ★
+- TALENT toolbox — Liu et al. 2024 — `2407.04057`
+- Survey on Deep Tabular Learning — 2024 — `2410.12034`
+- TabM — Gorishniy et al. 2024 — `2410.24210` ★ (best DL baseline, ICLR 2025)
+- Drift-Resilient TabPFN — Helli et al. 2024 — `2411.10634`
+- TabICL — Qu et al. 2025 — `2502.05564` ★ (scales ICL to 500K rows, ICML 2025)
+- A Closer Look at TabPFN v2 — Ye et al. 2025 — `2502.17361`
+- Realistic eval of TabPFN v2 (open environments) — Cheng et al. 2025 — `2505.16226` (critical)
+- TabArena — Erickson et al. 2025 — `2506.16791` ★ (living benchmark, NeurIPS 2025)
+- TabPFN v2 — Hollmann et al. 2025 — *Nature* `s41586-024-08328-6` ★
+- _Note:_ TabDPT, CARTE, and LLM-serialization methods (e.g. TabLLM) are optional skims — track via TabArena leaderboard rather than chasing each.
+
+### Year 3 — Graph ML
+- Gilmer et al. 2017 — MPNN — `1704.01212` ★
+- Kipf & Welling 2017 — GCN — `1609.02907` ★
+- Hamilton et al. 2017 — GraphSAGE — `1706.02216` ★
+- Veličković et al. 2018 — GAT — `1710.10903`
+- Schlichtkrull et al. 2018 — R-GCN — `1703.06103` ★
+- Xu et al. 2019 — GIN — `1810.00826`
+- Hu et al. 2020 — HGT — `2003.01332` ★
+- Rossi et al. 2020 — TGN — `2006.10637` ★
+- Hu et al. 2020 — OGB — `2005.00687`
+
+### Year 4 — Relational deep learning
+- Cvitkovic 2019 — DL on relational data — `1903.06430`
+- RelBench beta — 2023 — `2312.04615`
+- Fey et al. 2024 — RDL position (ICML) — see PMLR v235; arXiv `2312.04615` lineage ★
+- RelBench v1 — Robinson et al. 2024 — `2407.20060` ★
+- ContextGNN — Yuan et al. 2024 — `2411.19513` ★ (recsys / link prediction)
+- RelGNN — Chen et al. 2025 — `2502.06784` ★ (composite message passing, ICML 2025)
+- RelGT — Dwivedi et al. 2025 — `2505.10960` ★ (Relational Graph Transformer, ICLR 2026)
+- RDL survey — 2025 — `2506.16654`
+
+### Year 5 — Foundation relational models
+- Zahradník et al. 2023 — Towards FMs for relational DBs — `2305.15321` ★
+- Griffin — Wang et al. 2025 — `2505.05568` ★ (graph-centric RDB FM, ICML 2025)
+- RDB-PFN — Wang et al. 2026 — `2603.03805` ★ (synthetic-prior relational FM, open code)
+- GelGT (Gaussian Relational Graph Transformer) — 2026 — `2605.15575`
+- RelBench v2 — `2602.12606` · RelGT-AC — `2606.03040`
+- KumoRFM — 2025 industry technical report (proprietary in-context relational FM)
+
+**Currency rule:** This index is a snapshot. Before each new quarter, run an arXiv search for the quarter's topic sorted by `submitted` and add any paper that (a) sets new SOTA on RelBench/TabArena, (b) exposes a failure mode, or (c) is a baseline you'll be measured against. Do not add papers that merely apply an existing method.
