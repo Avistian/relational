@@ -18,16 +18,19 @@
       margin: 1rem 0;
     }
     .sketch .tbl { color: var(--accent); font-weight: 600; }
+    .verdict-safe { color: #2d6a4f; font-weight: 600; }
+    .verdict-leak { color: #9b2226; font-weight: 600; }
   </style>
 </head>
 <body>
 <article>
   <h1>Design Matrix &amp; Leakage</h1>
-  <p class="subtitle">Lesson 002 · Phase 1 · ~20 min</p>
+  <p class="subtitle">Lesson 002 · Phase 1 · ~45 min</p>
 
   <p>
     Lesson 001 named the contract: tabular learners eat a flat matrix. This lesson makes that
-    contract precise and shows where joins most often cheat.
+    contract precise, catalogs the ways joins cheat, and gives you a checklist you will reuse
+    through Year 6.
   </p>
 
   <h2>The design matrix</h2>
@@ -46,6 +49,40 @@
     See the <a href="../reference/design-matrix-leakage.html">leakage cheat sheet</a>.
   </p>
 
+  <h3>Row alignment pitfalls</h3>
+  <p>
+    Leakage often enters before any “future date” mistake — at the row level:
+  </p>
+  <ul>
+    <li>
+      <strong>Duplicate keys after join.</strong> Joining orders to customers without
+      <code>GROUP BY customer_id</code> produces one row per order, not per customer.
+      Labels defined at customer level no longer align with feature rows.
+    </li>
+    <li>
+      <strong>Left vs inner join.</strong> Inner joins drop customers with zero orders,
+      changing the population <code>y</code> was defined on. That is sample bias, not
+      always leakage — but it invalidates comparison to a full cohort.
+    </li>
+    <li>
+      <strong>Train and test built separately.</strong> Fitting a scaler or target encoder
+      on the full dataset before the split leaks test statistics into train features.
+      Pipelines must fit transforms on train only.
+    </li>
+  </ul>
+
+  <h2>Point-in-time prediction</h2>
+  <p>
+    Every leakage audit starts with one question: <em>what did we know at decision time
+    <code>t</code>?</em> For churn, <code>t</code> might be “last day of the billing period.”
+    For credit, <code>t</code> is application time. Features may use data strictly
+    <strong>≤ t</strong>. Labels describe outcomes strictly <strong>after t</strong>
+    (e.g. cancel within 30 days). Anything from the label window in the features is leakage.
+  </p>
+
+  <pre>timeline:  ─── past features ───| t |─── label window ───▶
+allowed:     order_date ≤ t          ^     cancel_date ∈ (t, t+30d]</pre>
+
   <h2>Join sketch</h2>
   <p>Task: predict whether customer <code>c</code> churns in the 30 days <em>after</em> date <code>t</code>.</p>
 
@@ -59,26 +96,106 @@ Feature ideas built by joining on customer_id:
   B) spend_30d     = SUM(amount WHERE order_date ∈ (t−30d, t])
   C) future_orders = COUNT(*) WHERE order_date &gt; t
   D) country       = customers.country
+  E) days_since_last_order = t − MAX(order_date WHERE order_date ≤ t)
+  F) avg_order_after_t     = AVG(amount WHERE order_date &gt; t)
   </div>
 
   <h2>Find the leakage</h2>
   <p>Which features smuggle information that would not exist at prediction time <code>t</code>?</p>
   <div id="quiz1"></div>
   <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Verdict table</h2>
+  <table>
+    <thead>
+      <tr><th>Feature</th><th>Verdict</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A — total_spend</td>
+        <td class="verdict-leak">Leak</td>
+        <td>Sums orders after <code>t</code> unless explicitly filtered</td>
+      </tr>
+      <tr>
+        <td>B — spend_30d</td>
+        <td class="verdict-safe">Safe</td>
+        <td>Window ends at <code>t</code>; only past behavior</td>
+      </tr>
+      <tr>
+        <td>C — future_orders</td>
+        <td class="verdict-leak">Leak</td>
+        <td>Uses only post-<code>t</code> orders by construction</td>
+      </tr>
+      <tr>
+        <td>D — country</td>
+        <td class="verdict-safe">Safe</td>
+        <td>Static attribute known at signup (assuming no retroactive edits)</td>
+      </tr>
+      <tr>
+        <td>E — days_since_last_order</td>
+        <td class="verdict-safe">Safe</td>
+        <td><code>MAX</code> restricted to orders ≤ <code>t</code></td>
+      </tr>
+      <tr>
+        <td>F — avg_order_after_t</td>
+        <td class="verdict-leak">Leak</td>
+        <td>Directly averages future transactions</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Four leakage patterns to memorize</h2>
+  <ol>
+    <li>
+      <strong>Temporal bleed.</strong> Future timestamps in features (A, C, F above).
+      Most common in relational data because SQL makes full-table aggregates easy.
+    </li>
+    <li>
+      <strong>Label bleed.</strong> Features derived from the outcome column or its proxies
+      (e.g. “reason for cancellation” encoded before the model runs at <code>t</code>).
+    </li>
+    <li>
+      <strong>Population bleed.</strong> Filtering or imputing using test-set statistics;
+      target encoding fit on all data; duplicate rows that cross split boundaries.
+    </li>
+    <li>
+      <strong>Pipeline bleed.</strong> Feature jobs that re-run on all history nightly and
+      back-fill values into training snapshots — common in production, invisible in notebooks.
+    </li>
+  </ol>
 
   <h2>Why this matters for RDL</h2>
   <p>
     Manual feature engineering hides leakage in SQL no one re-reads. Relational models
     (GNNs on a REG) still need <strong>temporal splits</strong> and point-in-time features —
-    the graph does not magically fix a leaky label horizon. Evaluation discipline is
-    non-negotiable in Phase 1 and stays non-negotiable in Year 4.
+    the graph does not magically fix a leaky label horizon. A message-passing layer can
+    propagate information across edges; without time masks, it propagates <em>future</em>
+    information too. Evaluation discipline is non-negotiable in Phase 1 and stays
+    non-negotiable in Year 4.
+  </p>
+
+  <p>
+    Your homework pipelines already use grouped CV — extend that instinct to joins. Before
+    any benchmark claim, ask: “Could this feature be computed from a cron job that only
+    had access to data ≤ <code>t</code>?” If not, fix the SQL first, then compare models.
   </p>
 
   <h2>Primary reading (today)</h2>
   <p>
     <a href="https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/">Chip Huyen — <em>Designing Machine Learning Systems</em></a>,
-    Chapters 2–3 (data fundamentals and feature engineering). Focus on how train/valid/test
-  splits and feature pipelines interact — stop before deployment chapters.
+    Chapters 2–3 (data fundamentals and feature engineering). Read both chapters in full
+    if you have time; minimum is §2.3 on data leakage and §3 on feature engineering
+    pipelines. Note how train/valid/test splits interact with batch feature jobs.
+  </p>
+
+  <h2>Lab preview</h2>
+  <p>
+    The unit lab for this lesson: take a join sketch from your own work (or the e-commerce
+    example from Lesson 001) and mark each feature <strong>safe / leak / unclear</strong> with
+    a one-line justification. Paste it to your tutor with the prediction time <code>t</code>
+    defined explicitly. “Unclear” is an acceptable answer — that is when you ask for a
+    second pair of eyes.
   </p>
 
   <div class="teacher-note">
@@ -119,6 +236,18 @@ Feature ideas built by joining on customer_id:
     ],
     correct: "a",
     explain: "The name gives it away: counting orders strictly after t is post-outcome information for a churn-at-t task."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Feature E: days_since_last_order with MAX(order_date) ≤ t. Verdict?",
+    options: [
+      { label: "Leaks — uses future orders", value: "a" },
+      { label: "Safe — static customer trait", value: "b" },
+      { label: "Safe — only past window used", value: "c" },
+      { label: "Leaks — uses the label column", value: "d" }
+    ],
+    correct: "c",
+    explain: "The MAX is restricted to orders on or before t, so only past behavior enters the feature."
   });
 </script>
 </body>

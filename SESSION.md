@@ -21,11 +21,11 @@ Start with retrieval, then input, then a lab. Be strict — quiz me before teach
 - You say: `Quiz me on the last lesson.`
 - Tutor: 3–5 recall questions. You answer from memory first.
 
-**2. Input (25 min) — one concept + its failure mode**
+**2. Input (40 min) — one concept + its failure mode**
 - You say: `Teach Lesson 00X` or `Walk me through §[N] of [paper].`
 - Interrupt freely: `slower` · `give an example` · `why does that matter?`
 
-**3. Practice (20 min) — you produce, tutor reviews**
+**3. Practice (15 min) — you produce, tutor reviews**
 - You say: `Give me the lab.` then paste your attempt: `Here's my attempt — review it.`
 - A unit is DONE only when its lab runs and its quiz/checkpoint passes.
 

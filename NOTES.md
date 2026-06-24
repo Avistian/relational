@@ -42,6 +42,7 @@ Track with ✓ as completed:
 
 ## Preferences
 
+- **Lesson length:** prefer longer, richer lesson HTML (~35–45 min reading + quizzes) over short skims; chunk with worked examples and multiple check-your-understanding blocks
 - **Pace:** year-by-year phases; do not skip tabular foundations even though the thesis is relational
 - **Time:** ~1 hour/day **baseline** (minimum on typical days); may study longer when energy and schedule allow — curriculum pacing assumes 360 h/year at baseline
 - **Extra time:** prefer deeper labs, paper appendices, checkpoint work, or spaced retrieval — not skipping year exit exams

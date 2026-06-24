@@ -21,7 +21,7 @@ A common, correct objection: *240 lessons ÷ 365 days ≈ 0.66 years — so at o
 
 | Activity | ≈ hours | Share |
 |----------|---------|-------|
-| Lesson content itself (240 × ~0.5h) | ~120 | ~6% |
+| Lesson content itself (240 × ~0.75h) | ~180 | ~8% |
 | Deep primary-paper reading (60+ papers, harder each year) | ~350 | ~16% |
 | **Hands-on labs & reproduction** (GNNs, RelBench runs, tuning) | ~900 | ~42% |
 | Checkpoints + year exit exams | ~150 | ~7% |
@@ -409,7 +409,7 @@ So the 6 years are paced by **skill acquisition (labs/reproduction) and the fina
 
 On days with extra time, add minutes to **Practice** first, then **Input** (paper appendices). Never skip exit criteria to move faster through years.
 
-| Phase | Retrieval (15m) | Input (25m) | Practice (20m) |
+| Phase | Retrieval (15m) | Input (40m) | Practice (15m) |
 |-------|-----------------|-------------|------------------|
 | Y1 tabular | Quiz prior lesson | sklearn/XGB reading or lesson | Notebook cell |
 | Y2 neural tabular | Architecture recall | Paper section | TabM / TabPFN v2 / TabICL run |
@@ -424,7 +424,7 @@ On days with extra time, add minutes to **Practice** first, then **Input** (pape
 
 - Produce **1 lesson HTML per lecture row** as the student reaches it. Realistic cadence is **front-loaded**: ~2–3 lessons/week in Y1–Y2 (concept-dense), ~1/week in Y3–Y4 (reproduction units span multiple sessions), and sparse milestone lessons in Y5–Y6 (research-dominated). Do **not** pace lesson production at a fixed weekly rate across all years.
 - A lesson HTML covers the *concept*; the unit isn't complete until the student finishes the lab/reproduction it points to (often days of work in later years).
-- Each lesson: one concept, one quiz, one primary paper link, one lab step.
+- Each lesson: one concept, multiple check-your-understanding quizzes, worked examples, one primary paper link, one lab step.
 - Every 10 units: checkpoint lesson with longer exercise.
 - Update [[GLOSSARY.md]] when user demonstrates term mastery.
 - Track paper completion in [[NOTES.md]] with `✓ paper-id` lines.
