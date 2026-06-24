@@ -15,6 +15,12 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
 - [Designing Machine Learning Systems — Huyen](https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/)
   Evaluation, leakage, deployment. Use for: year-1 evaluation lectures.
 
+_Optional / extension (◆ — read after the year exit criterion):_
+- [SHAP — Lundberg & Lee, NeurIPS 2017](https://arxiv.org/abs/1705.07874)
+  Model-agnostic feature attribution with uniqueness guarantees. Use for: explaining *why* a baseline predicts what it does; the interpretability tool reused on every later model.
+- [Interpretable Machine Learning (3rd ed., 2025) — Christoph Molnar](https://christophm.github.io/interpretable-ml-book/)
+  Free book. Use for: PDP/ICE, SHAP, and "goals of interpretability" when auditing tree/MLP baselines.
+
 ## Knowledge — Year 2 (Advanced tabular)
 
 **Architectures**
@@ -63,6 +69,16 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
 - [PyTorch Frame — Hu et al., 2024](https://arxiv.org/abs/2402.05964)
   Deep tabular row encoder. Use for: RDL stack (encoder → GNN); read in Y2, apply heavily in Y4.
 
+_Optional / extension (◆):_
+- [CARTE — Kim, Grinsztajn & Varoquaux, 2024](https://arxiv.org/abs/2402.16785)
+  String-aware graph-attention pretraining; no schema/entity matching needed. Use for: schema-agnostic transfer across tables and an early glimpse of the relational graph view.
+- [Interpretable ML for TabPFN — Rundel et al., 2024](https://arxiv.org/abs/2403.10923)
+  SHAP/LOCO adapted to in-context models (avoids retraining). Use for: interpreting foundation-model predictions; pairs with Molnar's "interpretability tax".
+- [TabLLM — Hegselmann et al., 2022](https://arxiv.org/abs/2210.10723)
+  LLM serialization of rows. Use for: understanding the boundary the thesis rejects — text-only ≠ relational structure (see [MISSION.md](./MISSION.md) out-of-scope).
+- [Tabular Foundation Models (in-progress book) — Christoph Molnar](https://tabularfoundationmodels.com) · [Mindful Modeler newsletter](https://mindfulmodeler.substack.com/)
+  Practitioner's tour of TabPFN/TabICL: usage, architecture, interpretability cost, failure modes. Use for: tracking the tabular-FM frontier between curriculum updates.
+
 ## Knowledge — Year 3 (Graph ML)
 
 - [Neural Message Passing — Gilmer et al., ICML 2017](https://arxiv.org/abs/1704.01212)
@@ -79,6 +95,22 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Heterogeneous graph transformer. Use for: multi-type message passing at scale.
 - [TGN — Rossi et al., ICML 2020](https://arxiv.org/abs/2006.10637)
   Temporal graph networks. Use for: time-respecting relational data before RDL.
+
+_Optional / extension (◆) — GNN pathologies & graph transformers:_
+- [Deeper Insights / over-smoothing — Li et al., 2018](https://arxiv.org/abs/1801.07606)
+  Formalizes over-smoothing (lecture 085). Use for: why stacking GNN layers stops helping.
+- [DropEdge — Rong et al., 2019](https://arxiv.org/abs/1907.10903)
+  Random edge dropping. Use for: a cheap remedy for over-smoothing/over-fitting in deep GCNs.
+- [PNA — Corso et al., 2020](https://arxiv.org/abs/2004.05718)
+  Multiple aggregators + degree-scalers. Use for: why a single aggregator throws away neighborhood information.
+- [Over-squashing bottleneck — Alon & Yahav, 2021](https://arxiv.org/abs/2006.05205)
+  Long-range signal collapse. Use for: predicting where deep REG message passing loses distant-table signal.
+- [Over-squashing via curvature — Topping et al., 2021](https://arxiv.org/abs/2111.14522)
+  Ricci-curvature diagnosis + rewiring. Use for: a geometric account of graph bottlenecks.
+- [Graphormer — Ying et al., 2021](https://arxiv.org/abs/2106.05234)
+  Structural encodings for transformers on graphs. Use for: precursor to relational graph transformers.
+- [GraphGPS — Rampášek et al., 2022](https://arxiv.org/abs/2205.12454)
+  MPNN + global attention recipe. Use for: the direct conceptual parent of RelGT (Y4).
 
 ## Knowledge — Year 4 (Relational DL)
 
@@ -98,6 +130,10 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Multi-element tokenization + local/global attention. Use for: graph-transformer paradigm on REG.
 - [RDL survey — arXiv 2025](https://arxiv.org/abs/2506.16654)
   Challenges + next-gen architectures. Use for: year-4/5 frontier mapping.
+
+_Optional / extension (◆):_
+- [4DBInfer — Wang et al., NeurIPS 2024](https://arxiv.org/abs/2404.18209)
+  Graph-centric RDB benchmarking toolbox ([code](https://github.com/awslabs/multi-table-benchmark)). Use for: comparing table→graph construction strategies and subsampling against RelBench, to test whether your conclusions are benchmark-dependent.
 
 ## Knowledge — Year 5 (Foundation relational models)
 
@@ -123,6 +159,8 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Bug reports and baseline discrepancies. Use for: when numbers don't match papers.
 - [r/MachineLearning](https://reddit.com/r/MachineLearning)
   New paper alerts. Use for: spotting RDL papers; filter for signal.
+- [Mindful Modeler — Christoph Molnar (Substack)](https://mindfulmodeler.substack.com/)
+  High-signal newsletter on interpretability and tabular foundation models, written with statistical mindfulness. Use for: a practitioner's read on TabPFN/TabICL failure modes and the "interpretability tax" of in-context models.
 
 ## Gaps
 
@@ -130,3 +168,4 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
 - Proprietary FM weights (KumoRFM) limit full reproduction; plan ablations on open components (Griffin, RDB-PFN).
 - Lesson HTML exists only for lecture 001 so far; agent produces lessons as you progress through CURRICULUM.md rows.
 - Fast-moving frontier: re-run an arXiv search each quarter (sort by `submitted`) and add only papers that set SOTA, expose a failure mode, or are a baseline to beat. Full verified ID index lives in [CURRICULUM.md](./CURRICULUM.md#verified-paper-index-arxiv-ids).
+- Resources are tagged **core** (the default entries) vs **◆ optional / extension** (read only after the year's core papers and lab are done). Optional papers are ~2 h skims, never a reason to skip reproduction or exit exams. Full optional index: [CURRICULUM.md → Optional / extension reading](./CURRICULUM.md).

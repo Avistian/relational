@@ -44,6 +44,15 @@ So the 6 years are paced by **skill acquisition (labs/reproduction) and the fina
 >
 > Every architecture below is taught **with its failure mode**, not as hype. A model earns a lesson only if it changed the SOTA, exposed a real limitation, or is a baseline you must beat. See [arXiv IDs in RESOURCES.md](./RESOURCES.md).
 
+### Core (★) vs optional (◆) papers
+
+Papers come in two tiers so the reading budget (~350 h, ~16% of the clock) never crowds out labs or exit criteria:
+
+- **★ Core** — required. Read deeply (abstract → method → key results → appendix) and either reproduce it or use it as a baseline. Exit exams test these.
+- **◆ Optional / time-permitting** — read *only after* the quarter's core papers and lab are done, and *never* by cutting reproduction or exit-exam prep. A ◆ paper is a ~2 h skim: abstract, main figure, and a one-paragraph "when it wins / when it breaks" note in [NOTES.md](./NOTES.md). Most deepen a failure mode, give historical context, or are a second baseline — not new required scope.
+
+Each year lists its ◆ papers in an **Optional / time-permitting** block after the exit criterion; full arXiv IDs are in the [Optional / extension reading](#optional--extension-reading-) index. The quarterly currency rule still applies on top of both tiers.
+
 ---
 
 ## Year 1 — Tabular Foundations (Lessons 001–040)
@@ -113,6 +122,10 @@ So the 6 years are paced by **skill acquisition (labs/reproduction) and the fina
 | 040 | **Year 1 exit exam** | All Y1 papers | Beat XGB on flat task OR explain why not |
 
 **Year 1 exit criterion:** Reproducible tuned tree baseline + written understanding of Grinsztajn's three biases.
+
+**Optional / time-permitting (◆ — only after the exit criterion):**
+- **SHAP** — Lundberg & Lee 2017 (`1705.07874`) — model-agnostic feature attribution with theoretical grounding. The interpretability tool you will reuse on every later model; pairs with the leakage/evaluation lectures.
+- **Interpretable Machine Learning** (3rd ed., 2025) — Christoph Molnar (free book) — read "Goals of Interpretability", PDP/ICE, and the SHAP chapters when auditing a baseline. Use it to explain *why* a tree wins, not just that it does.
 
 ---
 
@@ -186,6 +199,12 @@ So the 6 years are paced by **skill acquisition (labs/reproduction) and the fina
 
 **Year 2 exit criterion:** Train and fairly compare FT-Transformer, TabM, and TabPFN v2 against a tuned GBDT under both random *and* temporal splits; articulate in writing why single-table models plateau and where ICL helps.
 
+**Optional / time-permitting (◆ — only after the exit criterion):**
+- **CARTE** — Kim, Grinsztajn & Varoquaux 2024 (`2402.16785`) — string-aware graph-attention pretraining that needs no schema/entity matching; schema-agnostic transfer and an early bridge to the relational graph view of a table.
+- **Interpretable ML for TabPFN** — Rundel et al. 2024 (`2403.10923`) — adapts SHAP and LOCO to in-context models, exploiting ICL to avoid retraining. Pair with Molnar's "interpretability tax" essays (below).
+- **TabLLM** — Hegselmann et al. 2022 (`2210.10723`) — LLM serialization of rows. Read to understand the boundary the thesis *rejects* (text-only ≠ relational structure; see [MISSION.md](./MISSION.md) out-of-scope), not as a method to adopt.
+- **Tabular Foundation Models** (in-progress book) + **Mindful Modeler** newsletter — Christoph Molnar — practitioner's tour of TabPFN/TabICL: usage, architecture, interpretability cost, and failure modes. Tracks this fast-moving frontier between curriculum updates.
+
 ---
 
 ## Year 3 — Graph Machine Learning (Lessons 081–120)
@@ -245,6 +264,22 @@ So the 6 years are paced by **skill acquisition (labs/reproduction) and the fina
 
 **Year 3 exit criterion:** Working hetero + temporal GNN pipeline in PyG; read Fey 2024 completely.
 
+**Optional / time-permitting (◆ — only after the exit criterion):**
+
+*Depth pathologies (these predict where deep REG message passing fails in Y4):*
+- **Deeper Insights / over-smoothing** — Li et al. 2018 (`1801.07606`) — formalizes the over-smoothing referenced in lecture 085.
+- **DropEdge** — Rong et al. 2019 (`1907.10903`) — cheap regularizer against over-smoothing and over-fitting in deep GCNs.
+- **PNA** — Corso et al. 2020 (`2004.05718`) — why a single aggregator loses information; degree-scalers and multiple aggregators.
+- **Over-squashing bottleneck** — Alon & Yahav 2021 (`2006.05205`) — long-range signal collapse; the failure mode behind many "GNN can't see distant tables" results.
+- **Over-squashing via curvature** — Topping et al. 2021 (`2111.14522`) — Ricci-curvature diagnosis + graph rewiring.
+
+*Graph transformers (conceptual parents of RelGT / RelGT-AC in Y4–Y5):*
+- **Graphormer** — Ying et al. 2021 (`2106.05234`) — structural encodings make a plain transformer competitive on graphs.
+- **GraphGPS** — Rampášek et al. 2022 (`2205.12454`) — the MPNN + global-attention recipe; direct lineage to the Relational Graph Transformer.
+
+*Indexed for lessons that already name them (read with their lecture, not separately):*
+- **HAN** — Wang et al. 2019 (`1903.07293`, lecture 092) · **Cluster-GCN** — Chiang et al. 2019 (`1905.07953`, lecture 089) · **TGAT** — Xu et al. 2020 (`2002.07962`, lecture 103) · **RE-Net** — Jin et al. 2020 (`1904.05530`, lecture 110 temporal link pred).
+
 ---
 
 ## Year 4 — Relational Deep Learning (Lessons 121–160)
@@ -302,6 +337,9 @@ So the 6 years are paced by **skill acquisition (labs/reproduction) and the fina
 
 **Year 4 exit criterion:** Reproduce RelBench baselines; documented comparison to manual FE on ≥3 tasks.
 
+**Optional / time-permitting (◆ — only after the exit criterion):**
+- **4DBInfer** — Wang et al. 2024, NeurIPS (`2404.18209`) — a second graph-centric RDB benchmarking toolbox. Compare its table→graph construction strategies and subsampling against RelBench to stress-test whether your conclusions are method- or benchmark-dependent.
+
 ---
 
 ## Year 5 — Foundation Relational Models (Lessons 161–200)
@@ -356,6 +394,10 @@ So the 6 years are paced by **skill acquisition (labs/reproduction) and the fina
 | 200 | **Year 5 exit exam** | All Y5 papers | FM reproduction + proposal |
 
 **Year 5 exit criterion:** Written research proposal with evidence from RelBench experiments; reproduced one FM-related baseline.
+
+**Optional / time-permitting (◆ — only after the exit criterion):**
+- **Tabular Foundation Models** (in-progress book) — Christoph Molnar — revisit for lecture 167 (tabular FM → relational FM transfer): what in-context learning carries over from TabPFN/TabICL to the relational setting, and what doesn't.
+- Beyond the fixed index, the **quarterly currency rule** is the real "optional" channel for Y5: this frontier moves monthly, so let the arXiv re-search (SOTA / failure-mode / baseline only) supply new ◆ papers rather than pre-listing soon-stale ones.
 
 ---
 
@@ -502,3 +544,35 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - KumoRFM — 2025 industry technical report (proprietary in-context relational FM)
 
 **Currency rule:** This index is a snapshot. Before each new quarter, run an arXiv search for the quarter's topic sorted by `submitted` and add any paper that (a) sets new SOTA on RelBench/TabArena, (b) exposes a failure mode, or (c) is a baseline you'll be measured against. Do not add papers that merely apply an existing method.
+
+---
+
+## Optional / extension reading (◆)
+
+Read these **only after** the relevant quarter's ★ core papers and lab are complete, and never in place of reproduction or exit-exam prep (see [Core vs optional papers](#core--vs-optional--papers)). Each is a ~2 h skim → one-paragraph "when it wins / when it breaks" note in [NOTES.md](./NOTES.md). Verified arXiv IDs (June 2026).
+
+### Year 1 — Interpretability you reuse everywhere
+- Lundberg & Lee 2017 — SHAP (A Unified Approach to Interpreting Model Predictions) — `1705.07874`
+- Christoph Molnar — *Interpretable Machine Learning*, 3rd ed. 2025 — free book, [christophm.github.io/interpretable-ml-book](https://christophm.github.io/interpretable-ml-book/)
+
+### Year 2 — Tabular transfer, FM interpretability, and the LLM boundary
+- CARTE — Kim, Grinsztajn & Varoquaux 2024 — `2402.16785` (string-aware graph-attention pretraining; bridge to relational)
+- Interpretable ML for TabPFN — Rundel et al. 2024 — `2403.10923` (SHAP/LOCO adapted to in-context models)
+- TabLLM — Hegselmann et al. 2022 — `2210.10723` (LLM serialization; read as the boundary the thesis rejects)
+- Christoph Molnar — *Tabular Foundation Models* (in-progress) — [tabularfoundationmodels.com](https://tabularfoundationmodels.com) + Mindful Modeler newsletter
+
+### Year 3 — GNN pathologies & graph transformers
+- Li et al. 2018 — Deeper Insights / over-smoothing — `1801.07606`
+- Rong et al. 2019 — DropEdge — `1907.10903`
+- Corso et al. 2020 — PNA (Principal Neighbourhood Aggregation) — `2004.05718`
+- Alon & Yahav 2021 — over-squashing bottleneck — `2006.05205`
+- Topping et al. 2021 — over-squashing via curvature (ICLR 2022) — `2111.14522`
+- Ying et al. 2021 — Graphormer — `2106.05234`
+- Rampášek et al. 2022 — GraphGPS — `2205.12454`
+- _Indexed for lessons that name them:_ HAN — Wang et al. 2019 `1903.07293` · Cluster-GCN — Chiang et al. 2019 `1905.07953` · TGAT — Xu et al. 2020 `2002.07962` · RE-Net — Jin et al. 2020 `1904.05530`
+
+### Year 4 — A second RDB benchmark
+- 4DBInfer — Wang et al. 2024 (NeurIPS) — `2404.18209` (graph-centric RDB benchmarking toolbox; compare table→graph construction vs RelBench)
+
+### Year 5 — Frontier
+- Prefer the **currency rule** over a fixed optional list here; the relational-FM frontier turns over too fast to pre-list. Molnar's *Tabular Foundation Models* book supports lecture 167 (tabular → relational FM transfer).
