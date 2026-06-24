@@ -28,5 +28,7 @@ Track with ✓ as completed:
 - **Pace:** year-by-year phases; do not skip tabular foundations even though the thesis is relational
 - **Time:** ~1 hour/day **baseline** (minimum on typical days); may study longer when energy and schedule allow — curriculum pacing assumes 360 h/year at baseline
 - **Extra time:** prefer deeper labs, paper appendices, checkpoint work, or spaced retrieval — not skipping year exit exams
-- **Technical:** lessons use plain `<script>` tags, not ES modules (works on `file://`)
+- **Technical:** lessons use plain `<script>` tags, not ES modules (works on `file://` and GitHub Pages)
+- **GitHub Pages:** site at `https://avistian.github.io/relational/` once pushed and Actions enabled (Settings → Pages → Source: GitHub Actions)
+- **Mobile:** bookmark the home page; lesson list grows as new lessons are published
 - **Out of scope:** see [[MISSION.md]]
