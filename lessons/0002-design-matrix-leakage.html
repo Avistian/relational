@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 002 — Design Matrix &amp; Leakage</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .sketch {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.85rem 1rem;
+      overflow-x: auto;
+      line-height: 1.5;
+      margin: 1rem 0;
+    }
+    .sketch .tbl { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Design Matrix &amp; Leakage</h1>
+  <p class="subtitle">Lesson 002 · Phase 1 · ~20 min</p>
+
+  <p>
+    Lesson 001 named the contract: tabular learners eat a flat matrix. This lesson makes that
+    contract precise and shows where joins most often cheat.
+  </p>
+
+  <h2>The design matrix</h2>
+  <p>
+    A <strong>design matrix</strong> <code>X</code> has shape <code>(n, d)</code>:
+    <code>n</code> rows (one per training example) and <code>d</code> columns (features).
+    The <strong>label vector</strong> <code>y</code> has length <code>n</code> — row <code>i</code>
+    of <code>X</code> pairs with <code>y[i]</code>. That row alignment is the whole API.
+  </p>
+
+  <pre>customers.csv  +  orders.csv  ──join/aggregate──▶  X (n×d)  +  y (n)</pre>
+
+  <p>
+    XGBoost, sklearn, and neural tabular models never see <code>customers</code> or
+    <code>orders</code> as separate tables. They see only <code>X</code> and <code>y</code>.
+    See the <a href="../reference/design-matrix-leakage.html">leakage cheat sheet</a>.
+  </p>
+
+  <h2>Join sketch</h2>
+  <p>Task: predict whether customer <code>c</code> churns in the 30 days <em>after</em> date <code>t</code>.</p>
+
+  <div class="sketch">
+<span class="tbl">customers</span>(customer_id, signup_date, country)
+<span class="tbl">orders</span>(order_id, customer_id, order_date, amount)
+
+Feature ideas built by joining on customer_id:
+
+  A) total_spend   = SUM(amount)                    -- all orders, no date filter
+  B) spend_30d     = SUM(amount WHERE order_date ∈ (t−30d, t])
+  C) future_orders = COUNT(*) WHERE order_date &gt; t
+  D) country       = customers.country
+  </div>
+
+  <h2>Find the leakage</h2>
+  <p>Which features smuggle information that would not exist at prediction time <code>t</code>?</p>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+
+  <h2>Why this matters for RDL</h2>
+  <p>
+    Manual feature engineering hides leakage in SQL no one re-reads. Relational models
+    (GNNs on a REG) still need <strong>temporal splits</strong> and point-in-time features —
+    the graph does not magically fix a leaky label horizon. Evaluation discipline is
+    non-negotiable in Phase 1 and stays non-negotiable in Year 4.
+  </p>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    <a href="https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/">Chip Huyen — <em>Designing Machine Learning Systems</em></a>,
+    Chapters 2–3 (data fundamentals and feature engineering). Focus on how train/valid/test
+  splits and feature pipelines interact — stop before deployment chapters.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Paste a join or aggregate from your own work if you want
+    a leakage review. That is the fastest way to make this stick.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0001-single-table-assumption.html">← Lesson 001</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../reference/design-matrix-leakage.html">Reference: leakage cheat sheet</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Feature A: total_spend = SUM(amount) with no date filter. Verdict?",
+    options: [
+      { label: "Leaks — uses future orders", value: "a" },
+      { label: "Safe — static customer trait", value: "b" },
+      { label: "Safe — only past window used", value: "c" },
+      { label: "Leaks — uses the label column", value: "d" }
+    ],
+    correct: "a",
+    explain: "Summing all orders includes purchases after t — information unavailable at prediction time."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Feature C: future_orders = COUNT(*) WHERE order_date > t. Verdict?",
+    options: [
+      { label: "Leaks — uses future orders", value: "a" },
+      { label: "Safe — static customer trait", value: "b" },
+      { label: "Safe — only past window used", value: "c" },
+      { label: "Leaks — uses the label column", value: "d" }
+    ],
+    correct: "a",
+    explain: "The name gives it away: counting orders strictly after t is post-outcome information for a churn-at-t task."
+  });
+</script>
+</body>
+</html>
