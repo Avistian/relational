@@ -1,0 +1,7 @@
+# Optional paper tier added to the curriculum
+
+The curriculum now distinguishes **★ core** papers (required, read deeply, reproduced, tested in exit exams) from **◆ optional / time-permitting** papers (~2 h skims read only after a quarter's core work is done, never displacing reproduction or exit-exam prep). This lets the user "squeeze in more papers" without changing the 6-year span — the binding constraint stays the ~350 h reading budget and the rule that labs/exit criteria set the calendar, not reading volume.
+
+Optional papers added (verified arXiv IDs, June 2026): Y1 SHAP `1705.07874` + Molnar's *Interpretable ML* book; Y2 CARTE `2402.16785`, Interpretable-ML-for-TabPFN `2403.10923`, TabLLM `2210.10723` (taught as the LLM boundary the thesis rejects), Molnar's *Tabular Foundation Models* book / Mindful Modeler; Y3 over-smoothing `1801.07606`, DropEdge `1907.10903`, PNA `2004.05718`, over-squashing `2006.05205` / curvature `2111.14522`, Graphormer `2106.05234`, GraphGPS `2205.12454` (plus HAN/Cluster-GCN/TGAT/RE-Net indexed for lessons that already name them); Y4 4DBInfer `2404.18209`; Y5 deferred to the quarterly currency rule.
+
+Implication for teaching: when the user has spare sessions, point them at the relevant year's ◆ block — favor Y3 GNN-pathology papers (they predict where deep REG message passing fails in Y4) and the Molnar interpretability thread (explains *why* models win/break, reinforcing the honest-baseline discipline). Christoph Molnar's work is now the curriculum's interpretability spine across Y1→Y5.
