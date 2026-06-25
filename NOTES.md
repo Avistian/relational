@@ -31,6 +31,11 @@
 - **Lesson 001 complete** (2026-06-24).
 - Lesson 002 published: design matrix & leakage join sketch.
 
+## Session 6 — 2026-06-25
+
+- **Lesson 002 complete** — join sketch 5/6; country/static-dimension distinction to reinforce.
+- **Lesson 003 published** — train/valid/test, stratified CV, split-viz widget, sklearn lab.
+
 ## Session 5 — 2026-06-25
 
 - User started **Lesson 002** (design matrix & leakage).

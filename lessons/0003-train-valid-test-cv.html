@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 003 — Train / Valid / Test &amp; CV</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .split-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .split-viz-intro { font-size: 0.92rem; margin: 0 0 0.75rem; }
+    .split-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .split-viz-btn {
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .split-viz-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .split-viz-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.4rem 0; font-family: var(--font-sans); font-size: 0.78rem; }
+    .split-viz-fold-label { width: 3.5rem; color: var(--muted); flex-shrink: 0; }
+    .split-viz-bar { flex: 1; display: flex; height: 1.1rem; border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+    .split-viz-seg.neg { background: #d5d8dc; }
+    .split-viz-seg.pos { background: #1a5276; }
+    .split-viz-pct { width: 7.5rem; text-align: right; flex-shrink: 0; }
+    .split-viz-caption { font-size: 0.88rem; margin-top: 0.75rem; color: var(--muted); }
+    .role-tag {
+      display: inline-block;
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 3px;
+      margin-right: 0.35rem;
+    }
+    .role-train { background: var(--accent-light); color: var(--accent); }
+    .role-val { background: #fef9e7; color: #9a7b0a; }
+    .role-test { background: #fdedec; color: var(--wrong); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Train / Valid / Test &amp; Cross-Validation</h1>
+  <p class="subtitle">Lesson 003 · Phase 1 · ~40 min</p>
+
+  <p>
+    Lesson 002 taught you to audit features at prediction time <code>t</code>. This lesson
+    teaches <em>where</em> those features may be used: which rows train the model, which
+    rows tune it, and which rows earn a final score. Get this wrong and even a leak-free
+  join sketch produces a lying metric.
+  </p>
+
+  <h2>Why hold out data at all?</h2>
+  <p>
+    Training and evaluating on the same rows is a methodological mistake. A model that
+    memorizes labels would score perfectly and generalize nowhere. The
+    <a href="https://scikit-learn.org/stable/modules/cross_validation.html">scikit-learn cross-validation guide</a>
+    states this plainly: hold out part of the data as a <strong>test set</strong> before you
+    declare victory.
+  </p>
+
+  <p>
+    Your thesis will be judged on generalization — on RelBench tasks, on temporal splits,
+    against tuned GBDT baselines. Split discipline is how you keep those comparisons honest.
+  </p>
+
+  <h2>Three sets, three jobs</h2>
+  <table>
+    <thead>
+      <tr><th>Set</th><th>Job</th><th>Rule of thumb</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="role-tag role-train">Train</span></td>
+        <td>Fit model parameters (tree splits, neural weights)</td>
+        <td>Use freely during development</td>
+      </tr>
+      <tr>
+        <td><span class="role-tag role-val">Validation</span></td>
+        <td>Choose hyperparameters, early stopping, feature sets</td>
+        <td>Peek many times; never confuse with test</td>
+      </tr>
+      <tr>
+        <td><span class="role-tag role-test">Test</span></td>
+        <td>Final estimate of out-of-sample performance</td>
+        <td><strong>Touch once</strong> — then the estimate is spent</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    Hyperparameter tuning on the test set is the classic mistake: you keep tweaking until
+    the test metric looks good, so test knowledge leaks into the model. The fix is either
+    a dedicated validation set or <strong>cross-validation (CV)</strong> on the training
+    portion — CV rotates which rows play validation so you do not waste data on a single
+    fixed validation slice.
+  </p>
+
+  <h2>Holdout split: <code>train_test_split</code></h2>
+  <p>
+    The simplest pattern: one random partition into train and test. In sklearn:
+  </p>
+
+  <pre>from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,      # 20% held out
+    stratify=y,         # preserve class ratio in both sets
+    random_state=42,    # reproducible split
+)</pre>
+
+  <p>
+    <strong><code>stratify=y</code></strong> matters when labels are imbalanced (churn,
+    fraud, rare disease). Without it, a lucky random draw can put almost all positives
+    in train and none in test — or vice versa — making accuracy and PR-AUC meaningless.
+    See the <a href="../reference/cross-validation-splits.html">CV cheat sheet</a>.
+  </p>
+
+  <h3>Worked example: 10% positive churn</h3>
+  <p>
+    10,000 customers, 1,000 churners. A 80/20 split without stratification might leave
+    only 150 churners in test (unlucky) or 250 (lucky). You cannot compare two models if
+    the test set's difficulty changes every seed. Stratification keeps ~10% positives in
+    both train and test.
+  </p>
+
+  <h2>K-fold cross-validation</h2>
+  <p>
+    Split the training data into <code>k</code> folds. For each fold:
+  </p>
+  <ol>
+    <li>Train on <code>k−1</code> folds</li>
+    <li>Score on the held-out fold</li>
+    <li>Average the <code>k</code> scores</li>
+  </ol>
+
+  <pre>from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression
+
+clf = LogisticRegression(max_iter=1000, random_state=42)
+scores = cross_val_score(clf, X_train, y_train, cv=5)
+print(f"{scores.mean():.3f} ± {scores.std():.3f}")</pre>
+
+  <p>
+    For classifiers, <code>cross_val_score(..., cv=5)</code> uses
+    <strong>StratifiedKFold</strong> by default — each fold preserves the global class
+    ratio. Report <strong>mean ± std</strong> across folds; high variance means either
+    too little data or a noisy task.
+  </p>
+
+  <h2>Interactive: stratified vs random folds</h2>
+  <p>
+    Toggle the buttons. Watch how random splits can produce folds with almost no positive
+    class — exactly what you want to avoid on churn.
+  </p>
+  <div id="split-viz"></div>
+
+  <h2>Lesson 002 meets Lesson 003: pipelines</h2>
+  <p>
+    Lesson 002 flagged <strong>pipeline bleed</strong>: fitting a scaler or target encoder on
+    all of <code>X</code> before splitting leaks test statistics into train features.
+    sklearn's rule:
+    <em>preprocessing must be fit on training data only</em>, then applied to held-out rows.
+  </p>
+
+  <pre>from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipe = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
+scores = cross_val_score(pipe, X_train, y_train, cv=5)</pre>
+
+  <p>
+    Inside each CV fold, the scaler fits on that fold's train slice and transforms only
+    that fold's validation slice. This is the pattern your homework pipelines should
+    already follow — if not, fix it before any benchmark claim.
+  </p>
+
+  <h2>What this lesson does <em>not</em> cover yet</h2>
+  <p>
+    You already use <strong>grouped CV</strong> in production-style pipelines. Standard
+    K-fold assumes rows are <strong>i.i.d.</strong> — independent draws from the same
+    distribution. sklearn's docs warn explicitly: if samples have group structure
+    (multiple rows per person, per store, per patient), use group-wise CV instead.
+    That is <a href="../reference/curriculum.html">Lesson 004</a> (Grouped &amp; nested CV).
+  </p>
+
+  <p>
+    Similarly, random splits assume no time ordering. Production churn and RelBench tasks
+    need <strong>temporal splits</strong> (Lesson 021). Random stratified CV is the right
+    tool for i.i.d. single-table baselines in Phase 1 — not the final word on relational
+    evaluation.
+  </p>
+
+  <div class="callout">
+    <strong>scikit-learn (1.9 docs):</strong> “If one knows that the samples have been
+    generated using a time-dependent process, it is safer to use a time-series aware
+    cross-validation scheme.” Bookmark that sentence — you will cite it in Year 4.
+  </div>
+
+  <h2>Four split mistakes to catch</h2>
+  <ol>
+    <li>
+      <strong>Test-set tuning.</strong> Running grid search on <code>X_test</code> until
+      metrics improve. Fix: CV on train, or train/val/test with val for search.
+    </li>
+    <li>
+      <strong>Preprocessing bleed.</strong> Global <code>fit_transform(X)</code> before
+      split. Fix: <code>Pipeline</code> inside CV.
+    </li>
+    <li>
+      <strong>Unstratified rare labels.</strong> Lucky/unlucky class ratios in folds.
+      Fix: <code>stratify=y</code> and <code>StratifiedKFold</code>.
+    </li>
+    <li>
+      <strong>Wrong independence assumption.</strong> Same customer in train and test.
+      Fix: grouped splits — next lesson.
+    </li>
+  </ol>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read
+    <a href="https://scikit-learn.org/stable/modules/cross_validation.html">scikit-learn — Cross-validation: evaluating estimator performance</a>
+    in full if you can; minimum is §3.1 through §3.1.2.1.1 (K-fold) plus the
+    <strong>“Data transformation with held-out data”</strong> subsection. Note the
+    warning about i.i.d. vs time-dependent vs grouped data — that paragraph is your bridge
+    to Lessons 004 and 021.
+  </p>
+
+  <h2>Lab — implement a stratified split</h2>
+  <p>
+    Exit ticket for this unit. In Python (local notebook or script):
+  </p>
+  <ol>
+    <li>Load any binary classification dataset (e.g. sklearn <code>load_breast_cancer</code>).</li>
+    <li>Split 80/20 with <code>stratify=y</code> and <code>random_state=42</code>.</li>
+    <li>Print the positive-class rate in train and test — they should match within rounding.</li>
+    <li>Run <code>cross_val_score</code> with <code>cv=5</code> on the <strong>train</strong> portion only.</li>
+    <li>Repeat once <em>without</em> <code>stratify</code> on a highly imbalanced subset (downsample negatives or use a rare-label slice) and compare test-set positive rates.</li>
+  </ol>
+
+  <p>
+    Paste your printed class rates and CV mean ± std to your tutor, or say
+    <em>“lab done”</em> when finished. Lesson 004 assumes you can write this split cold.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your homework <code>report.md</code> CV section
+    if you want a split-strategy audit — random vs grouped vs temporal — before Lesson 004.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0002-design-matrix-leakage.html">← Lesson 002</a></li>
+      <li><a href="0004-grouped-nested-cv.html">Next: Lesson 004 →</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../reference/cross-validation-splits.html">Reference: CV cheat sheet</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/split-viz.js"></script>
+<script>
+  SplitViz.mount(document.getElementById("split-viz"), {
+    nSamples: 100,
+    positiveRate: 0.1,
+    nSplits: 5,
+    seed: 42
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "What is the test set for in a supervised experiment?",
+    options: [
+      { label: "Final generalization estimate", value: "a" },
+      { label: "Tuning hyperparameters daily", value: "b" },
+      { label: "Fitting the scaler globally", value: "c" },
+      { label: "Picking features by correlation", value: "d" }
+    ],
+    correct: "a",
+    explain: "Test data estimates performance on unseen rows. Tuning on test leaks information and invalidates the score."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Why pass stratify=y to train_test_split on churn data?",
+    options: [
+      { label: "Keep class ratio in splits", value: "a" },
+      { label: "Speed up model training time", value: "b" },
+      { label: "Remove duplicate row indices", value: "c" },
+      { label: "Prevent future label leakage", value: "d" }
+    ],
+    correct: "a",
+    explain: "Stratification preserves the positive rate in train and test — critical when churners are rare."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Where must StandardScaler.fit run during 5-fold CV?",
+    options: [
+      { label: "On each fold train only", value: "a" },
+      { label: "On all data before CV", value: "b" },
+      { label: "On the test set alone", value: "c" },
+      { label: "On validation labels only", value: "d" }
+    ],
+    correct: "a",
+    explain: "Each fold's scaler must learn mean/variance from that fold's training indices only — Pipeline handles this."
+  });
+</script>
+</body>
+</html>
