@@ -31,6 +31,11 @@
 - **Lesson 001 complete** (2026-06-24).
 - Lesson 002 published: design matrix & leakage join sketch.
 
+## Session 5 — 2026-06-25
+
+- User started **Lesson 002** (design matrix & leakage).
+- Retrieval from L001 assumed solid; session focuses on PIT aggregates and join-sketch lab.
+
 ## Session 4 — 2026-06-24
 
 - User asked to add **optional papers** ("follow when time allows") and update the curriculum; scan arXiv + Christoph Molnar's blog for candidates.
