@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Train / Valid / Test &amp; CV</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .role-train { color: var(--accent); font-weight: 600; }
+    .role-val { color: #b8860b; font-weight: 600; }
+    .role-test { color: var(--wrong); font-weight: 600; }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Train / Valid / Test &amp; CV</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet</p>
+
+  <h2>Three roles</h2>
+  <table>
+    <thead>
+      <tr><th>Set</th><th>Used for</th><th>Touch how often?</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="role-train">Train</td>
+        <td>Fit model weights / trees</td>
+        <td>Every experiment</td>
+      </tr>
+      <tr>
+        <td class="role-val">Validation</td>
+        <td>Pick hyperparameters, early stopping</td>
+        <td>Many times (or use CV instead)</td>
+      </tr>
+      <tr>
+        <td class="role-test">Test</td>
+        <td>Final generalization estimate</td>
+        <td><strong>Once</strong> — then it is burned</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>sklearn quick calls</h2>
+  <pre>from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+
+X_tr, X_te, y_tr, y_te = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42)
+
+scores = cross_val_score(clf, X_tr, y_tr, cv=5)  # StratifiedKFold for classifiers
+
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+for train_idx, val_idx in skf.split(X_tr, y_tr):
+    ...</pre>
+
+  <h2>Split hygiene (links to Lesson 002)</h2>
+  <table>
+    <thead>
+      <tr><th>Mistake</th><th>Fix</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Fit scaler on all of <code>X</code> before split</td>
+        <td><code>Pipeline</code> + CV, or fit on train only</td>
+      </tr>
+      <tr>
+        <td>Tune on test set until metrics look good</td>
+        <td>Hold test out; tune on val or CV</td>
+      </tr>
+      <tr>
+        <td>Random split on imbalanced labels</td>
+        <td><code>stratify=y</code> or <code>StratifiedKFold</code></td>
+      </tr>
+      <tr>
+        <td>Multiple rows per person in train and test</td>
+        <td><code>GroupKFold</code> — Lesson 004</td>
+      </tr>
+      <tr>
+        <td>Random split on time-ordered data</td>
+        <td>Temporal split — Lesson 021</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>CV mean ± std</h2>
+  <p>Report <code>scores.mean()</code> and <code>scores.std()</code>. Low std across folds → stable estimate; high std → small data or hard task.</p>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0003-train-valid-test-cv.html">Lesson 003</a></li>
+      <li><a href="../lessons/0003-train-valid-test-cv.html">Lesson 003</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>
