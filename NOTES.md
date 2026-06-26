@@ -33,9 +33,11 @@
 
 ## Session 8 — 2026-06-26
 
-- User started **Lesson 004** (grouped & nested CV).
-- Warm-up pending: bridge from L003 (i.i.d. assumption break) to grouped + nested failure modes.
-- Prior signal: grouped CV already in homework — lesson deepens to StratifiedGroupKFold + nested CV + groups plumbing.
+- User started **Lesson 004** (grouped & nested CV); warm-up: grouped leak correct (A); nested-CV bias chose D (best_score_=train) → corrected to B (selection bias; best_score_ is a *validation* score chosen by same data).
+- **Lesson 004 complete** ("lab done").
+- **Lesson 005 published** — pipelines & preprocessing; new reusable `pipeline-viz.js` (leak vs per-fold fit). Primary reading: sklearn §6.1 Pipelines + mixed-types ColumnTransformer example.
+- **Verified live on sklearn 1.9:** SelectKBest-before-CV = 0.78 vs 0.44 honest (pure noise); OHE pandas output needs `sparse_output=False`; `handle_unknown="ignore"` required for test-only categories.
+- Next: Lesson 006 (missingness taxonomy MCAR/MAR/MNAR) — not yet published. Watch the `best_score_`-is-training misconception doesn't resurface.
 
 ## Session 7 — 2026-06-26
 
