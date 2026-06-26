@@ -34,8 +34,9 @@
 ## Session 7 — 2026-06-26
 
 - User started **Lesson 003** (train / valid / test & CV).
-- Retrieval from L002 assumed solid; session focuses on split roles, stratification, pipeline-inside-CV, and i.i.d. vs grouped/temporal boundaries.
-- User already uses grouped CV — L003 covers standard stratified splits; L004 deepens grouped/nested CV.
+- Warm-up retrieval solid: country=safe; design matrix forcing mechanism correct.
+- **Lesson 003 complete** — lab done; stratified split + CV on train.
+- Next: Lesson 004 (grouped & nested CV) — not yet published.
 
 ## Session 6 — 2026-06-25
 
