@@ -14,6 +14,10 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Three inductive biases. Use for: year-1 exit exam; explains the bar neural methods must clear.
 - [Designing Machine Learning Systems — Huyen](https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/)
   Evaluation, leakage, deployment. Use for: year-1 evaluation lectures.
+- [On Over-fitting in Model Selection… — Cawley & Talbot, JMLR 2010](https://jmlr.org/papers/v11/cawley10a.html)
+  Selection bias from tuning + scoring on the same data; argues for nested ("double") CV. Use for: Lesson 004 primary reading and the citation behind every honest tuned baseline.
+- [scikit-learn — Cross-validation iterators for grouped data (§3.1.2.4)](https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data)
+  `GroupKFold` / `StratifiedGroupKFold` API and rationale. Use for: Lesson 004 grouped splits; the non-i.i.d. fix that generalizes to temporal splits (Y4).
 
 _Optional / extension (◆ — read after the year exit criterion):_
 - [SHAP — Lundberg & Lee, NeurIPS 2017](https://arxiv.org/abs/1705.07874)

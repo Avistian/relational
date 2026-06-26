@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Grouped &amp; Nested CV</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Grouped &amp; Nested CV</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet</p>
+
+  <h2>Pick a splitter</h2>
+  <table>
+    <thead>
+      <tr><th>Data shape</th><th>Splitter</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>i.i.d. rows, balanced</td><td><code>KFold</code></td></tr>
+      <tr><td>i.i.d. rows, imbalanced</td><td><code>StratifiedKFold</code></td></tr>
+      <tr><td>Many rows per entity</td><td><code>GroupKFold</code></td></tr>
+      <tr><td>Grouped <em>and</em> imbalanced</td><td><code>StratifiedGroupKFold</code></td></tr>
+      <tr><td>Time-ordered</td><td>Temporal split — Lesson 021</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Group splitters</h2>
+  <pre>from sklearn.model_selection import (
+    GroupKFold, StratifiedGroupKFold, cross_val_score)
+
+gkf = GroupKFold(n_splits=5)
+scores = cross_val_score(clf, X, y, groups=entity_id, cv=gkf)
+
+# class balance + group isolation
+sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
+scores = cross_val_score(clf, X, y, groups=entity_id, cv=sgkf)</pre>
+
+  <p>Rules: pass <code>groups</code> (or it errors); folds are unequal in size; need ≥ <code>n_splits</code> distinct groups.</p>
+
+  <h2>Nested CV (unbiased tuned estimate)</h2>
+  <pre>from sklearn.model_selection import GridSearchCV, cross_val_score, KFold
+
+inner = KFold(5, shuffle=True, random_state=1)   # picks hyperparameters
+outer = KFold(5, shuffle=True, random_state=2)   # scores the procedure
+
+search = GridSearchCV(clf, param_grid, cv=inner)
+nested = cross_val_score(search, X, y, cv=outer)
+report = nested.mean()   # the honest number</pre>
+
+  <h2>Two loops, two jobs</h2>
+  <table>
+    <thead><tr><th>Loop</th><th>Question</th><th>Keep</th></tr></thead>
+    <tbody>
+      <tr><td>Inner</td><td>Which hyperparameters?</td><td>best params per fold</td></tr>
+      <tr><td>Outer</td><td>How well does it generalize?</td><td>mean ± std (headline)</td></tr>
+    </tbody>
+  </table>
+  <p>Report the <strong>outer mean</strong>, not <code>GridSearchCV.best_score_</code> — the latter is selection-biased (Cawley &amp; Talbot, JMLR 2010).</p>
+
+  <h2>Grouped + nested</h2>
+  <pre>inner = GroupKFold(5); outer = GroupKFold(5)
+search = GridSearchCV(clf, param_grid, cv=inner)
+nested = cross_val_score(search, X, y, cv=outer,
+                         params={"groups": entity_id})  # sklearn >=1.4</pre>
+
+  <h2>Mistakes &rarr; fixes</h2>
+  <table>
+    <thead><tr><th>Mistake</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Row-level K-fold on grouped data</td><td><code>GroupKFold</code></td></tr>
+      <tr><td>GroupKFold on imbalanced labels</td><td><code>StratifiedGroupKFold</code></td></tr>
+      <tr><td>Reporting <code>best_score_</code></td><td>Nested CV; report outer mean</td></tr>
+      <tr><td>Dropping <code>groups</code> in outer loop</td><td>Route <code>groups</code> to both loops</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://jmlr.org/papers/v11/cawley10a.html">Cawley &amp; Talbot, JMLR 2010 — selection bias / nested CV</a></li>
+    <li><a href="https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data">sklearn §3.1.2.4 — grouped data</a></li>
+    <li><a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedGroupKFold.html">sklearn — StratifiedGroupKFold</a></li>
+  </ul>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0004-grouped-nested-cv.html">Lesson 004</a></li>
+      <li><a href="cross-validation-splits.html">Reference: Train / Valid / Test &amp; CV</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>
