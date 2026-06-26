@@ -31,6 +31,12 @@
 - **Lesson 001 complete** (2026-06-24).
 - Lesson 002 published: design matrix & leakage join sketch.
 
+## Session 8 — 2026-06-26
+
+- User started **Lesson 004** (grouped & nested CV).
+- Warm-up pending: bridge from L003 (i.i.d. assumption break) to grouped + nested failure modes.
+- Prior signal: grouped CV already in homework — lesson deepens to StratifiedGroupKFold + nested CV + groups plumbing.
+
 ## Session 7 — 2026-06-26
 
 - User started **Lesson 003** (train / valid / test & CV).
