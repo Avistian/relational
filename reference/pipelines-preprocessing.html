@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Pipelines &amp; Preprocessing</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Pipelines &amp; Preprocessing</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet</p>
+
+  <h2>The one rule</h2>
+  <p>
+    Anything with a <code>fit</code> (scaler, imputer, encoder, feature selector, PCA) goes
+    <strong>inside a <code>Pipeline</code></strong> so it refits per CV fold on training rows
+    only. Fitting before the split leaks test statistics into training and inflates the score.
+  </p>
+
+  <h2>What each step learns (and leaks)</h2>
+  <table>
+    <thead><tr><th>Step</th><th>Learns in <code>fit</code></th></tr></thead>
+    <tbody>
+      <tr><td><code>StandardScaler</code></td><td>per-column mean &amp; std</td></tr>
+      <tr><td><code>SimpleImputer</code></td><td>per-column mean / median / mode</td></tr>
+      <tr><td><code>OneHotEncoder</code></td><td>the category set</td></tr>
+      <tr><td><code>SelectKBest</code></td><td>features correlated with <code>y</code> (worst leak)</td></tr>
+      <tr><td><code>PCA</code></td><td>principal axes</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Basic pipeline</h2>
+  <pre>from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipe = Pipeline([
+    ("impute", SimpleImputer(strategy="median")),
+    ("scale",  StandardScaler()),
+    ("clf",    LogisticRegression(max_iter=1000)),
+])
+scores = cross_val_score(pipe, X, y, cv=5)   # whole chain refit per fold</pre>
+  <p><code>make_pipeline(...)</code> auto-names steps lowercase; <code>Pipeline</code> lets you name them (needed for tuning).</p>
+
+  <h2>Mixed columns: ColumnTransformer</h2>
+  <pre>from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.preprocessing import OneHotEncoder
+
+numeric = Pipeline([("impute", SimpleImputer(strategy="median")),
+                    ("scale",  StandardScaler())])
+categorical = Pipeline([("impute", SimpleImputer(strategy="most_frequent")),
+                        ("onehot", OneHotEncoder(handle_unknown="ignore",
+                                                 sparse_output=False))])
+
+pre = ColumnTransformer([
+    ("num", numeric,     make_column_selector(dtype_include="number")),
+    ("cat", categorical, make_column_selector(dtype_include=object)),
+])
+model = Pipeline([("pre", pre), ("clf", LogisticRegression(max_iter=1000))])</pre>
+
+  <h2>Two non-optional settings (verified sklearn 1.9)</h2>
+  <table>
+    <thead><tr><th>Setting</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><code>OneHotEncoder(handle_unknown="ignore")</code></td><td>test-only categories crash otherwise; encodes unseen as all-zeros</td></tr>
+      <tr><td><code>sparse_output=False</code></td><td>required with <code>set_output(transform="pandas")</code> — sparse + pandas raises</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Readable feature names</h2>
+  <pre>pre.set_output(transform="pandas")
+# columns -> num__a, num__b, cat__cat_x, cat__cat_y   (step__feature)</pre>
+
+  <h2>Tune the whole pipeline (step__param)</h2>
+  <pre>from sklearn.model_selection import GridSearchCV
+param_grid = {
+    "pre__num__impute__strategy": ["median", "mean"],
+    "clf__C": [0.1, 1.0, 10.0],
+}
+search = GridSearchCV(model, param_grid, cv=5)</pre>
+  <p>Double underscore descends one level: <code>step → substep → param</code>. Composes with nested CV (Lesson 004) — wrap <code>search</code> in <code>cross_val_score</code>.</p>
+
+  <h2>The measured leak (pure noise, no signal)</h2>
+  <table>
+    <thead><tr><th>Protocol</th><th>CV accuracy</th></tr></thead>
+    <tbody>
+      <tr><td>SelectKBest on all data, then CV</td><td>0.78 (fiction)</td></tr>
+      <tr><td>SelectKBest inside Pipeline</td><td>0.44 (≈ chance)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Mistakes &rarr; fixes</h2>
+  <table>
+    <thead><tr><th>Mistake</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Scaler/imputer fit before split</td><td>Put it in the <code>Pipeline</code></td></tr>
+      <tr><td>Feature selection before CV</td><td><code>SelectKBest</code> as a pipeline step</td></tr>
+      <tr><td>OHE without <code>handle_unknown="ignore"</code></td><td>Ignore unknown categories</td></tr>
+      <tr><td>Tuning preprocessing by hand outside CV</td><td>Grid params with <code>step__param</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://scikit-learn.org/stable/modules/compose.html#pipeline-chaining-estimators">sklearn §6.1 — Pipelines &amp; composite estimators</a></li>
+    <li><a href="https://scikit-learn.org/stable/auto_examples/compose/plot_column_transformer_mixed_types.html">sklearn — ColumnTransformer with mixed types</a></li>
+  </ul>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0005-pipelines-preprocessing.html">Lesson 005</a></li>
+      <li><a href="grouped-nested-cv.html">Reference: Grouped &amp; nested CV</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>
