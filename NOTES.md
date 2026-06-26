@@ -36,7 +36,8 @@
 - User started **Lesson 003** (train / valid / test & CV).
 - Warm-up retrieval solid: country=safe; design matrix forcing mechanism correct.
 - **Lesson 003 complete** — lab done; stratified split + CV on train.
-- Next: Lesson 004 (grouped & nested CV) — not yet published.
+- **Lesson 004 published** — grouped & nested CV; new `group-viz.js`; Cawley & Talbot 2010 + sklearn §3.1.2.4 primary reading; verified lab claims on sklearn 1.9 (corrected metadata-routing example to require `set_config`).
+- Next: Lesson 005 (pipelines & preprocessing) — not yet published.
 
 ## Session 6 — 2026-06-25
 
