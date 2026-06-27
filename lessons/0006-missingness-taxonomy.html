@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 006 — Missingness: MCAR / MAR / MNAR</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .miss-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .miss-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .miss-viz-btn {
+      font-family: var(--font-sans); font-size: 0.85rem; padding: 0.45rem 0.9rem;
+      border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer;
+    }
+    .miss-viz-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .miss-viz-grid { font-family: var(--font-sans); font-size: 0.75rem; }
+    .miss-viz-row { display: flex; align-items: center; gap: 0.6rem; margin: 0.18rem 0; }
+    .miss-viz-head { color: var(--muted); margin-bottom: 0.35rem; }
+    .miss-viz-rlabel { width: 3.2rem; color: var(--muted); flex-shrink: 0; }
+    .miss-viz-colh { width: 8rem; text-align: center; }
+    .miss-viz-cell { width: 8rem; height: 1.3rem; border-radius: 3px; display: inline-block; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.08); }
+    .miss-viz-cell.driver { outline: 3px solid #f4d03f; outline-offset: 1px; }
+    .miss-viz-cell.missing {
+      background: #fff !important;
+      border: 1px dashed #922b21;
+      background-image: repeating-linear-gradient(45deg, #fdedec, #fdedec 4px, #fff 4px, #fff 8px) !important;
+    }
+    .miss-viz-cell.ghost { opacity: 0.4; border: 2px dashed #922b21; background-image: none !important; }
+    .miss-viz-caption { font-size: 0.9rem; margin-top: 0.85rem; color: var(--muted); min-height: 3rem; }
+    .legend { font-family: var(--font-sans); font-size: 0.78rem; color: var(--muted); margin: 0.5rem 0 0; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .swatch { width: 0.9rem; height: 0.9rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,0.15); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .num-table td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1</p>
+  <h1>Missingness: MCAR / MAR / MNAR</h1>
+  <p class="subtitle">Lesson 006 · Phase 1 · ~40 min</p>
+
+  <p>
+    <a href="0005-pipelines-preprocessing.html">Lesson 005</a> taught you to put every
+    imputer inside a <code>Pipeline</code> so it refits per fold. That answers
+    <em>where</em> to impute. This lesson answers the harder question your last lesson
+    quietly skipped: <strong>why are the values missing in the first place</strong> — and
+    why the answer decides whether your imputation is harmless or quietly poisons the result.
+  </p>
+
+  <p>
+    This lesson's single skill: given a hole in your data, <strong>classify its mechanism as
+    MCAR, MAR, or MNAR</strong> by asking one question — <em>what does the probability of
+    being missing depend on?</em> — and then pick a handling that does not bias your baseline.
+  </p>
+
+  <h2>One question, three answers</h2>
+  <p>
+    Donald Rubin's 1976 taxonomy splits all missingness by what the missingness
+    <em>depends on</em>. Let <code>R</code> mark which cells are missing. Then
+    <a href="https://stefvanbuuren.name/fimd/sec-idconcepts.html">(van Buuren, FIMD §2.2.4)</a>:
+  </p>
+  <table>
+    <thead>
+      <tr><th>Mechanism</th><th>Probability of missing depends on…</th><th>Plain words</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>MCAR</strong><br><span style="color:var(--muted)">completely at random</span></td><td>nothing (just a constant)</td><td>The gaps are pure chance. The observed rows are a fair random sample.</td></tr>
+      <tr><td><strong>MAR</strong><br><span style="color:var(--muted)">at random</span></td><td>only <em>observed</em> data</td><td>The gaps depend on columns you <em>can</em> see. Conditioning on them removes the bias.</td></tr>
+      <tr><td><strong>MNAR</strong><br><span style="color:var(--muted)">not at random</span></td><td>the <em>unobserved</em> value itself</td><td>The gaps depend on the very value that's missing. Nothing observed can fully explain them.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>The names mislead everyone once.</strong> "MAR" is <em>not</em> "missing
+    randomly" — that's MCAR. MAR means: <em>random once you condition on what you observed.</em>
+    The ladder is "depends on nothing → depends on the observed → depends on the unobserved."
+  </div>
+
+  <h2>Van Buuren's weighing scale</h2>
+  <p>
+    The cleanest intuition, straight from the
+    <a href="https://stefvanbuuren.name/fimd/sec-MCAR.html">primary source</a>, is a scale that
+    sometimes fails to record a weight:
+  </p>
+  <ul>
+    <li><strong>MCAR:</strong> the scale randomly drops readings — a loose wire. Missingness is unrelated to anything.</li>
+    <li><strong>MAR:</strong> the scale drops more readings on a <em>soft surface</em> than a hard one. If you <em>recorded the surface</em>, the missingness depends only on something observed.</li>
+    <li><strong>MNAR:</strong> the scale wears out and drops more readings for <em>heavier</em> objects — and you never noticed. Missingness depends on the weight itself, the thing you failed to measure.</li>
+  </ul>
+
+  <h2>See the mechanism</h2>
+  <p>
+    Two columns below. <strong>X2</strong> is fully observed; <strong>X1</strong> is the column
+    that develops gaps. Darker = larger value. A hatched red cell is a missing X1 value. Toggle
+    the mechanism and watch <em>where</em> the gaps land and <em>what</em> drives them.
+  </p>
+  <div id="miss-viz"></div>
+  <p class="legend">
+    <span><span class="swatch" style="background:hsl(206,45%,40%)"></span>larger value</span>
+    <span><span class="swatch" style="background:hsl(206,45%,80%)"></span>smaller value</span>
+    <span><span class="swatch" style="outline:3px solid #f4d03f; outline-offset:-2px; background:#fff"></span>observed driver (MAR)</span>
+    <span><span class="swatch" style="background-image:repeating-linear-gradient(45deg,#fdedec,#fdedec 3px,#fff 3px,#fff 6px); border:1px dashed #922b21"></span>missing</span>
+  </p>
+  <p>
+    Under <strong>MAR</strong> the gaps line up with the ringed high-X2 rows — a column you
+    can see. Under <strong>MNAR</strong> the gaps are exactly the high-X1 rows (ghosted): the
+    missing value caused its own absence, and X2 gives you no warning.
+  </p>
+
+  <h2>Why the label decides your method</h2>
+  <p>
+    The mechanism is not academic — it dictates which "fixes" are safe. Take the two reflexes
+    most people reach for:
+  </p>
+  <table>
+    <thead>
+      <tr><th>Handling</th><th>Unbiased under…</th><th>Breaks under…</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Drop incomplete rows (<em>complete-case</em> / listwise)</td><td>MCAR only</td><td>MAR, MNAR — you delete a non-random slice and skew every estimate</td></tr>
+      <tr><td>Mean / median imputation</td><td>nothing, really</td><td>all — it shrinks variance and flattens relationships even under MCAR</td></tr>
+      <tr><td>Conditional imputation (regress on observed cols, e.g. <code>IterativeImputer</code>)</td><td>MCAR, MAR</td><td>MNAR — the predictor it needs is itself missing</td></tr>
+      <tr><td>Add a <em>missing-indicator</em> column</td><td>keeps MNAR signal usable</td><td>doesn't recover the value, but lets the model use "was-missing" as a feature</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>The trap.</strong> Complete-case deletion <em>feels</em> safe — you only "use real
+    data." But under MAR/MNAR the rows you drop differ systematically from the rows you keep,
+    so every downstream number (a mean, a coefficient, a CV score) is biased. Deleting data is
+    a modelling decision, not a neutral cleanup.
+  </div>
+
+  <h2>You cannot fully test which one you have</h2>
+  <p>
+    You can test MCAR-vs-not (e.g. compare observed-data distributions across the
+    missing/observed split), but <strong>MAR vs MNAR is untestable from the data alone</strong>
+    — the information you'd need is exactly what's missing
+    (<a href="https://stefvanbuuren.name/fimd/sec-idconcepts.html">FIMD §2.2.4</a>). So the
+    mechanism is a <em>domain judgement</em>: you argue it from how the data was generated. That
+    is why naming it explicitly, and citing your reasoning, is part of an honest baseline.
+  </p>
+
+  <h2>The tools (all inside the Pipeline from Lesson 005)</h2>
+  <p>
+    sklearn's <a href="https://scikit-learn.org/stable/modules/impute.html">§6.4 imputation</a>
+    gives you three building blocks. Every one of them has a <code>fit</code>, so — by the rule
+    you just learned — every one lives inside the pipeline and refits per fold.
+  </p>
+
+  <pre>from sklearn.impute import SimpleImputer, MissingIndicator
+from sklearn.experimental import enable_iterative_imputer  # noqa: required first
+from sklearn.impute import IterativeImputer
+
+# 1) Simple + keep the "was it missing?" signal (crucial under MNAR)
+imp = SimpleImputer(strategy="median", add_indicator=True)
+
+# 2) Conditional imputation — models each column from the others (MAR-friendly)
+imp = IterativeImputer(max_iter=10, random_state=0)</pre>
+
+  <p>
+    <code>add_indicator=True</code> appends a 0/1 column per feature that had missing values:
+    the model can now learn that <em>"this was missing"</em> is itself predictive — the only way
+    to keep MNAR information once you've filled the hole. Note <code>IterativeImputer</code> is
+    still experimental, so the <code>enable_iterative_imputer</code> import must come first.
+  </p>
+
+  <pre>from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+
+pipe = Pipeline([
+    ("impute", SimpleImputer(strategy="median", add_indicator=True)),
+    ("clf",    LogisticRegression(max_iter=1000)),
+])
+# refit per fold, indicator and all — no leakage, MNAR signal preserved</pre>
+
+  <h2>Bridge to the thesis</h2>
+  <p>
+    Relational data is <em>saturated</em> with missingness, and it is rarely MCAR. A customer
+    with no orders, a product with no reviews, a null foreign key — these gaps usually depend on
+    the very thing you want to predict (a churned user stops generating rows). That is
+    <strong>structural, MNAR-flavoured missingness</strong>, the same idea you flagged back in
+    <a href="0002-design-matrix-leakage.html">Lesson 002</a>.
+  </p>
+  <p>
+    This is exactly where the paradigms diverge, and where your fair baseline lives:
+  </p>
+  <ul>
+    <li><strong>GBDTs</strong> (your XGBoost baseline) handle <code>NaN</code> natively: each
+      split learns a <em>default direction</em> for missing values, effectively using
+      missingness as a free feature. A fair tabular baseline leans on this — don't impute away
+      a signal the tree could have used.</li>
+    <li><strong>Relational deep learning</strong> represents "missing" structurally: a missing
+      relation is simply an <em>absent edge / absent neighbour</em> in the entity graph. The
+      model never sees a <code>NaN</code>; it sees "no message arrived." The thesis bet is that
+      this structural encoding captures informative missingness more faithfully than any
+      hand-built indicator column.</li>
+  </ul>
+  <p>
+    So to argue RDL is undervalued, your manual baseline must treat missingness deliberately —
+    name the mechanism, keep the indicator, never silently drop rows — or a reviewer will say you
+    handicapped the baseline. Flawless missing-data discipline is, again, the bar the thesis must clear.
+  </p>
+
+  <h2>Four mistakes to catch</h2>
+  <ol>
+    <li><strong>Calling MAR "random."</strong> MAR depends on observed columns; MCAR is the random one. Mislabel and you'll trust complete-case analysis when you shouldn't.</li>
+    <li><strong>Dropping incomplete rows by default.</strong> Unbiased only under MCAR. Fix: impute inside the pipeline; keep the rows.</li>
+    <li><strong>Mean-imputing and moving on.</strong> Destroys variance and hides MNAR signal. Fix: <code>add_indicator=True</code>, or let trees handle <code>NaN</code> natively.</li>
+    <li><strong>Imputing on the full table before CV.</strong> The Lesson 005 leak. Fix: imputer is a pipeline step, refit per fold.</li>
+  </ol>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read van Buuren, <em>Flexible Imputation of Missing Data</em> (free online) —
+    <a href="https://stefvanbuuren.name/fimd/sec-MCAR.html">§1.2 "Concepts of MCAR, MAR and MNAR"</a>
+    and the more precise
+    <a href="https://stefvanbuuren.name/fimd/sec-idconcepts.html">§2.2.4</a>. It is the canonical,
+    high-trust reference and the source of the weighing-scale examples. Skim sklearn's
+    <a href="https://scikit-learn.org/stable/modules/impute.html">§6.4 imputation guide</a> for the
+    <code>add_indicator</code> and <code>IterativeImputer</code> APIs you'll use in the lab.
+  </p>
+
+  <h2>Lab — name the mechanism, measure the bias</h2>
+  <p>
+    This lab ships as a notebook with blanks to fill in:
+    <a href="../labs/0006-missingness.ipynb"><code>labs/0006-missingness.ipynb</code></a>.
+    Open it in Jupyter or in Cursor/VS Code. You will:
+  </p>
+  <ol>
+    <li>Take a clean dataset, then knock holes in one column three ways — <strong>MCAR, MAR, MNAR</strong> (you fill in the MAR and MNAR masks).</li>
+    <li>Compare the <strong>observed-only mean</strong> of that column to its <strong>true mean</strong> under each mechanism, and see which ones are biased.</li>
+    <li>Build two Lesson-005 pipelines — mean-impute vs mean-impute <code>+ add_indicator</code> — and compare CV scores to show the indicator recovers informative missingness.</li>
+    <li>Print the exit ticket: three observed-vs-true means + whether the indicator helped + one-sentence cause.</li>
+  </ol>
+  <p>
+    Paste the exit-ticket output here, or say <em>"lab done."</em> Lesson 007 assumes you can
+    name a mechanism and defend a missing-data choice cold.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring a real missing column from your own data and we'll
+    argue its mechanism together — MAR vs MNAR is a judgement call, and rehearsing the argument
+    is the actual skill a reviewer will probe.
+  </div>
+
+  <div class="ask-teacher">
+    Stuck on the MAR/MNAR masks or the <code>add_indicator</code> pipeline? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0005-pipelines-preprocessing.html">← Lesson 005</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../labs/0006-missingness.ipynb">Lab notebook: 0006-missingness.ipynb</a></li>
+      <li><a href="../reference/missingness-taxonomy.html">Reference: Missingness cheat sheet</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/missingness-viz.js"></script>
+<script>
+  MissingnessViz.mount(document.getElementById("miss-viz"), { nRows: 12 });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "A scale drops more readings on a soft surface, which you recorded. This is:",
+    options: [
+      { label: "Missing at random given surface", value: "a" },
+      { label: "Missing completely at random here", value: "b" },
+      { label: "Missing not at random by weight", value: "c" },
+      { label: "Not a missing-data problem here", value: "d" }
+    ],
+    correct: "a",
+    explain: "Missingness depends only on an observed column (surface), so it is MAR — random once you condition on what you saw."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Dropping every incomplete row is unbiased under which mechanism only?",
+    options: [
+      { label: "Only when the data is MCAR", value: "a" },
+      { label: "Only when the data is MNAR", value: "b" },
+      { label: "Under both MAR and MNAR", value: "c" },
+      { label: "Under every missingness mechanism", value: "d" }
+    ],
+    correct: "a",
+    explain: "Complete-case analysis is unbiased only under MCAR; under MAR/MNAR the kept rows differ systematically from the dropped ones."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why add a missing-indicator column when a value is MNAR?",
+    options: [
+      { label: "Was-missing is itself a signal", value: "a" },
+      { label: "It recovers the true value exactly", value: "b" },
+      { label: "It makes the data become MCAR", value: "c" },
+      { label: "It lets you delete the rows", value: "d" }
+    ],
+    correct: "a",
+    explain: "You can't recover the hidden value, but the fact that it was missing is predictive under MNAR — the indicator keeps that signal for the model."
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Missingness: MCAR / MAR / MNAR</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Missingness: MCAR / MAR / MNAR</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet</p>
+
+  <h2>The one question</h2>
+  <p>
+    <strong>What does the probability of being missing depend on?</strong>
+    Nothing → MCAR. Observed data → MAR. The missing value itself → MNAR.
+  </p>
+
+  <h2>Taxonomy</h2>
+  <table>
+    <thead><tr><th>Mechanism</th><th>Depends on</th><th>Example (weighing scale)</th></tr></thead>
+    <tbody>
+      <tr><td><strong>MCAR</strong> — completely at random</td><td>nothing</td><td>loose wire drops readings at random</td></tr>
+      <tr><td><strong>MAR</strong> — at random</td><td>observed columns</td><td>more drops on a soft surface (surface recorded)</td></tr>
+      <tr><td><strong>MNAR</strong> — not at random</td><td>the unobserved value</td><td>scale wears out, drops heavy objects (weight unknown)</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Naming trap:</strong> MAR is not "random" — that's MCAR. MAR = random <em>after</em> conditioning on observed data.</p>
+
+  <h2>What each handling assumes</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Unbiased under</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Complete-case (drop rows)</td><td>MCAR only</td><td>under MAR/MNAR you delete a biased slice</td></tr>
+      <tr><td>Mean / median imputation</td><td>—</td><td>shrinks variance, flattens relationships even under MCAR</td></tr>
+      <tr><td>Conditional (<code>IterativeImputer</code>, MICE)</td><td>MCAR, MAR</td><td>needs an observed predictor; fails for MNAR</td></tr>
+      <tr><td>Missing-indicator column</td><td>any</td><td>keeps "was-missing" signal (key for MNAR); doesn't restore the value</td></tr>
+      <tr><td>Native NaN (XGBoost/LightGBM)</td><td>any</td><td>learns a default split direction = uses missingness as a feature</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Testability</h2>
+  <p>
+    MCAR-vs-not is partly testable (compare observed distributions across the missing/observed
+    split). <strong>MAR vs MNAR is untestable</strong> from the data — the needed info is the
+    missing data itself. Argue the mechanism from how the data was generated; state it explicitly.
+  </p>
+
+  <h2>sklearn tools (all go inside the Pipeline)</h2>
+  <pre>from sklearn.impute import SimpleImputer, MissingIndicator
+from sklearn.experimental import enable_iterative_imputer  # must precede next import
+from sklearn.impute import IterativeImputer
+
+SimpleImputer(strategy="median", add_indicator=True)   # fill + keep was-missing flag
+IterativeImputer(max_iter=10, random_state=0)          # conditional, MAR-friendly
+
+from sklearn.pipeline import Pipeline
+pipe = Pipeline([
+    ("impute", SimpleImputer(strategy="median", add_indicator=True)),
+    ("clf",    LogisticRegression(max_iter=1000)),
+])   # refit per fold (Lesson 005) — no leakage, MNAR signal kept</pre>
+
+  <h2>Relational / thesis notes</h2>
+  <ul>
+    <li>Relational gaps (no orders, null FK, no reviews) are usually <strong>structural, MNAR-flavoured</strong> — the absence depends on the target.</li>
+    <li><strong>GBDT baseline:</strong> let it eat <code>NaN</code> natively; don't impute away a signal it could split on.</li>
+    <li><strong>RDL:</strong> "missing" = an <em>absent edge / neighbour</em> in the entity graph; no NaN ever reaches the model.</li>
+    <li>Fair baseline rule: name the mechanism, keep an indicator, never silently drop rows.</li>
+  </ul>
+
+  <h2>Decision flow</h2>
+  <pre>Is a value missing?
+ ├─ Does P(missing) depend on anything?  ── no ──▶ MCAR  (drop OR impute, both ok-ish)
+ └─ yes
+     ├─ only on OBSERVED columns? ──────── yes ─▶ MAR   (conditional impute; keep rows)
+     └─ on the UNOBSERVED value? ───────── yes ─▶ MNAR  (indicator / native NaN; sensitivity-check)</pre>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://stefvanbuuren.name/fimd/sec-MCAR.html">van Buuren, FIMD §1.2</a> · <a href="https://stefvanbuuren.name/fimd/sec-idconcepts.html">§2.2.4</a> (free online)</li>
+    <li><a href="https://doi.org/10.1093/biomet/63.3.581">Rubin (1976), <em>Inference and missing data</em>, Biometrika</a></li>
+    <li><a href="https://scikit-learn.org/stable/modules/impute.html">scikit-learn §6.4 — Imputation</a></li>
+  </ul>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0006-missingness-taxonomy.html">Lesson 006</a></li>
+      <li><a href="../labs/0006-missingness.ipynb">Lab: 0006-missingness.ipynb</a></li>
+      <li><a href="pipelines-preprocessing.html">Reference: Pipelines &amp; preprocessing</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>

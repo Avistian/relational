@@ -18,6 +18,16 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Selection bias from tuning + scoring on the same data; argues for nested ("double") CV. Use for: Lesson 004 primary reading and the citation behind every honest tuned baseline.
 - [scikit-learn — Cross-validation iterators for grouped data (§3.1.2.4)](https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data)
   `GroupKFold` / `StratifiedGroupKFold` API and rationale. Use for: Lesson 004 grouped splits; the non-i.i.d. fix that generalizes to temporal splits (Y4).
+- [Flexible Imputation of Missing Data (2nd ed.) — Stef van Buuren](https://stefvanbuuren.name/fimd/) (free online)
+  §1.2 + §2.2.4 define MCAR/MAR/MNAR by what the missingness probability depends on (nothing / observed / unobserved), with the weighing-scale examples. Use for: Lesson 006 primary reading and the canonical citation for "I named my missingness mechanism."
+- [Inference and Missing Data — Rubin, Biometrika 1976](https://doi.org/10.1093/biomet/63.3.581)
+  Origin of the MCAR/MAR/MNAR taxonomy and the "ignorability" idea. Use for: the foundational citation behind every missing-data method.
+- [scikit-learn — Imputation of missing values (§6.4)](https://scikit-learn.org/stable/modules/impute.html)
+  `SimpleImputer`, `add_indicator` / `MissingIndicator`, and `IterativeImputer` (behind `from sklearn.experimental import enable_iterative_imputer`). Use for: Lesson 006 lab; imputers refit inside the Pipeline from Lesson 005.
+
+_Optional / extension (◆):_
+- [Statistical Analysis with Missing Data (3rd ed.) — Little & Rubin, 2019](https://www.wiley.com/en-us/Statistical+Analysis+with+Missing+Data%2C+3rd+Edition-p-9780470526798)
+  The graduate reference. Use for: likelihood/ignorability theory once the taxonomy is second nature.
 
 _Optional / extension (◆ — read after the year exit criterion):_
 - [SHAP — Lundberg & Lee, NeurIPS 2017](https://arxiv.org/abs/1705.07874)
