@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Class Imbalance</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Class Imbalance</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet</p>
+
+  <h2>The two rules</h2>
+  <ol>
+    <li><strong>Don't trust accuracy.</strong> On rare positives it just reports the majority rate.</li>
+    <li><strong>Resample only inside the CV fold</strong> (use <code>imblearn.pipeline</code>). Reweighting can't leak; resampling can.</li>
+  </ol>
+
+  <h2>Metrics (pick for the rare class)</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>Answers</th><th>Reach for it when</th></tr></thead>
+    <tbody>
+      <tr><td>Recall / sensitivity</td><td>of real positives, how many caught</td><td>missing a positive is costly</td></tr>
+      <tr><td>Precision</td><td>of positive calls, how many right</td><td>false alarms costly</td></tr>
+      <tr><td>F1</td><td>harmonic mean of the two</td><td>need one balanced number</td></tr>
+      <tr><td><strong>PR-AUC</strong> (avg precision)</td><td>precision across thresholds</td><td><strong>default for rare positives</strong></td></tr>
+      <tr><td>Balanced accuracy</td><td>mean recall over classes</td><td>accuracy-like single number</td></tr>
+      <tr><td>ROC-AUC</td><td>ranking quality</td><td>fine, but optimistic under imbalance</td></tr>
+    </tbody>
+  </table>
+  <p>Verified same-model contrast: ROC-AUC 0.914 vs PR-AUC 0.747. ROC flatters; PR tells the truth.</p>
+
+  <h2>Handling menu (first to last)</h2>
+  <table>
+    <thead><tr><th>Method</th><th>How</th><th>Leak risk</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Class weights</strong> (cost-sensitive)</td><td><code>class_weight="balanced"</code>; XGB <code>scale_pos_weight</code></td><td>none — no rows added</td></tr>
+      <tr><td><strong>Threshold tuning</strong></td><td>move decision threshold; choose on validation</td><td>none if chosen off test</td></tr>
+      <tr><td><strong>Resampling</strong></td><td>SMOTE / RandomUnderSampler, inside <code>imblearn</code> Pipeline</td><td>high if done before CV</td></tr>
+    </tbody>
+  </table>
+  <p>Verified: <code>class_weight="balanced"</code> recall 0.55 → 0.83, but PR-AUC 0.756 → 0.734 — reweighting shifts the operating point, it does not add ranking signal.</p>
+
+  <h2>The resampling leak</h2>
+  <pre># WRONG — SMOTE sees all rows, then CV grades on synthetic near-copies
+X_res, y_res = SMOTE().fit_resample(X, y)
+cross_val_score(clf, X_res, y_res, cv=cv, scoring="f1")     # 0.887 (fiction)
+
+# RIGHT — imblearn Pipeline: resamples TRAIN folds only, predicts on natural imbalance
+from imblearn.pipeline import make_pipeline
+from imblearn.over_sampling import SMOTE
+pipe = make_pipeline(SMOTE(random_state=0), clf)
+cross_val_score(pipe, X, y, cv=cv, scoring="f1")            # 0.479 (honest)</pre>
+  <p>Why <code>imblearn.pipeline</code>: SMOTE rewrites <code>y</code>, which a plain sklearn Pipeline can't host; imblearn also skips resamplers at predict time so test folds keep natural imbalance.</p>
+
+  <h2>Relational / thesis notes</h2>
+  <ul>
+    <li>RelBench tasks (churn, fraud, conversion, link prediction) are rare-positive → score with <strong>PR-AUC / AUROC</strong>, never accuracy.</li>
+    <li>Across a <strong>temporal</strong> split, prefer <code>scale_pos_weight</code> / <code>class_weight</code>; SMOTE-before-split is resampling leak + time leak.</li>
+    <li>SMOTE on an entity graph is ill-defined (interpolating two customers + their orders breaks structure); RDL keeps real entities and carries cost in the loss.</li>
+  </ul>
+
+  <h2>Decision flow</h2>
+  <pre>Imbalanced target?
+ ├─ Metric: drop accuracy → PR-AUC (+ recall at your cost point)
+ ├─ First fix: class_weight / scale_pos_weight   (leak-free)
+ ├─ Still need more recall? tune threshold on VALIDATION
+ └─ Resample? only inside imblearn Pipeline, never before CV/temporal split</pre>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://doi.org/10.1109/TKDE.2008.239">He &amp; Garcia (2009), <em>Learning from Imbalanced Data</em>, IEEE TKDE</a></li>
+    <li><a href="https://www.jair.org/index.php/jair/article/view/10302">Chawla et al. (2002), <em>SMOTE</em>, JAIR</a></li>
+    <li><a href="https://imbalanced-learn.org/stable/common_pitfalls.html">imbalanced-learn — Common pitfalls and recommended practices</a></li>
+  </ul>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0007-class-imbalance.html">Lesson 007</a></li>
+      <li><a href="../labs/0007-class-imbalance.ipynb">Lab: 0007-class-imbalance.ipynb</a></li>
+      <li><a href="missingness-taxonomy.html">Reference: Missingness</a></li>
+      <li><a href="pipelines-preprocessing.html">Reference: Pipelines &amp; preprocessing</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>

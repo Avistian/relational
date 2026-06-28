@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 007 — Class Imbalance</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .imb-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .imb-viz-intro { font-size: 0.92rem; margin: 0 0 0.9rem; }
+    .imb-viz-strip { position: relative; height: 5rem; background: #fff; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 0.6rem; }
+    .imb-viz-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); left: 50%; }
+    .imb-viz-dot { position: absolute; width: 0.55rem; height: 0.55rem; border-radius: 50%; transform: translate(-50%, -50%); }
+    .imb-viz-dot.neg { background: #9bb8cc; }
+    .imb-viz-dot.pos { background: #922b21; }
+    .imb-viz-slider { width: 100%; margin: 0.25rem 0 0.75rem; }
+    .imb-viz-readout { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; font-family: var(--font-sans); }
+    .imb-metric { display: flex; flex-direction: column; min-width: 4.5rem; padding: 0.4rem 0.6rem; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .imb-metric.hot { border-color: var(--wrong); }
+    .imb-k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .imb-v { font-size: 1.05rem; font-family: var(--font-mono); }
+    .imb-cm { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); width: 100%; margin-top: 0.2rem; }
+    .legend { font-family: var(--font-sans); font-size: 0.78rem; color: var(--muted); margin: 0.5rem 0 0; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .swatch { width: 0.9rem; height: 0.9rem; border-radius: 50%; display: inline-block; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .num-table td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1</p>
+  <h1>Class Imbalance</h1>
+  <p class="subtitle">Lesson 007 · Phase 1 · ~40 min</p>
+
+  <p>
+    Every leakage lesson so far — <a href="0002-design-matrix-leakage.html">002</a>,
+    <a href="0005-pipelines-preprocessing.html">005</a>,
+    <a href="0006-missingness-taxonomy.html">006</a> — protected the <em>honesty</em> of your
+    score. This lesson protects something the score itself can hide. When one class is rare —
+    churn, fraud, conversion, a positive diagnosis — a model can be <strong>95% accurate and
+    completely useless</strong>, and a careless fix can leak the very signal you're measuring.
+  </p>
+
+  <p>
+    This lesson's single skill: on an imbalanced problem, <strong>stop trusting accuracy, judge
+    with imbalance-aware metrics, and apply the handling menu (class weights, threshold tuning,
+    resampling) without leaking</strong> — which means any resampling lives inside an
+    <code>imblearn</code> Pipeline, exactly as your transforms did in Lesson 005.
+  </p>
+
+  <h2>The accuracy paradox</h2>
+  <p>
+    Take a dataset that is <strong>5.5% positive</strong>. A model that ignores the input and
+    always predicts "negative" scores like this (verified, sklearn 1.9):
+  </p>
+  <table class="num-table">
+    <thead><tr><th>Model</th><th>Accuracy</th><th>Recall (positives caught)</th><th>PR-AUC</th></tr></thead>
+    <tbody>
+      <tr><td><code>DummyClassifier("most_frequent")</code></td><td class="n">0.945</td><td class="n">0.000</td><td class="n">0.055</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>94.5% accuracy, and it catches zero positives.</strong> Accuracy just measures the
+    majority class back to you. This is the accuracy paradox: on imbalanced data, the
+    headline metric rewards a model for doing nothing
+    (<a href="https://doi.org/10.1109/TKDE.2008.239">He &amp; Garcia 2009</a>).
+  </p>
+
+  <h2>Move the threshold, watch recall swing</h2>
+  <p>
+    A classifier outputs a <em>score</em>; a <em>threshold</em> turns it into a label. Drag the
+    threshold below. Red dots are the rare positives, blue the negatives. Notice you can park
+    accuracy near its maximum while recall is near zero — and that pushing recall up costs
+    precision.
+  </p>
+  <div id="imb-viz"></div>
+  <p class="legend">
+    <span><span class="swatch" style="background:#9bb8cc"></span>negative (common)</span>
+    <span><span class="swatch" style="background:#922b21"></span>positive (rare)</span>
+  </p>
+
+  <h2>Metrics that survive imbalance</h2>
+  <p>
+    Replace accuracy with metrics that look at the rare class directly:
+  </p>
+  <table>
+    <thead><tr><th>Metric</th><th>What it answers</th><th>Use when</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Recall</strong> (sensitivity)</td><td>of the real positives, how many did we catch?</td><td>missing a positive is costly (fraud, disease)</td></tr>
+      <tr><td><strong>Precision</strong></td><td>of our positive calls, how many were right?</td><td>false alarms are costly</td></tr>
+      <tr><td><strong>F1</strong></td><td>harmonic mean of precision &amp; recall</td><td>you need one balanced number</td></tr>
+      <tr><td><strong>PR-AUC</strong> (average precision)</td><td>precision across all thresholds</td><td><strong>the default for rare positives</strong></td></tr>
+      <tr><td><strong>Balanced accuracy</strong></td><td>mean recall over both classes</td><td>you want a single accuracy-like number</td></tr>
+      <tr><td>ROC-AUC</td><td>ranking quality over thresholds</td><td>useful, but optimistic under heavy imbalance</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>ROC flatters, PR tells the truth.</strong> Verified on the same model: ROC-AUC
+    <strong>0.914</strong> vs PR-AUC <strong>0.747</strong>. ROC-AUC uses the true-negative-rich
+    denominator, so it looks rosy when negatives dominate. For rare positives, lead with PR-AUC.
+    (We go deep on metrics next lesson — here just stop using accuracy.)
+  </div>
+
+  <h2>The handling menu</h2>
+  <p>Three families, roughly in order of "reach for this first":</p>
+  <ol>
+    <li>
+      <strong>Cost-sensitive learning (class weights).</strong> Tell the model a positive error
+      costs more. In sklearn, <code>class_weight="balanced"</code>; in XGBoost,
+      <code>scale_pos_weight</code>. No data is added or removed, so <em>there is nothing to
+      leak</em> — this is the safe default. Verified effect (logistic regression):
+      recall <strong>0.55 → 0.83</strong>.
+    </li>
+    <li>
+      <strong>Threshold tuning.</strong> Keep the model; move the decision threshold to match
+      your cost trade-off. Choose it on validation data, never on test. Verified: F1 rose from
+      <strong>0.711</strong> at the default 0.5 to <strong>0.725</strong> at threshold 0.3.
+    </li>
+    <li>
+      <strong>Resampling.</strong> Rebalance the training set — undersample the majority, or
+      synthesize minority points with <strong>SMOTE</strong>
+      (<a href="https://www.jair.org/index.php/jair/article/view/10302">Chawla et al. 2002</a>).
+      Powerful, but it rewrites your data — and that is where the trap is.
+    </li>
+  </ol>
+
+  <div class="callout">
+    <strong>A caution the metric won't show.</strong> Class weights changed recall a lot
+    (0.55 → 0.83) but barely moved PR-AUC (<strong>0.756 → 0.734</strong>). Reweighting and
+    resampling mostly <em>shift the operating point</em> — they trade precision for recall —
+    rather than making the model rank better. Don't expect them to manufacture signal that
+    isn't there; expect them to move where you sit on the precision/recall curve.
+  </div>
+
+  <h2>The resampling leak (this is the exam question)</h2>
+  <p>
+    Here is the mistake that quietly inflates a huge fraction of "imbalanced-data" results.
+    SMOTE creates synthetic minority points by interpolating between real ones. If you SMOTE
+    the <strong>whole dataset</strong> and then cross-validate, synthetic points in your test
+    folds are interpolations of points in your training folds — the model is graded on near-copies
+    of what it trained on. Worse, it's also tested on an artificially balanced set it will never
+    see in production
+    (<a href="https://imbalanced-learn.org/stable/common_pitfalls.html">imbalanced-learn, Common pitfalls</a>).
+  </p>
+
+  <pre># WRONG — SMOTE sees every row, then we cross-validate on it
+X_res, y_res = SMOTE().fit_resample(X, y)
+wrong = cross_val_score(clf, X_res, y_res, cv=cv, scoring="f1").mean()
+
+# RIGHT — SMOTE lives in an imblearn Pipeline; it touches train folds only
+from imblearn.pipeline import make_pipeline
+from imblearn.over_sampling import SMOTE
+pipe  = make_pipeline(SMOTE(random_state=0), clf)
+right = cross_val_score(pipe, X, y, cv=cv, scoring="f1").mean()</pre>
+
+  <table class="num-table">
+    <thead><tr><th>Protocol</th><th>CV F1</th><th>Truth</th></tr></thead>
+    <tbody>
+      <tr><td>SMOTE all data, then CV</td><td class="n">0.887</td><td>fiction</td></tr>
+      <tr><td>SMOTE inside the imblearn Pipeline</td><td class="n">0.479</td><td>honest</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>Verified (imbalanced-learn 0.14):</strong> the leak invents <strong>0.41 of F1 out
+    of interpolation</strong> — the same shape of lie as Lesson 005's feature-selection demo
+    (0.78 vs 0.44 on pure noise). The rule generalizes: <strong>anything that uses the data to
+    transform the data belongs inside the cross-validation fold.</strong>
+  </div>
+
+  <p>
+    One wrinkle Lesson 005 didn't have: SMOTE changes <code>y</code>, not just <code>X</code>.
+    A plain <code>sklearn.pipeline.Pipeline</code> can't host a step that resamples rows. That's
+    why <code>imblearn</code> ships its own <code>Pipeline</code> — same interface, but it routes
+    resamplers correctly and, crucially, <em>skips them at predict time</em> so the held-out fold
+    keeps its natural imbalance.
+  </p>
+
+  <h2>Bridge to the thesis</h2>
+  <p>
+    Imbalance is not an edge case for relational deep learning — it is the <em>default</em>. The
+    headline RelBench tasks (churn, fraud, conversion, link prediction) all have rare positives.
+    Three consequences for a fair baseline:
+  </p>
+  <ul>
+    <li>
+      <strong>Report PR-AUC / AUROC, not accuracy.</strong> A churn model at 95% accuracy that
+      predicts "nobody churns" is the accuracy paradox in production. RelBench leaderboards are
+      scored on ranking metrics for exactly this reason.
+    </li>
+    <li>
+      <strong>Reweight, don't resample, across a temporal split.</strong> <code>scale_pos_weight</code>
+      / <code>class_weight</code> is leak-free; SMOTE before a time-based split is the resampling
+      leak <em>plus</em> a time leak. Your tuned GBDT baseline should use weights.
+    </li>
+    <li>
+      <strong>SMOTE barely makes sense on an entity graph.</strong> What is the interpolation of
+      two customers, with their orders and reviews? Synthesizing rows fractures relational
+      structure. RDL instead keeps every real entity and lets the loss carry the class weights —
+      a cleaner story the thesis can lean on.
+    </li>
+  </ul>
+
+  <h2>Four mistakes to catch</h2>
+  <ol>
+    <li><strong>Reporting accuracy on imbalanced data.</strong> Rewards predicting the majority. Fix: PR-AUC, recall, balanced accuracy.</li>
+    <li><strong>SMOTE before the split.</strong> Synthetic test points leak from train. Fix: SMOTE inside an <code>imblearn</code> Pipeline.</li>
+    <li><strong>Tuning the threshold on the test set.</strong> Leaks the answer. Fix: pick the threshold on validation.</li>
+    <li><strong>Expecting reweighting to add signal.</strong> It shifts the operating point, not the ranking. Fix: judge with PR-AUC, set the cost deliberately.</li>
+  </ol>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read He &amp; Garcia,
+    <a href="https://doi.org/10.1109/TKDE.2008.239"><em>Learning from Imbalanced Data</em> (IEEE TKDE 2009)</a>
+    — the canonical survey. Focus on the nature of the problem and the assessment-metrics section;
+    skim the sampling and cost-sensitive families. Then read imbalanced-learn's
+    <a href="https://imbalanced-learn.org/stable/common_pitfalls.html">Common pitfalls and recommended practices</a>
+    for the leak-free resampling pattern you'll use in the lab.
+  </p>
+
+  <h2>Lab — make the leak, then kill it</h2>
+  <p>
+    Notebook with blanks:
+    <a href="../labs/0007-class-imbalance.ipynb"><code>labs/0007-class-imbalance.ipynb</code></a>
+    (uses <code>imbalanced-learn</code> — run <code>bash labs/setup-env.sh</code> first if you
+    haven't). You will:
+  </p>
+  <ol>
+    <li>Build an imbalanced dataset and reproduce the <strong>accuracy paradox</strong> with a majority-class dummy.</li>
+    <li>Show the <strong>SMOTE leak</strong>: resample-all-then-CV F1 vs SMOTE inside an <code>imblearn</code> Pipeline.</li>
+    <li>Apply <code>class_weight="balanced"</code> and measure the <strong>recall gain</strong> against PR-AUC.</li>
+    <li>Print the exit ticket: paradox numbers, leaked-vs-honest F1, recall gain, and a one-sentence cause.</li>
+  </ol>
+  <p>
+    Paste the exit-ticket output here, or say <em>"lab done."</em> Lesson 008 (metrics — ROC vs
+    PR curves and calibration) builds straight on the metric intuitions you just used.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring a real imbalanced target (a churn or fraud column)
+    and we'll choose its metric and decide weights-vs-resampling together — the same call a
+    RelBench baseline forces you to make.
+  </div>
+
+  <div class="ask-teacher">
+    Stuck on the <code>imblearn</code> Pipeline or which metric to trust? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0006-missingness-taxonomy.html">← Lesson 006</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../labs/0007-class-imbalance.ipynb">Lab notebook: 0007-class-imbalance.ipynb</a></li>
+      <li><a href="../reference/class-imbalance.html">Reference: Class imbalance cheat sheet</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/imbalance-viz.js"></script>
+<script>
+  ImbalanceViz.mount(document.getElementById("imb-viz"), {});
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "A model is 95% accurate on a 5% positive dataset. The likely problem is:",
+    options: [
+      { label: "It mostly predicts the majority class", value: "a" },
+      { label: "It memorised the rare positive class", value: "b" },
+      { label: "The threshold was set far too low", value: "c" },
+      { label: "The accuracy metric was miscomputed", value: "d" }
+    ],
+    correct: "a",
+    explain: "With 5% positives, predicting 'negative' every time scores 95% accuracy and zero recall — the accuracy paradox."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Why apply SMOTE inside an imblearn Pipeline rather than before CV?",
+    options: [
+      { label: "So synthetic points never reach validation", value: "a" },
+      { label: "Because imblearn runs strictly faster here", value: "b" },
+      { label: "To make every fold perfectly balanced", value: "c" },
+      { label: "So the model trains on fewer total rows", value: "d" }
+    ],
+    correct: "a",
+    explain: "SMOTE on the whole dataset puts interpolations of training points into the test folds — leakage. The imblearn Pipeline resamples train folds only."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Which handling adds no data and therefore cannot leak rows?",
+    options: [
+      { label: "Setting balanced class weights directly", value: "a" },
+      { label: "Oversampling the minority with SMOTE", value: "b" },
+      { label: "Undersampling the majority class rows", value: "c" },
+      { label: "Duplicating minority rows before CV", value: "d" }
+    ],
+    correct: "a",
+    explain: "class_weight / scale_pos_weight only changes the loss; no rows are added or removed, so there is nothing to leak. It's the safe default."
+  });
+</script>
+</body>
+</html>

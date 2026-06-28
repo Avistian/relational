@@ -24,6 +24,12 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Origin of the MCAR/MAR/MNAR taxonomy and the "ignorability" idea. Use for: the foundational citation behind every missing-data method.
 - [scikit-learn — Imputation of missing values (§6.4)](https://scikit-learn.org/stable/modules/impute.html)
   `SimpleImputer`, `add_indicator` / `MissingIndicator`, and `IterativeImputer` (behind `from sklearn.experimental import enable_iterative_imputer`). Use for: Lesson 006 lab; imputers refit inside the Pipeline from Lesson 005.
+- [Learning from Imbalanced Data — He & Garcia, IEEE TKDE 2009](https://doi.org/10.1109/TKDE.2008.239)
+  The canonical survey of the imbalanced-learning problem: why accuracy misleads, the sampling/cost-sensitive/threshold families, and assessment metrics. Use for: Lesson 007 primary reading; the citation behind "accuracy is the wrong metric here."
+- [SMOTE — Chawla et al., JAIR 2002](https://www.jair.org/index.php/jair/article/view/10302)
+  Synthetic Minority Over-sampling. Use for: the most-cited resampling method; the thing you must keep inside the CV fold.
+- [imbalanced-learn — Common pitfalls and recommended practices](https://imbalanced-learn.org/stable/common_pitfalls.html)
+  Why resampling the whole dataset before CV leaks and tests on an unrealistic distribution; the `imblearn.pipeline` fix that resamples train folds only. Use for: Lesson 007 lab; the leak-free pattern that extends Lesson 005's Pipeline discipline to steps that also rewrite `y`.
 
 _Optional / extension (◆):_
 - [Statistical Analysis with Missing Data (3rd ed.) — Little & Rubin, 2019](https://www.wiley.com/en-us/Statistical+Analysis+with+Missing+Data%2C+3rd+Edition-p-9780470526798)

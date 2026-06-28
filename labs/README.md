@@ -18,15 +18,30 @@ Design intent: blanks sit only on the **skill** being practised; everything peri
 provided so working memory stays on the one idea (see `../NOTES.md` preferences and the
 `teach` skill's fluency-vs-storage-strength note). CHECK cells make the feedback loop tight.
 
-## Running
+## Environment (one-time setup)
+
+From the repo root (`relational/`):
 
 ```bash
-pip install jupyterlab scikit-learn pandas numpy   # once
-jupyter lab            # then open labs/NNNN-<slug>.ipynb
+bash labs/setup-env.sh
 ```
 
-No Jupyter? Open the `.ipynb` directly in Cursor/VS Code and run cells with the Python
-extension. Paste the EXIT TICKET output back into chat, or say "lab done".
+This creates `.venv/`, installs [`requirements-labs.txt`](../requirements-labs.txt), and registers the Jupyter kernel **Relational Labs (.venv)**.
+
+**In Cursor / VS Code:** open a lab notebook → **Select Kernel** → choose either:
+- **Relational Labs (.venv)** (Jupyter kernel), or
+- the interpreter at `.venv/bin/python`
+
+**In a terminal:**
+
+```bash
+source .venv/bin/activate
+jupyter lab    # then open labs/NNNN-<slug>.ipynb
+```
+
+Re-run `bash labs/setup-env.sh` after pulling new dependencies.
+
+## Running
 
 ## Reproduction labs build incrementally (future)
 
@@ -45,3 +60,5 @@ This keeps the thesis baselines trustworthy by the time results matter.
 
 - `0006-missingness.ipynb` — classify MCAR/MAR/MNAR; show complete-case bias and the
   missing-indicator fix (Lesson 006).
+- `0007-class-imbalance.ipynb` — accuracy paradox, the SMOTE-before-CV leak vs the imblearn
+  Pipeline fix, and leak-free class weights (Lesson 007).
