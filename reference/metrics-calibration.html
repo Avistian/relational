@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Metrics: ROC vs PR &amp; Calibration</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Metrics: ROC vs PR &amp; Calibration</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet</p>
+
+  <h2>Two separate questions</h2>
+  <ol>
+    <li><strong>Ranking:</strong> does it order positives above negatives? → ROC-AUC / PR-AUC.</li>
+    <li><strong>Calibration:</strong> can the probabilities be believed? → reliability curve + Brier.</li>
+  </ol>
+  <p>A model can be a great ranker and badly calibrated. AUROC says nothing about calibration.</p>
+
+  <h2>ROC vs PR</h2>
+  <table>
+    <thead><tr><th>Curve</th><th>Axes</th><th>No-skill baseline</th><th>Use when</th></tr></thead>
+    <tbody>
+      <tr><td>ROC</td><td>TPR vs FPR</td><td>0.5 always</td><td>ranking quality, ~balanced classes</td></tr>
+      <tr><td>PR</td><td>Precision vs Recall</td><td><strong>prevalence</strong></td><td>rare positives, act on top of list (use MAP for ranking)</td></tr>
+    </tbody>
+  </table>
+  <p>ROC is optimistic under imbalance (FPR denominator is true-negative-rich). Verified same-model: ROC-AUC 0.863 vs PR-AUC 0.720 at prevalence 0.177. Always state prevalence next to PR-AUC.</p>
+
+  <h2>Calibration — reliability curve</h2>
+  <p>Bin predictions; plot mean predicted vs observed frequency. On the diagonal = calibrated. RandomForest / boosted trees / SVMs bow off it (sigmoid distortion); logistic regression is usually close.</p>
+  <pre>from sklearn.calibration import calibration_curve
+frac_pos, mean_pred = calibration_curve(y_test, p, n_bins=10)   # plot frac_pos vs mean_pred</pre>
+
+  <h2>Brier score (one number, lower better)</h2>
+  <p>Mean squared error of probability vs 0/1 outcome; a proper scoring rule (rewards ranking + calibration). Verified RF: raw 0.0898 → sigmoid 0.0856 → isotonic 0.0853 (AUROC unchanged).</p>
+  <pre>from sklearn.metrics import brier_score_loss
+brier_score_loss(y_test, p)</pre>
+
+  <h2>Fix: CalibratedClassifierCV</h2>
+  <table>
+    <thead><tr><th>Method</th><th>What</th><th>Prefer when</th></tr></thead>
+    <tbody>
+      <tr><td><code>method="sigmoid"</code> (Platt)</td><td>1-param logistic map</td><td>sigmoid distortion (trees/SVM), small data</td></tr>
+      <tr><td><code>method="isotonic"</code></td><td>monotonic step map</td><td>more data; flexible but overfits when small</td></tr>
+    </tbody>
+  </table>
+  <pre>from sklearn.calibration import CalibratedClassifierCV
+cal = CalibratedClassifierCV(base_estimator, method="sigmoid", cv=5).fit(X_train, y_train)
+# cv= fits the calibrator on held-out folds -> no leakage (Lesson 005 instinct)</pre>
+
+  <h2>Relational / thesis notes</h2>
+  <ul>
+    <li>RelBench churn/fraud/recsys are rare-positive → report <strong>AUPRC / MAP</strong> + prevalence, not accuracy or bare AUROC.</li>
+    <li>A higher AUROC that loses on AUPRC at the operating recall is not a win — say so.</li>
+    <li>Deployed scores feeding a threshold or expected-value calc must be <strong>calibrated</strong>; GBDTs and GNNs are often not.</li>
+  </ul>
+
+  <h2>Decision flow</h2>
+  <pre>Evaluating a classifier?
+ ├─ Ranking metric: balanced → ROC-AUC; rare positives → PR-AUC/MAP (state prevalence)
+ └─ Will anyone ACT on the probability?
+     ├─ no  → ranking metric is enough
+     └─ yes → reliability curve + Brier; if off-diagonal, CalibratedClassifierCV(cv=...)</pre>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://doi.org/10.1371/journal.pone.0118432">Saito &amp; Rehmsmeier (2015), PR &gt; ROC under imbalance, PLOS ONE</a></li>
+    <li><a href="https://doi.org/10.1145/1143844.1143874">Davis &amp; Goadrich (2006), PR/ROC relationship, ICML</a></li>
+    <li><a href="https://www.cs.cornell.edu/~alexn/papers/calibration.icml05.crc.rev3.pdf">Niculescu-Mizil &amp; Caruana (2005), calibration, ICML</a></li>
+    <li><a href="https://scikit-learn.org/stable/modules/calibration.html">scikit-learn §1.16 — Probability calibration</a></li>
+  </ul>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0008-metrics-calibration.html">Lesson 008</a></li>
+      <li><a href="../labs/0008-metrics-calibration.ipynb">Lab: 0008-metrics-calibration.ipynb</a></li>
+      <li><a href="class-imbalance.html">Reference: Class imbalance</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>

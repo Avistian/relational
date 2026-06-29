@@ -30,6 +30,14 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Synthetic Minority Over-sampling. Use for: the most-cited resampling method; the thing you must keep inside the CV fold.
 - [imbalanced-learn — Common pitfalls and recommended practices](https://imbalanced-learn.org/stable/common_pitfalls.html)
   Why resampling the whole dataset before CV leaks and tests on an unrealistic distribution; the `imblearn.pipeline` fix that resamples train folds only. Use for: Lesson 007 lab; the leak-free pattern that extends Lesson 005's Pipeline discipline to steps that also rewrite `y`.
+- [The Precision-Recall Plot Is More Informative than the ROC Plot… — Saito & Rehmsmeier, PLOS ONE 2015](https://doi.org/10.1371/journal.pone.0118432)
+  Why ROC is deceptively optimistic under imbalance (its FPR denominator is true-negative-rich) while PR reflects deployment performance. Use for: Lesson 008 primary reading; the citation for "report PR/MAP on rare-positive tasks."
+- [The Relationship Between Precision-Recall and ROC Curves — Davis & Goadrich, ICML 2006](https://doi.org/10.1145/1143844.1143874)
+  A curve dominates in ROC iff it dominates in PR; AUROC and AUPRC can disagree on rankings. Use for: the formal relationship behind Lesson 008's curve choice.
+- [Predicting Good Probabilities With Supervised Learning — Niculescu-Mizil & Caruana, ICML 2005](https://www.cs.cornell.edu/~alexn/papers/calibration.icml05.crc.rev3.pdf)
+  Reliability diagrams; max-margin methods (boosted trees, SVMs) give sigmoid-distorted scores; Platt scaling & isotonic regression fix them. Use for: Lesson 008 calibration section; the canonical calibration reference.
+- [scikit-learn — Probability calibration (§1.16)](https://scikit-learn.org/stable/modules/calibration.html)
+  `CalibratedClassifierCV` (sigmoid/isotonic), `calibration_curve`, Brier score. Use for: Lesson 008 lab; the API for checking and fixing calibration without leakage.
 
 _Optional / extension (◆):_
 - [Statistical Analysis with Missing Data (3rd ed.) — Little & Rubin, 2019](https://www.wiley.com/en-us/Statistical+Analysis+with+Missing+Data%2C+3rd+Edition-p-9780470526798)

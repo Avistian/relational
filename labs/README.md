@@ -62,3 +62,5 @@ This keeps the thesis baselines trustworthy by the time results matter.
   missing-indicator fix (Lesson 006).
 - `0007-class-imbalance.ipynb` — accuracy paradox, the SMOTE-before-CV leak vs the imblearn
   Pipeline fix, and leak-free class weights (Lesson 007).
+- `0008-metrics-calibration.ipynb` — ROC-AUC vs PR-AUC against the prevalence baseline, and
+  reliability-curve + Brier calibration with CalibratedClassifierCV (Lesson 008).
