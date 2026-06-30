@@ -38,6 +38,14 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Reliability diagrams; max-margin methods (boosted trees, SVMs) give sigmoid-distorted scores; Platt scaling & isotonic regression fix them. Use for: Lesson 008 calibration section; the canonical calibration reference.
 - [scikit-learn — Probability calibration (§1.16)](https://scikit-learn.org/stable/modules/calibration.html)
   `CalibratedClassifierCV` (sigmoid/isotonic), `calibration_curve`, Brier score. Use for: Lesson 008 lab; the API for checking and fixing calibration without leakage.
+- [Deep Feature Synthesis: Towards Automating Data Science Endeavors — Kanter & Veeramachaneni, DSAA 2015](https://www.maxkanter.com/papers/DSAA_DSM_2015.pdf)
+  The algorithm that automatically generates features for relational data by following foreign keys to a base table and stacking aggregation/transform primitives ("depth"); beat 615/906 human teams. Use for: Lesson 009 primary reading; the direct conceptual bridge from manual relational FE → DFS → RDL.
+- [An Empirical Analysis of Feature Engineering for Predictive Modeling — Heaton, IEEE SoutheastCon 2016](https://arxiv.org/abs/1701.07852)
+  Tests which engineered features NN/RF/GBDT/SVM can synthesize alone: simple single-column transforms yes, but **none** could learn a ratio of differences. Use for: Lesson 009; the citation for "engineer the features the model can't learn itself."
+- [Featuretools — Deep Feature Synthesis documentation](https://docs.featuretools.com/en/stable/getting_started/afe.html)
+  The open-source implementation of DFS (EntitySets, primitives, `max_depth`). Use for: a concrete tool to compare a hand-engineered baseline against later in the thesis.
+- [scikit-learn — Preprocessing data (§6.3) incl. TargetEncoder](https://scikit-learn.org/stable/modules/preprocessing.html)
+  Stateless vs fit-bearing transforms; `TargetEncoder` with built-in cross-fitting. Use for: Lesson 009 lab; keeping target encoding leak-free inside the Pipeline.
 
 _Optional / extension (◆):_
 - [Statistical Analysis with Missing Data (3rd ed.) — Little & Rubin, 2019](https://www.wiley.com/en-us/Statistical+Analysis+with+Missing+Data%2C+3rd+Edition-p-9780470526798)

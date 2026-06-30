@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Feature Engineering</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Feature Engineering</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet</p>
+
+  <h2>The core idea</h2>
+  <p>A feature is a calculated field that makes a relationship the model needs <em>learnable</em>. Engineer the features a model <strong>cannot synthesize itself</strong>; skip the ones it can.</p>
+
+  <h2>What models can / cannot learn (Heaton 2016)</h2>
+  <table>
+    <thead><tr><th>Feature type</th><th>Models learn it alone?</th><th>Engineer it?</th></tr></thead>
+    <tbody>
+      <tr><td>log, polynomial, power, root (single column)</td><td>yes (all 4 models)</td><td>rarely worth it</td></tr>
+      <tr><td><strong>ratio of differences \((a-b)/(c-d)\)</strong></td><td><strong>no model could</strong></td><td><strong>yes — high value</strong></td></tr>
+      <tr><td>interactions (A·B, effect of A depends on B)</td><td>trees partially; linear no</td><td>yes, esp. for linear models</td></tr>
+    </tbody>
+  </table>
+  <p>Verified (\(y=(a-b)/(c-d)\), 5-fold R²): Ridge <strong>0.644 → 0.998</strong>, HistGBDT <strong>0.968 → 0.980</strong> with the ratio engineered in.</p>
+
+  <h2>High-value patterns</h2>
+  <table>
+    <thead><tr><th>Pattern</th><th>Encodes</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Ratios &amp; differences</td><td>rate, margin, change</td><td>not synthesizable — engineer</td></tr>
+      <tr><td>Interactions</td><td>A depends on B</td><td>linear models see only additive</td></tr>
+      <tr><td>Datetime decomposition</td><td>hour, dow, month, cyclicality</td><td>raw timestamp = one meaningless int</td></tr>
+      <tr><td>Aggregations over a relation</td><td>count/mean/max of child rows</td><td>rows live in another table → DFS/RDL</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Datetime: cyclical encoding</h2>
+  <p>Integer hour 0…23 puts 23:00 and 00:00 far apart. Use sin/cos so the circle closes. Verified HistGBDT on an hour-of-day signal: raw timestamp R² <strong>0.840 → 0.979</strong> with sin/cos.</p>
+  <pre>h = ts.dt.hour
+X["hour_sin"] = np.sin(2*np.pi*h/24)
+X["hour_cos"] = np.cos(2*np.pi*h/24)</pre>
+
+  <h2>Stateless vs fit-bearing (the leakage boundary)</h2>
+  <table>
+    <thead><tr><th>Type</th><th>Uses</th><th>Examples</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Stateless</strong></td><td>within-row arithmetic only</td><td>ratios, differences, parsed hour, sin/cos</td><td>cannot leak; still keep in pipeline</td></tr>
+      <tr><td><strong>Fit-bearing</strong></td><td>across-row statistics</td><td>target/mean encoding, scaling, KBins, imputation</td><td><strong>must be a Pipeline step (fit on train folds)</strong></td></tr>
+    </tbody>
+  </table>
+  <pre>from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import TargetEncoder, FunctionTransformer
+
+pipe = Pipeline([
+    ("ratio",  FunctionTransformer(add_ratio)),   # stateless
+    ("encode", TargetEncoder()),                  # fit-bearing: per-fold only
+    ("model",  HistGradientBoostingClassifier()),
+])
+# Target-encoding the WHOLE frame leaks the label and inflates CV. Always inside the pipeline.</pre>
+
+  <h2>Relational features &amp; the thesis spine</h2>
+  <ul>
+    <li>Most powerful relational features = <strong>aggregations over child rows</strong> (txn count, avg order value, days since last login).</li>
+    <li><strong>Deep Feature Synthesis</strong>: follow foreign keys to a base table, stack aggregation + transform primitives; "depth" = relationships traversed (powers Featuretools).</li>
+    <li>Progression: <strong>manual FE → DFS (automated, you pick primitives) → RDL (GNN learns aggregations end-to-end)</strong>. The hand-engineered baseline is what RDL must beat.</li>
+    <li>Always apply a <strong>point-in-time cutoff</strong> (Lesson 002): only aggregate child rows that existed before the prediction time.</li>
+  </ul>
+
+  <h2>Four mistakes</h2>
+  <ol>
+    <li>Engineering what the model already learns (logs/polys of one column).</li>
+    <li>Target encoding on the full dataset → label leak. Fix: per-fold pipeline step.</li>
+    <li>Aggregating across the time cutoff → uses the future. Fix: PIT windows.</li>
+    <li>Integer hour with a midnight cliff. Fix: sin/cos.</li>
+  </ol>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://www.maxkanter.com/papers/DSAA_DSM_2015.pdf">Kanter &amp; Veeramachaneni (2015), Deep Feature Synthesis, DSAA</a></li>
+    <li><a href="https://arxiv.org/abs/1701.07852">Heaton (2016), Empirical Analysis of Feature Engineering, IEEE SoutheastCon</a></li>
+    <li><a href="https://docs.featuretools.com/en/stable/getting_started/afe.html">Featuretools — Deep Feature Synthesis docs</a></li>
+    <li><a href="https://scikit-learn.org/stable/modules/preprocessing.html">scikit-learn §6.3 — Preprocessing &amp; TargetEncoder</a></li>
+  </ul>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0009-feature-engineering.html">Lesson 009</a></li>
+      <li><a href="../labs/0009-feature-engineering.ipynb">Lab: 0009-feature-engineering.ipynb</a></li>
+      <li><a href="pipelines-preprocessing.html">Reference: Pipelines &amp; preprocessing</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>
