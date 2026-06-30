@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 010 — Q1 Checkpoint: A Reproducible Baseline</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .num-table td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .chk { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .chk-title { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.6rem; }
+    .chk-list { list-style: none; padding: 0; margin: 0; }
+    .chk-item { display: flex; align-items: baseline; gap: 0.55rem; margin: 0.5rem 0; font-size: 0.92rem; }
+    .chk-item input { margin-top: 0.2rem; flex: none; }
+    .chk-hint { color: var(--accent); font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .chk-feedback { margin-top: 0.75rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); }
+    .chk-feedback.done { color: #1e6b3c; font-weight: 600; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q1 Checkpoint</p>
+  <h1>Q1 Checkpoint: A Reproducible Baseline</h1>
+  <p class="subtitle">Lesson 010 · Phase 1 · ~45 min · capstone</p>
+
+  <p>
+    Nine lessons, one habit: <strong>never let information leak from the future or the test set
+    into training.</strong> This checkpoint is not a new concept — it is the moment you wire
+    Lessons <a href="0001-single-table-assumption.html">001</a>–<a href="0009-feature-engineering.html">009</a>
+    into a single, reproducible, leak-free pipeline and evaluate it honestly. Everything after
+    this — gradient boosting, neural nets, and ultimately relational deep learning — is measured
+    against the baseline you build here.
+  </p>
+
+  <p>
+    This checkpoint's single skill: <strong>assemble the whole leakage spine into one
+    <code>Pipeline</code>, evaluate it with the right metric against the prevalence baseline, and
+    make the result reproducible.</strong>
+  </p>
+
+  <h2>The leakage spine, in one place</h2>
+  <p>
+    Each Q1 lesson contributed one vertebra. A competent baseline has all of them, and every
+    <em>fit-bearing</em> step lives inside the pipeline so it only ever sees training folds:
+  </p>
+  <table>
+    <thead><tr><th>From</th><th>Vertebra</th><th>In the baseline</th></tr></thead>
+    <tbody>
+      <tr><td><a href="0001-single-table-assumption.html">001</a></td><td>single-table assumption</td><td>one design matrix, one label vector</td></tr>
+      <tr><td><a href="0002-design-matrix-leakage.html">002</a></td><td>point-in-time correctness</td><td>only features known before the cutoff</td></tr>
+      <tr><td><a href="0003-train-valid-test-cv.html">003</a></td><td>train/valid/test &amp; CV</td><td>stratified split; CV on train only</td></tr>
+      <tr><td><a href="0004-grouped-nested-cv.html">004</a></td><td>grouped / nested CV</td><td>group- or time-aware folds when entities repeat</td></tr>
+      <tr><td><a href="0005-pipelines-preprocessing.html">005</a></td><td>pipelines</td><td>every <code>fit</code>-bearing transform inside the <code>Pipeline</code></td></tr>
+      <tr><td><a href="0006-missingness-taxonomy.html">006</a></td><td>missingness</td><td>impute + missing-indicator (or native NaN)</td></tr>
+      <tr><td><a href="0007-class-imbalance.html">007</a></td><td>class imbalance</td><td>PR-aware metric; resample in-fold if needed</td></tr>
+      <tr><td><a href="0008-metrics-calibration.html">008</a></td><td>metrics &amp; calibration</td><td>PR-AUC vs prevalence; reliability + Brier</td></tr>
+      <tr><td><a href="0009-feature-engineering.html">009</a></td><td>feature engineering</td><td>ratios / datetime in-pipeline; encoders fit per-fold</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The recipe</h2>
+  <p>
+    A reproducible sklearn baseline is one object you can <code>fit</code> and one number you can
+    trust. Stateless engineering and every fit-bearing transform go inside a single
+    <code>Pipeline</code>; a <code>ColumnTransformer</code> routes numeric and categorical columns
+    to the right preprocessing; a fixed <code>random_state</code> and a pinned environment make
+    the result repeatable.
+  </p>
+  <pre>from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, FunctionTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+
+pre = ColumnTransformer([
+    ("num", SimpleImputer(strategy="median", add_indicator=True), num_cols),   # L006
+    ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_cols),
+])
+pipe = Pipeline([
+    ("engineer", FunctionTransformer(add_ratio)),       # L009, stateless
+    ("pre", pre),                                        # L005/L006, fit-bearing
+    ("clf", HistGradientBoostingClassifier(random_state=0)),
+])
+cv = StratifiedKFold(5, shuffle=True, random_state=0)    # L003
+score = cross_val_score(pipe, X_train, y_train, cv=cv,
+                        scoring="average_precision").mean()   # L007/L008, PR-AUC</pre>
+  <p>
+    <code>HistGradientBoostingClassifier</code> is sklearn-native, handles NaNs without imputation,
+    and is the strongest single-table baseline you can build with no extra dependencies — which is
+    exactly why it's the yardstick. (Tuned XGBoost/LightGBM/CatBoost arrive in Q2.)
+  </p>
+
+  <h2>Always start with the dummy floor</h2>
+  <p>
+    Before any real model, fit a <code>DummyClassifier(strategy="prior")</code>. Its PR-AUC equals
+    the prevalence and its ROC-AUC is 0.5 — the no-skill floor from
+    <a href="0008-metrics-calibration.html">Lesson 008</a>. If a "fancy" model doesn't clearly beat
+    the dummy, something is wrong (or the features are useless). Here is the verified bake-off on a
+    realistic dataset — imbalanced, missing-laden, mixed-type, with an irregular signal:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>Model</th><th>CV&nbsp;PR-AUC</th><th>Test&nbsp;PR-AUC</th><th>ROC-AUC</th><th>Brier&nbsp;(↓)</th></tr></thead>
+    <tbody>
+      <tr><td>prevalence baseline</td><td class="n">0.154</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+      <tr><td>Dummy (prior)</td><td class="n">0.154</td><td class="n">0.154</td><td class="n">0.500</td><td class="n">0.130</td></tr>
+      <tr><td>Logistic regression</td><td class="n">0.381</td><td class="n">0.389</td><td class="n">0.733</td><td class="n">0.114</td></tr>
+      <tr><td>HistGradientBoosting</td><td class="n win">0.470</td><td class="n win">0.443</td><td class="n win">0.789</td><td class="n win">0.108</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>Verified (sklearn 1.9, n=8000, 15.4% positive, 18% MAR-missing, fixed seed).</strong>
+    HistGBDT wins on every metric. Both real models crush the dummy, and PR-AUC is read against the
+    prevalence floor of 0.154 — "0.47" is ~3× the baseline. The tree wins because the signal is
+    irregular axis-aligned interactions, the regime where trees beat linear and deep models
+    (<a href="https://arxiv.org/abs/2207.08815">Grinsztajn et al. 2022</a>).
+  </div>
+
+  <h2>Then calibrate the winner</h2>
+  <p>
+    Ranking quality is not trustworthy probabilities. Wrapping the winning HistGBDT in
+    <code>CalibratedClassifierCV(method="sigmoid", cv=5)</code> lowered its Brier from
+    <strong>0.1078 → 0.1055</strong> with ROC essentially unchanged — the
+    <a href="0008-metrics-calibration.html">Lesson 008</a> move, now part of a real baseline. If a
+    deployed relational score will feed a threshold or an expected-value calculation, this step is
+    not optional.
+  </p>
+
+  <h2>Reproducibility is part of the baseline</h2>
+  <ul>
+    <li><strong>Fixed seeds</strong> everywhere randomness enters: split, CV, model (<code>random_state=0</code>).</li>
+    <li><strong>Pinned environment</strong> — your <code>.venv</code> from <code>requirements-labs.txt</code>; record library versions in the output.</li>
+    <li><strong>One callable</strong> — the whole baseline is a single <code>Pipeline</code> you can <code>fit</code>/<code>predict</code>, not a notebook of loose cells run out of order.</li>
+    <li><strong>Stated prevalence</strong> next to every PR-AUC, so the baseline is always visible.</li>
+  </ul>
+
+  <h2>Self-audit — tick every vertebra</h2>
+  <p>Run this against the baseline you build in the lab. All boxes ticked = checkpoint-ready:</p>
+  <div id="checklist"></div>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read Grinsztajn, Oyallon &amp; Varoquaux,
+    <a href="https://arxiv.org/abs/2207.08815"><em>Why do tree-based models still outperform deep
+    learning on typical tabular data?</em> (NeurIPS 2022)</a> — focus on the three inductive biases
+    (irregular targets, uninformative features, rotation non-invariance). This is <em>why</em> a
+    competently-built GBDT is the baseline your thesis must beat, and the standard the rest of the
+    curriculum is measured against.
+  </p>
+
+  <h2>Lab — build the baseline, end to end</h2>
+  <p>
+    Capstone notebook with blanks:
+    <a href="../labs/0010-baseline-checkpoint.ipynb"><code>labs/0010-baseline-checkpoint.ipynb</code></a>
+    (kernel <strong>Relational Labs (.venv)</strong>). You will:
+  </p>
+  <ol>
+    <li>Assemble one <code>Pipeline</code>: stateless feature engineering → <code>ColumnTransformer</code> (impute+indicator, OHE) → classifier.</li>
+    <li>Establish the <strong>dummy floor</strong>, then score Logistic and HistGBDT with <strong>CV PR-AUC</strong>.</li>
+    <li>Report <strong>test PR-AUC vs prevalence, ROC-AUC, and Brier</strong>, then <strong>calibrate</strong> the winner.</li>
+    <li>Print the exit ticket: the comparison table and the calibration delta.</li>
+  </ol>
+  <p>
+    Paste the exit-ticket output here, or say <em>"lab done."</em> That closes <strong>Q1</strong>.
+    Lesson 011 opens Q2 — gradient boosting (XGBoost) on top of this exact harness.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring any dataset and we'll stand up this baseline on it
+    together — decide the metric, the split, what's fit-bearing, and whether the winner needs
+    calibrating. That conversation <em>is</em> the Q1 skill.
+  </div>
+
+  <div class="ask-teacher">
+    Stuck wiring the <code>ColumnTransformer</code> or reading the bake-off? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0009-feature-engineering.html">← Lesson 009</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../labs/0010-baseline-checkpoint.ipynb">Lab notebook: 0010-baseline-checkpoint.ipynb</a></li>
+      <li><a href="../reference/baseline-recipe.html">Reference: Reproducible baseline recipe</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/checklist.js"></script>
+<script>
+  Checklist.mount(document.getElementById("checklist"), {
+    title: "Leakage-spine rubric",
+    items: [
+      { label: "Held-out test set split off before anything else (stratified).", hint: "L003" },
+      { label: "Folds respect groups / time when entities repeat.", hint: "L004" },
+      { label: "Every fit-bearing transform lives inside the Pipeline.", hint: "L005" },
+      { label: "Missing values imputed + indicated (or native NaN).", hint: "L006" },
+      { label: "Imbalance handled; metric is PR-aware.", hint: "L007" },
+      { label: "PR-AUC reported against prevalence; winner calibrated (Brier).", hint: "L008" },
+      { label: "Engineered features fit per-fold; encoders never see test.", hint: "L009" },
+      { label: "Seeds fixed and environment pinned; baseline is one callable.", hint: "repro" }
+    ],
+    done: "All vertebrae present — your baseline is checkpoint-ready and leak-free."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why fit a DummyClassifier(prior) before any real model?",
+    options: [
+      { label: "It fixes the no-skill floor to beat", value: "a" },
+      { label: "It speeds up the later pipeline fits", value: "b" },
+      { label: "It imputes the missing values cheaply", value: "c" },
+      { label: "It calibrates the probabilities for free", value: "d" }
+    ],
+    correct: "a",
+    explain: "The dummy's PR-AUC equals prevalence and ROC is 0.5 — the floor. If a real model doesn't clearly beat it, something is wrong."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "On this irregular tabular signal, which model won the bake-off?",
+    options: [
+      { label: "Gradient boosting beat linear models", value: "a" },
+      { label: "Linear logistic beat all the trees", value: "b" },
+      { label: "The dummy matched the tuned models", value: "c" },
+      { label: "Every model scored exactly the same", value: "d" }
+    ],
+    correct: "a",
+    explain: "HistGBDT won on every metric. Trees excel on irregular, axis-aligned interactions — the Grinsztajn 2022 result."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "What makes the baseline result reproducible across runs?",
+    options: [
+      { label: "Fixed seeds and a pinned environment", value: "a" },
+      { label: "A higher number of boosting rounds", value: "b" },
+      { label: "Reporting accuracy instead of PR-AUC", value: "c" },
+      { label: "Calibrating the model on the test set", value: "d" }
+    ],
+    correct: "a",
+    explain: "Reproducibility comes from fixing every random_state and pinning library versions, with the baseline as one fit-able Pipeline."
+  });
+</script>
+</body>
+</html>

@@ -47,8 +47,11 @@
 - **Lesson 008 complete** ("lab done"). Lab surfaced two real `CalibratedClassifierCV` snags the user worked through: `cal.fit()` returns the estimator not probabilities (→ `predict_proba(Xte)[:,1]`), and the calibrator needs a base estimator. Note the `fit()`-returns-self confusion for callback.
 - **Lesson 009 published** — feature engineering (curriculum lec 009). New reusable `assets/feature-viz.js` (raw column vs engineered ratio scatter). **Verified live (sklearn 1.9):** ratio of differences Ridge R² 0.644→0.998 (HistGBDT 0.968→0.980); cyclical datetime 0.840→0.979; target-encoding leak 0.76 (full-data) vs 0.50 (per-fold pipeline) on a pure-noise category. Lab `labs/0009-feature-engineering.ipynb` runs end-to-end verified. Primary: Kanter & Veeramachaneni 2015 (DFS) + Heaton 2016.
 - Thesis bridge made explicit: manual relational FE → DFS/Featuretools → RDL (learns aggregations end-to-end).
-- Next: **Lesson 010 = Q1 checkpoint** (assemble 001–009 into one reproducible sklearn baseline).
-- Exit: `labs/0009-feature-engineering.ipynb` EXIT TICKET or "lab done."
+- User started **Lesson 009** (feature engineering). Warm-up **3/3** (target encoding in pipeline A; PR baseline = prevalence A; PIT aggregate A — L005/L008/L002 retrieved cold). **Lesson 009 complete** ("lab done").
+- **Lesson 010 published — Q1 CHECKPOINT** (reproducible sklearn baseline; curriculum lec 010). Capstone synthesizing 001–009, not a new concept. New reusable `assets/checklist.js` (interactive leakage-spine rubric, reusable for Q2/Q3/Q4 checkpoints). **Verified live (sklearn 1.9, n=8000, 15.4% pos, 18% MAR-missing, mixed-type, irregular signal):** Dummy PR-AUC 0.154 (=prevalence), Logistic CV-PR 0.381 / ROC 0.733 / Brier 0.114, HistGBDT CV-PR 0.470 / ROC 0.789 / Brier 0.108 (wins all); calibration 0.1078→0.1055. Capstone lab `labs/0010-baseline-checkpoint.ipynb` runs end-to-end verified. Primary: Grinsztajn 2022. No new deps (HistGBDT native; XGBoost waits for Q2).
+- Reproduction-lab incremental rule (see Preferences) first applies at **Q2 (lec 011+)**: tuned XGBoost/LightGBM/CatBoost build on this Q1 baseline harness. Consider seeding `labs/relkit/` then.
+- Q1 (001–010) **complete** after L010 lab. Next: Lesson 011 (Q2, gradient boosting — XGBoost).
+- Exit: `labs/0010-baseline-checkpoint.ipynb` EXIT TICKET or "lab done."
 
 ## Session 11 — 2026-06-29
 

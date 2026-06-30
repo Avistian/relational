@@ -11,7 +11,7 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
 - [CatBoost — Prokhorenkova et al., NeurIPS 2018](https://arxiv.org/abs/1706.09516)
   Ordered boosting + categoricals. Use for: high-cardinality categoricals without target leakage.
 - [Why trees beat DL on tabular — Grinsztajn et al., NeurIPS 2022](https://arxiv.org/abs/2207.08815)
-  Three inductive biases. Use for: year-1 exit exam; explains the bar neural methods must clear.
+  Three inductive biases (irregular targets, uninformative features, rotation non-invariance). Use for: Lesson 010 Q1-checkpoint primary reading + year-1 exit exam; explains why a competently-built GBDT is the baseline the thesis must beat.
 - [Designing Machine Learning Systems — Huyen](https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/)
   Evaluation, leakage, deployment. Use for: year-1 evaluation lectures.
 - [On Over-fitting in Model Selection… — Cawley & Talbot, JMLR 2010](https://jmlr.org/papers/v11/cawley10a.html)
@@ -46,6 +46,10 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   The open-source implementation of DFS (EntitySets, primitives, `max_depth`). Use for: a concrete tool to compare a hand-engineered baseline against later in the thesis.
 - [scikit-learn — Preprocessing data (§6.3) incl. TargetEncoder](https://scikit-learn.org/stable/modules/preprocessing.html)
   Stateless vs fit-bearing transforms; `TargetEncoder` with built-in cross-fitting. Use for: Lesson 009 lab; keeping target encoding leak-free inside the Pipeline.
+- [scikit-learn — Pipelines & composite estimators (§6.1)](https://scikit-learn.org/stable/modules/compose.html)
+  `Pipeline`, `ColumnTransformer`, `FunctionTransformer` to route columns and bundle the whole baseline into one fit-able object. Use for: Lesson 010 capstone; the API for the reproducible baseline harness.
+- [scikit-learn — Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html)
+  Data leakage, inconsistent preprocessing, controlling randomness with `random_state`. Use for: Lesson 010; the reproducibility + no-leak checklist behind the Q1 checkpoint.
 
 _Optional / extension (◆):_
 - [Statistical Analysis with Missing Data (3rd ed.) — Little & Rubin, 2019](https://www.wiley.com/en-us/Statistical+Analysis+with+Missing+Data%2C+3rd+Edition-p-9780470526798)

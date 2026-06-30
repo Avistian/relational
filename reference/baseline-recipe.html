@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Reproducible Baseline Recipe</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Reproducible Baseline Recipe</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet · Q1 capstone</p>
+
+  <h2>The leakage spine (rubric)</h2>
+  <table>
+    <thead><tr><th>L</th><th>Vertebra</th><th>Concretely</th></tr></thead>
+    <tbody>
+      <tr><td>001</td><td>single-table</td><td>one design matrix X, one label y</td></tr>
+      <tr><td>002</td><td>point-in-time</td><td>only features known before the cutoff</td></tr>
+      <tr><td>003</td><td>split &amp; CV</td><td>hold out test first (stratified); CV on train only</td></tr>
+      <tr><td>004</td><td>grouped/nested</td><td>group- or time-aware folds when entities repeat</td></tr>
+      <tr><td>005</td><td>pipeline</td><td>every fit-bearing transform inside the Pipeline</td></tr>
+      <tr><td>006</td><td>missingness</td><td>impute + add_indicator (or native NaN in GBDT)</td></tr>
+      <tr><td>007</td><td>imbalance</td><td>PR-aware metric; resample in-fold via imblearn if needed</td></tr>
+      <tr><td>008</td><td>metrics</td><td>PR-AUC vs prevalence; reliability + Brier; calibrate</td></tr>
+      <tr><td>009</td><td>feature eng.</td><td>ratios/datetime in-pipeline; encoders fit per-fold</td></tr>
+      <tr><td>—</td><td>reproducible</td><td>fixed seeds; pinned env; baseline = one callable</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Skeleton</h2>
+  <pre>from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.dummy import DummyClassifier
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.metrics import average_precision_score, roc_auc_score, brier_score_loss
+
+Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, stratify=y, random_state=0)
+prevalence = yte.mean()                       # PR-AUC no-skill floor
+
+pre = ColumnTransformer([
+    ("num", SimpleImputer(strategy="median", add_indicator=True), num_cols),
+    ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_cols),
+])
+pipe = Pipeline([
+    ("engineer", FunctionTransformer(add_ratio)),     # stateless FE
+    ("pre", pre),
+    ("clf", HistGradientBoostingClassifier(random_state=0)),
+])
+cv = StratifiedKFold(5, shuffle=True, random_state=0)
+cv_pr = cross_val_score(pipe, Xtr, ytr, cv=cv, scoring="average_precision").mean()
+
+# always benchmark the floor
+dummy_pr = DummyClassifier(strategy="prior").fit(Xtr, ytr)  # PR-AUC == prevalence, ROC == 0.5
+
+# calibrate the winner if probabilities will be acted on
+cal = CalibratedClassifierCV(pipe, method="sigmoid", cv=5).fit(Xtr, ytr)
+p = cal.predict_proba(Xte)[:, 1]
+print(average_precision_score(yte, p), roc_auc_score(yte, p), brier_score_loss(yte, p))</pre>
+
+  <h2>Verified bake-off (sklearn 1.9, n=8000, 15.4% positive, 18% MAR-missing)</h2>
+  <table>
+    <thead><tr><th>Model</th><th>CV PR-AUC</th><th>Test PR-AUC</th><th>ROC-AUC</th><th>Brier</th></tr></thead>
+    <tbody>
+      <tr><td>prevalence floor</td><td>0.154</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>Dummy (prior)</td><td>0.154</td><td>0.154</td><td>0.500</td><td>0.130</td></tr>
+      <tr><td>Logistic</td><td>0.381</td><td>0.389</td><td>0.733</td><td>0.114</td></tr>
+      <tr><td><strong>HistGBDT</strong></td><td><strong>0.470</strong></td><td><strong>0.443</strong></td><td><strong>0.789</strong></td><td><strong>0.108</strong></td></tr>
+    </tbody>
+  </table>
+  <p>Calibration of the winner: HistGBDT Brier 0.1078 → 0.1055 (sigmoid), ROC ~unchanged.</p>
+
+  <h2>Checklist before you report a number</h2>
+  <ul>
+    <li>Did the dummy get beaten clearly? If not, stop and debug.</li>
+    <li>Is every <code>fit</code>-bearing step inside the Pipeline (nothing fit on full data)?</li>
+    <li>Is the metric PR-aware and stated next to the prevalence?</li>
+    <li>If probabilities will be acted on — is the winner calibrated (Brier reported)?</li>
+    <li>Seeds fixed, env pinned, versions printed?</li>
+  </ul>
+
+  <h2>Thesis note</h2>
+  <p>This baseline is the yardstick. Every later result — XGBoost (Q2), neural tabular models, and RDL — is reported as better/worse than a competently-built, leak-free, calibrated GBDT baseline. Grinsztajn 2022 explains why that GBDT is hard to beat on single-table data. Q2 swaps HistGBDT for tuned XGBoost/LightGBM/CatBoost on this same harness.</p>
+
+  <h2>Sources</h2>
+  <ul>
+    <li><a href="https://arxiv.org/abs/2207.08815">Grinsztajn, Oyallon &amp; Varoquaux (2022), Why trees beat DL on tabular, NeurIPS</a></li>
+    <li><a href="https://scikit-learn.org/stable/modules/compose.html">scikit-learn — Pipelines &amp; composite estimators (§6.1)</a></li>
+    <li><a href="https://scikit-learn.org/stable/common_pitfalls.html">scikit-learn — Common pitfalls &amp; recommended practices</a></li>
+  </ul>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0010-baseline-checkpoint.html">Lesson 010</a></li>
+      <li><a href="../labs/0010-baseline-checkpoint.ipynb">Lab: 0010-baseline-checkpoint.ipynb</a></li>
+      <li><a href="pipelines-preprocessing.html">Reference: Pipelines &amp; preprocessing</a></li>
+      <li><a href="metrics-calibration.html">Reference: Metrics &amp; calibration</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>
