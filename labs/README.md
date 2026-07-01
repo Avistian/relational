@@ -18,6 +18,12 @@ Design intent: blanks sit only on the **skill** being practised; everything peri
 provided so working memory stays on the one idea (see `../NOTES.md` preferences and the
 `teach` skill's fluency-vs-storage-strength note). CHECK cells make the feedback loop tight.
 
+**No prefilled answers:** TODO code cells use `____` only — never the completed solution.
+Teacher copies with filled answers live in [`solutions/`](./solutions/) (gitignored).
+
+**Agent scoring:** when you say *lab done*, your teacher scores the lab with the rubric in
+`.agents/skills/lab-authoring/SKILL.md`.
+
 ## Environment (one-time setup)
 
 From the repo root (`relational/`):
@@ -64,3 +70,6 @@ This keeps the thesis baselines trustworthy by the time results matter.
   Pipeline fix, and leak-free class weights (Lesson 007).
 - `0008-metrics-calibration.ipynb` — ROC-AUC vs PR-AUC against the prevalence baseline, and
   reliability-curve + Brier calibration with CalibratedClassifierCV (Lesson 008).
+- `0009-feature-engineering.ipynb` — ratio, cyclical datetime, leak-free target encoding (Lesson 009).
+- `0010-baseline-checkpoint.ipynb` — Q1 capstone reproducible baseline (Lesson 010).
+- `0011-decision-trees-partitions.ipynb` — tree splits on OpenML credit data (Lesson 011).

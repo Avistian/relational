@@ -1,17 +1,34 @@
 /**
  * Reusable multiple-choice quiz widget.
- * Usage: Quiz.mount(containerElement, { question, options, correct, explain })
+ * Usage: Quiz.mount(containerElement, { question, options, correct, explain, shuffle })
  * Each option: { label: string, value: string }
  * All option labels should be equal length (words/chars) when possible.
+ * Options are shuffled on mount by default (shuffle: false to disable).
  */
 (function (global) {
   "use strict";
+
+  function shuffleArray(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i];
+      a[i] = a[j];
+      a[j] = tmp;
+    }
+    return a;
+  }
 
   function mount(container, config) {
     var question = config.question;
     var options = config.options;
     var correct = config.correct;
     var explain = config.explain || "";
+    var shuffle = config.shuffle !== false;
+
+    if (shuffle) {
+      options = shuffleArray(options);
+    }
 
     container.innerHTML = "";
     container.classList.add("quiz");
@@ -30,12 +47,15 @@
     container.appendChild(feedbackEl);
 
     var answered = false;
+    var buttonsByValue = {};
 
     options.forEach(function (opt) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "quiz-option";
       btn.textContent = opt.label;
+      btn.dataset.value = opt.value;
+      buttonsByValue[opt.value] = btn;
       btn.addEventListener("click", function () {
         if (answered) return;
         answered = true;
@@ -51,24 +71,16 @@
           feedbackEl.className = "quiz-feedback correct";
         } else {
           btn.classList.add("wrong");
-          buttons.forEach(function (b) {
-            if (b.textContent === findLabel(options, correct)) {
-              b.classList.add("correct");
-            }
-          });
+          var correctBtn = buttonsByValue[correct];
+          if (correctBtn) {
+            correctBtn.classList.add("correct");
+          }
           feedbackEl.textContent = "Not quite. " + explain;
           feedbackEl.className = "quiz-feedback wrong";
         }
       });
       optsEl.appendChild(btn);
     });
-  }
-
-  function findLabel(options, value) {
-    for (var i = 0; i < options.length; i++) {
-      if (options[i].value === value) return options[i].label;
-    }
-    return "";
   }
 
   global.Quiz = { mount: mount };

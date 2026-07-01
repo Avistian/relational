@@ -60,6 +60,16 @@ Each lesson should recommend a primary source for the user to read or watch. Thi
 
 Each lesson should contain a reminder to ask followup questions to the agent. The agent is their teacher, and can assist with anything that's unclear.
 
+## Companion skills (invoke before creative work)
+
+Read [[NOTES.md]] Preferences (Q1 retrospective section) and invoke these project skills at the right step:
+
+| Skill | When |
+|-------|------|
+| [lesson-visuals](../lesson-visuals/SKILL.md) | Before writing or editing lesson HTML |
+| [lab-authoring](../lab-authoring/SKILL.md) | Before creating or retrofitting lab notebooks; when user says *lab done* |
+| [curriculum-currency](../curriculum-currency/SKILL.md) | Start of each quarter; before a new curriculum year block |
+
 ## Assets
 
 Lessons are built from reusable **components**, stored in `./assets/`: stylesheets, quiz widgets, simulators, diagram helpers — anything a second lesson could reuse.
@@ -67,6 +77,8 @@ Lessons are built from reusable **components**, stored in `./assets/`: styleshee
 Reuse is the default, not the exception. Before authoring a lesson, read `./assets/` and build from the components already there. When a lesson needs something new and reusable, write it as a component in `./assets/` and link to it — never inline code a future lesson would duplicate.
 
 A shared stylesheet is the first component every workspace earns: every lesson links it, so the lessons look like one consistent course rather than a pile of one-offs. As the workspace grows, so should the component library.
+
+**Visual verification is mandatory** before publishing any lesson with a viz component. Open the lesson in a browser and confirm labels, highlights, and captions match the prose (see `lesson-visuals` skill).
 
 ## The Mission
 
@@ -107,7 +119,9 @@ For skill acquisition, difficulty is the tool. Effortful retrieval is what build
 
 Each of these should be based on a **feedback loop**, where the user receives feedback on their performance. This feedback loop should be as tight as possible, giving feedback immediately - and ideally automatically.
 
-For quizzes, each answer should be exactly the same number of words (and characters, if possible). Don't give the user any clues about the answer through formatting.
+For quizzes, each answer should be exactly the same number of words (and characters, if possible). Don't give the user any clues about the answer through formatting. Option order is shuffled by `assets/quiz.js` on each page load — do not rely on position as a cue.
+
+When publishing a lesson, update [`lessons/manifest.json`](../../lessons/manifest.json) (see `assets/home.js` / home page).
 
 ## Acquiring Wisdom
 

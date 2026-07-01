@@ -51,7 +51,9 @@
 - **Lesson 010 published — Q1 CHECKPOINT** (reproducible sklearn baseline; curriculum lec 010). Capstone synthesizing 001–009, not a new concept. New reusable `assets/checklist.js` (interactive leakage-spine rubric, reusable for Q2/Q3/Q4 checkpoints). **Verified live (sklearn 1.9, n=8000, 15.4% pos, 18% MAR-missing, mixed-type, irregular signal):** Dummy PR-AUC 0.154 (=prevalence), Logistic CV-PR 0.381 / ROC 0.733 / Brier 0.114, HistGBDT CV-PR 0.470 / ROC 0.789 / Brier 0.108 (wins all); calibration 0.1078→0.1055. Capstone lab `labs/0010-baseline-checkpoint.ipynb` runs end-to-end verified. Primary: Grinsztajn 2022. No new deps (HistGBDT native; XGBoost waits for Q2).
 - Reproduction-lab incremental rule (see Preferences) first applies at **Q2 (lec 011+)**: tuned XGBoost/LightGBM/CatBoost build on this Q1 baseline harness. Consider seeding `labs/relkit/` then.
 - Q1 (001–010) **complete** after L010 lab. Next: Lesson 011 (Q2, gradient boosting — XGBoost).
+- **Curriculum currency (2026-07-01):** Q2 pass added TabPFN-2.5/3, TabICLv2, TabH2O, Relational Transformer, OpenRFM to verified index + RESOURCES.
 - Exit: `labs/0010-baseline-checkpoint.ipynb` EXIT TICKET or "lab done."
+- **Lesson 011 published (2026-07-01)** — decision trees as partitions (Q2 start). New `assets/tree-viz.js`, `assets/leakage-viz.js` (L002 retrofit), `labs/relkit/` harness, Tier-A OpenML credit lab. Home page now reads `lessons/manifest.json`. Q1 feedback standards in NOTES Preferences + three project skills.
 
 ## Session 11 — 2026-06-29
 
@@ -125,3 +127,15 @@ Track with ✓ as completed:
 - **GitHub Pages:** site at `https://avistian.github.io/relational/` once pushed and Actions enabled (Settings → Pages → Source: GitHub Actions)
 - **Mobile:** bookmark the home page; lesson list grows as new lessons are published
 - **Out of scope:** see [[MISSION.md]]
+
+### Q1 retrospective (2026-07-01) — standards for all future units
+
+Recorded after Q1 checkpoint. Full rationale: [[learning-records/0032-q1-retrospective-feedback.md]].
+
+1. **Lesson visuals:** Basic HTML is fine for simple ideas; anything spatial, temporal, or mechanistic needs a reusable viz in `assets/`. Always verify viz matches prose in the browser before publishing (`lesson-visuals` skill).
+2. **Quiz fairness:** `assets/quiz.js` shuffles options on mount — never rely on answer position. Author may keep `correct: "a"` in lesson source; display order is randomized.
+3. **Lab difficulty (mid zone):** TODO cells have blanks only — never prefilled solution code or code hints in markdown. Hints describe *what*, not *how*. Paper-repro labs use the 4-block structure (paper step → crucial fragment → harness → reproduction target). When the user says *lab done*, score with the rubric in `lab-authoring` skill (0–2 × 5 axes, max 10).
+4. **Home page:** Do not hand-list lessons in `index.html`. Update `lessons/manifest.json` when publishing; `assets/home.js` renders year/quarter navigation.
+5. **Research currency:** Before each quarter, run `curriculum-currency` skill (arxiv MCP + TabArena/RelBench checks). Sync `CURRICULUM.md`, `RESOURCES.md`, `reference/curriculum.html`.
+6. **Project skills:** Use `lesson-visuals`, `lab-authoring`, `curriculum-currency` from `.agents/skills/` — do not re-derive these rules from chat.
+7. **Datasets:** Tier A (real OpenML/UCI) default for Q2+ training labs; Tier C (synthetic) only for mechanism isolation. See `labs/data/README.md`.

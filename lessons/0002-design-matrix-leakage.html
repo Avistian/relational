@@ -20,6 +20,31 @@
     .sketch .tbl { color: var(--accent); font-weight: 600; }
     .verdict-safe { color: #2d6a4f; font-weight: 600; }
     .verdict-leak { color: #9b2226; font-weight: 600; }
+    .leak-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .leak-viz-intro { font-size: 0.92rem; margin: 0 0 0.75rem; }
+    .leak-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .leak-viz-btn {
+      font-family: var(--font-sans); font-size: 0.78rem; padding: 0.4rem 0.65rem;
+      border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer;
+    }
+    .leak-viz-btn.active { border-color: var(--accent); background: var(--accent-light); font-weight: 600; }
+    .leak-viz-timeline { position: relative; margin: 0.5rem 0; }
+    .leak-viz-axis { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .leak-viz-cutoff { color: var(--accent); font-weight: 600; }
+    .leak-viz-track { position: relative; height: 2.5rem; background: #eef2f5; border-radius: 4px; border: 1px solid var(--border); }
+    .leak-viz-order {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      width: 0.85rem; height: 0.85rem; border-radius: 50%; background: #95a5a6; border: 2px solid #fff;
+    }
+    .leak-viz-order.leak-viz-future { background: #fadbd8; }
+    .leak-viz-order.leak-viz-used { background: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+    .leak-viz-line {
+      position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent);
+      transform: translateX(-50%); z-index: 2;
+    }
+    .leak-viz-caption { font-size: 0.88rem; margin-top: 0.75rem; }
+    .leak-viz-caption.leak-viz-safe { color: #2d6a4f; }
+    .leak-viz-caption.leak-viz-leak { color: #9b2226; }
   </style>
 </head>
 <body>
@@ -99,6 +124,9 @@ Feature ideas built by joining on customer_id:
   E) days_since_last_order = t − MAX(order_date WHERE order_date ≤ t)
   F) avg_order_after_t     = AVG(amount WHERE order_date &gt; t)
   </div>
+
+  <h3>Interactive — which orders does each feature see?</h3>
+  <div id="leak-viz"></div>
 
   <h2>Find the leakage</h2>
   <p>Which features smuggle information that would not exist at prediction time <code>t</code>?</p>
@@ -205,7 +233,7 @@ Feature ideas built by joining on customer_id:
 
   <nav class="nav-links">
     <ul>
-      <li><a href="0002-design-matrix-leakage.html">← Lesson 002</a></li>
+      <li><a href="0001-single-table-assumption.html">← Lesson 001</a></li>
       <li><a href="0003-train-valid-test-cv.html">Next: Lesson 003 →</a></li>
       <li><a href="../index.html">Home</a></li>
       <li><a href="../reference/design-matrix-leakage.html">Reference: leakage cheat sheet</a></li>
@@ -214,7 +242,9 @@ Feature ideas built by joining on customer_id:
 </article>
 
 <script src="../assets/quiz.js"></script>
+<script src="../assets/leakage-viz.js"></script>
 <script>
+  LeakageViz.mount(document.getElementById("leak-viz"));
   Quiz.mount(document.getElementById("quiz1"), {
     question: "Feature A: total_spend = SUM(amount) with no date filter. Verdict?",
     options: [

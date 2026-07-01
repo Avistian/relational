@@ -176,10 +176,11 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 064 | TabPFN v2 (Nature) ★ | Hollmann et al. 2025 (Nature) | Compare to 4h-tuned GBDT |
 | 065 | How TabPFN v2 handles heterogeneity | Ye et al. 2025 (2502.17361) | Feature-extractor mode |
 | 066 | TabICL — scaling ICL to 500K rows ★ | Qu et al. 2025 (2502.05564) | Column-then-row attention |
+| 066b | TabICLv2 — open SOTA ICL ★ | Qu et al. 2026 (2602.11139) | QASSMax + Muon; compare to TabICL v1 |
 | 067 | Retrieval + fine-tuning PFNs | LoCalPFN (2406.05207) | Local calibration |
 | 068 | Distribution shift & PFNs | Drift-Resilient TabPFN (2411.10634) | Temporal shift test |
 | 069 | **Critical:** where TabPFN v2 breaks | Cheng et al. 2025 (2505.16226) | Open-environment failure cases |
-| 070 | **Q3 checkpoint** | Hollmann 2025 + TabICL | TabPFN v2 vs TabM vs XGB on 5 datasets |
+| 070 | **Q3 checkpoint** | Hollmann 2025 + TabICL + TabICLv2 | TabPFN v2/v2.5 vs TabM vs XGB on 5 datasets |
 
 ### Q4 · Self-supervision, encoders & the bridge to relational (071–080)
 **Papers:** Yoon 2020 (VIME) · Bahri 2021 (SCARF) · Ucar 2021 (SubTab) · Hu et al. 2024 (PyTorch Frame) · CARTE/cross-table transfer (skim)
@@ -508,6 +509,10 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - TabM — Gorishniy et al. 2024 — `2410.24210` ★ (best DL baseline, ICLR 2025)
 - Drift-Resilient TabPFN — Helli et al. 2024 — `2411.10634`
 - TabICL — Qu et al. 2025 — `2502.05564` ★ (scales ICL to 500K rows, ICML 2025)
+- TabICLv2 — Qu et al. 2026 — `2602.11139` ★ (open SOTA ICL; QASSMax, Muon optimizer)
+- TabH2O — Qu et al. 2026 — `2605.18383` (unified cls+reg FM; builds on TabICL)
+- TabPFN-2.5 — Grinsztajn et al. 2025 — `2511.08667` ★ (RealTabPFN-2.5)
+- TabPFN-3 — Grinsztajn et al. 2026 — `2605.13986` ★ (enterprise-scale tabular FM)
 - A Closer Look at TabPFN v2 — Ye et al. 2025 — `2502.17361`
 - Realistic eval of TabPFN v2 (open environments) — Cheng et al. 2025 — `2505.16226` (critical)
 - TabArena — Erickson et al. 2025 — `2506.16791` ★ (living benchmark, NeurIPS 2025)
@@ -539,6 +544,8 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - Zahradník et al. 2023 — Towards FMs for relational DBs — `2305.15321` ★
 - Griffin — Wang et al. 2025 — `2505.05568` ★ (graph-centric RDB FM, ICML 2025)
 - RDB-PFN — Wang et al. 2026 — `2603.03805` ★ (synthetic-prior relational FM, open code)
+- Relational Transformer (RT) — Wang et al. 2025 — `2510.06377` ★ (zero-shot relational FM)
+- OpenRFM — Chen et al. 2026 — `2606.04320` ◆ (dissects relational ICL; open weights)
 - GelGT (Gaussian Relational Graph Transformer) — 2026 — `2605.15575`
 - RelBench v2 — `2602.12606` · RelGT-AC — `2606.03040`
 - KumoRFM — 2025 industry technical report (proprietary in-context relational FM)

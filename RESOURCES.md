@@ -102,6 +102,14 @@ _Optional / extension (◆ — read after the year exit criterion):_
   How it handles heterogeneity; feature-extractor mode. Use for: understanding *why* it works.
 - [TabICL — Qu et al., ICML 2025](https://arxiv.org/abs/2502.05564)
   Scales ICL to 500K rows via column-then-row attention. Use for: the scalability frontier of tabular ICL.
+- [TabICLv2 — Qu et al., 2026](https://arxiv.org/abs/2602.11139)
+  Open SOTA tabular ICL; QASSMax + Muon optimizer. Use for: current best open tabular FM baseline.
+- [TabH2O — Qu et al., 2026](https://arxiv.org/abs/2605.18383)
+  Unified classification+regression tabular FM in one forward pass. Use for: single-model cls/reg coverage.
+- [TabPFN-2.5 — Grinsztajn et al., 2025](https://arxiv.org/abs/2511.08667)
+  RealTabPFN-2.5; strong on small/medium datasets. Use for: tuned FM baseline on TabArena.
+- [TabPFN-3 — Grinsztajn et al., 2026](https://arxiv.org/abs/2605.13986)
+  Enterprise-scale tabular FM (up to ~1M rows). Use for: production-scale tabular ICL frontier.
 - [LoCalPFN — Thomas et al., 2024](https://arxiv.org/abs/2406.05207) · [Drift-Resilient TabPFN — Helli et al., NeurIPS 2024](https://arxiv.org/abs/2411.10634)
   Retrieval+fine-tuning; distribution shift. Use for: making PFNs practical.
 - [Realistic eval of TabPFN v2 in open environments — Cheng et al., 2025](https://arxiv.org/abs/2505.16226)
@@ -183,6 +191,10 @@ _Optional / extension (◆):_
   Graph-centric RDB foundation model; unified encoder/decoder, cross-attention, pretrained on 150M+ nodes. Use for: the first serious open RDB FM.
 - [RDB-PFN — Wang et al., 2026](https://arxiv.org/abs/2603.03805)
   First relational FM trained *purely on synthetic data* (Relational Prior Generator + PFN). Use for: open, reproducible relational ICL.
+- [Relational Transformer (RT) — Wang et al., 2025](https://arxiv.org/abs/2510.06377)
+  Cell-level tokenization + relational attention; zero-shot on unseen schemas. Use for: schema-agnostic relational FM baseline.
+- [OpenRFM — Chen et al., 2026](https://arxiv.org/html/2606.04320)
+  Open relational ICL dissecting synthetic vs real pretraining. Use for: understanding what relational ICL actually learns.
 - [GelGT (Gaussian Relational Graph Transformer) — 2026](https://arxiv.org/abs/2605.15575)
   Long-range dependency fixes for relational graph transformers. Use for: tracking architecture frontier.
 - [RelBench v2 — arXiv 2602.12606](https://arxiv.org/abs/2602.12606) · [RelGT-AC — arXiv 2606.03040](https://arxiv.org/abs/2606.03040)
