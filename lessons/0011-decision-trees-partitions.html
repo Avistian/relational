@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 011 — Decision Trees as Partitions</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .tree-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tree-viz-intro, .tree-viz-caption { font-size: 0.88rem; margin: 0.5rem 0; }
+    .tree-viz-caption { color: var(--muted); }
+    .tree-viz-canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>Decision Trees as Partitions</h1>
+  <p class="subtitle">Lesson 011 · Phase 1 · ~40 min</p>
+
+  <p>
+    Q1 built an honest sklearn baseline with <code>HistGradientBoostingClassifier</code> — a
+    histogram-based tree ensemble. Before tuning XGBoost and LightGBM, you need to see what a
+    <strong>single tree</strong> actually does: it carves the feature space into
+    <strong>axis-aligned rectangles</strong> and assigns a constant prediction to each region.
+  </p>
+
+  <p>
+    This lesson's single skill: <strong>read a tree as a partition rule</strong> — one feature,
+    one threshold, two child regions — and connect that geometry to the impurity reduction the
+    algorithm maximizes.
+  </p>
+
+  <h2>From features to regions</h2>
+  <p>
+    A binary classification tree at depth 1 asks one question:
+  </p>
+  <pre>if feature[j] ≤ threshold:
+    predict majority class in left bucket
+else:
+    predict majority class in right bucket</pre>
+  <p>
+    Every split is <strong>axis-aligned</strong>: parallel to a feature axis. That is why trees
+    excel at irregular, threshold-like interactions (Grinsztajn 2022) and struggle with smooth
+    diagonal boundaries unless depth grows.
+  </p>
+
+  <h2>See one split</h2>
+  <p>
+    Two numeric features from a real credit dataset (OpenML German credit, Tier A). Points are
+    colored by default vs bad credit; the dashed line is the depth-1 tree's split.
+  </p>
+  <div id="tree-viz"></div>
+
+  <h2>Gini impurity — what the split optimizes</h2>
+  <p>
+    At a node with class proportions <code>p</code>, Gini is
+    <code>G = 1 − Σ p_k²</code>. A split into left/right with proportions
+    <code>p_L, p_R</code> and weights <code>w_L, w_R</code> (fraction of rows) yields:
+  </p>
+  <pre>ΔG = G_parent − (w_L · G_left + w_R · G_right)</pre>
+  <p>
+    The learning algorithm searches features and thresholds to maximize <code>ΔG</code> (or an
+    equivalent criterion). XGBoost later replaces Gini with a regularized gain on gradients — but
+    the partition picture stays the same.
+  </p>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    ESL (Hastie, Tibshirani, Friedman) <em>Elements of Statistical Learning</em>, Chapter 9.2 —
+    tree splitting and impurity. Skim CART notation; focus on the partition + impurity reduction
+    view, not pruning details yet.
+  </p>
+
+  <h2>Lab — read the split on real data</h2>
+  <p>
+    Notebook:
+    <a href="../labs/0011-decision-trees-partitions.ipynb"><code>labs/0011-decision-trees-partitions.ipynb</code></a>
+    (Tier A · OpenML German credit via <code>relkit</code>). You will fit a depth-1 tree, extract
+    its split feature and threshold, and compute the Gini reduction by hand for that split.
+  </p>
+
+  <div class="ask-teacher">
+    Stuck on impurity arithmetic or reading <code>tree_.feature</code>? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0010-baseline-checkpoint.html">← Lesson 010</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../labs/0011-decision-trees-partitions.ipynb">Lab notebook</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/tree-viz.js"></script>
+<script>
+  TreeViz.mount(document.getElementById("tree-viz"), {
+    featureNames: ["duration", "amount"],
+    points: [[12,4500],[6,2500],[18,6200],[24,1500],[36,8000],[48,1200],[8,3000],[15,5000]],
+    labels: [0,0,1,0,1,0,0,1],
+    splitFeature: 0,
+    splitValue: 14.5,
+    caption: "Illustrative 2-feature projection — the lab fits the real split on credit data."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "A depth-1 tree split is always:",
+    options: [
+      { label: "Axis-aligned on one feature", value: "a" },
+      { label: "A diagonal line in 2D space", value: "b" },
+      { label: "A radial distance threshold", value: "c" },
+      { label: "A random feature subset only", value: "d" }
+    ],
+    correct: "a",
+    explain: "Each node tests one feature against a threshold — a hyperplane parallel to an axis."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Maximizing Gini reduction at a split prefers:",
+    options: [
+      { label: "Purer child nodes overall", value: "a" },
+      { label: "Equal class counts in both", value: "b" },
+      { label: "More rows in the left child", value: "c" },
+      { label: "Higher depth every step always", value: "d" }
+    ],
+    correct: "a",
+    explain: "Impurity drops when children are more homogeneous than the parent — purity, not balance for its own sake."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why do trees beat linear models on threshold rules?",
+    options: [
+      { label: "They piecewise-constant regions", value: "a" },
+      { label: "They always need fewer features", value: "b" },
+      { label: "They ignore categorical columns", value: "c" },
+      { label: "They never overfit at any depth", value: "d" }
+    ],
+    correct: "a",
+    explain: "Axis-aligned rectangles can represent if-then threshold structure without engineering every interaction."
+  });
+</script>
+</body>
+</html>
