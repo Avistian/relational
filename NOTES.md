@@ -61,7 +61,11 @@
 - **New standard #8 (lab intros):** user flagged labs were too thin on explanation → labs now require in-notebook concept recap + per-task goal/why (`lab-authoring` § Introductory content). `LAB-TEMPLATE.ipynb` updated; Lab 011 retrofitted.
 - **Lesson 012 published** — bagging & random forest (curriculum lec 012). New reusable `assets/ensemble-viz.js` (slider: variance collapses ~1/B as trees are averaged). **Verified live (sklearn 1.9, credit_g, prevalence 0.700):** single deep tree CV PR-AUC 0.757; RF(300) 0.901, OOB acc 0.754; per-row pred std 0.270 (single) → 0.068 (10-tree ensemble). Lab `labs/0012-bagging-random-forest.ipynb` imports `relkit` (incremental rule). Primary: Breiman 2001.
 - **Web notebooks added:** `scripts/render_notebooks.sh` (nbconvert → `labs/html/`, all 7 labs rendered), `notebooks.html` gallery + `assets/notebooks.js` (View HTML / source / Run on Binder / Colab), `binder/requirements.txt` for the runnable path. Home page links the Notebooks page. Binder is the zero-setup full-run path (has network + relkit via CWD=labs/); Colab noted as needing a clone.
-- Next: Lesson 013 (boosting intuition — Friedman 2001; RF is the control that isolates boosting's bias reduction).
+- **Lesson 012 complete** — "lab and lesson 12 done."
+- **Lesson 013 published** — boosting intuition (curriculum lec 013). New reusable `assets/residual-viz.js` (stagewise residual boosting: flat mean → fits residual stumps → MSE collapses; slider = rounds M). Lab `labs/0013-boosting-intuition.ipynb` — **crucial fragment** is the by-hand residual loop (that *is* gradient boosting), then lr trade-off, then tree/RF/GBDT on `credit_g`. Solved copy executed end-to-end (all CHECK + EXIT clean). Friedman 2001 added to RESOURCES. Record: [[learning-records/0037-lesson-013-published.md]].
+- **Verified live (sklearn 1.9):** toy residual loop MSE 0.359→0.004 (60 rounds); lr sweep (40 rounds) 0.05→0.084 / 0.3→0.008 / 1.0→0.007; **credit_g** tree 0.757 / RF 0.901 / GBDT 0.879 (RF edges untuned boosting on tiny noisy data); **adult** RF 0.785 / GBDT 0.824 (boosting wins with real signal). Honest bagging-vs-boosting contrast baked into the "On our data" table.
+- Browser MCP unavailable this session → `residual-viz.js` verified headlessly in Node (no runtime errors; MSE readout collapses M=0→M=40).
+- Next: Lesson 014 (XGBoost — Chen & Guestrin 2016; tune XGB, regularized split gain; ΔG-sign callback from L011).
 
 ## Session 11 — 2026-06-29
 
