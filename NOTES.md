@@ -55,6 +55,14 @@
 - Exit: `labs/0010-baseline-checkpoint.ipynb` EXIT TICKET or "lab done."
 - **Lesson 011 published (2026-07-01)** — decision trees as partitions (Q2 start). New `assets/tree-viz.js`, `assets/leakage-viz.js` (L002 retrofit), `labs/relkit/` harness, Tier-A OpenML credit lab. Home page now reads `lessons/manifest.json`. Q1 feedback standards in NOTES Preferences + three project skills.
 
+## Session 14 — 2026-07-02
+
+- **Lesson 011 complete** — "lab 11 done." Lab scored ≈9/10 (rubric in [[learning-records/0035-lesson-011-complete.md]]). Live fixes that stuck: Gini = `1−p²−(1−p)²` (not `p`), ΔG = parent − weighted children. Callback for L013/L014 gain.
+- **New standard #8 (lab intros):** user flagged labs were too thin on explanation → labs now require in-notebook concept recap + per-task goal/why (`lab-authoring` § Introductory content). `LAB-TEMPLATE.ipynb` updated; Lab 011 retrofitted.
+- **Lesson 012 published** — bagging & random forest (curriculum lec 012). New reusable `assets/ensemble-viz.js` (slider: variance collapses ~1/B as trees are averaged). **Verified live (sklearn 1.9, credit_g, prevalence 0.700):** single deep tree CV PR-AUC 0.757; RF(300) 0.901, OOB acc 0.754; per-row pred std 0.270 (single) → 0.068 (10-tree ensemble). Lab `labs/0012-bagging-random-forest.ipynb` imports `relkit` (incremental rule). Primary: Breiman 2001.
+- **Web notebooks added:** `scripts/render_notebooks.sh` (nbconvert → `labs/html/`, all 7 labs rendered), `notebooks.html` gallery + `assets/notebooks.js` (View HTML / source / Run on Binder / Colab), `binder/requirements.txt` for the runnable path. Home page links the Notebooks page. Binder is the zero-setup full-run path (has network + relkit via CWD=labs/); Colab noted as needing a clone.
+- Next: Lesson 013 (boosting intuition — Friedman 2001; RF is the control that isolates boosting's bias reduction).
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -134,8 +142,9 @@ Recorded after Q1 checkpoint. Full rationale: [[learning-records/0032-q1-retrosp
 
 1. **Lesson visuals:** Basic HTML is fine for simple ideas; anything spatial, temporal, or mechanistic needs a reusable viz in `assets/`. Always verify viz matches prose in the browser before publishing (`lesson-visuals` skill).
 2. **Quiz fairness:** `assets/quiz.js` shuffles options on mount — never rely on answer position. Author may keep `correct: "a"` in lesson source; display order is randomized.
-3. **Lab difficulty (mid zone):** TODO cells have blanks only — never prefilled solution code or code hints in markdown. Hints describe *what*, not *how*. Paper-repro labs use the 4-block structure (paper step → crucial fragment → harness → reproduction target). When the user says *lab done*, score with the rubric in `lab-authoring` skill (0–2 × 5 axes, max 10).
+3. **Lab difficulty (mid zone):** TODO cells have blanks only — never prefilled solution code or code hints in markdown. Hints describe *what*, not *how*. **Lab intros (from L011):** concept recap + per-task goal/why markdown before coding — see `lab-authoring` § Introductory content. Paper-repro labs use the 4-block structure (paper step → crucial fragment → harness → reproduction target). When the user says *lab done*, score with the rubric in `lab-authoring` skill (0–2 × 5 axes, max 10).
 4. **Home page:** Do not hand-list lessons in `index.html`. Update `lessons/manifest.json` when publishing; `assets/home.js` renders year/quarter navigation.
 5. **Research currency:** Before each quarter, run `curriculum-currency` skill (arxiv MCP + TabArena/RelBench checks). Sync `CURRICULUM.md`, `RESOURCES.md`, `reference/curriculum.html`.
 6. **Project skills:** Use `lesson-visuals`, `lab-authoring`, `curriculum-currency` from `.agents/skills/` — do not re-derive these rules from chat.
 7. **Datasets:** Tier A (real OpenML/UCI) default for Q2+ training labs; Tier C (synthetic) only for mechanism isolation. See `labs/data/README.md`.
+8. **Lab intros (from 2026-07-02):** labs must **introduce the topic in-notebook** — concept recap (terms, formulas, one toy worked example), plus goal/why before each task. Student should not need to re-open the lesson HTML for core definitions. Explanations in markdown; implementation stays in TODO blanks. See `lab-authoring` skill § Introductory content. Lab 011 retrofitted as reference.

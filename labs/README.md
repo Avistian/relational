@@ -18,6 +18,11 @@ Design intent: blanks sit only on the **skill** being practised; everything peri
 provided so working memory stays on the one idea (see `../NOTES.md` preferences and the
 `teach` skill's fluency-vs-storage-strength note). CHECK cells make the feedback loop tight.
 
+**Introductory content (from L011 onward):** each lab opens with a **concept recap**
+(terms, formulas, one toy worked example) and a short **goal / why** block before every task.
+The notebook should bridge lesson → practice without forcing the student to re-read the HTML
+for core definitions. See `.agents/skills/lab-authoring/SKILL.md` § Introductory content.
+
 **No prefilled answers:** TODO code cells use `____` only — never the completed solution.
 Teacher copies with filled answers live in [`solutions/`](./solutions/) (gitignored).
 
@@ -73,3 +78,9 @@ This keeps the thesis baselines trustworthy by the time results matter.
 - `0009-feature-engineering.ipynb` — ratio, cyclical datetime, leak-free target encoding (Lesson 009).
 - `0010-baseline-checkpoint.ipynb` — Q1 capstone reproducible baseline (Lesson 010).
 - `0011-decision-trees-partitions.ipynb` — tree splits on OpenML credit data (Lesson 011).
+- `0012-bagging-random-forest.ipynb` — RF vs single tree, OOB, variance drop (Lesson 012).
+
+## View / run in the browser
+
+- **View:** static HTML renders live in `labs/html/` (regenerate with `bash scripts/render_notebooks.sh`).
+- **Run:** the [Notebooks page](../notebooks.html) links each lab to **Binder** (real `relkit` env + OpenML fetch) and **Colab**.

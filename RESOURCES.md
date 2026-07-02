@@ -10,6 +10,8 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Fast tree training. Use for: large tabular baselines.
 - [CatBoost — Prokhorenkova et al., NeurIPS 2018](https://arxiv.org/abs/1706.09516)
   Ordered boosting + categoricals. Use for: high-cardinality categoricals without target leakage.
+- [Random Forests — Breiman, Machine Learning 2001](https://doi.org/10.1023/A:1010933404324)
+  Bagging + per-split feature subsampling to decorrelate trees; OOB error. Use for: Lesson 012 primary reading; the variance-reduction baseline (contrast with boosting's bias reduction).
 - [Why trees beat DL on tabular — Grinsztajn et al., NeurIPS 2022](https://arxiv.org/abs/2207.08815)
   Three inductive biases (irregular targets, uninformative features, rotation non-invariance). Use for: Lesson 010 Q1-checkpoint primary reading + year-1 exit exam; explains why a competently-built GBDT is the baseline the thesis must beat.
 - [Designing Machine Learning Systems — Huyen](https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/)

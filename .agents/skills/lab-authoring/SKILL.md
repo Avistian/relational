@@ -60,3 +60,31 @@ Return: total /10, one concrete improvement, log notable gaps in `NOTES.md` or a
 ## Template
 
 Follow `labs/LAB-TEMPLATE.ipynb` and `labs/README.md`.
+
+## Introductory content — required (from L011 onward)
+
+Labs are not a silent worksheet. The lesson HTML teaches; the notebook **bridges** lesson → hands-on practice. Every new lab must include markdown that a student can follow **without reopening the lesson** for the core idea.
+
+### Required sections (markdown cells)
+
+1. **Header** — lesson link, skill, exit criteria, how PROVIDED/TODO/CHECK/EXIT works, environment (see template).
+2. **Concept recap** (after header, before setup) — 3–6 short paragraphs:
+   - Restate the *one skill* in plain language
+   - Define key terms and formulas used in the lab (with LaTeX or code-style math)
+   - One **worked micro-example** on toy numbers (not the lab's answer — e.g. Gini on `[0,0,1,1]`, not the German-credit split)
+   - Link back to the lesson HTML for the full viz/reading
+3. **Before each task** — a markdown cell with:
+   - **Goal** — one sentence: what you will produce
+   - **Why it matters** — tie to mission/thesis or the lesson's failure mode
+   - **Hint boundary** — describe *what* to compute, never the completed code
+
+### Balance with mid-zone difficulty
+
+- Intro markdown **explains concepts**; TODO cells still hold the **implementation** blanks.
+- Do not paste the solution into markdown or prefilled TODO code.
+- A formula in the recap is fine; the student still writes the Python that implements it.
+- Target: ~30% of notebook cells are explanatory markdown; the rest are PROVIDED/TODO/CHECK/EXIT.
+
+### Retrofit rule
+
+When publishing a new lesson, if the matching lab lacks a concept recap, add one before marking the unit published. Retrofit the current lesson's lab when the user flags thin intros (see `NOTES.md` Preferences).
