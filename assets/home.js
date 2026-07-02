@@ -15,6 +15,12 @@
     return "Q" + q;
   }
 
+  // Rendered-HTML view path for a lab notebook (renders in any browser).
+  // labs/0012-foo.ipynb -> labs/html/0012-foo.html
+  function labViewPath(labPath) {
+    return "labs/html/" + labPath.replace(/^labs\//, "").replace(/\.ipynb$/, "") + ".html";
+  }
+
   function renderContinue(container, lessons) {
     var lastSlug = global.localStorage.getItem(STORAGE_KEY);
     var target = null;
@@ -97,7 +103,7 @@
           var lab = document.createElement("span");
           lab.className = "lab-link";
           var labA = document.createElement("a");
-          labA.href = l.labPath;
+          labA.href = labViewPath(l.labPath);
           labA.textContent = "lab";
           lab.appendChild(labA);
           li.appendChild(lab);
