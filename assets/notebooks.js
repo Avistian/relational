@@ -57,12 +57,20 @@
     return li;
   }
 
+  function manifestFetchUrl(base) {
+    base = base || "lessons/manifest.json";
+    var meta = document.querySelector('meta[name="rdl-manifest-version"]');
+    var v = meta && meta.getAttribute("content");
+    if (!v) return base;
+    return base + (base.indexOf("?") >= 0 ? "&" : "?") + "v=" + encodeURIComponent(v);
+  }
+
   function mount(config) {
     config = config || {};
     var el = document.getElementById(config.listId || "nb-list");
     if (!el) return;
 
-    fetch(config.manifestUrl || "lessons/manifest.json")
+    fetch(manifestFetchUrl(config.manifestUrl))
       .then(function (r) { if (!r.ok) throw new Error("manifest"); return r.json(); })
       .then(function (data) {
         var labs = (data.lessons || [])

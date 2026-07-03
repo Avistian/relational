@@ -118,12 +118,20 @@
     container.appendChild(block);
   }
 
+  function manifestFetchUrl(base) {
+    base = base || "lessons/manifest.json";
+    var meta = document.querySelector('meta[name="rdl-manifest-version"]');
+    var v = meta && meta.getAttribute("content");
+    if (!v) return base;
+    return base + (base.indexOf("?") >= 0 ? "&" : "?") + "v=" + encodeURIComponent(v);
+  }
+
   function mount(config) {
     var navEl = document.getElementById(config.navId || "lesson-nav");
     var continueEl = document.getElementById(config.continueId || "continue-nav");
     if (!navEl) return;
 
-    fetch(config.manifestUrl || "lessons/manifest.json")
+    fetch(manifestFetchUrl(config.manifestUrl))
       .then(function (r) {
         if (!r.ok) throw new Error("manifest fetch failed");
         return r.json();
