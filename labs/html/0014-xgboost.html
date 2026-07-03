@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0013-boosting-intuition</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0014-xgboost</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,16 +7796,17 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2d5b8587">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l014-00">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-013-%E2%80%94-Build-boosting-from-residuals">Lab 013 — Build boosting from residuals<a class="anchor-link" href="#Lab-013-%E2%80%94-Build-boosting-from-residuals">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0013-boosting-intuition.html"><code>lessons/0013-boosting-intuition.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
-<p><strong>Dataset tiers:</strong> C — synthetic toy (mechanism isolation) for Task 1; A — OpenML German credit (<code>credit_g</code>) via <code>relkit</code> for Task 3 (same harness as Labs 011–012).</p>
-<p><strong>Skill you are practising:</strong> implement the stagewise <strong>residual-fitting loop</strong> of gradient boosting by hand, feel the <strong>learning-rate</strong> trade-off, then compare a single tree, a Random Forest, and <code>GradientBoostingClassifier</code> with the shared CV harness.</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints the toy MSE collapse (round 0 → final), the learning-rate comparison, and the single-tree / RF / GBDT CV PR-AUC on <code>credit_g</code>.</p>
+<h1 id="Lab-014-%E2%80%94-XGBoost-from-the-formula-up">Lab 014 — XGBoost from the formula up<a class="anchor-link" href="#Lab-014-%E2%80%94-XGBoost-from-the-formula-up">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0014-xgboost.html"><code>lessons/0014-xgboost.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
+<p><strong>Paper:</strong> Chen &amp; Guestrin 2016, <em>XGBoost: A Scalable Tree Boosting System</em> (KDD) — §2, Eq 5–7.</p>
+<p><strong>Dataset tiers:</strong> C — synthetic squared-error toy (mechanism isolation) for Tasks 1–2; A — OpenML German credit (<code>credit_g</code>) via <code>relkit</code> for Task 3 (same harness as Labs 011–013).</p>
+<p><strong>Skill you are practising:</strong> implement XGBoost's <strong>regularized leaf weight</strong> and <strong>structure-score split gain</strong> by hand and check them against XGBoost's own leaf outputs; then fit and <strong>tune</strong> XGBoost with the shared CV harness and compare honestly to the L013 baseline.</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints (1) your by-hand vs XGBoost leaf weights, (2) how λ shrinks weights and γ prunes a split, and (3) the credit_g CV PR-AUC for the L013 GBDT, default XGBoost, and tuned XGBoost.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
 <li><strong>PROVIDED</strong> cells — complete boilerplate; just run.</li>
@@ -7813,37 +7814,33 @@ a.anchor-link {
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. No local install? Open this notebook from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong> to execute it in the browser.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. This lab needs <strong>xgboost</strong> (already in <code>requirements-labs.txt</code>). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f52e2c95">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l014-01">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-boosting-fits-residuals">Concept recap — boosting fits residuals<a class="anchor-link" href="#Concept-recap-%E2%80%94-boosting-fits-residuals">¶</a></h2><p>Bagging (Lesson 012) trains trees <strong>independently</strong> and averages them to cut <strong>variance</strong>. Boosting does the opposite: it trains trees <strong>sequentially</strong>, each one fitting what the ensemble still gets wrong, to cut <strong>bias</strong>.</p>
-<p>The recipe (gradient boosting, squared-error loss):</p>
-<ol>
-<li>Start with a constant model: <code>F₀(x) = mean(y)</code>.</li>
-<li>For each round <code>m = 1 … M</code>:<ul>
-<li>Compute the <strong>residuals</strong> <code>rᵢ = yᵢ − F₋₁(xᵢ)</code> — for squared error, the residual <strong>is</strong> the negative gradient of the loss.</li>
-<li>Fit a small tree <code>hₘ</code> to <code>(xᵢ, rᵢ)</code>.</li>
-<li>Update <code>Fₘ(x) = F₋₁(x) + η · hₘ(x)</code>, where <code>η</code> is the <strong>learning rate</strong> (shrinkage).</li>
+<h2 id="Concept-recap-%E2%80%94-the-two-formulas-that-define-XGBoost">Concept recap — the two formulas that define XGBoost<a class="anchor-link" href="#Concept-recap-%E2%80%94-the-two-formulas-that-define-XGBoost">¶</a></h2><p>Gradient boosting (Lesson 013) fits a tree to the residuals each round. XGBoost keeps that stagewise recipe but writes down a <strong>regularized objective</strong> and keeps the <strong>second-order</strong> term of the loss. For each row it uses the gradient $g_i$ and the hessian $h_i$; for a whole leaf it sums them: $G_j = \sum g_i$, $H_j = \sum h_i$.</p>
+<p>The tree is penalized by $\Omega(f) = \gamma T + \tfrac{1}{2}\lambda \sum_j w_j^2$ (T = number of leaves). Minimizing the resulting quadratic gives two things:</p>
+<ul>
+<li><strong>Optimal leaf weight</strong> (the value the leaf outputs):
+$$w_j^{*} = -\frac{G_j}{H_j + \lambda}$$</li>
+<li><strong>Structure score</strong> of a node, whose per-leaf term measures leaf quality: $\dfrac{G_j^2}{H_j + \lambda}$. The gain of a split is then
+$$\text{Gain} = \tfrac{1}{2}\Big[\tfrac{G_L^2}{H_L+\lambda} + \tfrac{G_R^2}{H_R+\lambda} - \tfrac{(G_L+G_R)^2}{H_L+H_R+\lambda}\Big] - \gamma$$</li>
 </ul>
-</li>
-</ol>
-<p><strong>Learning rate <code>η</code>:</strong> small steps (0.01–0.1) generalize better but need more rounds; big steps can overshoot. Shrinkage is regularization by taking small steps.</p>
-<p><strong>Toy micro-example (not this lab's answer):</strong> suppose <code>y = [10, 20]</code> and <code>F₀ = 15</code> (the mean). Residuals are <code>[-5, +5]</code>. A stump that predicts <code>-5</code> on the left row and <code>+5</code> on the right, added with <code>η = 1</code>, lands exactly on <code>y</code>. With <code>η = 0.3</code> you move only 30% of the way — hence more rounds.</p>
-<p><strong>Why it matters for the thesis:</strong> a competently-built gradient-boosted tree is <em>the</em> single-table baseline the relational thesis must beat fairly (Grinsztajn 2022). You have to know boosting reduces bias by fitting residuals — not by magic — to argue honestly that a relational model wins on <em>structure</em>, not on a weak baseline.</p>
-<p>Full viz (residuals shrinking as rounds grow) and reading: <a href="../lessons/0013-boosting-intuition.html">Lesson 013</a> · Friedman 2001.</p>
+<p><strong>Callback (L011):</strong> that bracket is <em>left child + right child − parent</em> — the same <code>ΔG = children − parent</code> shape as a Gini split, now in units of $G^2/(H+\lambda)$. The $-\gamma$ is a flat toll: if children don't beat the parent by more than $\gamma$, the gain is negative and the split is <strong>pruned</strong>.</p>
+<p><strong>Toy micro-example (not this lab's answer):</strong> a leaf holding rows with gradient sum $G=-6$, hessian sum $H=4$, and $\lambda=2$ outputs $w^{*} = -(-6)/(4+2) = +1.0$. Raise $\lambda$ to 10 and it shrinks to $6/14 \approx 0.43$ — that is L2 regularization pulling the leaf toward 0.</p>
+<p><strong>Why it matters for the thesis:</strong> a <em>tuned</em> XGBoost is <em>the</em> single-table baseline the relational thesis must beat fairly (Grinsztajn 2022). "We beat a default XGBoost" is not a result. Full derivation and the interactive λ/γ viz: <a href="../lessons/0014-xgboost.html">Lesson 014</a> · Chen &amp; Guestrin 2016 §2.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=231d9d0f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l014-02">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7853,289 +7850,225 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=1fa318da">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-03">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()))</span>  <span class="c1"># labs/ on the path so `relkit` imports</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecisionTreeRegressor</span><span class="p">,</span> <span class="n">DecisionTreeClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestClassifier</span><span class="p">,</span> <span class="n">GradientBoostingClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean_squared_error</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">GradientBoostingClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomizedSearchCV</span><span class="p">,</span> <span class="n">StratifiedKFold</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">LabelEncoder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span><span class="p">,</span> <span class="n">XGBRegressor</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">cv_pr_auc</span>
 
 <span class="n">RS</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"relkit ok"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"relkit + xgboost ok"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>relkit ok
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=715cedcc">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l014-04">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-the-residual-loop,-by-hand-%E2%80%94-TODO-(crucial-fragment)">Task 1 — the residual loop, by hand — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-the-residual-loop,-by-hand-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> implement gradient boosting's core loop on a 1-D toy and record the MSE against the true function each round.</p>
-<p><strong>Why it matters:</strong> this five-line loop <em>is</em> gradient boosting — XGBoost and LightGBM are fast, regularized versions of exactly this. Writing it once removes the mystery for every boosting model you'll ever tune.</p>
-<p><strong>You implement (the loop body has 3 blanks):</strong></p>
+<h2 id="Task-1-%E2%80%94-the-leaf-weight-&amp;-split-gain,-by-hand-%E2%80%94-TODO-(crucial-fragment)">Task 1 — the leaf weight &amp; split gain, by hand — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-the-leaf-weight-&amp;-split-gain,-by-hand-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> implement XGBoost's three §2 formulas — node score, regularized leaf weight, and split gain — and reproduce XGBoost's <em>own</em> leaf outputs exactly.</p>
+<p><strong>Why it matters:</strong> these formulas <em>are</em> XGBoost. Once you can compute the leaf value XGBoost prints, the model stops being a black box: every knob (<code>reg_lambda</code>, <code>gamma</code>) is just a term you wrote here.</p>
+<p><strong>You implement (3 one-line returns):</strong></p>
 <ol>
-<li><code>resid</code> = current residuals, <code>y_toy − pred</code>.</li>
-<li>fit a depth-1 tree (<code>stump</code>) to <code>(X_toy, resid)</code>, then update <code>pred += lr * stump.predict(X_toy)</code>.</li>
-<li>append the MSE of <code>pred</code> vs the <strong>true</strong> function <code>f_true</code> to <code>mse_hist</code>.</li>
+<li><code>node_score(G, H, lam)</code> → $G^2/(H+\lambda)$</li>
+<li><code>reg_leaf_weight(G, H, lam)</code> → $-G/(H+\lambda)$</li>
+<li><code>split_gain(GL, HL, GR, HR, lam, gamma)</code> → $\tfrac{1}{2}[\text{score}(L)+\text{score}(R)-\text{score(parent)}]-\gamma$</li>
 </ol>
-<p><strong>Hint boundary:</strong> the residual is truth minus current prediction; the stump is a <code>DecisionTreeRegressor(max_depth=1)</code>; shrink its prediction by <code>lr</code> before adding. Do <strong>not</strong> call <code>GradientBoostingRegressor</code> here — the point is to build it.</p>
+<p><strong>Hint boundary:</strong> the parent's stats are the sums $G_L+G_R$ and $H_L+H_R$; reuse <code>node_score</code> inside <code>split_gain</code>. Do <strong>not</strong> read the leaf value off XGBoost — compute it, then compare.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a96e5bf3">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-05">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — toy data (Tier C): a smooth truth + noise</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — a squared-error toy so g = pred - y and h = 1 (base_score 0.5).</span>
+<span class="c1"># We fit a single XGBoost stump, read its split, and gather leaf gradient/hessian sums.</span>
 <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">200</span><span class="p">))</span>
-<span class="n">f_true</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">x</span>        <span class="c1"># the signal we want to recover</span>
-<span class="n">y_toy</span> <span class="o">=</span> <span class="n">f_true</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>     <span class="c1"># noisy observations</span>
-<span class="n">X_toy</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">Xr</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">yr</span> <span class="o">=</span> <span class="p">(</span><span class="n">Xr</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span> <span class="o">*</span> <span class="mf">4.0</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>
 
-<span class="n">lr</span> <span class="o">=</span> <span class="mf">0.3</span>
-<span class="n">n_rounds</span> <span class="o">=</span> <span class="mi">60</span>
-<span class="n">pred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">y_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>         <span class="c1"># F0 = mean(y)</span>
-<span class="n">mse_hist</span> <span class="o">=</span> <span class="p">[</span><span class="n">mean_squared_error</span><span class="p">(</span><span class="n">f_true</span><span class="p">,</span> <span class="n">pred</span><span class="p">)]</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round 0  MSE vs truth = </span><span class="si">{</span><span class="n">mse_hist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">LAMBDA</span> <span class="o">=</span> <span class="mf">3.0</span>
+<span class="n">stump</span> <span class="o">=</span> <span class="n">XGBRegressor</span><span class="p">(</span>
+    <span class="n">n_estimators</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">reg_lambda</span><span class="o">=</span><span class="n">LAMBDA</span><span class="p">,</span> <span class="n">reg_alpha</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">base_score</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">objective</span><span class="o">=</span><span class="s2">"reg:squarederror"</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xr</span><span class="p">,</span> <span class="n">yr</span><span class="p">)</span>
+
+<span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">yr</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">-</span> <span class="n">yr</span>      <span class="c1"># gradient of ½(pred - y)^2 at pred = 0.5</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">yr</span><span class="p">)</span>                <span class="c1"># hessian = 1</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">stump</span><span class="o">.</span><span class="n">get_booster</span><span class="p">()</span><span class="o">.</span><span class="n">trees_to_dataframe</span><span class="p">()</span>
+<span class="n">thr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"Feature"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"Leaf"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"Split"</span><span class="p">])</span>
+<span class="n">left</span> <span class="o">=</span> <span class="n">Xr</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">thr</span>
+<span class="n">GL</span><span class="p">,</span> <span class="n">HL</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">left</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">h</span><span class="p">[</span><span class="n">left</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="n">GR</span><span class="p">,</span> <span class="n">HR</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="o">~</span><span class="n">left</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">h</span><span class="p">[</span><span class="o">~</span><span class="n">left</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="n">xgb_leaf_vals</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"Feature"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Leaf"</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">"Node"</span><span class="p">)[</span><span class="s2">"Gain"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"split threshold = </span><span class="si">{</span><span class="n">thr</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">   GL,HL = </span><span class="si">{</span><span class="n">GL</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">HL</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">   GR,HR = </span><span class="si">{</span><span class="n">GR</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">HR</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>round 0  MSE vs truth = 0.359
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=04b049f5">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-06">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — fill the 3 blanks in the loop body</span>
-<span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rounds</span><span class="p">):</span>
-    <span class="n">resid</span> <span class="o">=</span> <span class="n">y_toy</span> <span class="o">-</span> <span class="n">pred</span>                                 <span class="c1"># y_toy - pred</span>
-    <span class="n">stump</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">resid</span><span class="p">)</span>  <span class="c1"># fit to residuals</span>
-    <span class="n">pred</span> <span class="o">=</span> <span class="n">pred</span> <span class="o">+</span> <span class="n">lr</span> <span class="o">*</span> <span class="n">stump</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">)</span>                            <span class="c1"># add the shrunken stump: lr * stump.predict(X_toy)</span>
-    <span class="n">mse_hist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mean_squared_error</span><span class="p">(</span><span class="n">f_true</span><span class="p">,</span> <span class="n">pred</span><span class="p">))</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement the three XGBoost formulas (Chen &amp; Guestrin 2016, §2)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">node_score</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">lam</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">____</span>                      <span class="c1"># G^2 / (H + lam)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round </span><span class="si">{</span><span class="n">n_rounds</span><span class="si">}</span><span class="s2">  MSE vs truth = </span><span class="si">{</span><span class="n">mse_hist</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"first 6 rounds:"</span><span class="p">,</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">mse_hist</span><span class="p">[:</span><span class="mi">6</span><span class="p">]])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">reg_leaf_weight</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">lam</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">____</span>                      <span class="c1"># -G / (H + lam)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">split_gain</span><span class="p">(</span><span class="n">GL</span><span class="p">,</span> <span class="n">HL</span><span class="p">,</span> <span class="n">GR</span><span class="p">,</span> <span class="n">HR</span><span class="p">,</span> <span class="n">lam</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
+    <span class="n">children</span> <span class="o">=</span> <span class="n">____</span>                  <span class="c1"># node_score(L) + node_score(R)</span>
+    <span class="n">parent</span> <span class="o">=</span> <span class="n">____</span>                    <span class="c1"># node_score of the combined parent</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">children</span> <span class="o">-</span> <span class="n">parent</span><span class="p">)</span> <span class="o">-</span> <span class="n">gamma</span>
+
+<span class="n">wL</span> <span class="o">=</span> <span class="n">reg_leaf_weight</span><span class="p">(</span><span class="n">GL</span><span class="p">,</span> <span class="n">HL</span><span class="p">,</span> <span class="n">LAMBDA</span><span class="p">)</span>
+<span class="n">wR</span> <span class="o">=</span> <span class="n">reg_leaf_weight</span><span class="p">(</span><span class="n">GR</span><span class="p">,</span> <span class="n">HR</span><span class="p">,</span> <span class="n">LAMBDA</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"by-hand leaf weights  L/R = </span><span class="si">{</span><span class="n">wL</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2"> / </span><span class="si">{</span><span class="n">wR</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"XGBoost leaf weights      = </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">xgb_leaf_vals</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>round 60  MSE vs truth = 0.004
-first 6 rounds: [0.359, 0.223, 0.154, 0.12, 0.102, 0.092]
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=c20efa67">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-07">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">mse_hist</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_rounds</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Record one MSE per round plus the round-0 baseline."</span>
-<span class="k">assert</span> <span class="n">mse_hist</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">mse_hist</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"Boosting should reduce error vs the mean baseline."</span>
-<span class="k">assert</span> <span class="n">mse_hist</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s2">"After 60 rounds the fit should be close to the truth."</span>
-<span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">mse_hist</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">mse_hist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1e-9</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mse_hist</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span> \
-    <span class="s2">"Training MSE vs truth should fall (or hold) each round for this clean toy."</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 1 ok — you built gradient boosting; bias falls round by round."</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">node_score</span><span class="p">(</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="mf">16.0</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">),</span> <span class="s2">"node_score should be G^2/(H+lam)."</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="n">wL</span><span class="p">,</span> <span class="n">wR</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">xgb_leaf_vals</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">),</span> \
+    <span class="s2">"Your leaf weights should match XGBoost's own leaf outputs (they are the same formula)."</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 1 ok — your formula reproduces XGBoost's leaf weights exactly."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 1 ok — you built gradient boosting; bias falls round by round.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8f8ef5dc">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l014-08">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-the-learning-rate-trade-off-%E2%80%94-TODO">Task 2 — the learning-rate trade-off — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-the-learning-rate-trade-off-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> show that a smaller learning rate needs more rounds to reach the same fit.</p>
-<p><strong>Why it matters:</strong> <code>η</code> and <code>n_estimators</code> trade off directly — this is the single most important pair of knobs on every boosting model, and the reason small-<code>η</code> runs are slower but usually generalize better.</p>
-<p><strong>You implement:</strong> for each <code>lr</code> in <code>lrs</code>, run the same residual loop for <code>n_rounds</code> rounds and store the <strong>final</strong> MSE-vs-truth in <code>final_mse[lr]</code>. (Reuse the Task-1 loop body.)</p>
-<p><strong>Hint boundary:</strong> re-initialize <code>pred</code> to the mean before each learning rate; the only thing that changes between runs is the shrinkage factor.</p>
+<h2 id="Task-2-%E2%80%94-feel-the-regularizers-%CE%BB-and-%CE%B3-%E2%80%94-TODO">Task 2 — feel the regularizers λ and γ — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-feel-the-regularizers-%CE%BB-and-%CE%B3-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> show numerically that (a) raising <strong>λ</strong> shrinks a leaf weight toward 0, and (b) raising <strong>γ</strong> past the raw gain flips a split from KEEP to PRUNE.</p>
+<p><strong>Why it matters:</strong> these are the two knobs that make XGBoost hard to overfit on small, noisy data — exactly the regime where L013 showed a Random Forest can tie a booster. Tuning them is most of the game.</p>
+<p><strong>You implement:</strong> two list comprehensions that reuse your Task-1 functions —
+<code>weights_by_lambda</code> (leaf weight of the LEFT leaf at each λ) and <code>net_gains</code> (split gain at each γ toll, λ fixed at 1.0).</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=edb175b1">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-09">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — sweep the learning rate (same 40-round budget for each)</span>
-<span class="n">lrs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
-<span class="n">n_rounds2</span> <span class="o">=</span> <span class="mi">40</span>
-<span class="n">final_mse</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">cur_lr</span> <span class="ow">in</span> <span class="n">lrs</span><span class="p">:</span>
-    <span class="n">pred_lr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">y_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
-    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rounds2</span><span class="p">):</span>
-        <span class="n">resid</span> <span class="o">=</span> <span class="n">y_toy</span> <span class="o">-</span> <span class="n">pred_lr</span>                          <span class="c1"># y_toy - pred_lr</span>
-        <span class="n">stump</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">resid</span><span class="p">)</span>
-        <span class="n">pred_lr</span> <span class="o">=</span> <span class="n">pred_lr</span> <span class="o">+</span> <span class="n">cur_lr</span> <span class="o">*</span> <span class="n">stump</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">)</span>                  <span class="c1"># cur_lr * stump.predict(X_toy)</span>
-    <span class="n">final_mse</span><span class="p">[</span><span class="n">cur_lr</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">f_true</span><span class="p">,</span> <span class="n">pred_lr</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — sweep λ (shrinkage) and γ (pruning toll)</span>
+<span class="n">lam_grid</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span>
+<span class="n">weights_by_lambda</span> <span class="o">=</span> <span class="p">[</span><span class="n">____</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lam_grid</span><span class="p">]</span>        <span class="c1"># reg_leaf_weight of LEFT leaf at each λ</span>
 
-<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">lrs</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"lr=</span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">&lt;5</span><span class="si">}</span><span class="s2"> final MSE after </span><span class="si">{</span><span class="n">n_rounds2</span><span class="si">}</span><span class="s2"> rounds = </span><span class="si">{</span><span class="n">final_mse</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">raw_gain</span> <span class="o">=</span> <span class="n">split_gain</span><span class="p">(</span><span class="n">GL</span><span class="p">,</span> <span class="n">HL</span><span class="p">,</span> <span class="n">GR</span><span class="p">,</span> <span class="n">HR</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">gammas</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">raw_gain</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">raw_gain</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">]</span>
+<span class="n">net_gains</span> <span class="o">=</span> <span class="p">[</span><span class="n">____</span> <span class="k">for</span> <span class="n">gm</span> <span class="ow">in</span> <span class="n">gammas</span><span class="p">]</span>                 <span class="c1"># split_gain at each γ (λ=1.0)</span>
+
+<span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lam_grid</span><span class="p">,</span> <span class="n">weights_by_lambda</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  λ=</span><span class="si">{</span><span class="n">l</span><span class="si">:</span><span class="s2">5.1f</span><span class="si">}</span><span class="s2">  left-leaf w* = </span><span class="si">{</span><span class="n">w</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"raw gain (γ=0) = </span><span class="si">{</span><span class="n">raw_gain</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">gm</span><span class="p">,</span> <span class="n">ng</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">gammas</span><span class="p">,</span> <span class="n">net_gains</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  γ=</span><span class="si">{</span><span class="n">gm</span><span class="si">:</span><span class="s2">6.3f</span><span class="si">}</span><span class="s2">  net gain = </span><span class="si">{</span><span class="n">ng</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  -&gt;  </span><span class="si">{</span><span class="s1">'KEEP'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">ng</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'PRUNE'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>lr=0.05  final MSE after 40 rounds = 0.084
-lr=0.3   final MSE after 40 rounds = 0.008
-lr=1.0   final MSE after 40 rounds = 0.007
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=21e94f33">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-10">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">final_mse</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">lrs</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">final_mse</span><span class="p">[</span><span class="mf">0.05</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">final_mse</span><span class="p">[</span><span class="mf">0.3</span><span class="p">],</span> \
-    <span class="s2">"With a fixed round budget, the smallest lr should still be further from the truth."</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 2 ok — small lr under-fits at a fixed budget; it needs more rounds."</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">weights_by_lambda</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">weights_by_lambda</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="s2">"λ should shrink |w| toward 0."</span>
+<span class="k">assert</span> <span class="n">net_gains</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">net_gains</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> \
+    <span class="s2">"γ below the raw gain keeps the split; γ above it should prune (net gain &lt; 0)."</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 2 ok — λ shrinks weights; γ past the raw gain prunes the split."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 2 ok — small lr under-fits at a fixed budget; it needs more rounds.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=dd6a68d7">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l014-11">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-tree-vs-forest-vs-boosting-on-real-data-%E2%80%94-TODO">Task 3 — tree vs forest vs boosting on real data — TODO<a class="anchor-link" href="#Task-3-%E2%80%94-tree-vs-forest-vs-boosting-on-real-data-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> score a single deep tree, a Random Forest, and a <code>GradientBoostingClassifier</code> on <code>credit_g</code> with the shared CV harness.</p>
-<p><strong>Why it matters:</strong> this is the honest baseline bake-off. On this small, noisy dataset the forest's variance reduction is hard to beat with an untuned booster — seeing that yourself (rather than assuming boosting always wins) is the discipline the mission demands.</p>
+<h2 id="Task-3-%E2%80%94-fit-&amp;-tune-XGBoost-on-real-data-%E2%80%94-TODO-(reproduction-target)">Task 3 — fit &amp; tune XGBoost on real data — TODO (reproduction target)<a class="anchor-link" href="#Task-3-%E2%80%94-fit-&amp;-tune-XGBoost-on-real-data-%E2%80%94-TODO-(reproduction-target)">¶</a></h2><p><strong>Goal:</strong> score XGBoost's defaults against the L013 sklearn GBDT on <code>credit_g</code>, then tune it with a small random search and see how much tuning buys.</p>
+<p><strong>Why it matters:</strong> this is the honest-baseline discipline the mission demands. Out of the box XGBoost barely edges sklearn's GBDT here; the real gain comes from tuning — a cost you must pay before claiming any relational model "beat XGBoost".</p>
+<p><strong>Reproduction target (from the lesson table):</strong> sklearn GBDT ≈ 0.879, XGBoost default ≈ 0.883, XGBoost tuned ≈ 0.896.</p>
 <p><strong>You implement:</strong></p>
 <ol>
-<li><code>DecisionTreeClassifier(random_state=RS)</code> → <code>tree_pr</code>.</li>
-<li><code>RandomForestClassifier(n_estimators=300, random_state=RS, n_jobs=-1)</code> → <code>rf_pr</code>.</li>
-<li><code>GradientBoostingClassifier(n_estimators=300, learning_rate=0.05, max_depth=3, random_state=RS)</code> → <code>gb_pr</code>.</li>
+<li><code>xgb_default</code> — <code>cv_pr_auc</code> of a plain <code>XGBClassifier(random_state=RS, n_jobs=-1, eval_metric="logloss", tree_method="hist")</code>.</li>
+<li>the <code>estimator</code> passed to the PROVIDED <code>RandomizedSearchCV</code> (same XGBClassifier).</li>
 </ol>
-<p>Score each with <code>cv_pr_auc(estimator, Xn, y)</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=addafdf0">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-12">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — Tier A: credit_g via relkit (label-encoded for bare estimators, as in Lab 012)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — Tier A: credit_g via relkit (label-encoded for bare estimators, as in Labs 012-013)</span>
 <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>
 <span class="n">num_cols</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 <span class="n">cat_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num_cols</span><span class="p">]</span>
@@ -8143,26 +8076,28 @@ lr=1.0   final MSE after 40 rounds = 0.007
 <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat_cols</span><span class="p">:</span>
     <span class="n">Xn</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">LabelEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">))</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rows=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">  pos_rate=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  features=</span><span class="si">{</span><span class="n">Xn</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">gb_ref</span> <span class="o">=</span> <span class="n">cv_pr_auc</span><span class="p">(</span>
+    <span class="n">GradientBoostingClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">),</span>
+    <span class="n">Xn</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">param_dist</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"n_estimators"</span><span class="p">:</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="mi">600</span><span class="p">],</span>
+    <span class="s2">"max_depth"</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+    <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+    <span class="s2">"subsample"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
+    <span class="s2">"colsample_bytree"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
+    <span class="s2">"reg_lambda"</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">],</span>
+    <span class="s2">"min_child_weight"</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+<span class="p">}</span>
+<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rows=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2"> pos_rate=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> features=</span><span class="si">{</span><span class="n">Xn</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">  |  L013 GBDT ref = </span><span class="si">{</span><span class="n">gb_ref</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>rows=1000  pos_rate=0.700  features=20
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=70a09dfc">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-13">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8170,19 +8105,28 @@ lr=1.0   final MSE after 40 rounds = 0.007
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO</span>
-<span class="n">tree_pr</span> <span class="o">=</span> <span class="n">cv_pr_auc</span><span class="p">(</span><span class="n">DecisionTreeClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">),</span> <span class="n">Xn</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>   <span class="c1"># cv_pr_auc(DecisionTreeClassifier(random_state=RS), Xn, y)</span>
-<span class="n">rf_pr</span>   <span class="o">=</span> <span class="n">cv_pr_auc</span><span class="p">(</span><span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">Xn</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>   <span class="c1"># cv_pr_auc(RandomForestClassifier(n_estimators=300, random_state=RS, n_jobs=-1), Xn, y)</span>
-<span class="n">gb_pr</span>   <span class="o">=</span> <span class="n">cv_pr_auc</span><span class="p">(</span><span class="n">GradientBoostingClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">),</span> <span class="n">Xn</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>   <span class="c1"># cv_pr_auc(GradientBoostingClassifier(n_estimators=300, learning_rate=0.05, max_depth=3, random_state=RS), Xn, y)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"single tree      CV PR-AUC = </span><span class="si">{</span><span class="n">tree_pr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"random forest    CV PR-AUC = </span><span class="si">{</span><span class="n">rf_pr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"gradient boost   CV PR-AUC = </span><span class="si">{</span><span class="n">gb_pr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — default XGBoost, then a 40-iteration random search</span>
+<span class="n">xgb_default</span> <span class="o">=</span> <span class="n">cv_pr_auc</span><span class="p">(</span>
+    <span class="n">____</span><span class="p">,</span>                          <span class="c1"># a plain XGBClassifier (see hint above)</span>
+    <span class="n">Xn</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">search</span> <span class="o">=</span> <span class="n">RandomizedSearchCV</span><span class="p">(</span>
+    <span class="n">____</span><span class="p">,</span>                          <span class="c1"># the estimator to tune (same XGBClassifier)</span>
+    <span class="n">param_dist</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">search</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xn</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">xgb_tuned</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">search</span><span class="o">.</span><span class="n">best_score_</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"XGBoost default  CV PR-AUC = </span><span class="si">{</span><span class="n">xgb_default</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"XGBoost tuned    CV PR-AUC = </span><span class="si">{</span><span class="n">xgb_tuned</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"best params: </span><span class="si">{</span><span class="n">search</span><span class="o">.</span><span class="n">best_params_</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=473416fb">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-14">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8190,30 +8134,29 @@ lr=1.0   final MSE after 40 rounds = 0.007
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">tree_pr</span><span class="p">,</span> <span class="n">rf_pr</span><span class="p">,</span> <span class="n">gb_pr</span><span class="p">):</span>
-    <span class="k">assert</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"PR-AUC must be in [0, 1]."</span>
-<span class="k">assert</span> <span class="n">gb_pr</span> <span class="o">&gt;</span> <span class="n">tree_pr</span><span class="p">,</span> <span class="s2">"Boosting should beat a lone deep tree."</span>
-<span class="k">assert</span> <span class="n">rf_pr</span> <span class="o">&gt;</span> <span class="n">tree_pr</span><span class="p">,</span> <span class="s2">"The forest should beat a lone deep tree."</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 3 ok — both ensembles beat the single tree; compare RF vs GBDT below."</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">xgb_default</span><span class="p">,</span> <span class="n">xgb_tuned</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="mf">0.5</span> <span class="o">&lt;</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"PR-AUC should be a sensible probability-ranking score."</span>
+<span class="k">assert</span> <span class="n">xgb_tuned</span> <span class="o">&gt;=</span> <span class="n">xgb_default</span> <span class="o">-</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s2">"Tuning should not meaningfully hurt CV PR-AUC."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — default </span><span class="si">{</span><span class="n">xgb_default</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> -&gt; tuned </span><span class="si">{</span><span class="n">xgb_tuned</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (Δ </span><span class="si">{</span><span class="n">xgb_tuned</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">xgb_default</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=441f1b4a">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l014-15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary to paste back to your teacher.</p>
-<p><strong>Takeaway prompt:</strong> in one sentence, say what boosting reduces (bias vs variance) and <em>how</em> (fitting residuals), and note which model won on <code>credit_g</code> here and why that does <strong>not</strong> contradict "boosting usually wins on tabular".</p>
+<p><strong>Takeaway prompt:</strong> in one sentence, name the two XGBoost regularizers you implemented (λ and γ) and what each does, and state whether tuning was needed to beat the L013 GBDT here.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b15a2db1">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8221,11 +8164,12 @@ lr=1.0   final MSE after 40 rounds = 0.007
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 013 ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"toy MSE vs truth : round 0 </span><span class="si">{</span><span class="n">mse_hist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  -&gt;  round </span><span class="si">{</span><span class="n">n_rounds</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">mse_hist</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"lr sweep (40 rounds): "</span> <span class="o">+</span> <span class="s2">"  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"lr</span><span class="si">{</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">final_mse</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"credit_g PR-AUC  : tree </span><span class="si">{</span><span class="n">tree_pr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  |  RF </span><span class="si">{</span><span class="n">rf_pr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  |  GBDT </span><span class="si">{</span><span class="n">gb_pr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 014 ==="</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"leaf weight  by hand </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="n">wL</span><span class="p">,</span><span class="w"> </span><span class="n">wR</span><span class="p">])</span><span class="si">}</span><span class="s2">  vs XGBoost </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">xgb_leaf_vals</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"λ sweep (left leaf w*): "</span> <span class="o">+</span> <span class="s2">"  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"λ</span><span class="si">{</span><span class="n">l</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">w</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lam_grid</span><span class="p">,</span> <span class="n">weights_by_lambda</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"γ prune: raw gain </span><span class="si">{</span><span class="n">raw_gain</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> -&gt; net gains </span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">net_gains</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"credit_g PR-AUC: GBDT </span><span class="si">{</span><span class="n">gb_ref</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | XGB default </span><span class="si">{</span><span class="n">xgb_default</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | XGB tuned </span><span class="si">{</span><span class="n">xgb_tuned</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
 </pre></div>
@@ -8234,17 +8178,17 @@ lr=1.0   final MSE after 40 rounds = 0.007
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=95117fbf">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l014-17">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)">Stretch (optional, ungraded)<a class="anchor-link" href="#Stretch-(optional,-ungraded)">¶</a></h2><p>Boosting's edge grows with data and signal. Swap the dataset to <code>adult</code> (larger, ~24% prevalence) and re-score RF vs GBDT — you should see boosting pull ahead. Or vary <code>max_depth</code> (1 vs 3) and <code>learning_rate</code> on <code>credit_g</code> and watch the CV PR-AUC move. This previews the tuning you'll do properly with XGBoost in Lesson 014.</p>
+<h2 id="Stretch-(optional,-ungraded)">Stretch (optional, ungraded)<a class="anchor-link" href="#Stretch-(optional,-ungraded)">¶</a></h2><p>XGBoost's edge grows with data and signal. Swap to <code>adult</code> (~49k rows, ~24% prevalence) and compare the L013 GBDT vs XGBoost default — the booster should pull ahead more clearly than on <code>credit_g</code>. Or set <code>missing=np.nan</code> and drop values into a column to watch <strong>sparsity-aware split finding</strong> route them without imputation (Lesson 006 callback).</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=0abf5eaf">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l014-18">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8252,15 +8196,15 @@ lr=1.0   final MSE after 40 rounds = 0.007
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># STRETCH — ungraded. Uncomment to try boosting where it shines.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded. Boosting where it shines: more data + real signal.</span>
 <span class="c1"># Xa, ya = load_tier_a("adult")</span>
 <span class="c1"># na = Xa.select_dtypes(include=[np.number]).columns.tolist()</span>
 <span class="c1"># Xan = Xa[na].copy()</span>
 <span class="c1"># for c in [c for c in Xa.columns if c not in na]:</span>
 <span class="c1">#     Xan[c] = LabelEncoder().fit_transform(Xa[c].astype(str))</span>
 <span class="c1"># ya = np.asarray(ya)</span>
-<span class="c1"># print("adult RF  :", round(cv_pr_auc(RandomForestClassifier(n_estimators=200, random_state=RS, n_jobs=-1), Xan, ya), 3))</span>
 <span class="c1"># print("adult GBDT:", round(cv_pr_auc(GradientBoostingClassifier(n_estimators=200, learning_rate=0.1, max_depth=3, random_state=RS), Xan, ya), 3))</span>
+<span class="c1"># print("adult XGB :", round(cv_pr_auc(XGBClassifier(random_state=RS, n_jobs=-1, eval_metric='logloss', tree_method='hist'), Xan, ya), 3))</span>
 </pre></div>
 </div>
 </div>

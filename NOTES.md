@@ -67,6 +67,19 @@
 - Browser MCP unavailable this session → `residual-viz.js` verified headlessly in Node (no runtime errors; MSE readout collapses M=0→M=40).
 - Next: Lesson 014 (XGBoost — Chen & Guestrin 2016; tune XGB, regularized split gain; ΔG-sign callback from L011).
 
+## Session 15 — 2026-07-03
+
+- **Lesson 013 complete** — "lesson/lab 13 done." Lab scored ≈9/10 ([[learning-records/0038-lesson-013-complete.md]]); only gap was the EXIT `takeaway:` sentence left blank. Residual-loop-as-gradient and shrinkage retained.
+- **New dependency:** `xgboost` 3.3.0 installed into `.venv` and added to `requirements-labs.txt` (first Q2 lab to add a package beyond sklearn/imblearn).
+- **Lesson 014 published** — XGBoost (curriculum lec 014, Chen & Guestrin 2016 §2). Regularized objective Ω=γT+½λ‖w‖²; closed-form leaf weight `w*=−G/(H+λ)`; structure-score split gain (= L011 children−parent, now regularized, −γ toll). Systems callbacks: sparsity-aware missing (L006), column/row subsample (L012), shrinkage (L013).
+- **New reusable asset:** `assets/gain-viz.js` (λ shrinks leaf weights/scores; γ lifts a toll line and flips KEEP→PRUNE). Verified headlessly in Node (mount + math; browser MCP unavailable again — only user-arxiv authed).
+- **Verified live (sklearn 1.9 + xgboost 3.3.0, `relkit`), from executed `solutions/0014-xgboost.ipynb`:** by-hand leaf weight **exactly** matches XGBoost's leaf output (λ=3 → −0.480/+3.095); λ shrinks w* (0→−0.591 … 10→−0.334); γ=1.5×raw prunes; **credit_g** GBDT 0.879 · XGB default 0.883 · XGB tuned (40-iter search) **0.896** (RF from L012 still 0.901 — honest near-tie); **adult** GBDT 0.824 · XGB default 0.829.
+- **Honest-baseline discipline reinforced:** untuned XGB ≈ sklearn; the +0.017 comes from tuning. Lesson states plainly the relational thesis must beat a *tuned* booster, not a default.
+- **Lab (incremental rule active):** `labs/0014-xgboost.ipynb` — paper-repro 4-block; crucial fragment = implement `node_score`/`reg_leaf_weight`/`split_gain` and match XGBoost's leaf outputs. Built via `labs/_build_l014.py`; student blank (4 TODO cells, no outputs), solution executed clean & gitignored.
+- Manifest regenerated (14 entries), all labs re-rendered to `labs/html/` (incl. `0014-xgboost.html`).
+- **Callback closed:** L011 ΔG-sign (children − parent) re-derived in regularized form in L014.
+- Next: Lesson 015 (LightGBM — Ke et al. 2017; histogram + leaf-wise growth, speed vs XGB).
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -121,7 +134,7 @@
 
 Track with ✓ as completed:
 
-- [ ] Y1: Chen 2016 XGBoost
+- [x] Y1: Chen 2016 XGBoost §2 assigned in Lesson 014 (Eq 5–7 implemented in lab)
 - [ ] Y1: Grinsztajn 2022
 - [ ] Y1: Fey 2024 §1
 - [x] Y1: Fey 2024 §1 assigned in Lesson 001
