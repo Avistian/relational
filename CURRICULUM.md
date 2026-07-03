@@ -60,7 +60,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | Status | Topic | Where already solved |
 |--------|-------|-------------------|
 | ✅ | Fair GBDT baseline + leakage discipline | Y1 Q1 lessons 001–010 (published); L010 checkpoint |
-| ✅ | XGBoost / boosting mechanics | Y1 Q2 lessons 011–014 (published); Chen 2016 in index |
+| ✅ | XGBoost / boosting mechanics | Y1 Q2 lessons 011–015 (published); Chen 2016 + Ke 2017 in index |
 | ✅ | Grinsztajn three biases + benchmark protocol | Y1 Q3 lec 024–027; Y1 exit |
 | ✅ | FT-Transformer, TabNet, NODE, SAINT, ExcelFormer, Trompt | Y2 Q1 full quarter |
 | ✅ | TabR, RealMLP, TabM, TabReD, TabArena | Y2 Q2 lec 052–056 |
@@ -523,7 +523,7 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 
 ### Year 1 — Tabular foundations
 - Chen & Guestrin 2016 — XGBoost — `1603.02754` ★
-- Ke et al. 2017 — LightGBM — `1711.08251` (NeurIPS)
+- Ke et al. 2017 — LightGBM — NeurIPS 2017 (**no arXiv**; cite [NeurIPS proceedings](https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html)) — *prior index listed `1711.08251`, which is an unrelated hep-ph paper; corrected 2026-07-03*
 - Prokhorenkova et al. 2018 — CatBoost — `1706.09516`
 - Grinsztajn et al. 2022 — Why trees beat DL — `2207.08815` ★
 - Kapoor & Narayanan 2022 — Leakage & reproducibility — `2207.07048`
@@ -584,7 +584,7 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - Hu et al. 2020 — OGB — `2005.00687`
 
 ### Year 4 — Relational deep learning
-- Cvitkovic 2019 — DL on relational data — `1903.06430`
+- Cvitkovic 2019 — Supervised learning on relational DBs with GNNs — `2002.02046` (arXiv 2020)
 - RelBench beta — 2023 — `2312.04615`
 - Fey et al. 2024 — RDL position (ICML) — see PMLR v235; arXiv `2312.04615` lineage ★
 - RelBench v1 — Robinson et al. 2024 — `2407.20060` ★
@@ -682,7 +682,7 @@ Canonical ★/◆ assignments live in the [verified index](#verified-paper-index
 ### Relational — foundations & benchmarks
 | Paper | arXiv | Tier | Notes |
 |-------|-------|------|-------|
-| Cvitkovic 2019 | 1903.06430 | ◆ | Pre-RDL |
+| Cvitkovic 2019 | 2002.02046 | ◆ | Pre-RDL (arXiv 2020) |
 | Fey RDL | 2312.04615 | ★ | REG blueprint |
 | RelBench v1 | 2407.20060 | ★ | 7 DBs, 30 tasks |
 | RelBench v2 | 2602.12606 | ★ | 11 DBs, autocomplete |

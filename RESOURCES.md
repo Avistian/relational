@@ -6,8 +6,8 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
 
 - [XGBoost — Chen & Guestrin, KDD 2016](https://arxiv.org/abs/1603.02754)
   Canonical gradient boosting. Use for: the baseline every RDL result must beat fairly.
-- [LightGBM — Ke et al., NeurIPS 2017](https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree)
-  Fast tree training. Use for: large tabular baselines.
+- [LightGBM — Ke et al., NeurIPS 2017](https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html)
+  Histogram + leaf-wise growth + GOSS (§3) + EFB (§4). **No arXiv** — use the NeurIPS PDF; the official [LightGBM "Features" docs](https://lightgbm.readthedocs.io/en/latest/Features.html) are the best reference for leaf-wise growth and histogram subtraction. Use for: Lesson 015 primary reading; the fast/scalable GBDT baseline. The famous "20× faster" is vs *conventional* pre-histogram GBDT, not modern XGBoost-`hist`.
 - [CatBoost — Prokhorenkova et al., NeurIPS 2018](https://arxiv.org/abs/1706.09516)
   Ordered boosting + categoricals. Use for: high-cardinality categoricals without target leakage.
 - [Random Forests — Breiman, Machine Learning 2001](https://doi.org/10.1023/A:1010933404324)
@@ -145,13 +145,13 @@ _Optional / extension (◆):_
   MPNN framework. Use for: unified view of GNN layers.
 - [GCN — Kipf & Welling, ICLR 2017](https://arxiv.org/abs/1609.02907)
   Spectral motivation, simple propagation. Use for: first GNN implementation.
-- [GraphSAGE — Hamilton et al., NeurIPS 2017](https://arxiv.org/abs/1706.1016)
+- [GraphSAGE — Hamilton et al., NeurIPS 2017](https://arxiv.org/abs/1706.02216)
   Inductive neighbor sampling. Use for: scaling GNN training.
 - [GAT — Veličković et al., ICLR 2018](https://arxiv.org/abs/1710.10903)
   Attention over neighbors. Use for: adaptive aggregation.
 - [R-GCN — Schlichtkrull et al., ESWC 2018](https://arxiv.org/abs/1703.06103)
   Relation-specific convolutions. Use for: heterogeneous graphs; direct precursor to REG edges.
-- [HGT — Hu et al., WWW 2020](https://arxiv.org/abs/2003.01396)
+- [HGT — Hu et al., WWW 2020](https://arxiv.org/abs/2003.01332)
   Heterogeneous graph transformer. Use for: multi-type message passing at scale.
 - [TGN — Rossi et al., ICML 2020](https://arxiv.org/abs/2006.10637)
   Temporal graph networks. Use for: time-respecting relational data before RDL.
@@ -174,7 +174,7 @@ _Optional / extension (◆) — GNN pathologies & graph transformers:_
 
 ## Knowledge — Year 4 (Relational DL)
 
-- [Deep Learning on Relational Data — Cvitkovic, 2019](https://arxiv.org/abs/1903.06430)
+- [Supervised Learning on Relational Databases with GNNs — Cvitkovic, 2019](https://arxiv.org/abs/2002.02046)
   Early relational DL line. Use for: historical context.
 - [Position: Relational Deep Learning — Fey et al., ICML 2024](https://proceedings.mlr.press/v235/fey24a.html)
   REG blueprint. Use for: north-star thesis and vocabulary.
@@ -242,7 +242,7 @@ _Optional / extension (◆):_
 
 - No canonical textbook for relational foundation models — curriculum is paper-driven.
 - Proprietary FM weights (KumoRFM v1/v2) limit full reproduction; plan ablations on open components (Griffin, RDB-PFN, OpenRFM, RDBLearn).
-- Lesson HTML published through 014 (XGBoost); agent produces lessons as you progress through CURRICULUM.md rows.
+- Lesson HTML published through 015 (LightGBM); agent produces lessons as you progress through CURRICULUM.md rows.
 - Fast-moving frontier: re-run an arXiv search each quarter (sort by `submitted`) and add only papers that set SOTA, expose a failure mode, or are a baseline to beat. Full verified ID index + exhaustive registry in [CURRICULUM.md](./CURRICULUM.md#exhaustive-paper-registry-july-2026).
 - Resources are tagged **core** (the default entries) vs **◆ optional / extension** (read only after the year's core papers and lab are done). Optional papers are ~2 h skims, never a reason to skip reproduction or exit exams. Full optional index: [CURRICULUM.md → Optional / extension reading](./CURRICULUM.md).
 - **July 2026 merge:** PyTorch Frame ID corrected to `2404.00776`; TALENT to `2407.00956`. See [Research merge status](./CURRICULUM.md#research-merge-status-july-2026-deep-research-pass) for what's already solved vs newly added.

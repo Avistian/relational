@@ -99,6 +99,18 @@
 - **Desired graph (`2606.08491`):** Wins when schema-derived REG is overloaded/fragmented; filtering+injection beats raw graph. Breaks if you skip understanding Fey's default REG first — this is an optimizer on top, not a replacement for RDL vocabulary.
 - **Operational TTF (`2606.29091`):** Wins as falsifiable barrier for values-only TFMs in rule-governed DBs. Breaks if misread as "TFMs useless" — it's about **operational grounding**, not IID accuracy.
 
+## Session 17 — 2026-07-03
+
+- **Lesson 014 complete** — "lesson 14 done." Lab ≈9/10 ([[learning-records/0040-lesson-014-complete.md]]). Pre-"done" Q&A showed strong retrieval: g/h are loss derivatives w.r.t. current score F (squared: g=F−y, h=1; logistic: g=p−y, h=p(1−p)), recomputed each round and discarded at inference; thresholds from a hessian-weighted histogram; gain≤0 after γ ⇒ prune; η only in the outer update. L011 ΔG callback fully closed.
+- **New dependency:** `lightgbm` 4.6.0 installed into `.venv` + `requirements-labs.txt`.
+- **Lesson 015 published** — LightGBM (curriculum lec 015, Ke et al. 2017 NeurIPS). Histograms + subtraction, leaf-wise (best-first) growth (⇒ `num_leaves` is the primary knob, not `max_depth`), GOSS (§3), EFB (§4). New reusable `assets/growth-viz.js` (leaf-wise vs level-wise toggle + split slider; readout shows both losses so leaf-wise ≤ level-wise). Record: [[learning-records/0041-lesson-015-published.md]].
+- **Verified live (`_verify_l015.py` + executed solution):** GOSS unbiased (~30% rows, 8× amplify, mean err ≈+0.06/200 seeds); credit_g GBDT 0.879 · XGB 0.883 · **LGBM default 0.889** · LGBM tuned 0.893 (num_leaves=7); num_leaves sweep 7→0.889…127→0.884 (overfits); adult XGB 0.829 ≈ LGBM 0.831; **speed (50k×50):** sklearn GBDT 64.3s vs XGB-hist 0.58s (110×) vs LGBM 0.60s (107×) vs LGBM-goss 0.42s (152×).
+- **Honest myth-buster kept:** "20× faster" is vs *conventional pre-histogram* GBDT; modern XGBoost-`hist` is on par (mirrors L014's "untuned XGB ≈ 2016 sklearn"). GOSS is opt-in (`boosting_type='goss'`).
+- **GOSS bug caught by CHECK:** first `goss_weights` sampled `b·|rest|` (biased by (1−a)); fixed to `b·n` per Algorithm 2. Good example of the auto-feedback loop working.
+- **Currency fix:** CURRICULUM had LightGBM as arXiv `1711.08251` (actually an unrelated hep-ph paper). LightGBM has **no arXiv**; corrected to NeurIPS proceedings in CURRICULUM.md + RESOURCES.md.
+- Browser MCP unavailable again → `growth-viz.js` verified headlessly in Node (mount + gain-table logic; leaf-wise ≤ level-wise from split 3 on). Manifest regenerated (15 entries); all labs re-rendered to `labs/html/`.
+- Next: Lesson 016 (CatBoost — Prokhorenkova et al. 2018; ordered boosting + categorical handling).
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -154,6 +166,7 @@
 Track with ✓ as completed:
 
 - [x] Y1: Chen 2016 XGBoost §2 assigned in Lesson 014 (Eq 5–7 implemented in lab)
+- [x] Y1: Ke 2017 LightGBM §3 (GOSS) + §4 (EFB) assigned in Lesson 015 (GOSS implemented in lab)
 - [ ] Y1: Grinsztajn 2022
 - [ ] Y1: Fey 2024 §1
 - [x] Y1: Fey 2024 §1 assigned in Lesson 001
