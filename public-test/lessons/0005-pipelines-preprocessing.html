@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 005 — Pipelines &amp; Preprocessing</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .pipe-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .pipe-viz-intro { font-size: 0.92rem; margin: 0 0 0.75rem; }
+    .pipe-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .pipe-viz-btn {
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .pipe-viz-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .pipe-viz-row { display: flex; align-items: center; gap: 0.6rem; margin: 0.3rem 0; font-family: var(--font-sans); font-size: 0.78rem; }
+    .pipe-viz-rlabel { width: 3.5rem; color: var(--muted); flex-shrink: 0; }
+    .pipe-viz-cells { display: flex; gap: 4px; flex-wrap: wrap; }
+    .pipe-viz-cell { width: 1.1rem; height: 1.1rem; border-radius: 3px; display: inline-block; box-sizing: border-box; }
+    .pipe-viz-cell.train { background: #1a5276; }
+    .pipe-viz-cell.test { background: #922b21; }
+    .pipe-viz-cell.seen { outline: 3px solid #f4d03f; outline-offset: 1px; }
+    .pipe-viz-cell.leaked { outline-color: #e67e22; }
+    .pipe-viz-caption { font-size: 0.88rem; margin-top: 0.75rem; color: var(--muted); }
+    .legend { font-family: var(--font-sans); font-size: 0.78rem; color: var(--muted); margin: 0.5rem 0 0; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .swatch { width: 0.9rem; height: 0.9rem; border-radius: 3px; display: inline-block; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .num-table td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1</p>
+  <h1>Pipelines &amp; Preprocessing</h1>
+  <p class="subtitle">Lesson 005 · Phase 1 · ~40 min</p>
+
+  <p>
+    <a href="0004-grouped-nested-cv.html">Lesson 004</a> built the discipline that makes a
+    cross-validation number honest: keep groups whole, and never let the data that tuned a
+    model also report its score. But there is one more way the future leaks into the past, and
+    it is the most common silent bug in a "strong baseline" — <strong>preprocessing fit on
+    data the model should not have seen.</strong>
+  </p>
+
+  <p>
+    This lesson's single skill: wrap every transformation — imputation, scaling, encoding,
+    feature selection — inside an sklearn <strong><code>Pipeline</code></strong> so it is
+    refit <em>inside each fold</em>, on training rows only. Get this right and your CV
+    estimate finally measures what you claim it measures. Get it wrong and you have rebuilt
+    the Lesson 002 leak through the back door.
+  </p>
+
+  <h2>The leak you cannot see in the metric</h2>
+  <p>
+    Recall Lesson 003's split hygiene table: <em>"Fit scaler on all of <code>X</code> before
+    split."</em> Why is that wrong? A <code>StandardScaler</code> subtracts the mean and
+    divides by the standard deviation. If you compute that mean and std over the
+    <strong>whole</strong> dataset, the numbers carry information from the test rows into
+    every training row. The same is true of:
+  </p>
+  <table>
+    <thead>
+      <tr><th>Step</th><th>Statistic it learns in <code>fit</code></th><th>Leaks if fit on all data</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>StandardScaler</code></td><td>per-column mean &amp; std</td><td>test distribution</td></tr>
+      <tr><td><code>SimpleImputer</code></td><td>per-column mean / median / mode</td><td>test values fill train</td></tr>
+      <tr><td><code>OneHotEncoder</code></td><td>the set of categories</td><td>test-only categories</td></tr>
+      <tr><td><code>SelectKBest</code></td><td>which features correlate with <code>y</code></td><td>test labels pick features</td></tr>
+      <tr><td><code>PCA</code></td><td>principal axes</td><td>test geometry</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    The reason this bug is so persistent is that <strong>nothing warns you</strong>. The code
+    runs, the score prints, and the number is simply too good. You only discover it when the
+    model underperforms in production — or when a reviewer asks where your scaler was fit.
+  </p>
+
+  <h2>See it leak</h2>
+  <p>
+    Each row is one fold of a 5-fold CV. The red square is that fold's held-out test data; the
+    blue squares are training rows. A <strong>yellow ring</strong> means the preprocessing step
+    read that row when it computed its statistics. Toggle the two modes.
+  </p>
+  <div id="pipe-viz"></div>
+  <p class="legend">
+    <span><span class="swatch" style="background:#1a5276"></span>train row</span>
+    <span><span class="swatch" style="background:#922b21"></span>test row</span>
+    <span><span class="swatch" style="outline:3px solid #f4d03f; outline-offset:-2px; background:#fff"></span>seen by preprocessing</span>
+  </p>
+  <p>
+    Under <strong>"fit on all data"</strong> every test square is ringed: the transformer
+    peeked at all of them once, before the split. Under <strong>"Pipeline"</strong> no test
+    square is ever ringed — the transformer is refit fold by fold, on train only.
+  </p>
+
+  <h2>How big is the lie? A measured demo</h2>
+  <p>
+    Theory is cheap; let's measure. Take <strong>pure noise</strong> — 200 rows, 2000 random
+    features, a random binary label with <em>no</em> real relationship. Honest accuracy must be
+    about 0.5. Now select the 20 features most correlated with <code>y</code> — but do it
+    <em>before</em> cross-validation, on all the data — then CV a logistic regression on those
+    20 columns:
+  </p>
+
+  <pre>rng = np.random.RandomState(0)
+X = rng.randn(200, 2000)        # pure noise
+y = rng.randint(0, 2, 200)      # random labels
+
+# WRONG: select features on ALL data, then cross-validate
+X_sel = SelectKBest(f_classif, k=20).fit_transform(X, y)
+wrong = cross_val_score(LogisticRegression(max_iter=1000), X_sel, y, cv=cv).mean()
+
+# RIGHT: selection lives inside the pipeline, refit each fold
+pipe = make_pipeline(SelectKBest(f_classif, k=20),
+                     LogisticRegression(max_iter=1000))
+right = cross_val_score(pipe, X, y, cv=cv).mean()</pre>
+
+  <table class="num-table">
+    <thead>
+      <tr><th>Protocol</th><th>CV accuracy</th><th>Truth</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Select features on all data, then CV</td><td class="n">0.78</td><td>fiction</td></tr>
+      <tr><td>Selection inside the Pipeline</td><td class="n">0.44</td><td>≈ 0.5, honest</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Verified (sklearn 1.9):</strong> the leak invents <strong>28 points of accuracy
+    out of literally nothing</strong> — there is no signal in the data. The selector, having
+    seen all labels, picks the 20 columns that happen to correlate by chance; those columns
+    then "predict" in every fold because the choice already used the test labels. The Pipeline
+    version refits the selector per fold and collapses back to chance.
+  </div>
+
+  <p>
+    Not every step leaks this dramatically. A <code>StandardScaler</code> on a real, stable
+    dataset often shifts the score by a tiny amount, because per-column means barely move when
+    you drop one fold. That is exactly the trap: the leak is sometimes invisible in the metric,
+    so you cannot decide step-by-step whether to bother. The rule has to be unconditional —
+    <strong>everything with a <code>fit</code> goes inside the Pipeline</strong> — precisely
+    because you cannot eyeball which transforms are safe.
+  </p>
+
+  <h2>The tool: <code>Pipeline</code></h2>
+  <p>
+    A <code>Pipeline</code> chains transformers and a final estimator into one object with one
+    <code>fit</code> and one <code>predict</code>. When you hand it to <code>cross_val_score</code>
+    or <code>GridSearchCV</code>, every <code>fit</code> call refits the <em>whole chain</em>
+    on that fold's training rows, then applies it to the held-out rows. The leak becomes
+    structurally impossible.
+  </p>
+
+  <pre>from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+
+# Explicit names — needed later for hyperparameter tuning
+pipe = Pipeline([
+    ("impute", SimpleImputer(strategy="median")),
+    ("scale",  StandardScaler()),
+    ("clf",    LogisticRegression(max_iter=1000)),
+])
+
+# Or let sklearn name the steps for you
+pipe = make_pipeline(SimpleImputer(strategy="median"),
+                     StandardScaler(),
+                     LogisticRegression(max_iter=1000))
+
+scores = cross_val_score(pipe, X, y, cv=5)   # each fold refits the whole chain</pre>
+
+  <p>
+    <code>make_pipeline</code> auto-names steps in lowercase (<code>simpleimputer</code>,
+    <code>standardscaler</code>, <code>logisticregression</code>);
+    <code>Pipeline</code> lets you name them. Use explicit names when you plan to tune — the
+    names become the prefix in the parameter grid.
+  </p>
+
+  <h2>Mixed columns: <code>ColumnTransformer</code></h2>
+  <p>
+    Real tables mix numeric and categorical columns that need different treatment: impute the
+    median and scale the numbers; impute the mode and one-hot the categories.
+    <code>ColumnTransformer</code> routes each column group to its own sub-pipeline and
+    concatenates the results — all still refit per fold.
+  </p>
+
+  <pre>from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.preprocessing import OneHotEncoder
+
+numeric = Pipeline([
+    ("impute", SimpleImputer(strategy="median")),
+    ("scale",  StandardScaler()),
+])
+categorical = Pipeline([
+    ("impute", SimpleImputer(strategy="most_frequent")),
+    ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+])
+
+pre = ColumnTransformer([
+    ("num", numeric,     make_column_selector(dtype_include="number")),
+    ("cat", categorical, make_column_selector(dtype_include=object)),
+])
+
+model = Pipeline([("pre", pre), ("clf", LogisticRegression(max_iter=1000))])</pre>
+
+  <p>Two settings here are not optional, and both come from verified runs:</p>
+  <ol>
+    <li>
+      <strong><code>handle_unknown="ignore"</code></strong> on the encoder. A category that
+      appears only in a test fold would otherwise raise at <code>transform</code> time and
+      crash your CV. "Ignore" encodes the unseen category as all-zeros — the only sane choice
+      once preprocessing is correctly refit per fold (new categories <em>will</em> appear).
+    </li>
+    <li>
+      <strong><code>sparse_output=False</code></strong> if you call
+      <code>.set_output(transform="pandas")</code>. Verified on sklearn 1.9: a pandas-output
+      <code>OneHotEncoder</code> with the default sparse matrix raises
+      <em>"Pandas output does not support sparse data."</em> Set it to dense, or keep numpy
+      output.
+    </li>
+  </ol>
+
+  <div class="callout">
+    <strong>Readable feature names.</strong> Call <code>pre.set_output(transform="pandas")</code>
+    and the transformed columns come back named <code>num__a</code>, <code>cat__cat_x</code> …
+    — the <code>&lt;step&gt;__&lt;feature&gt;</code> convention. Verified: invaluable when you
+    later inspect coefficients or feature importances and need to know which engineered column
+    is which.
+  </div>
+
+  <h2>Tuning the whole pipeline</h2>
+  <p>
+    Because the pipeline is one estimator, <code>GridSearchCV</code> tunes preprocessing
+    <em>and</em> model together, addressing each parameter by
+    <code>&lt;stepname&gt;__&lt;param&gt;</code> — the double underscore. This composes directly
+    with the nested CV from Lesson 004:
+  </p>
+
+  <pre>from sklearn.model_selection import GridSearchCV
+
+param_grid = {
+    "pre__num__impute__strategy": ["median", "mean"],
+    "clf__C": [0.1, 1.0, 10.0],
+}
+search = GridSearchCV(model, param_grid, cv=5)
+search.fit(X_train, y_train)</pre>
+
+  <p>
+    Read <code>pre__num__impute__strategy</code> left to right: the <code>pre</code> step → its
+    <code>num</code> sub-pipeline → the <code>impute</code> step → its <code>strategy</code>
+    argument. Every candidate is evaluated with preprocessing refit per inner fold — there is
+    no path left for leakage.
+  </p>
+
+  <h2>Bridge to the thesis</h2>
+  <p>
+    This is not a detour from relational deep learning — it is the spine of a fair baseline.
+    When you claim an RDL model beats a tuned GBDT, the GBDT's number must come from a pipeline
+    where imputation, encoding, and any feature selection were refit on each training fold.
+    A reviewer who finds a scaler fit on the full table will discard the comparison, and they
+    will be right to.
+  </p>
+  <p>
+    There is a deeper echo, too. The aggregate features you sketched in
+    <a href="0002-design-matrix-leakage.html">Lesson 002</a> — "count of orders before time
+    <code>t</code>" — are <em>preprocessing</em>. Relational deep learning's whole pitch is to
+    <strong>learn</strong> those aggregations inside the model instead of hand-fitting them
+    outside it. The Pipeline discipline you build here is the manual version of what an
+    end-to-end relational model promises to automate. To argue the automated version is
+    undervalued, you must first be flawless at the manual one.
+  </p>
+
+  <h2>Four mistakes to catch</h2>
+  <ol>
+    <li><strong>Scaler/imputer fit before the split.</strong> Test stats leak in. Fix: put it in the <code>Pipeline</code>.</li>
+    <li><strong>Feature selection before CV.</strong> The worst offender — test labels pick features. Fix: <code>SelectKBest</code> as a pipeline step.</li>
+    <li><strong>OneHotEncoder without <code>handle_unknown="ignore"</code>.</strong> Crashes on a test-only category. Fix: ignore unknowns.</li>
+    <li><strong>Tuning preprocessing by hand outside CV.</strong> Silent leakage. Fix: put params in the grid with <code>step__param</code>.</li>
+  </ol>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read the scikit-learn
+    <a href="https://scikit-learn.org/stable/modules/compose.html#pipeline-chaining-estimators">Pipelines and composite estimators guide (§6.1)</a>
+    — at minimum the <em>Pipeline</em> and <em>ColumnTransformer</em> sections, and the note on
+    why pipelines prevent leaking test statistics. It is the canonical citation for "my
+    preprocessing was refit per fold." Skim the
+    <a href="https://scikit-learn.org/stable/auto_examples/compose/plot_column_transformer_mixed_types.html">mixed-types ColumnTransformer example</a>
+    for a full numeric+categorical template.
+  </p>
+
+  <h2>Lab — turn a leak into an honest number</h2>
+  <p>Exit ticket. In Python (notebook or script):</p>
+  <ol>
+    <li>
+      Build a small mixed-type <code>DataFrame</code>: a couple of numeric columns (inject some
+      <code>NaN</code>s) and one categorical column. Any classification label.
+    </li>
+    <li>
+      <strong>Leak it on purpose.</strong> Fit a <code>StandardScaler</code> (or
+      <code>SelectKBest</code>) on the <em>whole</em> <code>X</code>, then run
+      <code>cross_val_score</code>. Record the mean.
+    </li>
+    <li>
+      <strong>Fix it.</strong> Put the same preprocessing in a <code>Pipeline</code>
+      (use <code>ColumnTransformer</code> for the mixed columns) and
+      <code>cross_val_score</code> again. Record the mean.
+    </li>
+    <li>
+      Confirm the leaked number is <strong>≥</strong> the pipeline number, and explain in one
+      sentence which statistic leaked.
+    </li>
+    <li>
+      Bonus: wrap the pipeline in <code>GridSearchCV</code> tuning one preprocessing param
+      (e.g. <code>impute__strategy</code>) and one model param via <code>step__param</code> names.
+    </li>
+  </ol>
+
+  <p>
+    Paste your two numbers (leaked mean, pipeline mean) and the one-sentence cause, or say
+    <em>"lab done."</em> Lesson 006 (missingness taxonomy — MCAR / MAR / MNAR) assumes you can
+    build a leakage-safe mixed-type pipeline cold.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your homework <code>report.md</code> pipeline and I
+    will check whether every transform with a <code>fit</code> lives inside the CV — the same
+    audit a thesis reviewer runs first. Pairs naturally with the nested-CV audit from Lesson 004.
+  </div>
+
+  <div class="ask-teacher">
+    Stuck on <code>ColumnTransformer</code> wiring or the <code>step__param</code> grid syntax?
+    Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0004-grouped-nested-cv.html">← Lesson 004</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../reference/pipelines-preprocessing.html">Reference: Pipelines &amp; preprocessing cheat sheet</a></li>
+      <li><a href="../reference/grouped-nested-cv.html">Reference: Grouped &amp; nested CV</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/pipeline-viz.js"></script>
+<script>
+  PipelineViz.mount(document.getElementById("pipe-viz"), {
+    nSamples: 10,
+    nSplits: 5
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why fit a StandardScaler inside a Pipeline, not before CV?",
+    options: [
+      { label: "So test statistics never reach training", value: "a" },
+      { label: "Because pipelines run strictly faster", value: "b" },
+      { label: "To make every fold exactly balanced", value: "c" },
+      { label: "So the scaler can skip the test set", value: "d" }
+    ],
+    correct: "a",
+    explain: "Fit before splitting computes the mean/std over all rows, leaking the test distribution into training. A Pipeline refits per fold on train only."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Which preprocessing leak inflated noise accuracy to 0.78?",
+    options: [
+      { label: "Feature selection done before CV", value: "a" },
+      { label: "Median imputation done per fold", value: "b" },
+      { label: "One-hot encoding of categories", value: "c" },
+      { label: "Scaling features after the split", value: "d" }
+    ],
+    correct: "a",
+    explain: "Selecting features on all data lets the test labels choose columns; those chance-correlated columns then 'predict' in every fold. Inside the pipeline it collapses to chance."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "What does pre__num__impute__strategy address in a grid?",
+    options: [
+      { label: "Imputer strategy in numeric sub-pipeline", value: "a" },
+      { label: "The learning rate of the classifier", value: "b" },
+      { label: "Number of cross-validation outer folds", value: "c" },
+      { label: "Which columns count as categorical", value: "d" }
+    ],
+    correct: "a",
+    explain: "Read it step by step: the 'pre' ColumnTransformer, its 'num' sub-pipeline, the 'impute' step, its 'strategy' argument — the double underscore descends one level each time."
+  });
+</script>
+</body>
+</html>

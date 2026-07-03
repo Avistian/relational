@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Design Matrix &amp; Leakage</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .flag-bad { color: var(--wrong); font-weight: 600; }
+    .flag-ok { color: var(--correct); font-weight: 600; }
+    pre { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <h1>Design Matrix &amp; Leakage</h1>
+  <p class="subtitle">Reference · print-friendly cheat sheet</p>
+
+  <h2>Contract</h2>
+  <pre>X ∈ ℝ<sup>n×d</sup>   — n rows (examples), d columns (features)
+y ∈ ℝ<sup>n</sup>      — one label per row, same row order as X</pre>
+  <p>Every sklearn / XGBoost / tabular neural API expects this pair. Multi-table SQL must be reduced to it upstream.</p>
+
+  <h2>Leakage red flags in joins</h2>
+  <table>
+    <thead>
+      <tr><th>Pattern</th><th>Verdict</th><th>Fix</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>AVG(amount)</code> over all orders, no time cut</td>
+        <td class="flag-bad">Leaks</td>
+        <td>Filter <code>order_date ≤ t</code> per prediction time <code>t</code></td>
+      </tr>
+      <tr>
+        <td><code>COUNT(*)</code> including events after label time</td>
+        <td class="flag-bad">Leaks</td>
+        <td>Point-in-time (PIT) aggregate at <code>t</code></td>
+      </tr>
+      <tr>
+        <td>Label column (or derivative) in features</td>
+        <td class="flag-bad">Leaks</td>
+        <td>Drop target and post-outcome columns</td>
+      </tr>
+      <tr>
+        <td>Train/test split after global normalization</td>
+        <td class="flag-bad">Leaks</td>
+        <td>Fit scaler on train only; transform val/test</td>
+      </tr>
+      <tr>
+        <td><code>COUNT</code> orders in 30d window ending at <code>t</code></td>
+        <td class="flag-ok">Safe</td>
+        <td>— (if <code>t</code> is prediction time)</td>
+      </tr>
+      <tr>
+        <td>Static attributes known at signup (country, cohort)</td>
+        <td class="flag-ok">Safe</td>
+        <td>— (verify not updated retroactively)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Sanity question</h2>
+  <p>Before training: <em>Could I compute this feature at prediction time using only information that existed then?</em></p>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../lessons/0002-design-matrix-leakage.html">Lesson 002</a></li>
+      <li><a href="../index.html">Home</a></li>
+    </ul>
+  </nav>
+</article>
+</body>
+</html>

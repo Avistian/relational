@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 014 — XGBoost</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .gain-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tree-viz-intro, .tree-viz-caption { font-size: 0.88rem; margin: 0.5rem 0; }
+    .tree-viz-caption { color: var(--muted); }
+    .tree-viz-canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .algo { font-family: var(--font-mono); font-size: 0.82rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0.9rem 1.1rem; margin: 1rem 0; line-height: 1.6; }
+    .algo .step { display: block; }
+    .eq { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 1rem; margin: 0.9rem 0; text-align: center; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>XGBoost</h1>
+  <p class="subtitle">Lesson 014 · Phase 1 · ~45 min</p>
+
+  <p>
+    <a href="0013-boosting-intuition.html">Lesson 013</a> built gradient boosting by hand: fit a
+    tree to the residuals, add a shrunken slice, repeat. XGBoost (Chen &amp; Guestrin, 2016) is that
+    idea made <strong>regularized, exact, and fast</strong> — and for a decade it has been the model
+    to beat on tabular data. This lesson's single skill: <strong>explain XGBoost's regularized
+    objective and its structure-score split gain</strong>, and know which knobs (<code>λ</code>,
+    <code>γ</code>, learning rate, subsampling) control over/underfitting — then tune it on a real task.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> XGBoost keeps L013's stagewise recipe but (1) uses a
+    <em>second-order</em> (gradient <em>and</em> curvature) approximation of the loss, and (2) adds an
+    explicit <strong>regularizer</strong> on tree complexity, which yields a closed-form best leaf
+    weight and a principled split-gain that can <em>prune itself</em>.
+  </div>
+
+  <h2>From residuals to a regularized objective</h2>
+  <p>
+    Plain gradient boosting fits the negative gradient. XGBoost writes down what it is really
+    minimizing at round <em>t</em> and keeps the <strong>second-order</strong> term of the Taylor
+    expansion. For each row it needs two numbers: the gradient <code>gᵢ</code> (slope of the loss)
+    and the hessian <code>hᵢ</code> (curvature). It also adds a penalty on the tree itself:
+  </p>
+  <div class="eq">Ω(f) = γ·T + ½·λ·Σⱼ wⱼ²</div>
+  <p>
+    where <code>T</code> is the number of leaves, <code>wⱼ</code> the weight (output value) of leaf
+    <em>j</em>, <code>γ</code> a flat cost per leaf, and <code>λ</code> an L2 penalty that pulls leaf
+    weights toward zero. Regularization is no longer a side-effect of shrinkage — it is written into
+    the objective.
+  </p>
+
+  <h2>The two formulas that fall out</h2>
+  <p>
+    Because the objective is now a tidy quadratic in each leaf's weight, the best weight has a
+    <strong>closed form</strong>. Let <code>Gⱼ = Σ gᵢ</code> and <code>Hⱼ = Σ hᵢ</code> be the sums
+    of gradients and hessians of the rows landing in leaf <em>j</em>:
+  </p>
+  <div class="eq">wⱼ* = − Gⱼ / (Hⱼ + λ)</div>
+  <p>
+    Plugging that back in, a fixed tree structure has a <strong>structure score</strong> (lower is
+    better) whose per-leaf term <code>Gⱼ²/(Hⱼ+λ)</code> measures how useful that leaf is. Deciding
+    whether to split a node is then just: does splitting improve the score more than it costs?
+  </p>
+  <div class="eq">Gain = ½ [ G<sub>L</sub>²/(H<sub>L</sub>+λ) + G<sub>R</sub>²/(H<sub>R</sub>+λ) − (G<sub>L</sub>+G<sub>R</sub>)²/(H<sub>L</sub>+H<sub>R</sub>+λ) ] − γ</div>
+
+  <div class="callout">
+    <strong>Callback — Lesson 011.</strong> Recognize the shape? This is exactly the
+    <em>ΔG = children − parent</em> logic from decision-tree splits, just measured in
+    <code>G²/(H+λ)</code> instead of Gini. The bracket is <strong>left child quality + right child
+    quality − parent quality</strong>; the <code>−γ</code> is a toll. If the children don't beat the
+    parent by more than <code>γ</code>, the gain is negative and XGBoost <strong>doesn't make the
+    split</strong>. That is built-in pruning.
+  </div>
+
+  <h2>Feel the regularizers</h2>
+  <p>
+    A candidate split sends fixed gradient/hessian statistics into a left and right leaf. Drag
+    <code>λ</code> and watch every leaf weight and every score shrink toward zero — that is L2
+    regularization. Drag <code>γ</code> up: it lifts a red toll line, and once <code>γ</code> exceeds
+    the raw gain the verdict flips to <strong>PRUNED</strong>. These are the same two numbers the lab
+    computes by hand and checks against XGBoost's own leaf outputs.
+  </p>
+  <div id="gain-viz"></div>
+
+  <h2>Why XGBoost actually won (it isn't just the math)</h2>
+  <p>
+    The regularized objective is elegant, but XGBoost's dominance came as much from
+    <strong>systems and algorithmic</strong> engineering. Four pieces matter for you:
+  </p>
+  <ul>
+    <li><strong>Sparsity-aware split finding.</strong> Every split learns a <em>default direction</em>
+      for missing values from the data itself — a direct, learned answer to the
+      <a href="0006-missingness-taxonomy.html">missingness</a> problem of Lesson 006. No imputation
+      required; missing is a first-class citizen.</li>
+    <li><strong>Weighted quantile sketch.</strong> Instead of testing every threshold, it proposes
+      candidate split points from a hessian-weighted histogram — this is what makes it scale to
+      millions of rows (and it's what sklearn's <code>HistGradientBoosting</code> and LightGBM also do).</li>
+    <li><strong>Column &amp; row subsampling.</strong> Borrowed from
+      <a href="0012-bagging-random-forest.html">Random Forests</a> (L012): sample features/rows per
+      tree to decorrelate and regularize.</li>
+    <li><strong>Shrinkage (learning rate).</strong> The same <code>η</code> knob from L013 — small
+      steps, many trees.</li>
+  </ul>
+
+  <h2>The knobs that matter (and what they do)</h2>
+  <table>
+    <thead><tr><th>Knob</th><th>Effect</th><th>Push it when</th></tr></thead>
+    <tbody>
+      <tr><td><code>learning_rate</code> (η)</td><td>Step size per tree</td><td>Lower + more <code>n_estimators</code> to generalize better</td></tr>
+      <tr><td><code>max_depth</code></td><td>Interaction order per tree</td><td>Lower (2–4) to fight overfitting on noisy data</td></tr>
+      <tr><td><code>reg_lambda</code> (λ)</td><td>L2 on leaf weights</td><td>Raise to shrink confident leaves</td></tr>
+      <tr><td><code>gamma</code> (γ)</td><td>Min gain to make a split</td><td>Raise to prune aggressively</td></tr>
+      <tr><td><code>min_child_weight</code></td><td>Min hessian (≈ rows) per leaf</td><td>Raise to stop tiny, noisy leaves</td></tr>
+      <tr><td><code>subsample</code> / <code>colsample_bytree</code></td><td>Row / column sampling</td><td>Lower (0.7–0.9) to decorrelate trees</td></tr>
+    </tbody>
+  </table>
+
+  <h2>On our data</h2>
+  <p>
+    Verified with the <code>relkit</code> harness (5-fold CV PR-AUC). The by-hand leaf weight
+    <em>exactly</em> reproduces XGBoost's internal leaf output — the formula above is not an
+    analogy, it's the implementation:
+  </p>
+  <table>
+    <thead><tr><th>Check</th><th>By hand</th><th>XGBoost</th></tr></thead>
+    <tbody>
+      <tr><td>Leaf weight <code>−G/(H+λ)</code>, λ=3 (L / R)</td><td class="n">−0.480 / +3.095</td><td class="n win">−0.480 / +3.095</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Model (credit_g, n=1,000)</th><th>CV PR-AUC</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>sklearn GBDT (L013 config)</td><td class="n">0.879</td><td>where we left off in L013</td></tr>
+      <tr><td>XGBoost, defaults</td><td class="n">0.883</td><td>≈ tie out of the box</td></tr>
+      <tr><td>XGBoost, tuned (40-iter random search)</td><td class="n win">0.896</td><td>depth 4, η 0.02, λ 10, subsample 0.7</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Two honest lessons here. First, on 1,000 noisy rows XGBoost's out-of-the-box edge over sklearn is
+    small — the <a href="0012-bagging-random-forest.html">Random Forest's</a> 0.901 from L012 is
+    <em>still competitive</em>. The win comes from <strong>tuning</strong> (+0.017), and tuning is a
+    cost you must pay honestly. Second, the tuned config leans on regularization (λ=10, shallow trees,
+    row subsampling) precisely because the data is small and noisy — exactly what the formulas above
+    predict.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> A properly tuned XGBoost is <em>the</em> single-table baseline
+    the relational thesis must beat fairly (Grinsztajn 2022; the whole point of Year 1). "We beat a
+    default XGBoost" is not a result — defaults were nearly matched by 2016-era sklearn. When a
+    relational model later wins, it must win against a <strong>tuned</strong> booster, and the win has
+    to come from <em>structure the GBDT cannot see across joins</em>, not from a lazy baseline.
+  </div>
+
+  <h2>Where XGBoost breaks (know this too)</h2>
+  <ul>
+    <li>Needs tuning to shine; untuned it's only a hair above sklearn's GBDT (see table).</li>
+    <li>No free lunch on tiny, noisy data — a Random Forest can tie or win (L012/L013).</li>
+    <li>Can overfit without <code>λ</code>/<code>γ</code>/early-stopping, especially deep trees.</li>
+    <li>Still a <em>single-table</em> model: it never sees relational structure you didn't hand-engineer.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Chen &amp; Guestrin (2016), <em>XGBoost: A Scalable Tree Boosting System</em> (KDD) — read
+    <strong>§2 (regularized objective, structure score, split gain)</strong> carefully; skim §3
+    (sparsity-aware split finding) and §4 (systems). Focus on Equations 5–7: the leaf weight, the
+    structure score, and the gain formula you'll implement in the lab.
+  </p>
+
+  <h2>Lab — XGBoost from the formula up</h2>
+  <p>
+    Notebook <code>0014-xgboost.ipynb</code> (paper-reproduction structure): implement the
+    regularized leaf weight and structure-score gain <strong>by hand</strong> and check them against
+    XGBoost's own leaf outputs; then fit XGBoost via <code>relkit</code>, tune it with a small random
+    search, and honestly compare to the L013 baseline — matching the numbers in the table above.
+    <a href="../labs/html/0014-xgboost.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why the hessian shows up in the denominator, or how γ prunes a split? Ask your teacher in
+    Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0013-boosting-intuition.html">← Lesson 013</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0014-xgboost.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/gain-viz.js"></script>
+<script>
+  GainViz.mount(document.getElementById("gain-viz"), {
+    gL: -8, hL: 10, gR: 12, hR: 10, lambda: 1, gamma: 0,
+    caption: "λ shrinks leaf weights and scores; γ is a flat toll per split — raise it past the raw gain and the split is pruned."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "In XGBoost, the optimal weight of a leaf is:",
+    options: [
+      { label: "−G / (H + λ)", value: "a" },
+      { label: "The mean label in the leaf", value: "b" },
+      { label: "G × H, scaled by γ", value: "c" },
+      { label: "The majority class vote", value: "d" }
+    ],
+    correct: "a",
+    explain: "Minimizing the regularized quadratic objective gives the closed form w* = −G/(H+λ) — sum of gradients over sum of hessians plus the L2 penalty."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Raising γ (gamma) makes XGBoost:",
+    options: [
+      { label: "Prune more splits (need bigger gain)", value: "a" },
+      { label: "Take larger learning steps", value: "b" },
+      { label: "Fit deeper, larger trees", value: "c" },
+      { label: "Ignore missing values entirely", value: "d" }
+    ],
+    correct: "a",
+    explain: "γ is a flat cost per split; a split survives only if its gain exceeds γ, so larger γ prunes more aggressively."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "XGBoost handles missing values by:",
+    options: [
+      { label: "Learning a default direction per split", value: "a" },
+      { label: "Dropping any row with a gap", value: "b" },
+      { label: "Always imputing the column median", value: "c" },
+      { label: "Refusing to train on sparse data", value: "d" }
+    ],
+    correct: "a",
+    explain: "Sparsity-aware split finding sends missing values to whichever branch maximizes gain — a learned default direction, no imputation needed."
+  });
+</script>
+</body>
+</html>

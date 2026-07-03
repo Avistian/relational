@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 008 — Metrics: ROC vs PR &amp; Calibration</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .rel-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .rel-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .rel-viz-btn { font-family: var(--font-sans); font-size: 0.85rem; padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; }
+    .rel-viz-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .rel-viz-svg { width: 100%; max-width: 340px; height: auto; display: block; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .rel-axis { stroke: #999; stroke-width: 1; }
+    .rel-diag { stroke: #bbb; stroke-width: 1.5; stroke-dasharray: 4 3; }
+    .rel-path { fill: none; stroke-width: 2; }
+    .rel-path.raw { stroke: #922b21; }
+    .rel-path.calibrated { stroke: #1e6b3c; }
+    .rel-dot { stroke: #fff; stroke-width: 1; }
+    .rel-dot.raw { fill: #922b21; }
+    .rel-dot.calibrated { fill: #1e6b3c; }
+    .rel-lbl { font-family: var(--font-sans); font-size: 11px; fill: var(--muted); }
+    .rel-viz-caption { font-size: 0.9rem; margin-top: 0.75rem; color: var(--muted); min-height: 3.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .num-table td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1</p>
+  <h1>Metrics: ROC vs PR &amp; Calibration</h1>
+  <p class="subtitle">Lesson 008 · Phase 1 · ~40 min</p>
+
+  <p>
+    <a href="0007-class-imbalance.html">Lesson 007</a> told you to stop trusting accuracy and
+    lead with PR-AUC. This lesson makes that precise, and then separates two things almost
+    everyone conflates: <strong>how well a model ranks</strong> (ROC, PR) versus
+    <strong>whether its probabilities can be believed</strong> (calibration). A model can ace
+    the first and fail the second — and for a deployed risk score, the second is what bites you.
+  </p>
+
+  <p>
+    This lesson's single skill: <strong>choose and read the right evaluation curve for the
+    question, and check (then fix) calibration</strong> with a reliability curve and the Brier
+    score.
+  </p>
+
+  <h2>Two curves, two questions</h2>
+  <table>
+    <thead><tr><th>Curve</th><th>Axes</th><th>Answers</th><th>No-skill baseline</th></tr></thead>
+    <tbody>
+      <tr><td><strong>ROC</strong></td><td>TPR vs FPR</td><td>how well does it <em>rank</em> positives above negatives?</td><td>0.5, always</td></tr>
+      <tr><td><strong>PR</strong></td><td>Precision vs Recall</td><td>at a given recall, how clean are the positive calls?</td><td><em>prevalence</em> (the positive rate)</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The baseline column is the whole point. A useless model scores ROC-AUC 0.5 no matter how
+    rare the positives are — but its PR-AUC floor <em>is the prevalence</em>. So on a 2% positive
+    problem, "PR-AUC 0.30" is real skill (15× the baseline) while "ROC-AUC 0.80" might be
+    mediocre. ROC's false-positive-rate denominator is dominated by the huge negative class, so
+    it stays optimistic when negatives swamp positives
+    (<a href="https://doi.org/10.1371/journal.pone.0118432">Saito &amp; Rehmsmeier 2015</a>).
+  </p>
+
+  <div class="callout">
+    <strong>Verified (sklearn 1.9, 17.7% positive, RandomForest):</strong>
+    ROC-AUC <strong>0.863</strong> vs PR-AUC <strong>0.720</strong>, with a PR no-skill baseline
+    of <strong>0.177</strong>. Same model, same predictions — ROC just reads higher because its
+    denominator is rich in easy true negatives. Report the PR/average-precision number on
+    rare-positive tasks, and always state the prevalence so the baseline is visible.
+  </div>
+
+  <p>
+    Use <strong>ROC-AUC</strong> when you care about ranking quality across the whole range and
+    classes are roughly balanced; use <strong>PR-AUC / average precision</strong> (and MAP for
+    ranking tasks) when positives are rare and you act on the top of the ranked list. They can
+    even disagree on which model is better
+    (<a href="https://doi.org/10.1145/1143844.1143874">Davis &amp; Goadrich 2006</a>) — pick the
+    one that matches how the model will be used.
+  </p>
+
+  <h2>Ranking is not the same as trustworthy probabilities</h2>
+  <p>
+    AUROC and AUPRC only care about <em>order</em>. A model that outputs 0.51 for every positive
+    and 0.49 for every negative ranks perfectly and has AUROC 1.0 — yet none of those numbers are
+    real probabilities. The moment you <em>act on the probability</em> — threshold a fraud score,
+    multiply a churn probability by customer value, feed risk into a downstream decision — you
+    need <strong>calibration</strong>: when the model says 0.7, the event should happen about 70%
+    of the time.
+  </p>
+
+  <h2>The reliability curve</h2>
+  <p>
+    To check calibration, bin predictions and plot the <em>mean predicted probability</em>
+    against the <em>observed frequency</em> in each bin. Perfect calibration lies on the
+    diagonal. Toggle a raw model vs its calibrated version:
+  </p>
+  <div id="rel-viz"></div>
+  <p>
+    This is the textbook distortion of an out-of-the-box <strong>RandomForest</strong>: variance
+    in the averaged trees pushes predictions away from 0 and 1, so the curve bows off the
+    diagonal — at a predicted 0.55 the event actually occurs ~72% of the time
+    (<a href="https://www.cs.cornell.edu/~alexn/papers/calibration.icml05.crc.rev3.pdf">Niculescu-Mizil &amp; Caruana 2005</a>).
+    Boosted trees and SVMs show the same sigmoid; logistic regression is usually close to
+    calibrated already.
+  </p>
+
+  <h2>One number for calibration: the Brier score</h2>
+  <p>
+    The <strong>Brier score</strong> is the mean squared error between predicted probability and
+    the 0/1 outcome — lower is better. It is a <em>proper scoring rule</em>: it rewards
+    probabilities that are both well-ranked and well-calibrated, so it's the single number to
+    track when probabilities matter.
+  </p>
+  <table class="num-table">
+    <thead><tr><th>RandomForest probabilities</th><th>Brier (↓)</th></tr></thead>
+    <tbody>
+      <tr><td>raw</td><td class="n">0.0898</td></tr>
+      <tr><td>Platt / sigmoid calibration</td><td class="n">0.0856</td></tr>
+      <tr><td>isotonic calibration</td><td class="n">0.0853</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>Verified.</strong> Calibrating the same forest lowered Brier from 0.0898 to 0.0853
+    <em>without retraining the ranker</em> — AUROC is unchanged, the probabilities just moved
+    onto the diagonal. Small absolute numbers (most cases are easy negatives), but the mid-range
+    is exactly where decisions live.
+  </div>
+
+  <h2>The fix: <code>CalibratedClassifierCV</code></h2>
+  <p>
+    Two standard mappings turn scores into calibrated probabilities:
+    <strong>sigmoid (Platt scaling)</strong> — fit a 1-parameter logistic, great for the sigmoid
+    distortion of trees/SVMs and robust on small data; and <strong>isotonic</strong> — fit a
+    monotonic step function, more flexible but needs more data or it overfits.
+  </p>
+  <pre>from sklearn.calibration import CalibratedClassifierCV, calibration_curve
+from sklearn.metrics import brier_score_loss
+
+cal = CalibratedClassifierCV(RandomForestClassifier(), method="sigmoid", cv=5)
+cal.fit(X_train, y_train)                       # calibrates on held-out inner folds
+p = cal.predict_proba(X_test)[:, 1]
+
+brier = brier_score_loss(y_test, p)
+frac_pos, mean_pred = calibration_curve(y_test, p, n_bins=10)   # the reliability curve</pre>
+  <p>
+    The <code>cv</code> argument matters: <code>CalibratedClassifierCV</code> fits the calibrator
+    on data the base model didn't train on, the same leak-free instinct as Lesson 005. Calibrate
+    on the training set via internal CV, then report Brier and the reliability curve on the
+    untouched test set.
+  </p>
+
+  <h2>Bridge to the thesis</h2>
+  <p>
+    Metrics are how the thesis will be won or lost on paper. Three consequences:
+  </p>
+  <ul>
+    <li>
+      <strong>Match the metric to the RelBench task.</strong> Entity classification (churn,
+      fraud) and recommendation/link prediction are rare-positive and top-of-list — report
+      AUPRC / MAP with the prevalence stated, not accuracy or bare AUROC. The leaderboards do
+      this for a reason.
+    </li>
+    <li>
+      <strong>A better AUROC is not automatically a better model.</strong> If your RDL model
+      wins on AUROC but the baseline wins on AUPRC at the operating recall, say so — that's the
+      honest-limitations posture the mission demands.
+    </li>
+    <li>
+      <strong>Deployed relational scores must be calibrated.</strong> A churn probability that
+      feeds an expected-value calculation, or a fraud score with a cost threshold, is useless if
+      0.7 doesn't mean 70%. GBDTs and GNNs are both frequently mis-calibrated; calibrating and
+      reporting Brier is part of a baseline a skeptic will accept.
+    </li>
+  </ul>
+
+  <h2>Four mistakes to catch</h2>
+  <ol>
+    <li><strong>Reporting AUROC alone on rare positives.</strong> It hides the prevalence baseline. Fix: lead with AUPRC/MAP and state the positive rate.</li>
+    <li><strong>Treating ranking scores as probabilities.</strong> AUROC says nothing about calibration. Fix: reliability curve + Brier.</li>
+    <li><strong>Calibrating on the test set.</strong> Leaks the answer. Fix: <code>CalibratedClassifierCV(cv=...)</code> on train, evaluate on test.</li>
+    <li><strong>Isotonic on tiny data.</strong> Overfits the calibration map. Fix: prefer sigmoid when data is limited.</li>
+  </ol>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read Saito &amp; Rehmsmeier,
+    <a href="https://doi.org/10.1371/journal.pone.0118432"><em>The Precision-Recall Plot Is More
+    Informative than the ROC Plot…</em> (PLOS ONE 2015)</a> — focus on why ROC misleads under
+    imbalance and what the PR baseline is. Then skim scikit-learn's
+    <a href="https://scikit-learn.org/stable/modules/calibration.html">Probability calibration
+    guide (§1.16)</a> for reliability curves, sigmoid vs isotonic, and the Brier score. The
+    deeper calibration reference is
+    <a href="https://www.cs.cornell.edu/~alexn/papers/calibration.icml05.crc.rev3.pdf">Niculescu-Mizil &amp; Caruana 2005</a>.
+  </p>
+
+  <h2>Lab — read the curves, fix the probabilities</h2>
+  <p>
+    Notebook with blanks:
+    <a href="../labs/0008-metrics-calibration.ipynb"><code>labs/0008-metrics-calibration.ipynb</code></a>
+    (kernel <strong>Relational Labs (.venv)</strong>). You will:
+  </p>
+  <ol>
+    <li>On an imbalanced dataset, compute <strong>ROC-AUC and PR-AUC</strong> for one model and compare PR-AUC to the <strong>prevalence baseline</strong>.</li>
+    <li>Plot the <strong>reliability curve</strong> of a RandomForest and read off the distortion.</li>
+    <li>Calibrate it with <code>CalibratedClassifierCV</code> and show the <strong>Brier score drops</strong> while AUROC stays put.</li>
+    <li>Print the exit ticket: ROC-AUC vs PR-AUC (with prevalence), Brier raw-vs-calibrated, and a one-sentence cause.</li>
+  </ol>
+  <p>
+    Paste the exit-ticket output here, or say <em>"lab done."</em> Lesson 009 (feature
+    engineering) starts the build toward your Q1 reproducible-baseline checkpoint.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring a model's predicted scores and we'll decide together
+    whether to report ROC or PR, and whether it needs calibrating before anyone acts on the
+    numbers — the same two questions a RelBench write-up forces.
+  </div>
+
+  <div class="ask-teacher">
+    Stuck on the PR baseline or <code>CalibratedClassifierCV</code>? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0007-class-imbalance.html">← Lesson 007</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../labs/0008-metrics-calibration.ipynb">Lab notebook: 0008-metrics-calibration.ipynb</a></li>
+      <li><a href="../reference/metrics-calibration.html">Reference: Metrics &amp; calibration cheat sheet</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/reliability-viz.js"></script>
+<script>
+  ReliabilityViz.mount(document.getElementById("rel-viz"));
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "On a 2% positive task, what is the no-skill PR-AUC baseline?",
+    options: [
+      { label: "About 0.02, the positive prevalence", value: "a" },
+      { label: "Always 0.5 regardless of prevalence", value: "b" },
+      { label: "Exactly 1.0 minus the prevalence", value: "c" },
+      { label: "Zero, since no positives are found", value: "d" }
+    ],
+    correct: "a",
+    explain: "A PR curve's no-skill floor is the positive rate; ROC's floor is always 0.5. So PR-AUC must be read against prevalence."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "A model has AUROC 0.99 but a bowed reliability curve. It is:",
+    options: [
+      { label: "A good ranker that is poorly calibrated", value: "a" },
+      { label: "A poor ranker that is well calibrated", value: "b" },
+      { label: "Both poorly ranked and miscalibrated", value: "c" },
+      { label: "Impossible — AUROC implies calibration", value: "d" }
+    ],
+    correct: "a",
+    explain: "AUROC measures only ranking. High AUROC with an off-diagonal reliability curve means good order but untrustworthy probabilities."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why pass cv to CalibratedClassifierCV instead of reusing train fits?",
+    options: [
+      { label: "To calibrate on data the model didn't train on", value: "a" },
+      { label: "To make the calibrator run much faster", value: "b" },
+      { label: "To improve the model's ranking AUROC", value: "c" },
+      { label: "To balance the classes before fitting", value: "d" }
+    ],
+    correct: "a",
+    explain: "Calibrating on the same rows the base model trained on leaks and gives over-confident maps; the cv folds fit the calibrator on held-out data."
+  });
+</script>
+</body>
+</html>

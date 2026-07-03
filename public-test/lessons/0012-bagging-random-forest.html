@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 012 — Bagging &amp; Random Forest</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .ensemble-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tree-viz-intro, .tree-viz-caption { font-size: 0.88rem; margin: 0.5rem 0; }
+    .tree-viz-caption { color: var(--muted); }
+    .tree-viz-canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>Bagging &amp; Random Forest</h1>
+  <p class="subtitle">Lesson 012 · Phase 1 · ~40 min</p>
+
+  <p>
+    <a href="0011-decision-trees-partitions.html">Lesson 011</a> showed a single tree carves
+    feature space into axis-aligned rectangles. Grow that tree deep and it fits the training set
+    almost perfectly — but it is <strong>high-variance</strong>: reshuffle a few rows and the
+    splits jump around. This lesson's single skill: <strong>explain how averaging many
+    decorrelated trees turns a high-variance learner into a stable one</strong>, and know what a
+    Random Forest adds on top of plain bagging.
+  </p>
+
+  <div class="callout">
+    <strong>Bias vs variance, in one line.</strong> A deep tree has <em>low bias, high
+    variance</em>. <strong>Bagging</strong> attacks the variance by averaging; <strong>boosting</strong>
+    (Lesson 013) attacks the bias by correcting residuals. Same building block — the tree — two
+    different failure modes to fix.
+  </div>
+
+  <h2>Bagging = Bootstrap AGGregatING</h2>
+  <p>
+    Train <code>B</code> trees, each on a <strong>bootstrap sample</strong> (draw <code>n</code> rows
+    <em>with replacement</em> from the <code>n</code> training rows). Predict by averaging their
+    probabilities (or voting). If the trees were perfectly independent, averaging <code>B</code> of
+    them cuts variance by roughly <code>1/B</code> while leaving bias unchanged
+    (Breiman 1996). The catch: bootstrap trees are <em>correlated</em>, so the real reduction is
+    smaller — which is exactly the gap Random Forest closes.
+  </p>
+
+  <h2>See variance collapse</h2>
+  <p>
+    Each faint gray line is one high-variance tree fit to a bootstrap sample; the bold blue line is
+    their average; the dashed green line is the true function. Drag to add trees and watch the
+    average steady toward the target while each individual tree stays jagged.
+  </p>
+  <div id="ensemble-viz"></div>
+
+  <h2>Random Forest = bagging + feature subsampling</h2>
+  <p>
+    Bagged trees are still correlated because the strongest feature tends to win the top split in
+    <em>every</em> tree. Random Forest (Breiman 2001) breaks that correlation: at <strong>each
+    split</strong>, only a random subset of features is considered (often <code>√p</code> for
+    classification). Decorrelated trees average better, so the variance drop is larger than plain
+    bagging for the same <code>B</code>.
+  </p>
+  <ul>
+    <li><strong>Bootstrap rows</strong> → diversity across trees (bagging).</li>
+    <li><strong>Random feature subset per split</strong> → decorrelation (the "random" in forest).</li>
+    <li><strong>Average / vote</strong> → variance reduction without adding bias.</li>
+  </ul>
+
+  <h2>Out-of-bag (OOB) error — free validation</h2>
+  <p>
+    A bootstrap sample leaves out ~<strong>37%</strong> of rows on average
+    (<code>(1 − 1/n)<sup>n</sup> → e<sup>−1</sup> ≈ 0.368</code>). Each row is "out-of-bag" for the
+    trees that never saw it, so you can score it with exactly those trees. The averaged OOB score is
+    a nearly-free validation estimate — no separate fold needed. Treat it as a convenience, not a
+    replacement for the leak-free CV spine you built in Q1.
+  </p>
+
+  <h2>On our data</h2>
+  <p>
+    Verified on OpenML German credit (<code>credit_g</code>, prevalence 0.700) with the
+    <code>relkit</code> harness — 5-fold PR-AUC:
+  </p>
+  <table>
+    <thead><tr><th>Model</th><th>CV PR-AUC</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Prevalence baseline</td><td class="n">0.700</td><td>positive rate = floor</td></tr>
+      <tr><td>Single deep tree</td><td class="n">0.757</td><td>high variance, barely above floor</td></tr>
+      <tr><td>Random Forest (300)</td><td class="n win">0.901</td><td>OOB accuracy 0.754</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The variance proxy is stark: the per-row std of a single tree's predicted probability was
+    <strong>0.270</strong>; averaging just 10 trees dropped it to <strong>0.068</strong> — the same
+    <code>~1/B</code> collapse the viz shows. You reproduce these numbers in the lab.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> Random Forest is a second honest baseline — but on tabular data
+    the <em>boosted</em> GBDT you built in Q1 (and XGBoost in Lesson 014) usually beats RF, because
+    boosting reduces bias where bagging only reduces variance (Grinsztajn 2022). RF is the control
+    that proves the win in Lesson 013 is about <em>boosting</em>, not just "more trees."
+  </div>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Breiman (2001), <em>Random Forests</em>, <em>Machine Learning</em> 45(1) — skim §1–2 and the
+    OOB discussion. Focus on <strong>why decorrelation</strong> (feature subsampling) improves the
+    averaged estimator; skip the convergence proofs for now.
+  </p>
+
+  <h2>Lab — RF vs a single tree</h2>
+  <p>
+    Notebook <code>0012-bagging-random-forest.ipynb</code> (Tier A · <code>credit_g</code> via
+    <code>relkit</code>): score a single deep tree and a Random Forest with the shared CV harness,
+    read the OOB estimate, and measure the variance drop from averaging.
+    <a href="../labs/html/0012-bagging-random-forest.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Fuzzy on why decorrelation matters, or how OOB rows are chosen? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0011-decision-trees-partitions.html">← Lesson 011</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0012-bagging-random-forest.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/ensemble-viz.js"></script>
+<script>
+  EnsembleViz.mount(document.getElementById("ensemble-viz"), {
+    maxTrees: 40,
+    caption: "Illustrative 1-D fit — the lab measures the same variance drop on real credit data."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Bagging mainly reduces a model's:",
+    options: [
+      { label: "Variance, by averaging models", value: "a" },
+      { label: "Bias, by correcting residuals", value: "b" },
+      { label: "Feature count, by selection", value: "c" },
+      { label: "Training time, by sampling", value: "d" }
+    ],
+    correct: "a",
+    explain: "Averaging many high-variance trees stabilizes predictions; bias is largely unchanged."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "The 'random' in Random Forest refers to:",
+    options: [
+      { label: "A feature subset per split", value: "a" },
+      { label: "A random label per leaf", value: "b" },
+      { label: "A random depth per tree", value: "c" },
+      { label: "A random metric per fold", value: "d" }
+    ],
+    correct: "a",
+    explain: "Sampling features at each split decorrelates the trees, so their average reduces variance more."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Out-of-bag rows are useful because they:",
+    options: [
+      { label: "Were unseen by some trees", value: "a" },
+      { label: "Are the hardest to classify", value: "b" },
+      { label: "Have no missing values ever", value: "c" },
+      { label: "Belong to the test set only", value: "d" }
+    ],
+    correct: "a",
+    explain: "~37% of rows are left out of each bootstrap; scoring them on the trees that missed them gives free validation."
+  });
+</script>
+</body>
+</html>

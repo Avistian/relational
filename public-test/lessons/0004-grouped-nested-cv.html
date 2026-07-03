@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 004 — Grouped &amp; Nested CV</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .group-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .group-viz-intro { font-size: 0.92rem; margin: 0 0 0.75rem; }
+    .group-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .group-viz-btn {
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .group-viz-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .group-viz-row { display: flex; align-items: center; gap: 0.6rem; margin: 0.3rem 0; font-family: var(--font-sans); font-size: 0.78rem; }
+    .group-viz-glabel { width: 4.5rem; color: var(--muted); flex-shrink: 0; }
+    .group-viz-cells { display: flex; gap: 3px; flex: 1; }
+    .group-viz-cell { width: 1.05rem; height: 1.05rem; border-radius: 3px; display: inline-block; }
+    .group-viz-flag { width: 3.5rem; text-align: right; flex-shrink: 0; font-weight: 600; }
+    .group-viz-flag.leak { color: var(--wrong); }
+    .group-viz-flag.safe { color: var(--correct); }
+    .group-viz-caption { font-size: 0.88rem; margin-top: 0.75rem; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .loop-diagram {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.85rem 1rem;
+      overflow-x: auto;
+      line-height: 1.55;
+      margin: 1rem 0;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1</p>
+  <h1>Grouped &amp; Nested Cross-Validation</h1>
+  <p class="subtitle">Lesson 004 · Phase 1 · ~40 min</p>
+
+  <p>
+    <a href="0003-train-valid-test-cv.html">Lesson 003</a> ended on a warning: standard
+    K-fold assumes rows are <strong>i.i.d.</strong> — independent draws from one
+    distribution. You already use grouped CV in your pipelines, so this lesson is not about
+    convincing you that groups matter. It is about making two failure modes precise, naming
+    the exact sklearn tools, and adding the one technique that separates a tuned number from
+    an <em>honest</em> tuned number: <strong>nested CV</strong>.
+  </p>
+
+  <p>
+    Both failures share a root cause from Lesson 002: information that should be unseen at
+    scoring time bleeds in. There, it bled through <em>features</em>. Here, it bleeds through
+    <em>rows</em> (the same group in train and test) and through <em>the tuning procedure
+    itself</em> (the data that picked the hyperparameters also reports the score).
+  </p>
+
+  <h2>Failure 1 — the i.i.d. assumption breaks</h2>
+  <p>
+    K-fold shuffles rows and deals them into folds as if each row were an independent example.
+    Real relational data violates this constantly, because one entity produces many rows:
+  </p>
+  <table>
+    <thead>
+      <tr><th>Entity (group)</th><th>Many rows because…</th><th>Task</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Customer</td><td>many orders / sessions</td><td>churn, LTV</td></tr>
+      <tr><td>Patient</td><td>repeated visits / labs</td><td>diagnosis, readmission</td></tr>
+      <tr><td>Store</td><td>one row per day</td><td>demand forecasting</td></tr>
+      <tr><td>User–item</td><td>repeated interactions</td><td>recommendation</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    When the same customer appears in both train and test, the model can learn
+    <strong>group-specific shortcuts</strong> — “customer #5012 churns” — instead of a
+    generalizable pattern. The test fold then rewards memorization. The
+    <a href="https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data">scikit-learn guide (§3.1.2.4)</a>
+    states the fix plainly:
+  </p>
+
+  <div class="callout">
+    <strong>scikit-learn:</strong> “<em>GroupKFold</em> is a variation of K-fold which ensures
+    that the same group is not represented in both testing and training sets… if the model is
+    flexible enough to learn from highly person-specific features it could fail to generalize
+    to new subjects. GroupKFold makes it possible to detect this kind of overfitting.”
+  </div>
+
+  <h2>See the leak</h2>
+  <p>
+    Each row below is a group (a customer); each square is one of their samples (orders).
+    Color = assigned fold. Toggle the modes. Under <strong>random K-fold</strong>, a group's
+    squares scatter into different folds — that group is in both train and test. Under
+    <strong>GroupKFold</strong>, every group is a single color: atomic, never split.
+  </p>
+  <div id="group-viz"></div>
+
+  <h2>The tool: <code>GroupKFold</code></h2>
+  <p>
+    You pass a <code>groups</code> array — one group id per row — and sklearn keeps every
+    group whole:
+  </p>
+
+  <pre>from sklearn.model_selection import GroupKFold, cross_val_score
+
+gkf = GroupKFold(n_splits=5)
+scores = cross_val_score(clf, X, y, groups=customer_id, cv=gkf)
+print(f"{scores.mean():.3f} ± {scores.std():.3f}")</pre>
+
+  <p>Three things that bite people:</p>
+  <ol>
+    <li>
+      <strong>You must pass <code>groups</code>.</strong> Calling <code>gkf.split(X, y)</code>
+      without it raises <em>“The groups parameter should not be None.”</em>
+      <code>train_test_split</code> spoils you — group splitters never assume.
+    </li>
+    <li>
+      <strong>Folds are not equal-sized.</strong> Groups have different row counts, so folds
+      differ in size. That is correct behavior, not a bug.
+    </li>
+    <li>
+      <strong>You need at least <code>n_splits</code> distinct groups.</strong> Five folds
+      need five or more groups, or the split is impossible.
+    </li>
+  </ol>
+
+  <h3>When you also need class balance: <code>StratifiedGroupKFold</code></h3>
+  <p>
+    Plain <code>GroupKFold</code> balances the <em>number of groups</em> per fold, not the
+    class ratio. On imbalanced churn that can hand you a fold with almost no positives —
+    the Lesson 003 problem, now constrained by groups. <code>StratifiedGroupKFold</code>
+    preserves the class percentages <em>and</em> keeps groups non-overlapping:
+  </p>
+
+  <pre>from sklearn.model_selection import StratifiedGroupKFold
+
+sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
+scores = cross_val_score(clf, X, y, groups=customer_id, cv=sgkf)</pre>
+
+  <p>
+    Per the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedGroupKFold.html">API docs</a>,
+    when groups are few-but-large, perfect stratification is impossible and it degrades
+    gracefully toward <code>GroupKFold</code> — groups win the tie, because group leakage is
+    the more dangerous error.
+  </p>
+
+  <h2>Failure 2 — tuning and scoring on the same data</h2>
+  <p>
+    Lesson 003 taught: never tune on the test set. But there is a subtler leak. Suppose you
+    run a 5-fold CV grid search, pick the hyperparameters with the best CV score, and then
+    <em>report that same best CV score</em> as your performance estimate. You have used the
+    validation folds twice — once to choose, once to report — so the number is optimistically
+    biased. The estimate is <strong>contaminated by the selection</strong>.
+  </p>
+
+  <div class="callout">
+    <strong>Cawley &amp; Talbot (JMLR 2010):</strong> a model-selection criterion with
+    non-negligible variance can be <em>over-fit</em> just like model parameters; the
+    resulting bias is “often of comparable magnitude to differences in performance between
+    learning algorithms.” In plain terms: the gap you brag about may be smaller than the bias
+    your protocol introduced.
+  </div>
+
+  <p>
+    This is exactly the trap your thesis cannot fall into. If you claim a relational model
+    beats a tuned GBDT, a skeptic's first question is: <em>was the GBDT's reported number
+    chosen by the same data that scored it?</em> If yes, the comparison is dead on arrival.
+  </p>
+
+  <h2>The tool: nested cross-validation</h2>
+  <p>
+    Nested CV uses <strong>two loops</strong>. The <strong>inner loop</strong> searches
+    hyperparameters. The <strong>outer loop</strong> scores the whole search-and-fit
+    procedure on data the inner loop never saw. Each outer fold's hyperparameters are chosen
+    fresh, inside that fold only.
+  </p>
+
+  <div class="loop-diagram">OUTER fold 1  ──▶ [ INNER CV: grid search → best params ] ──▶ fit ──▶ score on outer test 1
+OUTER fold 2  ──▶ [ INNER CV: grid search → best params ] ──▶ fit ──▶ score on outer test 2
+OUTER fold 3  ──▶ [ INNER CV: grid search → best params ] ──▶ fit ──▶ score on outer test 3
+                                                                       │
+                            unbiased estimate = mean ± std of outer ◀──┘</div>
+
+  <p>
+    In sklearn the pattern is a <code>GridSearchCV</code> (the inner loop) handed to
+    <code>cross_val_score</code> (the outer loop):
+  </p>
+
+  <pre>from sklearn.model_selection import GridSearchCV, cross_val_score, KFold
+
+inner = KFold(n_splits=5, shuffle=True, random_state=1)
+outer = KFold(n_splits=5, shuffle=True, random_state=2)
+
+search = GridSearchCV(clf, param_grid, cv=inner)
+nested_scores = cross_val_score(search, X, y, cv=outer)
+print(f"Nested estimate: {nested_scores.mean():.3f} ± {nested_scores.std():.3f}")</pre>
+
+  <p>
+    The number you report is <code>nested_scores.mean()</code>. The hyperparameters change
+    across outer folds — and that is fine: nested CV evaluates the <em>procedure</em>, not one
+    frozen configuration. You pick the final config separately, by running the inner search
+    once on all the data <em>after</em> you have your honest estimate.
+  </p>
+
+  <h3>Two CVs, two questions</h3>
+  <table>
+    <thead>
+      <tr><th>Loop</th><th>Answers</th><th>Output you keep</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Inner</td><td>“Which hyperparameters?”</td><td>best params (per outer fold)</td></tr>
+      <tr><td>Outer</td><td>“How well does the whole procedure generalize?”</td><td>mean ± std — the headline number</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Combining both: grouped + nested</h2>
+  <p>
+    Your relational baselines often need <em>both</em> — group isolation and an unbiased tuned
+    estimate. Use group splitters in both loops and route the <code>groups</code> array
+    through. There are two ways, and the first one trips everyone up.
+  </p>
+
+  <p>
+    <strong>Metadata routing</strong> (sklearn ≥ 1.4) lets <code>cross_val_score</code> forward
+    <code>groups</code> to the inner search — but you must <em>opt in</em> first, or it raises
+    <em>“The groups parameter should not be None.”</em>:
+  </p>
+
+  <pre>import sklearn
+from sklearn.model_selection import (
+    GridSearchCV, cross_val_score, GroupKFold)
+
+sklearn.set_config(enable_metadata_routing=True)   # easy to forget!
+
+search = GridSearchCV(clf, param_grid, cv=GroupKFold(5))
+nested = cross_val_score(
+    search, X, y,
+    cv=GroupKFold(5),
+    params={"groups": customer_id},
+)</pre>
+
+  <p>
+    <strong>Portable manual loop</strong> — works on any sklearn version and makes the plumbing
+    explicit. Write the outer loop yourself and pass <code>groups</code> to both
+    <code>split</code> and <code>fit</code>:
+  </p>
+
+  <pre>import numpy as np
+scores = []
+for tr, te in GroupKFold(5).split(X, y, groups=customer_id):
+    search = GridSearchCV(clf, param_grid, cv=GroupKFold(5))
+    search.fit(X[tr], y[tr], groups=customer_id[tr])   # inner loop
+    scores.append(search.score(X[te], y[te]))          # outer score
+print(f"{np.mean(scores):.3f} ± {np.std(scores):.3f}")</pre>
+
+  <p>
+    The plumbing of <code>groups</code> through nested loops is the single most error-prone part
+    of an honest baseline — sliced into <code>customer_id[tr]</code> in the manual version,
+    silently dropped if you forget <code>set_config</code> in the routing version. When in
+    doubt, use the manual loop: you can <em>see</em> that no group crosses the boundary.
+  </p>
+
+  <h2>Bridge to the thesis</h2>
+  <p>
+    Grouping is the gateway drug to <strong>temporal splits</strong>. A customer is a group in
+    space; a time cutoff is a “group” in time — you never let the future train the past. RelBench
+    tasks demand time-respecting splits, which is <a href="../reference/curriculum.html">Lesson 021</a>.
+    Everything you internalize here — <em>the unit of independence is not the row</em> — is the
+    same instinct you will apply to time in Year 4. When you report that an RDL model beats a
+    GBDT, both numbers must come from grouped, nested, time-correct protocols. Otherwise the
+    undervaluation thesis rests on a measurement artifact.
+  </p>
+
+  <h2>Four mistakes to catch</h2>
+  <ol>
+    <li><strong>Row-level K-fold on grouped data.</strong> Same entity in train and test. Fix: <code>GroupKFold</code>.</li>
+    <li><strong>GroupKFold on imbalanced labels.</strong> A fold with no positives. Fix: <code>StratifiedGroupKFold</code>.</li>
+    <li><strong>Reporting the best grid-search CV score.</strong> Selection bias. Fix: nested CV; report the outer mean.</li>
+    <li><strong>Dropping <code>groups</code> in the outer loop.</strong> Groups leak across the nesting. Fix: route <code>groups</code> to both loops.</li>
+  </ol>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read <a href="https://jmlr.org/papers/v11/cawley10a.html">Cawley &amp; Talbot, “On Over-fitting
+    in Model Selection and Subsequent Selection Bias in Performance Evaluation” (JMLR 2010)</a>
+    — at minimum the abstract, §1 (introduction), and the discussion of nested / “double”
+    cross-validation. It is the citation you will reach for whenever a reviewer doubts your
+    baseline. Pair it with the
+    <a href="https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data">sklearn grouped-data section (§3.1.2.4)</a>.
+  </p>
+
+  <h2>Lab — measure the optimism, then remove it</h2>
+  <p>
+    Exit ticket. In Python (notebook or script):
+  </p>
+  <ol>
+    <li>
+      Make grouped data: take any classification dataset and assign a synthetic
+      <code>group_id</code> so each group owns several rows (e.g. 20 groups). Make the label
+      partly group-determined so leakage actually helps the model cheat.
+    </li>
+    <li>
+      Score a classifier two ways on the <em>same</em> data: plain <code>KFold(5)</code> vs
+      <code>GroupKFold(5)</code> with <code>groups=group_id</code>. Print both means. The
+      plain-KFold number should be <strong>optimistically higher</strong> — that gap is the
+      leakage you would have shipped.
+    </li>
+    <li>
+      Run a small <code>GridSearchCV</code> (e.g. 2–3 values of one hyperparameter) and print
+      its <code>best_score_</code>. Then wrap it in <code>cross_val_score</code> as a nested
+      CV and print the outer mean. Note that the nested estimate is <strong>lower (or
+      equal)</strong> — that drop is the selection bias Cawley &amp; Talbot warn about.
+    </li>
+    <li>
+      Bonus: combine — <code>GroupKFold</code> in both nested loops, routing
+      <code>groups</code> through.
+    </li>
+  </ol>
+
+  <p>
+    Paste your four numbers (KFold mean, GroupKFold mean, grid <code>best_score_</code>, nested
+    mean) or say <em>“lab done.”</em> Lesson 005 (pipelines &amp; preprocessing) assumes you can
+    write a leakage-safe split cold.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your homework <code>report.md</code> if you want me
+    to audit whether your reported CV numbers are nested — this is the most common silent bug in
+    “strong baseline” claims, and the one a thesis reviewer will probe first.
+  </div>
+
+  <div class="ask-teacher">
+    Stuck on the <code>groups</code> plumbing or the nested loop? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0003-train-valid-test-cv.html">← Lesson 003</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../reference/grouped-nested-cv.html">Reference: Grouped &amp; nested CV cheat sheet</a></li>
+      <li><a href="../reference/cross-validation-splits.html">Reference: Train / Valid / Test &amp; CV</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/group-viz.js"></script>
+<script>
+  GroupViz.mount(document.getElementById("group-viz"), {
+    nGroups: 8,
+    samplesPerGroup: 5,
+    nSplits: 4,
+    seed: 7
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "When does standard K-fold give an optimistic score?",
+    options: [
+      { label: "Same group in train and test", value: "a" },
+      { label: "Labels are perfectly balanced now", value: "b" },
+      { label: "Features are scaled before split", value: "c" },
+      { label: "Folds are exactly equal sized", value: "d" }
+    ],
+    correct: "a",
+    explain: "If one entity has rows in both train and test, the model can memorize group-specific shortcuts, inflating the score."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "What does the OUTER loop of nested CV estimate?",
+    options: [
+      { label: "Generalization of the whole procedure", value: "a" },
+      { label: "The single best hyperparameter value", value: "b" },
+      { label: "The class ratio inside each fold", value: "c" },
+      { label: "The fastest model to train fully", value: "d" }
+    ],
+    correct: "a",
+    explain: "The inner loop picks hyperparameters; the outer loop scores the entire tune-and-fit procedure on unseen data — the unbiased estimate."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why prefer StratifiedGroupKFold over GroupKFold here?",
+    options: [
+      { label: "Keeps class ratio and groups", value: "a" },
+      { label: "Always makes folds equal sized", value: "b" },
+      { label: "Removes the groups argument need", value: "c" },
+      { label: "Tunes the model hyperparameters too", value: "d" }
+    ],
+    correct: "a",
+    explain: "It preserves class percentages while keeping groups non-overlapping — needed when labels are imbalanced and rows are grouped."
+  });
+</script>
+</body>
+</html>

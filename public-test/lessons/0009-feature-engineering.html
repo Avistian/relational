@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 009 — Feature Engineering</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .feat-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .feat-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .feat-viz-btn { font-family: var(--font-sans); font-size: 0.85rem; padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; }
+    .feat-viz-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .feat-viz-svg { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .feat-axis { stroke: #999; stroke-width: 1; }
+    .feat-dot { stroke: #fff; stroke-width: 0.5; }
+    .feat-dot.raw { fill: #922b21; opacity: 0.75; }
+    .feat-dot.engineered { fill: #1e6b3c; opacity: 0.8; }
+    .feat-lbl { font-family: var(--font-sans); font-size: 11px; fill: var(--muted); }
+    .feat-viz-caption { font-size: 0.9rem; margin-top: 0.75rem; color: var(--muted); min-height: 4rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .num-table td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1</p>
+  <h1>Feature Engineering</h1>
+  <p class="subtitle">Lesson 009 · Phase 1 · ~40 min</p>
+
+  <p>
+    Lessons <a href="0005-pipelines-preprocessing.html">005</a>–<a href="0008-metrics-calibration.html">008</a>
+    taught you to evaluate a model honestly. This lesson is about giving the model something
+    worth evaluating: <strong>features</strong>. A feature is a calculated field derived from
+    raw columns, designed so the relationship the model needs to learn becomes one it
+    <em>can</em> learn. This is the last concept before your Q1 checkpoint — and it is the exact
+    skill the thesis is about replacing.
+  </p>
+
+  <p>
+    This lesson's single skill: <strong>engineer features that encode structure a model cannot
+    synthesize on its own — and fit every data-dependent feature inside the pipeline so it never
+    leaks.</strong>
+  </p>
+
+  <h2>Why models need help</h2>
+  <p>
+    You might assume a powerful model "figures out" whatever transformation it needs. Heaton
+    (2016) tested this directly: he generated datasets built around specific expressions and
+    measured whether neural nets, random forests, gradient boosting, and SVMs could synthesize
+    each one from raw inputs. Simple single-column transforms (log, polynomial, power, root) were
+    learned easily — but <strong>none of the four models could learn a <em>ratio of
+    differences</em></strong>, \( (a-b)/(c-d) \)
+    (<a href="https://arxiv.org/abs/1701.07852">Heaton 2016</a>). If a model can already
+    synthesize a feature, engineering it is wasted effort; the value is in the features it
+    <em>cannot</em>.
+  </p>
+
+  <div id="feat-viz"></div>
+
+  <div class="callout">
+    <strong>Verified (sklearn 1.9, target \(y=(a-b)/(c-d)\), 5-fold R²):</strong>
+    a <strong>Ridge</strong> regressor scores R² <strong>0.644</strong> on the four raw columns
+    and <strong>0.998</strong> once the ratio is engineered in. Even a strong
+    <strong>HistGradientBoosting</strong> rises from <strong>0.968 → 0.980</strong> — it can
+    locally approximate the smooth ratio, but still gets a free, leak-proof lift from being
+    handed the exact structure. The cloud doesn't change; your <em>coordinates</em> do.
+  </div>
+
+  <h2>The high-value patterns</h2>
+  <table>
+    <thead><tr><th>Pattern</th><th>What it encodes</th><th>Why the model can't</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Ratios &amp; differences</strong></td><td>rate per unit, margin, change</td><td>division/ratio-of-differences isn't synthesizable (Heaton)</td></tr>
+      <tr><td><strong>Interactions</strong></td><td>effect of A <em>depends on</em> B</td><td>linear models see only additive effects</td></tr>
+      <tr><td><strong>Datetime decomposition</strong></td><td>hour, day-of-week, month, cyclicality</td><td>a raw timestamp is one meaningless big integer</td></tr>
+      <tr><td><strong>Aggregations over a relation</strong></td><td>count / mean / max of a child table</td><td>the rows live in a different table entirely</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Datetime is the cheapest win. A raw Unix timestamp hides everything useful inside one
+    monotonic number. Split it into hour-of-day, day-of-week, and (for periodicity)
+    \( \sin(2\pi\,h/24),\ \cos(2\pi\,h/24) \), and a cyclical signal appears:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>Hour-of-day signal, HistGBDT</th><th>R² (↑)</th></tr></thead>
+    <tbody>
+      <tr><td>raw timestamp column</td><td class="n">0.840</td></tr>
+      <tr><td>+ sin/cos cyclical encoding</td><td class="n">0.979</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>Verified.</strong> The sine/cosine pair also makes 23:00 and 00:00 adjacent again —
+    something a plain "hour = 0…23" integer breaks at the midnight wrap.
+  </div>
+
+  <h2>The relational case — where the thesis lives</h2>
+  <p>
+    The most powerful features for relational data aren't in your table at all — they're
+    <strong>aggregations over related rows in other tables</strong>: a user's transaction count,
+    their average order value, days since last login, max session length. This is exactly the
+    manual work a data scientist does before training a tabular model on a database.
+  </p>
+  <p>
+    Kanter &amp; Veeramachaneni formalized and automated it as <strong>Deep Feature
+    Synthesis</strong>: follow the foreign-key relationships to a base table, then stack
+    aggregation primitives (SUM, MEAN, COUNT) and transform primitives (MONTH, HOUR) along that
+    path — the "depth" is how many relationships you traverse
+    (<a href="https://www.maxkanter.com/papers/DSAA_DSM_2015.pdf">Kanter &amp; Veeramachaneni
+    2015</a>, the algorithm behind <a href="https://docs.featuretools.com/en/stable/getting_started/afe.html">Featuretools</a>).
+    Their automated system beat 615 of 906 human teams across three competitions.
+  </p>
+  <div class="callout">
+    <strong>This is the thesis in one sentence.</strong> Manual relational feature engineering
+    → Deep Feature Synthesis (automated, but you still pick primitives) → <strong>Relational Deep
+    Learning</strong> (the GNN <em>learns</em> the aggregations end-to-end over the schema graph).
+    RDL is trying to make this entire lesson obsolete. To prove it does, you must first be able
+    to build the strong hand-engineered baseline it has to beat.
+  </div>
+
+  <h2>The leakage trap — non-negotiable</h2>
+  <p>
+    Any feature whose computation <em>looks at the target or uses statistics of the data</em> is
+    a fit-bearing transform, and from <a href="0005-pipelines-preprocessing.html">Lesson 005</a>
+    you know where those belong: <strong>inside the Pipeline</strong>, fit on training folds
+    only. The classic offender is <strong>target/mean encoding</strong> — replacing a category
+    with the mean target for that category. Computed on the full dataset it leaks the answer and
+    inflates CV; it must be fit per-fold (or with out-of-fold smoothing).
+  </p>
+  <pre>from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
+
+# Stateless engineering (ratios, datetime parts): safe anywhere, but keep it in the pipeline
+ratio = FunctionTransformer(lambda X: np.c_[X, (X[:,0]-X[:,1])/(X[:,2]-X[:,3])])
+
+# Data-dependent engineering (target/mean encoding, scaling, KBins) MUST be a pipeline step
+pipe = Pipeline([
+    ("engineer", ratio),
+    ("encode",   TargetEncoder()),     # fit on train folds only — never the whole frame
+    ("model",    HistGradientBoostingClassifier()),
+])</pre>
+  <p>
+    Rule of thumb: a feature that uses only <em>within-row</em> arithmetic (a ratio of this
+    row's columns, this row's hour) is stateless and cannot leak. A feature that uses
+    <em>across-row</em> statistics (a category's mean target, a column's mean for imputation, a
+    standardization scale) is fit-bearing and must live in the pipeline. For relational
+    aggregations, the same discipline plus a <strong>time cutoff</strong> — only aggregate child
+    rows that existed before the prediction time (your point-in-time rule from
+    <a href="0002-design-matrix-leakage.html">Lesson 002</a>).
+  </p>
+
+  <h2>Four mistakes to catch</h2>
+  <ol>
+    <li><strong>Engineering features the model already learns.</strong> Logs/polynomials of one column rarely help trees. Fix: spend effort on ratios, interactions, and aggregations.</li>
+    <li><strong>Target encoding on the full dataset.</strong> Leaks the label. Fix: a pipeline step fit per fold.</li>
+    <li><strong>Aggregating across the time cutoff.</strong> Uses the future. Fix: point-in-time-correct windows only.</li>
+    <li><strong>Integer hour with a midnight cliff.</strong> 23 and 0 look far apart. Fix: sin/cos cyclical encoding.</li>
+  </ol>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read Kanter &amp; Veeramachaneni,
+    <a href="https://www.maxkanter.com/papers/DSAA_DSM_2015.pdf"><em>Deep Feature Synthesis:
+    Towards Automating Data Science Endeavors</em> (DSAA 2015)</a> — focus on §III (the feature
+    synthesis abstractions and how it follows relationships to a base field). It is the cleanest
+    statement of what RDL is trying to learn automatically. Then skim
+    <a href="https://arxiv.org/abs/1701.07852">Heaton 2016</a> for which features models can and
+    cannot synthesize themselves.
+  </p>
+
+  <h2>Lab — engineer the features models can't learn</h2>
+  <p>
+    Notebook with blanks:
+    <a href="../labs/0009-feature-engineering.ipynb"><code>labs/0009-feature-engineering.ipynb</code></a>
+    (kernel <strong>Relational Labs (.venv)</strong>). You will:
+  </p>
+  <ol>
+    <li>Reproduce the <strong>ratio-of-differences</strong> result: a linear model jumps from R² ≈ 0.64 to ≈ 1.00 once you engineer the ratio.</li>
+    <li>Decompose a timestamp into a <strong>sin/cos cyclical</strong> encoding and show the score lift.</li>
+    <li>Build a leak-free <strong>target encoder inside a Pipeline</strong> and show that doing it outside the pipeline inflates CV.</li>
+    <li>Print the exit ticket: raw-vs-engineered R² for both demos, plus the leaky-vs-safe target-encoding gap.</li>
+  </ol>
+  <p>
+    Paste the exit-ticket output here, or say <em>"lab done."</em> Lesson 010 is your
+    <strong>Q1 checkpoint</strong> — assembling everything from 001–009 into one reproducible
+    sklearn baseline.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring a schema or a raw table and we'll list the
+    aggregations and ratios worth engineering — and decide which are stateless vs fit-bearing, so
+    they land on the right side of the pipeline boundary.
+  </div>
+
+  <div class="ask-teacher">
+    Stuck on stateless vs fit-bearing, or target-encoding leakage? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0008-metrics-calibration.html">← Lesson 008</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../labs/0009-feature-engineering.ipynb">Lab notebook: 0009-feature-engineering.ipynb</a></li>
+      <li><a href="../reference/feature-engineering.html">Reference: Feature-engineering cheat sheet</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/feature-viz.js"></script>
+<script>
+  FeatureViz.mount(document.getElementById("feat-viz"));
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Heaton 2016 found which feature no common model could synthesize itself?",
+    options: [
+      { label: "The ratio of differences between columns", value: "a" },
+      { label: "The natural logarithm of a column", value: "b" },
+      { label: "A simple polynomial of one column", value: "c" },
+      { label: "The square root of a column", value: "d" }
+    ],
+    correct: "a",
+    explain: "Single-column transforms (log, polynomial, power, root) were learned by all models; the ratio of differences was learned by none — so it is worth engineering."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Which engineered feature is fit-bearing and must live inside the pipeline?",
+    options: [
+      { label: "Mean target encoding of a category", value: "a" },
+      { label: "A ratio of two columns in a row", value: "b" },
+      { label: "The hour parsed from a timestamp", value: "c" },
+      { label: "The difference of two row columns", value: "d" }
+    ],
+    correct: "a",
+    explain: "Target encoding uses across-row statistics of the label, so it must be fit on training folds only. Within-row arithmetic (ratios, parsed hour) is stateless and cannot leak."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Deep Feature Synthesis generates relational features primarily by:",
+    options: [
+      { label: "Following relations and stacking aggregations", value: "a" },
+      { label: "Training a deep network on raw bytes", value: "b" },
+      { label: "Randomly combining every pair of columns", value: "c" },
+      { label: "Dropping columns with missing values", value: "d" }
+    ],
+    correct: "a",
+    explain: "DFS follows foreign-key relationships to a base field and stacks aggregation/transform primitives along the path — exactly the manual relational feature engineering RDL aims to learn end-to-end."
+  });
+</script>
+</body>
+</html>

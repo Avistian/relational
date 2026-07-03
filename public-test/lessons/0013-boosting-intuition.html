@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 013 — Boosting Intuition</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .residual-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tree-viz-intro, .tree-viz-caption { font-size: 0.88rem; margin: 0.5rem 0; }
+    .tree-viz-caption { color: var(--muted); }
+    .tree-viz-canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .algo { font-family: var(--font-mono); font-size: 0.82rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0.9rem 1.1rem; margin: 1rem 0; line-height: 1.6; }
+    .algo .step { display: block; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>Boosting Intuition</h1>
+  <p class="subtitle">Lesson 013 · Phase 1 · ~40 min</p>
+
+  <p>
+    <a href="0012-bagging-random-forest.html">Lesson 012</a> fixed a single tree's
+    <strong>variance</strong> by averaging many decorrelated trees in parallel — a Random Forest.
+    Boosting attacks the <em>other</em> half of the error. It grows trees <strong>one at a
+    time</strong>, each one fitting what the current ensemble still gets wrong. This lesson's single
+    skill: <strong>explain boosting as stagewise additive modelling that fits residuals to reduce
+    bias</strong>, and know exactly how that differs from bagging.
+  </p>
+
+  <div class="callout">
+    <strong>Bagging vs boosting, in one line.</strong> Bagging trains trees
+    <em>independently</em> and averages them to cut <strong>variance</strong>. Boosting trains trees
+    <em>sequentially</em>, each correcting the last, to cut <strong>bias</strong>. Same building
+    block — the tree — opposite failure mode.
+  </div>
+
+  <h2>The core idea: fit the residuals</h2>
+  <p>
+    Start with a trivial model — predict the mean for everyone. Look at what's left over: the
+    <strong>residuals</strong> (truth − prediction). Now fit a small tree <em>to those residuals</em>,
+    add a shrunken slice of it to your prediction, and recompute the residuals. Repeat. Each round
+    the model spends its capacity exactly where the ensemble is still wrong, so the systematic
+    error — the <strong>bias</strong> — shrinks round by round.
+  </p>
+  <p>
+    Friedman (2001) framed this precisely as <strong>gradient descent in function space</strong>:
+    for squared-error loss the negative gradient <em>is</em> the residual, so "fit the residual"
+    is literally "take a gradient step, using a tree as the step direction." Change the loss (to
+    logistic loss for classification) and you fit the <em>pseudo-residuals</em> — the negative
+    gradient of that loss — instead.
+  </p>
+
+  <div class="algo">
+    <strong>Gradient boosting (squared error), the skeleton:</strong>
+    <span class="step">F<sub>0</sub>(x) = mean(y)</span>
+    <span class="step">for m = 1 … M:</span>
+    <span class="step">&nbsp;&nbsp;r<sub>i</sub> = y<sub>i</sub> − F<sub>m−1</sub>(x<sub>i</sub>) &nbsp; ← residual (negative gradient)</span>
+    <span class="step">&nbsp;&nbsp;fit a small tree h<sub>m</sub> to (x<sub>i</sub>, r<sub>i</sub>)</span>
+    <span class="step">&nbsp;&nbsp;F<sub>m</sub>(x) = F<sub>m−1</sub>(x) + η · h<sub>m</sub>(x) &nbsp; ← η = learning rate</span>
+  </div>
+
+  <h2>Watch the bias fall</h2>
+  <p>
+    Each red bar is a residual — the gap the next stump will try to fit. The bold blue line is the
+    running ensemble; the dashed green line is the true function. At <code>M = 0</code> the model is
+    a flat mean and the residuals are huge. Drag to add rounds and watch the blue curve bend toward
+    the truth while the residual bars — and the MSE — collapse.
+  </p>
+  <div id="residual-viz"></div>
+
+  <h2>Why the learning rate matters</h2>
+  <p>
+    The <strong>learning rate</strong> <code>η</code> (shrinkage) scales each tree's contribution
+    before it's added. Small <code>η</code> (0.01–0.1) takes tiny steps: it needs more rounds but
+    generalizes better, because no single tree dominates. Large <code>η</code> can overshoot and
+    overfit. Shrinkage plus "many weak learners" is the empirical heart of why boosting works —
+    it's regularization by small steps. You will feel this trade-off directly in the lab.
+  </p>
+
+  <h2>Two families you'll hear named</h2>
+  <ul>
+    <li><strong>AdaBoost</strong> (Freund &amp; Schapire 1997) — the original: re-weight
+      <em>misclassified</em> rows so the next tree focuses on them. It's a special case of the
+      gradient view (exponential loss).</li>
+    <li><strong>Gradient boosting</strong> (Friedman 2001) — the general recipe above; fit the
+      negative gradient of <em>any</em> differentiable loss. XGBoost (Lesson 014) and LightGBM
+      (Lesson 015) are fast, regularized implementations of this.</li>
+  </ul>
+
+  <h2>On our data</h2>
+  <p>
+    Verified with the <code>relkit</code> harness (5-fold PR-AUC). Two datasets tell the honest
+    story — bagging and boosting each win where their failure mode dominates:
+  </p>
+  <table>
+    <thead><tr><th>Dataset</th><th>Random Forest</th><th>Gradient Boosting</th><th>Who wins</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>credit_g (n = 1,000, noisy)</td>
+        <td class="n win">0.901</td>
+        <td class="n">~0.88</td>
+        <td>RF — variance reduction on tiny data</td>
+      </tr>
+      <tr>
+        <td>adult (n = 48,842)</td>
+        <td class="n">0.785</td>
+        <td class="n win">0.824</td>
+        <td>Boosting — bias reduction with real signal</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    This is the point, not a bug: on 1,000 noisy rows an <em>untuned</em> forest's variance
+    reduction edges out untuned boosting, while on 48k rows with genuine structure boosting's
+    bias reduction pulls clearly ahead. The boosting advantage grows further with tuning — which is
+    exactly the job of XGBoost in Lesson 014. In the lab you'll <strong>build the residual loop by
+    hand</strong> and reproduce the credit_g comparison so the near-tie is something you measured,
+    not something you were told.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> A competently-tuned gradient-boosted tree is <em>the</em>
+    single-table baseline the relational thesis must beat fairly (Grinsztajn 2022). Understanding
+    that boosting reduces bias by fitting residuals — not by magic — is what lets you later argue
+    honestly that a relational model wins because of <em>structure it can see and GBDTs cannot</em>,
+    not because your baseline was weak.
+  </div>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Friedman (2001), <em>Greedy Function Approximation: A Gradient Boosting Machine</em>,
+    <em>Annals of Statistics</em> 29(5) — read §1–3 and Algorithm 1. Focus on the
+    <strong>function-space gradient descent</strong> view and why the residual is the negative
+    gradient for squared error; skip the specific loss derivations on a first pass.
+  </p>
+
+  <h2>Lab — build boosting from residuals</h2>
+  <p>
+    Notebook <code>0013-boosting-intuition.ipynb</code>: implement the stagewise residual loop
+    yourself on a Tier-C toy (watch the MSE fall), then compare a single tree, a Random Forest, and
+    <code>GradientBoostingClassifier</code> on Tier-A <code>credit_g</code> via <code>relkit</code>,
+    and feel the learning-rate trade-off.
+    <a href="../labs/html/0013-boosting-intuition.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Fuzzy on why the residual is a gradient, or when boosting beats bagging? Ask your teacher in
+    Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0012-bagging-random-forest.html">← Lesson 012</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0013-boosting-intuition.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/residual-viz.js"></script>
+<script>
+  ResidualViz.mount(document.getElementById("residual-viz"), {
+    rounds: 40,
+    lr: 0.3,
+    caption: "Illustrative 1-D fit — the lab measures the same MSE collapse on a toy you build by hand."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Boosting mainly reduces a model's:",
+    options: [
+      { label: "Bias, by fitting residuals", value: "a" },
+      { label: "Variance, by averaging trees", value: "b" },
+      { label: "Feature count, by pruning", value: "c" },
+      { label: "Latency, by subsampling rows", value: "d" }
+    ],
+    correct: "a",
+    explain: "Each new tree fits what the ensemble still gets wrong, shrinking the systematic error (bias)."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "In gradient boosting, each new tree fits the:",
+    options: [
+      { label: "Negative gradient of the loss", value: "a" },
+      { label: "Raw labels from a bootstrap", value: "b" },
+      { label: "Average of all prior trees", value: "c" },
+      { label: "Random subset of the columns", value: "d" }
+    ],
+    correct: "a",
+    explain: "The tree fits the negative gradient (the residual for squared error) — a step in function space."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "A smaller learning rate usually means you:",
+    options: [
+      { label: "Need more boosting rounds", value: "a" },
+      { label: "Need fewer boosting rounds", value: "b" },
+      { label: "Skip the residual step twice", value: "c" },
+      { label: "Drop half of the features", value: "d" }
+    ],
+    correct: "a",
+    explain: "Small steps generalize better but require more rounds to reach the same fit — shrinkage as regularization."
+  });
+</script>
+</body>
+</html>

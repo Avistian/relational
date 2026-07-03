@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 015 — LightGBM</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    .growth-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tree-viz-intro, .tree-viz-caption { font-size: 0.88rem; margin: 0.5rem 0; }
+    .tree-viz-caption { color: var(--muted); }
+    .tree-viz-canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .eq { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 1rem; margin: 0.9rem 0; text-align: center; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>LightGBM</h1>
+  <p class="subtitle">Lesson 015 · Phase 1 · ~40 min</p>
+
+  <p>
+    <a href="0014-xgboost.html">Lesson 014</a> gave you XGBoost's exact machinery: the regularized
+    leaf weight <code>w* = −G/(H+λ)</code>, the structure-score split gain, and a first glimpse of
+    <strong>histogram</strong> split finding. LightGBM (Ke et al., NeurIPS 2017) keeps <em>that same
+    gain math</em> and re-engineers everything around it to be <strong>fast and scalable</strong> when
+    rows and features explode. This lesson's single skill: <strong>explain the four tricks that make
+    LightGBM fast — histograms, leaf-wise growth, GOSS, and EFB — and know that
+    <code>num_leaves</code> (not <code>max_depth</code>) is now the central complexity knob</strong>,
+    then confirm it against XGBoost on a real task.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> LightGBM is XGBoost's gradient/hessian gain formula with four
+    speed-ups bolted on — bin features into <strong>histograms</strong>, grow trees
+    <strong>leaf-wise</strong> instead of level-wise, throw away most small-gradient rows
+    (<strong>GOSS</strong>), and merge sparse features that never co-occur (<strong>EFB</strong>).
+  </div>
+
+  <h2>Same gain, different growth: leaf-wise vs level-wise</h2>
+  <p>
+    XGBoost (by default) grows a tree <strong>level-wise</strong>: it splits every node at the current
+    depth before going deeper, producing balanced trees. LightGBM grows <strong>leaf-wise
+    (best-first)</strong>: at each step it splits the one frontier leaf whose split would reduce the
+    loss most — the leaf with <em>max delta loss</em>. Holding the number of leaves fixed, leaf-wise
+    reaches <strong>lower training loss</strong> because it never wastes a split on a low-gain node.
+  </p>
+  <p>
+    The cost: leaf-wise trees get <strong>deep and unbalanced</strong>, which <strong>overfits on
+    small data</strong>. That is why LightGBM's primary complexity knob is <code>num_leaves</code>
+    (how many leaves the tree may have), with <code>max_depth</code> as an optional safety cap — a
+    real shift from XGBoost, where <code>max_depth</code> was the main lever.
+  </p>
+  <div id="growth-viz"></div>
+
+  <h2>GOSS — keep the rows that still hurt</h2>
+  <p>
+    To score a split, XGBoost scans <em>every</em> row to sum gradients and hessians. LightGBM's
+    <strong>Gradient-based One-Side Sampling</strong> asks: do we really need them all? A row with a
+    <strong>large gradient</strong> is one the model still gets badly wrong — it carries most of the
+    information about where to split. A row with a tiny gradient is already well-fit. So GOSS:
+  </p>
+  <ul>
+    <li>keeps the top <code>a·n</code> rows by <strong>|gradient|</strong> (the under-trained,
+      informative ones),</li>
+    <li>randomly draws a further <code>b·n</code> rows from the small-gradient remainder,</li>
+    <li>and <strong>amplifies</strong> those sampled rows by <code>(1−a)/b</code> when summing, so the
+      overall gradient statistics stay <strong>unbiased</strong>.</li>
+  </ul>
+  <div class="eq">amplify small-gradient sample by (1 − a) / b</div>
+  <p>
+    The paper proves this estimates the information gain accurately with far fewer rows — the source
+    of much of the "up to 20× faster than conventional GBDT" headline (Ke et al. 2017, §3). It is a
+    smarter cousin of the row <a href="0012-bagging-random-forest.html">subsampling</a> from L012:
+    instead of sampling uniformly, sample by how wrong the model still is.
+  </p>
+
+  <h2>EFB — bundle features that never co-occur</h2>
+  <p>
+    High-dimensional data (especially one-hot encodings) is usually <strong>sparse</strong>: many
+    features are almost never nonzero at the same time. <strong>Exclusive Feature Bundling</strong>
+    packs such <em>mutually exclusive</em> features into a single bundled feature — a one-hot block of
+    1,000 columns that only ever has one "hot" entry becomes, effectively, one column. Histogram
+    building then costs <code>O(#data × #bundles)</code> instead of <code>O(#data × #features)</code>.
+    Finding the optimal bundling is NP-hard (it reduces to graph coloring), so LightGBM uses a greedy
+    approximation (Ke et al. 2017, §4).
+  </p>
+
+  <h2>Histograms and the subtraction trick</h2>
+  <p>
+    Both XGBoost's <code>hist</code> mode and LightGBM bucket each feature's values into ~255 discrete
+    <strong>bins</strong>, so a split scan costs <code>O(#bins)</code> instead of <code>O(#rows)</code>
+    — the candidate-threshold idea previewed in <a href="0014-xgboost.html">L014</a>. LightGBM adds a
+    neat accountant's trick: a node's two children partition its rows, so
+    <strong>child<sub>right</sub> histogram = parent histogram − child<sub>left</sub> histogram</strong>.
+    Build the histogram for the smaller child, subtract to get the sibling for free. These are
+    engineering wins, not new statistics — the gain formula underneath is still L014's.
+  </p>
+
+  <h2>The knobs that matter (and how they differ from XGBoost)</h2>
+  <table>
+    <thead><tr><th>Knob</th><th>Effect</th><th>Push it when</th></tr></thead>
+    <tbody>
+      <tr><td><code>num_leaves</code></td><td><strong>Primary</strong> capacity knob (leaf-wise)</td><td>Lower to fight overfitting; keep ≪ 2<sup>max_depth</sup></td></tr>
+      <tr><td><code>max_depth</code></td><td>Optional cap on leaf-wise depth</td><td>Set a small cap on tiny, noisy data</td></tr>
+      <tr><td><code>min_child_samples</code> / <code>min_data_in_leaf</code></td><td>Min rows per leaf</td><td>Raise to stop deep leaf-wise splits on noise</td></tr>
+      <tr><td><code>learning_rate</code> + <code>n_estimators</code></td><td>Shrinkage / rounds (as in L013/L014)</td><td>Lower rate + more trees to generalize</td></tr>
+      <tr><td><code>feature_fraction</code> / <code>bagging_fraction</code></td><td>Column / row subsampling</td><td>Lower (0.7–0.9) to decorrelate + speed up</td></tr>
+      <tr><td><code>reg_lambda</code> / <code>reg_alpha</code></td><td>L2 / L1 on leaf weights (L014's λ)</td><td>Raise to shrink confident leaves</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>The one trap.</strong> Because growth is leaf-wise, setting a large <code>max_depth</code>
+    without lowering <code>num_leaves</code> lets the tree balloon and overfit. On small data, tune
+    <code>num_leaves</code> <em>down</em> first — the sweep below shows why.
+  </div>
+
+  <h2>On our data</h2>
+  <p>
+    Verified with the <code>relkit</code> harness (5-fold CV PR-AUC), same protocol as L013/L014.
+    LightGBM's defaults edge XGBoost's on <code>credit_g</code>, and the leaf-wise <code>num_leaves</code>
+    knob behaves exactly as the theory predicts — bigger trees <em>overfit</em> this small, noisy set:
+  </p>
+  <table>
+    <thead><tr><th>Model (credit_g, n=1,000)</th><th>CV PR-AUC</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>sklearn GBDT (L013)</td><td class="n">0.879</td><td>where Q2 started</td></tr>
+      <tr><td>XGBoost, default (L014)</td><td class="n">0.883</td><td>histogram, level-wise</td></tr>
+      <tr><td>LightGBM, default</td><td class="n win">0.889</td><td>leaf-wise, out of the box</td></tr>
+      <tr><td>LightGBM, tuned</td><td class="n">0.893</td><td>40-iter search picked <code>num_leaves=7</code>, η=0.02</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th><code>num_leaves</code> (credit_g)</th><th>CV PR-AUC</th></tr></thead>
+    <tbody>
+      <tr><td class="n">7</td><td class="n win">0.889</td></tr>
+      <tr><td class="n">15</td><td class="n">0.887</td></tr>
+      <tr><td class="n">31 (default)</td><td class="n">0.888</td></tr>
+      <tr><td class="n">63</td><td class="n">0.884</td></tr>
+      <tr><td class="n">127</td><td class="n">0.884</td></tr>
+    </tbody>
+  </table>
+  <p>
+    On <code>adult</code> (~49k rows) the two boosters are an accuracy <strong>near-tie</strong>
+    (XGBoost 0.829, LightGBM 0.831) — no magic jump. So where is the famous speed?
+  </p>
+
+  <h2>The "20× faster" myth, measured honestly</h2>
+  <p>
+    LightGBM's headline was "up to 20× faster than conventional GBDT" — and the operative words are
+    <strong>conventional GBDT</strong>. The 2017 baseline was a <em>pre-histogram</em> implementation
+    that scans every row for every split (like scikit-learn's <code>GradientBoostingClassifier</code>).
+    Modern XGBoost's <code>hist</code> mode <strong>adopted the same histogram idea</strong>, so today
+    the two are roughly on par. Timing a single 100-tree fit on a 50k × 50 synthetic set makes this
+    concrete:
+  </p>
+  <table>
+    <thead><tr><th>Implementation</th><th>Fit time</th><th>vs conventional</th></tr></thead>
+    <tbody>
+      <tr><td>sklearn GBDT (conventional, pre-histogram)</td><td class="n">64.3 s</td><td class="n">1×</td></tr>
+      <tr><td>XGBoost (<code>hist</code>)</td><td class="n">0.58 s</td><td class="n">≈110×</td></tr>
+      <tr><td>LightGBM (default <code>gbdt</code>)</td><td class="n">0.60 s</td><td class="n">≈107×</td></tr>
+      <tr><td>LightGBM (<code>boosting_type="goss"</code>)</td><td class="n win">0.42 s</td><td class="n win">≈152×</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Two honest takeaways. First, the ~100× speed-up is <strong>real but historical</strong>: it is
+    against pre-histogram GBDT, not against a modern XGBoost that already learned the trick — exactly
+    the "untuned XGBoost ≈ 2016-era sklearn" lesson from <a href="0014-xgboost.html">L014</a>, one
+    layer up. Second, <strong>GOSS is opt-in</strong>: LightGBM's default <code>boosting_type</code>
+    is <code>gbdt</code>, so you only get the extra ~30% here by asking for <code>"goss"</code>.
+    LightGBM's durable edges over XGBoost are elsewhere — native categorical splits, lower memory,
+    and better scaling on <strong>sparse, high-cardinality</strong> data (where EFB pays off).
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> LightGBM is the <em>scale</em> member of the GBDT baseline family:
+    when a relational join is flattened into millions of rows and thousands of sparse, one-hot columns,
+    LightGBM (native categoricals + EFB + low memory) is often the single-table baseline that actually
+    fits in RAM and finishes. "We beat XGBoost but never tried a tuned LightGBM on the full-size join"
+    is not an honest win (Grinsztajn 2022; the 2026 fair-comparison stack still lists a tuned GBDT).
+  </div>
+
+  <h2>Where LightGBM breaks (know this too)</h2>
+  <ul>
+    <li>Leaf-wise growth <strong>overfits small/noisy data</strong> unless <code>num_leaves</code> (and
+      often <code>min_child_samples</code>) are tuned down — see the sweep above.</li>
+    <li>The default <code>num_leaves=31</code> is <em>not</em> a safe universal default; it interacts
+      with <code>max_depth</code> in ways that surprise people migrating from XGBoost.</li>
+    <li>On tiny data the speed advantage is irrelevant and a <a href="0012-bagging-random-forest.html">Random
+      Forest</a> or tuned XGBoost can tie it (L012/L014).</li>
+    <li>Still a <strong>single-table</strong> model: faster, but it never sees relational structure you
+      didn't hand-engineer across joins.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Ke et al. (2017), <em>LightGBM: A Highly Efficient Gradient Boosting Decision Tree</em> (NeurIPS
+    30, pp. 3149–3157) — read <strong>§3 (GOSS)</strong> and <strong>§4 (EFB)</strong> carefully; the
+    theorems there are what justify "20× faster at almost the same accuracy." (This paper has no arXiv
+    preprint — use the <a href="https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html">NeurIPS
+    proceedings PDF</a>.) The official <a href="https://lightgbm.readthedocs.io/en/latest/Features.html">LightGBM
+    "Features" docs</a> are the best reference for leaf-wise growth and histogram subtraction.
+  </p>
+
+  <h2>Lab — LightGBM vs XGBoost, GOSS by hand</h2>
+  <p>
+    Notebook <code>0015-lightgbm.ipynb</code> (paper-reproduction structure): implement <strong>GOSS's
+    amplified gradient estimate by hand</strong> and check it is unbiased against the full-data sum;
+    sweep <code>num_leaves</code> to <em>see</em> leaf-wise overfitting; then race LightGBM against
+    XGBoost on <code>credit_g</code> and <code>adult</code> with the shared <code>relkit</code> CV
+    harness, matching the tables above.
+    <a href="../labs/html/0015-lightgbm.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why keeping big-gradient rows is "unbiased," or when leaf-wise beats level-wise? Ask your
+    teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0014-xgboost.html">← Lesson 014</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0015-lightgbm.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/growth-viz.js"></script>
+<script>
+  GrowthViz.mount(document.getElementById("growth-viz"), {
+    caption: "Toggle the strategy and drag the split budget. Leaf-wise dives down the high-gain path (deep, unbalanced); level-wise fills each depth first (balanced). For the same number of leaves, leaf-wise reaches lower training loss — the reason LightGBM grows this way, and the reason it overfits small data without num_leaves control."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "LightGBM's leaf-wise growth means each step splits the leaf that:",
+    options: [
+      { label: "Reduces the loss the most", value: "a" },
+      { label: "Sits at the shallowest depth", value: "b" },
+      { label: "Contains the fewest rows", value: "c" },
+      { label: "Was created most recently", value: "d" }
+    ],
+    correct: "a",
+    explain: "Leaf-wise (best-first) growth expands the frontier leaf with maximum delta loss (gain), so for a fixed number of leaves it reaches lower training loss than level-wise."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "GOSS speeds up training by keeping the rows that have:",
+    options: [
+      { label: "The largest absolute gradients", value: "a" },
+      { label: "The smallest absolute gradients", value: "b" },
+      { label: "The most missing feature values", value: "c" },
+      { label: "The highest raw label values", value: "d" }
+    ],
+    correct: "a",
+    explain: "Large-gradient rows are still badly fit and carry most of the split information; GOSS keeps them, subsamples the small-gradient rest, and amplifies that sample by (1−a)/b to stay unbiased."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "On small, noisy data, the LightGBM knob to lower first is:",
+    options: [
+      { label: "num_leaves (leaf-wise capacity)", value: "a" },
+      { label: "n_estimators (number of trees)", value: "b" },
+      { label: "learning_rate (shrinkage step)", value: "c" },
+      { label: "bagging_fraction (row sample)", value: "d" }
+    ],
+    correct: "a",
+    explain: "Leaf-wise trees overfit small data; num_leaves is the primary complexity knob, so lower it first (the credit_g sweep shows PR-AUC dropping as num_leaves grows)."
+  });
+</script>
+</body>
+</html>
