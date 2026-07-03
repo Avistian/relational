@@ -90,8 +90,14 @@ _Optional / extension (◆ — read after the year exit criterion):_
   Parameter-efficient MLP ensembling. Use for: **the current best/most practical DL baseline** — beats attention/retrieval models.
 - [TabReD — Rubachev et al., 2024](https://arxiv.org/abs/2406.19380)
   Industry-grade datasets with temporal splits. Use for: proving why *time-based* evaluation flips model rankings.
+- [Understanding temporal-shift limits — Cai & Ye, ICML 2025](https://arxiv.org/abs/2502.20260)
+  Why DL fails under temporal drift; val-split protocol + Fourier temporal embedding. Use for: pairing with TabReD in Y2 Q2.
 - [TabArena — Erickson et al., NeurIPS 2025](https://arxiv.org/abs/2506.16791)
   Living, maintained tabular leaderboard. Use for: ground truth on what actually wins, with ensembling.
+- [BeyondArena — Purucker et al., 2026](https://arxiv.org/abs/2606.30410)
+  Holistic benchmark: IID vs temporal vs grouped; TFMs win tiny/medium IID, trees/DL win non-IID/large/high-dim. Use for: failure-mode literacy beyond TabArena.
+- [TALENT — Ye et al., 2024](https://arxiv.org/abs/2407.00956)
+  300+ dataset meta-analysis; TALENT-tiny (45) for fast eval. Use for: meta-features predicting which family wins.
 - [DL & Tabular Data: A Survey — Borisov et al., 2021](https://arxiv.org/abs/2110.01889) · [Survey on Deep Tabular Learning, 2024](https://arxiv.org/abs/2410.12034)
   Use for: mapping architecture families.
 
@@ -118,8 +124,10 @@ _Optional / extension (◆ — read after the year exit criterion):_
   Retrieval+fine-tuning; distribution shift. Use for: making PFNs practical.
 - [Realistic eval of TabPFN v2 in open environments — Cheng et al., 2025](https://arxiv.org/abs/2505.16226)
   **Critical counterweight:** where tabular FMs fail (covariate shift, scale, imbalance) and trees still win.
-- [PyTorch Frame — Hu et al., 2024](https://arxiv.org/abs/2402.05964)
-  Deep tabular row encoder. Use for: RDL stack (encoder → GNN); read in Y2, apply heavily in Y4.
+- [Operational TTF — Klein & Hoffart, 2026](https://arxiv.org/abs/2606.29091)
+  Values-only TFMs hit Bayes bound; rule-derived audits needed. Use for: enterprise deployment skepticism.
+- [PyTorch Frame — Hu et al., 2024](https://arxiv.org/abs/2404.00776)
+  Deep tabular row encoder. Use for: RDL stack (encoder → GNN); read in Y2, apply heavily in Y4. (**Correct ID:** not `2402.05964`.)
 
 _Optional / extension (◆):_
 - [CARTE — Kim, Grinsztajn & Varoquaux, 2024](https://arxiv.org/abs/2402.16785)
@@ -180,10 +188,18 @@ _Optional / extension (◆) — GNN pathologies & graph transformers:_
   Composite message passing + atomic routes; SOTA on most RelBench tasks. Use for: current SOTA GNN architecture.
 - [Relational Graph Transformer (RelGT) — Dwivedi et al., ICLR 2026](https://arxiv.org/abs/2505.10960)
   Multi-element tokenization + local/global attention. Use for: graph-transformer paradigm on REG.
+- [Desired graph for RDL — Cheng & Luo, ICML 2026](https://arxiv.org/abs/2606.08491)
+  Schema graphs need filtering + injection. Use for: when raw FK graphs fail.
+- [Universal Row Encoder — Peleška & Šír, ECML PKDD 2026](https://arxiv.org/abs/2606.21434)
+  Modular row encoder decoupled from GNN message passing. Use for: cross-database encoder pretrain.
 - [RDL survey — arXiv 2025](https://arxiv.org/abs/2506.16654)
   Challenges + next-gen architectures. Use for: year-4/5 frontier mapping.
 
 _Optional / extension (◆):_
+- [DBFormer — Peleška & Šír, 2024](https://arxiv.org/abs/2412.05218)
+  SQL-native relational transformer; contrast to graph-native RDL.
+- [ReDeLEx — 2025](https://arxiv.org/abs/2506.22199)
+  70+ CTU databases; classical vs RDL benchmarking framework.
 - [4DBInfer — Wang et al., NeurIPS 2024](https://arxiv.org/abs/2404.18209)
   Graph-centric RDB benchmarking toolbox ([code](https://github.com/awslabs/multi-table-benchmark)). Use for: comparing table→graph construction strategies and subsampling against RelBench, to test whether your conclusions are benchmark-dependent.
 
@@ -195,15 +211,19 @@ _Optional / extension (◆):_
   Graph-centric RDB foundation model; unified encoder/decoder, cross-attention, pretrained on 150M+ nodes. Use for: the first serious open RDB FM.
 - [RDB-PFN — Wang et al., 2026](https://arxiv.org/abs/2603.03805)
   First relational FM trained *purely on synthetic data* (Relational Prior Generator + PFN). Use for: open, reproducible relational ICL.
-- [Relational Transformer (RT) — Wang et al., 2025](https://arxiv.org/abs/2510.06377)
+- [RDBLearn — Zhang et al., 2026](https://arxiv.org/abs/2602.13697)
+  DFS featurize + off-the-shelf TabICL/TabPFN; no RDB FM training. Use for: **training-free baseline** that sometimes beats supervised RDL.
+- [Relational Transformer (RT) — Ranjan et al., ICLR 2026](https://arxiv.org/abs/2510.06377)
   Cell-level tokenization + relational attention; zero-shot on unseen schemas. Use for: schema-agnostic relational FM baseline.
-- [OpenRFM — Chen et al., 2026](https://arxiv.org/html/2606.04320)
-  Open relational ICL dissecting synthetic vs real pretraining. Use for: understanding what relational ICL actually learns.
+- [OpenRFM — Chen et al., 2026](https://arxiv.org/abs/2606.04320)
+  Open relational ICL; dual-stage architecture + homophily-aware pretrain; ~30% over RT. Use for: best open reproducible relational FM.
+- [KumoRFM-2 — Fey et al., 2026](https://arxiv.org/abs/2604.12596)
+  Current RelBench SOTA; first few-shot FM to beat supervised RelGNN. Use for: SOTA tracking (proprietary weights).
 - [GelGT (Gaussian Relational Graph Transformer) — 2026](https://arxiv.org/abs/2605.15575)
   Long-range dependency fixes for relational graph transformers. Use for: tracking architecture frontier.
 - [RelBench v2 — arXiv 2602.12606](https://arxiv.org/abs/2602.12606) · [RelGT-AC — arXiv 2606.03040](https://arxiv.org/abs/2606.03040)
   Expanded benchmark + autocomplete tasks. Use for: year-5+ experiments.
-- KumoRFM (2025) — proprietary in-context relational FM. Track via vendor tech report; not reproducible but sets a commercial bar.
+- KumoRFM v1 (2025) — no arXiv; [PDF](https://kumo.ai/research/kumo_relational_foundation_model.pdf). Track via KumoRFM-2 for reproducible numbers.
 
 ## Wisdom (Communities)
 
@@ -221,7 +241,8 @@ _Optional / extension (◆):_
 ## Gaps
 
 - No canonical textbook for relational foundation models — curriculum is paper-driven.
-- Proprietary FM weights (KumoRFM) limit full reproduction; plan ablations on open components (Griffin, RDB-PFN).
-- Lesson HTML exists only for lecture 001 so far; agent produces lessons as you progress through CURRICULUM.md rows.
-- Fast-moving frontier: re-run an arXiv search each quarter (sort by `submitted`) and add only papers that set SOTA, expose a failure mode, or are a baseline to beat. Full verified ID index lives in [CURRICULUM.md](./CURRICULUM.md#verified-paper-index-arxiv-ids).
+- Proprietary FM weights (KumoRFM v1/v2) limit full reproduction; plan ablations on open components (Griffin, RDB-PFN, OpenRFM, RDBLearn).
+- Lesson HTML published through 014 (XGBoost); agent produces lessons as you progress through CURRICULUM.md rows.
+- Fast-moving frontier: re-run an arXiv search each quarter (sort by `submitted`) and add only papers that set SOTA, expose a failure mode, or are a baseline to beat. Full verified ID index + exhaustive registry in [CURRICULUM.md](./CURRICULUM.md#exhaustive-paper-registry-july-2026).
 - Resources are tagged **core** (the default entries) vs **◆ optional / extension** (read only after the year's core papers and lab are done). Optional papers are ~2 h skims, never a reason to skip reproduction or exit exams. Full optional index: [CURRICULUM.md → Optional / extension reading](./CURRICULUM.md).
+- **July 2026 merge:** PyTorch Frame ID corrected to `2404.00776`; TALENT to `2407.00956`. See [Research merge status](./CURRICULUM.md#research-merge-status-july-2026-deep-research-pass) for what's already solved vs newly added.

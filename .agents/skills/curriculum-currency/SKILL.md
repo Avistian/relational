@@ -47,4 +47,11 @@ Papers to track (verify IDs before adding):
 | TabICLv2 | 2602.11139 | Y2 lec 066 extend |
 | TabH2O | 2605.18383 | Y2 Q3 optional |
 | Relational Transformer | 2510.06377 | Y5 ★ core |
-| OpenRFM | 2606.04320 | Y5 ◆ or ★ |
+| OpenRFM | 2606.04320 | Y5 ★ core (promoted July 2026) |
+| BeyondArena | 2606.30410 | Y2 Q2 ★ |
+| RDBLearn | 2602.13697 | Y5 ★ core |
+| KumoRFM-2 | 2604.12596 | Y5 ★ SOTA tracking |
+| Universal Row Encoder | 2606.21434 | Y4 ★ |
+| Desired graph for RDL | 2606.08491 | Y4 ★ |
+
+**July 2026 exhaustive merge:** full registry in [CURRICULUM.md](../../CURRICULUM.md#exhaustive-paper-registry-july-2026). Re-run arXiv MCP at start of Y1 Q3 (next quarter for student).

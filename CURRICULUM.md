@@ -53,6 +53,40 @@ Papers come in two tiers so the reading budget (~350 h, ~16% of the clock) never
 
 Each year lists its ◆ papers in an **Optional / time-permitting** block after the exit criterion; full arXiv IDs are in the [Optional / extension reading](#optional--extension-reading-) index. The quarterly currency rule still applies on top of both tiers.
 
+### Research merge status (July 2026 deep-research pass)
+
+Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; **new ★** items were missing and are now in the [verified index](#verified-paper-index-arxiv-ids) and lecture rows.
+
+| Status | Topic | Where already solved |
+|--------|-------|-------------------|
+| ✅ | Fair GBDT baseline + leakage discipline | Y1 Q1 lessons 001–010 (published); L010 checkpoint |
+| ✅ | XGBoost / boosting mechanics | Y1 Q2 lessons 011–014 (published); Chen 2016 in index |
+| ✅ | Grinsztajn three biases + benchmark protocol | Y1 Q3 lec 024–027; Y1 exit |
+| ✅ | FT-Transformer, TabNet, NODE, SAINT, ExcelFormer, Trompt | Y2 Q1 full quarter |
+| ✅ | TabR, RealMLP, TabM, TabReD, TabArena | Y2 Q2 lec 052–056 |
+| ✅ | TabPFN v1/v2, TabICL, TabICLv2, LoCalPFN, open-env critique | Y2 Q3 lec 061–069 |
+| ✅ | VIME, SCARF, PyTorch Frame bridge | Y2 Q4 lec 071–075 |
+| ✅ | GraphSAGE → R-GCN → HGT → TGN | Y3 Q1–Q3 |
+| ✅ | Fey RDL, RelBench v1, RelGNN, RelGT, ContextGNN | Y4 Q1 + Q3 |
+| ✅ | Griffin, RDB-PFN, Relational Transformer | Y5 Q1 |
+| ✅ | RelBench v2, GelGT, RelGT-AC | Y5 Q3 lec 181 |
+| ✅ | TabPFN-2.5/3, TabH2O in index | Y2 verified index (lec 064/070 extend at runtime) |
+| 🆕 ★ | **BeyondArena** — non-IID / large-data TFMs fail | Y2 Q2 lec 056b |
+| 🆕 ★ | **Temporal-shift limits** (ICML 2025) | Y2 Q2 lec 055b |
+| 🆕 ★ | **Operational TTF** — values-only TFMs need rules | Y2 Q3 lec 069b |
+| 🆕 ★ | **TALENT** (correct ID) | Y2 Q2 lec 058 |
+| 🆕 ★ | **RDBLearn** — training-free relational ICL | Y5 Q1 lec 166b · Q2 lec 178 |
+| 🆕 ★ | **KumoRFM-2** — current RelBench SOTA | Y5 Q3 lec 191 |
+| 🆕 ★ | **OpenRFM** (promoted ◆→★) | Y5 Q1 lec 165b |
+| 🆕 ★ | **Universal Row Encoder** | Y4 Q1 lec 125b |
+| 🆕 ★ | **Desired graph for RDL** (graph construction) | Y4 Q4 lec 157b |
+| 🆕 ★ | **Three FM paradigms synthesis** | Y5 Q1 lec 170b |
+| 🆕 ◆ | DBFormer, ReDeLEx, FROG, DHN, TabSwift, LimiX, OmniTabBench, ModernNCA, TabZilla | Optional index |
+| 🔧 | PyTorch Frame arXiv ID | `2402.05964` → **`2404.00776`** everywhere |
+| 🔧 | TALENT arXiv ID | `2407.04057` → **`2407.00956`** |
+
+**2026 fair comparison stack** (teach explicitly at Y2 Q2 checkpoint): tuned CatBoost/XGBoost + RealMLP/TabM defaults + (if n≲50K) TabICLv2, on **time splits when timestamps exist**, reported via TabArena/BeyondArena ensembling protocol.
+
 ---
 
 ## Year 1 — Tabular Foundations (Lessons 001–040)
@@ -159,9 +193,11 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 053 | RealMLP & strong defaults ★ | Holzmüller 2024 (2407.04491) | RealMLP vs tuned XGB |
 | 054 | TabM — parameter-efficient ensembling ★ | Gorishniy 2024 (2410.24210) | Train TabM (current best DL baseline) |
 | 055 | The temporal-split reality | TabReD (2406.19380) | Random vs time split flips rankings |
+| 055b | Temporal shift & DL limits ★ | Cai & Ye 2025 (2502.20260) | Val-split protocol + Fourier temporal embedding |
 | 056 | Living benchmark literacy | TabArena (2506.16791) | Read leaderboard methodology |
+| 056b | Beyond IID / enterprise gap ★ | Purucker et al. 2026 (2606.30410) | TFMs vs trees on non-IID, large, high-dim |
 | 057 | Ensembling across model families | TabArena §results | Build cross-model ensemble |
-| 058 | Surveys & taxonomy | Borisov 2021 (2110.01889) · survey 2410.12034 | Map architecture families |
+| 058 | Surveys & meta-benchmarks | Borisov 2021 · TALENT (2407.00956) · survey 2410.12034 | Map families; 300-dataset meta-analysis |
 | 059 | Validation-set overfitting | TabArena critique | Diagnose overfit ensemble |
 | 060 | **Q2 checkpoint** | TabM + RealMLP | Beat your Y1 XGB with a tuned DL model — or document why you can't |
 
@@ -180,7 +216,8 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 067 | Retrieval + fine-tuning PFNs | LoCalPFN (2406.05207) | Local calibration |
 | 068 | Distribution shift & PFNs | Drift-Resilient TabPFN (2411.10634) | Temporal shift test |
 | 069 | **Critical:** where TabPFN v2 breaks | Cheng et al. 2025 (2505.16226) | Open-environment failure cases |
-| 070 | **Q3 checkpoint** | Hollmann 2025 + TabICL + TabICLv2 | TabPFN v2/v2.5 vs TabM vs XGB on 5 datasets |
+| 069b | **Critical:** operational identifiability ★ | Klein & Hoffart 2026 (2606.29091) | Values-only TFMs vs rule-grounded audits |
+| 070 | **Q3 checkpoint** | Hollmann 2025 + TabICL + TabICLv2 + TabPFN-3 | TabPFN-2.5/3 vs TabM vs XGB on 5 datasets |
 
 ### Q4 · Self-supervision, encoders & the bridge to relational (071–080)
 **Papers:** Yoon 2020 (VIME) · Bahri 2021 (SCARF) · Ucar 2021 (SubTab) · Hu et al. 2024 (PyTorch Frame) · CARTE/cross-table transfer (skim)
@@ -191,7 +228,7 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 072 | SCARF / SubTab — contrastive & multi-view | Bahri 2021 · Ucar 2021 | Contrastive views |
 | 073 | When SSL actually helps | Survey + your homework VIME notes | SSL ablation design |
 | 074 | Cross-table transfer (CARTE etc.) | Literature skim | Schema-agnostic embeddings |
-| 075 | PyTorch Frame — the row encoder ★ | Hu et al. 2024 (2402.05964) | Encode mixed-type schema |
+| 075 | PyTorch Frame — the row encoder ★ | Hu et al. 2024 (2404.00776) | Encode mixed-type schema |
 | 076 | Encoder → predictor stack | RDL preview | Encoder → head pattern |
 | 077 | **Single-table ceiling** (synthesis) | — | Write: what rows-only models cannot represent |
 | 078 | Bridge: message passing preview | Gilmer 2017 · Kipf 2017 §2 | Manual one-hop aggregate |
@@ -294,7 +331,8 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 122 | REG construction | Fey 2024 §3 | Build toy REG |
 | 123 | Temporal heterogeneous graphs | Fey 2024 §3–4 | Timestamp every node/edge |
 | 124 | Entity vs task table | Fey 2024 | Prediction node selection |
-| 125 | PyTorch Frame deep dive | Hu 2024 | Row encoders in PyG Frame |
+| 125 | PyTorch Frame deep dive | Hu 2024 (2404.00776) | Row encoders in PyG Frame |
+| 125b | Universal Row Encoder ★ | Peleška & Šír 2026 (2606.21434) | Modular encoder decoupled from GNN |
 | 126 | RelBench beta paper | arXiv 2312.04615 | Package tour |
 | 127 | RelBench v1 | Robinson 2024 NeurIPS | 7 databases overview |
 | 128 | Task taxonomy | RelBench docs | Entity / link / autoregressive |
@@ -332,6 +370,7 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 155 | Compare to manual FE | Robinson user study protocol | Document human-effort ratio |
 | 156 | Temporal leakage audit | — | Full REG audit checklist |
 | 157 | Open-source contribution | — | PR or reproducibility repo |
+| 157b | When schema graphs fail ★ | Cheng & Luo 2026 (2606.08491) | Filtering vs injection for REG graphs |
 | 158 | Year 4 synthesis essay | — | Evidence for/against thesis |
 | 159 | Foundation model preview | Zahradník 2023 full | Pre-training objectives |
 | 160 | **Year 4 exit exam** | All Y4 papers | RelBench portfolio + essay |
@@ -354,12 +393,15 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 162 | The relational FM vision | Zahradník 2023 (2305.15321) | LM + GNN pre-training |
 | 163 | LM encoders for rows | Zahradník 2023 §4 | Text vs typed columns |
 | 164 | Griffin — graph-centric RDB FM ★ | Wang 2025 (2505.05568) | Unified encoder/decoder, cross-attention |
-| 165 | KumoRFM — in-context relational learner | KumoRFM tech report (2025) | Few-shot task adaptation (proprietary) |
+| 165 | KumoRFM — in-context relational learner | KumoRFM tech report (2025) | Few-shot task adaptation (proprietary upper bound) |
+| 165b | OpenRFM — open relational ICL ★ | Chen et al. 2026 (2606.04320) | Dual-stage ICL; ~30% over RT; open weights |
 | 166 | RDB-PFN — synthetic-prior relational FM ★ | Wang 2026 (2603.03805) | Relational Prior Generator; reproduce (open code) |
+| 166b | RDBLearn — training-free relational ICL ★ | Zhang et al. 2026 (2602.13697) | DFS + TabICL; no RDB FM training |
 | 167 | Tabular FM → relational FM transfer | TabPFN v2 + TabICL recap | What carries over from Year 2 |
 | 168 | Cross-database generalization | Griffin + RDB-PFN experiments | Zero-/few-shot on unseen schema |
 | 169 | Scaling laws & open questions | Survey 2025 | What's unknown |
-| 170 | **Q1 checkpoint** | Zahradník + Griffin + RDB-PFN | Written FM design doc comparing the three |
+| 170 | **Q1 checkpoint** | Zahradník + Griffin + RDB-PFN + RDBLearn | Written FM design doc comparing paradigms |
+| 170b | Three relational FM paradigms ★ | Synthesis lecture | Graph-native ICL vs synthetic pretrain vs training-free |
 
 ### Q2 · Building pre-training pipelines (171–180)
 | 171 | Corpus of databases | — | Curate or use RelBench multi-DB |
@@ -369,7 +411,7 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 175 | Evaluation: zero-shot | — | Unseen database task |
 | 176 | Evaluation: few-shot ICL | — | k labeled examples |
 | 177 | Compute budget realism | — | What's feasible at baseline vs extended sessions |
-| 178 | Compare FM vs tuned GNN | — | Same task, fair budget |
+| 178 | Compare FM vs tuned GNN vs RDBLearn | RDBLearn + RelGNN | Same task, fair budget; three paradigms |
 | 179 | Failure modes | — | Schema shift, cold start |
 | 180 | **Q2 checkpoint** | — | Fine-tune public encoder on 1 DB |
 
@@ -386,7 +428,8 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 190 | **Q3 checkpoint** | — | Research gap document (5 pages) |
 
 ### Q4 · Year 5 synthesis (191–200)
-| 191–194 | Reproduce best public FM baseline | — | Full reproduction |
+| 191 | KumoRFM-2 SOTA tracking ★ | Fey et al. 2026 (2604.12596) | RelBench v1+v2 numbers; proprietary vs open gap |
+| 192–194 | Reproduce best **open** FM baseline | OpenRFM or RDBLearn | Full reproduction |
 | 195 | Thesis stress-test | — | Where is thesis wrong? |
 | 196 | Community engagement | RelBench mailing list | Ask one technical question |
 | 197 | Year 5 essay | — | FM landscape map |
@@ -410,7 +453,7 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 | 201 | Sharpen hypothesis | — | Falsifiable claim |
 | 202 | Related work deep dive | — | Position vs RelGNN/RelGT/FM |
 | 203 | Experiment protocol | — | Pre-registration style doc |
-| 204 | Baseline suite locked | — | Trees + FE + GNN + FM |
+| 204 | Baseline suite locked | — | Trees + FE + RelGNN + TabICLv2 + RDBLearn + best open FM |
 | 205 | Implementation sprint 1 | — | Core method |
 | 206 | Implementation sprint 2 | — | Ablations |
 | 207 | Negative results log | — | What didn't work |
@@ -426,7 +469,7 @@ Each year lists its ◆ papers in an **Optional / time-permitting** block after 
 ### Q3 · Communication (221–230)
 | 221 | Write technical report | — | 8–12 page draft |
 | 222 | Open-source release | — | Code + docs |
-| 223 | RelBench leaderboard submission | — | If results merit |
+| 223 | RelBench leaderboard submission | RelBench v1 **+ v2** + 4DBInfer subset | If results merit; single-benchmark claims insufficient |
 | 224 | Blog / talk outline | — | Thesis for general audience |
 | 225 | Respond to critique | — | Steel-man opposing view |
 | 226 | Revise based on gaps | — | Second experiment round |
@@ -500,24 +543,34 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - ExcelFormer — Chen et al. 2023 — `2301.02819`
 - Trompt — Chen et al. 2023 — `2305.18446`
 - TabR — Gorishniy et al. 2023 — `2307.14338` ★ (retrieval-augmented)
-- PyTorch Frame — Hu et al. 2024 — `2402.05964` ★ (row encoder for RDL)
+- PyTorch Frame — Hu et al. 2024 — `2404.00776` ★ (row encoder for RDL; **not** `2402.05964`)
 - LoCalPFN — Thomas et al. 2024 — `2406.05207`
 - TabReD — Rubachev et al. 2024 — `2406.19380` ★ (industry, temporal splits)
 - RealMLP / Better by Default — Holzmüller et al. 2024 — `2407.04491` ★
-- TALENT toolbox — Liu et al. 2024 — `2407.04057`
+- TALENT toolbox — Ye et al. 2024 — `2407.00956` ★ (300+ datasets; **not** `2407.04057`)
+- ModernNCA — Ye et al. 2024 — `2407.03257` ◆ (retrieval DL baseline)
 - Survey on Deep Tabular Learning — 2024 — `2410.12034`
 - TabM — Gorishniy et al. 2024 — `2410.24210` ★ (best DL baseline, ICLR 2025)
 - Drift-Resilient TabPFN — Helli et al. 2024 — `2411.10634`
+- TabZilla — McElfresh et al. 2023 — `2305.02997` ◆ (when NN vs GBDT)
+- Understanding temporal-shift limits — Cai & Ye 2025 — `2502.20260` ★ (ICML 2025)
 - TabICL — Qu et al. 2025 — `2502.05564` ★ (scales ICL to 500K rows, ICML 2025)
 - TabICLv2 — Qu et al. 2026 — `2602.11139` ★ (open SOTA ICL; QASSMax, Muon optimizer)
-- TabH2O — Qu et al. 2026 — `2605.18383` (unified cls+reg FM; builds on TabICL)
+- TabH2O — Qu et al. 2026 — `2605.18383` ◆ (unified cls+reg FM; builds on TabICL)
 - TabPFN-2.5 — Grinsztajn et al. 2025 — `2511.08667` ★ (RealTabPFN-2.5)
 - TabPFN-3 — Grinsztajn et al. 2026 — `2605.13986` ★ (enterprise-scale tabular FM)
+- Feature-aware temporal modulation — 2025 — `2512.03678` ◆ (TabM + temporal shift)
 - A Closer Look at TabPFN v2 — Ye et al. 2025 — `2502.17361`
-- Realistic eval of TabPFN v2 (open environments) — Cheng et al. 2025 — `2505.16226` (critical)
+- Realistic eval of TabPFN v2 (open environments) — Cheng et al. 2025 — `2505.16226` ★ (critical)
 - TabArena — Erickson et al. 2025 — `2506.16791` ★ (living benchmark, NeurIPS 2025)
+- BeyondArena — Purucker et al. 2026 — `2606.30410` ★ (non-IID / large / high-dim; TFMs fail)
+- Operational TTF (tabular FM barrier) — Klein & Hoffart 2026 — `2606.29091` ★ (values-only TFMs)
+- TabSwift — Liu & Ye 2026 — `2606.07345` ◆ (efficient ICL, ICML 2026 spotlight)
+- LimiX / LimiX-2M — 2025–26 — `2509.03505` / `2606.04485` ◆ (open structured FM)
+- OmniTabBench — 2026 — `2604.06814` ◆ (3030-dataset mega-benchmark)
 - TabPFN v2 — Hollmann et al. 2025 — *Nature* `s41586-024-08328-6` ★
-- _Note:_ TabDPT, CARTE, and LLM-serialization methods (e.g. TabLLM) are optional skims — track via TabArena leaderboard rather than chasing each.
+- Illusion of Generalization (tabular LMs) — 2026 — `2602.04031` ◆ (contamination critique)
+- _Note:_ TabDPT, CARTE, Schema-1 (`2605.06290`), and LLM-serialization methods (e.g. TabLLM) are optional skims — track via TabArena leaderboard rather than chasing each.
 
 ### Year 3 — Graph ML
 - Gilmer et al. 2017 — MPNN — `1704.01212` ★
@@ -535,28 +588,144 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - RelBench beta — 2023 — `2312.04615`
 - Fey et al. 2024 — RDL position (ICML) — see PMLR v235; arXiv `2312.04615` lineage ★
 - RelBench v1 — Robinson et al. 2024 — `2407.20060` ★
+- DBFormer — Peleška & Šír 2024 — `2412.05218` ◆ (SQL-native transformer; contrast to graph RDL)
 - ContextGNN — Yuan et al. 2024 — `2411.19513` ★ (recsys / link prediction)
 - RelGNN — Chen et al. 2025 — `2502.06784` ★ (composite message passing, ICML 2025)
 - RelGT — Dwivedi et al. 2025 — `2505.10960` ★ (Relational Graph Transformer, ICLR 2026)
+- ReDeLEx — 2025 — `2506.22199` ◆ (70+ CTU databases; pretrain via value masking)
 - RDL survey — 2025 — `2506.16654`
+- FROG (learnable table roles) — Huang et al. 2026 — `2605.21475` ◆ (ICML 2026)
+- Desired graph for RDL — Cheng & Luo 2026 — `2606.08491` ★ (filtering + injection; ICML 2026)
+- Universal Row Encoder — Peleška & Šír 2026 — `2606.21434` ★ (ECML PKDD 2026)
+- DHN expressive power — Schönherr et al. 2026 — `2605.22852` ◆ (SQL ↔ deep homomorphism nets)
 
 ### Year 5 — Foundation relational models
 - Zahradník et al. 2023 — Towards FMs for relational DBs — `2305.15321` ★
 - Griffin — Wang et al. 2025 — `2505.05568` ★ (graph-centric RDB FM, ICML 2025)
 - RDB-PFN — Wang et al. 2026 — `2603.03805` ★ (synthetic-prior relational FM, open code)
-- Relational Transformer (RT) — Wang et al. 2025 — `2510.06377` ★ (zero-shot relational FM)
-- OpenRFM — Chen et al. 2026 — `2606.04320` ◆ (dissects relational ICL; open weights)
-- GelGT (Gaussian Relational Graph Transformer) — 2026 — `2605.15575`
-- RelBench v2 — `2602.12606` · RelGT-AC — `2606.03040`
-- KumoRFM — 2025 industry technical report (proprietary in-context relational FM)
+- RDBLearn — Zhang et al. 2026 — `2602.13697` ★ · implementation — `2602.18495`
+- Relational Transformer (RT) — Ranjan et al. 2025 — `2510.06377` ★ (zero-shot relational FM, ICLR 2026)
+- OpenRFM — Chen et al. 2026 — `2606.04320` ★ (open relational ICL; ~30% over RT)
+- KumoRFM-2 — Fey et al. 2026 — `2604.12596` ★ (RelBench SOTA; proprietary)
+- GelGT (Gaussian Relational Graph Transformer) — 2026 — `2605.15575` ◆
+- RelBench v2 — `2602.12606` ★ · RelGT-AC — `2606.03040` ★
+- LM+GNN hybrid FM — Wu et al. 2026 — `2605.16085` ◆ (lightweight BART + GraphSAGE)
+- KumoRFM v1 — 2025 industry technical report (no arXiv; cite PDF + KumoRFM-2 for numbers)
 
-**Currency rule:** This index is a snapshot. Before each new quarter, run an arXiv search for the quarter's topic sorted by `submitted` and add any paper that (a) sets new SOTA on RelBench/TabArena, (b) exposes a failure mode, or (c) is a baseline you'll be measured against. Do not add papers that merely apply an existing method.
+**Currency rule:** This index is a snapshot (last exhaustive merge: **July 2026**). Before each new quarter, run an arXiv search for the quarter's topic sorted by `submitted` and add any paper that (a) sets new SOTA on RelBench/TabArena/BeyondArena, (b) exposes a failure mode, or (c) is a baseline you'll be measured against. Do not add papers that merely apply an existing method.
+
+---
+
+## Exhaustive paper registry (July 2026)
+
+Canonical ★/◆ assignments live in the [verified index](#verified-paper-index-arxiv-ids) above. This registry lists **every paper tracked** for curriculum completeness — including historical and optional entries — so nothing falls through the currency pass.
+
+### Tabular — benchmarks & evaluation
+| Paper | arXiv | Tier | Notes |
+|-------|-------|------|-------|
+| Grinsztajn et al. 2022 | 2207.08815 | ★ | 45-dataset tree vs DL |
+| TabReD | 2406.19380 | ★ | Temporal splits flip rankings |
+| TabArena | 2506.16791 | ★ | Living benchmark |
+| BeyondArena | 2606.30410 | ★ | Non-IID / large / high-dim |
+| TALENT | 2407.00956 | ★ | 300+ datasets meta-analysis |
+| TabZilla | 2305.02997 | ◆ | When NN vs GBDT |
+| OmniTabBench | 2604.06814 | ◆ | 3030 datasets |
+| Temporal-shift limits | 2502.20260 | ★ | ICML 2025 |
+| Open-env TabPFN critique | 2505.16226 | ★ | TFMs fail open world |
+| Operational TTF | 2606.29091 | ★ | Rule-grounding barrier |
+| Shwartz-Ziv & Armon 2021 | 2106.03253 | ◆ | Early "DL not all you need" |
+| Tabular DL is not all you need | 2402.03970 | ◆ | Contrarian rebuttal to Grinsztajn |
+
+### Tabular — trained DL architectures
+| Paper | arXiv | Tier | Notes |
+|-------|-------|------|-------|
+| TabNet | 1908.07442 | ◆ | Sequential attention |
+| NODE | 1909.06312 | ◆ | Differentiable trees |
+| FT-Transformer / Revisiting | 2106.11959 | ★ | Canonical attention baseline |
+| SAINT | 2106.01342 | ◆ | Row+col attention |
+| TabR | 2307.14338 | ★ | Retrieval-augmented |
+| RealMLP | 2407.04491 | ★ | Strong defaults |
+| TabM | 2410.24210 | ★ | Best trained DL baseline |
+| ModernNCA | 2407.03257 | ◆ | Stochastic neighbors |
+| ExcelFormer | 2301.02819 | ◆ | Semi-permeable attention |
+| Trompt | 2305.18446 | ◆ | Prompt-inspired |
+| Feature-aware temporal TabM | 2512.03678 | ◆ | Temporal shift |
+
+### Tabular — foundation models (ICL/PFN)
+| Paper | arXiv | Tier | Notes |
+|-------|-------|------|-------|
+| PFNs (Müller) | 2112.10510 | ★ | Bayesian ICL foundation |
+| TabPFN v1 | 2207.01848 | ◆ | ≤1K rows |
+| TabPFN v2 | Nature 2025 | ★ | ≤10K rows |
+| TabPFN-2.5 | 2511.08667 | ★ | ~100K rows |
+| TabPFN-3 | 2605.13986 | ★ | ~1M rows; TabArena SOTA |
+| TabICL | 2502.05564 | ★ | Open ICL 500K |
+| TabICLv2 | 2602.11139 | ★ | Open SOTA ICL |
+| TabH2O | 2605.18383 | ◆ | Unified cls+reg |
+| TabSwift | 2606.07345 | ◆ | Efficient serving |
+| LoCalPFN | 2406.05207 | ★ | kNN + fine-tune |
+| Drift-Resilient TabPFN | 2411.10634 | ◆ | Temporal shift |
+| Closer Look TabPFN v2 | 2502.17361 | ◆ | Mechanistic |
+| LimiX / LimiX-2M | 2509.03505 / 2606.04485 | ◆ | Open multi-task |
+| Schema-1 (DLM) | 2605.06290 | ◆ | Raw-cell paradigm |
+| Tabular LM illusion | 2602.04031 | ◆ | Contamination critique |
+
+### Tabular — SSL & transfer
+| Paper | arXiv | Tier | Notes |
+|-------|-------|------|-------|
+| VIME | NeurIPS 2020 | ◆ | Masked pretext |
+| SCARF | 2106.15147 | ◆ | Contrastive |
+| SubTab | 2110.04361 | ◆ | Multi-view |
+| SSL survey tabular | 2402.01204 | ◆ | Taxonomy |
+| CARTE | 2402.16785 | ◆ | Cross-table pretrain |
+
+### Relational — foundations & benchmarks
+| Paper | arXiv | Tier | Notes |
+|-------|-------|------|-------|
+| Cvitkovic 2019 | 1903.06430 | ◆ | Pre-RDL |
+| Fey RDL | 2312.04615 | ★ | REG blueprint |
+| RelBench v1 | 2407.20060 | ★ | 7 DBs, 30 tasks |
+| RelBench v2 | 2602.12606 | ★ | 11 DBs, autocomplete |
+| 4DBInfer | 2404.18209 | ◆ | Alt RDB benchmark |
+| ReDeLEx | 2506.22199 | ◆ | 70+ CTU DBs |
+| RDL KDD survey | 2506.16654 | ◆ | Landscape map |
+| PyTorch Frame | 2404.00776 | ★ | Row encoder |
+| DBFormer | 2412.05218 | ◆ | SQL-native transformer |
+
+### Relational — supervised architectures
+| Paper | arXiv | Tier | Notes |
+|-------|-------|------|-------|
+| ContextGNN | 2411.19513 | ★ | Recsys / link pred |
+| RelGNN | 2502.06784 | ★ | Best open supervised |
+| RelGT | 2505.10960 | ★ | Graph transformer |
+| GelGT | 2605.15575 | ◆ | Gaussian temporal attn |
+| RelGT-AC | 2606.03040 | ★ | Autocomplete + text |
+| Desired graph | 2606.08491 | ★ | Graph construction |
+| FROG | 2605.21475 | ◆ | Learnable table roles |
+| Universal Row Encoder | 2606.21434 | ★ | Modular encoder |
+| DHN expressivity | 2605.22852 | ◆ | SQL fragments |
+
+### Relational — foundation models
+| Paper | arXiv | Tier | Notes |
+|-------|-------|------|-------|
+| Zahradník FM vision | 2305.15321 | ★ | LM+GNN roadmap |
+| Griffin | 2505.05568 | ★ | Open RDB FM |
+| Relational Transformer | 2510.06377 | ★ | Zero-shot cell tokens |
+| RDB-PFN | 2603.03805 | ★ | Synthetic prior only |
+| OpenRFM | 2606.04320 | ★ | Open RT improvement |
+| RDBLearn | 2602.13697 | ★ | DFS + TabICL; no train |
+| KumoRFM-2 | 2604.12596 | ★ | RelBench SOTA (closed) |
+| KumoRFM v1 | PDF only | ◆ | Proprietary upper bound |
+| LM+GNN hybrid | 2605.16085 | ◆ | Resource-efficient path |
+
+### Graph ML prerequisites (Y3 — see verified index)
+GraphSAGE, GCN, GAT, R-GCN, HGT, TGN, Graphormer, GraphGPS, over-smoothing/squashing papers — all indexed under Y3 optional blocks; no gaps from July 2026 sweep.
 
 ---
 
 ## Optional / extension reading (◆)
 
-Read these **only after** the relevant quarter's ★ core papers and lab are complete, and never in place of reproduction or exit-exam prep (see [Core vs optional papers](#core--vs-optional--papers)). Each is a ~2 h skim → one-paragraph "when it wins / when it breaks" note in [NOTES.md](./NOTES.md). Verified arXiv IDs (June 2026).
+Read these **only after** the relevant quarter's ★ core papers and lab are complete, and never in place of reproduction or exit-exam prep (see [Core vs optional papers](#core--vs-optional--papers)). Each is a ~2 h skim → one-paragraph "when it wins / when it breaks" note in [NOTES.md](./NOTES.md). Verified arXiv IDs (July 2026 deep-research merge).
 
 ### Year 1 — Interpretability you reuse everywhere
 - Lundberg & Lee 2017 — SHAP (A Unified Approach to Interpreting Model Predictions) — `1705.07874`
@@ -566,6 +735,9 @@ Read these **only after** the relevant quarter's ★ core papers and lab are com
 - CARTE — Kim, Grinsztajn & Varoquaux 2024 — `2402.16785` (string-aware graph-attention pretraining; bridge to relational)
 - Interpretable ML for TabPFN — Rundel et al. 2024 — `2403.10923` (SHAP/LOCO adapted to in-context models)
 - TabLLM — Hegselmann et al. 2022 — `2210.10723` (LLM serialization; read as the boundary the thesis rejects)
+- Tabular LM illusion — 2026 — `2602.04031` (contamination / instruction-tuning critique)
+- ModernNCA — Ye et al. 2024 — `2407.03257` · TabZilla — McElfresh et al. 2023 — `2305.02997`
+- TabSwift — Liu & Ye 2026 — `2606.07345` · LimiX — `2509.03505` · OmniTabBench — `2604.06814`
 - Christoph Molnar — *Tabular Foundation Models* (in-progress) — [tabularfoundationmodels.com](https://tabularfoundationmodels.com) + Mindful Modeler newsletter
 
 ### Year 3 — GNN pathologies & graph transformers
@@ -578,8 +750,15 @@ Read these **only after** the relevant quarter's ★ core papers and lab are com
 - Rampášek et al. 2022 — GraphGPS — `2205.12454`
 - _Indexed for lessons that name them:_ HAN — Wang et al. 2019 `1903.07293` · Cluster-GCN — Chiang et al. 2019 `1905.07953` · TGAT — Xu et al. 2020 `2002.07962` · RE-Net — Jin et al. 2020 `1904.05530`
 
-### Year 4 — A second RDB benchmark
+### Year 4 — Alternative encodings & graph construction
 - 4DBInfer — Wang et al. 2024 (NeurIPS) — `2404.18209` (graph-centric RDB benchmarking toolbox; compare table→graph construction vs RelBench)
+- DBFormer — Peleška & Šír 2024 — `2412.05218` (SQL-native transformer; contrast to graph-native RDL)
+- ReDeLEx — 2025 — `2506.22199` (70+ CTU databases; classical vs RDL at scale)
+- FROG — Huang et al. 2026 — `2605.21475` (learnable table roles; ICML 2026)
+- DHN expressivity — Schönherr et al. 2026 — `2605.22852` (SQL ↔ deep homomorphism nets)
 
 ### Year 5 — Frontier
-- Prefer the **currency rule** over a fixed optional list here; the relational-FM frontier turns over too fast to pre-list. Molnar's *Tabular Foundation Models* book supports lecture 167 (tabular → relational FM transfer).
+- LM+GNN hybrid FM — Wu et al. 2026 — `2605.16085` (BART + GraphSAGE; resource-efficient path)
+- KumoRFM v1 — PDF only (proprietary; use KumoRFM-2 `2604.12596` for reproducible SOTA numbers)
+- Molnar's *Tabular Foundation Models* book supports lecture 167 (tabular → relational FM transfer)
+- Prefer the **currency rule** over a fixed optional list beyond this; the relational-FM frontier turns over monthly

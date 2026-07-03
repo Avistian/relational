@@ -80,6 +80,25 @@
 - **Callback closed:** L011 ΔG-sign (children − parent) re-derived in regularized form in L014.
 - Next: Lesson 015 (LightGBM — Ke et al. 2017; histogram + leaf-wise growth, speed vs XGB).
 
+## Session 16 — 2026-07-03
+
+- User requested **deep-research merge** (tabular + relational DL) into curriculum files; exhaustive paper list + mark what's already solved.
+- **July 2026 currency pass** merged into `CURRICULUM.md`, `RESOURCES.md`, `reference/curriculum.html`, `curriculum-currency` skill.
+- **ID fixes:** PyTorch Frame `2402.05964` → `2404.00776`; TALENT `2407.04057` → `2407.00956`.
+- **New ★ core:** BeyondArena `2606.30410`, temporal-shift limits `2502.20260`, Operational TTF `2606.29091`, RDBLearn `2602.13697`, KumoRFM-2 `2604.12596`, OpenRFM promoted to ★, Universal Row Encoder `2606.21434`, Desired graph `2606.08491`, three FM paradigms synthesis (Y5).
+- **Already solved (no re-add):** Y1 Q1–Q2 published lessons; Grinsztajn/TabM/TabR/RealMLP/TabReD/TabArena/TabPFN/TabICL chain; Fey/RelBench/RelGNN/RelGT/ContextGNN; Griffin/RDB-PFN/RT; RelBench v2/GelGT/RelGT-AC — all were in June 2026 pass.
+- **2026 fair stack** recorded in CURRICULUM: tuned GBDT + RealMLP/TabM + TabICLv2 (n≲50K), time splits, TabArena/BeyondArena protocol.
+- Exhaustive registry (70+ papers by category) added to CURRICULUM appendix.
+
+### New ★ papers — when it wins / when it breaks (skim notes; deep read at lecture time)
+
+- **BeyondArena (`2606.30410`):** Wins as unified eval framework across IID/temporal/grouped. Breaks if you cite TabArena-only results for "TFMs dominate" — non-IID/large/high-dim still tree/DL territory.
+- **RDBLearn (`2602.13697`):** Wins when DFS+TabICL beats training an RDB FM from scratch; open/reproducible. Breaks when graph-native signal needs end-to-end message passing (dense many-to-many, autocomplete with text).
+- **KumoRFM-2 (`2604.12596`):** Wins RelBench v1+v2 SOTA; sets commercial ceiling. Breaks for thesis reproduction — proprietary; compare against OpenRFM/RDBLearn/RelGNN instead.
+- **OpenRFM (`2606.04320`):** Wins as best **open** relational FM; dual-stage ICL fixes RT label scarcity. Breaks vs KumoRFM-2 on hardest tasks; still beats RT ~30%.
+- **Desired graph (`2606.08491`):** Wins when schema-derived REG is overloaded/fragmented; filtering+injection beats raw graph. Breaks if you skip understanding Fey's default REG first — this is an optimizer on top, not a replacement for RDL vocabulary.
+- **Operational TTF (`2606.29091`):** Wins as falsifiable barrier for values-only TFMs in rule-governed DBs. Breaks if misread as "TFMs useless" — it's about **operational grounding**, not IID accuracy.
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
