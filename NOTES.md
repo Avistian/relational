@@ -111,6 +111,17 @@
 - Browser MCP unavailable again → `growth-viz.js` verified headlessly in Node (mount + gain-table logic; leaf-wise ≤ level-wise from split 3 on). Manifest regenerated (15 entries); all labs re-rendered to `labs/html/`.
 - Next: Lesson 016 (CatBoost — Prokhorenkova et al. 2018; ordered boosting + categorical handling).
 
+## Session 18 — 2026-07-04
+
+- **Lesson 015 complete** — "lesson/lab 15 done." Lab ≈9/10 ([[learning-records/0042-lesson-015-complete.md]]); GOSS unbiasedness + (1−a)/b amplification + leaf-wise-overfits-small-data all retained.
+- **New dependency:** `catboost` 1.2.10 installed into `.venv` + `requirements-labs.txt` (first Q2 lab to add a package beyond sklearn/imblearn/xgboost/lightgbm).
+- **Lesson 016 published** — CatBoost (curriculum lec 016, Prokhorenkova et al. 2018, arXiv `1706.09516`). The "leakage, not speed" GBDT: **ordered target statistics** (encode row *i* from its permutation prefix + prior `a·p`; greedy whole-column mean leaks the own label, worst on rare cats), **ordered boosting** (§4; gradient from a model that hasn't seen row *i* → kills prediction shift), **oblivious/symmetric trees** (depth-6 = 64-leaf decision table; regularized + fast). Record: [[learning-records/0043-lesson-016-published.md]].
+- **New reusable asset:** `assets/ordered-viz.js` (permutation table; pointer picks the current row; greedy circles the row's own y as the leak, ordered shades only the prefix; reshuffle → ordered value moves with the permutation). Headless Node mount check clean (browser MCP unavailable again; only user-arxiv authed).
+- **Verified live (`_verify_l016.py` + executed solution, `relkit` 5-fold PR-AUC):** pure-noise category (K=700, y ⟂ cat) AUC(enc,y): greedy **0.845** (leak) vs ordered **0.493** (clean, 20 perms); **credit_g** XGB 0.883 · LGBM 0.880 · **CatBoost 0.896** (native cats win on categorical-rich small data); **adult** all ≈0.831 (near-tie); ordered-vs-plain boosting 0.889 vs 0.896 (near-wash — edge is from ordered TS, not ordered boosting; honest note kept).
+- **CatBoost sklearn gotcha (documented in `_verify_l016.py` + lab):** `cat_features` param does not survive `sklearn.clone`, so `relkit.cv_pr_auc`/`cross_val_score` fail on it. Used a clone-free manual 5-fold helper (build a fresh estimator per fold). Also: CatBoost cat columns must be str/int, not NaN → fillna `"missing"` before `astype(str)`.
+- **Lab:** `labs/0016-catboost.ipynb` — crucial fragment = `ordered_ts` by hand (encode-before-update); Task 2 = CatBoost vs XGB vs LGBM on credit_g. Student blank (3 TODO), solution executed clean & gitignored. Manifest regenerated (16 entries); all labs re-rendered to `labs/html/`.
+- Next: Lesson 017 (Hyperparameter search — Bergstra & Bengio 2012; random vs grid; RandomizedSearchCV).
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -167,6 +178,7 @@ Track with ✓ as completed:
 
 - [x] Y1: Chen 2016 XGBoost §2 assigned in Lesson 014 (Eq 5–7 implemented in lab)
 - [x] Y1: Ke 2017 LightGBM §3 (GOSS) + §4 (EFB) assigned in Lesson 015 (GOSS implemented in lab)
+- [x] Y1: Prokhorenkova 2018 CatBoost §3 (ordered TS) + §4 (ordered boosting) assigned in Lesson 016 (ordered TS implemented in lab)
 - [ ] Y1: Grinsztajn 2022
 - [ ] Y1: Fey 2024 §1
 - [x] Y1: Fey 2024 §1 assigned in Lesson 001

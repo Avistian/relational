@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 016 — CatBoost</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .eq { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 1rem; margin: 0.9rem 0; text-align: center; }
+
+    /* ordered-viz */
+    .ordered-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .ov-intro, .ov-caption { font-size: 0.88rem; margin: 0.5rem 0; }
+    .ov-caption { color: var(--muted); }
+    .ov-table { margin: 0.6rem 0; background: var(--bg); }
+    .ov-table td, .ov-table th { border-bottom: 1px solid var(--border); }
+    .ov-role { font-size: 0.76rem; color: var(--muted); }
+    .ov-cur { background: #fdf3d0; }
+    .ov-prefix { background: #d8efe0; }
+    .ov-past { background: transparent; }
+    .ov-future { color: var(--muted); opacity: 0.6; }
+    .ov-leak { display: inline-block; border: 2px solid #b03a2e; border-radius: 50%; width: 1.15rem; height: 1.15rem; line-height: 1.05rem; text-align: center; color: #b03a2e; font-weight: 700; }
+    .ov-readout { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.6rem 0; }
+    .ov-card { flex: 1; min-width: 220px; font-size: 0.83rem; border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem 0.7rem; background: var(--bg); }
+    .ov-card-bad { border-left: 4px solid #b03a2e; }
+    .ov-card-good { border-left: 4px solid #1e6b3c; }
+    .ov-h { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>CatBoost</h1>
+  <p class="subtitle">Lesson 016 · Phase 1 · ~40 min</p>
+
+  <p>
+    <a href="0014-xgboost.html">XGBoost</a> gave you the regularized gain math; <a href="0015-lightgbm.html">LightGBM</a>
+    re-engineered it for speed. CatBoost (Prokhorenkova et al., NeurIPS 2018) is the third member of the
+    GBDT family, and it earns its place by attacking a completely different problem: <strong>leakage</strong>.
+    Specifically, two leaks that quietly inflate ordinary gradient boosting — the <strong>target leak</strong>
+    in categorical encoding, and the subtler <strong>prediction shift</strong> in the boosting loop itself.
+    This lesson's single skill: <strong>explain how a random permutation and "use only the past" (ordered
+    target statistics + ordered boosting) make categorical encoding and gradient estimation leakage-free</strong>,
+    know that CatBoost's trees are <strong>oblivious</strong> (symmetric), and confirm where CatBoost actually
+    wins.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> CatBoost is gradient boosting that encodes each categorical value and
+    estimates each row's gradient using <em>only rows that come earlier in a random permutation</em> — so a
+    row's own label never leaks into its own features or its own gradient — grown as fast, symmetric
+    "decision-table" trees.
+  </div>
+
+  <h2>The problem: greedy target statistics leak</h2>
+  <p>
+    Trees split on numeric thresholds, so a categorical column (<code>city</code>, <code>user_id</code>,
+    <code>product</code>) must become a number. The most powerful encoding is a <strong>target statistic</strong>
+    (TS): replace each category with the mean target for that category — "customers in this city churn 22% of
+    the time." It is far stronger than one-hot for high-cardinality columns. But computed naively it
+    <strong>leaks the label</strong>: to encode row <em>i</em> you average the target over all rows of that
+    category <em>including row i's own label</em>. For a rare category — say a <code>user_id</code> seen twice —
+    that average is dominated by the row's own <code>y</code>. The feature becomes a peek at the answer.
+  </p>
+  <p>
+    You met this exact trap in <a href="0009-feature-engineering.html">Lesson 009</a> (target encoding scored
+    0.76 on pure noise until we moved it inside a per-fold pipeline) and the leakage discipline behind it in
+    <a href="0002-design-matrix-leakage.html">L002</a> (point-in-time joins) and <a href="0004-grouped-nested-cv.html">L004</a>.
+    Prokhorenkova et al. name the training-loop version of the same disease <strong>prediction shift</strong>:
+    standard boosting estimates each round's gradients on the <em>same</em> rows used to build the current
+    model, so the gradient for a row is computed by a model that has already seen that row. The estimates are
+    biased, and the model overfits in a way ordinary CV can hide.
+  </p>
+
+  <h2>The fix: use only the past (a random permutation)</h2>
+  <p>
+    CatBoost's core idea is disarmingly simple — impose an artificial "time" by drawing a <strong>random
+    permutation</strong> of the rows, then compute everything for row <em>i</em> using <strong>only the rows
+    before it</strong> in that permutation (its <em>prefix</em>). A row can never see its own label, exactly
+    like a point-in-time join never sees the future. The <strong>ordered target statistic</strong> for row
+    <em>i</em> is:
+  </p>
+  <div class="eq">TS<sub>i</sub> = ( Σ y<sub>j</sub> over earlier rows j&lt;i with same category  +  a · prior ) / ( count of those rows  +  a )</div>
+  <p>
+    The <code>a · prior</code> term (a smoothing prior, usually the global target mean, with strength
+    <code>a</code>) keeps the estimate sane when the prefix is empty or tiny — the first time a category
+    appears, its TS is just the prior. Slide the pointer below: the <span style="color:#b03a2e;font-weight:600;">greedy</span>
+    encoding always averages the whole category and swallows the current row's own label (circled), while the
+    <span style="color:#1e6b3c;font-weight:600;">ordered</span> encoding only sees the shaded prefix.
+  </p>
+  <div id="ordered-viz"></div>
+  <p>
+    Because a single permutation gives noisy, high-variance estimates for early rows, CatBoost draws
+    <strong>several permutations</strong> and averages — reshuffle the widget above to see the ordered value
+    move with the order. This is the whole trick, applied in two places.
+  </p>
+
+  <h2>Ordered boosting — the same trick on the gradients</h2>
+  <p>
+    CatBoost applies "only the past" to the boosting loop too. In <strong>ordered boosting</strong> it keeps a
+    set of supporting models where model <em>M</em><sub>i</sub> is trained on the first <em>i</em> rows of the
+    permutation only. To get the gradient for row <em>i</em>+1, it uses <em>M</em><sub>i</sub> — a model that
+    has <strong>never seen row i+1</strong>. The residual is therefore an honest out-of-sample residual, not
+    the optimistic in-sample one that classic boosting (L013/L014) uses. That removes the prediction-shift
+    bias at the cost of maintaining several models, so CatBoost uses <code>boosting_type="Ordered"</code> by
+    default on small data and falls back to fast <code>"Plain"</code> boosting on large data.
+  </p>
+
+  <h2>Oblivious (symmetric) trees</h2>
+  <p>
+    CatBoost's base learner is unusual: an <strong>oblivious tree</strong> uses the <em>same</em> split
+    (feature + threshold) across an entire level. A depth-6 oblivious tree is really a <strong>decision table</strong>
+    with 2<sup>6</sup> = 64 leaves indexed by 6 yes/no tests. Each individual tree is weaker and less flexible
+    than XGBoost's free-form trees, but they are strongly <strong>regularized</strong> (harder to overfit) and
+    give extremely fast, branch-free inference — you compute 6 bits and index a table. It is a deliberate
+    bias-for-variance trade, in the same spirit as the shrinkage and subsampling knobs from L013–L015.
+  </p>
+
+  <h2>On our data</h2>
+  <p>
+    First, the leak, measured directly. On a <strong>pure-noise</strong> high-cardinality category (700
+    categories, target independent of the category, so the honest signal is zero), we treat each encoding as a
+    one-feature score for <code>y</code> and read its ROC-AUC. A leakage-free feature should score ≈ 0.5:
+  </p>
+  <table>
+    <thead><tr><th>Encoding of a noise category</th><th>AUC(encoding, y)</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Greedy TS (own row included)</td><td class="n bad">0.845</td><td>spurious signal — <strong>leak</strong></td></tr>
+      <tr><td>Ordered TS (prefix only, mean of 20 perms)</td><td class="n win">0.493</td><td>≈ 0.5 — no leak</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Then the payoff on real categorical data, with the same <code>relkit</code> 5-fold CV PR-AUC protocol as
+    L013–L015. CatBoost passes categoricals <strong>natively</strong> (<code>cat_features=...</code>); XGBoost
+    gets label-encoded columns; LightGBM uses its native categorical mode:
+  </p>
+  <table>
+    <thead><tr><th>Model</th><th><code>credit_g</code> (n=1,000, 13 cat cols)</th><th><code>adult</code> (n≈49k, 8 cat cols)</th></tr></thead>
+    <tbody>
+      <tr><td>XGBoost (label-encoded)</td><td class="n">0.883</td><td class="n">0.829</td></tr>
+      <tr><td>LightGBM (native cats)</td><td class="n">0.880</td><td class="n">0.831</td></tr>
+      <tr><td>CatBoost (native cats)</td><td class="n win">0.896</td><td class="n">0.831</td></tr>
+    </tbody>
+  </table>
+  <p>
+    On the small, categorical-rich <code>credit_g</code> CatBoost's ordered TS clearly help — <strong>0.896</strong>,
+    the best single-table number we've seen on it (past the tuned XGBoost 0.896 tie from L014 and Random
+    Forest 0.901, and ahead of both boosters' defaults). On big <code>adult</code>, where categories are common
+    and label leakage is diluted, all three are a <strong>near-tie</strong> — no free lunch.
+  </p>
+  <div class="callout">
+    <strong>Honest note on ordered boosting.</strong> Toggling just the boosting scheme on <code>credit_g</code>
+    (<code>"Ordered"</code> 0.889 vs <code>"Plain"</code> 0.896, same 400 trees) shows ordered boosting is
+    <em>not</em> a guaranteed accuracy win on a single dataset — it is a robustness/anti-overfitting device,
+    and it is slower. Most of CatBoost's edge here comes from the <strong>ordered target statistics</strong>
+    (native categoricals), not from ordered boosting. Report both honestly.
+  </div>
+
+  <h2>The knobs that matter</h2>
+  <table>
+    <thead><tr><th>Knob</th><th>Effect</th><th>Push it when</th></tr></thead>
+    <tbody>
+      <tr><td><code>cat_features</code></td><td>Which columns get ordered TS (the whole point)</td><td>Always pass your categoricals here, as raw strings/ints</td></tr>
+      <tr><td><code>one_hot_max_size</code></td><td>Cardinality below which CatBoost one-hots instead of TS</td><td>Raise for low-cardinality cats you'd rather one-hot</td></tr>
+      <tr><td><code>depth</code></td><td>Oblivious-tree depth (≈ table of 2<sup>depth</sup> leaves)</td><td>6 is a strong default; lower on tiny/noisy data</td></tr>
+      <tr><td><code>l2_leaf_reg</code></td><td>L2 on leaf values (L014's λ)</td><td>Raise to shrink confident leaves</td></tr>
+      <tr><td><code>learning_rate</code> + <code>iterations</code></td><td>Shrinkage / rounds (as in L013–L015)</td><td>Lower rate + more trees to generalize</td></tr>
+      <tr><td><code>boosting_type</code></td><td><code>Ordered</code> (anti-shift, small data) vs <code>Plain</code> (fast)</td><td>Force <code>Plain</code> for speed on large data</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> Relational databases are <em>made of</em> high-cardinality categorical
+    keys — <code>user_id</code>, <code>product_id</code>, <code>store_id</code> foreign keys that <em>are</em>
+    the entities. Ordered target statistics are the strongest <strong>leakage-free single-table</strong> way to
+    turn "who/what" identity into a feature without ever building a graph. That makes CatBoost a direct
+    baseline the relational thesis must beat: "we beat XGBoost" is not enough if you never tried CatBoost's
+    native categorical handling on the flattened join. And note the deeper symmetry — CatBoost's random
+    permutation is the same "only use the past" discipline that Relational Deep Learning must enforce with
+    <em>timestamps</em> on the entity graph (Y3–Y4). Same leak, same cure, different data structure.
+  </div>
+
+  <h2>Where CatBoost breaks (know this too)</h2>
+  <ul>
+    <li>Oblivious trees are <strong>less expressive</strong> per tree; on problems dominated by complex numeric
+      interactions (few categoricals), free-form XGBoost/LightGBM trees can edge it — see the <code>adult</code>
+      near-tie.</li>
+    <li><strong>Ordered</strong> boosting is <strong>slower</strong> and memory-heavier than Plain/LightGBM; the
+      accuracy gain is dataset-dependent and sometimes zero (our <code>credit_g</code> toggle).</li>
+    <li>Careful manual target encoding <em>inside a proper CV pipeline</em> (L009) recovers much of the
+      categorical advantage — CatBoost automates the discipline, it doesn't hold secret math.</li>
+    <li>Still a <strong>single-table</strong> model: ordered TS encodes one categorical column against the
+      label; it never learns multi-hop structure across joins the way a GNN on the entity graph will.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Prokhorenkova et al. (2018), <em>CatBoost: unbiased boosting with categorical features</em> (NeurIPS 31,
+    arXiv <a href="https://arxiv.org/abs/1706.09516">1706.09516</a>) — read <strong>§3 (target statistics /
+    prediction shift)</strong> and <strong>§4 (ordered boosting)</strong> carefully; they are the two halves of
+    the "only use the past" idea. The official
+    <a href="https://catboost.ai/docs/en/concepts/algorithm-main-stages">CatBoost algorithm docs</a> are the
+    best reference for ordered TS and oblivious trees.
+  </p>
+
+  <h2>Lab — ordered target statistics by hand, then CatBoost vs the field</h2>
+  <p>
+    Notebook <code>0016-catboost.ipynb</code> (paper-reproduction structure): implement the
+    <strong>ordered target statistic by hand</strong> and prove it is leakage-free where greedy TS leaks on a
+    pure-noise category; then run CatBoost with native categoricals against label-encoded XGBoost and native
+    LightGBM on <code>credit_g</code> with the shared <code>relkit</code> harness, matching the tables above.
+    <a href="../labs/html/0016-catboost.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why a random permutation removes the leak, or when ordered boosting is worth the cost? Ask your
+    teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0015-lightgbm.html">← Lesson 015</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0016-catboost.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/ordered-viz.js"></script>
+<script>
+  OrderedViz.mount(document.getElementById("ordered-viz"), {
+    caption: "Slide the pointer to a 'current' row. Greedy target encoding (red) averages the whole category — including the current row's own label (circled) — so a rare category leaks the answer. Ordered encoding (green) uses only the shaded prefix (earlier rows in the permutation) plus a prior, so the label never leaks. Reshuffle to see the ordered value depend on the permutation — which is why CatBoost averages several."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why does a greedy (whole-column) target statistic leak, especially for rare categories?",
+    options: [
+      { label: "It averages in the current row's own label", value: "a" },
+      { label: "It uses too few histogram bins", value: "b" },
+      { label: "It grows the tree leaf-wise", value: "c" },
+      { label: "It applies L2 regularization to leaves", value: "d" }
+    ],
+    correct: "a",
+    explain: "The greedy TS for row i averages the target over all rows of that category including row i itself; for a rare category that average is dominated by the row's own y, so the encoding is a peek at the label."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "In ordered target statistics, the encoding for row i is computed from:",
+    options: [
+      { label: "Only rows before i in a random permutation", value: "a" },
+      { label: "All rows of the same category", value: "b" },
+      { label: "A uniform random 30% sample of rows", value: "c" },
+      { label: "The rows with the largest gradients", value: "d" }
+    ],
+    correct: "a",
+    explain: "CatBoost imposes an artificial order via a random permutation and encodes row i using only its prefix (earlier rows) plus a smoothing prior — so row i's own label is never used, like a point-in-time join."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "A CatBoost oblivious (symmetric) tree of depth 6 is best described as:",
+    options: [
+      { label: "A decision table: the same split per level, 64 leaves", value: "a" },
+      { label: "A free-form tree tuned by num_leaves", value: "b" },
+      { label: "Six independent random forests averaged", value: "c" },
+      { label: "A linear model over one-hot features", value: "d" }
+    ],
+    correct: "a",
+    explain: "Oblivious trees reuse one split (feature+threshold) across an entire level, so a depth-6 tree is a decision table indexed by 6 yes/no tests (2^6 = 64 leaves): weaker per tree, but strongly regularized and extremely fast at inference."
+  });
+</script>
+</body>
+</html>
