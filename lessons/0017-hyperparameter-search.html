@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 017 — Hyperparameter Search</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .eq { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 1rem; margin: 0.9rem 0; text-align: center; }
+
+    /* search-viz */
+    .search-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .sv-ctl { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.6rem; }
+    .sv-ctl button, .sv-ctl select {
+      font-size: 0.8rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); cursor: pointer; font-family: var(--font-sans);
+    }
+    .sv-ctl button.sv-active { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .sv-svg { display: block; max-width: 340px; margin: 0 auto; }
+    .sv-lab { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .sv-readout { font-size: 0.85rem; margin: 0.6rem 0; text-align: center; }
+    .sv-pill { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.05rem 0.55rem; font-size: 0.76rem; font-family: var(--font-mono); }
+    .sv-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>Hyperparameter Search</h1>
+  <p class="subtitle">Lesson 017 · Phase 1 · ~40 min</p>
+
+  <p>
+    You now have three tunable boosters — <a href="0014-xgboost.html">XGBoost</a>,
+    <a href="0015-lightgbm.html">LightGBM</a>, <a href="0016-catboost.html">CatBoost</a> — each with a
+    fistful of knobs (<code>max_depth</code>, <code>learning_rate</code>, <code>n_estimators</code>,
+    <code>subsample</code>, regularization…). In L014 the difference between a default XGBoost and a
+    <em>tuned</em> one was the whole story: <strong>0.883 → 0.896</strong> PR-AUC. That gain lives entirely in
+    <strong>how you search the hyperparameter space</strong>. This lesson's single skill:
+    <strong>explain why random search beats grid search under a fixed budget when only a few
+    hyperparameters matter, and run <code>RandomizedSearchCV</code> without fooling yourself about the
+    result</strong>.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Given the same number of trials, grid search wastes most of them re-testing
+    the same values of the knobs that don't matter, while random search spends every trial on a fresh value of
+    the knob that does — so random search finds better settings as soon as your search space has a few useless
+    dimensions (Bergstra &amp; Bengio 2012).
+  </div>
+
+  <h2>The setup: a search over configurations</h2>
+  <p>
+    A hyperparameter is a setting you fix <em>before</em> training (unlike a weight, which is learned). Tuning
+    is a search: pick a configuration, estimate its quality with <strong>cross-validation</strong> (the
+    L003/L004 machinery — never the test set), keep the best. Two things define a search:
+    the <strong>space</strong> (which knobs, over what ranges) and the <strong>budget</strong> (how many
+    configurations you can afford to CV-evaluate). Compute is the budget — 27 configs × 5 folds is 135 model
+    fits — so the real question is: <em>where do you spend your trials?</em>
+  </p>
+
+  <h2>Grid search and its curse</h2>
+  <p>
+    <strong>Grid search</strong> picks a handful of values per knob and evaluates the full Cartesian product.
+    Three values each for three knobs is 3&times;3&times;3 = 27 configs; add a fourth knob and it is 81. The
+    cost is <strong>exponential in the number of knobs</strong> — <code>budget = k<sup>d</sup></code> for
+    <code>k</code> values on each of <code>d</code> axes. To stay inside a budget as <code>d</code> grows, you
+    are forced to shrink <code>k</code> until each axis has only 2–3 values. Worse, grid search spends the same
+    dense effort on <em>every</em> axis, including the ones that barely change the score.
+  </p>
+
+  <h2>The insight: low effective dimensionality</h2>
+  <p>
+    Bergstra &amp; Bengio's 2012 observation is that in practice <strong>only a few hyperparameters actually
+    matter</strong>, and <em>which</em> few differs by dataset. The objective has a <strong>low effective
+    dimensionality</strong>. Picture a 2-D space where the horizontal knob strongly changes the score (a sharp
+    peak) and the vertical knob is nearly irrelevant (flat). Watch what an equal budget buys each strategy —
+    the dashed lines project every trial down onto the important axis:
+  </p>
+
+  <div id="search-viz"></div>
+
+  <p>
+    A grid of <code>n</code> points is a <code>√n × √n</code> lattice, so it only ever tries
+    <strong>√n distinct values</strong> on the important axis — every column of the lattice re-tests the same
+    important value at a different useless value. Random search draws <code>n</code> independent points, so it
+    tries <strong>≈ n distinct values</strong> on the important axis and samples the peak far more densely.
+    Same budget; random covers the dimension that matters much better.
+  </p>
+
+  <h2>On our data — first the mechanism, honestly</h2>
+  <p>
+    We built a synthetic surface with a sharp peak on one important knob and near-flat useless knobs, then ran
+    grid vs random at an <em>equal</em> budget (best value found, 1.000 = the true optimum; random averaged
+    over 200 draws):
+  </p>
+  <table>
+    <thead><tr><th>Space</th><th>Budget</th><th>Grid distinct important-axis values</th><th>Grid best</th><th>Random best</th></tr></thead>
+    <tbody>
+      <tr><td>2-D (1 useful)</td><td class="n">9</td><td class="n">3</td><td class="n win">1.019</td><td class="n">0.771</td></tr>
+      <tr><td>2-D (1 useful)</td><td class="n">25</td><td class="n">5</td><td class="n win">1.019</td><td class="n">0.947</td></tr>
+      <tr><td>5-D (1 useful)</td><td class="n">32</td><td class="n">2</td><td class="n bad">0.076</td><td class="n win">0.967</td></tr>
+      <tr><td>8-D (1 useful)</td><td class="n">64</td><td class="n">2</td><td class="n bad">0.134</td><td class="n win">1.012</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read this honestly, because it is the whole lesson. In <strong>2-D</strong> a lucky grid actually
+    <em>wins</em> — 3 evenly-spaced values happen to straddle a centered peak, and random's scatter can miss it.
+    The random-search advantage is <strong>not</strong> a universal law in low dimensions. It appears, and then
+    dominates, as the number of knobs grows: at 5–8 dimensions the budget forces grid down to
+    <strong>2 values per axis</strong>, its resolution on the important knob collapses, and it misses the peak
+    entirely (0.076) while random still nails it (0.967). Fix the budget at 27 and add useless dimensions one at
+    a time and you can watch the crossover:
+  </p>
+  <table>
+    <thead><tr><th>Useless dims added (budget 27)</th><th>Grid best</th><th>Random best</th></tr></thead>
+    <tbody>
+      <tr><td>1-D total</td><td class="n win">1.000</td><td class="n">0.960</td></tr>
+      <tr><td>2-D total</td><td class="n win">1.019</td><td class="n">0.951</td></tr>
+      <tr><td>4-D total</td><td class="n bad">0.057</td><td class="n win">0.946</td></tr>
+      <tr><td>8-D total</td><td class="n bad">0.134</td><td class="n win">0.955</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Random search is roughly <strong>dimension-agnostic</strong>: it keeps ≈27 distinct tries on the important
+    axis no matter how many useless axes you bolt on. That is why it is the right default whenever you are
+    tuning more than two or three knobs — which is always, with modern boosters.
+  </p>
+
+  <h2>Running it: <code>RandomizedSearchCV</code></h2>
+  <p>
+    In scikit-learn you hand <code>RandomizedSearchCV</code> a dictionary of <strong>distributions</strong> (not
+    fixed lists) and an <code>n_iter</code> budget; it draws that many configurations, CV-scores each, and keeps
+    the best. Two practical rules:
+  </p>
+  <ul>
+    <li><strong>Use the right distribution.</strong> For a rate that spans orders of magnitude
+      (<code>learning_rate</code> from 0.01 to 0.3) sample <strong>log-uniform</strong>
+      (<code>scipy.stats.loguniform</code>), not uniform — otherwise 90% of draws land above 0.03. Integer knobs
+      use <code>randint</code>; fractions like <code>subsample</code> use <code>uniform(0.6, 0.4)</code> (a
+      range of 0.6–1.0).</li>
+    <li><strong>Budget is <code>n_iter</code>.</strong> More is better with diminishing returns; you control
+      cost directly instead of it exploding with the number of knobs.</li>
+  </ul>
+  <p>
+    On real data — tuning XGBoost on <code>credit_g</code>, same <code>relkit</code> 5-fold PR-AUC as L014, at
+    an <strong>equal budget of 27</strong> (grid = 3×3×3 over three knobs; random = 27 draws over five knobs,
+    two of them continuous):
+  </p>
+  <table>
+    <thead><tr><th>Strategy</th><th>Budget</th><th>credit_g CV PR-AUC</th></tr></thead>
+    <tbody>
+      <tr><td>XGBoost default (no search)</td><td class="n">1</td><td class="n">0.883</td></tr>
+      <tr><td>GridSearchCV (3 knobs, 3 values each)</td><td class="n">27</td><td class="n">0.891</td></tr>
+      <tr><td>RandomizedSearchCV (5 knobs, log-uniform rate)</td><td class="n">27</td><td class="n win">0.901</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Same budget, and random search wins <strong>0.901 vs 0.891</strong> — matching Random Forest's 0.901 from
+    L012 and clearing the tuned-XGBoost 0.896 from L014. It got there by tuning two extra knobs
+    (<code>subsample</code>, <code>colsample_bytree</code>) and sampling <code>learning_rate</code>
+    log-uniformly — coverage the 27-cell grid could not afford.
+  </p>
+
+  <h2>Don't fool yourself: the search score is optimistic</h2>
+  <p>
+    <code>best_score_</code> is the CV score of the <em>winner of a search over 27 candidates</em>. Picking the
+    max of 27 noisy estimates is itself a source of optimism — exactly the <strong>selection bias</strong> you
+    met in <a href="0004-grouped-nested-cv.html">Lesson 004</a>. The honest number comes from
+    <strong>nested CV</strong>: an outer loop holds out data the entire search never touches.
+  </p>
+  <div class="eq">RandomizedSearchCV best_score_ = 0.901 (optimistic) · nested CV = 0.895 (honest) · gap +0.006</div>
+  <p>
+    Here the gap is small (+0.006) because the search is modest, but it is <strong>always ≥ 0</strong> and grows
+    with the number of candidates. Rule: tune inside the training folds, and <strong>report a number that came
+    from data the tuning never saw</strong> — a held-out test set or a nested-CV estimate. Never quote
+    <code>best_score_</code> as your final performance.
+  </p>
+
+  <h2>Beyond random search (a preview, not today's skill)</h2>
+  <p>
+    Random search is the baseline that is surprisingly hard to beat — but two ideas do, given enough budget:
+  </p>
+  <ul>
+    <li><strong>Bayesian optimization</strong> (e.g. Optuna, scikit-optimize) builds a model of "config →
+      score" and proposes the next config where improvement looks likely, instead of drawing blind. Wins when
+      each evaluation is expensive.</li>
+    <li><strong>Successive halving / Hyperband</strong> (sklearn's <code>HalvingRandomSearchCV</code>) starts
+      many configs on a small budget (few trees / few rows), kills the losers early, and pours the saved
+      compute into the survivors.</li>
+  </ul>
+  <p>
+    All of them still need an honest held-out estimate, and all of them are compared <em>against</em> random
+    search — so random search remains the number you must report first.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> The undervaluation thesis stands or falls on <strong>fair baselines</strong>.
+    "Our relational model beats XGBoost" means nothing if the XGBoost got its defaults while your model got a
+    500-trial Bayesian sweep. A fair comparison gives <em>every</em> model — the GBDT baseline and the fancy
+    relational one — the <strong>same tuning budget</strong> under the <strong>same CV protocol</strong>, and
+    reports a nested / held-out number. This is not pedantry: the Year 1 Q3 benchmark-literacy lectures and the
+    Y3 "fair tuning budget on the entity graph" lecture both hinge on it. Random search is the equalizer,
+    because it lets you hand every model the identical budget regardless of how many knobs each one has.
+  </div>
+
+  <h2>Where this breaks (know this too)</h2>
+  <ul>
+    <li><strong>Very low dimension.</strong> With one or two knobs, a well-placed grid can match or beat random
+      (our 2-D rows) — the advantage is about <em>many</em> knobs, most useless.</li>
+    <li><strong>Discrete, tiny spaces.</strong> If a knob has three legal values, just grid it — random sampling
+      of three options wastes draws on duplicates.</li>
+    <li><strong>Bad ranges beat any strategy.</strong> Search is only as good as the space you define; a
+      log-uniform <code>learning_rate</code> over the wrong decade finds nothing. Sensible ranges &gt; clever
+      search.</li>
+    <li><strong>Optimism is unavoidable without a held-out set.</strong> No search strategy removes selection
+      bias; only an outer split (nested CV / test set) gives an honest number.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Bergstra &amp; Bengio (2012), <em>Random Search for Hyper-Parameter Optimization</em>,
+    <a href="https://www.jmlr.org/papers/v13/bergstra12a.html">JMLR 13:281–305</a> — read <strong>§1 (the low
+    effective dimensionality argument)</strong> and look closely at <strong>Figure 1</strong> (the grid-vs-random
+    projection the widget above reproduces). The scikit-learn
+    <a href="https://scikit-learn.org/stable/modules/grid_search.html">tuning guide</a> (§ "Randomized parameter
+    optimization" and "Searching for optimal parameters with successive halving") is the reference for
+    <code>RandomizedSearchCV</code> and distributions.
+  </p>
+
+  <h2>Lab — grid vs random, then tune XGBoost fairly</h2>
+  <p>
+    Notebook <code>0017-hyperparameter-search.ipynb</code>: implement <strong>grid and random search by hand</strong>
+    on a synthetic surface and reproduce the crossover (random wins once useless dims are added); then run
+    <code>GridSearchCV</code> vs <code>RandomizedSearchCV</code> on XGBoost/<code>credit_g</code> at an equal
+    budget, and get an honest score with <strong>nested CV</strong>. Reproduction target: the tables above.
+    <a href="../labs/html/0017-hyperparameter-search.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why √n distinct values is the whole story, or when nested CV is worth the extra compute? Ask your
+    teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0016-catboost.html">← Lesson 016</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0017-hyperparameter-search.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/search-viz.js"></script>
+<script>
+  SearchViz.mount(document.getElementById("search-viz"), {
+    caption: "Green marginal on top = the important knob (sharp peak in the middle); the left marginal is the near-useless knob. Toggle Grid vs Random at an equal budget and read the dashed projections onto the important axis: Grid reuses only √n distinct values there, Random tries ~n. Raise the budget or Resample to explore."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Under an equal budget of n trials, why does random search cover the important knob better than grid search?",
+    options: [
+      { label: "Grid tries only √n distinct values on each axis", value: "a" },
+      { label: "Random search uses a larger learning rate", value: "b" },
+      { label: "Grid search cannot use cross-validation", value: "c" },
+      { label: "Random search always evaluates more configs", value: "d" }
+    ],
+    correct: "a",
+    explain: "A grid of n points is a √n×√n lattice, so it repeats the same √n values on every axis; random search draws n independent points, giving ≈n distinct values on the important axis at the same budget."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "When is random search NOT clearly better than a grid?",
+    options: [
+      { label: "When there are only one or two knobs that matter", value: "a" },
+      { label: "When the dataset is large", value: "b" },
+      { label: "When you use PR-AUC instead of accuracy", value: "c" },
+      { label: "When the model is a gradient booster", value: "d" }
+    ],
+    correct: "a",
+    explain: "The advantage comes from low effective dimensionality — many knobs, few of them important. In one or two dimensions a well-placed grid can match or beat random; the win appears and grows as useless dimensions are added and grid's per-axis resolution collapses."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "You run RandomizedSearchCV over 50 configs and report best_score_ as your model's performance. What's wrong?",
+    options: [
+      { label: "It's optimistic — picking the max of 50 CV scores is selection bias", value: "a" },
+      { label: "Nothing; best_score_ is an unbiased test estimate", value: "b" },
+      { label: "RandomizedSearchCV cannot score with PR-AUC", value: "c" },
+      { label: "50 configs is too few to report anything", value: "d" }
+    ],
+    correct: "a",
+    explain: "best_score_ is the CV score of the winner of a search over many candidates, so it is optimistically biased (the L004 selection-bias trap). Report a number from data the search never touched — nested CV or a held-out test set."
+  });
+</script>
+</body>
+</html>

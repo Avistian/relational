@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0016-catboost</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0017-hyperparameter-search</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,17 +7796,17 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l016-00">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-00">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-016-%E2%80%94-CatBoost:-ordered-target-statistics,-no-leak">Lab 016 — CatBoost: ordered target statistics, no leak<a class="anchor-link" href="#Lab-016-%E2%80%94-CatBoost:-ordered-target-statistics,-no-leak">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0016-catboost.html"><code>lessons/0016-catboost.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
-<p><strong>Paper:</strong> Prokhorenkova et al. 2018, <em>CatBoost: unbiased boosting with categorical features</em> (NeurIPS 31), arXiv <a href="https://arxiv.org/abs/1706.09516">1706.09516</a> — §3 (target statistics / prediction shift), §4 (ordered boosting).</p>
-<p><strong>Dataset tiers:</strong> C — synthetic pure-noise category (mechanism isolation) for Task 1; A — OpenML <code>credit_g</code> via <code>relkit</code> for Task 2 (same harness as Labs 011–015).</p>
-<p><strong>Skill you are practising:</strong> implement the <strong>ordered target statistic</strong> by hand and prove it is leakage-free exactly where the greedy (whole-column) statistic leaks; then run CatBoost with native categoricals against label-encoded XGBoost and native LightGBM on real data.</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints (1) the greedy vs ordered AUC on a pure-noise category (leak vs no leak) and (2) CatBoost vs XGBoost vs LightGBM CV PR-AUC on credit_g.</p>
+<h1 id="Lab-017-%E2%80%94-Hyperparameter-search:-grid-vs-random,-tuned-fairly">Lab 017 — Hyperparameter search: grid vs random, tuned fairly<a class="anchor-link" href="#Lab-017-%E2%80%94-Hyperparameter-search:-grid-vs-random,-tuned-fairly">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0017-hyperparameter-search.html"><code>lessons/0017-hyperparameter-search.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
+<p><strong>Paper:</strong> Bergstra &amp; Bengio 2012, <em>Random Search for Hyper-Parameter Optimization</em>, <a href="https://www.jmlr.org/papers/v13/bergstra12a.html">JMLR 13:281–305</a> — §1 (low effective dimensionality) + Fig 1.</p>
+<p><strong>Dataset tiers:</strong> C — synthetic response surface (mechanism isolation) for Task 1; A — OpenML <code>credit_g</code> via <code>relkit</code> for Tasks 2–3 (same harness as Labs 011–016).</p>
+<p><strong>Skill you are practising:</strong> show <em>why</em> random search beats grid search at an equal budget once a few knobs are useless, run <code>RandomizedSearchCV</code> vs <code>GridSearchCV</code>, and get an <strong>honest</strong> score with nested CV (no selection bias).</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints (1) grid vs random best-found on the synthetic surface as dimensions grow, (2) grid vs random tuned XGBoost CV PR-AUC on credit_g at equal budget, and (3) the optimistic search score vs the honest nested-CV score.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
 <li><strong>PROVIDED</strong> cells — complete boilerplate; just run.</li>
@@ -7814,30 +7814,30 @@ a.anchor-link {
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. This lab needs <strong>catboost</strong> (added to <code>requirements-labs.txt</code>). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scipy</strong>, <strong>xgboost</strong> (already in <code>requirements-labs.txt</code>). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l016-01">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-01">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-%22only-use-the-past%22">Concept recap — "only use the past"<a class="anchor-link" href="#Concept-recap-%E2%80%94-%22only-use-the-past%22">¶</a></h2><p>A categorical column must become a number for a tree to split on it. The strongest encoding is a <strong>target statistic (TS)</strong>: replace each category with the mean target for that category. Computed naively it <strong>leaks</strong>, because to encode row $i$ you average the target over <em>all</em> rows of that category <strong>including row $i$'s own label</strong> $y_i$ — for a rare category, the encoding basically <em>is</em> $y_i$.</p>
-<p><strong>CatBoost's fix (ordered TS).</strong> Draw a random <strong>permutation</strong> of the rows and encode row $i$ using only the rows <em>before</em> it in that permutation (its <strong>prefix</strong>), plus a smoothing prior:</p>
-<p>$$\text{TS}_i = \frac{\sum_{j&lt;i,\; \text{cat}_j=\text{cat}_i} y_j \;+\; a\cdot p}{\#\{j&lt;i:\text{cat}_j=\text{cat}_i\} \;+\; a}$$</p>
-<p>where $p$ is the global target mean (the prior) and $a$ its strength. Row $i$'s own label is never used — the same <strong>point-in-time</strong> discipline as Lesson 002. The first time a category appears (empty prefix) the TS is just the prior $p$.</p>
-<p><strong>Ordered boosting (§4)</strong> applies the identical idea to the boosting loop: the gradient for row $i$ is computed by a model trained only on rows <em>before</em> $i$, so it never sees row $i$ — removing the <strong>prediction shift</strong> bias of classic boosting. It is the default (<code>boosting_type="Ordered"</code>) on small data, slower than <code>"Plain"</code>.</p>
-<p><strong>Oblivious trees.</strong> CatBoost's base learner reuses one split (feature+threshold) per level, so a depth-6 tree is a <strong>decision table</strong> with $2^6=64$ leaves: weaker per tree, but strongly regularized and very fast to score.</p>
-<p><strong>Toy micro-example (not this lab's answer).</strong> Permutation of category labels <code>[A, A, B, A]</code> with targets <code>[1, 0, 1, 1]</code> and prior $p=0.75, a=1$. The ordered TS of the <em>last</em> A (targets of earlier A's are <code>1, 0</code>) is $\frac{(1+0)+1\cdot0.75}{2+1}=\frac{1.75}{3}=0.583$ — it never touches that row's own $y=1$.</p>
-<p><strong>Why it matters for the thesis:</strong> relational databases are built from high-cardinality categorical foreign keys (<code>user_id</code>, <code>product_id</code>). Ordered TS is the leakage-free single-table way to encode entity identity — a baseline RDL must beat, and the same "use only the past" rule RDL enforces with timestamps on the entity graph. Full derivation + viz: <a href="../lessons/0016-catboost.html">Lesson 016</a> · Prokhorenkova et al. 2018 §3–4.</p>
+<h2 id="Concept-recap-%E2%80%94-spend-trials-where-they-matter">Concept recap — spend trials where they matter<a class="anchor-link" href="#Concept-recap-%E2%80%94-spend-trials-where-they-matter">¶</a></h2><p>A <strong>hyperparameter</strong> is fixed before training (a weight is learned). <strong>Tuning</strong> is a search: pick a config, estimate quality with <strong>cross-validation</strong> (never the test set), keep the best. Two things define it: the <strong>space</strong> (which knobs, what ranges) and the <strong>budget</strong> (how many configs you can CV-evaluate).</p>
+<p><strong>Grid search</strong> evaluates the full Cartesian product: $k$ values on each of $d$ axes costs $k^d$ configs — exponential in the number of knobs. To stay in budget as $d$ grows you must shrink $k$, so each axis ends up with only 2–3 values.</p>
+<p><strong>Bergstra &amp; Bengio's insight (low effective dimensionality):</strong> only a few hyperparameters actually matter. A grid of $n$ points is a $\sqrt n \times \sqrt n$ lattice, so it tries only $\sqrt n$ <strong>distinct values</strong> on the important axis — every lattice column re-tests the same important value. <strong>Random search</strong> draws $n$ independent points, giving $\approx n$ distinct values on <em>every</em> axis at the same budget.</p>
+<p>$$\text{grid: } k=\sqrt n \text{ distinct values / axis} \qquad \text{random: } \approx n \text{ distinct values / axis}$$</p>
+<p><strong>The honest nuance (this lab reproduces it):</strong> in 1–2 dimensions a well-placed grid can <em>win</em>. The random-search advantage appears — and then dominates — as you add knobs, because grid's per-axis resolution collapses while random's does not.</p>
+<p><strong>Toy micro-example (not this lab's answer).</strong> Budget $n=9$. A grid is $3\times3$: only <strong>3</strong> distinct values on the important axis. Random draws <strong>9</strong> points: <strong>9</strong> distinct values on that axis — 3× the resolution on the knob that matters, for free.</p>
+<p><strong>Don't fool yourself:</strong> <code>best_score_</code> is the CV score of the <em>winner of a search over many candidates</em> — optimistically biased (the L004 selection-bias trap). The honest number comes from <strong>nested CV</strong>: an outer split the search never touches.</p>
+<p><strong>Why it matters for the thesis:</strong> the undervaluation bet needs <strong>fair baselines</strong> — every model gets the <em>same</em> tuning budget under the <em>same</em> CV protocol, and you report a nested / held-out number. Random search is the equalizer. Full derivation + the grid-vs-random figure: <a href="../lessons/0017-hyperparameter-search.html">Lesson 017</a> · Bergstra &amp; Bengio 2012 §1.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l016-02">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-02">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7847,15 +7847,15 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l016-03">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-03">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()))</span>  <span class="c1"># labs/ on the path so `relkit` imports</span>
@@ -7864,191 +7864,37 @@ a.anchor-link {
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">roc_auc_score</span><span class="p">,</span> <span class="n">average_precision_score</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">StratifiedKFold</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">loguniform</span><span class="p">,</span> <span class="n">randint</span><span class="p">,</span> <span class="n">uniform</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">GridSearchCV</span><span class="p">,</span> <span class="n">RandomizedSearchCV</span><span class="p">,</span> <span class="n">StratifiedKFold</span><span class="p">,</span> <span class="n">cross_val_score</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">LabelEncoder</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">catboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">CatBoostClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LGBMClassifier</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
 
 <span class="n">RS</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"relkit + catboost + lightgbm + xgboost ok"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"relkit + scipy + xgboost ok"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>relkit + catboost + lightgbm + xgboost ok
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l016-04">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-04">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-the-ordered-target-statistic,-by-hand-%E2%80%94-TODO-(crucial-fragment)">Task 1 — the ordered target statistic, by hand — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-the-ordered-target-statistic,-by-hand-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> implement <code>ordered_ts(cat, y, a, prior, seed)</code> and show that on a <strong>pure-noise</strong> category (target independent of the category) the greedy encoding <em>invents</em> signal (AUC ≫ 0.5) while your ordered encoding does not (AUC ≈ 0.5).</p>
-<p><strong>Why it matters:</strong> this is the leak that quietly inflates models trained on high-cardinality categoricals — the single most common way a "great" offline score fails in production. Seeing greedy TS score 0.8+ AUC on a column that is literally random makes the danger concrete.</p>
-<p><strong>You implement <code>ordered_ts</code>:</strong> walk the rows in the order given by a random <code>permutation</code>. For each row, <em>first</em> compute its encoding from what you have seen so far, <code>(running_sum + a*prior) / (running_count + a)</code>, <em>then</em> add its own <code>y</code> to the running totals for its category. (Encode before you update — that is what keeps the row's own label out.)</p>
-<p><strong>Hint boundary:</strong> keep two dicts (sum and count) keyed by category; the order of "encode, then update" is the whole point. The greedy baseline is PROVIDED for contrast — do not edit it or the CHECK.</p>
+<h2 id="Task-1-%E2%80%94-grid-vs-random-on-a-synthetic-surface-%E2%80%94-TODO-(crucial-fragment)">Task 1 — grid vs random on a synthetic surface — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-grid-vs-random-on-a-synthetic-surface-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> implement <code>random_search</code> and use the PROVIDED <code>grid_search</code> to reproduce the Bergstra &amp; Bengio crossover: at an equal budget, grid can win in low dimensions but random takes over as useless dimensions are added.</p>
+<p><strong>Why it matters:</strong> this is the mechanism behind every "random search is my default" recommendation. Watching grid's best-found <em>collapse</em> when it is forced down to 2 values per axis makes the $\sqrt n$-vs-$n$ resolution argument concrete.</p>
+<p><strong>You implement <code>random_search(d, budget, seed)</code>:</strong> draw <code>budget</code> points uniformly in the $d$-dimensional unit cube, evaluate <code>response</code> at each, and return <code>(best_value_found, n_distinct_important_axis_values)</code>. The important axis is column 0, so the distinct count there is just the number of unique values in <code>points[:, 0]</code> (which, for continuous draws, equals <code>budget</code>).</p>
+<p><strong>Hint boundary:</strong> use <code>np.random.RandomState(seed).rand(budget, d)</code> for the points; <code>response(...)</code> is PROVIDED; the "distinct" count is <code>len(np.unique(points[:, 0]))</code>. Do not edit <code>response</code> or <code>grid_search</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l016-05">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — a pure-noise, high-cardinality category. Target is INDEPENDENT of cat.</span>
-<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">n</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span> <span class="mi">700</span>                       <span class="c1"># ~3 rows per category</span>
-<span class="n">cat</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>    <span class="c1"># no relationship to `cat`</span>
-<span class="n">prior</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">greedy_ts</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Whole-category mean, INCLUDING each row's own y -&gt; leak."""</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">cat</span><span class="p">):</span>
-        <span class="n">m</span> <span class="o">=</span> <span class="n">cat</span> <span class="o">==</span> <span class="n">k</span>
-        <span class="n">out</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">out</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pure-noise category: n=</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">, cardinality=</span><span class="si">{</span><span class="n">K</span><span class="si">}</span><span class="s2">, prevalence=</span><span class="si">{</span><span class="n">prior</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>pure-noise category: n=2000, cardinality=700, prevalence=0.288
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l016-06">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — implement ordered target statistics (Prokhorenkova et al. 2018, §3)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">ordered_ts</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
-    <span class="n">perm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-    <span class="n">running_sum</span><span class="p">,</span> <span class="n">running_cnt</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{}</span>
-    <span class="n">enc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">perm</span><span class="p">:</span>
-        <span class="n">c</span> <span class="o">=</span> <span class="n">cat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">s</span> <span class="o">=</span> <span class="n">running_sum</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-        <span class="n">m</span> <span class="o">=</span> <span class="n">running_cnt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">enc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">a</span><span class="o">*</span><span class="n">prior</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">m</span><span class="o">+</span><span class="n">a</span><span class="p">)</span>                       <span class="c1"># encode from the PREFIX only: (s + a*prior)/(m + a)</span>
-        <span class="n">running_sum</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>                   <span class="c1"># THEN update the running sum with this row's y</span>
-        <span class="n">running_cnt</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span>  <span class="n">m</span> <span class="o">+</span> <span class="mi">1</span>                  <span class="c1"># ...and its count</span>
-    <span class="k">return</span> <span class="n">enc</span>
-
-<span class="n">auc_greedy</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">greedy_ts</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
-<span class="n">auc_ordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ordered_ts</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">)])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"greedy  TS AUC(enc, y) = </span><span class="si">{</span><span class="n">auc_greedy</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">   (leak)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ordered TS AUC(enc, y) = </span><span class="si">{</span><span class="n">auc_ordered</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">   (mean over 20 perms; ~0.5 = no leak)"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>greedy  TS AUC(enc, y) = 0.845   (leak)
-ordered TS AUC(enc, y) = 0.493   (mean over 20 perms; ~0.5 = no leak)
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l016-07">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="n">enc0</span> <span class="o">=</span> <span class="n">ordered_ts</span><span class="p">(</span><span class="n">cat</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">enc0</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span>
-<span class="k">assert</span> <span class="n">auc_greedy</span> <span class="o">&gt;</span> <span class="mf">0.70</span><span class="p">,</span> <span class="s2">"Greedy TS should leak on a rare-category noise column (AUC well above 0.5)."</span>
-<span class="k">assert</span> <span class="mf">0.40</span> <span class="o">&lt;</span> <span class="n">auc_ordered</span> <span class="o">&lt;</span> <span class="mf">0.60</span><span class="p">,</span> <span class="s2">"Ordered TS should be ~0.5 on pure noise (no leak)."</span>
-<span class="c1"># The first occurrence of any category in a permutation must equal the prior (empty prefix).</span>
-<span class="n">perm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-<span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">();</span> <span class="n">first_ok</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">perm</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">cat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
-        <span class="n">first_ok</span> <span class="o">=</span> <span class="n">first_ok</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="n">enc0</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">prior</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span>
-        <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cat</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-<span class="k">assert</span> <span class="n">first_ok</span><span class="p">,</span> <span class="s2">"The first time a category appears, its ordered TS must equal the prior."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — greedy leaks (AUC </span><span class="si">{</span><span class="n">auc_greedy</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">); ordered is clean (AUC </span><span class="si">{</span><span class="n">auc_ordered</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 1 ok — greedy leaks (AUC 0.845); ordered is clean (AUC 0.493).
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l016-08">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-CatBoost-vs-the-field-on-real-categorical-data-%E2%80%94-TODO-(reproduction-target)">Task 2 — CatBoost vs the field on real categorical data — TODO (reproduction target)<a class="anchor-link" href="#Task-2-%E2%80%94-CatBoost-vs-the-field-on-real-categorical-data-%E2%80%94-TODO-(reproduction-target)">¶</a></h2><p><strong>Goal:</strong> compare CatBoost (native categoricals) against label-encoded XGBoost and native-categorical LightGBM on <code>credit_g</code>, all with a shared 5-fold CV PR-AUC.</p>
-<p><strong>Why it matters:</strong> honest-baseline discipline. <code>credit_g</code> has 13 categorical columns on only 1,000 rows — CatBoost's home turf. But a fair claim needs all three under the <em>same</em> protocol.</p>
-<p><strong>Reproduction target (lesson table):</strong> XGBoost ≈ 0.883, LightGBM ≈ 0.880, CatBoost ≈ 0.896.</p>
-<p><strong>You implement:</strong> the categorical-column <strong>indices</strong> <code>cat_idx</code> that CatBoost needs, and pass them to the CatBoost factory via <code>cat_features=...</code>. (A manual 5-fold helper is PROVIDED because CatBoost's <code>cat_features</code> param does not survive <code>sklearn.clone</code>, which <code>cross_val_score</code> uses.)</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l016-09">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-05">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8056,44 +7902,125 @@ ordered TS AUC(enc, y) = 0.493   (mean over 20 perms; ~0.5 = no leak)
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — credit_g in three forms + a clone-free CV helper.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — a surface on [0,1]^d. Only column 0 matters (sharp peak at 0.5);</span>
+<span class="c1"># the rest are near-flat "useless" knobs. Optimum value is 1.0 (at x0 = 0.5).</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">response</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">d_important</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">imp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">x</span><span class="p">[:,</span> <span class="p">:</span><span class="n">d_important</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="mf">0.08</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">unimp</span> <span class="o">=</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">6</span> <span class="o">*</span> <span class="n">x</span><span class="p">[:,</span> <span class="n">d_important</span><span class="p">:])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">imp</span> <span class="o">+</span> <span class="n">unimp</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">grid_search</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">budget</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Near-`budget` full factorial grid; returns (best_found, n_distinct_axis0)."""</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">budget</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">d</span><span class="p">)))</span>          <span class="c1"># values per axis</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="n">axis</span><span class="p">]</span> <span class="o">*</span> <span class="n">d</span><span class="p">)))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">return</span> <span class="n">response</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">k</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"response(): peak at x0=0.5 -&gt;"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">response</span><span class="p">([[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]])[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">3</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-06">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement random search over the unit cube</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">random_search</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">budget</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+    <span class="n">pts</span> <span class="o">=</span> <span class="n">____</span>                                      <span class="c1"># np.random.RandomState(seed).rand(budget, d)</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="n">____</span>                                     <span class="c1"># best response value over the sampled points</span>
+    <span class="n">distinct</span> <span class="o">=</span> <span class="n">____</span>                                 <span class="c1"># number of distinct values on the important axis (column 0)</span>
+    <span class="k">return</span> <span class="n">best</span><span class="p">,</span> <span class="n">distinct</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"dims | budget | grid distinct/best | random distinct/best (mean over 200 seeds)"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">budget</span> <span class="ow">in</span> <span class="p">[(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">64</span><span class="p">)]:</span>
+    <span class="n">g_best</span><span class="p">,</span> <span class="n">g_dist</span> <span class="o">=</span> <span class="n">grid_search</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">budget</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">random_search</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">budget</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">)])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  d=</span><span class="si">{</span><span class="n">d</span><span class="si">:</span><span class="s2">1d</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">budget</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2"> | grid </span><span class="si">{</span><span class="n">g_dist</span><span class="si">:</span><span class="s2">2d</span><span class="si">}</span><span class="s2"> vals -&gt; </span><span class="si">{</span><span class="n">g_best</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
+          <span class="sa">f</span><span class="s2">"| random </span><span class="si">{</span><span class="n">r</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> vals -&gt; </span><span class="si">{</span><span class="n">r</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-07">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="n">b</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">random_search</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">dist</span> <span class="o">==</span> <span class="mi">32</span><span class="p">,</span> <span class="s2">"Random search should try `budget` distinct values on the important axis."</span>
+<span class="k">assert</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">b</span> <span class="o">&lt;=</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">"response() is bounded near [0, 1]."</span>
+<span class="c1"># In LOW dim a lucky grid can win; in HIGHER dim random should dominate.</span>
+<span class="n">g2</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">grid_search</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">random_search</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">s</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">)])</span>
+<span class="n">g5</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">grid_search</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
+<span class="n">r5</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">random_search</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">s</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">)])</span>
+<span class="k">assert</span> <span class="n">g2</span> <span class="o">&gt;=</span> <span class="n">r2</span> <span class="o">-</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s2">"In 2-D a well-placed grid should be competitive."</span>
+<span class="k">assert</span> <span class="n">r5</span> <span class="o">&gt;</span> <span class="n">g5</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">"In 5-D random should crush grid (grid collapses to ~2 values/axis)."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — 2-D: grid </span><span class="si">{</span><span class="n">g2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs random </span><span class="si">{</span><span class="n">r2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (grid competitive); "</span>
+      <span class="sa">f</span><span class="s2">"5-D: grid </span><span class="si">{</span><span class="n">g5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs random </span><span class="si">{</span><span class="n">r5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (random wins)."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-08">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-2-%E2%80%94-GridSearchCV-vs-RandomizedSearchCV-on-XGBoost-%E2%80%94-TODO-(reproduction-target)">Task 2 — GridSearchCV vs RandomizedSearchCV on XGBoost — TODO (reproduction target)<a class="anchor-link" href="#Task-2-%E2%80%94-GridSearchCV-vs-RandomizedSearchCV-on-XGBoost-%E2%80%94-TODO-(reproduction-target)">¶</a></h2><p><strong>Goal:</strong> tune XGBoost on <code>credit_g</code> two ways at an <strong>equal budget</strong> — a 3×3×3 grid (27 configs) and 27 random draws over a <em>richer</em> 5-knob space — and confirm random wins.</p>
+<p><strong>Why it matters:</strong> honest-baseline discipline in action. Same budget, same 5-fold CV PR-AUC (as L014). The only difference is <em>where the trials are spent</em>.</p>
+<p><strong>Reproduction target (lesson table):</strong> XGBoost default ≈ 0.883, GridSearchCV ≈ 0.891, RandomizedSearchCV ≈ 0.901.</p>
+<p><strong>You implement:</strong> the <code>dists</code> dictionary of <strong>distributions</strong> for the random search (note <code>learning_rate</code> is <strong>log-uniform</strong>), and set <code>n_iter</code> to the grid size so the budgets match. <code>GridSearchCV</code> and the CV splitter are PROVIDED.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-09">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — credit_g, label-encoded for XGBoost + a fixed inner CV.</span>
 <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-<span class="n">num_cols</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-<span class="n">cat_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num_cols</span><span class="p">]</span>
+<span class="n">num</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num</span><span class="p">]</span>
+<span class="n">Xle</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">num</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat</span><span class="p">:</span>
+    <span class="n">Xle</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">LabelEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">))</span>
 
-<span class="c1"># (a) native strings for CatBoost</span>
-<span class="n">Xs</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat_cols</span><span class="p">:</span>
-    <span class="n">col</span> <span class="o">=</span> <span class="n">Xs</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"object"</span><span class="p">)</span>
-    <span class="n">Xs</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">col</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">notna</span><span class="p">(),</span> <span class="s2">"missing"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
-<span class="c1"># (b) label-encoded for XGBoost</span>
-<span class="n">Xle</span> <span class="o">=</span> <span class="n">Xs</span><span class="p">[</span><span class="n">num_cols</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat_cols</span><span class="p">:</span>
-    <span class="n">Xle</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">LabelEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">Xs</span><span class="p">[</span><span class="n">c</span><span class="p">])</span>
-<span class="c1"># (c) pandas 'category' dtype for LightGBM native mode</span>
-<span class="n">Xlg</span> <span class="o">=</span> <span class="n">Xs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat_cols</span><span class="p">:</span>
-    <span class="n">Xlg</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">Xlg</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"category"</span><span class="p">)</span>
+<span class="n">base</span> <span class="o">=</span> <span class="n">XGBClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">tree_method</span><span class="o">=</span><span class="s2">"hist"</span><span class="p">)</span>
+<span class="n">inner</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">cv_pr_auc_factory</span><span class="p">(</span><span class="n">make_estimator</span><span class="p">,</span> <span class="n">Xdf</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""5-fold PR-AUC. `make_estimator` is a 0-arg factory (avoids sklearn.clone)."""</span>
-    <span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
-    <span class="n">Xa</span> <span class="o">=</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">tr</span><span class="p">,</span> <span class="n">te</span> <span class="ow">in</span> <span class="n">cv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">Xa</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-        <span class="n">m</span> <span class="o">=</span> <span class="n">make_estimator</span><span class="p">()</span>
-        <span class="n">m</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xa</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">tr</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">tr</span><span class="p">])</span>
-        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">average_precision_score</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">te</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xa</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">te</span><span class="p">])[:,</span> <span class="mi">1</span><span class="p">]))</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rows=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2"> pos_rate=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  #cat=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_cols</span><span class="p">)</span><span class="si">}</span><span class="s2"> #num=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">num_cols</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">default_score</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"max_depth"</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span> <span class="s2">"n_estimators"</span><span class="p">:</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="mi">600</span><span class="p">]}</span>
+<span class="n">grid_n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">grid</span><span class="o">.</span><span class="n">values</span><span class="p">()]))</span>
+<span class="n">gs</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"XGBoost default       CV PR-AUC = </span><span class="si">{</span><span class="n">default_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GridSearchCV (</span><span class="si">{</span><span class="n">grid_n</span><span class="si">}</span><span class="s2">)    CV PR-AUC = </span><span class="si">{</span><span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l016-10">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-10">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8101,26 +8028,25 @@ ordered TS AUC(enc, y) = 0.493   (mean over 20 perms; ~0.5 = no leak)
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — CatBoost (native cats) vs XGBoost (label-enc) vs LightGBM (native)</span>
-<span class="n">cat_idx</span> <span class="o">=</span> <span class="n">____</span>     <span class="c1"># list of column POSITIONS for the categorical columns (see hint: .get_loc)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — random search over a richer space at the SAME budget</span>
+<span class="n">dists</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"max_depth"</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+    <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>                      <span class="c1"># log-uniform over 0.01 .. 0.3 (use loguniform)</span>
+    <span class="s2">"n_estimators"</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">150</span><span class="p">,</span> <span class="mi">700</span><span class="p">),</span>
+    <span class="s2">"subsample"</span><span class="p">:</span> <span class="n">uniform</span><span class="p">(</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">),</span>             <span class="c1"># range 0.6 .. 1.0</span>
+    <span class="s2">"colsample_bytree"</span><span class="p">:</span> <span class="n">uniform</span><span class="p">(</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">),</span>
+<span class="p">}</span>
+<span class="n">rs_search</span> <span class="o">=</span> <span class="n">RandomizedSearchCV</span><span class="p">(</span>
+    <span class="n">base</span><span class="p">,</span> <span class="n">dists</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">____</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">,</span>   <span class="c1"># equal budget: match the grid size</span>
+    <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
-<span class="n">cb_score</span> <span class="o">=</span> <span class="n">cv_pr_auc_factory</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">CatBoostClassifier</span><span class="p">(</span>
-    <span class="n">iterations</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">random_seed</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span>
-    <span class="n">cat_features</span><span class="o">=</span><span class="n">____</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">allow_writing_files</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">Xs</span><span class="p">)</span>   <span class="c1"># pass the categorical indices</span>
-<span class="n">xgb_score</span> <span class="o">=</span> <span class="n">cv_pr_auc_factory</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">XGBClassifier</span><span class="p">(</span>
-    <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">tree_method</span><span class="o">=</span><span class="s2">"hist"</span><span class="p">),</span> <span class="n">Xle</span><span class="p">)</span>
-<span class="n">lgbm_score</span> <span class="o">=</span> <span class="n">cv_pr_auc_factory</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">LGBMClassifier</span><span class="p">(</span>
-    <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">Xlg</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"XGBoost  (label-enc) CV PR-AUC = </span><span class="si">{</span><span class="n">xgb_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"LightGBM (native)    CV PR-AUC = </span><span class="si">{</span><span class="n">lgbm_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CatBoost (native)    CV PR-AUC = </span><span class="si">{</span><span class="n">cb_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"RandomizedSearchCV (</span><span class="si">{</span><span class="n">grid_n</span><span class="si">}</span><span class="s2">) CV PR-AUC = </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l016-11">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-11">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8128,31 +8054,86 @@ ordered TS AUC(enc, y) = 0.493   (mean over 20 perms; ~0.5 = no leak)
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">cb_score</span><span class="p">,</span> <span class="n">xgb_score</span><span class="p">,</span> <span class="n">lgbm_score</span><span class="p">):</span>
-    <span class="k">assert</span> <span class="mf">0.5</span> <span class="o">&lt;</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"PR-AUC should be a sensible probability-ranking score."</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">xgb_score</span> <span class="o">-</span> <span class="mf">0.883</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.03</span><span class="p">,</span> <span class="s2">"XGBoost should reproduce ~0.883 on credit_g."</span>
-<span class="k">assert</span> <span class="n">cb_score</span> <span class="o">&gt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xgb_score</span><span class="p">,</span> <span class="n">lgbm_score</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.01</span><span class="p">,</span> \
-    <span class="s2">"CatBoost's native categoricals should be at least competitive on this categorical-rich set."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — CatBoost </span><span class="si">{</span><span class="n">cb_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | XGBoost </span><span class="si">{</span><span class="n">xgb_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | LightGBM </span><span class="si">{</span><span class="n">lgbm_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">default_score</span> <span class="o">-</span> <span class="mf">0.883</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.03</span><span class="p">,</span> <span class="s2">"XGBoost default should reproduce ~0.883 on credit_g."</span>
+<span class="k">assert</span> <span class="n">rs_search</span><span class="o">.</span><span class="n">n_iter</span> <span class="o">==</span> <span class="n">grid_n</span><span class="p">,</span> <span class="s2">"Random search budget must equal the grid size for a fair comparison."</span>
+<span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span><span class="p">,</span> <span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="mf">0.85</span> <span class="o">&lt;</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="mf">0.93</span><span class="p">,</span> <span class="s2">"Tuned PR-AUC should land in a sensible range for credit_g."</span>
+<span class="k">assert</span> <span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span> <span class="o">&gt;=</span> <span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span> <span class="o">-</span> <span class="mf">0.005</span><span class="p">,</span> \
+    <span class="s2">"At an equal budget over a richer space, random search should match or beat the grid."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — default </span><span class="si">{</span><span class="n">default_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | grid </span><span class="si">{</span><span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"| random </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l016-12">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-12">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-3-%E2%80%94-the-honest-number:-nested-CV-%E2%80%94-TODO-(leakage-discipline)">Task 3 — the honest number: nested CV — TODO (leakage discipline)<a class="anchor-link" href="#Task-3-%E2%80%94-the-honest-number:-nested-CV-%E2%80%94-TODO-(leakage-discipline)">¶</a></h2><p><strong>Goal:</strong> <code>best_score_</code> is the CV score of the <em>winner of a 27-way search</em> — optimistically biased (L004 selection bias). Get the honest estimate with <strong>nested CV</strong>: an <em>outer</em> 5-fold loop wraps the whole <code>RandomizedSearchCV</code>, so each outer test fold is scored by a search that never saw it.</p>
+<p><strong>Why it matters:</strong> this is the number you are allowed to report. Quoting <code>best_score_</code> as "our performance" is the single most common way tuned models look better than they are.</p>
+<p><strong>You implement:</strong> wrap the search in <code>cross_val_score</code> with an <strong>outer</strong> <code>StratifiedKFold</code>. The inner search (same <code>dists</code>, same <code>n_iter</code>) is the estimator being cross-validated.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-13">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — nested CV: outer loop scores a search that never saw the outer test fold</span>
+<span class="n">outer</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">search</span> <span class="o">=</span> <span class="n">RandomizedSearchCV</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">dists</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">grid_n</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">,</span>
+                            <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">nested</span> <span class="o">=</span> <span class="n">____</span>                       <span class="c1"># cross_val_score(search, Xle, y, cv=outer, scoring="average_precision").mean()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"best_score_ (optimistic) = </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"nested CV   (honest)     = </span><span class="si">{</span><span class="n">nested</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"optimism gap             = </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">nested</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-14">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="mf">0.80</span> <span class="o">&lt;</span> <span class="n">nested</span> <span class="o">&lt;</span> <span class="mf">0.93</span><span class="p">,</span> <span class="s2">"Nested CV score should be a sensible PR-AUC."</span>
+<span class="k">assert</span> <span class="n">nested</span> <span class="o">&lt;=</span> <span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">,</span> \
+    <span class="s2">"Nested CV is an out-of-search estimate; it should not exceed the (optimistic) best_score_."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — optimistic </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> &gt;= honest nested </span><span class="si">{</span><span class="n">nested</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary to paste back to your teacher.</p>
-<p><strong>Takeaway prompt:</strong> in one sentence, say what the greedy target statistic leaks and how ordered TS removes the leak — and whether CatBoost's native categoricals beat the field on this small, categorical-rich dataset.</p>
+<p><strong>Takeaway prompt:</strong> in one sentence, say why random search covers the important knob better than a grid at equal budget, and why you must report the nested-CV number instead of <code>best_score_</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l016-13">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8160,10 +8141,12 @@ ordered TS AUC(enc, y) = 0.493   (mean over 20 perms; ~0.5 = no leak)
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 016 ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pure-noise category: greedy TS AUC </span><span class="si">{</span><span class="n">auc_greedy</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (leak) vs ordered TS AUC </span><span class="si">{</span><span class="n">auc_ordered</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (clean)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"credit_g PR-AUC: CatBoost </span><span class="si">{</span><span class="n">cb_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | XGBoost </span><span class="si">{</span><span class="n">xgb_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | LightGBM </span><span class="si">{</span><span class="n">lgbm_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 017 ==="</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Synthetic 2-D: grid </span><span class="si">{</span><span class="n">g2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs random </span><span class="si">{</span><span class="n">r2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (grid competitive)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Synthetic 5-D: grid </span><span class="si">{</span><span class="n">g5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs random </span><span class="si">{</span><span class="n">r5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (random wins)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"credit_g tuned XGB: default </span><span class="si">{</span><span class="n">default_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | grid </span><span class="si">{</span><span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | random </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Honest score: nested CV </span><span class="si">{</span><span class="n">nested</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs optimistic best_score_ </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
 </pre></div>
@@ -8172,17 +8155,17 @@ ordered TS AUC(enc, y) = 0.493   (mean over 20 perms; ~0.5 = no leak)
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l016-14">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-17">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-is-ordered-boosting-itself-worth-it?">Stretch (optional, ungraded) — is <em>ordered boosting</em> itself worth it?<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-is-ordered-boosting-itself-worth-it?">¶</a></h2><p>CatBoost's second permutation trick is <strong>ordered boosting</strong> (<code>boosting_type="Ordered"</code>, the default on small data) vs classic <strong>Plain</strong> boosting. It fixes <em>prediction shift</em> but is slower — and on a single small dataset the accuracy difference can be a wash. Toggle it and see for yourself, then note that most of CatBoost's edge above came from the <em>ordered target statistics</em>, not from ordered boosting.</p>
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-successive-halving">Stretch (optional, ungraded) — successive halving<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-successive-halving">¶</a></h2><p>sklearn's <code>HalvingRandomSearchCV</code> starts many configs on a small budget (few estimators / few rows), kills the losers, and reinvests compute in the survivors. Try it and compare wall-clock + best score to the plain random search above — often similar quality, much faster.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l016-15">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-18">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8190,12 +8173,12 @@ ordered TS AUC(enc, y) = 0.493   (mean over 20 perms; ~0.5 = no leak)
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># STRETCH — ungraded. Ordered vs Plain boosting on credit_g (expect a near-wash).</span>
-<span class="c1"># common = dict(iterations=400, learning_rate=0.05, depth=6, random_seed=RS,</span>
-<span class="c1">#               cat_features=cat_idx, verbose=0, allow_writing_files=False)</span>
-<span class="c1"># ordered = cv_pr_auc_factory(lambda: CatBoostClassifier(boosting_type="Ordered", **common), Xs)</span>
-<span class="c1"># plain   = cv_pr_auc_factory(lambda: CatBoostClassifier(boosting_type="Plain",   **common), Xs)</span>
-<span class="c1"># print(f"Ordered {ordered:.3f}  |  Plain {plain:.3f}")</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded. Successive halving (needs the experimental import).</span>
+<span class="c1"># from sklearn.experimental import enable_halving_search_cv  # noqa: F401</span>
+<span class="c1"># from sklearn.model_selection import HalvingRandomSearchCV</span>
+<span class="c1"># hs = HalvingRandomSearchCV(base, dists, scoring="average_precision", cv=inner,</span>
+<span class="c1">#                            factor=3, random_state=RS, n_jobs=4).fit(Xle, y)</span>
+<span class="c1"># print(f"HalvingRandomSearchCV best CV PR-AUC = {hs.best_score_:.3f}  (n_candidates seen: {len(hs.cv_results_['params'])})")</span>
 </pre></div>
 </div>
 </div>

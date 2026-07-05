@@ -10,6 +10,8 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Histogram + leaf-wise growth + GOSS (§3) + EFB (§4). **No arXiv** — use the NeurIPS PDF; the official [LightGBM "Features" docs](https://lightgbm.readthedocs.io/en/latest/Features.html) are the best reference for leaf-wise growth and histogram subtraction. Use for: Lesson 015 primary reading; the fast/scalable GBDT baseline. The famous "20× faster" is vs *conventional* pre-histogram GBDT, not modern XGBoost-`hist`.
 - [CatBoost — Prokhorenkova et al., NeurIPS 2018](https://arxiv.org/abs/1706.09516)
   Ordered boosting + categoricals. Use for: high-cardinality categoricals without target leakage.
+- [Random Search for Hyper-Parameter Optimization — Bergstra & Bengio, JMLR 2012](https://www.jmlr.org/papers/v13/bergstra12a.html)
+  Low effective dimensionality: only a few hyperparameters matter, so at an equal budget random search covers the important axes far better than a grid (Fig 1). Use for: Lesson 017 primary reading; the fair-budget tuning baseline. Reference implementation: sklearn [`RandomizedSearchCV`](https://scikit-learn.org/stable/modules/grid_search.html) + `HalvingRandomSearchCV` (successive halving).
 - [Random Forests — Breiman, Machine Learning 2001](https://doi.org/10.1023/A:1010933404324)
   Bagging + per-split feature subsampling to decorrelate trees; OOB error. Use for: Lesson 012 primary reading; the variance-reduction baseline (contrast with boosting's bias reduction).
 - [Greedy Function Approximation: A Gradient Boosting Machine — Friedman, Annals of Statistics 2001](https://doi.org/10.1214/aos/1013203451)

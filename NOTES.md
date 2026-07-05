@@ -122,6 +122,16 @@
 - **Lab:** `labs/0016-catboost.ipynb` — crucial fragment = `ordered_ts` by hand (encode-before-update); Task 2 = CatBoost vs XGB vs LGBM on credit_g. Student blank (3 TODO), solution executed clean & gitignored. Manifest regenerated (16 entries); all labs re-rendered to `labs/html/`.
 - Next: Lesson 017 (Hyperparameter search — Bergstra & Bengio 2012; random vs grid; RandomizedSearchCV).
 
+## Session 19 — 2026-07-05
+
+- **Lesson 016 complete** — "lesson/lab 16 done."
+- **Lesson 017 published** — Hyperparameter search (curriculum lec 017, Bergstra & Bengio 2012, JMLR 13 — **no arXiv**, JMLR PDF). Single skill: why random > grid at equal budget under low effective dimensionality (grid tries √n distinct values/axis, random ≈n), log-uniform sampling, and the nested-CV honesty rule (L004 selection-bias callback). Record: [[learning-records/0044-lesson-017-published.md]].
+- **New reusable asset:** `assets/search-viz.js` (the iconic B&B Fig 1 — Grid/Random toggle + budget selector + Resample; dashed projections onto the important axis; readout = distinct-axis-values + best peak found). CSS `.sv-*` in lesson `<style>`. Headless Node mount check clean; **browser MCP unavailable again** (empty tools folder; only user-arxiv authed).
+- **Verified live (`_verify_l017.py` + executed solution):** synthetic crossover (honest!) — 2-D budget 9 grid **1.019** vs random 0.771 (lucky grid wins low-dim); 5-D budget 32 grid **0.076** vs random **0.967** (grid collapses to 2 values/axis); credit_g tuned XGB (equal budget 27): default 0.883 · grid 0.891 · **random 0.901** (= RF 0.901, > tuned-XGB 0.896); nested CV 0.895 (honest) vs best_score_ 0.901 (optimistic), gap +0.006.
+- **Honest myth-buster kept:** random search is not a universal law — a well-placed grid wins in 1–2 dims; the advantage is about *many knobs, most useless*, and grows with dimensionality.
+- **Lab:** `labs/0017-hyperparameter-search.ipynb` — 4 TODO + stretch (`HalvingRandomSearchCV`). Task 1 crucial fragment = `random_search` by hand + crossover; Task 2 = Grid vs Randomized on XGB/credit_g equal budget (student writes `dists` w/ loguniform + `n_iter`); Task 3 = nested CV. numpy-2.5 gotcha: `float()` on a 1-elem array raises → use `float(arr[0])`. Student blank; solution executed clean & gitignored. Manifest → 17 entries; all labs re-rendered.
+- Next: Lesson 018 (Ensembling & stacking — Wolpert 1992; simple blend), then L019 (when trees win), L020 = Q2 checkpoint.
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -179,6 +189,7 @@ Track with ✓ as completed:
 - [x] Y1: Chen 2016 XGBoost §2 assigned in Lesson 014 (Eq 5–7 implemented in lab)
 - [x] Y1: Ke 2017 LightGBM §3 (GOSS) + §4 (EFB) assigned in Lesson 015 (GOSS implemented in lab)
 - [x] Y1: Prokhorenkova 2018 CatBoost §3 (ordered TS) + §4 (ordered boosting) assigned in Lesson 016 (ordered TS implemented in lab)
+- [x] Y1: Bergstra & Bengio 2012 §1 (random search / low effective dimensionality) assigned in Lesson 017 (grid vs random + nested CV implemented in lab)
 - [ ] Y1: Grinsztajn 2022
 - [ ] Y1: Fey 2024 §1
 - [x] Y1: Fey 2024 §1 assigned in Lesson 001
