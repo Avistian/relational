@@ -132,6 +132,17 @@
 - **Lab:** `labs/0017-hyperparameter-search.ipynb` — 4 TODO + stretch (`HalvingRandomSearchCV`). Task 1 crucial fragment = `random_search` by hand + crossover; Task 2 = Grid vs Randomized on XGB/credit_g equal budget (student writes `dists` w/ loguniform + `n_iter`); Task 3 = nested CV. numpy-2.5 gotcha: `float()` on a 1-elem array raises → use `float(arr[0])`. Student blank; solution executed clean & gitignored. Manifest → 17 entries; all labs re-rendered.
 - Next: Lesson 018 (Ensembling & stacking — Wolpert 1992; simple blend), then L019 (when trees win), L020 = Q2 checkpoint.
 
+## Session 20 — 2026-07-06
+
+- **Lesson 017 complete** — "lesson/lab 17 done" (no EXIT ticket pasted → no rubric score; record [[learning-records/0045-lesson-017-complete.md]]).
+- **Lesson 018 published** — Ensembling & stacking (curriculum lec 018, Wolpert 1992 *Stacked Generalization*, Neural Networks 5(2) — **no arXiv**, ScienceDirect). Single skill: build a stack whose meta-learner trains on **out-of-fold** base predictions; diversity is the fuel; in-sample base preds leak (crown the memorizer). Record: [[learning-records/0046-lesson-018-published.md]].
+- **New reusable asset:** `assets/stacking-viz.js` (level-0/level-1 SVG; 12 rows × 4 folds + META-FEATURE column; OOF "next fold ▶" fills honest green vs In-sample fills leak red). CSS `.stk-*` in lesson `<style>`. Headless Node check clean (`labs/_viz_check_l018.js`, 6/6). **Browser MCP unavailable again** (empty tools folder; only user-arxiv authed) → headless only.
+- **Verified live (`_verify_l018.py` + executed solution, relkit 5-fold PR-AUC, credit_g):** bases — logistic 0.874 · XGB 0.883 · LGBM 0.889 · CatBoost 0.900 · **RF 0.901 (best single)**; diversity — GBDT↔GBDT ≈0.89, logistic↔GBDT ≈0.68; blend (OOF avg 5) **0.899** (naïve blend *trails* best single), 3-GBDT blend 0.895; **stack (logistic meta, cv=5) 0.902** (edges best single +0.001), 3-GBDT stack 0.899; **leak trap (70/30 + 1-NN memorizer):** naïve meta weights 1-NN **+3.00**, train PR-AUC 1.000 (mirage) → test 0.895; OOF meta weights 1-NN **−0.11**, train 0.885 → test 0.930; **held-out gap +0.035**.
+- **Honest myth-buster kept:** on a 1000-row single table ensembling barely moves the number (+0.001); the durable lessons are the OOF mechanism, the diversity requirement, and the leak. Ensembling pays off with diverse families + more data (leaderboard regime).
+- **Thesis bridge:** the real single-table baseline is a *leak-free stacked ensemble* of tuned models (TabArena/Kaggle), not a single default — the bar the RDL thesis must clear. Sets up Y1 Q3 benchmark-literacy + Y2 Q2 lec-057 (ensembling across model families).
+- **Lab:** `labs/0018-ensembling-stacking.ipynb` — 3 TODO + stretch. Task 1 crucial fragment = OOF meta-features by hand (`cross_val_predict`) + blend; Task 2 = leak contrast with the 1-NN memorizer; Task 3 = `StackingClassifier` reproduction (0.902). Student blank (4 `____`, 0 outputs); solution executed clean & gitignored. **Setup-cell fix:** path insert now adds `Path(".")` *and its parent* so `relkit` imports from `labs/` or `labs/solutions/`. Manifest → 18 entries; all labs re-rendered.
+- Next: Lesson 019 (When trees win — Grinsztajn 2022 preview), then L020 = Q2 checkpoint.
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -190,6 +201,7 @@ Track with ✓ as completed:
 - [x] Y1: Ke 2017 LightGBM §3 (GOSS) + §4 (EFB) assigned in Lesson 015 (GOSS implemented in lab)
 - [x] Y1: Prokhorenkova 2018 CatBoost §3 (ordered TS) + §4 (ordered boosting) assigned in Lesson 016 (ordered TS implemented in lab)
 - [x] Y1: Bergstra & Bengio 2012 §1 (random search / low effective dimensionality) assigned in Lesson 017 (grid vs random + nested CV implemented in lab)
+- [x] Y1: Wolpert 1992 §1–3 (stacked generalization / out-of-fold meta-features) assigned in Lesson 018 (OOF blend + leak contrast + StackingClassifier in lab)
 - [ ] Y1: Grinsztajn 2022
 - [ ] Y1: Fey 2024 §1
 - [x] Y1: Fey 2024 §1 assigned in Lesson 001

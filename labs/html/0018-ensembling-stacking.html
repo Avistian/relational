@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0017-hyperparameter-search</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0018-ensembling-stacking</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,17 +7796,17 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-00">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-00">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-017-%E2%80%94-Hyperparameter-search:-grid-vs-random,-tuned-fairly">Lab 017 — Hyperparameter search: grid vs random, tuned fairly<a class="anchor-link" href="#Lab-017-%E2%80%94-Hyperparameter-search:-grid-vs-random,-tuned-fairly">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0017-hyperparameter-search.html"><code>lessons/0017-hyperparameter-search.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
-<p><strong>Paper:</strong> Bergstra &amp; Bengio 2012, <em>Random Search for Hyper-Parameter Optimization</em>, <a href="https://www.jmlr.org/papers/v13/bergstra12a.html">JMLR 13:281–305</a> — §1 (low effective dimensionality) + Fig 1.</p>
-<p><strong>Dataset tiers:</strong> C — synthetic response surface (mechanism isolation) for Task 1; A — OpenML <code>credit_g</code> via <code>relkit</code> for Tasks 2–3 (same harness as Labs 011–016).</p>
-<p><strong>Skill you are practising:</strong> show <em>why</em> random search beats grid search at an equal budget once a few knobs are useless, run <code>RandomizedSearchCV</code> vs <code>GridSearchCV</code>, and get an <strong>honest</strong> score with nested CV (no selection bias).</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints (1) grid vs random best-found on the synthetic surface as dimensions grow, (2) grid vs random tuned XGBoost CV PR-AUC on credit_g at equal budget, and (3) the optimistic search score vs the honest nested-CV score.</p>
+<h1 id="Lab-018-%E2%80%94-Ensembling-&amp;-stacking:-blend,-then-stack-without-leaking">Lab 018 — Ensembling &amp; stacking: blend, then stack without leaking<a class="anchor-link" href="#Lab-018-%E2%80%94-Ensembling-&amp;-stacking:-blend,-then-stack-without-leaking">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0018-ensembling-stacking.html"><code>lessons/0018-ensembling-stacking.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
+<p><strong>Paper:</strong> Wolpert 1992, <em>Stacked Generalization</em>, <a href="https://www.sciencedirect.com/science/article/abs/pii/S0893608005800231">Neural Networks 5(2):241–259</a> — §1–3 (a level-1 model trained on level-0 predictions of held-out data).</p>
+<p><strong>Dataset tier:</strong> A — OpenML <code>credit_g</code> via <code>relkit</code> (same harness as Labs 011–017).</p>
+<p><strong>Skill you are practising:</strong> build <strong>out-of-fold (OOF) meta-features</strong> by hand, see why the meta-learner must never see in-sample base predictions (the leak that crowns a memorizer), and run sklearn's <code>StackingClassifier</code>.</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints (1) the simple OOF blend vs the best single model, (2) the leaky in-sample stack vs the honest OOF stack on a held-out split, and (3) <code>StackingClassifier</code> CV PR-AUC.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
 <li><strong>PROVIDED</strong> cells — complete boilerplate; just run.</li>
@@ -7814,30 +7814,33 @@ a.anchor-link {
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scipy</strong>, <strong>xgboost</strong> (already in <code>requirements-labs.txt</code>). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong>, <strong>xgboost</strong>, <strong>lightgbm</strong>, <strong>catboost</strong> (already in <code>requirements-labs.txt</code>). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-01">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-01">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-spend-trials-where-they-matter">Concept recap — spend trials where they matter<a class="anchor-link" href="#Concept-recap-%E2%80%94-spend-trials-where-they-matter">¶</a></h2><p>A <strong>hyperparameter</strong> is fixed before training (a weight is learned). <strong>Tuning</strong> is a search: pick a config, estimate quality with <strong>cross-validation</strong> (never the test set), keep the best. Two things define it: the <strong>space</strong> (which knobs, what ranges) and the <strong>budget</strong> (how many configs you can CV-evaluate).</p>
-<p><strong>Grid search</strong> evaluates the full Cartesian product: $k$ values on each of $d$ axes costs $k^d$ configs — exponential in the number of knobs. To stay in budget as $d$ grows you must shrink $k$, so each axis ends up with only 2–3 values.</p>
-<p><strong>Bergstra &amp; Bengio's insight (low effective dimensionality):</strong> only a few hyperparameters actually matter. A grid of $n$ points is a $\sqrt n \times \sqrt n$ lattice, so it tries only $\sqrt n$ <strong>distinct values</strong> on the important axis — every lattice column re-tests the same important value. <strong>Random search</strong> draws $n$ independent points, giving $\approx n$ distinct values on <em>every</em> axis at the same budget.</p>
-<p>$$\text{grid: } k=\sqrt n \text{ distinct values / axis} \qquad \text{random: } \approx n \text{ distinct values / axis}$$</p>
-<p><strong>The honest nuance (this lab reproduces it):</strong> in 1–2 dimensions a well-placed grid can <em>win</em>. The random-search advantage appears — and then dominates — as you add knobs, because grid's per-axis resolution collapses while random's does not.</p>
-<p><strong>Toy micro-example (not this lab's answer).</strong> Budget $n=9$. A grid is $3\times3$: only <strong>3</strong> distinct values on the important axis. Random draws <strong>9</strong> points: <strong>9</strong> distinct values on that axis — 3× the resolution on the knob that matters, for free.</p>
-<p><strong>Don't fool yourself:</strong> <code>best_score_</code> is the CV score of the <em>winner of a search over many candidates</em> — optimistically biased (the L004 selection-bias trap). The honest number comes from <strong>nested CV</strong>: an outer split the search never touches.</p>
-<p><strong>Why it matters for the thesis:</strong> the undervaluation bet needs <strong>fair baselines</strong> — every model gets the <em>same</em> tuning budget under the <em>same</em> CV protocol, and you report a nested / held-out number. Random search is the equalizer. Full derivation + the grid-vs-random figure: <a href="../lessons/0017-hyperparameter-search.html">Lesson 017</a> · Bergstra &amp; Bengio 2012 §1.</p>
+<h2 id="Concept-recap-%E2%80%94-combine-diverse-models,-without-leaking">Concept recap — combine diverse models, without leaking<a class="anchor-link" href="#Concept-recap-%E2%80%94-combine-diverse-models,-without-leaking">¶</a></h2><p>You have several tuned single-table models. <strong>Ensembling</strong> asks: given each model's prediction for a row, what is my final prediction? Three levels:</p>
+<ul>
+<li><strong>Averaging / blending</strong> — mean of the base models' predicted probabilities. Zero extra parameters.</li>
+<li><strong>Weighted blend</strong> — a convex combination $\sum_i w_i p_i$ with chosen weights.</li>
+<li><strong>Stacking (Wolpert 1992)</strong> — treat the base predictions as <em>features</em> and train a small <strong>meta-learner</strong> (level-1, e.g. logistic regression) to combine them; it <em>learns</em> the weights.</li>
+</ul>
+<p><strong>Why it can beat the best single model — diversity.</strong> If two models make <em>independent</em> errors, averaging halves the error variance; if they make the <em>same</em> errors, averaging does nothing. So the fuel is <strong>diverse, individually-good</strong> base models. On <code>credit_g</code> the three GBDTs correlate $\approx 0.89$ (nearly the same model), while the logistic model correlates only $\approx 0.68$ with them — it carries the diversity.</p>
+<p><strong>The one hard part — out-of-fold predictions.</strong> You cannot train the meta-learner on predictions a base model made on its <em>own</em> training rows: those are memorized copies of the label, not forecasts. The fix is <strong>OOF</strong>: split into $K$ folds; for each fold, train the base on the other $K-1$ folds and predict the held-out fold. Stitch the held-out predictions together and every row has a prediction from a model that <em>never saw it</em>. <code>sklearn.model_selection.cross_val_predict(est, X, y, cv=K, method="predict_proba")</code> does exactly this.</p>
+<p><strong>The leak, made concrete.</strong> Add a pure memorizer — a <strong>1-nearest-neighbour</strong> classifier, which is <em>perfect</em> in-sample (each row's nearest neighbour is itself) but useless out-of-fold. Train the meta-learner on <strong>in-sample</strong> predictions and it hands the 1-NN the biggest weight; its apparent score is a mirage and it collapses on new data. Train on <strong>OOF</strong> predictions and the meta-learner sees the 1-NN's true (weak) signal and ignores it.</p>
+<p><strong>Toy micro-example (not this lab's answer).</strong> Two models, each 80% accurate. If their mistakes are on the <em>same</em> rows, the average is still 80%. If their mistakes are on <em>disjoint</em> rows, a soft average can be right whenever <em>either</em> is confident — pushing accuracy above 80%. Independent errors are what a stack monetizes.</p>
+<p><strong>Why it matters for the thesis:</strong> tabular leaderboards (TabArena, Kaggle) are won by <em>leak-free stacked ensembles</em> of tuned models — not single defaults. The RDL undervaluation bet must beat that stronger baseline, under the same CV protocol. Full derivation + the OOF widget: <a href="../lessons/0018-ensembling-stacking.html">Lesson 018</a> · Wolpert 1992.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-02">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-02">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7847,213 +7850,43 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l017-03">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-03">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()))</span>  <span class="c1"># labs/ on the path so `relkit` imports</span>
+<span class="n">_here</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_p</span> <span class="ow">in</span> <span class="p">(</span><span class="n">_here</span><span class="p">,</span> <span class="n">_here</span><span class="o">.</span><span class="n">parent</span><span class="p">):</span>          <span class="c1"># put labs/ on the path (works from labs/ or labs/solutions/)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">_p</span><span class="p">))</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">loguniform</span><span class="p">,</span> <span class="n">randint</span><span class="p">,</span> <span class="n">uniform</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">catboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">CatBoostClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LGBMClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestClassifier</span><span class="p">,</span> <span class="n">StackingClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">average_precision_score</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">GridSearchCV</span><span class="p">,</span> <span class="n">RandomizedSearchCV</span><span class="p">,</span> <span class="n">StratifiedKFold</span><span class="p">,</span> <span class="n">cross_val_score</span><span class="p">,</span>
+    <span class="n">StratifiedKFold</span><span class="p">,</span> <span class="n">cross_val_predict</span><span class="p">,</span> <span class="n">cross_val_score</span><span class="p">,</span> <span class="n">train_test_split</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">LabelEncoder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neighbors</span><span class="w"> </span><span class="kn">import</span> <span class="n">KNeighborsClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">LabelEncoder</span><span class="p">,</span> <span class="n">StandardScaler</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
 
 <span class="n">RS</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"relkit + scipy + xgboost ok"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>relkit + scipy + xgboost ok
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-04">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-grid-vs-random-on-a-synthetic-surface-%E2%80%94-TODO-(crucial-fragment)">Task 1 — grid vs random on a synthetic surface — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-grid-vs-random-on-a-synthetic-surface-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> implement <code>random_search</code> and use the PROVIDED <code>grid_search</code> to reproduce the Bergstra &amp; Bengio crossover: at an equal budget, grid can win in low dimensions but random takes over as useless dimensions are added.</p>
-<p><strong>Why it matters:</strong> this is the mechanism behind every "random search is my default" recommendation. Watching grid's best-found <em>collapse</em> when it is forced down to 2 values per axis makes the $\sqrt n$-vs-$n$ resolution argument concrete.</p>
-<p><strong>You implement <code>random_search(d, budget, seed)</code>:</strong> draw <code>budget</code> points uniformly in the $d$-dimensional unit cube, evaluate <code>response</code> at each, and return <code>(best_value_found, n_distinct_important_axis_values)</code>. The important axis is column 0, so the distinct count there is just the number of unique values in <code>points[:, 0]</code> (which, for continuous draws, equals <code>budget</code>).</p>
-<p><strong>Hint boundary:</strong> use <code>np.random.RandomState(seed).rand(budget, d)</code> for the points; <code>response(...)</code> is PROVIDED; the "distinct" count is <code>len(np.unique(points[:, 0]))</code>. Do not edit <code>response</code> or <code>grid_search</code>.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l017-05">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — a surface on [0,1]^d. Only column 0 matters (sharp peak at 0.5);</span>
-<span class="c1"># the rest are near-flat "useless" knobs. Optimum value is 1.0 (at x0 = 0.5).</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">response</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">d_important</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">imp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">x</span><span class="p">[:,</span> <span class="p">:</span><span class="n">d_important</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="mf">0.08</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
-    <span class="n">unimp</span> <span class="o">=</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">6</span> <span class="o">*</span> <span class="n">x</span><span class="p">[:,</span> <span class="n">d_important</span><span class="p">:])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">imp</span> <span class="o">+</span> <span class="n">unimp</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">grid_search</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">budget</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Near-`budget` full factorial grid; returns (best_found, n_distinct_axis0)."""</span>
-    <span class="n">k</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">budget</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">d</span><span class="p">)))</span>          <span class="c1"># values per axis</span>
-    <span class="n">axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-    <span class="n">mesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="n">axis</span><span class="p">]</span> <span class="o">*</span> <span class="n">d</span><span class="p">)))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
-    <span class="k">return</span> <span class="n">response</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">k</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">"response(): peak at x0=0.5 -&gt;"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">response</span><span class="p">([[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]])[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">3</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>response(): peak at x0=0.5 -&gt; 0.98
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l017-06">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — implement random search over the unit cube</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">random_search</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">budget</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
-    <span class="n">pts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">budget</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>                                     <span class="c1"># np.random.RandomState(seed).rand(budget, d)</span>
-    <span class="n">best</span> <span class="o">=</span> <span class="n">response</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-    <span class="n">distinct</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">pts</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]))</span>            <span class="c1"># distinct values tried on the important axis</span>
-    <span class="k">return</span> <span class="n">best</span><span class="p">,</span> <span class="n">distinct</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">"dims | budget | grid distinct/best | random distinct/best (mean over 200 seeds)"</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">budget</span> <span class="ow">in</span> <span class="p">[(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">64</span><span class="p">)]:</span>
-    <span class="n">g_best</span><span class="p">,</span> <span class="n">g_dist</span> <span class="o">=</span> <span class="n">grid_search</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">budget</span><span class="p">)</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">random_search</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">budget</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">)])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  d=</span><span class="si">{</span><span class="n">d</span><span class="si">:</span><span class="s2">1d</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">budget</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2"> | grid </span><span class="si">{</span><span class="n">g_dist</span><span class="si">:</span><span class="s2">2d</span><span class="si">}</span><span class="s2"> vals -&gt; </span><span class="si">{</span><span class="n">g_best</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
-          <span class="sa">f</span><span class="s2">"| random </span><span class="si">{</span><span class="n">r</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> vals -&gt; </span><span class="si">{</span><span class="n">r</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>dims | budget | grid distinct/best | random distinct/best (mean over 200 seeds)
-  d=2 |   9 | grid  3 vals -&gt; 1.019 | random 9 vals -&gt; 0.771
-  d=2 |  25 | grid  5 vals -&gt; 1.019 | random 25 vals -&gt; 0.947
-  d=5 |  32 | grid  2 vals -&gt; 0.076 | random 32 vals -&gt; 0.967
-  d=8 |  64 | grid  2 vals -&gt; 0.134 | random 64 vals -&gt; 1.012
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l017-07">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="n">b</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">random_search</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">dist</span> <span class="o">==</span> <span class="mi">32</span><span class="p">,</span> <span class="s2">"Random search should try `budget` distinct values on the important axis."</span>
-<span class="k">assert</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">b</span> <span class="o">&lt;=</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">"response() is bounded near [0, 1]."</span>
-<span class="c1"># In LOW dim a lucky grid can win; in HIGHER dim random should dominate.</span>
-<span class="n">g2</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">grid_search</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
-<span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">random_search</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">s</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">)])</span>
-<span class="n">g5</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">grid_search</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
-<span class="n">r5</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">random_search</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">s</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">)])</span>
-<span class="k">assert</span> <span class="n">g2</span> <span class="o">&gt;=</span> <span class="n">r2</span> <span class="o">-</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s2">"In 2-D a well-placed grid should be competitive."</span>
-<span class="k">assert</span> <span class="n">r5</span> <span class="o">&gt;</span> <span class="n">g5</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">"In 5-D random should crush grid (grid collapses to ~2 values/axis)."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — 2-D: grid </span><span class="si">{</span><span class="n">g2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs random </span><span class="si">{</span><span class="n">r2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (grid competitive); "</span>
-      <span class="sa">f</span><span class="s2">"5-D: grid </span><span class="si">{</span><span class="n">g5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs random </span><span class="si">{</span><span class="n">r5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (random wins)."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 1 ok — 2-D: grid 1.019 vs random 0.771 (grid competitive); 5-D: grid 0.076 vs random 0.967 (random wins).
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-08">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-GridSearchCV-vs-RandomizedSearchCV-on-XGBoost-%E2%80%94-TODO-(reproduction-target)">Task 2 — GridSearchCV vs RandomizedSearchCV on XGBoost — TODO (reproduction target)<a class="anchor-link" href="#Task-2-%E2%80%94-GridSearchCV-vs-RandomizedSearchCV-on-XGBoost-%E2%80%94-TODO-(reproduction-target)">¶</a></h2><p><strong>Goal:</strong> tune XGBoost on <code>credit_g</code> two ways at an <strong>equal budget</strong> — a 3×3×3 grid (27 configs) and 27 random draws over a <em>richer</em> 5-knob space — and confirm random wins.</p>
-<p><strong>Why it matters:</strong> honest-baseline discipline in action. Same budget, same 5-fold CV PR-AUC (as L014). The only difference is <em>where the trials are spent</em>.</p>
-<p><strong>Reproduction target (lesson table):</strong> XGBoost default ≈ 0.883, GridSearchCV ≈ 0.891, RandomizedSearchCV ≈ 0.901.</p>
-<p><strong>You implement:</strong> the <code>dists</code> dictionary of <strong>distributions</strong> for the random search (note <code>learning_rate</code> is <strong>log-uniform</strong>), and set <code>n_iter</code> to the grid size so the budgets match. <code>GridSearchCV</code> and the CV splitter are PROVIDED.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l017-09">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — credit_g, label-encoded for XGBoost + a fixed inner CV.</span>
+<span class="c1"># credit_g, label-encoded so every model shares one numeric matrix (as in L017).</span>
 <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
 <span class="n">num</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
@@ -8061,160 +7894,40 @@ a.anchor-link {
 <span class="n">Xle</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">num</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat</span><span class="p">:</span>
     <span class="n">Xle</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">LabelEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">))</span>
+<span class="n">Xle</span> <span class="o">=</span> <span class="n">Xle</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
-<span class="n">base</span> <span class="o">=</span> <span class="n">XGBClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">tree_method</span><span class="o">=</span><span class="s2">"hist"</span><span class="p">)</span>
-<span class="n">inner</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">base_models</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Fresh, clone-safe base learners on the label-encoded matrix."""</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"logistic"</span><span class="p">:</span>      <span class="n">make_pipeline</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)),</span>
+        <span class="s2">"random_forest"</span><span class="p">:</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">),</span>
+        <span class="s2">"xgboost"</span><span class="p">:</span>       <span class="n">XGBClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">tree_method</span><span class="o">=</span><span class="s2">"hist"</span><span class="p">),</span>
+        <span class="s2">"lightgbm"</span><span class="p">:</span>      <span class="n">LGBMClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span>
+        <span class="s2">"catboost"</span><span class="p">:</span>      <span class="n">CatBoostClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+    <span class="p">}</span>
 
-<span class="n">default_score</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="n">grid</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"max_depth"</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span> <span class="s2">"n_estimators"</span><span class="p">:</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="mi">600</span><span class="p">]}</span>
-<span class="n">grid_n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">grid</span><span class="o">.</span><span class="n">values</span><span class="p">()]))</span>
-<span class="n">gs</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"XGBoost default       CV PR-AUC = </span><span class="si">{</span><span class="n">default_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GridSearchCV (</span><span class="si">{</span><span class="n">grid_n</span><span class="si">}</span><span class="s2">)    CV PR-AUC = </span><span class="si">{</span><span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"relkit + 5 base models ready; X:"</span><span class="p">,</span> <span class="n">Xle</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>XGBoost default       CV PR-AUC = 0.883
-GridSearchCV (27)    CV PR-AUC = 0.891
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l017-10">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — random search over a richer space at the SAME budget</span>
-<span class="n">dists</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">"max_depth"</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
-    <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="n">loguniform</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">),</span>                      <span class="c1"># log-uniform over 0.01 .. 0.3 (use loguniform)</span>
-    <span class="s2">"n_estimators"</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">150</span><span class="p">,</span> <span class="mi">700</span><span class="p">),</span>
-    <span class="s2">"subsample"</span><span class="p">:</span> <span class="n">uniform</span><span class="p">(</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">),</span>             <span class="c1"># range 0.6 .. 1.0</span>
-    <span class="s2">"colsample_bytree"</span><span class="p">:</span> <span class="n">uniform</span><span class="p">(</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">),</span>
-<span class="p">}</span>
-<span class="n">rs_search</span> <span class="o">=</span> <span class="n">RandomizedSearchCV</span><span class="p">(</span>
-    <span class="n">base</span><span class="p">,</span> <span class="n">dists</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">grid_n</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">,</span>   <span class="c1"># equal budget: match the grid size</span>
-    <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"RandomizedSearchCV (</span><span class="si">{</span><span class="n">grid_n</span><span class="si">}</span><span class="s2">) CV PR-AUC = </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>RandomizedSearchCV (27) CV PR-AUC = 0.901
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l017-11">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">default_score</span> <span class="o">-</span> <span class="mf">0.883</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.03</span><span class="p">,</span> <span class="s2">"XGBoost default should reproduce ~0.883 on credit_g."</span>
-<span class="k">assert</span> <span class="n">rs_search</span><span class="o">.</span><span class="n">n_iter</span> <span class="o">==</span> <span class="n">grid_n</span><span class="p">,</span> <span class="s2">"Random search budget must equal the grid size for a fair comparison."</span>
-<span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span><span class="p">,</span> <span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="p">):</span>
-    <span class="k">assert</span> <span class="mf">0.85</span> <span class="o">&lt;</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="mf">0.93</span><span class="p">,</span> <span class="s2">"Tuned PR-AUC should land in a sensible range for credit_g."</span>
-<span class="k">assert</span> <span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span> <span class="o">&gt;=</span> <span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span> <span class="o">-</span> <span class="mf">0.005</span><span class="p">,</span> \
-    <span class="s2">"At an equal budget over a richer space, random search should match or beat the grid."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — default </span><span class="si">{</span><span class="n">default_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | grid </span><span class="si">{</span><span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
-      <span class="sa">f</span><span class="s2">"| random </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 2 ok — default 0.883 | grid 0.891 | random 0.901.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-12">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-04">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-the-honest-number:-nested-CV-%E2%80%94-TODO-(leakage-discipline)">Task 3 — the honest number: nested CV — TODO (leakage discipline)<a class="anchor-link" href="#Task-3-%E2%80%94-the-honest-number:-nested-CV-%E2%80%94-TODO-(leakage-discipline)">¶</a></h2><p><strong>Goal:</strong> <code>best_score_</code> is the CV score of the <em>winner of a 27-way search</em> — optimistically biased (L004 selection bias). Get the honest estimate with <strong>nested CV</strong>: an <em>outer</em> 5-fold loop wraps the whole <code>RandomizedSearchCV</code>, so each outer test fold is scored by a search that never saw it.</p>
-<p><strong>Why it matters:</strong> this is the number you are allowed to report. Quoting <code>best_score_</code> as "our performance" is the single most common way tuned models look better than they are.</p>
-<p><strong>You implement:</strong> wrap the search in <code>cross_val_score</code> with an <strong>outer</strong> <code>StratifiedKFold</code>. The inner search (same <code>dists</code>, same <code>n_iter</code>) is the estimator being cross-validated.</p>
+<h2 id="Task-1-%E2%80%94-out-of-fold-meta-features-+-a-blend-%E2%80%94-TODO-(crucial-fragment)">Task 1 — out-of-fold meta-features + a blend — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-out-of-fold-meta-features-+-a-blend-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> build the <strong>out-of-fold probability</strong> for each base model with <code>cross_val_predict</code>, average the five columns into a <strong>blend</strong>, and score it against the best single model.</p>
+<p><strong>Why it matters:</strong> the OOF prediction is <em>the</em> object stacking is built on — a prediction for every row from a model that never trained on that row. Averaging them is the simplest ensemble; the meta-learner in Task 3 just learns the weights instead of fixing them at $1/5$.</p>
+<p><strong>You implement:</strong> for each base model, <code>cross_val_predict(est, Xle, y, cv=cv, method="predict_proba")[:, 1]</code> gives its OOF positive-class probability; stack the five columns and take the row-wise <strong>mean</strong> for the blend.</p>
+<p><strong>Hint boundary:</strong> use the PROVIDED <code>cv</code> and <code>method="predict_proba"</code>; take column <code>[:, 1]</code> (positive class); <code>np.column_stack</code> then <code>.mean(axis=1)</code>. Do not fit on the full data and predict the same rows — that is the leak Task 2 exposes.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l017-13">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — nested CV: outer loop scores a search that never saw the outer test fold</span>
-<span class="n">outer</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
-<span class="n">search</span> <span class="o">=</span> <span class="n">RandomizedSearchCV</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">dists</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">grid_n</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">,</span>
-                            <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
-<span class="n">nested</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">search</span><span class="p">,</span> <span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">outer</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>                       <span class="c1"># cross_val_score(search, Xle, y, cv=outer, scoring="average_precision").mean()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"best_score_ (optimistic) = </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"nested CV   (honest)     = </span><span class="si">{</span><span class="n">nested</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"optimism gap             = </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">nested</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>best_score_ (optimistic) = 0.901
-nested CV   (honest)     = 0.895
-optimism gap             = +0.006
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-14">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-05">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8222,29 +7935,207 @@ optimism gap             = +0.006
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="mf">0.80</span> <span class="o">&lt;</span> <span class="n">nested</span> <span class="o">&lt;</span> <span class="mf">0.93</span><span class="p">,</span> <span class="s2">"Nested CV score should be a sensible PR-AUC."</span>
-<span class="k">assert</span> <span class="n">nested</span> <span class="o">&lt;=</span> <span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">,</span> \
-    <span class="s2">"Nested CV is an out-of-search estimate; it should not exceed the (optimistic) best_score_."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — optimistic </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> &gt;= honest nested </span><span class="si">{</span><span class="n">nested</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — build OOF probabilities for each base model, then blend</span>
+<span class="n">single</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">oof</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">est</span> <span class="ow">in</span> <span class="n">base_models</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">single</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cross_val_score</span><span class="p">(</span><span class="n">est</span><span class="p">,</span> <span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+    <span class="n">oof</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">____</span>          <span class="c1"># cross_val_predict(...): OOF positive-class prob for this model</span>
+
+<span class="n">P</span> <span class="o">=</span> <span class="n">____</span>                      <span class="c1"># column-stack the five OOF probability vectors -&gt; rows x 5</span>
+<span class="n">blend</span> <span class="o">=</span> <span class="n">____</span>                  <span class="c1"># row-wise mean of the five columns</span>
+<span class="n">blend_ap</span> <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">blend</span><span class="p">)</span>
+
+<span class="n">best_name</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">single</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">single</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">single</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="s2">16s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  best single = </span><span class="si">{</span><span class="n">best_name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | blend = </span><span class="si">{</span><span class="n">blend_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-06">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="n">P</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="mi">5</span><span class="p">),</span> <span class="s2">"P should be one OOF probability column per base model."</span>
+<span class="k">assert</span> <span class="p">((</span><span class="n">P</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">P</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s2">"OOF values are probabilities in [0, 1]."</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">blend_ap</span> <span class="o">-</span> <span class="mf">0.899</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.02</span><span class="p">,</span> <span class="s2">"Blend PR-AUC should reproduce ~0.899 on credit_g."</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">single</span><span class="p">[</span><span class="s2">"random_forest"</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.901</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.02</span><span class="p">,</span> <span class="s2">"RF (best single) should be ~0.901."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — blend </span><span class="si">{</span><span class="n">blend_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs best single </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"(on tiny credit_g the blend barely moves — the mechanism is the point)."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-15">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-07">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-2-%E2%80%94-the-leakage-trap:-in-sample-vs-OOF-meta-features-%E2%80%94-TODO-(leakage-discipline)">Task 2 — the leakage trap: in-sample vs OOF meta-features — TODO (leakage discipline)<a class="anchor-link" href="#Task-2-%E2%80%94-the-leakage-trap:-in-sample-vs-OOF-meta-features-%E2%80%94-TODO-(leakage-discipline)">¶</a></h2><p><strong>Goal:</strong> add a <strong>1-NN memorizer</strong> to the pool, then fit a logistic meta-learner two ways on a 70/30 split — once on <strong>in-sample</strong> base predictions (leak) and once on <strong>OOF</strong> base predictions (correct) — and compare held-out PR-AUC.</p>
+<p><strong>Why it matters:</strong> this is the single most common stacking bug. The 1-NN is perfect in-sample and useless out-of-fold; the leaky meta-learner crowns it and collapses on new data. Reproducing the collapse cements <em>why</em> OOF is mandatory.</p>
+<p><strong>Reproduction target (lesson table):</strong> naïve stack train PR-AUC ≈ 1.000 (mirage) → test ≈ 0.895; OOF stack train ≈ 0.885 → test ≈ 0.930 (held-out gap ≈ +0.035).</p>
+<p><strong>You implement:</strong> the <strong>OOF</strong> training meta-features <code>oof_tr</code> — for each model, <code>cross_val_predict</code> on the <em>training</em> split with the PROVIDED <code>inner</code> splitter. The naïve (in-sample) meta-features and the test meta-features are PROVIDED.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-08">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — pool + a pure memorizer; fit bases on the full training split.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">leak_models</span><span class="p">():</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">base_models</span><span class="p">()</span>
+    <span class="n">m</span><span class="p">[</span><span class="s2">"one_nn"</span><span class="p">]</span> <span class="o">=</span> <span class="n">KNeighborsClassifier</span><span class="p">(</span><span class="n">n_neighbors</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># perfect in-sample, useless OOF</span>
+    <span class="k">return</span> <span class="n">m</span>
+
+<span class="n">leak_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">leak_models</span><span class="p">())</span>
+<span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">inner</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+
+<span class="n">fitted</span> <span class="o">=</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">leak_models</span><span class="p">()[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">leak_names</span><span class="p">}</span>
+<span class="c1"># NAIVE meta-features: each base predicts the SAME rows it trained on (the leak)</span>
+<span class="n">naive_tr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">fitted</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xtr</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">leak_names</span><span class="p">])</span>
+<span class="c1"># test meta-features (same for both): bases (fit on all train) predict the held-out test rows</span>
+<span class="n">te_feat</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">fitted</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">leak_names</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"naive_tr and te_feat ready; columns ="</span><span class="p">,</span> <span class="n">leak_names</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-09">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — build HONEST out-of-fold training meta-features, then compare both meta-learners</span>
+<span class="n">oof_tr</span> <span class="o">=</span> <span class="n">____</span>   <span class="c1"># column-stack cross_val_predict(model, Xtr, ytr, cv=inner, method="predict_proba")[:,1]</span>
+                <span class="c1"># for each name in leak_names</span>
+
+<span class="n">meta_naive</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">naive_tr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+<span class="n">meta_oof</span>   <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">oof_tr</span><span class="p">,</span>   <span class="n">ytr</span><span class="p">)</span>
+
+<span class="n">naive_train</span> <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">ytr</span><span class="p">,</span> <span class="n">meta_naive</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">naive_tr</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">oof_train</span>   <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">ytr</span><span class="p">,</span> <span class="n">meta_oof</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">oof_tr</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">naive_test</span>  <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">meta_naive</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">te_feat</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">oof_test</span>    <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">meta_oof</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">te_feat</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="n">j</span> <span class="o">=</span> <span class="n">leak_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">"one_nn"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"1-NN weight  naive=</span><span class="si">{</span><span class="n">meta_naive</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s2">+.2f</span><span class="si">}</span><span class="s2">  oof=</span><span class="si">{</span><span class="n">meta_oof</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s2">+.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"NAIVE stack: train </span><span class="si">{</span><span class="n">naive_train</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (mirage) -&gt; test </span><span class="si">{</span><span class="n">naive_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OOF   stack: train </span><span class="si">{</span><span class="n">oof_train</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">          -&gt; test </span><span class="si">{</span><span class="n">oof_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"held-out gap (oof - naive) = </span><span class="si">{</span><span class="n">oof_test</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">naive_test</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-10">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="n">oof_tr</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">naive_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"OOF meta-features must have the same shape as the naive ones."</span>
+<span class="k">assert</span> <span class="n">naive_train</span> <span class="o">&gt;</span> <span class="mf">0.99</span><span class="p">,</span> <span class="s2">"In-sample meta-features should look near-perfect (the mirage) because of the 1-NN."</span>
+<span class="k">assert</span> <span class="n">oof_train</span> <span class="o">&lt;</span> <span class="n">naive_train</span><span class="p">,</span> <span class="s2">"OOF training score must be lower/honest than the leaked in-sample score."</span>
+<span class="k">assert</span> <span class="n">oof_test</span> <span class="o">&gt;=</span> <span class="n">naive_test</span><span class="p">,</span> <span class="s2">"Not leaking should NOT hurt held-out performance (here it clearly helps)."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — leaking cost </span><span class="si">{</span><span class="n">oof_test</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">naive_test</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> held-out PR-AUC; "</span>
+      <span class="sa">f</span><span class="s2">"OOF meta-learner ignored the 1-NN memorizer."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-11">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-3-%E2%80%94-sklearn-StackingClassifier-%E2%80%94-TODO-(reproduction-target)">Task 3 — sklearn <code>StackingClassifier</code> — TODO (reproduction target)<a class="anchor-link" href="#Task-3-%E2%80%94-sklearn-StackingClassifier-%E2%80%94-TODO-(reproduction-target)">¶</a></h2><p><strong>Goal:</strong> let scikit-learn do the OOF bookkeeping. Configure a <code>StackingClassifier</code> over the five base models with a <strong>logistic</strong> meta-learner and <code>cv=5</code>, and score the whole stack with an outer 5-fold CV.</p>
+<p><strong>Why it matters:</strong> <code>StackingClassifier</code> generates the level-0 features by internal cross-validation, so you never touch a leaked prediction — and wrapping it in an outer <code>cross_val_score</code> gives the honest number you are allowed to report (the L017 rule: score the <em>whole</em> fitting procedure on unseen data).</p>
+<p><strong>Reproduction target (lesson table):</strong> stack CV PR-AUC ≈ 0.902 — edging the best single model (~0.901).</p>
+<p><strong>You implement:</strong> the <code>final_estimator</code> (a <code>LogisticRegression</code>) and <code>cv=5</code> in the <code>StackingClassifier</code>; the estimator list and the outer scoring are PROVIDED.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-12">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — configure and score the stack</span>
+<span class="n">estimators</span> <span class="o">=</span> <span class="p">[(</span><span class="n">n</span><span class="p">,</span> <span class="n">base_models</span><span class="p">()[</span><span class="n">n</span><span class="p">])</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">base_models</span><span class="p">()]</span>
+<span class="n">stack</span> <span class="o">=</span> <span class="n">StackingClassifier</span><span class="p">(</span>
+    <span class="n">estimators</span><span class="o">=</span><span class="n">estimators</span><span class="p">,</span>
+    <span class="n">final_estimator</span><span class="o">=</span><span class="n">____</span><span class="p">,</span>        <span class="c1"># the level-1 meta-learner: a simple LogisticRegression</span>
+    <span class="n">cv</span><span class="o">=</span><span class="n">____</span><span class="p">,</span>                     <span class="c1"># internal CV that generates leak-free OOF meta-features</span>
+    <span class="n">stack_method</span><span class="o">=</span><span class="s2">"predict_proba"</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">stack_ap</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cross_val_score</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"StackingClassifier CV PR-AUC = </span><span class="si">{</span><span class="n">stack_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  (best single </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, blend </span><span class="si">{</span><span class="n">blend_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-13">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="mf">0.88</span> <span class="o">&lt;</span> <span class="n">stack_ap</span> <span class="o">&lt;</span> <span class="mf">0.92</span><span class="p">,</span> <span class="s2">"Stack PR-AUC should land near the base models' range."</span>
+<span class="k">assert</span> <span class="n">stack_ap</span> <span class="o">&gt;=</span> <span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s2">"A leak-free stack should match or edge the best single model."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — stack </span><span class="si">{</span><span class="n">stack_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> &gt;= best single </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> - tol."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-14">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary to paste back to your teacher.</p>
-<p><strong>Takeaway prompt:</strong> in one sentence, say why random search covers the important knob better than a grid at equal budget, and why you must report the nested-CV number instead of <code>best_score_</code>.</p>
+<p><strong>Takeaway prompt:</strong> in one sentence, say why the stacking meta-learner must be trained on out-of-fold predictions, and what makes an ensemble beat the best single model.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-16">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8252,12 +8143,11 @@ optimism gap             = +0.006
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 017 ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Synthetic 2-D: grid </span><span class="si">{</span><span class="n">g2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs random </span><span class="si">{</span><span class="n">r2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (grid competitive)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Synthetic 5-D: grid </span><span class="si">{</span><span class="n">g5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs random </span><span class="si">{</span><span class="n">r5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (random wins)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"credit_g tuned XGB: default </span><span class="si">{</span><span class="n">default_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | grid </span><span class="si">{</span><span class="n">gs</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | random </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Honest score: nested CV </span><span class="si">{</span><span class="n">nested</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs optimistic best_score_ </span><span class="si">{</span><span class="n">rs_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 018 ==="</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Blend (OOF avg of 5)     PR-AUC = </span><span class="si">{</span><span class="n">blend_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  (best single </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Leak trap: naive test </span><span class="si">{</span><span class="n">naive_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs OOF test </span><span class="si">{</span><span class="n">oof_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (gap </span><span class="si">{</span><span class="n">oof_test</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">naive_test</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"StackingClassifier CV    PR-AUC = </span><span class="si">{</span><span class="n">stack_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
 </pre></div>
@@ -8266,17 +8156,21 @@ optimism gap             = +0.006
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l017-17">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-successive-halving">Stretch (optional, ungraded) — successive halving<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-successive-halving">¶</a></h2><p>sklearn's <code>HalvingRandomSearchCV</code> starts many configs on a small budget (few estimators / few rows), kills the losers, and reinvests compute in the survivors. Try it and compare wall-clock + best score to the plain random search above — often similar quality, much faster.</p>
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-diversity-&amp;-passthrough">Stretch (optional, ungraded) — diversity &amp; passthrough<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-diversity-&amp;-passthrough">¶</a></h2><ol>
+<li><strong>Drop the boosters, keep diversity.</strong> Score a stack of just <code>{logistic, random_forest, catboost}</code> — fewer, more diverse models often match all five.</li>
+<li><strong><code>passthrough=True</code>.</strong> Let the meta-learner also see the raw features, not only base predictions. Does it help here, or just add variance on 1 000 rows?</li>
+<li><strong>Correlation → gain.</strong> Recompute <code>np.corrcoef(P.T)</code> from Task 1 and confirm the three GBDTs are the most correlated block — the reason stacking only GBDTs barely helps.</li>
+</ol>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l017-18">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-17">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8284,12 +8178,12 @@ optimism gap             = +0.006
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># STRETCH — ungraded. Successive halving (needs the experimental import).</span>
-<span class="c1"># from sklearn.experimental import enable_halving_search_cv  # noqa: F401</span>
-<span class="c1"># from sklearn.model_selection import HalvingRandomSearchCV</span>
-<span class="c1"># hs = HalvingRandomSearchCV(base, dists, scoring="average_precision", cv=inner,</span>
-<span class="c1">#                            factor=3, random_state=RS, n_jobs=4).fit(Xle, y)</span>
-<span class="c1"># print(f"HalvingRandomSearchCV best CV PR-AUC = {hs.best_score_:.3f}  (n_candidates seen: {len(hs.cv_results_['params'])})")</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
+<span class="c1"># diverse = [(n, base_models()[n]) for n in ("logistic", "random_forest", "catboost")]</span>
+<span class="c1"># s = StackingClassifier(diverse, final_estimator=LogisticRegression(max_iter=2000),</span>
+<span class="c1">#                        cv=5, stack_method="predict_proba", n_jobs=4)</span>
+<span class="c1"># print("diverse-3 stack:", round(float(cross_val_score(s, Xle, y, cv=cv, scoring="average_precision").mean()), 3))</span>
+<span class="c1"># print("OOF correlation matrix:\n", np.round(np.corrcoef(P.T), 2))</span>
 </pre></div>
 </div>
 </div>

@@ -12,6 +12,8 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Ordered boosting + categoricals. Use for: high-cardinality categoricals without target leakage.
 - [Random Search for Hyper-Parameter Optimization — Bergstra & Bengio, JMLR 2012](https://www.jmlr.org/papers/v13/bergstra12a.html)
   Low effective dimensionality: only a few hyperparameters matter, so at an equal budget random search covers the important axes far better than a grid (Fig 1). Use for: Lesson 017 primary reading; the fair-budget tuning baseline. Reference implementation: sklearn [`RandomizedSearchCV`](https://scikit-learn.org/stable/modules/grid_search.html) + `HalvingRandomSearchCV` (successive halving).
+- [Stacked Generalization — Wolpert, Neural Networks 1992](https://www.sciencedirect.com/science/article/abs/pii/S0893608005800231)
+  A level-1 generalizer trained on the level-0 models' predictions of *held-out* data (out-of-fold). Use for: Lesson 018 primary reading (skim §1–3); the leak-free stacked ensemble that is the real single-table baseline the RDL thesis must beat. Reference implementation: sklearn [`StackingClassifier` / `VotingClassifier`](https://scikit-learn.org/stable/modules/ensemble.html#stacked-generalization).
 - [Random Forests — Breiman, Machine Learning 2001](https://doi.org/10.1023/A:1010933404324)
   Bagging + per-split feature subsampling to decorrelate trees; OOB error. Use for: Lesson 012 primary reading; the variance-reduction baseline (contrast with boosting's bias reduction).
 - [Greedy Function Approximation: A Gradient Boosting Machine — Friedman, Annals of Statistics 2001](https://doi.org/10.1214/aos/1013203451)

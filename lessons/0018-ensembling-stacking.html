@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 018 — Ensembling &amp; Stacking</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .eq { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 1rem; margin: 0.9rem 0; text-align: center; }
+
+    /* stacking-viz */
+    .stacking-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .stk-ctl { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.6rem; }
+    .stk-ctl button {
+      font-size: 0.8rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); cursor: pointer; font-family: var(--font-sans);
+    }
+    .stk-ctl button.stk-active { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .stk-svg { display: block; max-width: 360px; margin: 0 auto; }
+    .stk-lab { font-family: var(--font-sans); font-size: 8px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .stk-cell { font-family: var(--font-mono); font-size: 8.5px; fill: #34495e; }
+    .stk-role { font-family: var(--font-sans); font-size: 8px; }
+    .stk-val { font-family: var(--font-mono); font-size: 9px; font-weight: 600; }
+    .stk-readout { font-size: 0.85rem; margin: 0.6rem 0; }
+    .stk-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>Ensembling &amp; Stacking</h1>
+  <p class="subtitle">Lesson 018 · Phase 1 · ~40 min</p>
+
+  <p>
+    You have finished the booster tour — <a href="0014-xgboost.html">XGBoost</a>,
+    <a href="0015-lightgbm.html">LightGBM</a>, <a href="0016-catboost.html">CatBoost</a> — plus a
+    <a href="0012-bagging-random-forest.html">Random Forest</a> and a logistic baseline, and in
+    <a href="0017-hyperparameter-search.html">L017</a> you learned to tune any of them fairly. Natural next
+    question: instead of shipping the single best model, can you <strong>combine</strong> them into something
+    better? This lesson's single skill: <strong>build a stacked ensemble whose meta-learner is trained on
+    <em>out-of-fold</em> base predictions, understand when combining actually helps (diversity), and never leak
+    (in-sample predictions crown the cheater)</strong> — Wolpert's 1992 <em>stacked generalization</em>.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Averaging or learning a weighted combination of several <em>diverse,
+    individually-good</em> models cancels their uncorrelated errors and can beat the best single model — but the
+    combiner must be trained on predictions each base model made on data it <strong>did not see</strong>
+    (out-of-fold), or it will simply learn to trust whichever model memorized the training set.
+  </div>
+
+  <h2>Three ways to combine models</h2>
+  <p>
+    All ensembling answers the same question — "given several models' outputs for a row, what's my final
+    prediction?" — with increasing sophistication:
+  </p>
+  <ul>
+    <li><strong>Averaging / blending (voting).</strong> Take the mean of the base models' predicted
+      probabilities (or a hard majority vote). Zero extra parameters; the classic Kaggle "average my
+      submissions" trick. sklearn's <code>VotingClassifier</code>.</li>
+    <li><strong>Weighted blend.</strong> A convex combination <code>Σ wᵢ pᵢ</code> with hand- or grid-chosen
+      weights. Better if some models are clearly stronger, but the weights are easy to overfit.</li>
+    <li><strong>Stacking (stacked generalization).</strong> Treat the base models' predictions as
+      <em>features</em> and train a small <strong>meta-learner</strong> (level-1 model, e.g. logistic
+      regression) to combine them. It learns the weights — and non-linear interactions — from data. This is
+      Wolpert 1992, and it's what wins leaderboards.</li>
+  </ul>
+
+  <h2>Why combining can beat the best single model: diversity</h2>
+  <p>
+    The intuition is the same variance argument as <a href="0012-bagging-random-forest.html">bagging</a>, but
+    now <em>across model families</em>. If two models make <strong>independent</strong> errors, averaging them
+    halves the error variance; if they make the <strong>same</strong> errors, averaging changes nothing. So the
+    fuel for ensembling is <strong>diversity</strong>: base models that are each accurate but wrong in
+    <em>different</em> places. A booster and a linear model disagree far more than two gradient boosters do.
+  </p>
+  <p>
+    We can measure it. Here are the pairwise correlations of the five base models' out-of-fold probability
+    predictions on <code>credit_g</code>:
+  </p>
+  <table>
+    <thead><tr><th>corr</th><th>logistic</th><th>rand. forest</th><th>xgboost</th><th>lightgbm</th><th>catboost</th></tr></thead>
+    <tbody>
+      <tr><td>logistic</td><td class="n">1.00</td><td class="n">0.78</td><td class="n">0.61</td><td class="n">0.65</td><td class="n">0.78</td></tr>
+      <tr><td>rand. forest</td><td class="n">0.78</td><td class="n">1.00</td><td class="n">0.82</td><td class="n">0.86</td><td class="n bad">0.95</td></tr>
+      <tr><td>xgboost</td><td class="n">0.61</td><td class="n">0.82</td><td class="n">1.00</td><td class="n bad">0.92</td><td class="n">0.87</td></tr>
+      <tr><td>lightgbm</td><td class="n">0.65</td><td class="n">0.86</td><td class="n bad">0.92</td><td class="n">1.00</td><td class="n">0.89</td></tr>
+      <tr><td>catboost</td><td class="n">0.78</td><td class="n">0.87</td><td class="n">0.87</td><td class="n">0.89</td><td class="n">1.00</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The three gradient boosters correlate <strong>≈ 0.89</strong> with each other (LightGBM ↔ XGBoost 0.92;
+    CatBoost ↔ RF 0.95 — nearly redundant): they are the same idea implemented three ways, so they make almost
+    the same mistakes. The <strong>logistic</strong> model is the odd one out — it correlates only
+    <strong>≈ 0.68</strong> with the boosters, so it carries the diversity. <em>Lesson: an ensemble of three
+    GBDTs is mostly one model in a trench coat; the payoff comes from adding a genuinely different learner.</em>
+  </p>
+
+  <h2>Stacking: the level-0 / level-1 picture</h2>
+  <p>
+    Stacking has two layers. <strong>Level-0</strong> is your pool of base models. <strong>Level-1</strong> is a
+    simple meta-learner whose input row is "the base models' predictions for this example" and whose output is
+    the final probability. Train it and you get learned, data-driven blend weights for free.
+  </p>
+  <p>
+    The whole difficulty is <em>how you generate the level-0 predictions used to train the meta-learner</em>.
+    You cannot ask a base model to predict rows it was trained on — those predictions are memorized, not
+    forecasts. The fix is <strong>out-of-fold (OOF) prediction</strong>: split the training data into K folds;
+    for each fold, train the base model on the other K−1 folds and predict the held-out fold. Stitch the
+    held-out predictions together and every row now has a prediction from a model that <em>never saw it</em>.
+    Step through it:
+  </p>
+
+  <div id="stacking-viz"></div>
+
+  <h2>Don't fool yourself: the in-sample leak</h2>
+  <p>
+    What happens if you skip the folds and just let each base model predict its own training rows? The <em>In-sample
+    (leak)</em> toggle above shows it: every meta-feature becomes a memorized copy of the label. A model that
+    <strong>overfits hardest looks best</strong> to the meta-learner, so the meta-learner hands it the most
+    weight — then that trust evaporates on new data. We proved it by dropping a pure memorizer (a 1-nearest-neighbour
+    classifier, which is <em>perfect</em> in-sample because each row's nearest neighbour is itself) into the pool
+    and fitting the meta-learner both ways on a 70/30 split of <code>credit_g</code>:
+  </p>
+  <table>
+    <thead><tr><th>Meta-learner trained on…</th><th>weight it gives the 1-NN memorizer</th><th>train PR-AUC</th><th>held-out test PR-AUC</th></tr></thead>
+    <tbody>
+      <tr><td>In-sample base predictions (leak)</td><td class="n bad">3.00 (largest)</td><td class="n bad">1.000</td><td class="n bad">0.895</td></tr>
+      <tr><td>Out-of-fold base predictions (correct)</td><td class="n win">−0.11 (ignored)</td><td class="n">0.885</td><td class="n win">0.930</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The 1-NN scores a flawless <strong>1.000</strong> PR-AUC in-sample and a useless <strong>0.704</strong>
+    out-of-fold — so the naïve meta-learner gives it the <em>biggest</em> coefficient (3.00) and its own training
+    score inflates to a mirage 1.000, while its honest held-out score <strong>drops to 0.895</strong>. The OOF
+    meta-learner sees the 1-NN's true (weak) OOF signal, assigns it a <strong>negative</strong> weight, and
+    lands at <strong>0.930</strong> — a <strong>+0.035</strong> held-out gap purely from not leaking. This is the
+    <a href="0004-grouped-nested-cv.html">L004</a>/<a href="0005-pipelines-preprocessing.html">L005</a>
+    leakage discipline, now one level up: <strong>fit the combiner on out-of-fold predictions only.</strong>
+  </p>
+
+  <h2>On our data — honestly</h2>
+  <p>
+    Same <code>relkit</code> 5-fold PR-AUC as every Q2 lesson. First the five base learners, then the two ways of
+    combining them:
+  </p>
+  <table>
+    <thead><tr><th>Model</th><th>credit_g CV PR-AUC</th></tr></thead>
+    <tbody>
+      <tr><td>Logistic regression</td><td class="n">0.874</td></tr>
+      <tr><td>XGBoost</td><td class="n">0.883</td></tr>
+      <tr><td>LightGBM</td><td class="n">0.889</td></tr>
+      <tr><td>CatBoost</td><td class="n">0.900</td></tr>
+      <tr><td>Random Forest (best single)</td><td class="n win">0.901</td></tr>
+      <tr><td>Simple average blend (all 5)</td><td class="n">0.899</td></tr>
+      <tr><td>Blend of the 3 GBDTs only</td><td class="n">0.895</td></tr>
+      <tr><td>Stacking (5 models, logistic meta-learner)</td><td class="n win">0.902</td></tr>
+      <tr><td>Stacking (3 correlated GBDTs only)</td><td class="n">0.899</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read this honestly, because it is the point. On a 1&nbsp;000-row single table where the base models are
+    already strong and mostly correlated, ensembling buys almost nothing: the stack reaches
+    <strong>0.902</strong>, edging the best single model (RF 0.901) by a hair, and the naïve blend actually
+    <strong>trails it</strong> (0.899) because it drags four models down toward the weaker logistic. Stacking
+    <em>only</em> the three near-redundant GBDTs gives 0.899 — you cannot ensemble your way past their shared
+    blind spots. The durable takeaways here are not the headline number; they are the <strong>mechanism (OOF),
+    the diversity requirement, and the leak</strong>. Ensembling pays off when you have (a) genuinely diverse
+    base models and (b) enough data that the meta-learner can learn stable weights — which is exactly the regime
+    of the tabular leaderboards below.
+  </p>
+
+  <h2>Running it: <code>StackingClassifier</code></h2>
+  <p>
+    scikit-learn does the OOF bookkeeping for you. Hand <code>StackingClassifier</code> a list of base
+    estimators, a <code>final_estimator</code> (the meta-learner), and <code>cv=5</code>; it generates the
+    level-0 features by internal cross-validation, so you never touch a leaked prediction:
+  </p>
+  <pre class="eq" style="text-align:left; white-space:pre-wrap;">StackingClassifier(
+    estimators=[("cat", CatBoostClassifier(...)),
+                ("xgb", XGBClassifier(...)),
+                ("logit", make_pipeline(StandardScaler(), LogisticRegression()))],
+    final_estimator=LogisticRegression(),
+    cv=5, stack_method="predict_proba")</pre>
+  <p>
+    Two rules: keep the meta-learner <strong>simple</strong> (logistic regression / ridge — a complex meta-learner
+    re-overfits the base predictions), and <strong>evaluate the whole stack with an outer CV or held-out set</strong>,
+    exactly as in L017 — the stack is a model like any other, so its honest score comes from data the entire
+    fitting procedure never saw. For plain averaging use <code>VotingClassifier(voting="soft")</code>.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> This is the baseline the undervaluation thesis actually has to beat. Modern
+    tabular leaderboards — <a href="https://tabarena.ai">TabArena</a>, and every serious Kaggle tabular result —
+    are won not by a single tuned booster but by a <strong>leak-free stacked ensemble</strong> of tuned GBDTs,
+    RealMLP/TabM, and (for small <em>n</em>) TabPFN-style models. So "our relational model beats XGBoost" is the
+    wrong bar; the real bar is "it beats a <em>tuned, stacked ensemble</em> of the best single-table models,
+    under the same CV protocol." Ensembling is where the single-table paradigm is strongest — which is precisely
+    why a relational model that beats it would be such a legible win. And note the continuity with L017: the
+    ensemble, like every base model, must be scored on data its fitting never saw.
+  </div>
+
+  <h2>Where this breaks (know this too)</h2>
+  <ul>
+    <li><strong>Redundant base models.</strong> Stacking five correlated GBDTs barely beats one of them (our
+      0.899). No diversity, no gain — add a different <em>family</em>, not another booster.</li>
+    <li><strong>In-sample meta-features.</strong> The single most common stacking bug: train the meta-learner on
+      predictions the base models made on their own training rows. It crowns the memorizer and collapses on new
+      data (our +0.035 gap). Always OOF.</li>
+    <li><strong>Complex meta-learner.</strong> A deep tree or another booster as the combiner re-overfits the K
+      base-prediction columns. Keep level-1 linear.</li>
+    <li><strong>Tiny data.</strong> With few rows the meta-learner cannot estimate stable weights and the OOF
+      predictions are noisy — the ensemble edge shrinks toward zero (our credit_g +0.001).</li>
+    <li><strong>Cost.</strong> A stack trains every base model K times inside every outer fold. For a fair,
+      honest number that is a lot of fits — budget for it (L017's fairness point again).</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Wolpert (1992), <em>Stacked Generalization</em>,
+    <a href="https://www.sciencedirect.com/science/article/abs/pii/S0893608005800231">Neural Networks 5(2):241–259</a>
+    — <strong>skim</strong> §1–3 for the core idea: a level-1 generalizer trained on the level-0 generalizers'
+    guesses about data held out from them (the "winner-take-all" cross-validation is the OOF construction the
+    widget shows). The scikit-learn
+    <a href="https://scikit-learn.org/stable/modules/ensemble.html#stacked-generalization">stacking guide</a>
+    (and the <a href="https://scikit-learn.org/stable/modules/ensemble.html#voting-classifier">voting</a> section)
+    is the practical reference for <code>StackingClassifier</code> and <code>VotingClassifier</code>.
+  </p>
+
+  <h2>Lab — blend, then stack without leaking</h2>
+  <p>
+    Notebook <code>0018-ensembling-stacking.ipynb</code>: build <strong>out-of-fold meta-features by hand</strong>
+    with <code>cross_val_predict</code> and average them into a blend; then compare the honest OOF stack against
+    the leaky in-sample stack (watch the 1-NN memorizer get crowned); finally run sklearn's
+    <code>StackingClassifier</code> and confirm it matches. Reproduction target: the tables above.
+    <a href="../labs/html/0018-ensembling-stacking.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why out-of-fold predictions kill the leak, or when a blend beats a learned stack? Ask your teacher in
+    Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0017-hyperparameter-search.html">← Lesson 017</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0018-ensembling-stacking.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/stacking-viz.js"></script>
+<script>
+  StackingViz.mount(document.getElementById("stacking-viz"), {
+    caption: "Building the level-1 training features from one level-0 base model. Out-of-fold: press “next fold ▶” to hold out each fold in turn and fill its rows with a prediction from a model trained on the others — after 4 folds all 12 rows are honest. In-sample (leak): every row is filled at once by a model that trained on it, so the meta-feature is a memorized copy of the label."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why must a stacking meta-learner be trained on out-of-fold base predictions?",
+    options: [
+      { label: "In-sample predictions are memorized, so the meta-learner over-trusts overfit models", value: "a" },
+      { label: "Out-of-fold predictions are faster to compute", value: "b" },
+      { label: "The meta-learner requires more training rows than the base models", value: "c" },
+      { label: "Cross-validation makes the base models more accurate", value: "d" }
+    ],
+    correct: "a",
+    explain: "A base model predicting its own training rows produces a memorized copy of the label, not a forecast. The meta-learner then assigns the biggest weight to whichever model overfits hardest (our 1-NN got coefficient 3.00), and that trust collapses on new data. Out-of-fold predictions reflect true generalization."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "You stack XGBoost, LightGBM, and CatBoost and barely beat the best single one. Most likely why?",
+    options: [
+      { label: "The three models are highly correlated — they make the same errors", value: "a" },
+      { label: "Stacking never helps gradient boosters", value: "b" },
+      { label: "The meta-learner should have been a deep neural network", value: "c" },
+      { label: "You should have used a hard majority vote instead", value: "d" }
+    ],
+    correct: "a",
+    explain: "Ensembling's fuel is diversity: uncorrelated errors cancel when combined. Three GBDTs correlate ~0.89 on our data — they are nearly the same model, so there is little independent error to cancel. Adding a genuinely different family (a linear model) carries the diversity."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "For the RDL undervaluation thesis, what is the fair single-table baseline to beat?",
+    options: [
+      { label: "A leak-free stacked ensemble of tuned models, under the same CV protocol", value: "a" },
+      { label: "A single XGBoost left on its default settings", value: "b" },
+      { label: "Whichever base model has the highest in-sample score", value: "c" },
+      { label: "A logistic regression, since it is the simplest", value: "d" }
+    ],
+    correct: "a",
+    explain: "Tabular leaderboards (TabArena, Kaggle) are won by leak-free stacked ensembles of tuned models, not single defaults. A relational model must beat that stronger baseline, tuned with the same budget and scored on held-out data, for the undervaluation claim to be legible to skeptics."
+  });
+</script>
+</body>
+</html>
