@@ -2,6 +2,12 @@
 
 Agent-facing plan for lesson sequencing. The student-facing version is [reference/curriculum.html](./reference/curriculum.html).
 
+> **Per-lesson decomposition.** The one-line rows below give topic + reading + lab hint. For a
+> **turnkey per-lesson spec** (single skill · paper section · lab crucial fragment · viz · thesis
+> bridge) for every lesson **031–240**, see [`plan/`](./plan/README.md) — built so that "create the
+> next lesson" needs no re-scoping. Lessons 001–019 are published (`lessons/`); 020–030 use these
+> rows plus published-lesson precedent.
+
 **Pace:** ~1 hour/day **baseline** (minimum on typical days) · ~360 hours/year · ~2,160 hours over 6 years.
 
 ### Why 240 units take 6 years (read this if the math looks off)
@@ -508,6 +514,8 @@ On days with extra time, add minutes to **Practice** first, then **Input** (pape
 
 ## Lesson production schedule (for agent)
 
+- Before building any lesson 031–240, read its entry in [`plan/`](./plan/README.md) (per-lesson skill,
+  paper section, lab crucial fragment, viz, bridge) — it is the starting contract for the lesson HTML + lab.
 - Produce **1 lesson HTML per lecture row** as the student reaches it. Realistic cadence is **front-loaded**: ~2–3 lessons/week in Y1–Y2 (concept-dense), ~1/week in Y3–Y4 (reproduction units span multiple sessions), and sparse milestone lessons in Y5–Y6 (research-dominated). Do **not** pace lesson production at a fixed weekly rate across all years.
 - A lesson HTML covers the *concept*; the unit isn't complete until the student finishes the lab/reproduction it points to (often days of work in later years).
 - Each lesson: one concept, multiple check-your-understanding quizzes, worked examples, one primary paper link, one lab step.

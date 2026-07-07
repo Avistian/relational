@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 019 — When Trees Win</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* biases-viz */
+    .biases-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .bv-ctl, .bv-sub { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .bv-ctl button, .bv-sub button {
+      font-size: 0.8rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); cursor: pointer; font-family: var(--font-sans);
+    }
+    .bv-ctl button.bv-active { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .bv-sub button.bv-on { background: #34495e; color: #fff; border-color: #34495e; }
+    .bv-svg { display: block; max-width: 360px; margin: 0.25rem auto; }
+    .bv-title { font-family: var(--font-sans); font-size: 8.5px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .bv-readout { font-size: 0.85rem; margin: 0.6rem 0; }
+    .bv-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
+  <h1>When Trees Win</h1>
+  <p class="subtitle">Lesson 019 · Phase 1 · ~35 min · <em>preview of Grinsztajn et al. 2022</em></p>
+
+  <p>
+    All of Q2 has been about <em>how</em> tree ensembles work — <a href="0011-decision-trees-partitions.html">splits</a>,
+    <a href="0012-bagging-random-forest.html">bagging</a>, <a href="0013-boosting-intuition.html">boosting</a>,
+    <a href="0014-xgboost.html">XGBoost</a>/<a href="0015-lightgbm.html">LightGBM</a>/<a href="0016-catboost.html">CatBoost</a>,
+    <a href="0017-hyperparameter-search.html">tuning</a>, and <a href="0018-ensembling-stacking.html">stacking</a>.
+    This lesson asks the <em>why</em>: on typical single-table data, a competently-built gradient-boosted tree
+    still matches or beats deep learning — even in 2024–2026. This lesson's single skill:
+    <strong>name and recognize the three inductive biases that make trees win — irregular targets, uninformative
+    features, and orientation — and know the honest conditions under which each advantage flips.</strong> It is a
+    <strong>preview</strong> of Grinsztajn, Oyallon &amp; Varoquaux (2022); the full benchmark reproduction comes in Y1 Q3.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Trees win on tabular data not because they are "more powerful" but because their
+    inductive biases happen to match tabular data: they can carve <em>irregular</em> boundaries, they
+    <em>ignore</em> uninformative features, and they respect the <em>orientation</em> of individually-meaningful
+    columns — three things a plain neural net does badly.
+  </div>
+
+  <h2>What "inductive bias" means here</h2>
+  <p>
+    Every learner has an <strong>inductive bias</strong>: the kind of function it reaches for first, before the
+    data forces it elsewhere. A linear model is biased toward straight boundaries; a neural net is biased toward
+    <em>smooth</em> ones; a decision tree is biased toward <em>axis-aligned, piecewise-constant</em> ones. No bias
+    is universally right — the question is whether a learner's bias <em>matches the data it is given</em>.
+    Grinsztajn et al. benchmarked deep nets against XGBoost and Random Forests across 45 datasets and a
+    20&nbsp;000-GPU-hour hyperparameter search, then ran controlled experiments to find <em>why</em> the trees kept
+    winning on medium-sized (~10K-row) tabular data. They distilled it into three challenges for anyone building a
+    tabular neural net — the mirror image of which is the three tree strengths below.
+  </p>
+
+  <h2>Strength 1 — trees fit irregular (non-smooth) targets</h2>
+  <p>
+    Neural nets are biased toward <strong>smooth</strong> functions of their inputs: small changes in <em>x</em>
+    give small changes in the prediction. Many tabular targets are <em>not</em> smooth — the risk of default can
+    jump at an income threshold, a fee kicks in at exactly 30 days late. A decision tree is happy to place a hard
+    step anywhere; a smooth-biased net rounds those steps off. The <em>rougher</em> the target, the more the net
+    falls behind.
+  </p>
+  <p>
+    The widget below makes this concrete with a checkerboard target (the class flips between neighbouring tiles).
+    The <strong>tree</strong> board is drawn sharp — it can carve every cell with axis-aligned splits. The
+    <strong>neural-net</strong> board is the same checkerboard through a fixed blur, standing in for the net's
+    smoothness bias. Coarse tiles: both fine. Push to an 8×8 board and the blur (and the accuracy) collapses.
+  </p>
+
+  <div id="biases-viz"></div>
+
+  <p>
+    Those readouts are real — a Random Forest vs a 2×256 MLP on synthetic checkerboards (details in the lab). At
+    2×2 both are near-perfect; by 8×8 the tree holds <span class="win">0.969</span> while the MLP falls to
+    <span class="bad">0.837</span>, and at 16×16 the MLP is essentially guessing (0.503). Grinsztajn's version of
+    this experiment <em>smooths the target</em> and shows the tree's advantage shrinks — proving the edge lives
+    precisely in the non-smooth regime.
+  </p>
+
+  <h2>Strength 2 — trees are robust to uninformative features</h2>
+  <p>
+    Real tables are full of columns that carry little or no signal. A tree does <strong>implicit feature
+    selection</strong>: at each split it picks the single most informative feature and simply never splits on the
+    junk. A standard MLP has no such filter — every input feeds every first-layer neuron, so uninformative columns
+    inject noise the network must learn to suppress, and it does so imperfectly. Add enough junk and the net
+    degrades faster than the tree.
+  </p>
+  <p>
+    Here is the honest picture. Start from an informative 10-feature classification task and keep adding pure-noise
+    columns (same RF vs MLP, test accuracy):
+  </p>
+  <table>
+    <thead><tr><th>noise features added</th><th>total features</th><th>tree (RF)</th><th>neural net (MLP)</th><th>gap</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td class="n">10</td><td class="n">0.936</td><td class="n win">0.965</td><td class="n bad">−0.029</td></tr>
+      <tr><td>20</td><td class="n">30</td><td class="n">0.911</td><td class="n">0.908</td><td class="n">+0.002</td></tr>
+      <tr><td>50</td><td class="n">60</td><td class="n">0.889</td><td class="n">0.871</td><td class="n">+0.018</td></tr>
+      <tr><td>100</td><td class="n">110</td><td class="n win">0.876</td><td class="n bad">0.826</td><td class="n">+0.049</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the first row carefully, because it is the honest half of the story: <strong>with no junk, the MLP
+    actually wins</strong> (0.965 vs 0.936). Neural nets are not weak learners. But as the uninformative features
+    pile up, the tree's built-in selection pays off — the gap swings from −0.029 to <strong>+0.049</strong>, the
+    MLP shedding 0.139 of accuracy while the tree sheds only 0.060. Grinsztajn shows the same effect both ways:
+    <em>removing</em> uninformative features closes the tree–net gap, and <em>adding</em> them widens it.
+  </p>
+
+  <h2>Strength 3 — trees preserve the orientation of the data</h2>
+  <p>
+    This is the deepest and least obvious of the three. In a table, <em>each column means something on its own</em>
+    — "age", "balance", "days late". A decision tree splits on one feature at a time, so it is <strong>not
+    rotationally invariant</strong>: it treats the individual axes as special, which is exactly right when the axes
+    are meaningful. A plain MLP is (approximately) <strong>rotationally invariant</strong> — rotate the feature
+    space by mixing columns into arbitrary linear combinations and the MLP learns the same thing. That sounds like
+    a virtue until you realize it means the net <em>cannot tell a meaningful column from a scrambled mixture</em>,
+    so it throws away the structure that made the columns informative.
+  </p>
+  <p>
+    Switch the widget above to <em>Rotate the board</em>. Axis-aligned, the tree's two splits nail the XOR
+    boundary (<span class="win">0.998</span>); the MLP is close behind (0.979). Now hit <em>Rotated</em>: applying
+    a random rotation turns the boundary diagonal. The tree can only approximate a diagonal with a
+    <strong>staircase</strong> of axis-aligned steps, so it collapses to <span class="bad">0.831</span> — while
+    the rotation-invariant MLP is unmoved at 0.976. The tree's whole edge <em>was</em> the orientation; destroy it
+    and the edge is gone. Grinsztajn's random-rotation experiment is the sharpest single piece of evidence in the
+    paper: it isolates orientation as a real, exploitable property of tabular data.
+  </p>
+
+  <h2>On our (synthetic) data — honestly</h2>
+  <p>
+    These are deliberately controlled synthetic demos (Tier C — mechanism isolation), not a benchmark. Their job
+    is to make each bias <em>visible in isolation</em>, one knob at a time:
+  </p>
+  <table>
+    <thead><tr><th>Bias (tree strength)</th><th>Knob turned</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Irregular target</td><td>checkerboard 2×2 → 16×16</td><td>tree 1.000→0.807, MLP 0.994→<span class="bad">0.503</span></td></tr>
+      <tr><td>Uninformative features</td><td>+0 → +100 noise columns</td><td>gap −0.029 → <span class="win">+0.049</span> (MLP wins clean, tree wins junky)</td></tr>
+      <tr><td>Orientation</td><td>random rotation of XOR</td><td>tree 0.998→<span class="bad">0.831</span>, MLP 0.979→0.976</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The point is not "trees beat nets" — row 2 shows a net winning cleanly. The point is that <em>typical tabular
+    data has all three properties at once</em> (irregular targets, many junk columns, meaningful orientation), and
+    trees are built to exploit exactly those, which is why a tuned GBDT is such a stubborn baseline.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> This is the intellectual core of Year 1's exit criterion. The RDL
+    undervaluation bet is <em>not</em> "deep learning is bad at tables" — it is "the single-table
+    <em>representation</em> throws away relational structure." Grinsztajn tells us why the flat-table incumbent is
+    so strong (its biases fit flat data), which sets the bar honestly: to argue relational models are undervalued,
+    you must beat a learner whose biases are genuinely well-matched to tabular data — not strawman it. Q3 (lec
+    024–027) reproduces these experiments on the real 45-dataset benchmark; the whole rest of the curriculum is
+    about finding where <em>structure the flat table destroyed</em> lets a relational model clear this bar.
+  </div>
+
+  <h2>Where this flips (know this too)</h2>
+  <ul>
+    <li><strong>Clean, smooth, low-dimensional data.</strong> Row 2 above: with no junk features the MLP won. When
+      the target is smooth and every feature matters, the net's biases are fine.</li>
+    <li><strong>Large data.</strong> Grinsztajn's result is strongest at ~10K rows; with enough data a net can
+      learn to overcome all three biases. The tree edge is a <em>small-and-medium-data</em> phenomenon.</li>
+    <li><strong>Perceptual / high-cardinality inputs.</strong> Images, text, audio, embeddings — smoothness and
+      rotation-invariance are <em>assets</em> there. This whole lesson is about <em>tabular</em> data.</li>
+    <li><strong>Modern tabular nets close the gap.</strong> FT-Transformer, RealMLP, TabM and TabPFN (all Year 2)
+      were designed specifically to fix these three biases; on many datasets they now tie tuned GBDTs. "Trees
+      always win" is already too strong — "trees are the honest default baseline" is right.</li>
+    <li><strong>This is a preview.</strong> The numbers here are synthetic illustrations. The rigorous claim needs
+      the real benchmark and protocol — that is Q3, and it is what the Q2 checkpoint (L020) tests you can run.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Grinsztajn, Oyallon &amp; Varoquaux (2022), <em>Why do tree-based models still outperform deep learning on
+    typical tabular data?</em>, NeurIPS 2022 Datasets &amp; Benchmarks —
+    <a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a>. For this preview, read the
+    <strong>abstract and §1</strong> and note the three numbered challenges (robust to uninformative features,
+    preserve orientation, learn irregular functions). Skim <strong>§5</strong> to see the controlled experiments
+    that produced each finding — you will reproduce them in Q3. Do not attempt the full benchmark yet.
+  </p>
+
+  <h2>Lab — see the three biases move</h2>
+  <p>
+    Notebook <code>0019-when-trees-win.ipynb</code>: build the three controlled experiments and watch each bias
+    with your own eyes — a Random Forest vs an MLP on (1) checkerboards of rising frequency, (2) a task with
+    growing noise features, and (3) a random rotation. You implement the checkerboard target, the noise-feature
+    stack, and the rotation matrix; the models and scoring are provided. Then write the three tree strengths in
+    your own words. Reproduction target: the tables above.
+    <a href="../labs/html/0019-when-trees-win.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Not sure why rotation-invariance is a <em>weakness</em> on tables, or why a net can win on clean data but lose
+    with junk? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0018-ensembling-stacking.html">← Lesson 018</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0019-when-trees-win.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/biases-viz.js"></script>
+<script>
+  BiasesViz.mount(document.getElementById("biases-viz"), {
+    caption: "Irregular target: pick a tile count — the tree carves every cell (sharp), the smooth-biased net (blurred board) loses the fine structure. Rotate the board: axis-aligned, the tree’s splits fit the XOR exactly; rotated, it must staircase the diagonal and collapses, while the rotation-invariant net is unchanged."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why does a plain neural net fall behind a tree as a tabular target gets more irregular?",
+    options: [
+      { label: "Neural nets are biased toward smooth functions and round off hard steps", value: "a" },
+      { label: "Neural nets cannot represent non-linear functions at all", value: "b" },
+      { label: "Trees always have more parameters than neural nets", value: "c" },
+      { label: "Irregular targets are impossible for any model to fit", value: "d" }
+    ],
+    correct: "a",
+    explain: "A net's inductive bias favours smooth, low-frequency functions, so it rounds off the hard steps and fine cells of an irregular target. A tree places axis-aligned steps anywhere, so it fits the roughness — our 8×8 checkerboard: tree 0.969 vs MLP 0.837."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "In the noise-feature experiment, the MLP beat the tree with 0 junk features. What does that show?",
+    options: [
+      { label: "Neural nets are strong; the tree edge comes from robustness to uninformative features", value: "a" },
+      { label: "The experiment was broken — trees must always win on tabular data", value: "b" },
+      { label: "Adding noise features always helps neural networks generalize", value: "c" },
+      { label: "Random Forests cannot fit informative features", value: "d" }
+    ],
+    correct: "a",
+    explain: "With clean, all-informative features the MLP won (0.965 vs 0.936). The tree's advantage only appears as uninformative columns accumulate (gap swings to +0.049), because a tree does implicit feature selection while an MLP feeds every column into every neuron. 'Trees always win' is too strong."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why is a tree's lack of rotational invariance an advantage on tabular data?",
+    options: [
+      { label: "Individual columns are meaningful, so respecting the axes preserves real structure", value: "a" },
+      { label: "Rotations are computationally expensive to apply to trees", value: "b" },
+      { label: "Rotational invariance makes any model overfit automatically", value: "c" },
+      { label: "Trees rotate the data internally before splitting", value: "d" }
+    ],
+    correct: "a",
+    explain: "Tabular columns (age, balance, days-late) each mean something on their own. A tree splits on single axes, exploiting that; a rotation-invariant MLP treats a meaningful column and an arbitrary linear mixture the same, discarding the structure. Randomly rotating the data collapsed the tree (0.998→0.831) but not the invariant MLP (0.979→0.976)."
+  });
+</script>
+</body>
+</html>

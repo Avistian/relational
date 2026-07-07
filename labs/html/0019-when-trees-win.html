@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0018-ensembling-stacking</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0019-when-trees-win</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,17 +7796,17 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-00">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l019-00">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-018-%E2%80%94-Ensembling-&amp;-stacking:-blend,-then-stack-without-leaking">Lab 018 — Ensembling &amp; stacking: blend, then stack without leaking<a class="anchor-link" href="#Lab-018-%E2%80%94-Ensembling-&amp;-stacking:-blend,-then-stack-without-leaking">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0018-ensembling-stacking.html"><code>lessons/0018-ensembling-stacking.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
-<p><strong>Paper:</strong> Wolpert 1992, <em>Stacked Generalization</em>, <a href="https://www.sciencedirect.com/science/article/abs/pii/S0893608005800231">Neural Networks 5(2):241–259</a> — §1–3 (a level-1 model trained on level-0 predictions of held-out data).</p>
-<p><strong>Dataset tier:</strong> A — OpenML <code>credit_g</code> via <code>relkit</code> (same harness as Labs 011–017).</p>
-<p><strong>Skill you are practising:</strong> build <strong>out-of-fold (OOF) meta-features</strong> by hand, see why the meta-learner must never see in-sample base predictions (the leak that crowns a memorizer), and run sklearn's <code>StackingClassifier</code>.</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints (1) the simple OOF blend vs the best single model, (2) the leaky in-sample stack vs the honest OOF stack on a held-out split, and (3) <code>StackingClassifier</code> CV PR-AUC.</p>
+<h1 id="Lab-019-%E2%80%94-When-trees-win:-see-the-three-inductive-biases-move">Lab 019 — When trees win: see the three inductive biases move<a class="anchor-link" href="#Lab-019-%E2%80%94-When-trees-win:-see-the-three-inductive-biases-move">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0019-when-trees-win.html"><code>lessons/0019-when-trees-win.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
+<p><strong>Paper (preview):</strong> Grinsztajn, Oyallon &amp; Varoquaux 2022, <em>Why do tree-based models still outperform deep learning on typical tabular data?</em>, <a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a> — abstract + §1 (the three challenges); §5 (the controlled experiments you reproduce in miniature here).</p>
+<p><strong>Dataset tier:</strong> C — synthetic (mechanism isolation). Each experiment turns exactly one knob so a single bias is visible in isolation; this is <em>not</em> a benchmark.</p>
+<p><strong>Skill you are practising:</strong> construct the three controlled experiments (an irregular target, a pile of uninformative features, a random rotation) and read off <em>why</em> a tree beats a plain neural net on each — then state the three tree strengths in your own words.</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints (1) tree vs MLP accuracy across checkerboard frequencies, (2) the tree/MLP gap as noise features grow, (3) tree vs MLP before/after a random rotation, plus your one-line-each statement of the three biases.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
 <li><strong>PROVIDED</strong> cells — complete boilerplate; just run.</li>
@@ -7814,33 +7814,30 @@ a.anchor-link {
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong>, <strong>xgboost</strong>, <strong>lightgbm</strong>, <strong>catboost</strong> (already in <code>requirements-labs.txt</code>). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong> and <strong>numpy</strong> only (no boosters here). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-01">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l019-01">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-combine-diverse-models,-without-leaking">Concept recap — combine diverse models, without leaking<a class="anchor-link" href="#Concept-recap-%E2%80%94-combine-diverse-models,-without-leaking">¶</a></h2><p>You have several tuned single-table models. <strong>Ensembling</strong> asks: given each model's prediction for a row, what is my final prediction? Three levels:</p>
-<ul>
-<li><strong>Averaging / blending</strong> — mean of the base models' predicted probabilities. Zero extra parameters.</li>
-<li><strong>Weighted blend</strong> — a convex combination $\sum_i w_i p_i$ with chosen weights.</li>
-<li><strong>Stacking (Wolpert 1992)</strong> — treat the base predictions as <em>features</em> and train a small <strong>meta-learner</strong> (level-1, e.g. logistic regression) to combine them; it <em>learns</em> the weights.</li>
-</ul>
-<p><strong>Why it can beat the best single model — diversity.</strong> If two models make <em>independent</em> errors, averaging halves the error variance; if they make the <em>same</em> errors, averaging does nothing. So the fuel is <strong>diverse, individually-good</strong> base models. On <code>credit_g</code> the three GBDTs correlate $\approx 0.89$ (nearly the same model), while the logistic model correlates only $\approx 0.68$ with them — it carries the diversity.</p>
-<p><strong>The one hard part — out-of-fold predictions.</strong> You cannot train the meta-learner on predictions a base model made on its <em>own</em> training rows: those are memorized copies of the label, not forecasts. The fix is <strong>OOF</strong>: split into $K$ folds; for each fold, train the base on the other $K-1$ folds and predict the held-out fold. Stitch the held-out predictions together and every row has a prediction from a model that <em>never saw it</em>. <code>sklearn.model_selection.cross_val_predict(est, X, y, cv=K, method="predict_proba")</code> does exactly this.</p>
-<p><strong>The leak, made concrete.</strong> Add a pure memorizer — a <strong>1-nearest-neighbour</strong> classifier, which is <em>perfect</em> in-sample (each row's nearest neighbour is itself) but useless out-of-fold. Train the meta-learner on <strong>in-sample</strong> predictions and it hands the 1-NN the biggest weight; its apparent score is a mirage and it collapses on new data. Train on <strong>OOF</strong> predictions and the meta-learner sees the 1-NN's true (weak) signal and ignores it.</p>
-<p><strong>Toy micro-example (not this lab's answer).</strong> Two models, each 80% accurate. If their mistakes are on the <em>same</em> rows, the average is still 80%. If their mistakes are on <em>disjoint</em> rows, a soft average can be right whenever <em>either</em> is confident — pushing accuracy above 80%. Independent errors are what a stack monetizes.</p>
-<p><strong>Why it matters for the thesis:</strong> tabular leaderboards (TabArena, Kaggle) are won by <em>leak-free stacked ensembles</em> of tuned models — not single defaults. The RDL undervaluation bet must beat that stronger baseline, under the same CV protocol. Full derivation + the OOF widget: <a href="../lessons/0018-ensembling-stacking.html">Lesson 018</a> · Wolpert 1992.</p>
+<h2 id="Concept-recap-%E2%80%94-three-biases,-one-knob-each">Concept recap — three biases, one knob each<a class="anchor-link" href="#Concept-recap-%E2%80%94-three-biases,-one-knob-each">¶</a></h2><p>Every learner has an <strong>inductive bias</strong> — the kind of function it reaches for first. A neural net (MLP) is biased toward <strong>smooth</strong> functions; a decision tree toward <strong>axis-aligned, piecewise-constant</strong> ones. Neither is universally better — what matters is whether the bias <em>matches the data</em>. Grinsztajn et al. (2022) found tree-based models still beat deep nets on typical ~10K-row tabular data, and isolated three reasons. This lab reproduces each in miniature with a <strong>RandomForest</strong> (the tree) vs a <strong>2×256 MLP</strong> (the net), scored by test accuracy.</p>
+<p><strong>1. Irregular targets.</strong> Tabular targets often jump at thresholds (a fee at 30 days late). A tree places a hard step anywhere; a smooth-biased net rounds it off. We make the target progressively rougher with a <strong>checkerboard</strong>: split each axis into $t$ tiles and label a point by the parity of its tile,
+$$y = \left(\lfloor t\,x_0 \rfloor + \lfloor t\,x_1 \rfloor\right) \bmod 2.$$
+Bigger $t$ = finer, more irregular target.</p>
+<p><strong>2. Uninformative features.</strong> Real tables carry many junk columns. A tree does <strong>implicit feature selection</strong> (it never splits on noise); an MLP feeds <em>every</em> column into every neuron. We start from an informative task and <strong>append pure-noise columns</strong>, watching the MLP degrade faster.</p>
+<p><strong>3. Orientation.</strong> Each tabular column means something on its own, so respecting the axes helps. A tree splits one feature at a time → <strong>not rotation-invariant</strong>. An MLP is ~rotation-invariant → it can't tell a meaningful column from a scrambled mixture. We apply a <strong>random orthogonal rotation</strong> $Q$ (so $X' = XQ$) to an axis-aligned XOR target and watch only the tree collapse.</p>
+<p><strong>Toy micro-example (not this lab's answer).</strong> Target $y = \mathbb{1}[x &gt; 3]$ on $x \in \{1,2,3,4,5\}$ → labels $0,0,0,1,1$. A tree needs <em>one</em> split at $x=3.5$ to be perfect. A smooth line through those points must slope gently and will be wrong near the jump — the smoothness bias in one picture.</p>
+<p>Full write-up + the interactive checkerboard/rotation widget: <a href="../lessons/0019-when-trees-win.html">Lesson 019</a>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-02">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l019-02">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7850,280 +7847,66 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l018-03">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-03">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="n">_here</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">_p</span> <span class="ow">in</span> <span class="p">(</span><span class="n">_here</span><span class="p">,</span> <span class="n">_here</span><span class="o">.</span><span class="n">parent</span><span class="p">):</span>          <span class="c1"># put labs/ on the path (works from labs/ or labs/solutions/)</span>
-    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">_p</span><span class="p">))</span>
-
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — models + a scorer. Same RandomForest (tree) and MLP (net) throughout.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">catboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">CatBoostClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LGBMClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestClassifier</span><span class="p">,</span> <span class="n">StackingClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogisticRegression</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">average_precision_score</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">StratifiedKFold</span><span class="p">,</span> <span class="n">cross_val_predict</span><span class="p">,</span> <span class="n">cross_val_score</span><span class="p">,</span> <span class="n">train_test_split</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neighbors</span><span class="w"> </span><span class="kn">import</span> <span class="n">KNeighborsClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">accuracy_score</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neural_network</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLPClassifier</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_pipeline</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">LabelEncoder</span><span class="p">,</span> <span class="n">StandardScaler</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_classification</span>
 
 <span class="n">RS</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">RS</span><span class="p">)</span>
 
-<span class="c1"># credit_g, label-encoded so every model shares one numeric matrix (as in L017).</span>
-<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-<span class="n">num</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-<span class="n">cat</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num</span><span class="p">]</span>
-<span class="n">Xle</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">num</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat</span><span class="p">:</span>
-    <span class="n">Xle</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">LabelEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">))</span>
-<span class="n">Xle</span> <span class="o">=</span> <span class="n">Xle</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">tree</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">base_models</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">"""Fresh, clone-safe base learners on the label-encoded matrix."""</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"logistic"</span><span class="p">:</span>      <span class="n">make_pipeline</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)),</span>
-        <span class="s2">"random_forest"</span><span class="p">:</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">),</span>
-        <span class="s2">"xgboost"</span><span class="p">:</span>       <span class="n">XGBClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">tree_method</span><span class="o">=</span><span class="s2">"hist"</span><span class="p">),</span>
-        <span class="s2">"lightgbm"</span><span class="p">:</span>      <span class="n">LGBMClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span>
-        <span class="s2">"catboost"</span><span class="p">:</span>      <span class="n">CatBoostClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
-    <span class="p">}</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">nn</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">make_pipeline</span><span class="p">(</span>
+        <span class="n">StandardScaler</span><span class="p">(),</span>
+        <span class="n">MLPClassifier</span><span class="p">(</span><span class="n">hidden_layer_sizes</span><span class="o">=</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
+                      <span class="n">max_iter</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">early_stopping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">),</span>
+    <span class="p">)</span>
 
-<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"relkit + 5 base models ready; X:"</span><span class="p">,</span> <span class="n">Xle</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="n">model_fn</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">model_fn</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xte</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"tree + nn + scorer ready"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>relkit + 5 base models ready; X: (1000, 20)
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-04">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l019-04">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-out-of-fold-meta-features-+-a-blend-%E2%80%94-TODO-(crucial-fragment)">Task 1 — out-of-fold meta-features + a blend — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-out-of-fold-meta-features-+-a-blend-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> build the <strong>out-of-fold probability</strong> for each base model with <code>cross_val_predict</code>, average the five columns into a <strong>blend</strong>, and score it against the best single model.</p>
-<p><strong>Why it matters:</strong> the OOF prediction is <em>the</em> object stacking is built on — a prediction for every row from a model that never trained on that row. Averaging them is the simplest ensemble; the meta-learner in Task 3 just learns the weights instead of fixing them at $1/5$.</p>
-<p><strong>You implement:</strong> for each base model, <code>cross_val_predict(est, Xle, y, cv=cv, method="predict_proba")[:, 1]</code> gives its OOF positive-class probability; stack the five columns and take the row-wise <strong>mean</strong> for the blend.</p>
-<p><strong>Hint boundary:</strong> use the PROVIDED <code>cv</code> and <code>method="predict_proba"</code>; take column <code>[:, 1]</code> (positive class); <code>np.column_stack</code> then <code>.mean(axis=1)</code>. Do not fit on the full data and predict the same rows — that is the leak Task 2 exposes.</p>
+<h2 id="Task-1-%E2%80%94-irregular-targets:-the-checkerboard-%E2%80%94-TODO-(crucial-fragment)">Task 1 — irregular targets: the checkerboard — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-irregular-targets:-the-checkerboard-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> build a checkerboard target of frequency $t$ and score the tree vs the MLP as $t$ rises.</p>
+<p><strong>Why it matters:</strong> this is Grinsztajn's smoothness finding in one experiment — as the target gets rougher, the smooth-biased net falls behind while the tree keeps carving cells.</p>
+<p><strong>You implement:</strong> the checkerboard label. For points <code>X</code> in the unit square and <code>t</code> tiles per side, a point's tile index on an axis is <code>np.floor(t * X[:, axis])</code>; the label is the <strong>parity</strong> (mod 2) of the sum of the two tile indices. Cast to <code>int</code>.</p>
+<p><strong>Hint boundary:</strong> use <code>np.floor</code>, integer cast, and <code>% 2</code>. Do not change the loop or the models.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l018-05">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — build OOF probabilities for each base model, then blend</span>
-<span class="n">single</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">oof</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">est</span> <span class="ow">in</span> <span class="n">base_models</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="n">single</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cross_val_score</span><span class="p">(</span><span class="n">est</span><span class="p">,</span> <span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
-    <span class="n">oof</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cross_val_predict</span><span class="p">(</span><span class="n">est</span><span class="p">,</span> <span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"predict_proba"</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>    <span class="c1"># cross_val_predict(...): OOF positive-class prob for this model</span>
-
-<span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">oof</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">base_models</span><span class="p">()])</span>                      <span class="c1"># column-stack the five OOF probability vectors -&gt; rows x 5</span>
-<span class="n">blend</span> <span class="o">=</span> <span class="n">P</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>                  <span class="c1"># row-wise mean of the five columns</span>
-<span class="n">blend_ap</span> <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">blend</span><span class="p">)</span>
-
-<span class="n">best_name</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">single</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">single</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">single</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="s2">16s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  best single = </span><span class="si">{</span><span class="n">best_name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | blend = </span><span class="si">{</span><span class="n">blend_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>  logistic         0.874
-  random_forest    0.901
-  xgboost          0.883
-  lightgbm         0.889
-  catboost         0.900
-  best single = random_forest 0.901 | blend = 0.899
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l018-06">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">P</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="mi">5</span><span class="p">),</span> <span class="s2">"P should be one OOF probability column per base model."</span>
-<span class="k">assert</span> <span class="p">((</span><span class="n">P</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">P</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s2">"OOF values are probabilities in [0, 1]."</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">blend_ap</span> <span class="o">-</span> <span class="mf">0.899</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.02</span><span class="p">,</span> <span class="s2">"Blend PR-AUC should reproduce ~0.899 on credit_g."</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">single</span><span class="p">[</span><span class="s2">"random_forest"</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.901</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.02</span><span class="p">,</span> <span class="s2">"RF (best single) should be ~0.901."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — blend </span><span class="si">{</span><span class="n">blend_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs best single </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
-      <span class="sa">f</span><span class="s2">"(on tiny credit_g the blend barely moves — the mechanism is the point)."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 1 ok — blend 0.899 vs best single 0.901 (on tiny credit_g the blend barely moves — the mechanism is the point).
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-07">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-the-leakage-trap:-in-sample-vs-OOF-meta-features-%E2%80%94-TODO-(leakage-discipline)">Task 2 — the leakage trap: in-sample vs OOF meta-features — TODO (leakage discipline)<a class="anchor-link" href="#Task-2-%E2%80%94-the-leakage-trap:-in-sample-vs-OOF-meta-features-%E2%80%94-TODO-(leakage-discipline)">¶</a></h2><p><strong>Goal:</strong> add a <strong>1-NN memorizer</strong> to the pool, then fit a logistic meta-learner two ways on a 70/30 split — once on <strong>in-sample</strong> base predictions (leak) and once on <strong>OOF</strong> base predictions (correct) — and compare held-out PR-AUC.</p>
-<p><strong>Why it matters:</strong> this is the single most common stacking bug. The 1-NN is perfect in-sample and useless out-of-fold; the leaky meta-learner crowns it and collapses on new data. Reproducing the collapse cements <em>why</em> OOF is mandatory.</p>
-<p><strong>Reproduction target (lesson table):</strong> naïve stack train PR-AUC ≈ 1.000 (mirage) → test ≈ 0.895; OOF stack train ≈ 0.885 → test ≈ 0.930 (held-out gap ≈ +0.035).</p>
-<p><strong>You implement:</strong> the <strong>OOF</strong> training meta-features <code>oof_tr</code> — for each model, <code>cross_val_predict</code> on the <em>training</em> split with the PROVIDED <code>inner</code> splitter. The naïve (in-sample) meta-features and the test meta-features are PROVIDED.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l018-08">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — pool + a pure memorizer; fit bases on the full training split.</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">leak_models</span><span class="p">():</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">base_models</span><span class="p">()</span>
-    <span class="n">m</span><span class="p">[</span><span class="s2">"one_nn"</span><span class="p">]</span> <span class="o">=</span> <span class="n">KNeighborsClassifier</span><span class="p">(</span><span class="n">n_neighbors</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># perfect in-sample, useless OOF</span>
-    <span class="k">return</span> <span class="n">m</span>
-
-<span class="n">leak_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">leak_models</span><span class="p">())</span>
-<span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
-<span class="n">inner</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
-
-<span class="n">fitted</span> <span class="o">=</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">leak_models</span><span class="p">()[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">leak_names</span><span class="p">}</span>
-<span class="c1"># NAIVE meta-features: each base predicts the SAME rows it trained on (the leak)</span>
-<span class="n">naive_tr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">fitted</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xtr</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">leak_names</span><span class="p">])</span>
-<span class="c1"># test meta-features (same for both): bases (fit on all train) predict the held-out test rows</span>
-<span class="n">te_feat</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">fitted</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">leak_names</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"naive_tr and te_feat ready; columns ="</span><span class="p">,</span> <span class="n">leak_names</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>naive_tr and te_feat ready; columns = ['logistic', 'random_forest', 'xgboost', 'lightgbm', 'catboost', 'one_nn']
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=l018-09">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — build HONEST out-of-fold training meta-features, then compare both meta-learners</span>
-<span class="n">oof_tr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span>
-    <span class="p">[</span><span class="n">cross_val_predict</span><span class="p">(</span><span class="n">leak_models</span><span class="p">()[</span><span class="n">n</span><span class="p">],</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">inner</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"predict_proba"</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
-     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">leak_names</span><span class="p">]</span>
-<span class="p">)</span>
-
-<span class="n">meta_naive</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">naive_tr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
-<span class="n">meta_oof</span>   <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">oof_tr</span><span class="p">,</span>   <span class="n">ytr</span><span class="p">)</span>
-
-<span class="n">naive_train</span> <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">ytr</span><span class="p">,</span> <span class="n">meta_naive</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">naive_tr</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
-<span class="n">oof_train</span>   <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">ytr</span><span class="p">,</span> <span class="n">meta_oof</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">oof_tr</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
-<span class="n">naive_test</span>  <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">meta_naive</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">te_feat</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
-<span class="n">oof_test</span>    <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">meta_oof</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">te_feat</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
-
-<span class="n">j</span> <span class="o">=</span> <span class="n">leak_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">"one_nn"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"1-NN weight  naive=</span><span class="si">{</span><span class="n">meta_naive</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s2">+.2f</span><span class="si">}</span><span class="s2">  oof=</span><span class="si">{</span><span class="n">meta_oof</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s2">+.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"NAIVE stack: train </span><span class="si">{</span><span class="n">naive_train</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (mirage) -&gt; test </span><span class="si">{</span><span class="n">naive_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OOF   stack: train </span><span class="si">{</span><span class="n">oof_train</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">          -&gt; test </span><span class="si">{</span><span class="n">oof_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"held-out gap (oof - naive) = </span><span class="si">{</span><span class="n">oof_test</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">naive_test</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>1-NN weight  naive=+3.00  oof=-0.11
-NAIVE stack: train 1.000 (mirage) -&gt; test 0.895
-OOF   stack: train 0.885          -&gt; test 0.930
-held-out gap (oof - naive) = +0.035
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-10">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-05">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8131,33 +7914,58 @@ held-out gap (oof - naive) = +0.035
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">oof_tr</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">naive_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"OOF meta-features must have the same shape as the naive ones."</span>
-<span class="k">assert</span> <span class="n">naive_train</span> <span class="o">&gt;</span> <span class="mf">0.99</span><span class="p">,</span> <span class="s2">"In-sample meta-features should look near-perfect (the mirage) because of the 1-NN."</span>
-<span class="k">assert</span> <span class="n">oof_train</span> <span class="o">&lt;</span> <span class="n">naive_train</span><span class="p">,</span> <span class="s2">"OOF training score must be lower/honest than the leaked in-sample score."</span>
-<span class="k">assert</span> <span class="n">oof_test</span> <span class="o">&gt;=</span> <span class="n">naive_test</span><span class="p">,</span> <span class="s2">"Not leaking should NOT hurt held-out performance (here it clearly helps)."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — leaking cost </span><span class="si">{</span><span class="n">oof_test</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">naive_test</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> held-out PR-AUC; "</span>
-      <span class="sa">f</span><span class="s2">"OOF meta-learner ignored the 1-NN memorizer."</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement the checkerboard label</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">checkerboard</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">6000</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">RS</span><span class="p">):</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">____</span>            <span class="c1"># parity (mod 2) of the sum of the two tile indices floor(t*x); cast to int</span>
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span>
+
+<span class="n">irr</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">):</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">checkerboard</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">irr</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">score</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">score</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">2d</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">&lt;2d</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">t</span><span class="o">*</span><span class="n">t</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2"> cells): tree </span><span class="si">{</span><span class="n">irr</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  nn </span><span class="si">{</span><span class="n">irr</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  gap </span><span class="si">{</span><span class="n">irr</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">irr</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-06">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">checkerboard</span><span class="p">(</span><span class="mi">4</span><span class="p">)[</span><span class="mi">1</span><span class="p">])))</span> <span class="o">==</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">},</span> <span class="s2">"Checkerboard labels must be 0/1."</span>
+<span class="k">assert</span> <span class="n">irr</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.95</span> <span class="ow">and</span> <span class="n">irr</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s2">"At 2x2 both models should be near-perfect."</span>
+<span class="k">assert</span> <span class="n">irr</span><span class="p">[</span><span class="mi">8</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">irr</span><span class="p">[</span><span class="mi">8</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s2">"By 8x8 the tree should clearly lead the smooth-biased net."</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">irr</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">irr</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">irr</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">irr</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span> <span class="s2">"The gap should GROW as the target gets more irregular."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — gap widens </span><span class="si">{</span><span class="n">irr</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">irr</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> (2x2) -&gt; </span><span class="si">{</span><span class="n">irr</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">irr</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> (16x16). "</span>
+      <span class="sa">f</span><span class="s2">"Irregular targets favour the tree."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-11">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l019-07">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-sklearn-StackingClassifier-%E2%80%94-TODO-(reproduction-target)">Task 3 — sklearn <code>StackingClassifier</code> — TODO (reproduction target)<a class="anchor-link" href="#Task-3-%E2%80%94-sklearn-StackingClassifier-%E2%80%94-TODO-(reproduction-target)">¶</a></h2><p><strong>Goal:</strong> let scikit-learn do the OOF bookkeeping. Configure a <code>StackingClassifier</code> over the five base models with a <strong>logistic</strong> meta-learner and <code>cv=5</code>, and score the whole stack with an outer 5-fold CV.</p>
-<p><strong>Why it matters:</strong> <code>StackingClassifier</code> generates the level-0 features by internal cross-validation, so you never touch a leaked prediction — and wrapping it in an outer <code>cross_val_score</code> gives the honest number you are allowed to report (the L017 rule: score the <em>whole</em> fitting procedure on unseen data).</p>
-<p><strong>Reproduction target (lesson table):</strong> stack CV PR-AUC ≈ 0.902 — edging the best single model (~0.901).</p>
-<p><strong>You implement:</strong> the <code>final_estimator</code> (a <code>LogisticRegression</code>) and <code>cv=5</code> in the <code>StackingClassifier</code>; the estimator list and the outer scoring are PROVIDED.</p>
+<h2 id="Task-2-%E2%80%94-robustness-to-uninformative-features-%E2%80%94-TODO-(crucial-fragment)">Task 2 — robustness to uninformative features — TODO (crucial fragment)<a class="anchor-link" href="#Task-2-%E2%80%94-robustness-to-uninformative-features-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> start from an informative 10-feature task and append growing numbers of pure-noise columns; compare how fast the tree vs the MLP degrades.</p>
+<p><strong>Why it matters:</strong> a tree ignores junk (implicit feature selection); an MLP does not. This is why trees shine on wide real tables full of weak/dead columns — <em>but note the honest twist in row <code>k=0</code>.</em></p>
+<p><strong>You implement:</strong> append <code>k</code> columns of standard Gaussian noise to the base matrix <code>Xb</code>. Use the PROVIDED <code>rng</code> so it is reproducible, and <code>np.hstack</code> to concatenate.</p>
+<p><strong>Hint boundary:</strong> <code>rng.normal(size=(n_rows, k))</code> makes the junk; <code>np.hstack([...])</code> glues it to <code>Xb</code>. When <code>k == 0</code>, just use <code>Xb</code> unchanged.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-12">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-08">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8165,23 +7973,17 @@ held-out gap (oof - naive) = +0.035
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — configure and score the stack</span>
-<span class="n">estimators</span> <span class="o">=</span> <span class="p">[(</span><span class="n">n</span><span class="p">,</span> <span class="n">base_models</span><span class="p">()[</span><span class="n">n</span><span class="p">])</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">base_models</span><span class="p">()]</span>
-<span class="n">stack</span> <span class="o">=</span> <span class="n">StackingClassifier</span><span class="p">(</span>
-    <span class="n">estimators</span><span class="o">=</span><span class="n">estimators</span><span class="p">,</span>
-    <span class="n">final_estimator</span><span class="o">=</span><span class="n">____</span><span class="p">,</span>        <span class="c1"># the level-1 meta-learner: a simple LogisticRegression</span>
-    <span class="n">cv</span><span class="o">=</span><span class="n">____</span><span class="p">,</span>                     <span class="c1"># internal CV that generates leak-free OOF meta-features</span>
-    <span class="n">stack_method</span><span class="o">=</span><span class="s2">"predict_proba"</span><span class="p">,</span>
-    <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">stack_ap</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cross_val_score</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">Xle</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"average_precision"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"StackingClassifier CV PR-AUC = </span><span class="si">{</span><span class="n">stack_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  (best single </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, blend </span><span class="si">{</span><span class="n">blend_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — one fixed informative task; we only add junk columns to it.</span>
+<span class="n">Xb</span><span class="p">,</span> <span class="n">yb</span> <span class="o">=</span> <span class="n">make_classification</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">6000</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">n_informative</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                             <span class="n">n_redundant</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_repeated</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_clusters_per_class</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">class_sep</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">flip_y</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"base task:"</span><span class="p">,</span> <span class="n">Xb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-13">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-09">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8189,28 +7991,133 @@ held-out gap (oof - naive) = +0.035
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="mf">0.88</span> <span class="o">&lt;</span> <span class="n">stack_ap</span> <span class="o">&lt;</span> <span class="mf">0.92</span><span class="p">,</span> <span class="s2">"Stack PR-AUC should land near the base models' range."</span>
-<span class="k">assert</span> <span class="n">stack_ap</span> <span class="o">&gt;=</span> <span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s2">"A leak-free stack should match or edge the best single model."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — stack </span><span class="si">{</span><span class="n">stack_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> &gt;= best single </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> - tol."</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — add k noise features, then score both models</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_noise</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Xb</span>
+    <span class="k">return</span> <span class="n">____</span>        <span class="c1"># np.hstack Xb with an (n_rows x k) block of rng.normal noise</span>
+
+<span class="n">junk</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">):</span>
+    <span class="n">Xj</span> <span class="o">=</span> <span class="n">add_noise</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+    <span class="n">junk</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">score</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">Xj</span><span class="p">,</span> <span class="n">yb</span><span class="p">),</span> <span class="n">score</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">Xj</span><span class="p">,</span> <span class="n">yb</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  +</span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2"> noise (</span><span class="si">{</span><span class="mi">10</span><span class="o">+</span><span class="n">k</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2"> feats): tree </span><span class="si">{</span><span class="n">junk</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  nn </span><span class="si">{</span><span class="n">junk</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  gap </span><span class="si">{</span><span class="n">junk</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">junk</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-10">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="n">add_noise</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">Xb</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">30</span><span class="p">),</span> <span class="s2">"add_noise(20) should give 10 + 20 = 30 columns."</span>
+<span class="k">assert</span> <span class="n">junk</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">junk</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.005</span><span class="p">,</span> <span class="s2">"Honest twist: with no junk the MLP should be competitive/better."</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">junk</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">junk</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">junk</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">junk</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span> <span class="s2">"The tree should get RELATIVELY better as junk grows."</span>
+<span class="n">nn_drop</span> <span class="o">=</span> <span class="n">junk</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">junk</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">tree_drop</span> <span class="o">=</span> <span class="n">junk</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">junk</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">assert</span> <span class="n">nn_drop</span> <span class="o">&gt;</span> <span class="n">tree_drop</span><span class="p">,</span> <span class="s2">"The MLP should lose more accuracy to junk than the tree does."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — junk cost the MLP </span><span class="si">{</span><span class="n">nn_drop</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> but the tree only </span><span class="si">{</span><span class="n">tree_drop</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">. "</span>
+      <span class="sa">f</span><span class="s2">"Trees are robust to uninformative features."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-14">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l019-11">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-3-%E2%80%94-orientation:-a-random-rotation-%E2%80%94-TODO-(crucial-fragment)">Task 3 — orientation: a random rotation — TODO (crucial fragment)<a class="anchor-link" href="#Task-3-%E2%80%94-orientation:-a-random-rotation-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> take an axis-aligned XOR target, apply a <strong>random orthogonal rotation</strong>, and show the tree collapses while the (rotation-invariant) MLP does not.</p>
+<p><strong>Why it matters:</strong> this is the sharpest evidence in the paper. A tree exploits the fact that individual columns are meaningful (axis-aligned splits); rotating mixes the columns into meaningless combinations, and the tree's edge vanishes. An MLP is ~rotation-invariant, so it is unmoved — which on tables is a <em>weakness</em>, not a virtue.</p>
+<p><strong>You implement:</strong> a random orthogonal matrix <code>Q</code> and the rotated design <code>Xrot = Xr @ Q</code>. Get an orthogonal <code>Q</code> from the <strong>QR decomposition</strong> of a random Gaussian matrix: <code>np.linalg.qr(rng.normal(size=(d, d)))</code> returns <code>(Q, R)</code>.</p>
+<p><strong>Hint boundary:</strong> build a <code>(d, d)</code> Gaussian matrix with <code>rng.normal</code>, take <code>Q</code> from <code>np.linalg.qr(...)</code>, then matrix-multiply <code>Xr @ Q</code>. <code>d</code> is the number of columns of <code>Xr</code>.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-12">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — axis-aligned XOR on 2 features + 6 pure-noise features.</span>
+<span class="n">d</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">Xr</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">6000</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+<span class="n">yr</span> <span class="o">=</span> <span class="p">((</span><span class="n">Xr</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">^</span> <span class="p">(</span><span class="n">Xr</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>   <span class="c1"># XOR of two axis-aligned thresholds</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"XOR task:"</span><span class="p">,</span> <span class="n">Xr</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"positives:"</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">yr</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-13">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — rotate the feature space, then compare orig vs rotated</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">____</span>                        <span class="c1"># a (d, d) matrix of Gaussian noise (use rng)</span>
+<span class="n">Q</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">____</span>                     <span class="c1"># orthogonal Q from the QR decomposition of A</span>
+<span class="n">Xrot</span> <span class="o">=</span> <span class="n">____</span>                     <span class="c1"># rotate the design: X @ Q</span>
+
+<span class="n">rot</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"original"</span><span class="p">:</span> <span class="p">(</span><span class="n">score</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">Xr</span><span class="p">,</span> <span class="n">yr</span><span class="p">),</span>   <span class="n">score</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">Xr</span><span class="p">,</span> <span class="n">yr</span><span class="p">)),</span>
+       <span class="s2">"rotated"</span><span class="p">:</span>  <span class="p">(</span><span class="n">score</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">Xrot</span><span class="p">,</span> <span class="n">yr</span><span class="p">),</span> <span class="n">score</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">Xrot</span><span class="p">,</span> <span class="n">yr</span><span class="p">))}</span>
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">n_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">rot</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">9s</span><span class="si">}</span><span class="s2">: tree </span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  nn </span><span class="si">{</span><span class="n">n_</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  rotation cost -&gt; tree </span><span class="si">{</span><span class="n">rot</span><span class="p">[</span><span class="s1">'original'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">rot</span><span class="p">[</span><span class="s1">'rotated'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">   nn </span><span class="si">{</span><span class="n">rot</span><span class="p">[</span><span class="s1">'original'</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">rot</span><span class="p">[</span><span class="s1">'rotated'</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-14">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">Q</span> <span class="o">@</span> <span class="n">Q</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">),</span> <span class="s2">"Q must be orthogonal (a rotation)."</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">Xrot</span><span class="p">,</span> <span class="n">Xr</span> <span class="o">@</span> <span class="n">Q</span><span class="p">),</span> <span class="s2">"Xrot should be the rotated design X @ Q."</span>
+<span class="k">assert</span> <span class="n">rot</span><span class="p">[</span><span class="s2">"original"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s2">"Axis-aligned, the tree should nail the XOR."</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">rot</span><span class="p">[</span><span class="s2">"original"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">rot</span><span class="p">[</span><span class="s2">"rotated"</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s2">"Rotation should clearly hurt the tree."</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">rot</span><span class="p">[</span><span class="s2">"original"</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">rot</span><span class="p">[</span><span class="s2">"rotated"</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.03</span><span class="p">,</span> <span class="s2">"Rotation should barely move the ~invariant MLP."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — rotation dropped the tree by </span><span class="si">{</span><span class="n">rot</span><span class="p">[</span><span class="s1">'original'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">rot</span><span class="p">[</span><span class="s1">'rotated'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"but the MLP by only </span><span class="si">{</span><span class="nb">abs</span><span class="p">(</span><span class="n">rot</span><span class="p">[</span><span class="s1">'original'</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">rot</span><span class="p">[</span><span class="s1">'rotated'</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">. Orientation was the tree's edge."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l019-15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary to paste back to your teacher.</p>
-<p><strong>Takeaway prompt:</strong> in one sentence, say why the stacking meta-learner must be trained on out-of-fold predictions, and what makes an ensemble beat the best single model.</p>
+<p><strong>Takeaway prompt:</strong> name the three tree strengths (inductive biases) in your own words, in one sentence each.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-15">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8218,34 +8125,34 @@ held-out gap (oof - naive) = +0.035
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 018 ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Blend (OOF avg of 5)     PR-AUC = </span><span class="si">{</span><span class="n">blend_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  (best single </span><span class="si">{</span><span class="n">single</span><span class="p">[</span><span class="n">best_name</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Leak trap: naive test </span><span class="si">{</span><span class="n">naive_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs OOF test </span><span class="si">{</span><span class="n">oof_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (gap </span><span class="si">{</span><span class="n">oof_test</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">naive_test</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"StackingClassifier CV    PR-AUC = </span><span class="si">{</span><span class="n">stack_ap</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the three-strengths string</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 019 ==="</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"1. Irregular target : 2x2 gap </span><span class="si">{</span><span class="n">irr</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">irr</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> -&gt; 16x16 gap </span><span class="si">{</span><span class="n">irr</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">irr</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"2. Uninformative    : +0 gap </span><span class="si">{</span><span class="n">junk</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">junk</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> -&gt; +100 gap </span><span class="si">{</span><span class="n">junk</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">junk</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"3. Orientation      : tree </span><span class="si">{</span><span class="n">rot</span><span class="p">[</span><span class="s1">'original'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">-&gt;</span><span class="si">{</span><span class="n">rot</span><span class="p">[</span><span class="s1">'rotated'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, nn </span><span class="si">{</span><span class="n">rot</span><span class="p">[</span><span class="s1">'original'</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">-&gt;</span><span class="si">{</span><span class="n">rot</span><span class="p">[</span><span class="s1">'rotated'</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"three tree strengths:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l018-16">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l019-17">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-diversity-&amp;-passthrough">Stretch (optional, ungraded) — diversity &amp; passthrough<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-diversity-&amp;-passthrough">¶</a></h2><ol>
-<li><strong>Drop the boosters, keep diversity.</strong> Score a stack of just <code>{logistic, random_forest, catboost}</code> — fewer, more diverse models often match all five.</li>
-<li><strong><code>passthrough=True</code>.</strong> Let the meta-learner also see the raw features, not only base predictions. Does it help here, or just add variance on 1 000 rows?</li>
-<li><strong>Correlation → gain.</strong> Recompute <code>np.corrcoef(P.T)</code> from Task 1 and confirm the three GBDTs are the most correlated block — the reason stacking only GBDTs barely helps.</li>
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-push-the-biases">Stretch (optional, ungraded) — push the biases<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-push-the-biases">¶</a></h2><ol>
+<li><strong>Smooth it back.</strong> Replace the checkerboard with a <em>smooth</em> target, e.g. $y = \mathbb{1}[x_0 + x_1 &gt; 1]$. The tree's edge should shrink toward the MLP — confirming the edge lives in the <em>non-smooth</em> regime.</li>
+<li><strong>Rotate only the informative axes.</strong> Rotate just columns 0–1 of the XOR task and leave the noise columns alone — does a partial rotation cost the tree less?</li>
+<li><strong>A modern tabular net.</strong> Swap the MLP for <code>sklearn.ensemble.HistGradientBoostingClassifier</code> (another tree) on the rotated task — two trees, same rotation weakness. (The Year-2 architectures fix this on purpose.)</li>
 </ol>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l018-17">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l019-18">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8253,12 +8160,12 @@ held-out gap (oof - naive) = +0.035
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
-<span class="c1"># diverse = [(n, base_models()[n]) for n in ("logistic", "random_forest", "catboost")]</span>
-<span class="c1"># s = StackingClassifier(diverse, final_estimator=LogisticRegression(max_iter=2000),</span>
-<span class="c1">#                        cv=5, stack_method="predict_proba", n_jobs=4)</span>
-<span class="c1"># print("diverse-3 stack:", round(float(cross_val_score(s, Xle, y, cv=cv, scoring="average_precision").mean()), 3))</span>
-<span class="c1"># print("OOF correlation matrix:\n", np.round(np.corrcoef(P.T), 2))</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
+<span class="c1"># def smooth(n=6000, seed=RS):</span>
+<span class="c1">#     r = np.random.RandomState(seed); X = r.uniform(0, 1, size=(n, 2))</span>
+<span class="c1">#     return X, (X[:, 0] + X[:, 1] &gt; 1).astype(int)</span>
+<span class="c1"># Xs, ys = smooth()</span>
+<span class="c1"># print("smooth target: tree", round(score(tree, Xs, ys), 3), " nn", round(score(nn, Xs, ys), 3))</span>
 </pre></div>
 </div>
 </div>
