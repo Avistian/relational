@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 020 — Q2 Checkpoint: Match a Published Tree Baseline</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .num-table td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .muted-cell { color: var(--muted); }
+    .chk { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .chk-title { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.6rem; }
+    .chk-list { list-style: none; padding: 0; margin: 0; }
+    .chk-item { display: flex; align-items: baseline; gap: 0.55rem; margin: 0.5rem 0; font-size: 0.92rem; }
+    .chk-item input { margin-top: 0.2rem; flex: none; }
+    .chk-hint { color: var(--accent); font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .chk-feedback { margin-top: 0.75rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); }
+    .chk-feedback.done { color: #1e6b3c; font-weight: 600; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2 Checkpoint</p>
+  <h1>Q2 Checkpoint: Match a Published Tree Baseline</h1>
+  <p class="subtitle">Lesson 020 · Phase 1 · ~45 min · capstone</p>
+
+  <p>
+    Q2 taught you <em>how</em> tree ensembles work — <a href="0011-decision-trees-partitions.html">splits</a>,
+    <a href="0012-bagging-random-forest.html">bagging</a>, <a href="0013-boosting-intuition.html">boosting</a>,
+    <a href="0014-xgboost.html">XGBoost</a>, <a href="0015-lightgbm.html">LightGBM</a>,
+    <a href="0016-catboost.html">CatBoost</a>, <a href="0017-hyperparameter-search.html">tuning</a>,
+    <a href="0018-ensembling-stacking.html">stacking</a> — and <a href="0019-when-trees-win.html">why</a> they win.
+    This checkpoint is not a new concept: it is the moment you prove you can <strong>reproduce a published
+    tree baseline honestly</strong> and then try to beat it. Everything the thesis argues after this — that
+    relational models unlock value the flat table misses — is measured against exactly this kind of baseline,
+    built exactly this carefully.
+  </p>
+
+  <p>
+    This checkpoint's single skill: <strong>reproduce a published-style tree baseline under a fair, fixed
+    protocol — same data, same split, same metric, a disclosed tuning budget — then match or beat it with a
+    tuned XGBoost / LightGBM and a leak-free stacked ensemble, reporting the result honestly.</strong>
+  </p>
+
+  <h2>What Q2 gave you, assembled in one place</h2>
+  <p>
+    Each Q2 lesson contributed one piece of the machine. A checkpoint-worthy reproduction uses all of them,
+    and every <em>fit-bearing</em> step still lives inside a pipeline so it only ever sees training folds —
+    the <a href="0010-baseline-checkpoint.html">Q1 leakage spine</a> does not lapse just because the model
+    got fancier:
+  </p>
+  <table>
+    <thead><tr><th>From</th><th>Piece</th><th>In the reproduction</th></tr></thead>
+    <tbody>
+      <tr><td><a href="0013-boosting-intuition.html">013</a></td><td>boosting</td><td>sequential residual fitting is the model class</td></tr>
+      <tr><td><a href="0014-xgboost.html">014</a></td><td>XGBoost</td><td>regularized booster — <em>Chen &amp; Guestrin 2016</em></td></tr>
+      <tr><td><a href="0015-lightgbm.html">015</a></td><td>LightGBM</td><td>leaf-wise booster — <em>Ke et al. 2017</em></td></tr>
+      <tr><td><a href="0017-hyperparameter-search.html">017</a></td><td>tuning</td><td><code>RandomizedSearchCV</code>, fixed budget, CV on train only</td></tr>
+      <tr><td><a href="0018-ensembling-stacking.html">018</a></td><td>stacking</td><td>out-of-fold meta-features → meta-learner</td></tr>
+      <tr><td><a href="0019-when-trees-win.html">019</a></td><td>when trees win</td><td>why this baseline is a stubborn, honest bar</td></tr>
+      <tr><td><a href="0010-baseline-checkpoint.html">010</a></td><td>leakage spine</td><td>held-out test, per-fold preprocessing, stated prevalence</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The fair-comparison contract</h2>
+  <p>
+    "Match or beat a published number" is meaningless unless the comparison is fair. A reproduction you can
+    defend fixes <strong>five things</strong> before touching a model, and reports the sixth:
+  </p>
+  <ul>
+    <li><strong>Same dataset.</strong> The exact rows and target the reference used (here: OpenML <code>adult</code>, income&nbsp;&gt;&nbsp;50K).</li>
+    <li><strong>Same split.</strong> One fixed, stratified holdout with a pinned seed — the test set is touched <em>once</em>, at the very end.</li>
+    <li><strong>Same metric.</strong> One headline number chosen up front (ROC-AUC here), with prevalence stated so it is readable.</li>
+    <li><strong>Disclosed tuning budget.</strong> Tuning is CV on <em>train only</em>, with a stated number of trials — not "I searched until I won."</li>
+    <li><strong>Same preprocessing scope.</strong> Every fit-bearing transform inside the pipeline, so no fold sees the others.</li>
+    <li><strong>Reported honestly.</strong> The verdict (matched / beat / failed) and the <em>size</em> of the gap, not a cherry-picked run.</li>
+  </ul>
+  <div class="callout">
+    <strong>Why this is the checkpoint.</strong> The single most common way a "relational model beats the
+    baseline" claim collapses is an <em>unfair baseline</em> — undertuned, leaky, or scored on a different
+    split. Q3 (<a href="0019-when-trees-win.html">evaluation rigor</a>) is built on this contract; the whole
+    thesis lives or dies by it. Learn to be the reviewer who would reject your own sloppy comparison.
+  </div>
+
+  <h2>The reference baseline</h2>
+  <p>
+    On <code>adult</code> (48,842 rows, ~24% positive), a competently-configured gradient-boosted tree is a
+    commonly reported baseline at roughly <strong>ROC-AUC 0.92–0.93</strong> and <strong>~87% accuracy</strong>.
+    We pre-register the target as a fixed-default XGBoost — no tuning, disclosed hyper-parameters — so it is a
+    number anyone can reproduce. Here is the verified bake-off under the contract above:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>Model</th><th>ROC-AUC</th><th>Accuracy</th><th>PR-AUC</th><th>Δ vs ref</th></tr></thead>
+    <tbody>
+      <tr><td>prevalence floor</td><td class="n muted-cell">0.500</td><td class="n muted-cell">0.761</td><td class="n muted-cell">0.239</td><td class="n muted-cell">—</td></tr>
+      <tr><td>XGBoost reference (fixed defaults)</td><td class="n">0.9282</td><td class="n">0.8733</td><td class="n">0.8303</td><td class="n muted-cell">—</td></tr>
+      <tr><td>XGBoost tuned (15-trial search)</td><td class="n">0.9294</td><td class="n">0.8734</td><td class="n">0.8327</td><td class="n win">+0.0012</td></tr>
+      <tr><td>LightGBM tuned (15-trial search)</td><td class="n">0.9296</td><td class="n">0.8731</td><td class="n">0.8333</td><td class="n win">+0.0014</td></tr>
+      <tr><td>Stacked (XGB + LGBM → logistic)</td><td class="n win">0.9297</td><td class="n">0.8728</td><td class="n win">0.8335</td><td class="n win">+0.0015</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>Verified (xgboost 3.3, lightgbm 4.6, sklearn 1.9; adult, 80/20 stratified, seed 0; ROC-AUC).</strong>
+    The fixed-default XGBoost lands at <strong>0.9282</strong> — squarely inside the published range, so the
+    baseline is reproduced. Tuning and stacking then <em>beat</em> it, but only barely.
+  </div>
+
+  <h2>Read the honest half: tuning barely moved it</h2>
+  <p>
+    A 15-trial randomized search bought <strong>+0.0012 ROC-AUC</strong> over an untuned default, and accuracy
+    did not move at all (0.8733 → 0.8734). This is the truth about strong tabular baselines that beginners miss:
+    <strong>a sensible default GBDT is already almost the whole story</strong>, and heroic tuning is a small
+    polish, not a savior. The discipline that matters here is not "search harder" — it is reproducing the
+    number under a protocol you would defend to a skeptic. If your tuned model beats a default by a lot, suspect
+    a leak or an unfair reference before you celebrate.
+  </p>
+
+  <h2>Two GBDTs are redundant — stacking confirms the diversity rule</h2>
+  <p>
+    The stacked ensemble gained essentially nothing over the best single model (+0.0001). Look at why: the
+    out-of-fold predictions of the tuned XGBoost and tuned LightGBM correlate at <strong>0.997</strong>. They
+    are two leaf-wise/level-wise flavours of the same idea, so they make the <em>same</em> mistakes — and
+    <a href="0018-ensembling-stacking.html">Lesson 018</a> told you diversity is the fuel of stacking. Stacking
+    two near-identical learners is stacking one. To move this number you would need a genuinely different
+    model class — which, on flat tabular data, is hard to find, and is exactly the opening the relational
+    thesis probes.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> You have now built the incumbent, honestly and at full strength: a tuned,
+    leak-free, reproducible tree baseline that pins ROC-AUC 0.93 on a real table, where tuning adds a
+    thousandth and a second GBDT adds nothing. That is the bar. The RDL bet is <em>not</em> "trees are weak" —
+    it is that the flat <code>adult</code> table <em>discards</em> relational structure (who a person's
+    employer is, which household they share, the sequence of their jobs) that a model over the original
+    database could exploit. Year 1 closes by naming what flattening throws away; Years 3–4 try to beat this
+    exact baseline by <em>keeping</em> it.
+  </div>
+
+  <h2>Self-audit — the reproduction-protocol rubric</h2>
+  <p>Tick every item against the baseline you build in the lab. All boxes ticked = checkpoint-ready:</p>
+  <div id="checklist"></div>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The two checkpoint papers, revisited as the systems you are reproducing:
+  </p>
+  <ul>
+    <li>Chen &amp; Guestrin (2016), <em>XGBoost: A Scalable Tree Boosting System</em> (KDD) —
+      <a href="https://arxiv.org/abs/1603.02754">arXiv:1603.02754</a>. Re-read §2 (the regularized objective)
+      and skim §6 (the end-to-end evaluation) to see how the authors report a baseline fairly.</li>
+    <li>Ke et al. (2017), <em>LightGBM: A Highly Efficient Gradient Boosting Decision Tree</em> (NeurIPS) —
+      <a href="https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html">NeurIPS 2017</a>.
+      Note the experimental protocol in §4: same data, same metric, stated budget — the contract you are practising.</li>
+  </ul>
+
+  <h2>Lab — reproduce the baseline, then try to beat it</h2>
+  <p>
+    Capstone notebook <code>0020-q2-checkpoint.ipynb</code> (kernel <strong>Relational Labs (.venv)</strong>).
+    You will:
+  </p>
+  <ol>
+    <li>Fix the protocol: one stratified 80/20 holdout and a per-fold <code>ColumnTransformer</code> pipeline (the leakage spine).</li>
+    <li>Establish the <strong>reference</strong> (fixed-default XGBoost) and confirm it reproduces the published range.</li>
+    <li>Tune <strong>XGBoost</strong> and <strong>LightGBM</strong> with a fixed-budget <code>RandomizedSearchCV</code> on train only; match or beat the reference.</li>
+    <li>Build a <strong>leak-free OOF stacked</strong> ensemble, read the base-model correlation, and print the exit-ticket comparison table with your honest verdict.</li>
+  </ol>
+  <p>
+    Paste the exit-ticket output here, or say <em>"lab done."</em> That closes <strong>Q2</strong>. No advancing
+    to Q3 until the reference is reproduced and the verdict is honest.
+    <a href="../labs/html/0020-q2-checkpoint.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring any dataset and we will stand up this exact protocol on it —
+    pick the metric, fix the split, set the tuning budget, and decide honestly whether the tuned model beat a
+    fair reference. Running that conversation cleanly <em>is</em> the Q2 skill.
+  </div>
+
+  <div class="ask-teacher">
+    Unsure why tuning barely helped, or why a 0.997 correlation kills the ensemble? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0019-when-trees-win.html">← Lesson 019</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0020-q2-checkpoint.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/checklist.js"></script>
+<script>
+  Checklist.mount(document.getElementById("checklist"), {
+    title: "Reproduction-protocol rubric",
+    items: [
+      { label: "Held-out test set split off first, stratified, with a pinned seed; touched once.", hint: "split" },
+      { label: "One headline metric chosen up front; prevalence stated next to it.", hint: "metric" },
+      { label: "Every fit-bearing transform lives inside the pipeline (per-fold).", hint: "L010" },
+      { label: "Tuning is CV on train only, with a disclosed trial budget.", hint: "L017" },
+      { label: "Reference baseline reproduced inside the published range before tuning.", hint: "reference" },
+      { label: "Stacking uses out-of-fold meta-features; base-model correlation reported.", hint: "L018" },
+      { label: "Verdict states matched/beat/failed and the size of the gap, honestly.", hint: "honesty" },
+      { label: "Seeds fixed and library versions recorded; result is one rerunnable notebook.", hint: "repro" }
+    ],
+    done: "Protocol is airtight — your reproduction would survive a skeptical reviewer. Q2 is closed."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why fix the split, metric, and tuning budget BEFORE fitting any model?",
+    options: [
+      { label: "So the comparison to the reference is fair and defensible", value: "a" },
+      { label: "So the model trains faster on the adult dataset", value: "b" },
+      { label: "So the test set can be reused to tune the model", value: "c" },
+      { label: "So accuracy always exceeds ROC-AUC on the run", value: "d" }
+    ],
+    correct: "a",
+    explain: "The fair-comparison contract fixes data, split, metric, and budget up front so 'match or beat' means something. Choosing them after seeing results (or reusing the test set to tune) is how unfair baselines and leaks sneak in."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "A 15-trial search improved the tuned XGBoost by only +0.0012 ROC-AUC over an untuned default. What is the honest read?",
+    options: [
+      { label: "A sensible default GBDT is already most of the story; tuning is a small polish", value: "a" },
+      { label: "The tuning was broken — a real search always adds several points", value: "b" },
+      { label: "The reference baseline must have been leaking", value: "c" },
+      { label: "Accuracy is a better metric than ROC-AUC here", value: "d" }
+    ],
+    correct: "a",
+    explain: "Strong tabular baselines are strong out of the box. Tuning polishes; it rarely transforms. A tuned model that beats a fair default by a large margin should make you suspect a leak or an unfair reference, not celebrate."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "The stacked ensemble barely beat the best single model. The OOF correlation of XGB and LGBM was 0.997. Why does that explain it?",
+    options: [
+      { label: "The two boosters make nearly the same mistakes, so combining adds little", value: "a" },
+      { label: "Logistic regression cannot be used as a meta-learner", value: "b" },
+      { label: "High correlation means both models are overfitting the test set", value: "c" },
+      { label: "Stacking requires at least four base models to work", value: "d" }
+    ],
+    correct: "a",
+    explain: "Stacking's fuel is diversity (Lesson 018). Two GBDT flavours correlated at 0.997 are effectively one learner — they err together, so the meta-learner has nothing to arbitrate. Beating this baseline needs a genuinely different model class, which flat tabular data rarely offers."
+  });
+</script>
+</body>
+</html>
