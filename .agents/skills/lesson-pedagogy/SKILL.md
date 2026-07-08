@@ -52,7 +52,36 @@ reveal.
 
 Use it once or twice per lesson, on the genuinely non-obvious results — not on every table.
 
-## 3. Keep the misconceptions ledger in sync (`misconceptions.md`)
+## 3. Add one teach-back / Feynman prompt per lesson (`assets/teachback.js`)
+
+Recognition (multiple choice) is the weakest retrieval; **explaining a concept in your own words** is the
+strongest, and it trains the mission goal ("explain the full stack without hand-waving"). Once per lesson,
+on the *load-bearing* idea, make the learner write an explanation before revealing a model answer + a
+self-check list of the points a good answer hits.
+
+```html
+<div id="teachback1"></div>
+<script src="../assets/teachback.js"></script>
+<script>
+  Teachback.mount(document.getElementById("teachback1"), {
+    prompt: "In your own words: why is X true?",
+    points: ["key point 1", "key point 2", "key point 3"],
+    model: "A model answer to compare against."
+  });
+</script>
+```
+
+The reveal is gated until the learner writes something (forces an attempt). Static HTML can't grade prose,
+so the widget nudges the learner to paste their explanation to the teacher (chat) for real feedback — when
+they do, grade it and, if they can explain it cold, add the term to `GLOSSARY.md` (personal mastery log).
+
+## 4. Spaced paper flashcards (`assets/flashcards.js` + `assets/paper-deck.js`)
+
+The curriculum is paper-dense; each paper otherwise surfaces once. Add a one-claim flashcard to
+`assets/paper-deck.js` whenever a lesson assigns a **core (★) paper**. The deck is reviewed on the standalone
+`flashcards.html` page (Leitner self-rated recall). Keep one crisp claim per card; use a stable `id`.
+
+## 5. Keep the misconceptions ledger in sync (`misconceptions.md`)
 
 When a lab CHECK, warm-up, or check-in exposes a wrong belief:
 
@@ -62,13 +91,23 @@ When a lab CHECK, warm-up, or check-in exposes a wrong belief:
 3. When it is answered correctly across ≥2 spaced sessions (Leitner box ≥ 3), mark the row `retired`
    (keep it for history).
 
+## Cross-cutting artifacts to keep current
+
+- **`reference/glossary.html`** — the authoritative ubiquitous language. Every lesson must use terms
+  consistently with it; add a row when a lesson introduces a term. (`GLOSSARY.md` is the learner's separate
+  *personal mastery log* — do not conflate.)
+- **`thesis-dossier.md`** — after each lesson add one Evidence-Ledger line (FOR / BAR / AGAINST the thesis).
+  Never delete counter-evidence. This is the skeptic-facing case the mission is ultimately for.
+
 ## Verification (browser MCP down → headless)
 
-`node labs/_check_pedagogy.js` verifies pool integrity, spacing, interleaving, Leitner transitions, and
-the predict commit/reveal flow. Run it after editing any of the three assets or the pool. When browser
-MCP returns, also eyeball the warm-up + predict widgets in a lesson (per `lesson-visuals` checklist).
+`node labs/_check_pedagogy.js` verifies pool integrity, spacing, interleaving, Leitner transitions, the
+predict commit/reveal flow, the paper deck + flashcard scheduling, and the teach-back gate/self-check. Run
+it after editing any pedagogy asset, the pool, or the deck. When browser MCP returns, also eyeball the
+widgets in a lesson (per `lesson-visuals` checklist).
 
 ## Reference implementation
 
-**L019 ("When trees win")** carries both a spaced-retrieval warm-up and a prediction-before-reveal prompt
-(on the "clean features → MLP wins" result). Copy its pattern.
+**L019 ("When trees win")** carries a spaced-retrieval warm-up, a prediction-before-reveal prompt (on the
+"clean features → MLP wins" result), and a teach-back prompt (on rotational invariance). Copy its pattern.
+The paper deck is reviewed on `flashcards.html`.

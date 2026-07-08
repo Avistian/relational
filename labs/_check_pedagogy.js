@@ -48,9 +48,17 @@ function load(f) { eval(fs.readFileSync(path.join(__dirname, "..", "assets", f),
 load("retrieval-pool.js");
 load("retrieval-bank.js");
 load("predict.js");
+load("paper-deck.js");
+load("flashcards.js");
+load("teachback.js");
 const POOL = global.window.RETRIEVAL_POOL;
 const RetrievalBank = global.window.RetrievalBank;
 const Predict = global.window.Predict;
+const DECK = global.window.PAPER_DECK;
+const Flashcards = global.window.Flashcards;
+const Teachback = global.window.Teachback;
+
+function fire(el, ev) { (el.listeners[ev] || []).forEach((fn) => fn()); }
 
 let pass = true;
 function check(name, cond) { console.log((cond ? "ok  " : "FAIL") + "  " + name); if (!cond) pass = false; }
@@ -148,6 +156,65 @@ check("predict: reveal shows outcome text + miss framing", outcome._text.include
 check("predict: correct option marked truth", pOpts.find((b) => b.dataset.value === "mlp")._cls.has("truth"));
 revealBtn.click(); // idempotent
 check("predict: reveal is idempotent", outcome._text.includes("0.965"));
+
+// ---- paper deck integrity ----
+check("paper deck loaded (>= 12 cards)", Array.isArray(DECK) && DECK.length >= 12);
+const dids = DECK.map((c) => c.id);
+check("deck ids unique", new Set(dids).size === dids.length);
+check("every card has front/back/paper/year/lesson", DECK.every((c) =>
+  c.front && c.back && c.paper && c.year && c.lesson));
+
+// ---- flashcards: due queue, reveal, self-rate Leitner ----
+const fstore = memStorage();
+c = bind(makeEl("div"));
+let fres = Flashcards.mount(c, { deck: DECK, storage: fstore, now: NOW });
+check("flashcards: all fresh cards are due", fres.dueCount === DECK.length);
+let front = collect(c, "fc-front", [])[0];
+check("flashcards: first card shows a front prompt", front && front._text.length > 0);
+let showBtn = collect(c, "fc-show", [])[0];
+let back = collect(c, "fc-back", [])[0];
+check("flashcards: back hidden before Show", back.style.display === "none");
+showBtn.click();
+check("flashcards: Show reveals back + rate row", back.style.display === "" &&
+  collect(c, "fc-rate", [])[0].style.display === "");
+// the first card is the most-overdue; capture its id via stored state after rating "Got it"
+collect(c, "fc-got", [])[0].click();
+let fst = JSON.parse(fstore.getItem("rdl-flashcards"));
+let promoted = Object.keys(fst).filter((k) => fst[k].box === 2 && fst[k].due === TODAY + 1);
+check("flashcards: Got it promotes a card to box 2, due+1", promoted.length === 1);
+// rate the next card "Missed"
+collect(c, "fc-show", [])[0].click();
+collect(c, "fc-missed", [])[0].click();
+fst = JSON.parse(fstore.getItem("rdl-flashcards"));
+let missed = Object.keys(fst).filter((k) => fst[k].box === 1 && fst[k].seen === 1);
+check("flashcards: Missed keeps/returns card to box 1", missed.length >= 1);
+
+// ---- flashcards: upTo spacing filter ----
+c = bind(makeEl("div"));
+fres = Flashcards.mount(c, { deck: DECK, storage: memStorage(), now: NOW, upTo: 15 });
+check("flashcards: upTo filters to earlier lessons", fres.dueCount === DECK.filter((x) => x.lesson < 15).length);
+
+// ---- teachback: gated reveal + self-check ----
+c = bind(makeEl("div"));
+const tb = Teachback.mount(c, {
+  prompt: "Explain X.",
+  points: ["point one", "point two", "point three"],
+  model: "The model answer text.",
+});
+const ta = collect(c, "tb-input", [])[0];
+const tbReveal = collect(c, "tb-reveal", [])[0];
+check("teachback: reveal locked before writing", tbReveal.disabled === true);
+ta.value = "too short"; fire(ta, "input");
+check("teachback: still locked under minChars", tbReveal.disabled === true);
+ta.value = "This is a long enough explanation to unlock the reveal button now."; fire(ta, "input");
+check("teachback: unlocks after enough text", tbReveal.disabled === false);
+tbReveal.click();
+check("teachback: reveal shows model answer", collect(c, "tb-model", [])[0]._text.includes("model answer"));
+check("teachback: renders one checkbox per key point", collect(c, "tb-cb", []).length === 3);
+check("teachback: isRevealed() true after reveal", tb.isRevealed() === true);
+const cb0 = collect(c, "tb-cb", [])[0];
+cb0.checked = true; fire(cb0, "change");
+check("teachback: self-check counts a ticked point", collect(c, "tb-hits", [])[0]._text.includes("1 / 3"));
 
 console.log(pass ? "\nALL PEDAGOGY CHECKS PASS" : "\nPEDAGOGY CHECKS FAILED");
 process.exit(pass ? 0 : 1);

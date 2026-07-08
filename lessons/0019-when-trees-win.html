@@ -147,6 +147,13 @@
     paper: it isolates orientation as a real, exploitable property of tabular data.
   </p>
 
+  <h2>Explain it back</h2>
+  <p>
+    Rotation is the subtlest of the three, so put it in your own words before moving on — explaining is a
+    far stronger test than recognizing.
+  </p>
+  <div id="teachback-rotation"></div>
+
   <h2>On our (synthetic) data — honestly</h2>
   <p>
     These are deliberately controlled synthetic demos (Tier C — mechanism isolation), not a benchmark. Their job
@@ -237,8 +244,20 @@
 <script src="../assets/retrieval-pool.js"></script>
 <script src="../assets/retrieval-bank.js"></script>
 <script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
 <script>
   RetrievalBank.mount(document.getElementById("warmup"), { upTo: 19, count: 3 });
+
+  Teachback.mount(document.getElementById("teachback-rotation"), {
+    prompt: "In your own words: why is a tree's LACK of rotational invariance an advantage on tabular data?",
+    points: [
+      "Each column of a table is meaningful on its own (age, balance, days-late)",
+      "A tree splits on one feature (axis) at a time, so it respects those meaningful axes",
+      "A rotation-invariant MLP treats a real column and a scrambled linear mixture identically",
+      "So invariance discards the very structure that made the columns informative"
+    ],
+    model: "In a table the meaningful directions ARE the axes — each column means something by itself. A decision tree splits one feature at a time, so it exploits those axes directly. A plain MLP is approximately rotation-invariant: rotate the feature space (mix columns into linear combinations) and it learns the same function, which means it cannot distinguish a meaningful column from an arbitrary mixture — it discards the axis structure. Randomly rotating the data collapsed the tree (0.998→0.831) but left the invariant MLP unmoved (0.979→0.976)."
+  });
 
   Predict.mount(document.getElementById("predict-clean"), {
     prompt: "Before you read the table: with 0 noise features (all 10 informative), who wins — the tree or the neural net?",

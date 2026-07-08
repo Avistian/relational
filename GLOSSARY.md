@@ -1,8 +1,13 @@
-# Glossary
+# Glossary — personal mastery log
 
-Terms you've demonstrated mastery of, with a one-line definition in *your own words*.
+Terms **you've demonstrated mastery of**, with a one-line definition in *your own words*.
 The tutor adds an entry when you can explain a term cold, and re-surfaces it in retrieval
 when you've forgotten it. Newest at the bottom.
+
+> This is your *personal* log. For the **authoritative** definition of every term the course uses (the
+> ubiquitous language every lesson is consistent with), see
+> [`reference/glossary.html`](reference/glossary.html). A term graduates to this file, in your own words,
+> once you can explain it cold.
 
 | Term | Your definition | First mastered | Lesson |
 |------|-----------------|----------------|--------|

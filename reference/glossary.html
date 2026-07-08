@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reference — Glossary (ubiquitous language)</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin: 0.75rem 0 1.5rem; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.term { font-weight: 600; white-space: nowrap; }
+    td.lsn { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+    .q-head { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-top: 1.5rem; }
+    .search { font-family: var(--font-sans); font-size: 0.9rem; padding: 0.5rem 0.7rem; width: 100%; max-width: 22rem; border: 1px solid var(--border); border-radius: 5px; margin: 0.5rem 0 1rem; }
+    mark { background: #fdf0c8; }
+    code { font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Reference · ubiquitous language</p>
+  <h1>Glossary</h1>
+  <p class="subtitle">The authoritative vocabulary — one canonical definition per term · print-friendly</p>
+
+  <div class="callout">
+    <strong>Two glossaries, two jobs.</strong> <em>This page</em> is the <strong>authoritative</strong>
+    definition of every term the course uses — the "ubiquitous language" every lesson must be consistent
+    with. The workspace's <a href="../GLOSSARY.md"><code>GLOSSARY.md</code></a> is <em>your</em> personal
+    mastery log: a term moves there, in your own words, only once you can explain it cold. Consult this page
+    to settle "what does that word mean here"; grow <code>GLOSSARY.md</code> as you master terms.
+  </div>
+
+  <input class="search" id="gsearch" type="text" placeholder="Filter terms… (e.g. leakage, OOF, leaf-wise)" oninput="filterTerms(this.value)">
+
+  <h2 class="q-head">Q1 · Leakage &amp; evaluation spine (L001–L010)</h2>
+  <table>
+    <thead><tr><th>Term</th><th>Definition</th><th>Lesson</th></tr></thead>
+    <tbody>
+      <tr><td class="term">Single-table assumption</td><td>Tabular learners consume a design matrix + label vector, not raw tables, so relational data must be flattened first. The thing the RDL thesis argues throws away signal.</td><td class="lsn">001</td></tr>
+      <tr><td class="term">Design matrix (X)</td><td>The feature matrix: one row per training example, one column per feature.</td><td class="lsn">002</td></tr>
+      <tr><td class="term">Label vector (y)</td><td>The target aligned row-for-row with X — what the model predicts.</td><td class="lsn">002</td></tr>
+      <tr><td class="term">Temporal leakage</td><td>Any feature that encodes information unavailable at the prediction cutoff time; makes offline scores fantasy.</td><td class="lsn">001</td></tr>
+      <tr><td class="term">Point-in-time (PIT)</td><td>Building each row's features using only events strictly before its cutoff timestamp — the structural defence against temporal leakage.</td><td class="lsn">002</td></tr>
+      <tr><td class="term">Stratified split</td><td>A train/test split that preserves the class prevalence in each part.</td><td class="lsn">003</td></tr>
+      <tr><td class="term">Cross-validation (CV)</td><td>Repeatedly hold out a fold, train on the rest; average the held-out scores. Fit only on the training portion of each fold.</td><td class="lsn">003</td></tr>
+      <tr><td class="term">Grouped CV</td><td>CV where all rows of an entity (customer, patient) stay together in one fold, so the model can't memorise an entity seen in training.</td><td class="lsn">004</td></tr>
+      <tr><td class="term">Nested CV</td><td>An inner CV selects hyperparameters; an outer CV scores the whole selection procedure. The honest estimate of tuned performance.</td><td class="lsn">004</td></tr>
+      <tr><td class="term"><code>best_score_</code></td><td>A grid search's best <em>validation</em> score — optimistic, because it was chosen using that same validation data (selection bias). Not a training score.</td><td class="lsn">004</td></tr>
+      <tr><td class="term">Pipeline (fit scope)</td><td>A container that fits every data-learning step (scaler, encoder, selector) on the training portion of each fold — never on all data before splitting.</td><td class="lsn">005</td></tr>
+      <tr><td class="term">MCAR / MAR / MNAR</td><td>Missingness mechanisms: Completely At Random; At Random given observed X; Not At Random (depends on the unobserved value itself).</td><td class="lsn">006</td></tr>
+      <tr><td class="term">Missingness indicator</td><td>A binary "was-missing" feature; preserves the pattern that imputation alone erases (essential under MNAR).</td><td class="lsn">006</td></tr>
+      <tr><td class="term">Class imbalance</td><td>A skewed positive rate; makes accuracy misleading (the accuracy paradox) and shifts the decision threshold.</td><td class="lsn">007</td></tr>
+      <tr><td class="term">SMOTE</td><td>Synthetic minority oversampling; must run <em>inside</em> the CV fold or it leaks.</td><td class="lsn">007</td></tr>
+      <tr><td class="term">ROC-AUC</td><td>Ranking quality via TPR vs FPR; no-skill baseline 0.5; optimistic under imbalance.</td><td class="lsn">008</td></tr>
+      <tr><td class="term">PR-AUC</td><td>Precision vs recall; no-skill baseline = <strong>prevalence</strong>; the honest lens on rare positives.</td><td class="lsn">008</td></tr>
+      <tr><td class="term">Calibration / Brier</td><td>Whether predicted probabilities match observed frequencies (reliability curve); Brier = MSE of probability vs outcome. Calibrator fit on held-out data.</td><td class="lsn">008</td></tr>
+      <tr><td class="term">Target encoding</td><td>Replacing a category by its mean target; must be out-of-fold or it leaks the label.</td><td class="lsn">009</td></tr>
+      <tr><td class="term">Leakage spine</td><td>The Q1 checklist of leakage sources (PIT, split, pipeline scope, resampling, encoding) a reproducible baseline must clear.</td><td class="lsn">010</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="q-head">Q2 · Trees, boosting, ensembling (L011–L020)</h2>
+  <table>
+    <thead><tr><th>Term</th><th>Definition</th><th>Lesson</th></tr></thead>
+    <tbody>
+      <tr><td class="term">Decision tree</td><td>A learner that recursively partitions feature space with axis-aligned splits into piecewise-constant regions.</td><td class="lsn">011</td></tr>
+      <tr><td class="term">Gini impurity</td><td><code>1 − p² − (1−p)²</code>: the chance two random draws from a node differ in label.</td><td class="lsn">011</td></tr>
+      <tr><td class="term">Split gain</td><td>Impurity drop from a split = parent impurity − weighted children impurity (regularized form subtracts a γ toll).</td><td class="lsn">011</td></tr>
+      <tr><td class="term">Bagging</td><td>Bootstrap-aggregating: average many trees on resampled data; variance falls ~1/B.</td><td class="lsn">012</td></tr>
+      <tr><td class="term">Random Forest</td><td>Bagging + random feature subsets per split; OOB score estimates test error for free.</td><td class="lsn">012</td></tr>
+      <tr><td class="term">OOB (out-of-bag)</td><td>Rows not in a tree's bootstrap sample; used to score that tree without a separate holdout.</td><td class="lsn">012</td></tr>
+      <tr><td class="term">Boosting</td><td>Fit each new learner to the residuals/gradients of the current ensemble; a stagewise additive model.</td><td class="lsn">013</td></tr>
+      <tr><td class="term">Shrinkage (learning rate η)</td><td>Scale each boosting step down so more, smaller steps generalise better.</td><td class="lsn">013</td></tr>
+      <tr><td class="term">Gradient / hessian (g, h)</td><td>First/second derivatives of the loss w.r.t. the current model score F, recomputed each round.</td><td class="lsn">014</td></tr>
+      <tr><td class="term">Regularized objective (XGBoost)</td><td>Loss + Ω = γT + ½λ‖w‖²; penalises leaf count and leaf-weight magnitude.</td><td class="lsn">014</td></tr>
+      <tr><td class="term">Leaf weight <code>w*</code></td><td>Closed-form optimum <code>w* = −G / (H + λ)</code>; λ shrinks it toward zero.</td><td class="lsn">014</td></tr>
+      <tr><td class="term">Histogram splits</td><td>Bin features once, split on bins — the speedup that made modern GBDTs fast (XGBoost-<code>hist</code>, LightGBM).</td><td class="lsn">015</td></tr>
+      <tr><td class="term">Leaf-wise growth</td><td>Grow the best-gain leaf next (best-first), so <code>num_leaves</code> — not <code>max_depth</code> — is the primary capacity knob.</td><td class="lsn">015</td></tr>
+      <tr><td class="term">GOSS</td><td>Gradient-based One-Side Sampling: keep large gradients, sample the rest, amplify the sample by <code>(1−a)/b</code> to stay unbiased.</td><td class="lsn">015</td></tr>
+      <tr><td class="term">EFB</td><td>Exclusive Feature Bundling: pack mutually-exclusive sparse features into one, shrinking the feature count.</td><td class="lsn">015</td></tr>
+      <tr><td class="term">Ordered target statistics</td><td>CatBoost's leak-free category encoding: encode row i from its permutation prefix + a prior, never its own label.</td><td class="lsn">016</td></tr>
+      <tr><td class="term">Ordered boosting</td><td>Compute a row's gradient from a model that never saw that row — kills prediction shift.</td><td class="lsn">016</td></tr>
+      <tr><td class="term">Oblivious tree</td><td>A symmetric tree using the same split across a whole level (a decision table); regularized and fast (CatBoost).</td><td class="lsn">016</td></tr>
+      <tr><td class="term">Grid vs random search</td><td>At equal budget under low effective dimensionality, random search tries ~n distinct values on the key axis vs a grid's √n — so it wins.</td><td class="lsn">017</td></tr>
+      <tr><td class="term">Low effective dimensionality</td><td>Only a few hyperparameters actually matter; the premise that makes random search beat grid.</td><td class="lsn">017</td></tr>
+      <tr><td class="term">Stacking</td><td>A meta-learner trained on base-model predictions; must use out-of-fold preds or it leaks.</td><td class="lsn">018</td></tr>
+      <tr><td class="term">Out-of-fold (OOF) meta-features</td><td>Base predictions for a row made by models that didn't train on it — the honest input to a stack.</td><td class="lsn">018</td></tr>
+      <tr><td class="term">Blending</td><td>Simple (often averaged) combination of base models; weaker than stacking but needs no meta-learner.</td><td class="lsn">018</td></tr>
+      <tr><td class="term">Inductive bias</td><td>The kind of function a learner reaches for first: trees → axis-aligned piecewise-constant; MLP → smooth, rotation-invariant.</td><td class="lsn">019</td></tr>
+      <tr><td class="term">Rotational invariance</td><td>Learning the same thing under a rotation of feature space; a virtue on images, a <em>weakness</em> on tables where columns are individually meaningful.</td><td class="lsn">019</td></tr>
+      <tr><td class="term">Fair-comparison contract</td><td>Fix data, split, metric, tuning budget, and preprocessing scope up front; report the verdict + gap honestly. The reviewer stance from the Q2 checkpoint.</td><td class="lsn">020</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Thesis vocabulary (used from Year 1, defined in full later).</strong> <em>Relational deep
+    learning (RDL)</em> — learning directly over a database's entity graph rather than a flattened table.
+    <em>Relational entity graph (REG)</em> — the graph whose nodes are rows and edges are foreign keys.
+    <em>Message passing</em> — how a GNN propagates information along those edges. These get their own
+    entries when their lessons land (Year 3+); listed here so usage stays consistent from the start.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="curriculum.html">Full curriculum</a></li>
+      <li><a href="../GLOSSARY.md">Your personal mastery log (GLOSSARY.md)</a></li>
+    </ul>
+  </nav>
+</article>
+<script>
+  function filterTerms(q) {
+    q = (q || "").trim().toLowerCase();
+    document.querySelectorAll("table tbody tr").forEach(function (tr) {
+      var text = tr.textContent.toLowerCase();
+      tr.style.display = (!q || text.indexOf(q) >= 0) ? "" : "none";
+    });
+  }
+</script>
+</body>
+</html>
