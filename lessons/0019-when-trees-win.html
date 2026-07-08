@@ -53,6 +53,13 @@
     columns — three things a plain neural net does badly.
   </div>
 
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — retrieval (even failed) encodes far better than re-reading.
+  </p>
+  <div id="warmup"></div>
+
   <h2>What "inductive bias" means here</h2>
   <p>
     Every learner has an <strong>inductive bias</strong>: the kind of function it reaches for first, before the
@@ -102,6 +109,7 @@
     Here is the honest picture. Start from an informative 10-feature classification task and keep adding pure-noise
     columns (same RF vs MLP, test accuracy):
   </p>
+  <div id="predict-clean"></div>
   <table>
     <thead><tr><th>noise features added</th><th>total features</th><th>tree (RF)</th><th>neural net (MLP)</th><th>gap</th></tr></thead>
     <tbody>
@@ -226,7 +234,22 @@
 
 <script src="../assets/quiz.js"></script>
 <script src="../assets/biases-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
 <script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 19, count: 3 });
+
+  Predict.mount(document.getElementById("predict-clean"), {
+    prompt: "Before you read the table: with 0 noise features (all 10 informative), who wins — the tree or the neural net?",
+    options: [
+      { label: "The neural net (MLP) wins", value: "mlp" },
+      { label: "The tree ensemble (RF) wins", value: "tree" }
+    ],
+    correct: "mlp",
+    reveal: "The MLP won 0.965 vs 0.936. Neural nets are not weak — the tree's edge only appears once uninformative columns pile up. That is the honest half of the story."
+  });
+
   BiasesViz.mount(document.getElementById("biases-viz"), {
     caption: "Irregular target: pick a tile count — the tree carves every cell (sharp), the smooth-biased net (blurred board) loses the fine structure. Rotate the board: axis-aligned, the tree’s splits fit the XOR exactly; rotated, it must staircase the diagonal and collapses, while the rotation-invariant net is unchanged."
   });
