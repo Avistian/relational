@@ -264,6 +264,32 @@
       ],
       correct: "a",
       explain: "Columns like age or balance mean something individually; a tree splits on single axes to exploit that, while a rotation-invariant MLP can't tell a real column from a scrambled mixture."
+    },
+
+    // ---- Q3: evaluation rigor & benchmark literacy ----
+    {
+      id: "l021-temporal", lesson: 21, quarter: "Q3", concept: "temporal-split", misconception: true,
+      question: "On time-ordered, drifting data, why does a random split report an optimistic score?",
+      options: [
+        { label: "It puts deployment-period rows into the training folds", value: "a" },
+        { label: "It shrinks the training set below a usable size", value: "b" },
+        { label: "It changes the scoring metric to PR-AUC quietly", value: "c" },
+        { label: "It always selects too few cross-validation folds", value: "d" }
+      ],
+      correct: "a",
+      explain: "A random split scatters test rows across all time, so training folds share the deployment period; under drift the model learns the current rule it is scored on (random-CV 0.846 vs temporal 0.758)."
+    },
+    {
+      id: "l021-timeseriessplit", lesson: 21, quarter: "Q3", concept: "timeseries-cv",
+      question: "How does TimeSeriesSplit differ from a shuffled KFold?",
+      options: [
+        { label: "Each fold trains on the past, tests on the next block", value: "a" },
+        { label: "It stratifies every fold to the base positive rate", value: "b" },
+        { label: "It resamples the minority class within each fold", value: "c" },
+        { label: "It fits the scaler once on the whole dataset first", value: "d" }
+      ],
+      correct: "a",
+      explain: "TimeSeriesSplit is an expanding window: every fold trains on an earlier block and validates on the next, never shuffling, so it cannot leak the future into training."
     }
   ];
 })(window);
