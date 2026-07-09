@@ -41,6 +41,12 @@ Status legend: **active** = still re-testing · **retired** = answered correctly
 | M16 | L018 | Averaging/stacking base models always improves the score | Only with **diverse** bases and enough data; on a 1000-row single table the gain was +0.001, and stacking on **in-sample** base preds leaks (crowns the memorizer) — use **out-of-fold** meta-features | active |
 | M17 | L019 | "Trees always win on tabular data" | With clean, all-informative, smooth features the MLP won; trees win because *typical* tabular data has irregular targets + junk features + meaningful orientation **at once** | active |
 
+## Q3 (Lessons 021–030)
+
+| # | Lesson | Wrong belief | Correct belief | Status |
+|---|--------|--------------|----------------|--------|
+| M18 | L021 | A random (shuffled) split is the default-safe way to evaluate any tabular model | On time-ordered / drifting data a random split leaks the deployment period into training and is **optimistic** (random-CV 0.846 vs temporal 0.758); use a **temporal split** (train past → test future) / `TimeSeriesSplit` whenever a time order or drift exists — assume temporal until you can argue the rows are truly i.i.d. | active |
+
 ---
 
 *Seeded 2026-07-08 from learning records 0001–0051. Add new rows as misconceptions surface; keep the

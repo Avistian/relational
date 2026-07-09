@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 021 — Data Splits in the Wild</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* temporal-split-viz */
+    .temporal-split-viz, .drift-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tsv-svg, .dv-svg { display: block; max-width: 600px; margin: 0.25rem auto; }
+    .tsv-title, .dv-axis { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .tsv-axis, .tsv-legend, .dv-tick, .dv-mini { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); }
+    .tsv-controls, .dv-controls { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin: 0.4rem 0; }
+    .tsv-btn { font-size: 0.8rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); cursor: pointer; font-family: var(--font-sans); }
+    .tsv-readout, .dv-readout { font-size: 0.86rem; margin: 0.5rem 0; line-height: 1.5; }
+    .dv-slider { vertical-align: middle; }
+    .dv-label { font-family: var(--font-sans); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>Data Splits in the Wild</h1>
+  <p class="subtitle">Lesson 021 · Phase 1 · Q3 opener · ~40 min · <em>previews TabReD (Rubachev et al. 2024)</em></p>
+
+  <p>
+    Q2 ended with the <a href="0020-q2-checkpoint.html">fair-comparison contract</a>: to compare two models
+    honestly you fix the <em>data</em>, the <em>split</em>, the <em>metric</em>, the <em>tuning budget</em>, and
+    the <em>preprocessing scope</em> up front. Q3 is about making each of those rigorous. This lesson takes the
+    one that quietly decides whether your whole evaluation is real or a mirage: <strong>the split</strong>. Its
+    single skill: <strong>recognize when a random (i.i.d.) split leaks the future and inflates your reported
+    score, and build a temporal split — train on the past, test on the future — that measures what deployment
+    actually faces.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A random train/test split assumes the rows are interchangeable; when the data
+    has a time order and the world drifts, that assumption puts the future in your training set, so the number you
+    report is optimistic — a temporal split forbids the peek and tells you the truth.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — retrieval (even failed) encodes far better than re-reading.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Every random split makes one assumption</h2>
+  <p>
+    <code>train_test_split(..., shuffle=True)</code> and <code>KFold(shuffle=True)</code> are the reflex of every
+    tabular pipeline, and they carry a hidden premise: the rows are <strong>i.i.d.</strong> — independent and
+    identically distributed, hence <em>exchangeable</em>. Under that premise, which rows land in test versus train
+    genuinely does not matter, so a random draw is the fair one. That premise is often <em>false</em> in
+    production. Data arrives over <strong>time</strong>, and the world it measures <strong>drifts</strong>: prices
+    move, fraud tactics evolve, user tastes shift, a pricing rule changes at a fixed date. Rows from March are not
+    exchangeable with rows from December.
+  </p>
+  <p>
+    When you deploy a model, it is always trained on the <em>past</em> and asked to predict the <em>future</em>.
+    A random split breaks that arrow of time: it sprinkles test rows uniformly across the whole history, so a test
+    row from December can sit right next to training rows from the same December. The model gets to train on the
+    period it is scored on. That is not the situation it will face in production — and it makes the model look
+    better than it is.
+  </p>
+
+  <h2>See it: random scatters, temporal cuts once</h2>
+  <p>
+    Below is the <em>same</em> stream of rows, ordered oldest→newest, split two ways. The top strip is a random
+    20% holdout; the bottom is a temporal one. Watch where the red test rows land. (Reshuffle the random split a
+    few times — the story never changes.)
+  </p>
+
+  <div id="temporal-split-viz"></div>
+
+  <p>
+    In the random strip, test rows are salted through <em>every</em> period, so for almost every test row there is
+    a training row from the same week — the model has effectively seen the neighbourhood of the answer. In the
+    temporal strip there is a single cut: everything left of the dashed line is train (the past), everything right
+    is test (the future). The model must <em>extrapolate forward</em> into a period it never touched. Only the
+    second picture matches deployment.
+  </p>
+
+  <h2>Why a random split flatters your model</h2>
+  <p>There are three distinct ways the random split leaks, and it is worth naming them separately:</p>
+  <ul>
+    <li><strong>Concept drift.</strong> The relationship between features and label changes over time. A random
+      split lets the model learn the <em>current</em> relationship from test-period training rows; a temporal
+      split forces it to rely on a possibly-stale relationship learned from the past. This is the big one, and the
+      one we visualize next.</li>
+    <li><strong>Temporal autocorrelation / near-duplicates.</strong> Consecutive rows are often near-copies (the
+      same sensor two seconds later, the same customer next day). A random split scatters near-duplicate pairs
+      across train and test, so the model can nearly <em>memorize</em> a test row from its train-set twin — a leak
+      even when nothing drifts. (TabReD flags the popular <code>electricity</code> dataset for exactly this.)</li>
+    <li><strong>Point-in-time feature leakage.</strong> Features computed over a window that straddles the cutoff
+      encode the future — the same <a href="0002-design-matrix-leakage.html">design-matrix leak</a> from L002, now
+      at the split level.</li>
+  </ul>
+
+  <h2>Concept drift, made visible</h2>
+  <p>
+    Here is the drift in our synthetic stream (the lab builds it). The rule that generates the label
+    <em>rotates</em> over time: early rows are labelled mostly by feature <code>x0</code>, late rows mostly by
+    <code>x1</code>, while <code>x2</code> stays a steady minor signal. The bars are the real correlation of each
+    feature with the label in five equal time buckets; the dial on the right is the direction of the decision rule
+    the model must learn. Drag the slider through time.
+  </p>
+
+  <div id="drift-viz"></div>
+
+  <p>
+    The base rate barely moves (prevalence stays ≈ 0.50 in every bucket), so this is <em>pure concept drift</em>,
+    not a shifting class balance — the <em>rule</em> changes, not how many positives there are.
+    <code>corr(x0,&nbsp;y)</code> decays from <strong>+0.72</strong> to <strong>+0.12</strong> while
+    <code>corr(x1,&nbsp;y)</code> climbs from <strong>+0.10</strong> to <strong>+0.71</strong>. A model that
+    trained only on the early buckets learned to <em>trust x0</em> — exactly the wrong instinct by the late
+    period. A random split hides this because its training folds contain late-bucket rows too; a temporal split
+    exposes it in full.
+  </p>
+
+  <h2>How big is the lie? Predict first</h2>
+  <p>
+    We trained a plain logistic regression on this stream two ways: a random 5-fold CV (<code>shuffle=True</code>)
+    and a temporal holdout (train on the first 80% of time, test on the last 20%). Same data, same model, same
+    metric (accuracy). Commit a guess before you see the numbers.
+  </p>
+  <div id="predict-gap"></div>
+
+  <table>
+    <thead><tr><th>Model</th><th>Random 5-fold CV</th><th>TimeSeriesSplit CV</th><th>Temporal holdout (last 20%)</th><th>Optimism gap</th></tr></thead>
+    <tbody>
+      <tr><td>Logistic regression</td><td class="n bad">0.846</td><td class="n">0.819</td><td class="n win">0.758</td><td class="n">+0.088</td></tr>
+      <tr><td>HistGradientBoosting</td><td class="n bad">0.832</td><td class="n">0.809</td><td class="n win">0.757</td><td class="n">+0.076</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the ordering carefully — it is the whole lesson in one row. <strong>Random CV (0.846)</strong> is the
+    most optimistic: its training folds are contaminated with the deployment period.
+    <strong>Temporal holdout (0.758)</strong> is the harshest and most honest: it is scored entirely on the
+    most-drifted final period, using only earlier data. Reporting the random number would have over-promised
+    deployment accuracy by <strong>~9 points</strong> — the kind of gap that turns a "ship it" into an incident.
+    Notice the gap is <em>smaller</em> for the flexible booster only because it fit the training period a little
+    less confidently here; drift punishes both model classes.
+  </p>
+
+  <h2>The honest CV: TimeSeriesSplit</h2>
+  <p>
+    A single temporal holdout wastes data and gives one noisy number. The cross-validated version is
+    <strong>time-series CV</strong> (sklearn's <code>TimeSeriesSplit</code>): an <em>expanding window</em> where
+    every fold trains on a block of the past and validates on the block immediately after it — never the reverse.
+  </p>
+  <pre style="font-family: var(--font-mono); font-size: 0.8rem; background: var(--bg-soft); padding: 0.8rem; border-radius: 6px; overflow-x:auto;">fold 1:  train [■■□□□□]  test [■]        # rows are TIME-ORDERED, never shuffled
+fold 2:  train [■■■□□□]  test [■]
+fold 3:  train [■■■■□□]  test [■]
+fold 4:  train [■■■■■□]  test [■]</pre>
+  <p>
+    It landed at <strong>0.819</strong> — between the optimistic random CV and the single last-block holdout,
+    because its earlier folds test on <em>less-drifted</em> periods while the final holdout tests only on the
+    hardest one. Two rules travel with it: <strong>(1)</strong> your <em>validation</em> slice for tuning and early
+    stopping must also be temporal (a random validation fold leaks the future into model selection — the same
+    <a href="0004-grouped-nested-cv.html">selection-bias</a> trap as L004, now on the time axis); and
+    <strong>(2)</strong> if the same entity recurs over time (a customer, a device), you may need <em>grouped and
+    temporal</em> splits together, so no entity straddles the cut.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>
+    This is the load-bearing idea of the lesson — put it in your own words before moving on. Explaining is a far
+    stronger test than recognizing.
+  </p>
+  <div id="teachback-optimism"></div>
+
+  <h2>Which split is the honest one?</h2>
+  <table>
+    <thead><tr><th>Situation</th><th>Honest split</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Rows have a timestamp; you predict the future</td><td class="win">Temporal</td><td>Deployment always trains on past, scores on future — the split must mirror that.</td></tr>
+      <tr><td>The world drifts (prices, fraud, tastes, rules)</td><td class="win">Temporal</td><td>Random CV hides drift by leaking the current rule into training.</td></tr>
+      <tr><td>The same entity recurs over time</td><td class="win">Grouped + temporal</td><td>Stops an entity's future rows teaching its past — combines L004 with the time axis.</td></tr>
+      <tr><td>Genuinely i.i.d., no time order, no repeats</td><td>Random (stratified)</td><td>Rows are exchangeable, so a random draw is the fair one — use stratified for rare labels (L003).</td></tr>
+      <tr><td>No timestamp, but you suspect time matters</td><td class="win">Find a proxy order</td><td>An ID that increments with time, a file's natural order — anything beats pretending it is i.i.d.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The default reflex should flip: <em>assume temporal until you can argue the rows are truly exchangeable</em>,
+    not the other way around. If a dataset has no timestamp, that is a limitation to note (and TabReD's central
+    complaint about academic benchmarks), not a license to shuffle.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> Time-respecting evaluation is not a footnote for the relational thesis — it is
+    load-bearing. Relational Deep Learning builds a <em>temporal</em> entity graph and RelBench scores every task
+    with a strict time cutoff (Fey et al. 2024), precisely because relational features (a customer's past orders,
+    a device's event history) are point-in-time by construction. And TabReD (Rubachev et al. 2024) shows on real
+    industrial data that switching from random to time-based splits <em>"leads to significant differences in
+    rankings and relative performance of methods… XGBoost's performance margin diminishes,"</em> and that random
+    splits <em>"could present overly optimistic performance estimates."</em> So this is both the <em>split</em> leg
+    of the fair-comparison contract and the reason claim <strong>C3</strong> (the RDL gain must survive honest
+    temporal evaluation) is where the thesis is won or lost. A relational win under a random split would prove
+    nothing.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>A temporal split is harder <em>and</em> smaller.</strong> You train on less data and test on the
+      most-shifted period, so scores drop — that is the point, not a bug. Do not "fix" it by shuffling.</li>
+    <li><strong>Random is not always wrong.</strong> For truly static, order-free tables (many UCI classics), a
+      stratified random split is correct and a temporal one is impossible. The skill is knowing <em>which world
+      you are in</em>.</li>
+    <li><strong>Drift ≠ imbalance.</strong> Our prevalence was flat; the leak came from the <em>rule</em> moving.
+      Watch for both — a shifting base rate is a second, separate kind of drift.</li>
+    <li><strong>Tune on a temporal validation slice.</strong> A perfect test split with a random <em>validation</em>
+      split still leaks the future into hyperparameter choice and early stopping.</li>
+    <li><strong>This is a controlled demo.</strong> The synthetic stream isolates concept drift so you can see the
+      mechanism; the rigorous evidence is TabReD on eight real industrial datasets (your primary reading).</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Two sources, in order. First, accessible: <strong>Chip Huyen, <em>Designing Machine Learning Systems</em>
+    (2022)</strong> — the sections on <em>train/validation/test splits</em> and <em>data distribution shifts</em>
+    (Ch. 4 &amp; Ch. 8). Then the empirical anchor: <strong>Rubachev et al. (2024), <em>TabReD: Analyzing Pitfalls
+    and Filling Gaps in Tabular Deep Learning Benchmarks</em></strong> —
+    <a href="https://arxiv.org/abs/2406.19380">arXiv:2406.19380</a>. Read the <strong>abstract and §1</strong>
+    (why temporal splits, why timestamp metadata is missing from benchmarks) and skim <strong>§5.4</strong> (random
+    vs time-based splits change rankings and shrink XGBoost's margin). You will meet TabReD again as a core paper in
+    Year 2; today it is the real-world proof of the mechanism you just built by hand.
+  </p>
+
+  <h2>Lab — build the optimism gap yourself</h2>
+  <p>
+    Notebook <code>0021-data-splits-in-the-wild.ipynb</code>: generate the drifting stream, then measure the same
+    model under a random 5-fold CV, a <code>TimeSeriesSplit</code>, and a temporal holdout, and watch the gap open.
+    You implement the temporal cut, the time-series CV call, and the per-bucket drift diagnostic; the stream
+    generator and scoring are provided. Reproduction target: the table above (random ≈ 0.846, temporal ≈ 0.758).
+    <a href="../labs/html/0021-data-splits-in-the-wild.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Not sure why <code>TimeSeriesSplit</code> lands between the random and temporal numbers, or when a random split
+    is actually the honest one? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0020-q2-checkpoint.html">← Lesson 020</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0021-data-splits-in-the-wild.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/temporal-split-viz.js"></script>
+<script src="../assets/drift-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 21, count: 3 });
+
+  TemporalSplitViz.mount(document.getElementById("temporal-split-viz"), {});
+
+  DriftViz.mount(document.getElementById("drift-viz"), {});
+
+  Predict.mount(document.getElementById("predict-gap"), {
+    prompt: "Same model, same data. Which reported accuracy is higher — the random 5-fold CV or the temporal holdout on the last 20%?",
+    options: [
+      { label: "The random 5-fold CV is higher", value: "random" },
+      { label: "The temporal holdout is higher", value: "temporal" }
+    ],
+    correct: "random",
+    reveal: "Random CV read 0.846; the temporal holdout was 0.758 — an 0.088 optimism gap. Random CV trains on the deployment period, so it flatters the model by ~9 points."
+  });
+
+  Teachback.mount(document.getElementById("teachback-optimism"), {
+    prompt: "In your own words: why does a random split report a higher score than a temporal split when the data drifts over time?",
+    points: [
+      "A random split scatters test rows across the whole timeline",
+      "So training folds contain rows from the same (deployment) period as the test rows",
+      "Under drift the feature→label rule changes, so seeing the current period during training is a real advantage",
+      "A temporal split forbids that: train = past, test = future, matching deployment",
+      "Hence the random number is optimistic; the temporal number is the honest deployment estimate"
+    ],
+    model: "A random split assumes rows are exchangeable, so it puts test rows in every time period — and therefore puts training rows in the same period as each test row. When the world drifts, the rule mapping features to the label is different in the test period than in the past; a random split lets the model learn that current rule from contemporaneous training rows, which is exactly the peek deployment never gets. A temporal split trains only on the past and tests only on the future, so the model must extrapolate through the drift. That is why random CV read 0.846 while the temporal holdout read 0.758 — the 0.088 gap is the size of the illusion."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why can a random train/test split overstate a model's real-world accuracy on time-ordered data?",
+    options: [
+      { label: "It places test-period rows into the training folds too", value: "a" },
+      { label: "It always uses too few cross-validation folds", value: "b" },
+      { label: "It shrinks the training set below a usable size", value: "c" },
+      { label: "It changes the metric from accuracy to PR-AUC", value: "d" }
+    ],
+    correct: "a",
+    explain: "A random split scatters test rows across all time, so training folds include rows from the deployment period. Under drift the model learns the current rule it will be scored on — a peek deployment never gets. Here random CV 0.846 vs temporal 0.758."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "How does TimeSeriesSplit differ from an ordinary shuffled KFold?",
+    options: [
+      { label: "Each fold trains on past blocks and tests on the next", value: "a" },
+      { label: "It stratifies every fold to the base positive rate", value: "b" },
+      { label: "It resamples the minority class inside each fold", value: "c" },
+      { label: "It fits the scaler once on the entire dataset", value: "d" }
+    ],
+    correct: "a",
+    explain: "TimeSeriesSplit is an expanding window: every fold trains on an earlier block and validates on the block immediately after, never shuffling. It respects the arrow of time, so it cannot leak the future into training."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "In our drifting stream, prevalence stayed near 0.50 in every bucket. What does that tell you?",
+    options: [
+      { label: "The rule drifted, not the class balance — pure concept drift", value: "a" },
+      { label: "There was no drift at all, so random splits are fine", value: "b" },
+      { label: "The dataset was perfectly balanced by oversampling", value: "c" },
+      { label: "The features were rescaled to unit variance per bucket", value: "d" }
+    ],
+    correct: "a",
+    explain: "A flat base rate rules out a shifting class balance. The leak came from the feature→label rule rotating over time (corr(x0,y) 0.72→0.12, corr(x1,y) 0.10→0.71) — concept drift, which a random split masks."
+  });
+</script>
+</body>
+</html>

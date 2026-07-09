@@ -155,6 +155,18 @@
 - Next: **Lesson 020 = Q2 checkpoint** (Chen 2016 + Ke 2017; match/beat a published tree baseline). Do not advance past it without passing.
 - **Per-lesson decomposition built (2026-07-07):** created [`plan/`](plan/README.md) — turnkey per-lesson specs (skill · paper §· lab crucial fragment · viz · bridge) for **every lesson 031–240**, so future sessions build lessons without re-scoping from papers. Six per-year files + README schema. Recent Y2/Y4/Y5 frontier papers verified via **user-arxiv MCP** before writing (RelGNN, RelGT, Desired-graph, Universal Row Encoder, ContextGNN, RDL survey, RelBench v1/v2, Zahradník, Griffin, RDB-PFN, RDBLearn, RT, OpenRFM, KumoRFM-2, RelGT-AC, GelGT, TabICLv2, BeyondArena, temporal-shift, Operational TTF, Cvitkovic, 4DBInfer). Collapsed CURRICULUM ranges (Y3 111–114, Y4 151–154, Y5 192–194, Y6 211–218 & 231–234) expanded into individual lessons. Linked from `CURRICULUM.md`. Record: [[learning-records/0049-lesson-plan-decomposition.md]]. **Rule going forward:** read the `plan/` entry before building any lesson 031+; it's a starting contract, update it if a live reproduction reveals a better framing.
 
+## Session 22 — 2026-07-09
+
+- **Lesson 020 complete** — "lesson/lab 20 done" (no EXIT ticket pasted → no rubric score; record [[learning-records/0055-lesson-020-complete.md]]). Q2 (011–020) closed.
+- **Lesson 021 published — Q3 opener** — Data splits in the wild (curriculum lec 021). Single skill: spot when a random (i.i.d.) split leaks the future and build a **temporal split** (train past → test future) + `TimeSeriesSplit`. Primary: Huyen (splits + distribution shift) + **TabReD preview** (Rubachev 2024, `2406.19380`; abstract fetched from arxiv.org — arxiv MCP down, OpenML blocked by egress). Record: [[learning-records/0056-lesson-021-published.md]].
+- **Two new reusable viz (standard #9):** `assets/temporal-split-viz.js` (random-scatter vs temporal-cut of the same stream, side by side) and `assets/drift-viz.js` (per-bucket corr bars + rotating rule dial). Headless-verified `labs/_viz_check_l021.js` 14/14; **browser MCP still unavailable**.
+- **Verified live (`labs/_verify_l021.py` + executed solution, synthetic Tier-C drifting stream, seed 0):** logistic random-CV **0.846** · TimeSeriesSplit **0.819** · temporal-HO **0.758** (gap **+0.088**); hist_gbdt 0.832 · 0.809 · 0.757 (gap +0.076); drift corr(x0,y) +0.72→+0.12, corr(x1,y) +0.10→+0.71, prevalence flat → **pure concept drift**. Ordering random-CV > TimeSeriesSplit > temporal-HO is the lesson in one row.
+- **Dataset call:** OpenML unreachable (egress: arxiv allowed, openml blocked) + no cache → Tier-C synthetic (mechanism isolation, like L019). TabReD flags `electricity` as leaky anyway, so synthetic was the right call. Documented in the lab intro.
+- **Artifacts synced:** retrieval-pool +2 (`l021-temporal` [misconception], `l021-timeseriessplit`); paper-deck +1 (`rubachev2024`); **M18** in misconceptions (new Q3 section); thesis-dossier +1 (BAR+FOR, C3/C1); `reference/glossary.html` +Q3 section. `node labs/_check_pedagogy.js` clean.
+- **Lab:** `labs/0021-data-splits-in-the-wild.ipynb` — Tier-C self-contained (no relkit; concept lab), 3 TODO (temporal cut · `TimeSeriesSplit` · per-bucket corr) + stretch. Student blank (9 `____`, 0 outputs); solution executed clean & gitignored. Manifest → 21 (quarter 3); all labs re-rendered.
+- **Env note:** no `python3-venv`/uv preinstalled this session; installed `uv` via curl and built `.venv` (sklearn 1.9.0, pandas 3.0.3, numpy 2.5.1). Env-setup agent should preinstall the lab venv + deps so future sessions skip this.
+- Next: Lesson 022 (label leakage patterns — Kapoor & Narayanan 2022, `2207.07048`).
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -215,6 +227,7 @@ Track with ✓ as completed:
 - [x] Y1: Bergstra & Bengio 2012 §1 (random search / low effective dimensionality) assigned in Lesson 017 (grid vs random + nested CV implemented in lab)
 - [x] Y1: Wolpert 1992 §1–3 (stacked generalization / out-of-fold meta-features) assigned in Lesson 018 (OOF blend + leak contrast + StackingClassifier in lab)
 - [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019 (three-bias synthetic demos in lab); full §5 benchmark reproduction still pending in Q3 (lec 024–027)
+- [~] Y1/Y2: Rubachev 2024 (TabReD, `2406.19380`) — abstract + §1 + §5.4 previewed in Lesson 021 (random vs temporal splits; optimism gap synthetic demo in lab); full core read is Y2 lec 055
 - [ ] Y1: Fey 2024 §1
 - [x] Y1: Fey 2024 §1 assigned in Lesson 001
 
