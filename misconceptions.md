@@ -46,6 +46,7 @@ Status legend: **active** = still re-testing · **retired** = answered correctly
 | # | Lesson | Wrong belief | Correct belief | Status |
 |---|--------|--------------|----------------|--------|
 | M18 | L021 | A random (shuffled) split is the default-safe way to evaluate any tabular model | On time-ordered / drifting data a random split leaks the deployment period into training and is **optimistic** (random-CV 0.846 vs temporal 0.758); use a **temporal split** (train past → test future) / `TimeSeriesSplit` whenever a time order or drift exists — assume temporal until you can argue the rows are truly i.i.d. | active |
+| M19 | L022 | A very predictive feature (or a big complex-vs-simple win) is good news | It is a **leak hypothesis first**: an **illegitimate feature** (L2, knowable only at/after the outcome) passes every pipeline/split check yet hands the model the answer, and a flexible model exploits it harder than a linear one — so removing it can collapse a huge apparent win (RF 0.935 vs LR 0.719 → 0.712 vs 0.721). Audit feature **provenance** with a model info sheet | active |
 
 ---
 
