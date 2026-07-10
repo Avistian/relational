@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 022 — Label Leakage Patterns</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* leakage-taxonomy-viz */
+    .ltv { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .ltv-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+    .ltv-fam { border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 0.75rem; background: #fff; }
+    .ltv-fam-title { font-family: var(--font-sans); font-weight: 600; font-size: 0.9rem; color: var(--accent); }
+    .ltv-fam-blurb { font-family: var(--font-sans); font-size: 0.78rem; color: var(--muted); margin: 0.2rem 0 0.5rem; }
+    .ltv-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .ltv-chip { font-family: var(--font-sans); font-size: 0.8rem; text-align: left; padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 5px; background: #fff; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .ltv-chip:hover { border-color: var(--accent); background: var(--bg-soft); }
+    .ltv-chip.active { border-color: var(--accent); background: var(--accent-light); font-weight: 600; }
+    .ltv-code { font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); }
+    .ltv-chip.active .ltv-code { color: var(--accent); }
+    .ltv-detail { margin-top: 0.85rem; padding: 0.75rem 0.9rem; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 5px; background: #fff; font-size: 0.9rem; }
+    .ltv-d-code { font-family: var(--font-sans); font-weight: 600; color: var(--accent); margin-bottom: 0.35rem; }
+    .ltv-detail p { margin: 0.4rem 0; }
+    .ltv-d-seen { color: var(--muted); font-size: 0.86rem; }
+    .ltv-d-fix { font-size: 0.88rem; }
+
+    /* repro-collapse-viz */
+    .rcv { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .rcv-svg { display: block; max-width: 480px; margin: 0.25rem auto; }
+    .rcv-axis, .rcv-tick { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); }
+    .rcv-lab { font-family: var(--font-sans); font-size: 11px; font-weight: 600; }
+    .rcv-val { font-family: var(--font-mono); font-size: 12px; fill: var(--ink); }
+    .rcv-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; justify-content: center; }
+    .rcv-btn { font-family: var(--font-sans); font-size: 0.8rem; padding: 0.35rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: #fff; cursor: pointer; }
+    .rcv-btn.active { border-color: var(--accent); background: var(--accent-light); font-weight: 600; }
+    .rcv-readout { font-size: 0.86rem; line-height: 1.5; margin-top: 0.4rem; }
+
+    /* checklist (model info sheet) */
+    .chk { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .chk-title { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.6rem; }
+    .chk-list { list-style: none; padding: 0; margin: 0; }
+    .chk-item { display: flex; align-items: baseline; gap: 0.55rem; margin: 0.5rem 0; font-size: 0.92rem; }
+    .chk-item input { margin-top: 0.2rem; flex: none; }
+    .chk-hint { color: var(--accent); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.02em; }
+    .chk-feedback { margin-top: 0.75rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); }
+    .chk-feedback.done { color: #1e6b3c; font-weight: 600; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>Label Leakage Patterns</h1>
+  <p class="subtitle">Lesson 022 · Phase 1 · Q3 · ~40 min · <em>Kapoor &amp; Narayanan 2022</em></p>
+
+  <p>
+    Lesson 021 fixed one leak at the <em>split</em> level: a random split on time-ordered data
+    lets the future bleed into training. But leakage is a whole family of bugs, and only some live
+    in the split. This lesson zooms out and gives you the <strong>map</strong>: Kapoor &amp;
+    Narayanan's taxonomy of <strong>eight</strong> ways label information sneaks from test into
+    train, and the single skill of <strong>spotting which leak a feature-engineering choice is
+    committing before it inflates your reported score</strong>. Then we reproduce their most
+    unsettling finding — that a leak can make a complex model look like it crushes a simple one when
+    it does not.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Data leakage is any way the model learns something at training
+    time it could not legitimately know at prediction time; it is the single most common cause of
+    results that look great in a notebook and collapse in the world — and it has a small, nameable
+    taxonomy you can audit against.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess
+    here is useful — retrieval (even failed) encodes far better than re-reading.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Leakage is not one bug — it is a family</h2>
+  <p>
+    You have already fought leakage five times without a name for the whole family: the point-in-time
+    cutoff (<a href="0002-design-matrix-leakage.html">L002</a>), grouped and nested CV
+    (<a href="0004-grouped-nested-cv.html">L004</a>), fit-per-fold pipelines
+    (<a href="0005-pipelines-preprocessing.html">L005</a>), out-of-fold target encoding
+    (<a href="0009-feature-engineering.html">L009</a>), and temporal splits
+    (<a href="0021-data-splits-in-the-wild.html">L021</a>). Kapoor &amp; Narayanan (2022) surveyed
+    ML-based science and found leakage in <strong>17 fields, affecting 329 papers</strong> — "from
+    textbook errors to open research problems." Their contribution is a <strong>fine-grained
+    taxonomy of eight leak types in three families</strong>. Learning the map is what turns leakage
+    from a vague fear into a checklist you can run.
+  </p>
+
+  <p>
+    Click each type below. Notice how many you have already met — the map mostly <em>names</em>
+    reflexes you have been building, and adds the few you have not.
+  </p>
+
+  <div id="taxonomy-viz"></div>
+
+  <p>
+    The three families answer three different questions. Family 1: <em>did test rows leak into
+    training?</em> (no test set, preprocessing/selection on all data, duplicates). Family 2:
+    <em>is a feature legitimate?</em> (a column that proxies the label or would not exist at
+    prediction time). Family 3: <em>is the test set the population you actually care about?</em>
+    (temporal leakage, non-independence, sampling bias). Most of your Q1–Q2 discipline lives in
+    Family 1; Lesson 021 was Family 3 (temporal); today's new sharp edge is <strong>Family 2 —
+    illegitimate features</strong>, the one that hides in feature engineering.
+  </p>
+
+  <h2>The dangerous one: an illegitimate feature</h2>
+  <p>
+    A feature is <strong>illegitimate</strong> (type L2) when its value would not be knowable at
+    the moment you actually make the prediction — most often because it is computed from, or after,
+    the outcome. It is dangerous because it does not look like a leak: no split is shuffled, no
+    scaler is misfit, the pipeline is clean. The column is just… very predictive. That is exactly
+    what a proxy for the label looks like.
+  </p>
+  <p>
+    Classic examples: a <code>discharge_disposition</code> field that is only set after a patient
+    dies; a <code>closed_reason</code> populated when a support ticket resolves; an account's
+    <code>total_lifetime_value</code> used to predict churn (it already includes the post-churn
+    period). Each hands the model a peek at the answer. The fix is not statistical — it is
+    <em>provenance</em>: for every feature, ask "could this value have been computed strictly before
+    the label event?" A column that fails that test must go, however predictive it is.
+  </p>
+
+  <h2>Why it is so destructive: predict first</h2>
+  <p>
+    Kapoor &amp; Narayanan ran a reproduction study on <strong>civil-war prediction</strong>, a field
+    where complex ML models were believed to "vastly outperform" decades-old logistic regression.
+    Every paper claiming the complex-model win <em>failed to reproduce</em> once the leakage was
+    removed. Before you see our synthetic reproduction of that effect, commit a guess.
+  </p>
+  <div id="predict-collapse"></div>
+
+  <p>
+    In the lab you build a dataset with a weak-but-honest signal (both a Random Forest and logistic
+    regression land near <strong>0.72</strong>) and then bolt on one <em>illegitimate</em> column —
+    a proxy for the label that a tree can exploit but a linear model cannot. Toggle the leak below.
+  </p>
+
+  <div id="collapse-viz"></div>
+
+  <p>
+    With the leak in, the Random Forest reads <strong>0.935</strong> and logistic regression
+    <strong>0.719</strong>: a <strong>+0.217</strong> gap that reads like "complex ML beats the old
+    model by 22 points." Remove the single leaked column and the story evaporates — RF
+    <strong>0.712</strong>, LR <strong>0.721</strong>, a <strong>−0.009</strong> gap. <em>The
+    apparent win was the leak, not the model.</em> This is the collapse in miniature: a leak does
+    not just inflate one number, it can manufacture an entire false conclusion about which methods
+    are better. (Why does the leak favour the tree? The proxy encodes the label
+    <em>non-monotonically</em> — a tree carves it out with two splits, while a linear model sees no
+    usable direction. A more flexible model exploits a leak harder, which is precisely why "the fancy
+    model won" is a leak-smell.)
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> This is the sharpest <strong>BAR</strong> the dossier has yet
+    recorded, and it cuts both ways. It raises the bar because it means a headline relational-vs-GBDT
+    win is <em>not</em> evidence until leakage is ruled out — a suspiciously large margin is a leak
+    hypothesis first, a method hypothesis second (exactly the <a href="0020-q2-checkpoint.html">L020</a>
+    reflex). It also arms the skeptic: "maybe RDL's wins are leakage too." Our answer has to be
+    structural — RelBench enforces strict point-in-time cutoffs by construction (Fey 2024), and every
+    reported gain travels with a leakage audit. The thesis is won with a clean win over a fair
+    baseline, never with a big number.
+  </div>
+
+  <h2>Explain it back</h2>
+  <p>
+    This is the load-bearing idea — put it in your own words before moving on. Explaining is a far
+    stronger test than recognizing.
+  </p>
+  <div id="teachback-collapse"></div>
+
+  <h2>The second leak the lab measures: non-independence</h2>
+  <p>
+    Family 1's <strong>L1.4</strong> (duplicates) and Family 3's <strong>L3.2</strong>
+    (non-independence) are close cousins, and the lab shows them together. When the <em>same
+    underlying record</em> appears more than once — a customer logged twice, a near-duplicate sensor
+    reading — a random split can put one copy in train and its twin in test. The model half-memorizes
+    the test answer from its training twin. In the lab: a naïve random 5-fold CV reads
+    <strong>0.948</strong>; a <code>GroupKFold</code> keyed on the record id, so no record straddles a
+    fold, reads the honest <strong>0.876</strong> — a <strong>+0.072</strong> phantom. This is the
+    same grouped-split fix from <a href="0004-grouped-nested-cv.html">L004</a>, now recognized as a
+    named leak type. The lesson: <em>identity is a leakage surface</em>. Always ask what the unit of
+    independence really is.
+  </p>
+
+  <h2>The defense: a model info sheet</h2>
+  <p>
+    Kapoor &amp; Narayanan's prescription is not "be careful" — it is a <strong>model info sheet</strong>:
+    a short, structured form you fill out for any ML claim, with a question per leak type, that forces
+    the leak to surface <em>before</em> publication. It is the leakage analogue of a pre-registration.
+    None of the civil-war errors could be caught by reading the papers; every one would have been
+    caught by the sheet. Below is the compact version you will fill in the lab. Tick each box only
+    when you can actually answer it for your own pipeline.
+  </p>
+  <div id="infosheet"></div>
+
+  <h2>Which leak is it? (spot it in FE)</h2>
+  <p>The skill for this lesson is classification: given a feature-engineering choice, name the leak.</p>
+  <table>
+    <thead><tr><th>Feature-engineering choice</th><th>Leak type</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Impute missing values using the column mean of the full dataset</td><td class="bad">L1.2</td><td>The mean sees test rows — preprocessing on all data.</td></tr>
+      <tr><td>Keep the top-20 features by correlation with y over the whole dataset</td><td class="bad">L1.3</td><td>Selection used test-row labels.</td></tr>
+      <tr><td>Predict readmission using <code>days_in_hospital</code> (known only at discharge)</td><td class="bad">L2</td><td>Illegitimate — computed after the outcome.</td></tr>
+      <tr><td>Random split when the same patient has many visits</td><td class="bad">L3.2</td><td>Non-independence: a patient straddles train/test.</td></tr>
+      <tr><td>Random split on daily prices; predict tomorrow</td><td class="bad">L3.1</td><td>Temporal — future rows train the model.</td></tr>
+      <tr><td>Report accuracy on the same rows you trained on</td><td class="bad">L1.1</td><td>No held-out test set at all.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>A clean pipeline can still leak.</strong> L2 leaks pass every fit-per-fold and
+      grouped-split check. Only provenance auditing catches them — the pipeline discipline from Q1 is
+      necessary, not sufficient.</li>
+    <li><strong>The fancier model is not "better" — it exploited the leak more.</strong> A big
+      complex-vs-simple gap is a leak hypothesis first. Under an honest evaluation the gap usually
+      shrinks (echoing Grinsztajn, <a href="0019-when-trees-win.html">L019</a>, and TabReD, L021).</li>
+    <li><strong>Leakage ≠ overfitting.</strong> Overfitting shows up as a train/test gap you can see;
+      leakage inflates the <em>test</em> score too, so cross-validation looks fine. That is what makes
+      it so dangerous.</li>
+    <li><strong>Sampling bias (L3.3) is the quietest.</strong> Your split can be perfectly honest and
+      your number still not generalize, because the test set is not the population your claim is about.
+      Define that population up front.</li>
+    <li><strong>This is a controlled demo.</strong> The synthetic collapse isolates the mechanism; the
+      real evidence is 329 papers across 17 fields (your primary reading).</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    <strong>Kapoor &amp; Narayanan (2022), <em>Leakage and the Reproducibility Crisis in
+    ML-based Science</em></strong> — <a href="https://arxiv.org/abs/2207.07048">arXiv:2207.07048</a>.
+    Read the <strong>abstract and §2 (the taxonomy of eight leak types)</strong>, then skim
+    <strong>§5 (the civil-war reproduction)</strong> and <strong>the model info sheet</strong> in §6.
+    This is the paper that gives the whole quarter its vocabulary; you will invoke its taxonomy every
+    time you audit an evaluation for the rest of the curriculum. Optional companion: Chip Huyen,
+    <em>Designing ML Systems</em>, the "data leakage" section of Ch. 5.
+  </p>
+
+  <h2>Lab — reproduce the collapse and audit the leaks</h2>
+  <p>
+    Notebook <code>0022-label-leakage-patterns.ipynb</code>: build the illegitimate feature and watch
+    the complex-vs-LR gap open (0.935 vs 0.719) and collapse (0.712 vs 0.721) when you remove it;
+    then measure the near-duplicate leak (0.948 random vs 0.876 grouped); then classify a set of FE
+    snippets into the taxonomy and fill in a model info sheet. You implement the leaked column, the
+    grouped split, and the classification; the data generators and scoring are provided.
+    <a href="../labs/html/0022-label-leakage-patterns.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why a leak inflates the <em>test</em> score (not just the train score), or which taxonomy
+    code a tricky feature falls under? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0021-data-splits-in-the-wild.html">← Lesson 021</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0022-label-leakage-patterns.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/checklist.js"></script>
+<script src="../assets/leakage-taxonomy-viz.js"></script>
+<script src="../assets/repro-collapse-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 22, count: 3 });
+
+  LeakageTaxonomyViz.mount(document.getElementById("taxonomy-viz"), {});
+  ReproCollapseViz.mount(document.getElementById("collapse-viz"), {});
+
+  Checklist.mount(document.getElementById("infosheet"), {
+    title: "Model info sheet (compact) — tick only what you can actually answer",
+    items: [
+      { label: "There is a held-out test set the model never saw", hint: "L1.1" },
+      { label: "Every preprocessing / selection step is fit inside the fold", hint: "L1.2 / L1.3" },
+      { label: "No record (or near-duplicate) appears in both train and test", hint: "L1.4" },
+      { label: "Every feature is knowable strictly before the label event", hint: "L2" },
+      { label: "The split respects time when the data is time-ordered", hint: "L3.1" },
+      { label: "Dependent rows (same entity) are grouped to one side", hint: "L3.2" },
+      { label: "The test set represents the population the claim is about", hint: "L3.3" }
+    ],
+    done: "Every leak type has an answer — this claim is audit-ready."
+  });
+
+  Predict.mount(document.getElementById("predict-collapse"), {
+    prompt: "A complex model beats logistic regression by 22 points on a benchmark. After one leaked feature is removed, what is the most likely outcome?",
+    options: [
+      { label: "The complex model still wins clearly", value: "still" },
+      { label: "The gap collapses to roughly a tie", value: "collapse" }
+    ],
+    correct: "collapse",
+    reveal: "The gap went from +0.217 (RF 0.935 vs LR 0.719) to -0.009 (RF 0.712 vs LR 0.721). The apparent win was the leak — Kapoor & Narayanan found this across every civil-war paper they reproduced."
+  });
+
+  Teachback.mount(document.getElementById("teachback-collapse"), {
+    prompt: "In your own words: how can a single leaked feature make a complex model look far better than a simple one, and why does removing it collapse the gap?",
+    points: [
+      "An illegitimate feature proxies the label (knowable only at/after outcome time)",
+      "A flexible model (tree) can exploit the leaked signal harder than a linear one",
+      "So the leak inflates the complex model's TEST score, widening the apparent gap",
+      "The gap measures leak-exploitation, not real modelling skill",
+      "Remove the feature and both models fall to the honest level — the gap collapses (~tie)"
+    ],
+    model: "A leaked feature is a stand-in for the answer that would not be available at prediction time. Because it is genuinely predictive of the label in the data, any model that uses it scores higher — but a more flexible model (like a Random Forest) can wring more out of a non-linear leaked signal than logistic regression can, so the complex model's test score rises further. The reported gap then reflects how much each model exploited the leak, not how well it models the real signal. Strip the illegitimate column out and both models drop to the honest signal level (here ~0.72 each), so the 22-point 'win' collapses to a tie. That is why Kapoor & Narayanan found complex ML did not substantively beat decades-old logistic regression once leakage was removed."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "What makes a feature 'illegitimate' (leak type L2)?",
+    options: [
+      { label: "Its value would not be knowable at prediction time", value: "a" },
+      { label: "It has a large number of missing entries", value: "b" },
+      { label: "It is measured on a different scale than the others", value: "c" },
+      { label: "It is only weakly correlated with the target", value: "d" }
+    ],
+    correct: "a",
+    explain: "L2 is about provenance: a column computed from or after the outcome (or otherwise unavailable when you predict) hands the model the answer. It passes every pipeline/split check — only provenance auditing catches it."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Why is a huge complex-vs-simple performance gap a reason for suspicion, not celebration?",
+    options: [
+      { label: "A flexible model can exploit a leak harder, inflating the gap", value: "a" },
+      { label: "Complex models are always overfit by construction", value: "b" },
+      { label: "Logistic regression cannot model any real signal", value: "c" },
+      { label: "Accuracy is the wrong metric for every dataset", value: "d" }
+    ],
+    correct: "a",
+    explain: "In the civil-war reproduction (and our demo), the gap came from a leak the flexible model exploited more. Remove it and complex ≈ simple. A big gap is a leak hypothesis first."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Two copies of the same underlying record land in train and test under a random split. Which leak is that, and what is the fix?",
+    options: [
+      { label: "Non-independence / duplicates (L1.4 / L3.2) — use a grouped split", value: "a" },
+      { label: "Temporal leakage (L3.1) — use a TimeSeriesSplit", value: "b" },
+      { label: "Preprocessing on all data (L1.2) — fit in the fold", value: "c" },
+      { label: "No test set (L1.1) — hold out a test set", value: "d" }
+    ],
+    correct: "a",
+    explain: "The unit of independence is the record, not the row. GroupKFold on the record id (0.876) is honest; the naïve random CV (0.948) leaks a twin from train into test."
+  });
+</script>
+</body>
+</html>

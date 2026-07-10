@@ -290,6 +290,30 @@
       ],
       correct: "a",
       explain: "TimeSeriesSplit is an expanding window: every fold trains on an earlier block and validates on the next, never shuffling, so it cannot leak the future into training."
+    },
+    {
+      id: "l022-illegit", lesson: 22, quarter: "Q3", concept: "illegitimate-feature", misconception: true,
+      question: "What makes a feature 'illegitimate' (leak type L2), and why is it so hard to catch?",
+      options: [
+        { label: "Its value would not be knowable at prediction time", value: "a" },
+        { label: "It has too many missing values to be useful", value: "b" },
+        { label: "It is on a different scale than the other columns", value: "c" },
+        { label: "It is only weakly correlated with the target", value: "d" }
+      ],
+      correct: "a",
+      explain: "L2 is a provenance leak — a column computed from/after the outcome. It passes every pipeline and split check (it just looks very predictive), so only provenance auditing catches it."
+    },
+    {
+      id: "l022-collapse", lesson: 22, quarter: "Q3", concept: "repro-collapse",
+      question: "A complex model beats logistic regression by a huge margin. Why treat that as a leak hypothesis first?",
+      options: [
+        { label: "A flexible model exploits a leak harder, inflating the gap", value: "a" },
+        { label: "Complex models are always overfit by construction", value: "b" },
+        { label: "Logistic regression cannot model any real signal", value: "c" },
+        { label: "Accuracy is the wrong metric for every dataset", value: "d" }
+      ],
+      correct: "a",
+      explain: "Kapoor & Narayanan's civil-war study: remove the leak and complex ≈ LR (our demo: gap +0.217 → −0.009). A big gap measures leak-exploitation, not modelling skill."
     }
   ];
 })(window);

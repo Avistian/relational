@@ -167,6 +167,43 @@
 - **Env note:** no `python3-venv`/uv preinstalled this session; installed `uv` via curl and built `.venv` (sklearn 1.9.0, pandas 3.0.3, numpy 2.5.1). Env-setup agent should preinstall the lab venv + deps so future sessions skip this.
 - Next: Lesson 022 (label leakage patterns — Kapoor & Narayanan 2022, `2207.07048`).
 
+## Session 23 — 2026-07-10
+
+- **Lesson 021 complete** — "lesson 21 done" (no EXIT ticket pasted → no rubric score; treated as
+  self-reported complete like L020). Record for L021 is [[learning-records/0056-lesson-021-published.md]].
+- **Lesson 022 published** — Label leakage patterns (curriculum lec 022, Kapoor & Narayanan 2022,
+  `2207.07048`). The synthesizing leakage lesson: names the whole family of leaks (8 types in 3 families)
+  and adds the ones not yet met. Single skill: classify an FE choice into the taxonomy + recognize the
+  **reproducibility collapse** an illegitimate feature (L2) causes. Record:
+  [[learning-records/0057-lesson-022-published.md]].
+- **arxiv MCP unavailable again** (only `cursor-cloud` MCP present) → verified the Kapoor & Narayanan
+  abstract by fetching arxiv.org directly (17 fields / 329 papers; 8-type taxonomy; civil-war
+  reproduction; model info sheet).
+- **Verified live (`labs/_verify_l022.py` + executed solution, sklearn 1.9.0, seed 0):** collapse — weak
+  honest tie (RF/LR ~0.72) + one non-monotone leaked column → **RF 0.935 vs LR 0.719 (gap +0.217)**;
+  remove it → **0.712 vs 0.721 (gap −0.009)**. Dup leak — naïve random CV **0.948** vs GroupKFold on
+  record id **0.876** (+0.071). Design note: ID-encoded and XOR leaks both failed (scaler makes ID
+  monotone → helps LR; greedy trees don't reliably find XOR); the non-monotone banded proxy is the clean
+  mechanism trees exploit but linear models can't.
+- **Two new reusable viz (standard #9):** `assets/leakage-taxonomy-viz.js` (clickable 8-type/3-family
+  map with "where you met it" + fix — the load-bearing structural visual) and
+  `assets/repro-collapse-viz.js` (leak ON/OFF RF-vs-LR bar toggle). Headless `labs/_viz_check_l022.js`
+  12/12; **browser MCP still unavailable**.
+- **Pedagogy:** warm-up (`upTo: 22`); predict-before-reveal on the collapse; teach-back on why a leak
+  widens the complex-vs-simple gap; `Checklist` mount = the **model info sheet** (7 leak-type questions);
+  3 quizzes. Artifacts synced: retrieval-pool +2 (`l022-illegit` [misconception], `l022-collapse`);
+  paper-deck +1 (`kapoor2022`); misconceptions **M19**; thesis-dossier +1 (BAR, C3) + new skeptic
+  objection ("maybe RDL wins are leakage too"); `reference/glossary.html` +5 Q3 terms.
+  `node labs/_check_pedagogy.js` clean.
+- **Lab:** `labs/0022-label-leakage-patterns.ipynb` — Tier-C concept lab (no relkit), built via
+  `labs/_build_l022.py`. 3 TODO (build `Xleak` + collapse · GroupKFold vs KFold · classify 6 FE snippets
+  into taxonomy codes) + stretch. Student blank (15 `____`, 0 outputs); solution executed clean &
+  gitignored. Manifest → 22; all labs re-rendered.
+- **Env note:** no `python3-venv`/uv preinstalled again; installed `uv` via curl, built lean `.venv`
+  (sklearn/numpy/pandas/ipykernel/nbconvert — no boosters needed for this lab). Env-setup agent should
+  preinstall the lab venv so future sessions skip this.
+- Next: Lesson 023 (statistical comparison — Demšar 2006; paired tests on CV folds), continuing Q3.
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -228,6 +265,7 @@ Track with ✓ as completed:
 - [x] Y1: Wolpert 1992 §1–3 (stacked generalization / out-of-fold meta-features) assigned in Lesson 018 (OOF blend + leak contrast + StackingClassifier in lab)
 - [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019 (three-bias synthetic demos in lab); full §5 benchmark reproduction still pending in Q3 (lec 024–027)
 - [~] Y1/Y2: Rubachev 2024 (TabReD, `2406.19380`) — abstract + §1 + §5.4 previewed in Lesson 021 (random vs temporal splits; optimism gap synthetic demo in lab); full core read is Y2 lec 055
+- [x] Y1: Kapoor & Narayanan 2022 (`2207.07048`) — abstract + §2 (8-type taxonomy) + §5 (civil-war reproduction) + §6 (model info sheet) assigned in Lesson 022 (illegitimate-feature collapse + FE-classification + model info sheet in lab)
 - [ ] Y1: Fey 2024 §1
 - [x] Y1: Fey 2024 §1 assigned in Lesson 001
 
