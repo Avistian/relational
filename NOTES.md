@@ -204,6 +204,38 @@
   preinstall the lab venv so future sessions skip this.
 - Next: Lesson 023 (statistical comparison — Demšar 2006; paired tests on CV folds), continuing Q3.
 
+## Session 24 — 2026-07-14
+
+- **Lesson 022 complete** — "Lesson 22 done" (no EXIT ticket pasted → no rubric score; treated as
+  self-reported complete like L020/L021). Record [[learning-records/0058-lesson-022-complete.md]].
+- **Lesson 023 published** — Statistical comparison of classifiers (curriculum lec 023, **Demšar 2006**,
+  JMLR 7). The third Q3 pillar = the last clause of the fair-comparison contract: *report the gap honestly*
+  now means *prove it is not noise*. Single skill: a **paired** significance test on CV folds + its failure
+  mode (naive paired t is anticonservative). Record: [[learning-records/0059-lesson-023-published.md]].
+- **arxiv MCP unavailable again** (only `user-arxiv` listed in a cloud env) → verified Demšar's
+  recommendations + Nadeau–Bengio's corrected-t formula (`1/n + n_test/n_train`) by fetching the
+  JMLR/Springer/NeurIPS PDFs directly.
+- **Verified live (`labs/_verify_l023.py` + executed solution, sklearn 1.9.0 / scipy 1.18.0, seed 0):**
+  LogReg vs GaussianNB, RepeatedStratifiedKFold(10×10): gap **+0.0098**, **naive t p=1.17e−5 (SIG)** vs
+  **corrected resampled t p=0.188 (noise)**; Wilcoxon on the same folds **p=5.0e−5 (also over-rejects — the
+  trap)**. Real-gap contrast (LR vs stump) survives both (p=3e−46 / 2.6e−11). Demšar: 4 models × 12
+  datasets, avg ranks LogReg 1.08 / NB 2.08 / RF 3.42 / HistGBDT 3.42, Friedman p=4.0e−6, **Nemenyi
+  CD=1.354** (LR–NB not sig; LR vs trees sig).
+- **Two new reusable viz (standard #9):** `assets/paired-diff-viz.js` (per-fold dots + naive/corrected CI
+  toggle → verdict flip) and `assets/cd-diagram-viz.js` (critical-difference diagram; click a model for its
+  non-different clique). Headless `labs/_viz_check_l023.js` 12/12; **browser MCP still unavailable**.
+- **Artifacts synced:** retrieval-pool +2 (`l023-corrected` [misconception], `l023-cd-diagram`); paper-deck
+  +1 (`demsar2006`); misconceptions **M20**; thesis-dossier +1 (BAR, C3) + honest-bar clause #5 ("prove the
+  gap is not noise"); `reference/glossary.html` +5 Q3 terms. `node labs/_check_pedagogy.js` clean.
+- **Lab:** `labs/0023-statistical-comparison.ipynb` — Tier-C concept lab, built via `labs/_build_l023.py`.
+  3 TODO (100 paired diffs + naive `ttest_rel` · **implement the corrected resampled t** + Wilcoxon trap ·
+  Friedman + Nemenyi CD over 12 datasets) + stretch (5×2cv, Cohen's d). Student blank (9 `____`, 0 outputs);
+  solution executed clean & gitignored. Manifest → 23; all labs re-rendered.
+- **Env note:** `.venv` already present + functional this session (sklearn 1.9.0, numpy 2.5.0, scipy 1.18.0,
+  Node v20) — no uv/venv rebuild needed. The env-setup preinstall finally took.
+- Next: Lesson 024 (The Grinsztajn benchmark — Grinsztajn 2022 §1–4; run one dataset), opening the
+  Grinsztajn arc 024–027.
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -266,6 +298,7 @@ Track with ✓ as completed:
 - [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019 (three-bias synthetic demos in lab); full §5 benchmark reproduction still pending in Q3 (lec 024–027)
 - [~] Y1/Y2: Rubachev 2024 (TabReD, `2406.19380`) — abstract + §1 + §5.4 previewed in Lesson 021 (random vs temporal splits; optimism gap synthetic demo in lab); full core read is Y2 lec 055
 - [x] Y1: Kapoor & Narayanan 2022 (`2207.07048`) — abstract + §2 (8-type taxonomy) + §5 (civil-war reproduction) + §6 (model info sheet) assigned in Lesson 022 (illegitimate-feature collapse + FE-classification + model info sheet in lab)
+- [x] Y1: Demšar 2006 (JMLR 7, no arXiv) — §3.2 (Wilcoxon) + §3.5 (Friedman + Nemenyi CD) assigned in Lesson 023; Nadeau & Bengio 2003 (corrected resampled t-test) + Dietterich 1998 (5×2cv/McNemar) as the single-dataset companions (corrected-t + Friedman/CD implemented in lab)
 - [ ] Y1: Fey 2024 §1
 - [x] Y1: Fey 2024 §1 assigned in Lesson 001
 

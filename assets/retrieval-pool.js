@@ -314,6 +314,30 @@
       ],
       correct: "a",
       explain: "Kapoor & Narayanan's civil-war study: remove the leak and complex ≈ LR (our demo: gap +0.217 → −0.009). A big gap measures leak-exploitation, not modelling skill."
+    },
+    {
+      id: "l023-corrected", lesson: 23, quarter: "Q3", concept: "significance-testing", misconception: true,
+      question: "Why is a paired t-test on k-fold CV fold scores anticonservative (too many false 'wins')?",
+      options: [
+        { label: "Overlapping training folds correlate the scores, so it underestimates variance", value: "a" },
+        { label: "It needs at least thirty folds before the t-distribution is valid", value: "b" },
+        { label: "Accuracy is the wrong metric to average over the folds", value: "c" },
+        { label: "It silently ignores the class imbalance within each fold", value: "d" }
+      ],
+      correct: "a",
+      explain: "k-fold training sets share most rows, so fold scores are positively correlated; the naive SE σ/√n assumes independence and is too small (naive p=1.2e−5 vs corrected 0.19). Fix: the corrected resampled t-test."
+    },
+    {
+      id: "l023-cd-diagram", lesson: 23, quarter: "Q3", concept: "rank-tests",
+      question: "Comparing many models over many datasets, when are two models 'not significantly different'?",
+      options: [
+        { label: "Their average ranks differ by less than the critical difference", value: "a" },
+        { label: "Their mean accuracies differ by less than one percent", value: "b" },
+        { label: "The Friedman omnibus test failed to reject its null", value: "c" },
+        { label: "They were both trained with the same random seed", value: "d" }
+      ],
+      correct: "a",
+      explain: "Demšar: rank per dataset, Friedman omnibus, then Nemenyi CD = q_α·√(k(k+1)/6N). Ranks closer than CD are joined in a CD diagram — here LogReg (1.08) and NB (2.08), gap 1.0 < CD 1.354."
     }
   ];
 })(window);

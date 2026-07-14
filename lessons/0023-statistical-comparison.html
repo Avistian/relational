@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 023 — Statistical Comparison of Classifiers</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* shared viz frame */
+    .paired-diff-viz, .cd-diagram-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .pd-svg, .cdv-svg { display: block; max-width: 600px; margin: 0.25rem auto; }
+    .pd-title, .pd-lab, .cdv-lab { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); }
+    .pd-tick, .cdv-tick { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); }
+    .cdv-cd { font-family: var(--font-sans); font-size: 10px; fill: #8e44ad; font-weight: 600; }
+    .cdv-name { font-family: var(--font-mono); font-size: 11px; fill: var(--fg, #222); }
+    .pd-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+    .pd-ctl button { font-size: 0.8rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); cursor: pointer; font-family: var(--font-sans); }
+    .pd-ctl button.pd-active { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .pd-readout, .cdv-readout { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .pd-pill, .cdv-pill { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; padding: 0.05rem 0.4rem; border-radius: 4px; background: var(--border); margin-right: 0.3rem; }
+    .pd-bad { font-weight: 700; color: #b03a2e; }
+    .pd-win { font-weight: 700; color: #1e6b3c; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>Statistical Comparison of Classifiers</h1>
+  <p class="subtitle">Lesson 023 · Phase 1 · Q3 · ~40 min · <em>core paper: Demšar 2006</em></p>
+
+  <p>
+    Q3 is about making every clause of the <a href="0020-q2-checkpoint.html">fair-comparison contract</a>
+    rigorous. <a href="0021-data-splits-in-the-wild.html">L021</a> fixed the <em>split</em>;
+    <a href="0022-label-leakage-patterns.html">L022</a> fixed the <em>features</em>. This lesson fixes the last
+    clause — <strong>report the gap honestly</strong> — by asking the question every bake-off table begs and
+    almost none answers: <strong>is model A's edge over model B real, or is it noise?</strong> Its single skill:
+    <strong>given per-fold scores for two models, run a <em>paired</em> significance test to decide whether the
+    gap is real — and recognize the failure mode: a naive paired t-test on overlapping CV folds fabricates
+    significance, so use the corrected resampled test on one dataset, and Demšar's rank tests across many.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> The number you report is a random variable — it depends on which rows landed
+    in which fold — so a mean-accuracy difference is meaningless without a test of whether it could have arisen
+    by chance, and the obvious test (a paired t-test over CV folds) is <em>anticonservative</em> because the folds
+    share training data.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — retrieval (even failed) encodes far better than re-reading.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>The gap you report is a random variable</h2>
+  <p>
+    You tune two models, cross-validate both, and model A wins by <strong>0.4% accuracy</strong>. Ship A?
+    Not yet. Re-draw the folds with a different seed and the gap might vanish, or flip. The cross-validated score
+    is an <em>estimate</em> of generalization error, and estimates have variance: they wobble with the particular
+    train/test partition you happened to draw. A responsible comparison reports not just the mean gap but whether
+    that gap is <strong>distinguishable from the wobble</strong>. That is a hypothesis test — the null hypothesis
+    being "the two models are equally good, and the observed difference is chance."
+  </p>
+  <p>
+    Because both models are scored on the <em>same folds</em>, the right family is a <strong>paired</strong> test:
+    fold by fold, compute the difference <code>d<sub>i</sub> = score<sub>A</sub>(fold i) − score<sub>B</sub>(fold i)</code>,
+    and ask whether the <em>mean</em> of those differences is far enough from zero. Pairing cancels the biggest
+    nuisance — some folds are just harder than others — so it is far more powerful than comparing two independent
+    columns of scores.
+  </p>
+
+  <h2>See it: is +0.0098 a win, or noise?</h2>
+  <p>
+    We compared logistic regression against Gaussian Naive Bayes on one synthetic dataset with
+    <code>RepeatedStratifiedKFold(10×10)</code> — 100 paired fold scores (the lab builds this). Logistic
+    regression averaged <strong>0.8246</strong>, NB <strong>0.8148</strong>: a mean gap of
+    <strong>+0.0098</strong>, and 63% of folds favour LR. Each dot below is one fold's difference. The band is the
+    95% confidence interval on the <em>mean</em> difference — and it is the whole lesson. Flip between the two
+    ways of estimating it.
+  </p>
+
+  <div id="paired-diff-viz"></div>
+
+  <h2>Predict first</h2>
+  <p>
+    A naive paired t-test on those 100 fold differences returns <code>p ≈ 1.2 × 10<sup>−5</sup></code> — wildly
+    "significant." Commit a guess before you flip the widget to the corrected test.
+  </p>
+  <div id="predict-corr"></div>
+
+  <h2>Why the naive t-test lies: the folds are not independent</h2>
+  <p>
+    A t-test on <code>n</code> numbers assumes they are <strong>independent</strong> samples, so the standard
+    error of their mean is <code>σ/√n</code> — it shrinks fast as <code>n</code> grows. With 100 folds that
+    denominator is tiny, so even a microscopic mean looks many standard errors from zero. But k-fold CV folds are
+    <em>not</em> independent: any two training folds <strong>overlap heavily</strong> (in 10-fold CV, two training
+    sets share about 8/9 of their rows). Overlapping training sets produce <strong>positively correlated</strong>
+    scores, and positive correlation means the true variance of the mean is much larger than <code>σ²/n</code>.
+    The naive test therefore <em>underestimates the variance</em> and rejects the null far too often — it is
+    <strong>anticonservative</strong>.
+  </p>
+  <p>
+    Nadeau &amp; Bengio (2003) worked out the correction. Their <strong>corrected resampled t-test</strong> keeps
+    the same mean and the same sample variance <code>σ²</code> of the differences, but inflates the variance of
+    the mean by a factor that accounts for the train/test overlap:
+  </p>
+  <span class="formula">t = mean(d) / √[ ( 1/n + n<sub>test</sub>/n<sub>train</sub> ) · σ²(d) ]     &nbsp;&nbsp; (for k-fold, n<sub>test</sub>/n<sub>train</sub> = 1/(k−1))</span>
+  <p>
+    The extra <code>n<sub>test</sub>/n<sub>train</sub></code> term never goes away as you add folds or repeats, so
+    it caps how confident repeated CV can make you. On our data it turns the verdict inside out: the corrected
+    <code>p</code> is <strong>0.19</strong> — the +0.0098 gap is <em>within noise</em>. Reversing your model choice
+    on a p-hacked 0.4% would be building on sand.
+  </p>
+
+  <table>
+    <thead><tr><th>Comparison (100 paired folds)</th><th>Mean gap</th><th>Naive paired t</th><th>Corrected resampled t</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>LogReg vs GaussianNB</td><td class="n">+0.0098</td><td class="n bad">p = 1.2e−5</td><td class="n win">p = 0.19</td><td>noise — do not claim a winner</td></tr>
+      <tr><td>LogReg vs DecisionTree(d=3)</td><td class="n">+0.1106</td><td class="n">p = 3e−46</td><td class="n">p = 3e−11</td><td class="win">real — survives the correction</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The correction does not make everything "not significant" — a genuinely large, consistent gap (LR beats a
+    stumpy tree by 11 points) stays significant under <em>both</em> tests. The correction simply removes the
+    <em>fake</em> wins that come from treating 100 correlated folds as 100 independent measurements.
+  </p>
+
+  <div class="callout">
+    <strong>Trap: Wilcoxon on CV folds does not fix this.</strong> The distribution-free Wilcoxon signed-rank
+    test also assumes its samples are independent, so run on the same 100 correlated folds it <em>also</em>
+    over-rejects (here <code>p ≈ 5e−5</code>, "significant"). Wilcoxon and Friedman are the right tools for
+    comparing over <em>independent datasets</em> (next section), not over the correlated folds of one dataset.
+    For a single dataset, the fix is the variance correction above — not swapping in a different test on the same
+    dependent numbers.
+  </div>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-corr"></div>
+
+  <h2>Many models over many datasets: Demšar's diagram</h2>
+  <p>
+    A single dataset can only ever tell you so much. The question a benchmark really asks is: <em>across many
+    datasets, which methods are better?</em> Here you <strong>cannot</strong> average accuracies (an 80% on one
+    dataset and 80% on another are not commensurable) and you <strong>cannot</strong> assume normality. Demšar
+    (2006) — the paper that standardized ML comparisons — recommends <strong>non-parametric, rank-based</strong>
+    tests instead:
+  </p>
+  <ul>
+    <li><strong>Rank</strong> the <code>k</code> models on each dataset (1 = best), then average each model's rank
+      down the <code>N</code> datasets. Ranks are commensurable where raw scores are not.</li>
+    <li>The <strong>Friedman test</strong> (a non-parametric repeated-measures ANOVA) asks whether the average
+      ranks differ more than chance allows. If it rejects the null, proceed to a post-hoc test.</li>
+    <li>The <strong>Nemenyi</strong> post-hoc (all-pairs) says two models differ significantly only if their
+      average ranks differ by at least the <strong>critical difference</strong>:</li>
+  </ul>
+  <span class="formula">CD = q<sub>α</sub> · √[ k(k+1) / (6N) ]</span>
+  <p>
+    where <code>k</code> is the number of models and <code>N</code> the number of datasets. Demšar's contribution
+    is to draw this as a <strong>CD diagram</strong>: an axis of average ranks with a bar joining any group of
+    models that are <em>not</em> significantly different. Below is the verified result of ranking four models over
+    12 synthetic datasets (the lab builds it). <strong>Click a model</strong> to see which others it cannot be
+    distinguished from.
+  </p>
+
+  <div id="cd-diagram-viz"></div>
+
+  <p>
+    Friedman rejects the null (<code>p ≈ 4e−6</code>): the ranks really do differ. With <code>k = 4</code>,
+    <code>N = 12</code>, the critical difference is <strong>1.354</strong> rank units. Logistic regression (mean
+    rank 1.08) and Naive Bayes (2.08) are only 1.0 apart — <em>joined</em>, so not significantly different — but
+    LR beats Random Forest and HistGBDT (both 3.42) by 2.33, comfortably past the CD. (These are near-linear
+    synthetic datasets, so a linear model deservedly tops them; the point is the <em>method</em>, not "trees
+    lose" — you saw in <a href="0019-when-trees-win.html">L019</a> when the ranking flips.)
+  </p>
+
+  <h2>Which test, when?</h2>
+  <table>
+    <thead><tr><th>Situation</th><th>Right test</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Two models, one dataset, k-fold CV</td><td class="win">Corrected resampled t-test</td><td>Folds share training data → correct the variance (Nadeau &amp; Bengio); a naive t-test or Wilcoxon over-rejects.</td></tr>
+      <tr><td>Two models, one dataset, you can afford it</td><td class="win">5×2cv paired t-test</td><td>Dietterich 1998: five 2-fold repeats keep train/test disjoint within each repeat, taming the correlation.</td></tr>
+      <tr><td>Two models, many independent datasets</td><td class="win">Wilcoxon signed-rank</td><td>Datasets are genuinely independent and scores are incommensurable → a distribution-free paired test on ranks (Demšar).</td></tr>
+      <tr><td>Many models, many datasets</td><td class="win">Friedman + Nemenyi (CD diagram)</td><td>Omnibus rank test, then a critical-difference post-hoc; the standard way to read a benchmark leaderboard (Demšar).</td></tr>
+      <tr><td>Two classifiers, one large test set, no CV</td><td>McNemar's test</td><td>Compares the disagreement cells on a single held-out set (Dietterich 1998) when retraining is too costly.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> This lesson is the last clause of the honest bar. When a relational model
+    beats a tuned GBDT by a couple of tenths of a point on one RelBench task, the correct reaction is <em>not</em>
+    "we win" — it is a <strong>corrected resampled test</strong> (or a rank test across tasks) to ask whether the
+    gap survives the wobble. TabReD and TabArena already report results this way, and RelBench spans many tasks
+    precisely so that a Friedman/CD-style verdict is possible. Claim <strong>C3</strong> (the RDL gain is real and
+    fair) is not won by a bigger mean; it is won by a gap that a skeptic's significance test cannot dissolve. A
+    result reported as a mean with no test is exactly the kind of finding Kapoor &amp; Narayanan (L022) found
+    evaporating across 17 fields.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>Significant ≠ important.</strong> With enough data a 0.05% gap can be "significant" and still not
+      worth the extra complexity, latency, or risk. Always pair a p-value with an <em>effect size</em> and a
+      practical threshold.</li>
+    <li><strong>Not significant ≠ equal.</strong> Failing to reject the null means you lack evidence of a
+      difference, not proof the models are identical — often it means you need more datasets, not a verdict.</li>
+    <li><strong>Multiple comparisons inflate false positives.</strong> Test 20 models pairwise at α = 0.05 and you
+      expect one "win" by chance. Nemenyi/Bonferroni-Dunn control this; ad-hoc all-pairs t-tests do not.</li>
+    <li><strong>The correction has assumptions too.</strong> The <code>n<sub>test</sub>/n<sub>train</sub></code>
+      term is an approximation of the true fold correlation; it is far better than ignoring it, but it is not
+      exact. 5×2cv sidesteps it by construction.</li>
+    <li><strong>This is a controlled demo.</strong> The synthetic data isolates the mechanism so the p-values are
+      reproducible; the rigorous case for the recommendations is Demšar's paper across real UCI benchmarks (your
+      primary reading).</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The core paper: <strong>Janez Demšar (2006), <em>Statistical Comparisons of Classifiers over Multiple Data
+    Sets</em>, JMLR 7:1–30</strong> —
+    <a href="https://jmlr.org/papers/v7/demsar06a.html">jmlr.org/papers/v7/demsar06a</a>. Read the abstract,
+    §2–§3 (why not to average accuracies / why non-parametric), §3.2 (Wilcoxon), §3.5 (Friedman + Nemenyi), and
+    the CD-diagram figures. For the single-dataset case, skim <strong>Nadeau &amp; Bengio (2003), <em>Inference for
+    the Generalization Error</em>, MLJ 52:239–281</strong> (the corrected resampled t-test) and
+    <strong>Dietterich (1998)</strong> for 5×2cv and McNemar. You will apply all three in the lab.
+  </p>
+
+  <h2>Lab — decide whether the gap is real</h2>
+  <p>
+    Notebook <code>0023-statistical-comparison.ipynb</code>: build the 100-fold paired differences, run a naive
+    paired t-test, then implement the <strong>corrected resampled t-test</strong> yourself and watch the p-value
+    balloon; add Wilcoxon and see the trap; finally rank four models over many datasets and compute the Friedman
+    test and the Nemenyi critical difference. Reproduction targets: naive <code>p ≈ 1.2e−5</code> → corrected
+    <code>p ≈ 0.19</code>; Friedman <code>p ≈ 4e−6</code>, CD ≈ 1.354.
+    <a href="../labs/html/0023-statistical-comparison.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why overlapping training folds inflate the correlation, or when Wilcoxon is legitimate versus a trap?
+    Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0022-label-leakage-patterns.html">← Lesson 022</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0023-statistical-comparison.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/paired-diff-viz.js"></script>
+<script src="../assets/cd-diagram-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 23, count: 3 });
+
+  PairedDiffViz.mount(document.getElementById("paired-diff-viz"), {});
+  CdDiagramViz.mount(document.getElementById("cd-diagram-viz"), {});
+
+  Predict.mount(document.getElementById("predict-corr"), {
+    prompt: "The naive test says the +0.0098 gap is highly significant (p ≈ 1e−5). What does the corrected resampled t-test say?",
+    options: [
+      { label: "Still significant — a real win", value: "sig" },
+      { label: "Not significant — within noise", value: "noise" }
+    ],
+    correct: "noise",
+    reveal: "Corrected p ≈ 0.19. Accounting for the overlapping training sets widens the CI until it straddles 0 — the 'win' was an artefact of treating 100 correlated folds as independent."
+  });
+
+  Teachback.mount(document.getElementById("teachback-corr"), {
+    prompt: "In your own words: why does a paired t-test on k-fold CV folds report a smaller p-value than it should?",
+    points: [
+      "A t-test assumes the n samples are independent, so SE of the mean = σ/√n",
+      "But k-fold training sets overlap heavily, so fold scores are positively correlated",
+      "Positive correlation means the true variance of the mean is larger than σ²/n",
+      "So the naive test underestimates variance and over-rejects (anticonservative)",
+      "The corrected resampled test inflates the variance by (1/n + n_test/n_train) to fix it"
+    ],
+    model: "A t-test's standard error, σ/√n, is only valid if the n numbers are independent. In k-fold CV any two training folds share most of their rows (about 8/9 in 10-fold), so the per-fold scores are positively correlated rather than independent. Under positive correlation the real variance of the mean difference is much bigger than σ²/n, so dividing by the too-small σ/√n makes the t-statistic too large and the p-value too small — the test rejects the null too often. Nadeau & Bengio's correction keeps the same mean and sample variance but multiplies the variance of the mean by (1/n + n_test/n_train), a term that captures the train/test overlap and never vanishes as you add folds, which is why the +0.0098 gap goes from p=1e−5 to p=0.19."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why is a naive paired t-test on k-fold CV fold scores anticonservative (too many false 'wins')?",
+    options: [
+      { label: "The overlapping training folds make scores correlated, so it underestimates variance", value: "a" },
+      { label: "Accuracy is the wrong metric to average across folds", value: "b" },
+      { label: "It needs at least 30 folds before the t-distribution applies", value: "c" },
+      { label: "It ignores the class imbalance inside each fold", value: "d" }
+    ],
+    correct: "a",
+    explain: "k-fold training sets share most of their rows, so fold scores are positively correlated. The naive SE σ/√n assumes independence and is too small, inflating t and shrinking p (here p=1.2e−5 vs a corrected 0.19)."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "When are the Wilcoxon signed-rank and Friedman tests the correct choice (per Demšar 2006)?",
+    options: [
+      { label: "Comparing models over multiple independent datasets", value: "a" },
+      { label: "Comparing two models over the folds of one dataset", value: "b" },
+      { label: "Whenever the accuracies are normally distributed", value: "c" },
+      { label: "Only when you have a single large held-out test set", value: "d" }
+    ],
+    correct: "a",
+    explain: "Datasets are genuinely independent and their scores are incommensurable, so rank-based non-parametric tests fit. Run on the correlated folds of one dataset, Wilcoxon over-rejects just like the naive t-test."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "In a critical-difference (CD) diagram, two models are joined by a bar (not significantly different) when…",
+    options: [
+      { label: "Their average ranks differ by less than the critical difference", value: "a" },
+      { label: "Their mean accuracies differ by less than one percent", value: "b" },
+      { label: "They were trained on the same random seed", value: "c" },
+      { label: "The Friedman test failed to reject the null", value: "d" }
+    ],
+    correct: "a",
+    explain: "The Nemenyi CD = q_α·√(k(k+1)/6N). Average ranks closer than CD are not distinguishable; here LR (1.08) and NB (2.08) are joined, but LR vs RF/HistGBDT (gap 2.33 > 1.354) are not."
+  });
+</script>
+</body>
+</html>
