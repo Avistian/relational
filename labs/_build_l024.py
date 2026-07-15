@@ -11,8 +11,12 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 HERE = os.path.dirname(__file__)
+sys.path.insert(0, HERE)
+
+from _colab import bootstrap_cells  # noqa: E402
 
 
 def md(src):
@@ -289,6 +293,7 @@ def build(solution: bool):
 
 ### Environment
 One-time: `bash labs/setup-env.sh` from repo root → kernel **Relational Labs (.venv)**. Needs **scikit-learn** + **relkit** and a network connection for the first OpenML fetch (then cached). The evaluation cell trains 60 models and takes ~1–2 minutes.'''),
+        *bootstrap_cells(),
         md(r'''## Concept recap — a benchmark is an instrument, and it can be rigged
 
 **The tuning trap.** "Model A: 0.82, Model B: 0.81" is meaningless without knowing how much each was tuned. A neural net with many sensitive knobs might need 200 random-search iterations to reach 0.82, while a GBT reaches 0.81 on defaults. Reporting only the peak flatters the model that is hardest to tune — and hides its deployment cost.
