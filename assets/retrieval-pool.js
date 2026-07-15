@@ -338,6 +338,30 @@
       ],
       correct: "a",
       explain: "Demšar: rank per dataset, Friedman omnibus, then Nemenyi CD = q_α·√(k(k+1)/6N). Ranks closer than CD are joined in a CD diagram — here LogReg (1.08) and NB (2.08), gap 1.0 < CD 1.354."
+    },
+    {
+      id: "l024-budget-curve", lesson: 24, quarter: "Q3", concept: "benchmark-protocol", misconception: true,
+      question: "Why does the Grinsztajn benchmark report a random-search budget curve instead of each model's single best tuned score?",
+      options: [
+        { label: "One tuned number hides how much tuning each model needed and its default quality", value: "a" },
+        { label: "Random search always reaches a higher optimum than grid search", value: "b" },
+        { label: "A curve is required to run the Friedman significance test", value: "c" },
+        { label: "It removes the need for any validation split", value: "d" }
+      ],
+      correct: "a",
+      explain: "A single peak conflates model quality with tuning effort and erases the default/ceiling split. The budget curve (select by validation, report test, avg over orderings) shows both — on credit-g the GBT leads at every budget (default gap +0.062 → tuned +0.015)."
+    },
+    {
+      id: "l024-normalization", lesson: 24, quarter: "Q3", concept: "benchmark-protocol",
+      question: "Why does Grinsztajn affine-normalize test scores (worst→0, best→1) per dataset before averaging across the suite?",
+      options: [
+        { label: "Raw accuracies are incommensurable across datasets, so one would dominate the mean", value: "a" },
+        { label: "It converts each accuracy into a calibrated probability", value: "b" },
+        { label: "Normalization forces every model to average exactly 0.5", value: "c" },
+        { label: "It lets you skip having a separate test set", value: "d" }
+      ],
+      correct: "a",
+      explain: "An 80% on an easy vs a hard dataset are not comparable (echo of Demšar, L023). Per-dataset min-max scaling bounds each dataset to [0,1] so the aggregate isn't hijacked by one high-variance task."
     }
   ];
 })(window);

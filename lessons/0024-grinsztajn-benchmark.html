@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 024 — The Grinsztajn Benchmark</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* shared viz frame */
+    .benchmark-budget-viz, .dataset-funnel-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .bb-svg, .df-svg { display: block; max-width: 560px; margin: 0.25rem auto; }
+    .bb-lab, .bb-tick, .bb-leg, .df-txt { font-family: var(--font-sans); }
+    .bb-lab { font-size: 9.5px; fill: var(--muted); }
+    .bb-tick { font-size: 9px; fill: var(--muted); }
+    .bb-leg { font-size: 10px; fill: var(--fg, #222); }
+    .df-txt { font-size: 11px; }
+    .bb-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .bb-ctl button { font-size: 0.8rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); cursor: pointer; font-family: var(--font-sans); }
+    .bb-ctl button.bb-active { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .bb-slabel { font-size: 0.82rem; font-family: var(--font-sans); color: var(--muted); display: flex; align-items: center; gap: 0.35rem; }
+    .bb-slider { vertical-align: middle; }
+    .bb-kval { font-family: var(--font-mono); font-weight: 600; color: var(--fg, #222); }
+    .bb-readout, .df-detail { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .bb-pill { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; padding: 0.05rem 0.4rem; border-radius: 4px; background: var(--border); margin-right: 0.3rem; }
+    .bb-win { color: #1e6b3c; }
+    .bb-caption, .df-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .df-detail { padding: 0.6rem 0.7rem; border: 1px dashed var(--border); border-radius: 5px; background: var(--bg); min-height: 2.2rem; }
+    .df-why { color: var(--muted); }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>The Grinsztajn Benchmark</h1>
+  <p class="subtitle">Lesson 024 · Phase 1 · Q3 · ~40 min · <em>core paper: Grinsztajn, Oyallon &amp; Varoquaux 2022</em></p>
+
+  <p>
+    The last three lessons made a <em>single</em> comparison honest: the right
+    <a href="0021-data-splits-in-the-wild.html">split</a> (L021), leak-free
+    <a href="0022-label-leakage-patterns.html">features</a> (L022), and a
+    <a href="0023-statistical-comparison.html">significance test</a> on the gap (L023). Now we zoom out from
+    one comparison to a whole <strong>benchmark</strong>: dozens of datasets, several model families, and a
+    protocol designed so the headline — <em>"tree ensembles still beat deep learning on typical tabular
+    data"</em> — is a defensible finding rather than a lucky configuration. This lesson opens the
+    <strong>Grinsztajn arc</strong> (024–027): here we build and read the benchmark; L025–L027 dissect the
+    three inductive biases that explain the result (you met them in preview in
+    <a href="0019-when-trees-win.html">L019</a>).
+  </p>
+  <p>
+    Its single skill: <strong>read and reproduce the Grinsztajn benchmark protocol — compare models across a
+    random-search hyperparameter <em>budget</em> (not one tuned number), normalize test scores per dataset so
+    they can be aggregated, and know the dataset-selection criteria that make the tree-vs-DL verdict
+    fair.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A benchmark's verdict is only as trustworthy as its <em>dataset curation</em>
+    and its <em>tuning protocol</em>: Grinsztajn compares models not at a single tuned point but along the whole
+    random-search budget curve, on a suite of datasets chosen by explicit rules, and normalized so no single
+    dataset dominates the average.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — retrieval (even failed) encodes far better than re-reading.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Why one tuned number lies</h2>
+  <p>
+    Suppose you read "FT-Transformer: 0.82, XGBoost: 0.81." Which is better? You cannot tell, because a single
+    number hides the question that decides everything: <strong>how much tuning did each model get?</strong> A
+    neural net with a hundred sensitive knobs might need 200 random-search iterations to reach 0.82, while a GBT
+    reaches 0.81 on its <em>defaults</em>. Report only the tuned peak and you flatter the model that is hardest
+    to tune — and you hide the fact that one of them is far cheaper to deploy.
+  </p>
+  <p>
+    Grinsztajn's fix (their §4) is to stop reporting a point and report a <strong>curve</strong>: for each model
+    and dataset, draw many random hyperparameter configurations, and plot the expected test score of the
+    <em>best-so-far</em> configuration as a function of the number of search iterations. Two properties make this
+    fair: it shows both the <strong>default</strong> quality (budget = 1) and the <strong>tuned ceiling</strong>
+    (large budget), and — because it averages over random orderings of the draws — it is a smooth, reproducible
+    object you can actually compare. Before any of that, though, comes the quieter half of fairness: the
+    datasets.
+  </p>
+
+  <h2>Fairness starts with the datasets (§3)</h2>
+  <p>
+    If you get to choose the datasets, you can "prove" almost anything. So the first defence against a
+    dataset-selection artifact is an <strong>explicit, pre-registered set of inclusion criteria</strong>, applied
+    to a large pool before any model is run. Grinsztajn filters OpenML down to a suite of medium-sized,
+    heterogeneous, real, non-trivial tabular datasets. Click through the funnel to see each rule and why it is
+    there (the counts are illustrative; the <em>criteria</em> are the point).
+  </p>
+
+  <div id="dataset-funnel-viz"></div>
+
+  <p>
+    Two criteria deserve emphasis because they are exactly where a sloppy benchmark cheats. <strong>"Heterogeneous
+    columns"</strong> excludes data whose columns are really pixels or sensor channels — that is perceptual data
+    in disguise, where neural nets have a natural home-field advantage, and including it would smuggle a non-tabular
+    win into a tabular benchmark. <strong>"Not too easy"</strong> removes datasets where a default linear model
+    already ties a tuned GBT: such datasets cannot <em>discriminate</em> methods, so they only add noise to the
+    aggregate. Curation is not housekeeping — it is half the experiment.
+  </p>
+
+  <h2>Predict first</h2>
+  <p>
+    We reproduced the protocol on one real dataset (OpenML <code>credit-g</code>): a GBT
+    (<code>HistGradientBoosting</code>) versus a neural net (<code>MLP</code>), each given 30 random-search
+    iterations, the curve averaged over 40 orderings. Commit a guess before you read the curve.
+  </p>
+  <div id="predict-budget"></div>
+
+  <h2>See it: the budget curve (§4)</h2>
+  <p>
+    Each line is the expected test accuracy of the best-validation configuration found after <code>k</code>
+    random-search iterations. Drag the budget slider; flip between raw accuracy and the per-dataset
+    <strong>normalized</strong> view. The GBT sits <strong>above</strong> the neural net at <em>every</em> budget,
+    and — the part people forget — it is already ahead at <code>k = 1</code>, on its defaults.
+  </p>
+
+  <div id="benchmark-budget-viz"></div>
+
+  <table>
+    <thead><tr><th>Budget (random-search iters)</th><th>GBT test acc</th><th>MLP test acc</th><th>GBT − MLP</th></tr></thead>
+    <tbody>
+      <tr><td>1 (defaults)</td><td class="n win">0.7906</td><td class="n">0.7286</td><td class="n win">+0.0620</td></tr>
+      <tr><td>5</td><td class="n win">0.7910</td><td class="n">0.7699</td><td class="n win">+0.0211</td></tr>
+      <tr><td>30 (fully tuned)</td><td class="n win">0.7850</td><td class="n">0.7700</td><td class="n win">+0.0150</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Two honest readings. First, <strong>tuning helps the neural net far more than the GBT</strong>: the MLP climbs
+    from 0.729 to 0.770 as the budget grows, while the GBT barely moves — the gap <em>narrows</em> (+0.062 →
+    +0.015) but never closes. That is the shape of Grinsztajn's Figure 1 across the whole suite: GBTs are both a
+    stronger <em>default</em> and a stronger <em>ceiling</em>. Second — a real small-data artifact worth naming —
+    the GBT curve here even dips slightly at large budgets: with only 200 validation rows, picking the
+    best-of-many configs starts to <strong>overfit the validation set</strong> (an echo of
+    <a href="0004-grouped-nested-cv.html">L004</a>'s selection bias and
+    <a href="0017-hyperparameter-search.html">L017</a>'s tuning honesty). The full benchmark avoids this by using
+    larger, medium-regime datasets — which is exactly why "not too small" is a selection criterion.
+  </p>
+
+  <h2>Why you cannot just average accuracies</h2>
+  <p>
+    To turn per-dataset curves into one benchmark number you must average across datasets — but an 80% on an easy
+    dataset and an 80% on a hard one are <strong>not commensurable</strong> (the same worry you met in
+    <a href="0023-statistical-comparison.html">L023</a>, where Demšar refuses to average raw accuracies). Grinsztajn's
+    answer is an <strong>affine per-dataset normalization</strong>: on each dataset, rescale test scores so the
+    worst model maps to 0 and the best to 1, then average those normalized curves.
+  </p>
+  <span class="formula">normalized(score) = ( score − worst<sub>dataset</sub> ) / ( best<sub>dataset</sub> − worst<sub>dataset</sub> )</span>
+  <p>
+    Flip the widget above to <strong>Normalized</strong>: on <code>credit-g</code> the MLP's untuned point (the
+    worst model seen) maps to 0.00 and the GBT's peak to 1.00, and the same ordering survives. Averaging these
+    bounded, per-dataset scores stops one high-variance dataset from hijacking the mean — the aggregation step
+    that makes a 45-dataset headline meaningful.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-budget"></div>
+
+  <h2>What the benchmark actually concludes</h2>
+  <p>
+    On this suite, under this protocol, <strong>tree ensembles (XGBoost, GBTs, Random Forests) outperform the
+    neural-net families (MLP, ResNet, FT-Transformer, SAINT) at every tuning budget</strong>, and the advantage
+    is largest at small budgets (trees are better defaults). Crucially, Grinsztajn does not stop at "trees win" —
+    the paper's real contribution is <em>why</em>, framed as three inductive biases you previewed in
+    <a href="0019-when-trees-win.html">L019</a> and will dissect next:
+  </p>
+  <ul>
+    <li><strong>L025 — smoothness.</strong> Neural nets are biased toward smooth functions; tabular targets are
+      often irregular, so MLPs over-smooth them.</li>
+    <li><strong>L026 — rotation.</strong> MLPs are rotationally invariant, but tabular features are individually
+      meaningful (a column is not an arbitrary linear mix); trees respect that orientation.</li>
+    <li><strong>L027 — uninformative features.</strong> Real tables carry junk columns; trees select against them,
+      MLPs are hurt by them.</li>
+  </ul>
+  <p>
+    The benchmark is the <em>measuring instrument</em>; the biases are the <em>mechanism</em>. Getting the
+    instrument right — datasets and protocol — is what earns you the right to draw a mechanistic conclusion at all.
+  </p>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> This is the honest bar the relational thesis must clear, made concrete. When
+    an RDL model is compared to a GBT, the fair report is not a single tuned peak — it is a <strong>budget
+    curve</strong> against a GBT that is a strong default, over a <strong>curated set of tasks</strong>, with
+    <strong>normalized</strong> aggregation. RelBench exists precisely to be that instrument for the relational
+    setting (many tasks, fixed protocol, point-in-time splits), just as Grinsztajn's suite is for single tables.
+    And note the boundary the thesis actually attacks: Grinsztajn's whole benchmark <em>lives inside the
+    single-table world</em> — it curates away relational structure (heterogeneous columns, one flat matrix). The
+    tree-vs-DL contest is a fight over how to model a flattened table; the thesis's claim (C1) is that the
+    flattening itself discarded signal <em>before</em> either contestant sees the data. Beating a GBT on
+    Grinsztajn's terms is table stakes; the bet is on a different table.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>The verdict is regime-specific.</strong> Grinsztajn studies <em>medium-sized</em> (≈10K training
+      rows), heterogeneous data. Larger data, homogeneous/perceptual columns, or the modern tabular nets of Year 2
+      (TabM, TabPFN, TabICL) narrow or flip it — the benchmark's scope <em>is</em> its claim.</li>
+    <li><strong>A budget curve is not free.</strong> Running hundreds of configs per model per dataset is
+      expensive; the payoff is a comparison that can't be gamed by tuning one side harder.</li>
+    <li><strong>Selection criteria are choices, not laws.</strong> "Not too easy" and "heterogeneous" are
+      defensible but debatable; a critic can argue a criterion tilts the field. That the rules are
+      <em>explicit</em> is what makes the argument possible at all.</li>
+    <li><strong>Default ≠ ceiling.</strong> A model can be a poor default and a strong ceiling (the MLP here) or a
+      strong default and a modest ceiling (the GBT). One tuned number erases this distinction; the curve keeps it.</li>
+    <li><strong>This is a single-dataset reproduction.</strong> The <code>credit-g</code> curve shows the
+      <em>protocol</em>, not the full 45-dataset result — for that, read the paper and, later, run the repo.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The core paper: <strong>Léo Grinsztajn, Edouard Oyallon &amp; Gaël Varoquaux (2022), <em>Why do tree-based
+    models still outperform deep learning on typical tabular data?</em>, NeurIPS 2022 Datasets &amp; Benchmarks</strong> —
+    <a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a>. Today read the abstract and
+    <strong>§1–§4</strong>: the motivation (§1–2), the <strong>dataset-selection criteria (§3)</strong>, and the
+    <strong>benchmark methodology — random-search budget curves and normalization (§4)</strong>. Save §5 (the
+    three inductive-bias experiments) for L025–L027. The accompanying benchmark code and datasets are on the
+    <a href="https://github.com/LeoGrin/tabular-benchmark">tabular-benchmark repo</a>.
+  </p>
+
+  <h2>Lab — reproduce the protocol on one dataset</h2>
+  <p>
+    Notebook <code>0024-grinsztajn-benchmark.ipynb</code>: on real OpenML <code>credit-g</code>, sample random
+    hyperparameter configs for a GBT and an MLP, select each by a <strong>validation</strong> split and report on
+    <strong>test</strong>, then implement the <strong>best-so-far budget curve</strong> (the crucial fragment) and
+    the <strong>per-dataset min-max normalization</strong>. Reproduction targets: GBT above MLP at every budget;
+    default gap ≈ +0.06, fully-tuned gap ≈ +0.015; normalized worst→0, best→1.
+    <a href="../labs/html/0024-grinsztajn-benchmark.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why a budget curve is fairer than a single tuned number, or why per-dataset normalization is needed
+    before averaging? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0023-statistical-comparison.html">← Lesson 023</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0024-grinsztajn-benchmark.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/benchmark-budget-viz.js"></script>
+<script src="../assets/dataset-funnel-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 24, count: 3 });
+
+  DatasetFunnelViz.mount(document.getElementById("dataset-funnel-viz"), {});
+  BenchmarkBudgetViz.mount(document.getElementById("benchmark-budget-viz"), {});
+
+  Predict.mount(document.getElementById("predict-budget"), {
+    prompt: "As you spend more random-search budget tuning both models, what happens to the GBT-vs-MLP gap on credit-g?",
+    options: [
+      { label: "The MLP overtakes the GBT once tuned", value: "flip" },
+      { label: "The gap narrows but the GBT stays on top at every budget", value: "narrow" },
+      { label: "The gap is constant regardless of budget", value: "flat" }
+    ],
+    correct: "narrow",
+    reveal: "Tuning helps the MLP more (0.729 → 0.770) than the GBT (barely moves), so the gap shrinks from +0.062 to +0.015 — but the GBT leads at every budget, and is the far stronger default."
+  });
+
+  Teachback.mount(document.getElementById("teachback-budget"), {
+    prompt: "In your own words: why is a random-search budget curve a fairer comparison than reporting each model's single best tuned score?",
+    points: [
+      "A single tuned number hides how much tuning each model needed to reach it",
+      "It flatters models that are hard to tune and ignores default quality / deployment cost",
+      "The budget curve shows both the default (k=1) and the tuned ceiling (large k)",
+      "Averaging over random orderings makes it a smooth, reproducible object to compare",
+      "Per-dataset normalization then lets you average across incommensurable datasets"
+    ],
+    model: "Reporting one tuned peak per model conflates the model's quality with the tuning effort it received: a fragile model with a hundred sensitive knobs can match a robust one only after a huge search, and the single number hides that. The budget curve plots the expected test score of the best-validation config found after k random-search iterations, so it reveals both the default quality (k=1, which is also the cheap-to-deploy point) and the tuned ceiling (large k), and whether the gap closes with tuning. Averaging over many random orderings of the draws turns a noisy search into a smooth curve you can actually compare. To then aggregate across datasets — where raw accuracies are incommensurable — you affine-normalize each dataset's scores (worst→0, best→1) and average those, so no single high-variance dataset dominates the benchmark."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why does Grinsztajn report a random-search budget curve instead of each model's single best tuned score?",
+    options: [
+      { label: "A single tuned number hides how much tuning each model needed and its default quality", value: "a" },
+      { label: "Random search always finds a better optimum than the reported best score", value: "b" },
+      { label: "Curves are required by the Friedman significance test", value: "c" },
+      { label: "It avoids having to use a validation split at all", value: "d" }
+    ],
+    correct: "a",
+    explain: "One tuned peak conflates model quality with tuning effort and erases the default/ceiling distinction. The budget curve shows both k=1 (default) and large-k (tuned), and whether the gap closes — on credit-g the GBT leads at every budget."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Why does Grinsztajn affine-normalize test scores (worst→0, best→1) per dataset before averaging?",
+    options: [
+      { label: "Raw accuracies are incommensurable across datasets, so one dataset would dominate the mean", value: "a" },
+      { label: "Normalization makes every model's score exactly 0.5 on average", value: "b" },
+      { label: "It converts accuracy into a proper probability", value: "c" },
+      { label: "It removes the need for a test set", value: "d" }
+    ],
+    correct: "a",
+    explain: "An 80% on an easy dataset and 80% on a hard one are not comparable (echo of Demšar, L023). Per-dataset min-max scaling bounds every dataset to [0,1] so the aggregate is not hijacked by one high-variance task."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why does the benchmark exclude datasets with 'homogeneous' columns (e.g. pixels or repeated sensor channels)?",
+    options: [
+      { label: "They are perceptual data in disguise, where neural nets have a natural edge — not the tabular question", value: "a" },
+      { label: "They always contain data leakage", value: "b" },
+      { label: "Trees cannot be trained on more than 500 columns", value: "c" },
+      { label: "OpenML does not host image-like data", value: "d" }
+    ],
+    correct: "a",
+    explain: "Heterogeneous columns (each a distinct meaningful feature) define the tabular setting. Pixel-like homogeneous columns give CNNs/MLPs a home-field advantage, so including them would smuggle a non-tabular win into a tabular benchmark."
+  });
+</script>
+</body>
+</html>

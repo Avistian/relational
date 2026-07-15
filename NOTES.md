@@ -236,6 +236,41 @@
 - Next: Lesson 024 (The Grinsztajn benchmark — Grinsztajn 2022 §1–4; run one dataset), opening the
   Grinsztajn arc 024–027.
 
+## Session 25 — 2026-07-15
+
+- **Lesson 024 published** — The Grinsztajn benchmark (curriculum lec 024, **Grinsztajn, Oyallon &
+  Varoquaux 2022**, arXiv `2207.08815`), **§1–4** — opens the Grinsztajn arc 024–027. Single skill:
+  read/reproduce the benchmark **protocol** — a random-search **budget curve** (not one tuned
+  number), **per-dataset normalization**, and the **dataset-selection criteria** that make the
+  tree-vs-DL verdict fair. §5 (three biases) deferred to L025–027. Record:
+  [[learning-records/0060-lesson-024-published.md]]. (Run headlessly by the publish loop; no user
+  interaction this session.)
+- **arxiv MCP unavailable** (headless publish env) → grounded in the published Grinsztajn arc (L019
+  already covered §5 biases via user-arxiv) + the paper's known §3/§4 methodology; cited arXiv abs +
+  the LeoGrin/tabular-benchmark repo.
+- **Verified live (`labs/_verify_l024.py` + executed solution, real OpenML credit-g, seed 0, 30
+  configs × 40 orderings):** GBT (HistGradientBoosting) above MLP at **every** budget — default
+  (k=1) **0.7906 vs 0.7286** (gap **+0.0620**), fully tuned (k=30) **0.7850 vs 0.7700** (gap
+  **+0.0150**); tuning helps the MLP more but the gap narrows-not-closes. Honest small-data artifact
+  kept: GBT curve dips at large budget (validation overfitting on 200 val rows → why "not too small"
+  is a criterion; callback L004/L017). Normalization worst→0, best→1, ordering preserved.
+- **Two new reusable viz (standard #9):** `assets/benchmark-budget-viz.js` (Fig-1 budget curve,
+  log-x, raw↔normalized toggle + budget slider, real credit-g data) and
+  `assets/dataset-funnel-viz.js` (§3 selection funnel, click-a-stage → criterion + rationale, counts
+  illustrative). Headless `labs/_viz_check_l024.js` 11/11; **browser MCP still unavailable** →
+  headless-only, as L021–L023.
+- **First Tier-A training lab of Q3:** OpenML **reachable** this session (unlike L021/L022 egress
+  blocks). `labs/0024-grinsztajn-benchmark.ipynb` uses `relkit.load_tier_a("credit_g")` (incremental
+  rule) + reproduces the protocol. 3 TODO + stretch; crucial fragment = the best-so-far budget curve
+  (select by valid, report test). Student blank (7 `____`, 0 outputs); solution executed clean &
+  gitignored. Built via `labs/_build_l024.py`.
+- **Artifacts synced:** retrieval-pool +2 (`l024-budget-curve` [misconception], `l024-normalization`);
+  paper-deck +1 (`grinsztajn2022-benchmark`, distinct from L019's `grinsztajn2022` biases card);
+  misconceptions **M21**; thesis-dossier +1 (BAR+FOR, C3/C1 — GBT default raises the bar, but the
+  contest lives inside the single-table world the thesis attacks); `reference/glossary.html` +6 Q3
+  terms. Manifest → 24; all labs re-rendered. `node labs/_check_pedagogy.js` clean.
+- Next: Lesson 025 (Inductive bias: smoothness — Grinsztajn 2022 §5.2), continuing the Grinsztajn arc.
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -295,7 +330,7 @@ Track with ✓ as completed:
 - [x] Y1: Prokhorenkova 2018 CatBoost §3 (ordered TS) + §4 (ordered boosting) assigned in Lesson 016 (ordered TS implemented in lab)
 - [x] Y1: Bergstra & Bengio 2012 §1 (random search / low effective dimensionality) assigned in Lesson 017 (grid vs random + nested CV implemented in lab)
 - [x] Y1: Wolpert 1992 §1–3 (stacked generalization / out-of-fold meta-features) assigned in Lesson 018 (OOF blend + leak contrast + StackingClassifier in lab)
-- [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019 (three-bias synthetic demos in lab); full §5 benchmark reproduction still pending in Q3 (lec 024–027)
+- [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019; **§3–4 (benchmark construction + random-search budget-curve protocol) assigned in Lesson 024** (single-dataset protocol reproduction on credit-g in lab); §5 inductive-bias experiments still pending in L025–027
 - [~] Y1/Y2: Rubachev 2024 (TabReD, `2406.19380`) — abstract + §1 + §5.4 previewed in Lesson 021 (random vs temporal splits; optimism gap synthetic demo in lab); full core read is Y2 lec 055
 - [x] Y1: Kapoor & Narayanan 2022 (`2207.07048`) — abstract + §2 (8-type taxonomy) + §5 (civil-war reproduction) + §6 (model info sheet) assigned in Lesson 022 (illegitimate-feature collapse + FE-classification + model info sheet in lab)
 - [x] Y1: Demšar 2006 (JMLR 7, no arXiv) — §3.2 (Wilcoxon) + §3.5 (Friedman + Nemenyi CD) assigned in Lesson 023; Nadeau & Bengio 2003 (corrected resampled t-test) + Dietterich 1998 (5×2cv/McNemar) as the single-dataset companions (corrected-t + Friedman/CD implemented in lab)

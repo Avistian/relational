@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0022-label-leakage-patterns</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0024-grinsztajn-benchmark</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,59 +7796,56 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=91d788db">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5c169a55">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-022-%E2%80%94-Label-leakage-patterns:-spot-it,-reproduce-the-collapse">Lab 022 — Label leakage patterns: spot it, reproduce the collapse<a class="anchor-link" href="#Lab-022-%E2%80%94-Label-leakage-patterns:-spot-it,-reproduce-the-collapse">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0022-label-leakage-patterns.html"><code>lessons/0022-label-leakage-patterns.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q3</p>
-<p><strong>Paper:</strong> Kapoor &amp; Narayanan 2022, <em>Leakage and the Reproducibility Crisis in ML-based Science</em>, <a href="https://arxiv.org/abs/2207.07048">arXiv:2207.07048</a> — abstract + §2 (taxonomy of 8 leak types), §5 (civil-war reproduction), §6 (model info sheet).</p>
-<p><strong>Dataset tier:</strong> C — synthetic (mechanism isolation). We isolate two leaks on controlled data so the effect is real and reproducible; this is <em>not</em> a benchmark.</p>
-<p><strong>Skill you are practising:</strong> classify a feature-engineering choice into the leak taxonomy, and reproduce how an <strong>illegitimate feature</strong> manufactures a false "complex model wins" result (the <em>reproducibility collapse</em>).</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints the collapse (with/without leak), the duplicate leak, the FE-audit result, and your one-sentence takeaway. Reproduction targets: leaked gap ≈ +0.217, honest gap ≈ 0.000; dup leak 0.948 → 0.876.</p>
+<h1 id="Lab-024-%E2%80%94-The-Grinsztajn-benchmark-protocol:-budget-curves,-not-single-numbers">Lab 024 — The Grinsztajn benchmark protocol: budget curves, not single numbers<a class="anchor-link" href="#Lab-024-%E2%80%94-The-Grinsztajn-benchmark-protocol:-budget-curves,-not-single-numbers">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0024-grinsztajn-benchmark.html"><code>lessons/0024-grinsztajn-benchmark.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q3</p>
+<p><strong>Paper:</strong> Grinsztajn, Oyallon &amp; Varoquaux 2022, <em>Why do tree-based models still outperform deep learning on typical tabular data?</em>, NeurIPS 2022 D&amp;B (<a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a>) — §3 (dataset criteria), §4 (random-search budget curves + normalization). Repo: <a href="https://github.com/LeoGrin/tabular-benchmark">tabular-benchmark</a>.</p>
+<p><strong>Dataset tier:</strong> A — real OpenML <code>credit-g</code> (via <code>relkit.load_tier_a</code>). This is a <em>single-dataset</em> reproduction of the <strong>protocol</strong>, not the full 45-dataset suite.</p>
+<p><strong>Skill you are practising:</strong> compare two model families the fair way — a <strong>random-search budget curve</strong> (select by validation, report test, averaged over orderings) instead of one tuned peak, plus <strong>per-dataset min-max normalization</strong> so datasets can be averaged.</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints the GBT-vs-MLP budget curve (GBT ahead at every budget; default gap ≈ +0.06, fully-tuned gap ≈ +0.015) and the normalized curves (worst→0, best→1).</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells — complete boilerplate; just run.</li>
+<li><strong>PROVIDED</strong> cells — complete boilerplate (data, models, the slow evaluation); just run.</li>
 <li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong> and <strong>numpy</strong> only (no boosters, no network).</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong> + <strong>relkit</strong> and a network connection for the first OpenML fetch (then cached). The evaluation cell trains 60 models and takes ~1–2 minutes.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=194b8a64">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7dc00874">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-leakage-is-a-family-with-a-map">Concept recap — leakage is a family with a map<a class="anchor-link" href="#Concept-recap-%E2%80%94-leakage-is-a-family-with-a-map">¶</a></h2><p><strong>Data leakage</strong> = anything the model learns at training time that it could not legitimately know at prediction time. Kapoor &amp; Narayanan (2022) found it in 17 fields (329 papers) and gave it a <strong>taxonomy of 8 types in 3 families</strong>:</p>
-<ul>
-<li><strong>Family 1 — no clean train/test separation:</strong> <code>L1.1</code> no test set · <code>L1.2</code> preprocessing on all data · <code>L1.3</code> feature selection on all data · <code>L1.4</code> duplicates across the split.</li>
-<li><strong>Family 2 — illegitimate features:</strong> <code>L2</code> a column that proxies the label or would not exist at prediction time.</li>
-<li><strong>Family 3 — test set ≠ distribution of interest:</strong> <code>L3.1</code> temporal leakage · <code>L3.2</code> non-independence (same entity both sides) · <code>L3.3</code> sampling bias.</li>
-</ul>
-<p><strong>The dangerous one (L2).</strong> An illegitimate feature passes every pipeline and split check — it just looks <em>very predictive</em>, because it is a stand-in for the answer. A flexible model exploits it harder than a linear one, so a leak can make a complex model look like it crushes logistic regression.</p>
-<p><strong>Toy micro-example (not this lab's answer).</strong> Predicting whether a loan <em>defaults</em>, you include <code>recovered_amount</code> — only ever nonzero after a default. Train accuracy 0.99, deploy accuracy 0.60: the column is a proxy for the label. The fix is provenance, not statistics: could the value be known strictly <em>before</em> the label event?</p>
-<p>Full write-up + the taxonomy map and collapse widgets: <a href="../lessons/0022-label-leakage-patterns.html">Lesson 022</a>.</p>
+<h2 id="Concept-recap-%E2%80%94-a-benchmark-is-an-instrument,-and-it-can-be-rigged">Concept recap — a benchmark is an instrument, and it can be rigged<a class="anchor-link" href="#Concept-recap-%E2%80%94-a-benchmark-is-an-instrument,-and-it-can-be-rigged">¶</a></h2><p><strong>The tuning trap.</strong> "Model A: 0.82, Model B: 0.81" is meaningless without knowing how much each was tuned. A neural net with many sensitive knobs might need 200 random-search iterations to reach 0.82, while a GBT reaches 0.81 on defaults. Reporting only the peak flatters the model that is hardest to tune — and hides its deployment cost.</p>
+<p><strong>The budget curve (§4).</strong> For each model, draw many random hyperparameter configs; for a budget <code>k</code>, take the config with the best <strong>validation</strong> score among the first <code>k</code> draws and record its <strong>test</strong> score; average over many random orderings of the draws. The result is a curve of test score vs number of search iterations — it shows the <strong>default</strong> (k=1) and the <strong>tuned ceiling</strong> (large k) at once. The rule that keeps it honest: <em>select by validation, report test</em> (callback L003/L004 — never pick by the test set).</p>
+<p><strong>Normalization (§4).</strong> To average across datasets you must first make them commensurable (raw accuracies are not — echo of Demšar, L023). Affine-rescale each dataset's scores so the worst model → 0 and the best → 1, then average those.</p>
+<p><strong>Curation (§3).</strong> Before any of this, the datasets are filtered by explicit rules: real, tabular, medium-sized, heterogeneous columns, not too easy. Curation is half the experiment — it is where a benchmark can quietly cheat.</p>
+<p><strong>Toy micro-example (not this lab's answer).</strong> Say draw order gives validation <code>[.70, .74, .72]</code> and test <code>[.69, .73, .71]</code>. Best-so-far <em>by validation</em>: k=1 pick idx0 → report test .69; k=2 idx1 is better → report .73; k=3 idx1 still best → report .73. You never report .71's test just because it came last.</p>
+<p>Full write-up + the budget-curve and dataset-funnel widgets: <a href="../lessons/0024-grinsztajn-benchmark.html">Lesson 024</a>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1e2da28a">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=61950cbd">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Setup-%E2%80%94-PROVIDED">Setup — PROVIDED<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED">¶</a></h2>
+<h2 id="Setup-%E2%80%94-PROVIDED-(loads-data,-sizes-the-split,-evaluates-60-configs-%E2%80%94-~1%E2%80%932-min)">Setup — PROVIDED (loads data, sizes the split, evaluates 60 configs — ~1–2 min)<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED-(loads-data,-sizes-the-split,-evaluates-60-configs-%E2%80%94-~1%E2%80%932-min)">¶</a></h2>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5d0c778e">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d93bef05">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7856,113 +7853,142 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — three data generators (mechanism isolation) + models. Just run.</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — data, models, config samplers, and the (slow) evaluation. Just run.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="c1"># make relkit importable whether the notebook runs from labs/ or labs/solutions/</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()))</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogisticRegression</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroupKFold</span><span class="p">,</span> <span class="n">KFold</span><span class="p">,</span> <span class="n">cross_val_score</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistGradientBoostingClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neural_network</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLPClassifier</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneHotEncoder</span><span class="p">,</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">accuracy_score</span>
 
 <span class="n">SEED</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">N_CONFIGS</span> <span class="o">=</span> <span class="mi">30</span>      <span class="c1"># random-search iterations per model</span>
+<span class="n">N_SHUFFLES</span> <span class="o">=</span> <span class="mi">40</span>     <span class="c1"># random orderings to average the budget curve over</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">make_legit</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""A weak, mostly-linear signal. RF and LR both land near 0.72 — an honest tie."""</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>            <span class="c1"># real OpenML data (Tier A)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">"category"</span><span class="p">,</span> <span class="s2">"object"</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">num</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cat</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"credit-g: n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="si">}</span><span class="s2">, d=</span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">num</span><span class="p">)</span><span class="si">}</span><span class="s2"> num + </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span><span class="si">}</span><span class="s2"> cat), prevalence=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># train / valid / test = 60 / 20 / 20  (valid selects hyperparameters, test reports)</span>
+<span class="n">Xtr</span><span class="p">,</span> <span class="n">Xtmp</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">ytmp</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+<span class="n">Xva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">Xtmp</span><span class="p">,</span> <span class="n">ytmp</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">ytmp</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"split: train </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">Xtr</span><span class="p">)</span><span class="si">}</span><span class="s2">  valid </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">Xva</span><span class="p">)</span><span class="si">}</span><span class="s2">  test </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">Xte</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">make_gbt</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">HistGradientBoostingClassifier</span><span class="p">(</span>
+        <span class="n">learning_rate</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"learning_rate"</span><span class="p">],</span> <span class="n">max_leaf_nodes</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"max_leaf_nodes"</span><span class="p">],</span>
+        <span class="n">max_iter</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"max_iter"</span><span class="p">],</span> <span class="n">l2_regularization</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"l2"</span><span class="p">],</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">make_mlp</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="n">pre</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">([(</span><span class="s2">"num"</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">num</span><span class="p">),</span>
+                             <span class="p">(</span><span class="s2">"cat"</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">),</span> <span class="n">cat</span><span class="p">)])</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MLPClassifier</span><span class="p">(</span><span class="n">hidden_layer_sizes</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"hidden"</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"alpha"</span><span class="p">],</span>
+                        <span class="n">learning_rate_init</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"lr"</span><span class="p">],</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+                        <span class="n">early_stopping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">make_pipeline</span><span class="p">(</span><span class="n">pre</span><span class="p">,</span> <span class="n">clf</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_gbt_configs</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">2.5</span><span class="p">,</span><span class="o">-</span><span class="mf">0.3</span><span class="p">)),</span>
+                 <span class="n">max_leaf_nodes</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">64</span><span class="p">)),</span>
+                 <span class="n">max_iter</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="mi">600</span><span class="p">)),</span>
+                 <span class="n">l2</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_mlp_configs</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="n">W</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="p">[</span><span class="mi">64</span><span class="p">,</span><span class="mi">128</span><span class="p">,</span><span class="mi">256</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">w</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">W</span><span class="p">));</span> <span class="n">dep</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">D</span><span class="p">))</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">hidden</span><span class="o">=</span><span class="nb">tuple</span><span class="p">([</span><span class="n">w</span><span class="p">]</span><span class="o">*</span><span class="n">dep</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span>
+                        <span class="n">lr</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="p">))))</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="n">build</span><span class="p">,</span> <span class="n">cfgs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Fit each config on train; return (valid_acc, test_acc) arrays."""</span>
+    <span class="n">va</span><span class="p">,</span> <span class="n">te</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="n">cfgs</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">build</span><span class="p">(</span><span class="n">cfg</span><span class="p">);</span> <span class="n">m</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+        <span class="n">va</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">yva</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xva</span><span class="p">)))</span>
+        <span class="n">te</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xte</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">va</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">te</span><span class="p">)</span>
+
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+<span class="n">gbt_va</span><span class="p">,</span> <span class="n">gbt_te</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span><span class="n">make_gbt</span><span class="p">,</span> <span class="n">sample_gbt_configs</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">N_CONFIGS</span><span class="p">))</span>
+<span class="n">mlp_va</span><span class="p">,</span> <span class="n">mlp_te</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span><span class="n">make_mlp</span><span class="p">,</span> <span class="n">sample_mlp_configs</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">N_CONFIGS</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"evaluated"</span><span class="p">,</span> <span class="n">N_CONFIGS</span><span class="p">,</span> <span class="s2">"configs per model (valid + test accuracy each)"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5a04c04b">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-1-%E2%80%94-the-best-so-far-budget-curve-%E2%80%94-TODO-(crucial-fragment)">Task 1 — the best-so-far budget curve — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-the-best-so-far-budget-curve-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> turn each model's <code>(valid, test)</code> scores into a <strong>budget curve</strong>: the expected test
+accuracy of the best-<strong>validation</strong> config found among the first <code>k</code> random draws, averaged over
+many random orderings of the draw sequence.</p>
+<p><strong>Why it matters:</strong> this is the methodological heart of Grinsztajn 2022 (§4). Reporting one tuned
+peak flatters whichever model is hardest to tune; the curve shows both the <strong>default</strong> (k=1) and the
+<strong>tuned ceiling</strong> (large k). The non-negotiable rule: <strong>select the config by the validation split,
+report its test score</strong> — never pick by test.</p>
+<p><strong>You implement:</strong> inside the loop, (1) update <code>best_i</code> to the index of the best <em>validation</em> score
+seen so far, and (2) accumulate the <em>test</em> score of that <code>best_i</code>.</p>
+<p><strong>Hint boundary:</strong> you compare <code>v[k]</code> to <code>v[best_i]</code> to update <code>best_i</code>; you add <code>t[best_i]</code> (the test
+score of the current best-by-validation config) to <code>curve[k]</code>. Do not peek at test to choose.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d08f8711">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement the select-by-validation, report-test budget curve</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">budget_curve</span><span class="p">(</span><span class="n">valid</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">n_shuffles</span><span class="o">=</span><span class="n">N_SHUFFLES</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
     <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
-    <span class="n">X</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.9</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
-    <span class="n">logit</span> <span class="o">=</span> <span class="n">X</span> <span class="o">@</span> <span class="n">w</span> <span class="o">+</span> <span class="mf">1.8</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">logit</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span>
+    <span class="n">curve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_shuffles</span><span class="p">):</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">valid</span><span class="p">[</span><span class="n">order</span><span class="p">],</span> <span class="n">test</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+        <span class="n">best_i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">____</span><span class="p">:</span>                      <span class="c1"># update best_i when a better VALIDATION score appears</span>
+                <span class="n">best_i</span> <span class="o">=</span> <span class="n">k</span>
+            <span class="n">curve</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">____</span>              <span class="c1"># accumulate the TEST score of the best-by-validation config</span>
+    <span class="k">return</span> <span class="n">curve</span> <span class="o">/</span> <span class="n">n_shuffles</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">leaked_nonmonotone</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">flip</span><span class="o">=</span><span class="mf">0.06</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""ILLEGITIMATE feature: encodes y NON-MONOTONICALLY.</span>
-<span class="sd">       y==1 -&gt; outer bands [0,0.33) U [0.66,1);  y==0 -&gt; middle band [0.33,0.66).</span>
-<span class="sd">    A tree carves it out with two splits; a linear model sees class means ~0.5 (no</span>
-<span class="sd">    usable direction). This is a downstream/proxy column absent at prediction time."""</span>
-    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">noisy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">flip</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-    <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">yi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">noisy</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">yi</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.66</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">if</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.5</span> <span class="k">else</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.33</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.33</span><span class="p">,</span> <span class="mf">0.66</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">val</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">gbt_curve</span> <span class="o">=</span> <span class="n">budget_curve</span><span class="p">(</span><span class="n">gbt_va</span><span class="p">,</span> <span class="n">gbt_te</span><span class="p">)</span>
+<span class="n">mlp_curve</span> <span class="o">=</span> <span class="n">budget_curve</span><span class="p">(</span><span class="n">mlp_va</span><span class="p">,</span> <span class="n">mlp_te</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">make_with_dups</span><span class="p">(</span><span class="n">n_unique</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span> <span class="n">dup_frac</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Unique records + near-duplicate copies (same record, tiny jitter).</span>
-<span class="sd">    Returns X, y, groups (groups = the underlying record id)."""</span>
-    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="n">Xu</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n_unique</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.2</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
-    <span class="n">yu</span> <span class="o">=</span> <span class="p">((</span><span class="n">Xu</span> <span class="o">@</span> <span class="n">w</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">n_unique</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="n">gu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_unique</span><span class="p">)</span>
-    <span class="n">nd</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n_unique</span> <span class="o">*</span> <span class="n">dup_frac</span><span class="p">)</span>
-    <span class="n">pick</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_unique</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">nd</span><span class="p">)</span>
-    <span class="n">Xd</span> <span class="o">=</span> <span class="n">Xu</span><span class="p">[</span><span class="n">pick</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.01</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">nd</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
-    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">Xu</span><span class="p">,</span> <span class="n">Xd</span><span class="p">]);</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">yu</span><span class="p">,</span> <span class="n">yu</span><span class="p">[</span><span class="n">pick</span><span class="p">]]);</span> <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">gu</span><span class="p">,</span> <span class="n">gu</span><span class="p">[</span><span class="n">pick</span><span class="p">]])</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">X</span><span class="p">[</span><span class="n">p</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">p</span><span class="p">],</span> <span class="n">g</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">rf</span><span class="p">():</span>
-    <span class="k">return</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">lr</span><span class="p">():</span>
-    <span class="k">return</span> <span class="n">make_pipeline</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">))</span>
-
-<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_legit</span><span class="p">()</span>
-<span class="n">leak</span> <span class="o">=</span> <span class="n">leaked_nonmonotone</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-<span class="n">cv5</span> <span class="o">=</span> <span class="n">KFold</span><span class="p">(</span><span class="n">n_splits</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"legit data: n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="si">}</span><span class="s2">, d=</span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">, prevalence=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">; leaked column shape </span><span class="si">{</span><span class="n">leak</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'budget k'</span><span class="si">:</span><span class="s2">&gt;9</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'GBT'</span><span class="si">:</span><span class="s2">&gt;7</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'MLP'</span><span class="si">:</span><span class="s2">&gt;7</span><span class="si">}</span><span class="s2"> | GBT-MLP"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">]:</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">k</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">&gt;9</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">gbt_curve</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">mlp_curve</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">gbt_curve</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">mlp_curve</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d3ef0215">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-reproduce-the-collapse-%E2%80%94-TODO-(crucial-fragment)">Task 1 — reproduce the collapse — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-reproduce-the-collapse-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> measure a complex model (Random Forest) and logistic regression <strong>with</strong> and <strong>without</strong> the illegitimate leaked column, and watch the apparent gap open then collapse.</p>
-<p><strong>Why it matters:</strong> this is the Kapoor &amp; Narayanan civil-war finding in miniature — a leak can <em>manufacture</em> a "complex ML beats the simple model" conclusion. Remove one column and the win evaporates.</p>
-<p><strong>You implement:</strong> (1) build the leaked design matrix by column-stacking <code>X</code> and <code>leak</code>; (2) score each model with <code>cross_val_score(..., cv=cv5, scoring="accuracy").mean()</code> on both the honest <code>X</code> and the leaked matrix.</p>
-<p><strong>Hint boundary:</strong> <code>np.hstack([...])</code> glues columns; call the provided <code>rf()</code> / <code>lr()</code> factories fresh for each score. Do not change <code>cv5</code>.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=8a3b1bcc">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — measure the collapse</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">acc</span><span class="p">(</span><span class="n">model_fn</span><span class="p">,</span> <span class="n">XX</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">model_fn</span><span class="p">(),</span> <span class="n">XX</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">cv5</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"accuracy"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-
-<span class="n">Xleak</span> <span class="o">=</span> <span class="n">____</span>                              <span class="c1"># column-stack the honest X with the leaked column</span>
-
-<span class="n">rf_honest</span> <span class="o">=</span> <span class="n">acc</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">____</span><span class="p">)</span>                 <span class="c1"># RF on the honest features</span>
-<span class="n">lr_honest</span> <span class="o">=</span> <span class="n">acc</span><span class="p">(</span><span class="n">lr</span><span class="p">,</span> <span class="n">____</span><span class="p">)</span>                 <span class="c1"># LR on the honest features</span>
-<span class="n">rf_leak</span>   <span class="o">=</span> <span class="n">acc</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="n">____</span><span class="p">)</span>                 <span class="c1"># RF WITH the leaked column</span>
-<span class="n">lr_leak</span>   <span class="o">=</span> <span class="n">acc</span><span class="p">(</span><span class="n">lr</span><span class="p">,</span> <span class="n">____</span><span class="p">)</span>                 <span class="c1"># LR WITH the leaked column</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"WITH leak:     RF </span><span class="si">{</span><span class="n">rf_leak</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">   LR </span><span class="si">{</span><span class="n">lr_leak</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">   gap(RF-LR) </span><span class="si">{</span><span class="n">rf_leak</span><span class="o">-</span><span class="n">lr_leak</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"WITHOUT leak:  RF </span><span class="si">{</span><span class="n">rf_honest</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">   LR </span><span class="si">{</span><span class="n">lr_honest</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">   gap(RF-LR) </span><span class="si">{</span><span class="n">rf_honest</span><span class="o">-</span><span class="n">lr_honest</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=375ba031">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5b97df92">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7971,31 +7997,39 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">rf_leak</span> <span class="o">-</span> <span class="n">lr_leak</span> <span class="o">&gt;</span> <span class="mf">0.15</span><span class="p">,</span> <span class="s2">"WITH the leak, RF should appear to crush LR (gap &gt; 0.15)."</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">rf_honest</span> <span class="o">-</span> <span class="n">lr_honest</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s2">"WITHOUT the leak, RF and LR should be ~tied."</span>
-<span class="k">assert</span> <span class="n">rf_leak</span> <span class="o">-</span> <span class="n">rf_honest</span> <span class="o">&gt;</span> <span class="mf">0.15</span><span class="p">,</span> <span class="s2">"The leak should inflate RF's score substantially."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — leak inflates the RF-vs-LR gap from </span><span class="si">{</span><span class="n">rf_honest</span><span class="o">-</span><span class="n">lr_honest</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> (honest) "</span>
-      <span class="sa">f</span><span class="s2">"to </span><span class="si">{</span><span class="n">rf_leak</span><span class="o">-</span><span class="n">lr_leak</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> (leaked). The 'complex model wins' was the leak."</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">gbt_curve</span><span class="p">)</span> <span class="o">==</span> <span class="n">N_CONFIGS</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mlp_curve</span><span class="p">)</span> <span class="o">==</span> <span class="n">N_CONFIGS</span>
+<span class="k">assert</span> <span class="n">gbt_curve</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">mlp_curve</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"GBT should beat the MLP by DEFAULT (budget k=1)."</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">gbt_curve</span> <span class="o">-</span> <span class="n">mlp_curve</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"GBT should be above the MLP at EVERY budget."</span>
+<span class="k">assert</span> <span class="mf">0.04</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">gbt_curve</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">mlp_curve</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.09</span><span class="p">,</span> <span class="s2">"Default gap should be ~+0.06."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — GBT leads at every budget; default gap "</span>
+      <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">gbt_curve</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">mlp_curve</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">, fully-tuned gap </span><span class="si">{</span><span class="n">gbt_curve</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">mlp_curve</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">. "</span>
+      <span class="sa">f</span><span class="s2">"Tuning helps the MLP more, but never enough to catch up."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a5cb0709">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=32928813">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-the-near-duplicate-leak-%E2%80%94-TODO-(crucial-fragment)">Task 2 — the near-duplicate leak — TODO (crucial fragment)<a class="anchor-link" href="#Task-2-%E2%80%94-the-near-duplicate-leak-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> show that when the <em>same underlying record</em> appears twice (near-duplicates), a random CV leaks — a training twin gives away its test copy. Fix it with a <strong>grouped</strong> split so no record straddles a fold.</p>
-<p><strong>Why it matters:</strong> the unit of independence is the <em>record</em>, not the row (taxonomy L1.4 / L3.2). This is the L004 grouped-split discipline, now recognized as a named leak type.</p>
-<p><strong>You implement:</strong> score <code>rf()</code> two ways — a naïve <code>KFold(shuffle=True)</code> and a <code>GroupKFold(n_splits=5)</code> that receives <code>groups=g</code> so copies of a record stay on one side.</p>
-<p><strong>Hint boundary:</strong> <code>GroupKFold(n_splits=5)</code>; pass <code>groups=g</code> to <code>cross_val_score</code>. The naïve one uses <code>cv5</code> (no groups).</p>
+<h2 id="Task-2-%E2%80%94-per-dataset-normalization-%E2%80%94-TODO">Task 2 — per-dataset normalization — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-per-dataset-normalization-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> implement Grinsztajn's affine (min-max) normalization that makes datasets commensurable so
+their curves can be averaged across the suite.</p>
+<p><strong>Why it matters:</strong> an 80% on an easy dataset and 80% on a hard one are not comparable (echo of Demšar,
+L023 — don't average raw accuracies). Rescaling each dataset's scores to <code>[0, 1]</code> (worst model → 0,
+best → 1) stops one high-variance dataset from hijacking the benchmark mean.</p>
+<p><strong>The formula:</strong> <code>normalized(s) = (s − worst) / (best − worst)</code>, where <code>worst</code>/<code>best</code> are the min/max
+test scores over <strong>all models on this dataset</strong> (here, both curves together).</p>
+<p><strong>You implement:</strong> <code>lo</code> and <code>hi</code> over the two curves, then the affine rescale.</p>
+<p><strong>Hint boundary:</strong> <code>lo</code> is the min over <em>both</em> curves, <code>hi</code> the max over both; then apply the formula to
+each curve.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c2f16928">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e7c7f9e8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8003,21 +8037,25 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — measure the duplicate leak</span>
-<span class="n">Xd</span><span class="p">,</span> <span class="n">yd</span><span class="p">,</span> <span class="n">g</span> <span class="o">=</span> <span class="n">make_with_dups</span><span class="p">()</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — affine min-max normalize both curves onto [0, 1]</span>
+<span class="n">both</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">gbt_curve</span><span class="p">,</span> <span class="n">mlp_curve</span><span class="p">])</span>
+<span class="n">lo</span> <span class="o">=</span> <span class="n">____</span>                                  <span class="c1"># worst (min) test score over ALL models on this dataset</span>
+<span class="n">hi</span> <span class="o">=</span> <span class="n">____</span>                                  <span class="c1"># best (max) test score over ALL models on this dataset</span>
 
-<span class="n">naive</span>   <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">rf</span><span class="p">(),</span> <span class="n">Xd</span><span class="p">,</span> <span class="n">yd</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">____</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"accuracy"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>          <span class="c1"># random KFold (leaks twins)</span>
-<span class="n">grouped</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">rf</span><span class="p">(),</span> <span class="n">Xd</span><span class="p">,</span> <span class="n">yd</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="n">____</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">____</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s2">"accuracy"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>  <span class="c1"># GroupKFold on record id</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">curve</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">____</span>                            <span class="c1"># (curve - lo) / (hi - lo)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"naive random 5-fold CV   </span><span class="si">{</span><span class="n">naive</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">   (copies straddle train/test -&gt; optimistic)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GroupKFold on record id  </span><span class="si">{</span><span class="n">grouped</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">   (no record straddles -&gt; honest)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"leak size = </span><span class="si">{</span><span class="n">naive</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">grouped</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">gbt_norm</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">gbt_curve</span><span class="p">)</span>
+<span class="n">mlp_norm</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">mlp_curve</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"raw range on credit-g: [</span><span class="si">{</span><span class="n">lo</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">hi</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"normalized GBT: k=1 </span><span class="si">{</span><span class="n">gbt_norm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  k=30 </span><span class="si">{</span><span class="n">gbt_norm</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"normalized MLP: k=1 </span><span class="si">{</span><span class="n">mlp_norm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  k=30 </span><span class="si">{</span><span class="n">mlp_norm</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a8cd896e">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7f5a9e22">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8026,35 +8064,33 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">naive</span> <span class="o">-</span> <span class="n">grouped</span> <span class="o">&gt;</span> <span class="mf">0.03</span><span class="p">,</span> <span class="s2">"The naive random CV should be clearly optimistic vs the grouped CV."</span>
-<span class="k">assert</span> <span class="n">grouped</span> <span class="o">&lt;</span> <span class="n">naive</span><span class="p">,</span> <span class="s2">"GroupKFold (no record straddling a fold) is the honest, lower number."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — duplicates inflate the score by </span><span class="si">{</span><span class="n">naive</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">grouped</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">. "</span>
-      <span class="sa">f</span><span class="s2">"Group by the record id (L004 discipline) and the phantom disappears."</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">gbt_norm</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">mlp_norm</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">-</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="s2">"The worst model should map to 0."</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">gbt_norm</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">mlp_norm</span><span class="o">.</span><span class="n">max</span><span class="p">())</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="s2">"The best model should map to 1."</span>
+<span class="k">assert</span> <span class="n">gbt_norm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">mlp_norm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="p">(</span><span class="n">gbt_norm</span> <span class="o">-</span> <span class="n">mlp_norm</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mf">1e-9</span><span class="p">,</span> <span class="s2">"Ordering must be preserved."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — worst model -&gt; 0.00, best -&gt; 1.00, ordering preserved. "</span>
+      <span class="sa">f</span><span class="s2">"These bounded per-dataset curves are what Grinsztajn averages across the 45-dataset suite."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b440b888">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ac77ce5c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-spot-the-leak-in-feature-engineering-%E2%80%94-TODO-(the-core-skill)">Task 3 — spot the leak in feature engineering — TODO (the core skill)<a class="anchor-link" href="#Task-3-%E2%80%94-spot-the-leak-in-feature-engineering-%E2%80%94-TODO-(the-core-skill)">¶</a></h2><p><strong>Goal:</strong> classify each feature-engineering choice into the Kapoor &amp; Narayanan taxonomy code. This is the lesson's headline skill: <em>name the leak before it inflates your score.</em></p>
-<p><strong>Taxonomy codes:</strong></p>
-<ul>
-<li><code>L1.1</code> no held-out test set · <code>L1.2</code> preprocessing on all data · <code>L1.3</code> feature selection on all data · <code>L1.4</code> duplicates across the split</li>
-<li><code>L2</code> illegitimate feature (proxy for / unavailable-at-prediction-time)</li>
-<li><code>L3.1</code> temporal leakage · <code>L3.2</code> non-independence (same entity both sides) · <code>L3.3</code> sampling bias in the test set</li>
-</ul>
-<p><strong>You implement:</strong> fill each value in <code>answers</code> with the correct code string.</p>
-<p><strong>Hint boundary:</strong> map each scenario to exactly one code. Re-read the taxonomy widget in the lesson if unsure — do not guess the whole set.</p>
+<h2 id="Task-3-%E2%80%94-read-the-verdict-%E2%80%94-TODO">Task 3 — read the verdict — TODO<a class="anchor-link" href="#Task-3-%E2%80%94-read-the-verdict-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> compute the gap curve and state, in numbers, the two honest readings of the benchmark.</p>
+<p><strong>Why it matters:</strong> the benchmark's headline is not "trees win" but <em>trees win at every budget, and are
+the stronger default</em>. You are extracting exactly that from your own reproduction.</p>
+<p><strong>You implement:</strong> the elementwise <code>gap = gbt_curve - mlp_curve</code>, and the boolean
+<code>gbt_wins_everywhere</code> = "is the minimum gap still positive?".</p>
+<p><strong>Hint boundary:</strong> <code>gap</code> is an array subtraction; <code>gbt_wins_everywhere</code> uses <code>gap.min() &gt; 0</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6a6135aa">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=422a8091">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8062,31 +8098,20 @@ a.anchor-link {
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — assign the taxonomy code (a string like "L2") to each scenario</span>
-<span class="n">scenarios</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">"a"</span><span class="p">:</span> <span class="s2">"Impute missing values with the column mean of the ENTIRE dataset before splitting"</span><span class="p">,</span>
-    <span class="s2">"b"</span><span class="p">:</span> <span class="s2">"Keep the 20 features most correlated with y, computed over the whole dataset"</span><span class="p">,</span>
-    <span class="s2">"c"</span><span class="p">:</span> <span class="s2">"Predict hospital readmission using days_in_hospital (known only at discharge)"</span><span class="p">,</span>
-    <span class="s2">"d"</span><span class="p">:</span> <span class="s2">"Random split when the same patient contributes many visits"</span><span class="p">,</span>
-    <span class="s2">"e"</span><span class="p">:</span> <span class="s2">"Random split of daily prices to predict tomorrow's move"</span><span class="p">,</span>
-    <span class="s2">"f"</span><span class="p">:</span> <span class="s2">"Report accuracy on the exact rows the model trained on"</span><span class="p">,</span>
-<span class="p">}</span>
-<span class="n">answers</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">"a"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>   <span class="c1"># which code?</span>
-    <span class="s2">"b"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>
-    <span class="s2">"c"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>
-    <span class="s2">"d"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>
-    <span class="s2">"e"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>
-    <span class="s2">"f"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>
-<span class="p">}</span>
-<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">scenarios</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  (</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">) [</span><span class="si">{</span><span class="n">answers</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="si">}</span><span class="s2">]  </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — the gap curve and the verdict</span>
+<span class="n">gap</span> <span class="o">=</span> <span class="n">____</span>                                 <span class="c1"># gbt_curve - mlp_curve (elementwise)</span>
+<span class="n">gbt_wins_everywhere</span> <span class="o">=</span> <span class="n">____</span>                 <span class="c1"># True iff the GBT leads at EVERY budget (min gap &gt; 0)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"default gap (k=1):      </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fully-tuned gap (k=30): </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"gap narrows with budget: </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">gap</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GBT leads at every budget: </span><span class="si">{</span><span class="n">gbt_wins_everywhere</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=426cdf4d">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b34940df">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8095,28 +8120,29 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="n">key</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="s2">"L1.2"</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">:</span> <span class="s2">"L1.3"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">:</span> <span class="s2">"L2"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">:</span> <span class="s2">"L3.2"</span><span class="p">,</span> <span class="s2">"e"</span><span class="p">:</span> <span class="s2">"L3.1"</span><span class="p">,</span> <span class="s2">"f"</span><span class="p">:</span> <span class="s2">"L1.1"</span><span class="p">}</span>
-<span class="n">wrong</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">answers</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">key</span> <span class="k">if</span> <span class="n">answers</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="n">key</span><span class="p">[</span><span class="n">k</span><span class="p">]}</span>
-<span class="k">assert</span> <span class="ow">not</span> <span class="n">wrong</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Reclassify these: </span><span class="si">{</span><span class="n">wrong</span><span class="si">}</span><span class="s2">"</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — all 6 scenarios classified correctly. You can spot the leak in FE."</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">gbt_wins_everywhere</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"On credit-g the GBT should lead at every budget."</span>
+<span class="k">assert</span> <span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">gap</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s2">"The gap should NARROW as tuning budget grows (tuning helps the MLP more)."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — the gap narrows from </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2"> (default) to </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2"> (tuned) "</span>
+      <span class="sa">f</span><span class="s2">"but never closes. That is Grinsztajn's Figure 1 in miniature."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9f3b6555">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8fb8d9a3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary to paste back to your teacher.</p>
-<p><strong>Takeaway prompt:</strong> in one sentence, why is a large complex-vs-simple performance gap a <em>leak hypothesis first</em>, and what single practice would have caught every civil-war error?</p>
+<p><strong>Takeaway prompt:</strong> in one sentence, why is a random-search budget curve (with per-dataset
+normalization) a fairer way to compare model families than each model's single best tuned score?</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f6d41577">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=efb3e7c7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8125,11 +8151,11 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 022 ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"collapse : WITH leak  RF </span><span class="si">{</span><span class="n">rf_leak</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> / LR </span><span class="si">{</span><span class="n">lr_leak</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  gap </span><span class="si">{</span><span class="n">rf_leak</span><span class="o">-</span><span class="n">lr_leak</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"           NO   leak  RF </span><span class="si">{</span><span class="n">rf_honest</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> / LR </span><span class="si">{</span><span class="n">lr_honest</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  gap </span><span class="si">{</span><span class="n">rf_honest</span><span class="o">-</span><span class="n">lr_honest</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dup leak : random </span><span class="si">{</span><span class="n">naive</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> -&gt; grouped </span><span class="si">{</span><span class="n">grouped</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">naive</span><span class="o">-</span><span class="n">grouped</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"FE audit : 6/6 scenarios classified into the taxonomy"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 024 ==="</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"protocol : random-search budget curve, select by valid / report test, avg of </span><span class="si">{</span><span class="n">N_SHUFFLES</span><span class="si">}</span><span class="s2"> orderings"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"default  : GBT </span><span class="si">{</span><span class="n">gbt_curve</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> vs MLP </span><span class="si">{</span><span class="n">mlp_curve</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  (gap </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"tuned    : GBT </span><span class="si">{</span><span class="n">gbt_curve</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> vs MLP </span><span class="si">{</span><span class="n">mlp_curve</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  (gap </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"verdict  : GBT leads at every budget = </span><span class="si">{</span><span class="n">gbt_wins_everywhere</span><span class="si">}</span><span class="s2">; gap narrows but never closes"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
 </pre></div>
@@ -8138,22 +8164,22 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=82e2aa58">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fc178e05">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-push-the-mechanism">Stretch (optional, ungraded) — push the mechanism<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-push-the-mechanism">¶</a></h2><ol>
-<li><strong>Make the leak monotone.</strong> Replace <code>leaked_nonmonotone</code> with a plain noisy copy of <code>y</code> (e.g. <code>y + 0.3*randn</code>). Now <em>both</em> RF and LR jump — the complex-vs-LR gap does <strong>not</strong> open, because a linear model can use a monotone leak too. The apparent-win effect needs a leak the flexible model exploits more.</li>
-<li><strong>Leak strength.</strong> Sweep the <code>flip</code> rate in <code>leaked_nonmonotone</code> from 0.0 to 0.5 and plot the leaked RF accuracy — the leak fades smoothly into the honest level.</li>
-<li><strong>Dup fraction.</strong> Sweep <code>dup_frac</code> in <code>make_with_dups</code>; the naïve/grouped gap grows with more duplicates.</li>
-<li><strong>Write the sheet.</strong> Fill in the 7-line model info sheet from the lesson for a project you actually have — the first box you cannot honestly tick is your leak.</li>
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-push-the-protocol">Stretch (optional, ungraded) — push the protocol<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-push-the-protocol">¶</a></h2><ol>
+<li><strong>Selection honesty.</strong> Build a <em>cheating</em> curve that selects the best config by the <strong>test</strong> score directly (<code>best_i</code> by <code>t</code>, not <code>v</code>). It will sit above the honest curve — that gap is the optimism you avoid by selecting on validation. This is L003/L004 in one plot.</li>
+<li><strong>More budget.</strong> Raise <code>N_CONFIGS</code> to 60 and re-run. Does the MLP ever catch the GBT? Does the GBT curve's small-data dip (validation overfitting) get worse?</li>
+<li><strong>A second dataset.</strong> Swap <code>load_tier_a("adult")</code> (larger, less noisy). Recompute both curves and normalize. Is the gap the same shape? One dataset is an anecdote; the suite is the benchmark.</li>
+<li><strong>Default vs ceiling.</strong> Report, for each model, <code>curve[0]</code> (default) and <code>curve.max()</code> (ceiling) separately — the two numbers a single tuned score collapses into one.</li>
 </ol>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2ca9158b">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1ecd697b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8162,9 +8188,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
-<span class="c1"># monotone = (y + 0.3 * np.random.default_rng(0).normal(size=len(y))).reshape(-1, 1)</span>
-<span class="c1"># Xm = np.hstack([X, monotone])</span>
-<span class="c1"># print("monotone leak: RF", round(acc(rf, Xm),3), " LR", round(acc(lr, Xm),3), " (gap barely opens)")</span>
+<span class="c1"># def cheating_curve(valid, test, n_shuffles=N_SHUFFLES, seed=SEED):</span>
+<span class="c1">#     rng = np.random.default_rng(seed); n=len(valid); curve=np.zeros(n)</span>
+<span class="c1">#     for _ in range(n_shuffles):</span>
+<span class="c1">#         order=rng.permutation(n); t=test[order]; best=0</span>
+<span class="c1">#         for k in range(n):</span>
+<span class="c1">#             if t[k] &gt; t[best]: best = k          # peeks at TEST -&gt; optimistic</span>
+<span class="c1">#             curve[k] += t[best]</span>
+<span class="c1">#     return curve/n_shuffles</span>
+<span class="c1"># gbt_cheat = cheating_curve(gbt_va, gbt_te)</span>
+<span class="c1"># print("optimism from selecting on test (GBT):", np.round(gbt_cheat - gbt_curve, 4)[:5])</span>
 </pre></div>
 </div>
 </div>
