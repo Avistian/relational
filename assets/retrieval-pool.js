@@ -386,6 +386,30 @@
       ],
       correct: "a",
       explain: "A tree partitions space into axis-aligned boxes and predicts a constant per box, so a single split produces a sharp jump — the natural way to render a high-frequency target. Gradient descent, by contrast, reaches smooth functions first (spectral bias)."
+    },
+    {
+      id: "l026-rotation", lesson: 26, quarter: "Q3", concept: "rotation", misconception: true,
+      question: "Randomly rotating the features (same Q on train+test) barely moves an MLP but collapses a tree. Why?",
+      options: [
+        { label: "Rotation is lossless but scrambles the axes, and the tree's edge was the axis alignment; the MLP is invariant", value: "a" },
+        { label: "Rotation injects noise, which hurts the higher-capacity tree more than the MLP", value: "b" },
+        { label: "Rotation deletes the uninformative features that the tree depended on", value: "c" },
+        { label: "Rotation regularizes the tree, which had simply been overfitting the data", value: "d" }
+      ],
+      correct: "a",
+      explain: "A rotation Q is invertible (no information lost); it only destroys the alignment of the signal with the meaningful columns. An MLP's linear first layer absorbs it (W·(Qx)=(WQ)·x) so it is invariant (+0.008), while the axis-aligned tree collapses (−0.24) — the ranking reverses."
+    },
+    {
+      id: "l026-invariance", lesson: 26, quarter: "Q3", concept: "rotation",
+      question: "Which model is (essentially) rotationally invariant, and why is that a liability on tabular data?",
+      options: [
+        { label: "The MLP — its linear first layer absorbs any rotation, but tabular columns are individually meaningful so the axes carry signal", value: "a" },
+        { label: "The decision tree — its axis-aligned splits already ignore orientation", value: "b" },
+        { label: "The random forest — bagging averages away any rotational structure", value: "c" },
+        { label: "None — every model behaves identically under a rotation of the features", value: "d" }
+      ],
+      correct: "a",
+      explain: "An MLP/ResNet is rotation-invariant (W·(Qx)=(WQ)·x); a tree and an FT-Transformer are not. On tables the original basis is privileged (age, balance mean something), so invariance blends meaningful columns away — Ng 2004: sample complexity then grows ≥ linearly in the number of junk features."
     }
   ];
 })(window);

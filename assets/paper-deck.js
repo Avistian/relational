@@ -113,6 +113,11 @@
       back: "Neural nets are biased toward overly SMOOTH (low-frequency) solutions (the spectral bias, Rahaman 2019), while tabular targets are typically irregular — so an MLP over-smooths them and a piecewise-constant tree follows the jags. Proof: Gaussian-smooth the TARGET at a growing length-scale and refit; the tree-vs-MLP gap collapses toward zero exactly as the high-frequency variance is erased (repro: gap +0.33 R² → ~0). The tree's edge WAS the irregularity, not raw model strength."
     },
     {
+      id: "grinsztajn2022-rotation", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win (§5.4, rotation)", year: 2022, lesson: 26,
+      front: "Grinsztajn et al. 2022 (§5.4, Finding 3) — what is the rotation bias, and the experiment that proves it?",
+      back: "A learner is rotationally invariant (Ng 2004) if applying the same orthogonal Q to train+test features leaves its score unchanged. MLPs/ResNets are invariant (W·(Qx)=(WQ)·x); trees are NOT (axis-aligned splits are tied to the original basis), nor are FT-Transformers (pointwise tokenizer). Tabular columns carry individual meaning, so the original basis is privileged — invariance is a liability. Proof: a random rotation leaves the MLP unmoved but collapses trees, REVERSING the ranking (repro: tree 0.987→0.747, MLP 0.862→0.869). Ng's theorem links it to junk features: an invariant learner's sample complexity grows ≥ linearly in the number of uninformative features. Per-feature embeddings (SAINT, FT-Transformer) break the invariance and recover much of the gap."
+    },
+    {
       id: "demsar2006", paper: "Demšar — Statistical Comparisons of Classifiers", year: 2006, lesson: 23,
       front: "Demšar 2006 — how should you compare classifiers over multiple datasets, and why not the obvious tests?",
       back: "Don't average accuracies (incommensurable across datasets) or run parametric t-tests (normality unsafe). Instead rank the models per dataset and use non-parametric rank tests: Wilcoxon signed-rank for two classifiers, and the Friedman test + Nemenyi post-hoc for many, visualized with a critical-difference (CD) diagram (CD = q_α·√(k(k+1)/6N)). Two models are not significantly different if their average ranks are within CD. (Single-dataset CV folds are correlated, so use the corrected resampled t-test there — Nadeau & Bengio 2003 — not Wilcoxon.)"
