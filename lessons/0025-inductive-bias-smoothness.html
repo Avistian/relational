@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 025 — Inductive Bias: Smoothness</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* shared viz frame */
+    .smoothness-fit-viz, .smoothness-gap-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .sf-svg, .sg-svg { display: block; max-width: 560px; margin: 0.25rem auto; }
+    .sf-lab, .sf-tick, .sf-leg, .sg-lab, .sg-tick, .sg-leg { font-family: var(--font-sans); }
+    .sf-lab, .sg-lab { font-size: 9.5px; fill: var(--muted); }
+    .sf-tick, .sg-tick { font-size: 9px; fill: var(--muted); }
+    .sf-leg, .sg-leg { font-size: 10px; fill: var(--fg, #222); }
+    .sf-ctl, .sg-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .sf-slabel, .sg-slabel { font-size: 0.82rem; font-family: var(--font-sans); color: var(--muted); display: flex; align-items: center; gap: 0.35rem; }
+    .sf-hval, .sg-hval { font-family: var(--font-mono); font-weight: 600; color: var(--fg, #222); }
+    .sf-readout, .sg-readout { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .sf-pill, .sg-pill { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; padding: 0.05rem 0.4rem; border-radius: 4px; background: var(--border); margin-right: 0.3rem; }
+    .sf-tree, .sg-gbt { color: #1e6b3c; }
+    .sf-mlp, .sg-mlp { color: #2e6fb0; }
+    .sf-caption, .sg-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>Inductive Bias: Smoothness</h1>
+  <p class="subtitle">Lesson 025 · Phase 1 · Q3 · ~35 min · <em>core paper: Grinsztajn, Oyallon &amp; Varoquaux 2022, §5.2</em></p>
+
+  <p>
+    <a href="0024-grinsztajn-benchmark.html">Lesson 024</a> built the <em>measuring instrument</em>:
+    a curated dataset suite and a budget-curve protocol that let Grinsztajn say, defensibly, that tree
+    ensembles beat neural nets on typical tabular data. But a benchmark only tells you <em>that</em>
+    trees win. The paper's real contribution is <em>why</em> — three <strong>inductive biases</strong>
+    you previewed in <a href="0019-when-trees-win.html">L019</a>. This lesson opens the mechanism arc
+    with the first and most fundamental of them: <strong>smoothness</strong>.
+  </p>
+  <p>
+    Its single skill: <strong>explain the smoothness bias — why an MLP is pulled toward smooth
+    (low-frequency) functions while a tree fits irregular, jagged targets — and know the experiment
+    that proves it is the mechanism: smoothing the target function closes the tree-vs-neural-net
+    gap.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Neural networks have a built-in preference for smooth functions, so
+    when a tabular target is irregular (which real ones usually are), the MLP over-smooths it and loses;
+    a tree, being piecewise-constant, can follow the jags — and if you artificially <em>smooth the
+    target</em>, the tree's advantage evaporates.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here
+    is useful — retrieval (even failed) encodes far better than re-reading.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>What "inductive bias" means</h2>
+  <p>
+    Every learner that generalizes must prefer some functions over others — otherwise it could never
+    choose between the infinitely many curves that fit the training points equally well. That built-in
+    preference is its <strong>inductive bias</strong>. It is not a bug; it is the thing that makes
+    learning possible. The question is only whether a model's bias <em>matches the data</em>.
+  </p>
+  <p>
+    An MLP's bias is toward <strong>smoothness</strong>. This has a precise, well-studied form: neural
+    networks trained by gradient descent fit the <strong>low-frequency</strong> parts of a function
+    first and the high-frequency parts only slowly (or never) — the <em>spectral bias</em> of Rahaman
+    et al. 2019. Intuitively, a network built from smooth activations, initialized near a smooth
+    function and nudged in small steps, has to work hard to produce a sharp corner. A decision tree has
+    the opposite disposition: it carves the input space into axis-aligned boxes and predicts a constant
+    in each, so a single split can produce an arbitrarily sharp step. Its natural output is
+    <strong>piecewise-constant and jagged</strong>.
+  </p>
+
+  <h2>See it: who can fit a jagged target? (§5.2)</h2>
+  <p>
+    Here is one irregular 1-D target (grey): a slow trend, a fast wiggle, and a step. A depth-limited
+    <strong>tree</strong> (green) approximates it with a staircase that hugs the jags; an
+    <strong>MLP</strong> (blue, dashed) draws a smooth curve that cuts every corner. Now drag the
+    <strong>smoothing</strong> slider — it Gaussian-smooths the <em>target itself</em>, erasing its
+    high-frequency structure — and watch the error numbers.
+  </p>
+
+  <div id="smoothness-fit-viz"></div>
+
+  <p>
+    On the raw target the MLP's error is over <strong>5×</strong> the tree's (MLP MSE 0.070 vs tree
+    0.013): it simply cannot render the wiggle and the step. Smooth the target a little and the ratio
+    falls to ~2.4×; smooth it fully and the tree's staircase becomes the <em>rougher</em> approximation —
+    the MLP's error drops to <strong>0.19×</strong> the tree's and the smooth model wins. The lesson is
+    not "MLPs are bad"; it is that <strong>the MLP's bias is a liability exactly when the target is
+    irregular, and an asset when it is smooth.</strong> Typical tabular targets are the former.
+  </p>
+
+  <h2>Predict first</h2>
+  <p>
+    That was one dimension. Grinsztajn ran the real experiment on their full suite: take an irregular
+    multi-dimensional target, <strong>Gaussian-smooth it</strong> at a growing length-scale, retrain a
+    GBT and an MLP on the smoothed target each time, and plot test accuracy. Commit a guess before you
+    read the curve.
+  </p>
+  <div id="predict-smooth"></div>
+
+  <h2>See it: smoothing the target closes the gap</h2>
+  <p>
+    We reproduced it on an irregular 8-feature regression (mean of 5 seeds; test R² for a
+    <code>HistGradientBoosting</code> GBT vs an MLP). At <code>h = 0</code> — the raw, jagged target —
+    the GBT scores <strong>0.94</strong> and the MLP <strong>0.72</strong>: a <strong>+0.22</strong> gap.
+    Drag the length-scale up and the gap collapses.
+  </p>
+
+  <div id="smoothness-gap-viz"></div>
+
+  <table>
+    <thead><tr><th>Target smoothing h</th><th>GBT R²</th><th>MLP R²</th><th>GBT − MLP</th><th>Variance kept</th></tr></thead>
+    <tbody>
+      <tr><td>0.0 (raw, jagged)</td><td class="n win">0.938</td><td class="n">0.717</td><td class="n win">+0.221</td><td class="n">100%</td></tr>
+      <tr><td>0.5</td><td class="n win">0.926</td><td class="n">0.697</td><td class="n win">+0.230</td><td class="n">91%</td></tr>
+      <tr><td>1.0</td><td class="n">0.885</td><td class="n win">0.905</td><td class="n">−0.020</td><td class="n">19%</td></tr>
+      <tr><td>2.0 (smooth)</td><td class="n">0.894</td><td class="n">0.894</td><td class="n">−0.000</td><td class="n">2%</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the last column alongside the gap. The advantage does not fade gradually with <code>h</code> —
+    it survives while the target still carries its high-frequency structure (91% of the variance at
+    <code>h = 0.5</code>, gap still +0.23), then <strong>collapses precisely as that structure is
+    smoothed away</strong> (19% variance left at <code>h = 1.0</code>, gap gone). That is the signature
+    of a mechanism, not a coincidence: <em>the tree's whole edge was the part of the target an MLP is
+    biased against</em>. Remove the jags and the MLP even edges ahead — its smoothness bias now
+    <em>matches</em> the (now-smooth) target.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-smooth"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> The smoothness bias is the deepest reason tuned MLPs lose to trees on
+    flat tables — and it is a fact about the <em>target</em>, not just the model. This cuts two ways for
+    the relational thesis. First, it warns you: any relational deep model that ends in an MLP head over a
+    flattened row inherits this bias, so a naïve RDL model can lose to a GBT for exactly this reason —
+    the honest baseline is real. Second, it points at the opening. The irregularity that trips an MLP on
+    a single flat table often comes from <em>relational structure that was crushed into columns</em> — a
+    "days since last order" feature is a jagged function of an entity's event history. A model that reads
+    the history <em>as structure</em> (a graph, a set of events) instead of a pre-smoothed aggregate may
+    represent that irregularity natively rather than fighting its own smoothness bias. Smoothness is both
+    the bar to clear and a hint about where the flattening hurt.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>The bias is not absolute.</strong> A big enough MLP, trained long enough, <em>can</em>
+      represent sharp functions — the spectral bias is about what it learns <em>easily and first</em>,
+      not what it can represent in principle. On finite data with early stopping, "easily and first" is
+      what you actually get.</li>
+    <li><strong>Smoothness is a property of the target, not of the label type.</strong> Classification
+      decision boundaries can be just as jagged as regression surfaces; the argument is about the
+      function the model must fit, not whether <code>y</code> is continuous.</li>
+    <li><strong>Smoothing the target is a diagnostic, not a fix.</strong> You would never smooth your
+      real target in production (it destroys signal — watch the R² of <em>both</em> models fall at very
+      large <code>h</code>). It is an <em>ablation</em>: deliberately delete the irregular structure to
+      prove that is what the tree was using.</li>
+    <li><strong>This is one of three biases.</strong> Smoothness alone does not explain tree dominance —
+      <strong>rotation</strong> (L026) and <strong>uninformative features</strong> (L027) are the other
+      two, and they compound. Do not over-attribute.</li>
+    <li><strong>Preprocessing interacts with it.</strong> Quantile/rank transforms and target-aware
+      encodings can regularize a target enough to narrow the gap — a hint of why Year 2's strong-default
+      MLPs (RealMLP, TabM) close so much of it without abandoning the neural approach.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The core paper again, now the mechanism section: <strong>Léo Grinsztajn, Edouard Oyallon &amp; Gaël
+    Varoquaux (2022), <em>Why do tree-based models still outperform deep learning on typical tabular
+    data?</em></strong> — <a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a>. Today read
+    <strong>§5.2 (Finding 1: neural networks are biased toward overly smooth solutions)</strong> and the
+    target-smoothing experiment. For the theoretical backing of <em>why</em> gradient descent prefers
+    low frequencies, skim <strong>Rahaman et al. 2019, <em>On the Spectral Bias of Neural Networks</em></strong>
+    (<a href="https://arxiv.org/abs/1806.08734">arXiv:1806.08734</a>), §1 and the headline figures.
+    Save §5.3 (rotation) and §5.4 (uninformative features) for L026–L027.
+  </p>
+
+  <h2>Lab — reproduce the smoothing experiment</h2>
+  <p>
+    Notebook <code>0025-inductive-bias-smoothness.ipynb</code> (Tier C — synthetic, to isolate the
+    mechanism): implement the <strong>Gaussian target smoother</strong> (the crucial fragment), then
+    smooth an irregular target at a growing length-scale and watch the GBT-vs-MLP gap close. Reproduction
+    targets: raw gap ≈ +0.22 R²; gap ≈ 0 once ~80% of the target's variance is smoothed away; the smooth
+    MLP eventually ties or edges the tree.
+    <a href="../labs/html/0025-inductive-bias-smoothness.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why gradient descent prefers low frequencies, or why <em>smoothing the target</em> is a valid
+    way to prove the mechanism (rather than just smoothing the model)? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0024-grinsztajn-benchmark.html">← Lesson 024</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0025-inductive-bias-smoothness.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/smoothness-fit-viz.js"></script>
+<script src="../assets/smoothness-gap-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 25, count: 3 });
+
+  SmoothnessFitViz.mount(document.getElementById("smoothness-fit-viz"), {});
+  SmoothnessGapViz.mount(document.getElementById("smoothness-gap-viz"), {});
+
+  Predict.mount(document.getElementById("predict-smooth"), {
+    prompt: "As you Gaussian-smooth the irregular target more and more, what happens to the GBT-vs-MLP accuracy gap?",
+    options: [
+      { label: "It stays roughly constant — smoothing helps both equally", value: "flat" },
+      { label: "It shrinks toward zero as the jags disappear", value: "close" },
+      { label: "It grows — the tree gets even further ahead", value: "grow" }
+    ],
+    correct: "close",
+    reveal: "The gap collapses (+0.22 → ~0) as the high-frequency variance is erased — the tree's whole edge was the irregular structure the MLP is biased against. Once the target is smooth, the MLP even edges ahead."
+  });
+
+  Teachback.mount(document.getElementById("teachback-smooth"), {
+    prompt: "In your own words: why does smoothing the target function close the gap between a tree and an MLP — and what does that prove about why trees win?",
+    points: [
+      "An MLP has a smoothness / low-frequency inductive bias (spectral bias): it fits smooth functions easily and jagged ones poorly",
+      "A tree is piecewise-constant, so it can produce arbitrarily sharp steps and follow an irregular target",
+      "Typical tabular targets are irregular, so the tree's bias matches the data and the MLP's does not",
+      "Smoothing the target deletes exactly the high-frequency structure the tree was exploiting",
+      "So the gap closing as you smooth (and only as the variance is destroyed) proves smoothness is the mechanism, not a coincidence"
+    ],
+    model: "Any generalizing learner must prefer some functions; that preference is its inductive bias. An MLP trained by gradient descent has a smoothness bias (the spectral bias of Rahaman 2019): it learns the low-frequency part of a function first and high-frequency detail slowly or not at all, because smooth activations nudged in small steps resist sharp corners. A decision tree splits space into axis-aligned boxes with a constant per box, so it is naturally piecewise-constant and can render an arbitrarily sharp jag. Real tabular targets are typically irregular, so the tree's bias matches the target and the MLP over-smooths it — on the raw target the MLP's error was 5× the tree's and its R² 0.22 below. Grinsztajn's test isolates this: Gaussian-smoothing the target deletes its high-frequency structure, and the tree-vs-MLP gap collapses to zero exactly as that structure (the target's variance) is erased — the tree even loses once the target is smooth. Because the advantage tracks the irregularity and nothing else, smoothness is the mechanism, not an artifact."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "What is the 'smoothness bias' of a neural network?",
+    options: [
+      { label: "Gradient descent fits low-frequency (smooth) structure easily and high-frequency detail slowly or not at all", value: "a" },
+      { label: "Neural networks can only ever represent linear functions", value: "b" },
+      { label: "Neural networks always smooth their input features before training", value: "c" },
+      { label: "The loss surface of a neural network is guaranteed to be convex", value: "d" }
+    ],
+    correct: "a",
+    explain: "The spectral bias (Rahaman 2019): an MLP learns the smooth, low-frequency part of a target first and the jagged, high-frequency part only slowly — it can represent sharp functions in principle but not easily on finite data."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Why does Gaussian-smoothing the target function make the tree-vs-MLP accuracy gap disappear?",
+    options: [
+      { label: "Smoothing deletes the high-frequency structure that only the tree could fit, so the MLP's bias now matches the target", value: "a" },
+      { label: "Smoothing gives the MLP more training data to work with", value: "b" },
+      { label: "Smoothing makes the tree unable to split on any feature", value: "c" },
+      { label: "Smoothing converts the regression problem into a classification one", value: "d" }
+    ],
+    correct: "a",
+    explain: "The tree's edge was exactly the irregular, high-frequency part of the target. Remove it (the gap closes as the target's variance is erased) and the MLP's smoothness bias fits the remaining smooth function — it even edges ahead."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "A decision tree can follow a jagged target better than an MLP mainly because it is…",
+    options: [
+      { label: "Piecewise-constant on axis-aligned boxes, so a single split makes an arbitrarily sharp step", value: "a" },
+      { label: "Trained with a smaller learning rate than the MLP", value: "b" },
+      { label: "Guaranteed to have more parameters than any MLP", value: "c" },
+      { label: "Rotationally invariant, so orientation does not matter to it", value: "d" }
+    ],
+    correct: "a",
+    explain: "Trees partition the space and predict a constant per region, so they produce sharp steps naturally. (Rotational invariance is the *opposite* — that is the L026 bias, and trees are NOT rotationally invariant.)"
+  });
+</script>
+</body>
+</html>

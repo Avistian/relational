@@ -108,6 +108,11 @@
       back: "Two pillars. (§3) Explicit dataset-selection criteria applied to a large OpenML pool: real, tabular, medium-sized, heterogeneous columns (not pixels), not too high-dimensional, not too easy. (§4) Report a random-search BUDGET CURVE, not one tuned number: for each model plot the expected test score of the best-VALIDATION config after k iterations, averaged over draw orderings — showing both the default (k=1) and the tuned ceiling. Aggregate across datasets via affine per-dataset normalization (worst→0, best→1), since raw accuracies are incommensurable. Result: GBTs beat NN families at every budget and are stronger defaults."
     },
     {
+      id: "grinsztajn2022-smoothness", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win (§5.2, smoothness)", year: 2022, lesson: 25,
+      front: "Grinsztajn et al. 2022 (§5.2, Finding 1) — what is the first inductive bias behind tree dominance, and the experiment that proves it?",
+      back: "Neural nets are biased toward overly SMOOTH (low-frequency) solutions (the spectral bias, Rahaman 2019), while tabular targets are typically irregular — so an MLP over-smooths them and a piecewise-constant tree follows the jags. Proof: Gaussian-smooth the TARGET at a growing length-scale and refit; the tree-vs-MLP gap collapses toward zero exactly as the high-frequency variance is erased (repro: gap +0.33 R² → ~0). The tree's edge WAS the irregularity, not raw model strength."
+    },
+    {
       id: "demsar2006", paper: "Demšar — Statistical Comparisons of Classifiers", year: 2006, lesson: 23,
       front: "Demšar 2006 — how should you compare classifiers over multiple datasets, and why not the obvious tests?",
       back: "Don't average accuracies (incommensurable across datasets) or run parametric t-tests (normality unsafe). Instead rank the models per dataset and use non-parametric rank tests: Wilcoxon signed-rank for two classifiers, and the Friedman test + Nemenyi post-hoc for many, visualized with a critical-difference (CD) diagram (CD = q_α·√(k(k+1)/6N)). Two models are not significantly different if their average ranks are within CD. (Single-dataset CV folds are correlated, so use the corrected resampled t-test there — Nadeau & Bengio 2003 — not Wilcoxon.)"

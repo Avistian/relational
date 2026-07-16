@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0011-decision-trees-partitions</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0025-inductive-bias-smoothness</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,29 +7796,30 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=775917d3">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2f111d6a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-011-%E2%80%94-Read-a-tree-split-on-real-credit-data">Lab 011 — Read a tree split on real credit data<a class="anchor-link" href="#Lab-011-%E2%80%94-Read-a-tree-split-on-real-credit-data">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0011-decision-trees-partitions.html"><code>lessons/0011-decision-trees-partitions.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2</p>
-<p><strong>Dataset tier:</strong> A — OpenML German credit (<code>credit_g</code>) via <code>relkit</code>. Real mixed-type tabular data; default rate ~70% so you see impurity on an imbalanced task.</p>
-<p><strong>Skill you are practising:</strong> fit a depth-1 decision tree on real data, read its partition rule, and verify the Gini impurity reduction for that split.</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints split feature name, threshold, child class rates, and hand-computed ΔGini matching sklearn within tolerance.</p>
+<h1 id="Lab-025-%E2%80%94-The-smoothness-inductive-bias:-smoothing-the-target-closes-the-gap">Lab 025 — The smoothness inductive bias: smoothing the target closes the gap<a class="anchor-link" href="#Lab-025-%E2%80%94-The-smoothness-inductive-bias:-smoothing-the-target-closes-the-gap">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0025-inductive-bias-smoothness.html"><code>lessons/0025-inductive-bias-smoothness.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q3</p>
+<p><strong>Paper:</strong> Grinsztajn, Oyallon &amp; Varoquaux 2022, <em>Why do tree-based models still outperform deep learning on typical tabular data?</em>, NeurIPS 2022 D&amp;B (<a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a>) — §5.2 (Finding 1: neural networks are biased toward overly smooth solutions). Theory backing: Rahaman et al. 2019, <em>On the Spectral Bias of Neural Networks</em> (<a href="https://arxiv.org/abs/1806.08734">arXiv:1806.08734</a>).</p>
+<p><strong>Dataset tier:</strong> C — synthetic irregular regression, to <em>isolate the mechanism</em> (per <code>lab-authoring</code>: Tier C is for mechanism isolation). No real dataset can turn its own irregularity on and off; a synthetic target can.</p>
+<p><strong>Skill you are practising:</strong> implement Grinsztajn's <strong>Gaussian target smoother</strong>, then show the GBT-vs-MLP gap <strong>collapses as the target's high-frequency structure is smoothed away</strong> — the experiment that proves smoothness is the mechanism.</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints the raw gap (≈ +0.33 R², GBT ahead) collapsing to ≈ 0 once ~70%+ of the target's variance is smoothed away.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells — complete boilerplate; just run.</li>
-<li><strong>TODO</strong> cells — blanks (<code>____</code> / <code># TODO</code>); you implement the skill.</li>
+<li><strong>PROVIDED</strong> cells — complete boilerplate (data, models, the fit/score harness); just run.</li>
+<li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong> only (no network — the data is synthetic). The sweep fits 8 models and takes ~15 seconds.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f026ec92">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a477fa8f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7832,7 +7833,7 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a53eac94">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=cc71dd86">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7840,13 +7841,13 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># @colab-bootstrap — PROVIDED. Makes the lab self-sufficient on Google Colab; a no-op elsewhere.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># @colab-bootstrap — PROVIDED. Makes the lab self-sufficient on Google Colab; a no-op elsewhere.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
 
 <span class="k">if</span> <span class="s2">"google.colab"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="s2">"/content/relational"</span><span class="p">):</span>
-        <span class="o">!</span>git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>https://github.com/Avistian/relational.git<span class="w"> </span>/content/relational
-    <span class="o">%</span><span class="k">pip</span> install -q -r /content/relational/requirements-labs.txt
+        <span class="err">!</span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Avistian</span><span class="o">/</span><span class="n">relational</span><span class="o">.</span><span class="n">git</span> <span class="o">/</span><span class="n">content</span><span class="o">/</span><span class="n">relational</span>
+    <span class="o">%</span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">q</span> <span class="o">-</span><span class="n">r</span> <span class="o">/</span><span class="n">content</span><span class="o">/</span><span class="n">relational</span><span class="o">/</span><span class="n">requirements</span><span class="o">-</span><span class="n">labs</span><span class="o">.</span><span class="n">txt</span>
     <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s2">"/content/relational/labs"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"Colab ready — working dir:"</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
 <span class="k">else</span><span class="p">:</span>
@@ -7857,409 +7858,33 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f227ba5b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a7d74e79">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-decision-trees-as-partitions">Concept recap — decision trees as partitions<a class="anchor-link" href="#Concept-recap-%E2%80%94-decision-trees-as-partitions">¶</a></h2><p>A <strong>classification tree</strong> recursively splits the feature space. At each node it picks <strong>one feature</strong> <code>j</code> and <strong>one threshold</strong> <code>t</code>, then sends rows left if <code>x[j] ≤ t</code>, else right. Every split is <strong>axis-aligned</strong> (parallel to a feature axis) — in 2D, a vertical or horizontal line, never diagonal.</p>
-<p>A <strong>depth-1 tree</strong> asks a single question and creates <strong>two regions</strong>. Each leaf predicts the <strong>majority class</strong> of the rows that land there. That is a <strong>piecewise-constant</strong> model — the same picture your Q1 <code>HistGradientBoostingClassifier</code> uses, but with hundreds of small regions instead of one.</p>
-<p><strong>What the algorithm optimizes:</strong> at each candidate split it maximizes <strong>impurity reduction</strong> (Gini drop). For binary labels in <code>{0, 1}</code> with <code>p = P(y=1)</code>:</p>
-<p>$$G = 1 - p^2 - (1-p)^2 = 2p(1-p)$$</p>
-<ul>
-<li>Pure node (all 0 or all 1): <code>G = 0</code></li>
-<li>50/50 mix: <code>G = 0.5</code> (worst for binary)</li>
-</ul>
-<p>After splitting into left/right with row fractions <code>w_L</code>, <code>w_R</code>:</p>
-<p>$$\Delta G = G_{\text{parent}} - \big(w_L \cdot G_{\text{left}} + w_R \cdot G_{\text{right}}\big)$$</p>
-<p><strong>Toy example (not this dataset):</strong> labels <code>[0, 0, 1, 1]</code> → <code>p = 0.5</code> → <code>G = 0.5</code>. Split left=<code>[0,0]</code>, right=<code>[1,1]</code> → children pure → <code>ΔG = 0.5</code>. A useless split that leaves both children as mixed as the parent gives <code>ΔG ≈ 0</code>.</p>
-<p><strong>In this lab:</strong> sklearn picks the best depth-1 split on German credit. You read <code>tree_.feature</code> / <code>tree_.threshold</code>, inspect child class rates, then <strong>hand-compute ΔG</strong> to prove you understand the partition rule — the same logic XGBoost scales up with regularized gain.</p>
-<p>Full viz and reading: <a href="../lessons/0011-decision-trees-partitions.html">Lesson 011</a> · ESL Ch. 9.2.</p>
+<h2 id="Concept-recap-%E2%80%94-inductive-bias,-and-the-smoothness-of-neural-nets">Concept recap — inductive bias, and the smoothness of neural nets<a class="anchor-link" href="#Concept-recap-%E2%80%94-inductive-bias,-and-the-smoothness-of-neural-nets">¶</a></h2><p><strong>Inductive bias.</strong> Any learner that generalizes must <em>prefer</em> some functions over others (otherwise it could never choose among the infinitely many curves through the training points). That preference is its inductive bias — not a bug, but the thing that makes learning possible. The only question is whether the bias <em>matches the data</em>.</p>
+<p><strong>The MLP's bias is smoothness.</strong> Trained by gradient descent, a neural net fits the <strong>low-frequency</strong> (smooth) part of a target first and the <strong>high-frequency</strong> (jagged) part slowly or not at all — the <em>spectral bias</em> (Rahaman 2019). It can represent sharp functions in principle; it just doesn't reach them easily on finite data.</p>
+<p><strong>The tree's disposition is the opposite.</strong> A decision tree splits the space into axis-aligned boxes and predicts a constant per box, so a single split makes an arbitrarily sharp step. Its natural output is <strong>piecewise-constant and jagged</strong> — a perfect match for an irregular target.</p>
+<p><strong>The experiment (§5.2).</strong> To prove the smoothness bias is <em>the</em> mechanism, Grinsztajn smooths the <strong>target function</strong> (not the model) with a Gaussian kernel of growing length-scale <code>h</code>, then refits both models. Smoothing deletes exactly the high-frequency structure a tree exploits — so if that structure is the tree's edge, the gap should vanish as <code>h</code> grows. You will implement the smoother and watch it happen.</p>
+<p><strong>Toy micro-example (not this lab's answer).</strong> Two points with targets <code>1.0</code> and <code>3.0</code>. At <code>h → 0</code> each keeps its own value; at <code>h → ∞</code> both weights → 1, so each smoothed value → the mean <code>2.0</code>. Bigger <code>h</code> = wider averaging = smoother target.</p>
+<p>Full write-up + the 1-D fit widget and the gap-vs-smoothing curve: <a href="../lessons/0025-inductive-bias-smoothness.html">Lesson 025</a>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3247ca2a">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=48f8137f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Setup-%E2%80%94-PROVIDED">Setup — PROVIDED<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED">¶</a></h2>
+<h2 id="Setup-%E2%80%94-PROVIDED-(synthetic-data,-models,-fit/score-harness)">Setup — PROVIDED (synthetic data, models, fit/score harness)<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED-(synthetic-data,-models,-fit/score-harness)">¶</a></h2>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=e369d822">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()))</span>  <span class="c1"># labs/))</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecisionTreeClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">LabelEncoder</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
-
-<span class="n">RS</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"relkit ok"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>relkit ok
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5fcfa45f">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Data-%E2%80%94-PROVIDED-(Tier-A)">Data — PROVIDED (Tier A)<a class="anchor-link" href="#Data-%E2%80%94-PROVIDED-(Tier-A)">¶</a></h2><p><strong>What you get:</strong> 1000 rows of real German credit applications — numeric columns (loan amount, duration, …) plus categoricals (checking status, purpose, …). Labels: good (<code>0</code>) vs bad (<code>1</code>) credit risk.</p>
-<p><strong>Why encode categoricals?</strong> <code>DecisionTreeClassifier</code> needs numeric inputs. We label-encode strings to integers <strong>for this partition demo only</strong> — CatBoost (Lesson 016) handles categories natively; for production baselines you'd use a proper <code>ColumnTransformer</code> inside a pipeline (Lesson 005).</p>
-<p>Run the cell below to load via <code>relkit</code> and print row count, positive rate, and feature count.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=89e0e9c2">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED</span>
-<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>
-<span class="n">num_cols</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-<span class="n">cat_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num_cols</span><span class="p">]</span>
-
-<span class="n">X_num</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">num_cols</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat_cols</span><span class="p">:</span>
-    <span class="n">X_num</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">LabelEncoder</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">))</span>
-
-<span class="n">feat_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">X_num</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rows=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">  pos_rate=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  features=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">feat_names</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>rows=1000  pos_rate=0.700  features=20
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d19ba133">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-Fit-depth-1-tree-%E2%80%94-TODO">Task 1 — Fit depth-1 tree — TODO<a class="anchor-link" href="#Task-1-%E2%80%94-Fit-depth-1-tree-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one fitted tree and its split rule printed as <code>feature &lt;= threshold</code>.</p>
-<p><strong>Why it matters:</strong> before tuning ensembles (XGBoost, LightGBM), you must read what a <em>single</em> split does — which feature and cutoff carve the space.</p>
-<p><strong>You implement:</strong></p>
-<ol>
-<li><code>DecisionTreeClassifier(max_depth=1, random_state=RS)</code> on <code>X_num</code>, <code>y</code></li>
-<li>Read root split from <code>tree.tree_</code>: <code>feature[0]</code>, <code>threshold[0]</code>, map index → name via <code>feat_names</code></li>
-</ol>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=877ff4aa">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO</span>
-<span class="n">tree</span> <span class="o">=</span> <span class="n">DecisionTreeClassifier</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
-<span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_num</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-<span class="n">t</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree_</span>
-<span class="n">split_feat_idx</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">feature</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">split_thresh</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">threshold</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">split_name</span> <span class="o">=</span> <span class="n">feat_names</span><span class="p">[</span><span class="n">split_feat_idx</span><span class="p">]</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"split: </span><span class="si">{</span><span class="n">split_name</span><span class="si">}</span><span class="s2"> &lt;= </span><span class="si">{</span><span class="n">split_thresh</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>split: checking_status &lt;= 1.5000
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a7acf67b">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK</span>
-<span class="k">assert</span> <span class="n">tree</span><span class="o">.</span><span class="n">get_depth</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Use max_depth=1."</span>
-<span class="k">assert</span> <span class="n">split_feat_idx</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"Tree must pick a split feature."</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 1 ok — depth-1 tree fitted."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 1 ok — depth-1 tree fitted.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d55e1b63">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-Inspect-the-partition-%E2%80%94-TODO">Task 2 — Inspect the partition — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-Inspect-the-partition-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> row counts and positive rates in the left vs right child of the root split.</p>
-<p><strong>Why it matters:</strong> a tree is a partition — you need to see <em>who landed where</em> before judging whether the split purified the classes.</p>
-<p><strong>You implement:</strong> boolean masks <code>left_mask</code> / <code>right_mask</code> from the split feature and threshold; compute <code>y[left_mask].mean()</code> and <code>y[right_mask].mean()</code> (positive rate = <code>P(y=1)</code> in each region).</p>
-<p><strong>sklearn node layout:</strong> node 0 = root; node 1 = left child; node 2 = right child in <code>tree_.impurity</code>.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=42dbe3d4">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO — majority class in left/right child (0 or 1)</span>
-<span class="n">left_mask</span> <span class="o">=</span> <span class="n">X_num</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="n">split_feat_idx</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">split_thresh</span>
-<span class="n">right_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">left_mask</span>
-
-<span class="n">left_rate</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">left_mask</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="n">right_rate</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">right_mask</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"left  n=</span><span class="si">{</span><span class="n">left_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">4d</span><span class="si">}</span><span class="s2">  pos_rate=</span><span class="si">{</span><span class="n">left_rate</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"right n=</span><span class="si">{</span><span class="n">right_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">4d</span><span class="si">}</span><span class="s2">  pos_rate=</span><span class="si">{</span><span class="n">right_rate</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>left  n= 543  pos_rate=0.558
-right n= 457  pos_rate=0.869
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=10bda977">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK</span>
-<span class="k">assert</span> <span class="n">left_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">+</span> <span class="n">right_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 2 ok — partition covers all rows."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 2 ok — partition covers all rows.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5dd2d460">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-Hand-compute-%CE%94Gini-%E2%80%94-TODO-(crucial-fragment)">Task 3 — Hand-compute ΔGini — TODO (crucial fragment)<a class="anchor-link" href="#Task-3-%E2%80%94-Hand-compute-%CE%94Gini-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> implement <code>gini(y_vec)</code> and compute <code>delta_g</code> for the split above; CHECK compares to sklearn's <code>tree_.impurity</code>.</p>
-<p><strong>Why it matters:</strong> libraries hide the objective. Hand-computing ΔG proves you know what "best split" <em>means</em> — weighted child purity gain — not just <code>fit()</code>.</p>
-<p><strong>You implement:</strong></p>
-<ol>
-<li><code>gini</code>: for binary <code>y</code>, return <code>1 - p**2 - (1-p)**2</code> where <code>p = y_vec.mean()</code> (return <code>0.0</code> on empty)</li>
-<li><code>G_parent</code>, <code>G_left</code>, <code>G_right</code> on full / left / right labels</li>
-<li><code>w_left</code>, <code>w_right</code> = fraction of rows in each child</li>
-<li><code>delta_g = G_parent - (w_left * G_left + w_right * G_right)</code> ← parent <strong>minus</strong> weighted children</li>
-</ol>
-<p><strong>Common mistake:</strong> using <code>p</code> (positive rate) instead of Gini, or forgetting to subtract from <code>G_parent</code>.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=32e8baec">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">gini</span><span class="p">(</span><span class="n">y_vec</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Gini impurity for binary labels in {0,1}."""</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_vec</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mf">0.0</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">y_vec</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">____</span>  <span class="c1"># TODO: 1 - p**2 - (1-p)**2</span>
-
-<span class="c1"># TODO: parent and weighted child Gini, then impurity reduction</span>
-<span class="n">G_parent</span> <span class="o">=</span> <span class="n">____</span>
-<span class="n">G_left</span> <span class="o">=</span> <span class="n">____</span>
-<span class="n">G_right</span> <span class="o">=</span> <span class="n">____</span>
-<span class="n">w_left</span> <span class="o">=</span> <span class="n">____</span>
-<span class="n">w_right</span> <span class="o">=</span> <span class="n">____</span>
-<span class="n">delta_g</span> <span class="o">=</span> <span class="n">____</span>  <span class="c1"># TODO: G_parent - (w_left * G_left + w_right * G_right)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"G_parent=</span><span class="si">{</span><span class="n">G_parent</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  delta_gini=</span><span class="si">{</span><span class="n">delta_g</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>G_parent=0.4200  delta_gini=0.2564
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=620d835f">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK</span>
-<span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">G_parent</span> <span class="o">&lt;=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">"Binary Gini should be in [0, 0.5]."</span>
-<span class="k">assert</span> <span class="n">delta_g</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"The chosen split should reduce impurity."</span>
-<span class="n">sklearn_imp</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree_</span><span class="o">.</span><span class="n">impurity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span>
-    <span class="p">(</span><span class="n">left_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span><span class="o">*</span><span class="n">tree</span><span class="o">.</span><span class="n">tree_</span><span class="o">.</span><span class="n">impurity</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="o">+</span> <span class="p">(</span><span class="n">right_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span><span class="o">*</span><span class="n">tree</span><span class="o">.</span><span class="n">tree_</span><span class="o">.</span><span class="n">impurity</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-<span class="p">)</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">delta_g</span> <span class="o">-</span> <span class="n">sklearn_imp</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.02</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Hand ΔGini </span><span class="si">{</span><span class="n">delta_g</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> vs sklearn </span><span class="si">{</span><span class="n">sklearn_imp</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 3 ok — hand ΔGini matches sklearn."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>
-<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">AssertionError</span>                            Traceback (most recent call last)
-<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[15]</span><span class="ansi-green-fg">, line 8</span>
-<span class="ansi-green-fg">      4</span> sklearn_imp = tree.tree_.impurity[0] - (
-<span class="ansi-green-fg">      5</span>     (left_mask.sum()/len(y))*tree.tree_.impurity[<span class="ansi-green-fg">1</span>]
-<span class="ansi-green-fg">      6</span>     + (right_mask.sum()/len(y))*tree.tree_.impurity[<span class="ansi-green-fg">2</span>]
-<span class="ansi-green-fg">      7</span> )
-<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">8</span> <span class="ansi-bold" style="color: rgb(0,135,0)">assert</span> abs(delta_g - sklearn_imp) &lt; <span class="ansi-green-fg">0.02</span>, f"Hand ΔGini {delta_g:.4f} vs sklearn {sklearn_imp:.4f}"
-<span class="ansi-green-fg">      9</span> print(<span class="ansi-yellow-fg">"Task 3 ok — hand ΔGini matches sklearn."</span>)
-
-<span class="ansi-red-fg">AssertionError</span>: Hand ΔGini 0.2564 vs sklearn 0.0479</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=27a540d5">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary you paste back to your teacher.</p>
-<p><strong>Takeaway prompt:</strong> in one sentence, connect the split you found to the partition picture — e.g. which feature/threshold separated higher-risk rows, and whether ΔGini confirms sklearn picked a purifying split.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=769c794b">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=65e01798">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8267,14 +7892,324 @@ right n= 457  pos_rate=0.869
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: complete takeaway</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 011 ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"split feature : </span><span class="si">{</span><span class="n">split_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"threshold     : </span><span class="si">{</span><span class="n">split_thresh</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"left pos_rate : </span><span class="si">{</span><span class="n">left_rate</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  right pos_rate: </span><span class="si">{</span><span class="n">right_rate</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"delta Gini    : </span><span class="si">{</span><span class="n">delta_g</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — synthetic irregular data, models, and the fit/score harness. Just run.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistGradientBoostingRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neural_network</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLPRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">r2_score</span>
+
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">SCALES</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">]</span>     <span class="c1"># target-smoothing length-scales to sweep</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">make_irregular_regression</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""An IRREGULAR (non-smooth) target: a sign/XOR flip, a hard step, a high-frequency</span>
+<span class="sd">    sinusoid, and a smooth linear part. This is the regime where trees beat MLPs."""</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>          <span class="c1"># sharp sign boundary (XOR-like)</span>
+         <span class="o">+</span> <span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.5</span>   <span class="c1"># hard step</span>
+         <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">X</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">])</span>                 <span class="c1"># high-frequency wiggle</span>
+         <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">X</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">])</span>                         <span class="c1"># a smooth linear part</span>
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_irregular_regression</span><span class="p">()</span>
+<span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"synthetic irregular regression: n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="si">}</span><span class="s2">, d=</span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">, "</span>
+      <span class="sa">f</span><span class="s2">"train </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">Xtr</span><span class="p">)</span><span class="si">}</span><span class="s2"> / test </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">Xte</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_score</span><span class="p">(</span><span class="n">ytr_target</span><span class="p">,</span> <span class="n">yte_target</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Fit a GBT and an MLP on the (possibly smoothed) TRAIN target; return their test R^2</span>
+<span class="sd">    against the (same-smoothing) TEST target. Trees and MLPs, head to head."""</span>
+    <span class="n">gbt</span> <span class="o">=</span> <span class="n">HistGradientBoostingRegressor</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr_target</span><span class="p">)</span>
+    <span class="n">mlp</span> <span class="o">=</span> <span class="n">make_pipeline</span><span class="p">(</span>
+        <span class="n">StandardScaler</span><span class="p">(),</span>
+        <span class="n">MLPRegressor</span><span class="p">(</span><span class="n">hidden_layer_sizes</span><span class="o">=</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
+                     <span class="n">learning_rate_init</span><span class="o">=</span><span class="mf">3e-3</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">),</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr_target</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">r2_score</span><span class="p">(</span><span class="n">yte_target</span><span class="p">,</span> <span class="n">gbt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xte</span><span class="p">)),</span> <span class="n">r2_score</span><span class="p">(</span><span class="n">yte_target</span><span class="p">,</span> <span class="n">mlp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xte</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"ready — harness fit_score(ytr_target, yte_target) -&gt; (gbt_r2, mlp_r2)"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=35fcc6ec">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-1-%E2%80%94-the-Gaussian-target-smoother-%E2%80%94-TODO-(crucial-fragment)">Task 1 — the Gaussian target smoother — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-the-Gaussian-target-smoother-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> implement <code>gaussian_smooth_target(X, y, h)</code> — Grinsztajn's §5.2 operation. The smoothed
+target at point <code>i</code> is a <strong>Gaussian-weighted average of every point's target</strong>, with weights that
+decay with distance in <em>standardized</em> feature space:</p>
+<p>$$\tilde{y}_i = \frac{\sum_j w_{ij}\, y_j}{\sum_j w_{ij}}, \qquad w_{ij} = \exp\!\left(-\frac{\lVert x_i - x_j\rVert^2}{2h^2}\right)$$</p>
+<p>As <code>h → 0</code> every point only sees itself, so <code>ỹ = y</code> (raw); as <code>h</code> grows, each point averages over
+an ever-wider neighbourhood, erasing high-frequency wiggles and, in the limit, returning the constant
+global mean.</p>
+<p><strong>Why it matters:</strong> this is the scalpel of the whole experiment. Smoothing the <em>target</em> (not the
+model) lets us delete exactly the irregular, high-frequency structure and ask: <em>was that what the tree
+was using?</em> If the tree's advantage lives there, smoothing will make it vanish.</p>
+<p><strong>You implement:</strong> inside the loop, (1) the squared Euclidean distance <code>d2</code> from point <code>i</code> to all
+points (in standardized space <code>Xs</code>), and (2) the Gaussian weights <code>w</code> from <code>d2</code> and <code>h</code>.</p>
+<p><strong>Hint boundary:</strong> <code>d2</code> is a sum of squared coordinate differences along <code>axis=1</code>; <code>w</code> is
+<code>exp(-d2 / (2*h*h))</code>. The weighted average <code>w @ y / w.sum()</code> is already written for you.</p>
+<p><strong>Toy check (not this lab's answer):</strong> with two points at distance 0 and a huge <code>h</code>, both weights → 1,
+so each smoothed value → the mean of the two targets.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2adf7e78">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement the Gaussian target smoother (the crucial fragment)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">gaussian_smooth_target</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">h</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>                        <span class="c1"># h=0 is the raw target (no smoothing)</span>
+    <span class="n">Xs</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>     <span class="c1"># distances in standardized feature space</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)):</span>
+        <span class="n">d2</span> <span class="o">=</span> <span class="n">____</span>                              <span class="c1"># squared distance from point i to ALL points (axis=1)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">____</span>                               <span class="c1"># Gaussian weights: exp(-d2 / (2 h^2))</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span> <span class="o">@</span> <span class="n">y</span> <span class="o">/</span> <span class="n">w</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>               <span class="c1"># weighted average of targets (provided)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="c1"># sanity: h=0 is identity; a large h collapses toward the global mean</span>
+<span class="n">_raw</span> <span class="o">=</span> <span class="n">gaussian_smooth_target</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+<span class="n">_big</span> <span class="o">=</span> <span class="n">gaussian_smooth_target</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"h=0   -&gt; identity? </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_raw</span><span class="p">,</span><span class="w"> </span><span class="n">ytr</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"h=50  -&gt; near the mean? std </span><span class="si">{</span><span class="n">_big</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (raw std </span><span class="si">{</span><span class="n">ytr</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">), "</span>
+      <span class="sa">f</span><span class="s2">"mean </span><span class="si">{</span><span class="n">_big</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> (raw mean </span><span class="si">{</span><span class="n">ytr</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=52cef02e">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">gaussian_smooth_target</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">ytr</span><span class="p">),</span> <span class="s2">"h=0 must be the identity (raw target)."</span>
+<span class="n">_big</span> <span class="o">=</span> <span class="n">gaussian_smooth_target</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">_big</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">ytr</span><span class="o">.</span><span class="n">std</span><span class="p">(),</span> <span class="s2">"A huge h must collapse the target toward its (near-constant) mean."</span>
+<span class="n">_mid</span> <span class="o">=</span> <span class="n">gaussian_smooth_target</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">_mid</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">ytr</span><span class="o">.</span><span class="n">std</span><span class="p">(),</span> <span class="s2">"Smoothing must reduce the target's variance."</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 1 ok — smoother is identity at h=0, shrinks variance as h grows, "</span>
+      <span class="s2">"and collapses to the mean at large h. That is Grinsztajn's target scalpel."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2b105210">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-2-%E2%80%94-sweep-the-smoothing-and-measure-the-gap-%E2%80%94-TODO">Task 2 — sweep the smoothing and measure the gap — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-sweep-the-smoothing-and-measure-the-gap-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> for each length-scale <code>h</code> in <code>SCALES</code>, smooth <strong>both</strong> the train and the test target the
+same way, fit a GBT and an MLP (via the provided <code>fit_score</code>), and record their test R² and the gap.</p>
+<p><strong>Why it matters:</strong> this is Grinsztajn's Finding 1 in one loop. If the tree's edge is the irregular
+structure, then deleting that structure (larger <code>h</code>) should shrink the GBT − MLP gap toward zero — and
+you will see it happen live.</p>
+<p><strong>You implement:</strong> call your smoother on <code>ytr</code>/<code>yte</code> at the current <code>h</code>, and append the gap
+<code>gbt_r2 − mlp_r2</code>.</p>
+<p><strong>Hint boundary:</strong> smooth <code>ytr</code> and <code>yte</code> with <code>gaussian_smooth_target(Xtr, ytr, h)</code> and
+<code>gaussian_smooth_target(Xte, yte, h)</code>; the gap is <code>g - m</code>. <code>var_kept</code> (provided) is the fraction of the
+target's variance that survives — watch the gap track it.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2e8ccfda">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — smooth train + test targets at each h, fit both models, record the gap (~15s)</span>
+<span class="n">gbt_r2</span><span class="p">,</span> <span class="n">mlp_r2</span><span class="p">,</span> <span class="n">gap</span><span class="p">,</span> <span class="n">var_kept</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">SCALES</span><span class="p">:</span>
+    <span class="n">ytr_h</span> <span class="o">=</span> <span class="n">____</span>                               <span class="c1"># smooth the TRAIN target at this h</span>
+    <span class="n">yte_h</span> <span class="o">=</span> <span class="n">____</span>                               <span class="c1"># smooth the TEST target at this h</span>
+    <span class="n">g</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="n">fit_score</span><span class="p">(</span><span class="n">ytr_h</span><span class="p">,</span> <span class="n">yte_h</span><span class="p">)</span>
+    <span class="n">gbt_r2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">);</span> <span class="n">mlp_r2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">gap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">____</span><span class="p">)</span>                           <span class="c1"># the GBT - MLP gap at this h</span>
+    <span class="n">var_kept</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">yte_h</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">yte</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'h'</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'GBT R2'</span><span class="si">:</span><span class="s2">&gt;7</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'MLP R2'</span><span class="si">:</span><span class="s2">&gt;7</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'gap'</span><span class="si">:</span><span class="s2">&gt;7</span><span class="si">}</span><span class="s2"> | var kept"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">SCALES</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">h</span><span class="si">:</span><span class="s2">&gt;5.1f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">gbt_r2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">mlp_r2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;+7.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">var_kept</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;6.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e720de4c">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="n">gap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gap</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.15</span><span class="p">,</span> <span class="s2">"On the RAW irregular target the GBT should beat the MLP clearly (gap &gt; 0.15)."</span>
+<span class="k">assert</span> <span class="n">gap</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.06</span><span class="p">,</span> <span class="s2">"Once the target is smoothed, the gap should collapse toward zero."</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">gap</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s2">"Smoothing should erase most of the GBT's advantage."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — raw gap </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> collapses to </span><span class="si">{</span><span class="n">gap</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> once smoothed. "</span>
+      <span class="sa">f</span><span class="s2">"The tree's whole edge was the high-frequency structure the MLP is biased against."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a59a4f5d">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-3-%E2%80%94-read-the-mechanism-%E2%80%94-TODO">Task 3 — read the mechanism — TODO<a class="anchor-link" href="#Task-3-%E2%80%94-read-the-mechanism-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> show that the gap does not fade gradually — it tracks the target's <strong>variance</strong>, collapsing
+exactly when the high-frequency structure is destroyed.</p>
+<p><strong>Why it matters:</strong> a gap that shrinks <em>in lockstep with the variance you deleted</em> is the signature of
+a mechanism, not a coincidence. That is what licenses the claim "smoothness is <em>the</em> reason", not just
+"trees happened to win".</p>
+<p><strong>You implement:</strong> the index of the first <code>h</code> where less than 30% of the variance survives, and the gap
+there.</p>
+<p><strong>Hint boundary:</strong> <code>var_kept</code> is a list; find the first index where <code>var_kept[i] &lt; 0.30</code>
+(<code>np.argmax(np.array(var_kept) &lt; 0.30)</code>), then read <code>gap[that_index]</code>.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2c7a7d75">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — locate the collapse and confirm it lines up with the variance loss</span>
+<span class="n">var_kept</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">var_kept</span><span class="p">)</span>
+<span class="n">collapse_i</span> <span class="o">=</span> <span class="n">____</span>                              <span class="c1"># first index where var_kept &lt; 0.30 (np.argmax(...))</span>
+<span class="n">gap_when_smoothed</span> <span class="o">=</span> <span class="n">____</span>                       <span class="c1"># gap[collapse_i]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"raw gap (h=</span><span class="si">{</span><span class="n">SCALES</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">):            </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">   (variance kept </span><span class="si">{</span><span class="n">var_kept</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"gap once &gt;70% smoothed (h=</span><span class="si">{</span><span class="n">SCALES</span><span class="p">[</span><span class="n">collapse_i</span><span class="p">]</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">gap_when_smoothed</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">   "</span>
+      <span class="sa">f</span><span class="s2">"(variance kept </span><span class="si">{</span><span class="n">var_kept</span><span class="p">[</span><span class="n">collapse_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the advantage tracked the variance, not h itself: </span><span class="si">{</span><span class="s1">'yes'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">gap_when_smoothed</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.2</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'no'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9997cfb8">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
+<span class="k">assert</span> <span class="n">var_kept</span><span class="p">[</span><span class="n">collapse_i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.30</span><span class="p">,</span> <span class="s2">"collapse_i should point at a heavily-smoothed target."</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gap_when_smoothed</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.08</span><span class="p">,</span> <span class="s2">"Once the high-frequency variance is gone, the gap should be ~0."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — the GBT led by </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> on the raw target and by </span><span class="si">{</span><span class="n">gap_when_smoothed</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> once "</span>
+      <span class="sa">f</span><span class="s2">"&gt;70% of the variance was smoothed away. The edge WAS the irregularity — that is the smoothness bias."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ae0d13b5">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary to paste back to your teacher.</p>
+<p><strong>Takeaway prompt:</strong> in one sentence, why does <em>smoothing the target function</em> close the GBT-vs-MLP gap,
+and what does that prove about <em>why</em> trees win on typical tabular data?</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=bb462d46">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 025 ==="</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"experiment : Gaussian-smooth an irregular target at growing length-scale; refit GBT vs MLP"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"raw target : GBT </span><span class="si">{</span><span class="n">gbt_r2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs MLP </span><span class="si">{</span><span class="n">mlp_r2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  (gap </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">, variance kept </span><span class="si">{</span><span class="n">var_kept</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"smoothed   : GBT </span><span class="si">{</span><span class="n">gbt_r2</span><span class="p">[</span><span class="n">collapse_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs MLP </span><span class="si">{</span><span class="n">mlp_r2</span><span class="p">[</span><span class="n">collapse_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  "</span>
+      <span class="sa">f</span><span class="s2">"(gap </span><span class="si">{</span><span class="n">gap</span><span class="p">[</span><span class="n">collapse_i</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">, variance kept </span><span class="si">{</span><span class="n">var_kept</span><span class="p">[</span><span class="n">collapse_i</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"verdict    : the gap collapsed as the high-frequency variance was erased"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=81ad3137">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-probe-the-bias">Stretch (optional, ungraded) — probe the bias<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-probe-the-bias">¶</a></h2><ol>
+<li><strong>A smooth target from the start.</strong> Replace the target with a purely smooth function (e.g. <code>y = X[:,0] + 0.5*X[:,1]**2 + X[:,2]</code>). Re-run the sweep at <code>h=0</code>: the MLP should already tie or beat the GBT — no jags to exploit, no tree advantage.</li>
+<li><strong>Frequency knob.</strong> In <code>make_irregular_regression</code>, raise the wiggle frequency <code>sin(4.0*X[:,3])</code> to <code>sin(10.0*X[:,3])</code>. Does the raw gap grow? Higher frequency = more of exactly what the MLP cannot fit.</li>
+<li><strong>Model smoothness, not target smoothness.</strong> Instead of smoothing the target, widen the MLP (more layers/units) and train longer. Does it ever match the tree on the raw target? (Spectral bias says: slowly, and not cheaply.)</li>
+<li><strong>Where it breaks.</strong> Push <code>h</code> very large (e.g. 8.0). Both R² should fall — you have smoothed away <em>all</em> the signal, not just the jags. Smoothing is a diagnostic, never a fix.</li>
+</ol>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a520f591">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
+<span class="c1"># def smooth_target_only(y_like):  # idea 1: swap in a smooth target and re-run the sweep</span>
+<span class="c1">#     pass</span>
+<span class="c1"># # idea 4: gaps at very large h — both models lose signal, not just the tree</span>
+<span class="c1"># for h in [4.0, 8.0]:</span>
+<span class="c1">#     yt = gaussian_smooth_target(Xtr, ytr, h); ye = gaussian_smooth_target(Xte, yte, h)</span>
+<span class="c1">#     g, m = fit_score(yt, ye)</span>
+<span class="c1">#     print(f"h={h}: GBT {g:.3f}  MLP {m:.3f}  var kept {np.var(ye)/np.var(yte):.3f}")</span>
 </pre></div>
 </div>
 </div>

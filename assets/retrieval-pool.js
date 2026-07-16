@@ -362,6 +362,30 @@
       ],
       correct: "a",
       explain: "An 80% on an easy vs a hard dataset are not comparable (echo of Demšar, L023). Per-dataset min-max scaling bounds each dataset to [0,1] so the aggregate isn't hijacked by one high-variance task."
+    },
+    {
+      id: "l025-smoothness", lesson: 25, quarter: "Q3", concept: "inductive-bias", misconception: true,
+      question: "Why do neural nets underperform trees on typical tabular data — and what proves it is the reason?",
+      options: [
+        { label: "The MLP's smoothness bias mismatches irregular targets; smoothing the target closes the gap", value: "a" },
+        { label: "Trees simply have far more parameters than any neural network does", value: "b" },
+        { label: "Neural nets cannot represent non-linear or non-smooth functions at all", value: "c" },
+        { label: "Trees are trained with a much smaller learning rate than the MLP", value: "d" }
+      ],
+      correct: "a",
+      explain: "An MLP is biased toward smooth (low-frequency) functions (Rahaman spectral bias); real tabular targets are irregular. Gaussian-smoothing the target erases the high-frequency structure and the tree-vs-MLP gap collapses (repro: +0.33 R² → ~0) — the edge was the irregularity, not raw model strength."
+    },
+    {
+      id: "l025-piecewise", lesson: 25, quarter: "Q3", concept: "smoothness",
+      question: "What lets a decision tree follow a jagged target that an MLP over-smooths?",
+      options: [
+        { label: "It is piecewise-constant, so one split makes an arbitrarily sharp step", value: "a" },
+        { label: "It fits a global smooth curve through all of the training points", value: "b" },
+        { label: "It rotates the feature space until the target looks smooth", value: "c" },
+        { label: "It always trains for many more gradient steps than the MLP", value: "d" }
+      ],
+      correct: "a",
+      explain: "A tree partitions space into axis-aligned boxes and predicts a constant per box, so a single split produces a sharp jump — the natural way to render a high-frequency target. Gradient descent, by contrast, reaches smooth functions first (spectral bias)."
     }
   ];
 })(window);

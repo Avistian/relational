@@ -271,6 +271,35 @@
   terms. Manifest → 24; all labs re-rendered. `node labs/_check_pedagogy.js` clean.
 - Next: Lesson 025 (Inductive bias: smoothness — Grinsztajn 2022 §5.2), continuing the Grinsztajn arc.
 
+## Session 26 — 2026-07-16
+
+- **Lesson 024 marked complete** on the user's word ("lesson 24 done") — no EXIT text pasted, no rubric
+  score, per the L017–L022 precedent. Record: [[learning-records/0061-lesson-024-complete.md]].
+- **Lesson 025 published** — Inductive bias: smoothness (curriculum lec 025, **Grinsztajn 2022 §5.2**,
+  Finding 1; theory backing Rahaman 2019 spectral bias, arXiv `1806.08734`). First of the three
+  mechanism lessons in the Grinsztajn arc. Single skill: explain the **smoothness/spectral bias** (MLPs
+  fit low-frequency structure first, over-smooth irregular targets; trees are piecewise-constant and
+  follow the jags) and the **target-smoothing experiment** that proves it. Record:
+  [[learning-records/0062-lesson-025-published.md]].
+- **Verified live (`labs/_verify_l025.py`, sklearn 1.9.0):** 1-D — MLP/tree MSE ratio **5.30× (raw) →
+  0.19× (smooth)**; multi-D gap experiment (mean of 5 seeds) — GBT **0.938** vs MLP **0.717** at h=0
+  (gap **+0.22**) collapsing to ~0 by h=1.0 as the target's variance drops to 19%. Gap tracks the
+  variance removed, not h — the mechanism signature. Lab solution (single seed): gap **+0.332 → −0.033**.
+- **Two new reusable viz (standard #9, one per beat):** `assets/smoothness-fit-viz.js` (1-D target +
+  tree staircase + MLP fit, target-smoothing slider + MSE readout) and `assets/smoothness-gap-viz.js`
+  (the §5.2 gap-vs-smoothing curve + "variance kept" annotation). Both driven by real verify-script
+  numbers. Headless `labs/_viz_check_l025.js` 12/12; **browser MCP still unavailable** → headless-only,
+  as L021–L024.
+- **Lab** `labs/0025-inductive-bias-smoothness.ipynb` — **Tier C** (synthetic; mechanism isolation, since
+  no real dataset can toggle its own irregularity). Crucial fragment = implement the Gaussian **target
+  smoother**; then sweep smoothing and watch the gap close. 3 TODO + stretch; student blank (8 `____`,
+  0 outputs); solution executed clean & gitignored. Built via `labs/_build_l025.py`.
+- **Artifacts synced:** retrieval-pool +2 (`l025-smoothness` [misconception], `l025-piecewise`);
+  paper-deck +1 (`grinsztajn2022-smoothness`); misconceptions **M22** ("trees are just more powerful" →
+  inductive-bias mismatch); thesis-dossier +1 (BAR+FOR, C3/C1); `reference/glossary.html` +3 Q3 terms.
+  Manifest → 25; all labs re-rendered. `node labs/_check_pedagogy.js` clean.
+- Next: Lesson 026 (Inductive bias: rotation — Grinsztajn 2022 §5.3; the rotation experiment).
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
