@@ -300,6 +300,48 @@
   Manifest → 25; all labs re-rendered. `node labs/_check_pedagogy.js` clean.
 - Next: Lesson 026 (Inductive bias: rotation — Grinsztajn 2022 §5.3; the rotation experiment).
 
+## Session 27 — 2026-07-16
+
+- **Lesson 025 complete** — "lab/lesson 25 done" (no EXIT ticket pasted → no rubric score; per the
+  L017–L024 precedent). Record: [[learning-records/0063-lesson-025-complete.md]].
+- **Lesson 026 published** — Inductive bias: rotation (curriculum lec 026, **Grinsztajn 2022 §5.4**,
+  Finding 3; theory backing **Ng 2004**, ICML). Second of the three mechanism lessons. Single skill:
+  explain **rotational invariance** (Ng 2004) — a tree is NOT invariant (axis-aligned splits tied to the
+  original basis), an MLP/ResNet IS (`W·(Qx)=(WQ)·x`) — why that is a liability where columns carry
+  individual meaning, and the experiment that proves it (a lossless random rotation collapses the tree,
+  leaves the MLP unmoved, **reverses the ranking**). Record: [[learning-records/0064-lesson-026-published.md]].
+- **Citation fix (rotation is §5.4, not §5.3):** prior records (L024-complete, L025) had the two
+  remaining Grinsztajn findings' section numbers swapped. Verified against arXiv (ar5iv HTML), HAL,
+  NeurIPS proceedings, and OpenReview: **§5.3 = uninformative features (Finding 2)**, **§5.4 = rotation
+  (Finding 3)**. L026 cites §5.4; fixed L025's one-line forward reference. Lesson *order* unchanged
+  (rotation L026 → uninformative L027), since it's baked into L025's quiz 3 and is a sound order (rotation
+  is the mechanism Ng's theorem uses to explain L027's uninformative-feature fragility). arxiv MCP
+  unavailable in this cloud env → grounded via direct web fetch of the four paper copies.
+- **Verified live (`labs/_verify_l026.py` + executed solution, synthetic axis-aligned task, sklearn
+  1.9.0):** rotation experiment (mean of 5 seeds) — Tree **0.987→0.747** (−0.240), GBT **0.997→0.824**,
+  RF **0.994→0.812**, **MLP 0.862→0.869 (+0.008, invariant)**; original gap +0.126 → rotated −0.122 (the
+  ranking **reverses**). Lab solution (single seed): tree 0.973→0.727, MLP 0.838→0.858 (+0.020), gap
+  +0.135 → −0.131; Q orthogonal, distances preserved. All CHECK + EXIT clean.
+- **Two new reusable viz (standard #9, one per beat):** `assets/rotation-splits-viz.js` (geometry:
+  axis-aligned quadrant with two straight tree splits vs the rotated wedge's red staircase; MLP boundary
+  rotates with the data) and `assets/rotation-gap-viz.js` (grouped bar chart Tree/GBT/RF/MLP original vs
+  rotated + ranking-reversal connectors). Headless `labs/_viz_check_l026.js` 15/15; **browser MCP still
+  unavailable** → headless-only, as L021–L025.
+- **Lab** `labs/0026-inductive-bias-rotation.ipynb` — **Tier C**. Crucial fragment = implement the
+  random-rotation operator (`Q` from `np.linalg.qr`, same `Q` on train+test) + verify it's a true
+  rotation; then fit tree/GBT/MLP on original vs rotated and watch the ranking flip. 3 TODO + stretch
+  (break invariance with a KBins embedding; rotation-friendly linear target). Student blank (10 `____`,
+  0 outputs); solution executed clean & gitignored. Built via `labs/_build_l026.py`.
+- **Artifacts synced:** retrieval-pool +2 (`l026-rotation` [misconception], `l026-invariance`);
+  paper-deck +1 (`grinsztajn2022-rotation`); misconceptions **M23**; thesis-dossier +1 (BAR+FOR, C3/C1);
+  `reference/glossary.html` +4 Q3 terms (rotational invariance, natural basis, random rotation, Ng's
+  bound). Manifest → 26; all labs re-rendered. `node labs/_check_pedagogy.js` clean.
+- **Env note:** no `python3-venv`/uv preinstalled again; installed `uv` via curl, built lean `.venv`
+  (sklearn/numpy/scipy/jupyter — no boosters; Tier-C lab). Env-setup agent should preinstall the lab
+  venv so future sessions skip this (recurring since Sessions 22–23).
+- Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
+  last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -359,7 +401,7 @@ Track with ✓ as completed:
 - [x] Y1: Prokhorenkova 2018 CatBoost §3 (ordered TS) + §4 (ordered boosting) assigned in Lesson 016 (ordered TS implemented in lab)
 - [x] Y1: Bergstra & Bengio 2012 §1 (random search / low effective dimensionality) assigned in Lesson 017 (grid vs random + nested CV implemented in lab)
 - [x] Y1: Wolpert 1992 §1–3 (stacked generalization / out-of-fold meta-features) assigned in Lesson 018 (OOF blend + leak contrast + StackingClassifier in lab)
-- [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019; **§3–4 (benchmark construction + random-search budget-curve protocol) assigned in Lesson 024** (single-dataset protocol reproduction on credit-g in lab); §5 inductive-bias experiments still pending in L025–027
+- [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019; **§3–4 (benchmark construction + random-search budget-curve protocol) assigned in Lesson 024** (single-dataset protocol reproduction on credit-g in lab); §5.2 (smoothness) assigned in Lesson 025 and §5.4 (rotation, incl. Ng 2004) assigned in Lesson 026; §5.3 (uninformative features) still pending in L027
 - [~] Y1/Y2: Rubachev 2024 (TabReD, `2406.19380`) — abstract + §1 + §5.4 previewed in Lesson 021 (random vs temporal splits; optimism gap synthetic demo in lab); full core read is Y2 lec 055
 - [x] Y1: Kapoor & Narayanan 2022 (`2207.07048`) — abstract + §2 (8-type taxonomy) + §5 (civil-war reproduction) + §6 (model info sheet) assigned in Lesson 022 (illegitimate-feature collapse + FE-classification + model info sheet in lab)
 - [x] Y1: Demšar 2006 (JMLR 7, no arXiv) — §3.2 (Wilcoxon) + §3.5 (Friedman + Nemenyi CD) assigned in Lesson 023; Nadeau & Bengio 2003 (corrected resampled t-test) + Dietterich 1998 (5×2cv/McNemar) as the single-dataset companions (corrected-t + Friedman/CD implemented in lab)
