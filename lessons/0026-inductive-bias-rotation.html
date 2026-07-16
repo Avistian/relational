@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 026 — Inductive Bias: Rotation</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* shared viz frames */
+    .rotation-splits-viz, .rotation-gap-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .rs-svg, .rg-svg { display: block; max-width: 560px; margin: 0.25rem auto; }
+    .rs-title, .rg-lab, .rg-tick, .rg-leg, .rg-val { font-family: var(--font-sans); }
+    .rs-title { font-size: 10px; fill: var(--muted); }
+    .rg-lab { font-size: 9.5px; fill: var(--muted); }
+    .rg-tick { font-size: 9px; fill: var(--muted); }
+    .rg-leg { font-size: 10px; fill: var(--fg, #222); }
+    .rg-val { font-size: 8.5px; fill: var(--fg, #222); }
+    .rs-ctl, .rg-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .rs-ctl button, .rg-ctl button { font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .rs-ctl button.rs-on, .rg-ctl button.rg-on { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .rs-readout, .rg-readout { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .rs-caption, .rg-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>Inductive Bias: Rotation</h1>
+  <p class="subtitle">Lesson 026 · Phase 1 · Q3 · ~35 min · <em>core paper: Grinsztajn, Oyallon &amp; Varoquaux 2022, §5.4</em></p>
+
+  <p>
+    <a href="0024-grinsztajn-benchmark.html">Lesson 024</a> built the benchmark; <a href="0025-inductive-bias-smoothness.html">Lesson 025</a>
+    opened the mechanism arc with the first of Grinsztajn's three inductive biases —
+    <strong>smoothness</strong>. This lesson takes the second spatial bias, and the most surprising
+    one: <strong>rotation</strong>. It is the bias that explains <em>why the very structure of a
+    table</em> — the fact that each column means something on its own — favours trees, and it is the
+    one that most directly points at the relational thesis.
+  </p>
+  <p>
+    Its single skill: <strong>explain rotational invariance in the sense of Ng (2004) — why a decision
+    tree is <em>not</em> invariant while an MLP <em>is</em>, why that invariance is a liability on
+    tabular data whose columns carry individual meaning, and recognize the experiment that proves it:
+    randomly rotating the feature space leaves the MLP untouched but destroys the tree's edge, and can
+    reverse the ranking entirely.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A decision tree attends to each feature on its own axis, so it
+    exploits the fact that a column like <em>age</em> or <em>balance</em> is individually meaningful;
+    an MLP treats the features as an unlabelled vector and is unchanged if you rotate the axes — which
+    sounds elegant but is exactly wrong for tabular data, where the original basis <em>is</em> the
+    signal.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess
+    here is useful — retrieval (even failed) encodes far better than re-reading.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>What "rotational invariance" means</h2>
+  <p>
+    Take your feature matrix <code>X</code> and multiply it by a random <strong>orthogonal</strong>
+    matrix <code>Q</code> (a rotation: it preserves every distance and angle, just spins the axes).
+    Apply the <em>same</em> <code>Q</code> to train and test. A learning procedure is
+    <strong>rotationally invariant</strong> (Ng, 2004) if training on <code>X</code> and training on
+    <code>XQ</code> give you the <em>same</em> test performance.
+  </p>
+  <span class="formula">rotate: X → X·Q,  where QᵀQ = I   (train and test rotated by the same Q)</span>
+  <p>
+    An MLP is (essentially) rotationally invariant: its first layer is a full linear map
+    <code>W·x</code>, and <code>W·(Qx) = (WQ)·x</code>, so the network can absorb any rotation into
+    its weights and reach an equivalent solution. A <strong>ResNet</strong> is invariant for the same
+    reason. A <strong>decision tree is not</strong>: it splits on <em>one feature at a time</em> at an
+    axis-aligned threshold, so its whole vocabulary is tied to the original coordinate system. Rotate
+    the axes and "feature 3 &gt; 0.5" no longer means anything. (An <strong>FT-Transformer</strong> is
+    also <em>not</em> invariant — its feature tokenizer is a per-column operation — which will matter
+    at the end.)
+  </p>
+
+  <h2>See it: why a tree can't survive a rotation (§5.4)</h2>
+  <p>
+    Here is an axis-aligned class region — the top-right quadrant (feature&nbsp;1&nbsp;&gt;&nbsp;0
+    <em>and</em> feature&nbsp;2&nbsp;&gt;&nbsp;0). The <strong>tree</strong> (left) carves it with two
+    straight, axis-aligned splits and nails it. Press <strong>Rotated basis</strong> to spin the whole
+    space: the region becomes a diagonal wedge, and the tree — still forced to cut along the axes — can
+    only approximate it with a red <strong>staircase</strong>. The <strong>MLP</strong> (right)
+    boundary simply rotates <em>with</em> the data, so it is unmoved.
+  </p>
+
+  <div id="rotation-splits-viz"></div>
+
+  <p>
+    This is the geometry of the bias in one picture. The tree's power on tables — carving the space one
+    meaningful axis at a time — is <em>the same property</em> that makes it fragile under rotation. The
+    MLP's rotation invariance means it cannot tell a real, meaningful column apart from an arbitrary
+    mixture of columns; on data where the axes carry the meaning, that is a handicap, not a virtue.
+  </p>
+
+  <h2>Predict first</h2>
+  <p>
+    Grinsztajn ran the real version of this: take the tabular benchmark, apply a random rotation to the
+    features, and refit every model family. Trees are not invariant; MLPs and ResNets are. Before you
+    read the numbers, commit a guess about what the rotation does to the <em>ranking</em> of the models.
+  </p>
+  <div id="predict-rotation"></div>
+
+  <h2>See it: rotation reverses the ranking</h2>
+  <p>
+    We reproduced it on a synthetic <strong>axis-aligned</strong> classification task (6 informative +
+    10 uninformative features; the label is a majority vote of the informative features' signs, so every
+    feature matters on its own axis — trees' home turf). We fit each model on the original features and
+    on a randomly-rotated copy (same <code>Q</code> on train and test), mean of 5 seeds.
+  </p>
+
+  <div id="rotation-gap-viz"></div>
+
+  <table>
+    <thead><tr><th>Model</th><th>Original</th><th>Rotated</th><th>Change</th><th>Invariant?</th></tr></thead>
+    <tbody>
+      <tr><td>Decision tree</td><td class="n win">0.987</td><td class="n bad">0.747</td><td class="n bad">−0.240</td><td>no</td></tr>
+      <tr><td>GBT (HistGB)</td><td class="n win">0.997</td><td class="n bad">0.824</td><td class="n bad">−0.173</td><td>no</td></tr>
+      <tr><td>Random forest</td><td class="n win">0.994</td><td class="n bad">0.812</td><td class="n bad">−0.182</td><td>no</td></tr>
+      <tr><td>MLP (256×256)</td><td class="n">0.862</td><td class="n win">0.869</td><td class="n win">+0.008</td><td>≈ yes</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the two columns as a story. On the <strong>original basis</strong> the tree beats the MLP by
+    <strong>+0.126</strong> — the axes carry the signal and the tree exploits them. After a random
+    <strong>rotation</strong> the tree collapses to 0.747 while the MLP barely moves (<strong>+0.008</strong>,
+    the hallmark of invariance), and now the <strong>MLP wins by −0.122</strong>. The ranking has
+    <em>reversed</em>. Nothing about the information content changed — a rotation is a lossless, invertible
+    transform — only the <em>alignment between the signal and the axes</em> was destroyed, and that
+    alignment was the tree's entire advantage. Grinsztajn's conclusion: <strong>because tabular data is
+    not invariant to rotation, a good learner should not be either.</strong>
+  </p>
+  <p>
+    Why does rotation invariance also make MLPs suffer more from <em>junk</em> features? Ng (2004) proved
+    that any rotationally-invariant learner has a worst-case sample complexity that grows <strong>at least
+    linearly in the number of uninformative features</strong>: to ignore a junk column it must first
+    <em>recover the original orientation</em> and only then decide which directions are useless — and
+    rotation is exactly what erases that orientation. A tree just never splits on the junk axis. That link
+    — rotation invariance ⟶ fragility to uninformative features — is the bridge to <strong>Lesson 027</strong>.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-rotation"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> Rotation is the bias that speaks most directly to the relational
+    thesis, and it cuts both ways. <em>Against a naïve version of the bet:</em> a relational model that
+    ends by feeding a flattened row vector into an MLP head inherits rotation invariance and will be
+    handicapped on exactly the tabular signal a tree exploits — so "just add a GNN then an MLP" is not a
+    free win. <em>For the bet:</em> the reason rotation invariance is bad is that <strong>columns carry
+    individual meaning</strong> — <code>age</code>, <code>balance</code>, <code>store_id</code> — and a
+    good model should respect that structure rather than blend it away. A relational database is the
+    <em>maximal</em> version of "the structure is meaningful": not just which column, but which entity,
+    which foreign key, which event sequence. The same instinct that says "don't rotate the axes of a
+    table" says "don't dissolve the schema of a database." Grinsztajn's fix on flat tables — Somepalli's
+    SAINT and Gorishniy's FT-Transformer add a per-feature <strong>embedding</strong> that breaks rotation
+    invariance and recovers much of the gap — is a small echo of the bigger move the thesis makes:
+    give the model back the structure the naïve representation threw away.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>The invariance is not perfectly exact in practice.</strong> A raw MLP is invariant; a
+      <em>pipeline</em> that per-feature-standardizes after rotation, plus finite training and random
+      init, makes it only <em>approximately</em> invariant — hence the MLP's <strong>+0.008</strong>
+      wobble rather than a flat zero. The point is the <em>contrast</em>: ±0.01 for the MLP vs
+      <strong>−0.24</strong> for the tree.</li>
+    <li><strong>Rotation is information-preserving.</strong> <code>Q</code> is invertible, so no signal is
+      lost — the accuracy drop is <em>purely</em> the model failing to use the (still-present) signal in a
+      scrambled basis. This is why the experiment isolates a <em>bias</em>, not a change in difficulty.</li>
+    <li><strong>Invariance is not always bad.</strong> On images, rotation/translation invariance is a
+      <em>virtue</em> (a cat is a cat, rotated) — which is why CNNs bake it in. Tabular data is the
+      opposite regime: there is a privileged natural basis (the columns), so invariance to it destroys
+      information about which feature is which.</li>
+    <li><strong>Breaking invariance is how neural tabular models catch up.</strong> Numerical-feature
+      embeddings (FT-Transformer, SAINT) break rotation invariance and are a large part of why modern
+      tabular nets narrow the gap — a preview of Year 2. The embedding, not extra depth, is doing the work.</li>
+    <li><strong>This is one of three biases.</strong> Rotation compounds with <strong>smoothness</strong>
+      (L025) and <strong>uninformative features</strong> (L027), and the last two are linked by Ng's
+      theorem. Do not over-attribute the whole gap to any single one.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The core paper, now the rotation section: <strong>Léo Grinsztajn, Edouard Oyallon &amp; Gaël
+    Varoquaux (2022), <em>Why do tree-based models still outperform deep learning on typical tabular
+    data?</em></strong> — <a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a>. Today read
+    <strong>§5.4 (Finding 3: data are non-invariant by rotation, so learning procedures should not be
+    either)</strong> and Figure&nbsp;5 (the random-rotation experiment). For the theoretical backbone —
+    the theorem that a rotationally-invariant learner's sample complexity grows at least linearly in the
+    number of irrelevant features — skim <strong>Andrew Ng (2004), <em>Feature selection, L1 vs. L2
+    regularization, and rotational invariance</em></strong>
+    (<a href="https://icml.cc/Conferences/2004/proceedings/papers/354.pdf">ICML 2004</a>), §1 and the main
+    theorem. §5.3 (uninformative features) is next, in L027.
+  </p>
+
+  <h2>Lab — reproduce the rotation experiment</h2>
+  <p>
+    Notebook <code>0026-inductive-bias-rotation.ipynb</code> (Tier C — synthetic, to isolate the
+    mechanism): implement the <strong>random-rotation operator</strong> (draw an orthogonal
+    <code>Q</code> from a QR decomposition; the crucial fragment), verify it is a true rotation
+    (<code>QᵀQ = I</code>, distances preserved), then fit a tree and an MLP on the original vs rotated
+    features and watch the ranking flip. Reproduction targets: tree drops ≈ 0.24, MLP moves ≈ 0 (invariant),
+    the tree-vs-MLP gap reverses sign.
+    <a href="../labs/html/0026-inductive-bias-rotation.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why <code>W·(Qx) = (WQ)·x</code> makes an MLP invariant, or why breaking that invariance with an
+    embedding <em>helps</em> on tables? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0025-inductive-bias-smoothness.html">← Lesson 025</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0026-inductive-bias-rotation.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/rotation-splits-viz.js"></script>
+<script src="../assets/rotation-gap-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 26, count: 3 });
+
+  RotationSplitsViz.mount(document.getElementById("rotation-splits-viz"), {});
+  RotationGapViz.mount(document.getElementById("rotation-gap-viz"), {});
+
+  Predict.mount(document.getElementById("predict-rotation"), {
+    prompt: "You randomly rotate the feature space (same rotation on train and test) and refit. What happens to the tree-vs-MLP ranking?",
+    options: [
+      { label: "Both drop by about the same amount — the ranking is unchanged", value: "same" },
+      { label: "The tree collapses but the MLP is ~unchanged — the ranking reverses", value: "reverse" },
+      { label: "Both improve — rotation acts like data augmentation", value: "up" }
+    ],
+    correct: "reverse",
+    reveal: "The tree collapses (0.987 → 0.747) while the MLP is invariant (0.862 → 0.869, +0.008), so the MLP now wins — the ranking reverses. Rotation is lossless; it only destroys the alignment of the signal with the axes, which was the tree's whole edge."
+  });
+
+  Teachback.mount(document.getElementById("teachback-rotation"), {
+    prompt: "In your own words: what does it mean for a learner to be 'rotationally invariant', why is a tree NOT invariant while an MLP IS, and why is that invariance a liability on tabular data?",
+    points: [
+      "Rotationally invariant = applying the same orthogonal matrix Q to train and test features leaves test performance unchanged",
+      "An MLP is invariant because its first layer is a full linear map (W·(Qx) = (WQ)·x), so it can absorb the rotation into its weights; a ResNet too",
+      "A tree is NOT invariant: it splits on one feature at a time at axis-aligned thresholds, so its whole vocabulary is tied to the original axes",
+      "Tabular columns carry individual meaning (age, balance), so the original basis is a privileged 'natural basis' that encodes the signal",
+      "Rotation mixes meaningful columns into arbitrary combinations, destroying that alignment — a rotation-invariant model can't exploit it (and Ng 2004: needs ≥ linearly more samples per junk feature)"
+    ],
+    model: "A learning procedure is rotationally invariant (Ng 2004) if training and evaluating on X gives the same test score as on X·Q for any orthogonal matrix Q — a rotation of the feature axes. An MLP is invariant because its first layer applies a full linear map W·x, and W·(Qx) = (WQ)·x, so gradient descent can absorb any rotation into the weights and reach an equivalent solution (a ResNet likewise). A decision tree is not invariant: it splits on a single feature at an axis-aligned threshold, so 'feature 3 > 0.5' is meaningless once the axes are spun — its entire vocabulary is tied to the original coordinate system. That tie is a liability only because tabular data HAS a privileged natural basis: columns like age or balance are individually meaningful, so the axes themselves carry signal. A rotation blends those meaningful columns into arbitrary mixtures; the tree loses its footing while the invariant MLP is unmoved. Grinsztajn's experiment shows this directly — a random rotation collapses the tree (0.987 → 0.747) but not the MLP (+0.008), reversing the ranking — and Ng's theorem explains the linked cost: an invariant learner must first recover the lost orientation before it can drop uninformative features, so its sample complexity grows at least linearly in the number of junk columns."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "A learning procedure is 'rotationally invariant' (Ng 2004) when…",
+    options: [
+      { label: "Applying the same orthogonal matrix Q to the train and test features leaves its test performance unchanged", value: "a" },
+      { label: "It rotates the input features internally to a canonical orientation before training", value: "b" },
+      { label: "It is invariant to the random seed used to initialize its weights", value: "c" },
+      { label: "Its predictions do not change when you shuffle the order of the training rows", value: "d" }
+    ],
+    correct: "a",
+    explain: "Invariance is a property of the whole train-and-evaluate procedure under a rotation of the feature space (X → X·Q on both train and test). MLPs/ResNets have it; trees and FT-Transformers do not."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Why is a decision tree NOT rotationally invariant, while an MLP essentially is?",
+    options: [
+      { label: "The tree splits on one feature at an axis-aligned threshold (tied to the axes); the MLP's linear first layer can absorb any rotation into its weights", value: "a" },
+      { label: "The tree has fewer parameters, so it cannot represent a rotated boundary at all", value: "b" },
+      { label: "The MLP standardizes each feature, which happens to undo any rotation exactly", value: "c" },
+      { label: "The tree is trained with bagging, and bagging removes rotational structure", value: "d" }
+    ],
+    correct: "a",
+    explain: "Axis-aligned splits are meaningless once the axes are spun (the tree must staircase a diagonal boundary), whereas W·(Qx) = (WQ)·x lets an MLP reach an equivalent solution on rotated data."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "On the axis-aligned task, a random rotation dropped the tree from 0.987 to 0.747 but the MLP only from 0.862 to 0.869. What does this prove?",
+    options: [
+      { label: "Rotation destroys the alignment of the signal with the axes (the tree's edge), while the invariant MLP is unaffected — so the ranking can reverse", value: "a" },
+      { label: "Rotation adds noise to the data, which hurts the higher-variance model more", value: "b" },
+      { label: "The tree was overfitting and rotation acted as a regularizer that fixed it", value: "c" },
+      { label: "Rotation removed the uninformative features, which only the MLP relied on", value: "d" }
+    ],
+    correct: "a",
+    explain: "A rotation is lossless and invertible — no information changes. The tree's whole advantage was that the meaningful signal lay along the axes; scramble the basis and that edge vanishes, while the rotation-invariant MLP is unmoved and now wins."
+  });
+</script>
+</body>
+</html>
