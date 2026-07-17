@@ -139,8 +139,8 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 023 | Statistical comparison | Demšar 2006 (statistical comparisons) | Paired test on CV folds |
 | 024 | The Grinsztajn benchmark | Grinsztajn et al. 2022 §1–4 | Run one dataset from repo |
 | 025 | Inductive bias: smoothness | Grinsztajn 2022 §5.2 | Explain smoothness bias |
-| 026 | Inductive bias: rotation | Grinsztajn 2022 §5.3 | Rotation experiment |
-| 027 | Inductive bias: junk features | Grinsztajn 2022 §5.4 | Add noise features |
+| 026 | Inductive bias: rotation | Grinsztajn 2022 §5.4 | Rotation experiment |
+| 027 | Inductive bias: junk features | Grinsztajn 2022 §5.3 | Add noise features |
 | 028 | MLP & ResNet tabular baselines | Gorishnaya et al. 2021 §3.2 | Train ResNet baseline |
 | 029 | Manual FE vs AutoML | Feurer et al. 2015 (Auto-sklearn, skim) | Compare to tuned XGB |
 | 030 | **Q3 checkpoint** | Grinsztajn 2022 full | Write 1-page benchmark report |
