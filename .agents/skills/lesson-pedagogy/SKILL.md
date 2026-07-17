@@ -91,6 +91,18 @@ When a lab CHECK, warm-up, or check-in exposes a wrong belief:
 3. When it is answered correctly across ≥2 spaced sessions (Leitner box ≥ 3), mark the row `retired`
    (keep it for history).
 
+## 6. Explain everything introduced (thoroughness standard, from L027)
+
+Storage strength needs the material to be *understandable on its own*. From L027 (user directive
+2026-07-17), lessons must **explain every term, symbol, formula, and mechanism they introduce**, from
+first principles, before relying on it — even terms an earlier lesson already used. Do not gate a
+definition behind "see Lesson 0XX"; restate it inline or in a callout. Derive results rather than
+asserting them, and unpack each experiment (held fixed / varied / measured / why it isolates the
+mechanism) before the numbers. **Length is not a constraint** — drop the ~35–45 min soft cap when the
+content needs more; a longer self-contained lesson beats a short one that leans on unstated recall. Keep
+the chunking + worked-example + check-block structure so the extra length stays digestible. Full rule:
+`NOTES.md` Preferences standard #17. Reference implementation: **L027**.
+
 ## Cross-cutting artifacts to keep current
 
 - **`reference/glossary.html`** — the authoritative ubiquitous language. Every lesson must use terms

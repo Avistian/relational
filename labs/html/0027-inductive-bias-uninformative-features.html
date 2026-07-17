@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0020-q2-checkpoint</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0027-inductive-bias-uninformative-features</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,30 +7796,30 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-00">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f64dd327">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-020-%E2%80%94-Q2-Checkpoint:-match-a-published-tree-baseline">Lab 020 — Q2 Checkpoint: match a published tree baseline<a class="anchor-link" href="#Lab-020-%E2%80%94-Q2-Checkpoint:-match-a-published-tree-baseline">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0020-q2-checkpoint.html"><code>lessons/0020-q2-checkpoint.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2 (capstone)</p>
-<p><strong>Papers:</strong> Chen &amp; Guestrin 2016, <em>XGBoost</em> (<a href="https://arxiv.org/abs/1603.02754">arXiv:1603.02754</a>) · Ke et al. 2017, <em>LightGBM</em> (<a href="https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html">NeurIPS 2017</a>).</p>
-<p><strong>Dataset tier:</strong> A — real, open. <code>adult</code> (OpenML 1590), income &gt; 50K, ~24% positive. One 80/20 stratified holdout, seed 0.</p>
-<p><strong>Skill you are practising:</strong> reproduce a published-style tree baseline under a <em>fair, fixed protocol</em> (same data, split, metric, disclosed tuning budget), then match or beat it with a tuned XGBoost / LightGBM and a leak-free stacked ensemble — and report the verdict honestly.</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints the comparison table (reference vs tuned XGB vs tuned LGBM vs stacked: ROC-AUC + accuracy), the base-model OOF correlation, and your one-line honest verdict on whether you matched/beat the reference.</p>
+<h1 id="Lab-027-%E2%80%94-The-uninformative-features-bias:-junk-sinks-the-MLP,-not-the-tree">Lab 027 — The uninformative-features bias: junk sinks the MLP, not the tree<a class="anchor-link" href="#Lab-027-%E2%80%94-The-uninformative-features-bias:-junk-sinks-the-MLP,-not-the-tree">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0027-inductive-bias-uninformative-features.html"><code>lessons/0027-inductive-bias-uninformative-features.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q3</p>
+<p><strong>Paper:</strong> Grinsztajn, Oyallon &amp; Varoquaux 2022, <em>Why do tree-based models still outperform deep learning on typical tabular data?</em>, NeurIPS 2022 D&amp;B (<a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a>) — §5.3 (Finding 2: MLP-like architectures are not robust to uninformative features). Theory backing: Andrew Ng 2004, <em>Feature selection, L1 vs L2 regularization, and rotational invariance</em> (<a href="https://icml.cc/Conferences/2004/proceedings/papers/354.pdf">ICML 2004</a>).</p>
+<p><strong>Dataset tier:</strong> C — synthetic, to <em>isolate the mechanism</em> (per <code>lab-authoring</code>: Tier C is for mechanism isolation). No real dataset lets you dial the amount of pure noise up and down while holding the real signal fixed; a synthetic one does.</p>
+<p><strong>Skill you are practising:</strong> implement the <strong>add-junk operator</strong> (append <code>k</code> pure-noise columns to a fixed informative block), then show a tree/GBT is <strong>robust</strong> while an MLP's clean-data lead <strong>erodes</strong> as junk accumulates — and measure the <strong>gate</strong> (root-split gain ≈ 0 on junk) that makes the tree robust. That is the experiment that proves Finding 2.</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints the MLP winning on clean data, the MLP losing more accuracy to junk than the GBT (flipping the ranking), and the tree's root-split gain being far higher on informative features than on junk.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells — complete boilerplate; just run.</li>
-<li><strong>TODO</strong> cells — blanks (<code>____</code> / <code># TODO</code>); you implement the skill.</li>
+<li><strong>PROVIDED</strong> cells — complete boilerplate (data, models, the fit/score harness); just run.</li>
+<li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong>, <strong>xgboost</strong>, <strong>lightgbm</strong>. The dataset is cached by <code>labs/data/fetch_datasets.py</code> (run once, online). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong> only (no network — the data is synthetic). The sweep fits a few models per junk level and takes ~30 seconds.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d412b3ce">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9032295e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7833,7 +7833,7 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=90381a9a">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e8f074ab">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7858,39 +7858,34 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-01">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=af5559c7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-the-fair-comparison-contract">Concept recap — the fair-comparison contract<a class="anchor-link" href="#Concept-recap-%E2%80%94-the-fair-comparison-contract">¶</a></h2><p>"Match or beat a published number" is meaningless unless the comparison is <strong>fair</strong>. Before touching a model you fix five things and report the sixth:</p>
-<ol>
-<li><strong>Same dataset</strong> — the exact rows and target the reference used.</li>
-<li><strong>Same split</strong> — one fixed, stratified holdout with a pinned seed; the test set is touched <em>once</em>, at the end.</li>
-<li><strong>Same metric</strong> — one headline number chosen up front (here <strong>ROC-AUC</strong>), prevalence stated so it is readable.</li>
-<li><strong>Disclosed tuning budget</strong> — tuning is cross-validation on <strong>train only</strong>, with a stated number of trials.</li>
-<li><strong>Same preprocessing scope</strong> — every fit-bearing transform lives <em>inside</em> the pipeline, so no fold sees the others (the <a href="../lessons/0010-baseline-checkpoint.html">L010</a> leakage spine).</li>
-<li><strong>Reported honestly</strong> — the verdict (matched / beat / failed) and the <em>size</em> of the gap, not a cherry-picked run.</li>
-</ol>
-<p><strong>The reference.</strong> On <code>adult</code>, a competently-configured GBDT is a commonly reported baseline at <strong>ROC-AUC ≈ 0.92–0.93</strong> / <strong>~87% accuracy</strong>. We pre-register the target as a <em>fixed-default</em> XGBoost (no tuning, disclosed params) so anyone can reproduce it, then try to beat it.</p>
-<p><strong>Toy micro-example (not this lab's answer).</strong> Suppose a paper reports "AUC 0.90" but tuned on the test set. Your fair reproduction fixes the split first, tunes on train-only CV, and scores the test set once. If you get 0.88 you report <em>0.88 with a fair protocol</em> — not 0.90 by peeking. A smaller honest number beats a larger dishonest one.</p>
-<p>Full write-up + the reproduction-protocol rubric: <a href="../lessons/0020-q2-checkpoint.html">Lesson 020</a>.</p>
+<h2 id="Concept-recap-%E2%80%94-implicit-feature-selection,-and-why-an-MLP-lacks-it">Concept recap — implicit feature selection, and why an MLP lacks it<a class="anchor-link" href="#Concept-recap-%E2%80%94-implicit-feature-selection,-and-why-an-MLP-lacks-it">¶</a></h2><p><strong>Uninformative (junk) feature.</strong> A column independent of the label — here a pure-noise Gaussian. Real tables are full of near-junk columns (surrogate IDs, unrelated measurements). The question: what does a model do with a pile of them?</p>
+<p><strong>Split gain (recall L011).</strong> A tree grows greedily: at each node it scores every candidate split by its <strong>gain</strong> — the Gini impurity it removes, <code>gain = parent − weighted children</code> — and keeps only the <strong>highest-gain</strong> split. A junk column's best split leaves the children as mixed as the parent, so its gain is ≈ 0.</p>
+<p><strong>Implicit feature selection.</strong> Because only the highest-gain feature is ever chosen, a junk column is simply never split on near the top of the tree. The tree <em>selects</em> the useful features as a side-effect of how it grows. That is why adding junk barely dents it.</p>
+<p><strong>The MLP has no gate.</strong> Every feature is wired into the first linear layer, and — because the MLP is <strong>rotationally invariant</strong> (L026: <code>W·(Qx)=(WQ)·x</code>) — it cannot cheaply tell a useful axis from a useless one. Ng (2004) proved the price: a rotation-invariant learner needs <strong>at least linearly more training samples per uninformative feature</strong>. With finite data, the leftover weight on junk directions is extra variance, so the MLP partly fits the noise and its accuracy falls.</p>
+<p><strong>The experiment (§5.3).</strong> <em>Add</em> junk → the tree–MLP gap widens (MLP hurt more). <em>Remove</em> junk → the gap shrinks (MLP helped more). We deliberately use a <strong>smooth</strong> target so the MLP WINS on clean data — that isolates <em>this</em> bias from smoothness (L025) and rotation (L026).</p>
+<p><strong>Toy micro-example (not this lab's answer).</strong> Gini of <code>[0,0,1,1]</code> is <code>1 − 0.5² − 0.5² = 0.5</code>; Gini of a pure node <code>[1,1,1,1]</code> is <code>0</code>. A split that removes impurity has positive gain; a split on noise has ≈ 0.</p>
+<p>Full write-up + the add-junk curve and the gate viz: <a href="../lessons/0027-inductive-bias-uninformative-features.html">Lesson 027</a>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-02">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c42f3348">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Setup-%E2%80%94-PROVIDED">Setup — PROVIDED<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED">¶</a></h2>
+<h2 id="Setup-%E2%80%94-PROVIDED-(synthetic-informative-block,-models,-fit/score-harness)">Setup — PROVIDED (synthetic informative block, models, fit/score harness)<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED-(synthetic-informative-block,-models,-fit/score-harness)">¶</a></h2>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-03">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9283ce9f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7898,73 +7893,79 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — data, fixed split, preprocessing factory, and a scorer.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — synthetic data with a SMOOTH target, models, and the fit/score harness. Just run.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="n">_here</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">_p</span> <span class="ow">in</span> <span class="p">(</span><span class="n">_here</span><span class="p">,</span> <span class="n">_here</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">_here</span> <span class="o">/</span> <span class="s2">"labs"</span><span class="p">):</span>   <span class="c1"># put labs/ on the path (works from repo root, labs/, or labs/solutions/)</span>
-    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">_p</span><span class="p">))</span>
-
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnTransformer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneHotEncoder</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogisticRegression</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">roc_auc_score</span><span class="p">,</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">average_precision_score</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">train_test_split</span><span class="p">,</span> <span class="n">StratifiedKFold</span><span class="p">,</span>
-                                     <span class="n">RandomizedSearchCV</span><span class="p">,</span> <span class="n">cross_val_predict</span><span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LGBMClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecisionTreeClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistGradientBoostingClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neural_network</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLPClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">accuracy_score</span>
 
-<span class="n">RS</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"adult"</span><span class="p">)</span>
-<span class="n">cat_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"category"</span><span class="p">,</span> <span class="s2">"object"</span><span class="p">)]</span>
-<span class="n">num_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cat_cols</span><span class="p">]</span>
-<span class="n">prev</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"adult: </span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> rows, </span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> cols, prevalence </span><span class="si">{</span><span class="n">prev</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
-      <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">num_cols</span><span class="p">)</span><span class="si">}</span><span class="s2"> numeric, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_cols</span><span class="p">)</span><span class="si">}</span><span class="s2"> categorical)"</span><span class="p">)</span>
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">D_INFORM</span> <span class="o">=</span> <span class="mi">5</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">pre</span><span class="p">():</span>
-    <span class="c1"># per-fold-safe preprocessing: passthrough numerics, one-hot the categoricals.</span>
-    <span class="k">return</span> <span class="n">ColumnTransformer</span><span class="p">([</span>
-        <span class="p">(</span><span class="s2">"num"</span><span class="p">,</span> <span class="s2">"passthrough"</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">"cat"</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">sparse_output</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">cat_cols</span><span class="p">),</span>
-    <span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_informative</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">d_inform</span><span class="o">=</span><span class="n">D_INFORM</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the INFORMATIVE block only: 5 Gaussian features driving a SMOOTH, mildly-nonlinear</span>
+<span class="sd">    target. The target is smooth on purpose so an MLP WINS on clean data — that isolates the</span>
+<span class="sd">    uninformative-feature effect from the smoothness (L025) and rotation (L026) biases."""</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">Xi</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">d_inform</span><span class="p">))</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="mf">1.3</span> <span class="o">*</span> <span class="n">Xi</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">Xi</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.8</span> <span class="o">*</span> <span class="n">Xi</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.6</span> <span class="o">*</span> <span class="n">Xi</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">Xi</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">s</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Xi</span><span class="p">,</span> <span class="n">y</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">):</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">auc</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
-    <span class="n">acc</span> <span class="o">=</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
-    <span class="n">ap</span> <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> ROC-AUC </span><span class="si">{</span><span class="n">auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  acc </span><span class="si">{</span><span class="n">acc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  PR-AUC </span><span class="si">{</span><span class="n">ap</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"auc"</span><span class="p">:</span> <span class="n">auc</span><span class="p">,</span> <span class="s2">"acc"</span><span class="p">:</span> <span class="n">acc</span><span class="p">,</span> <span class="s2">"ap"</span><span class="p">:</span> <span class="n">ap</span><span class="p">}</span>
+<span class="n">Xi</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_informative</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"informative block: n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">Xi</span><span class="p">)</span><span class="si">}</span><span class="s2">, d_inform=</span><span class="si">{</span><span class="n">Xi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">, positives=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>   <span class="c1"># tuning folds — TRAIN only</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"setup ready"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_acc</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Split, fit a tree / GBT / MLP, return test accuracy for each. The MLP is standardized;</span>
+<span class="sd">    tree-based models are scale-free."""</span>
+    <span class="n">Xs</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">Xs</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">DecisionTreeClassifier</span><span class="p">(</span><span class="n">max_leaf_nodes</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+    <span class="n">gbt</span> <span class="o">=</span> <span class="n">HistGradientBoostingClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+    <span class="n">mlp</span> <span class="o">=</span> <span class="n">make_pipeline</span><span class="p">(</span>
+        <span class="n">StandardScaler</span><span class="p">(),</span>
+        <span class="n">MLPClassifier</span><span class="p">(</span><span class="n">hidden_layer_sizes</span><span class="o">=</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
+                      <span class="n">learning_rate_init</span><span class="o">=</span><span class="mf">3e-3</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">),</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"tree"</span><span class="p">:</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xte</span><span class="p">)),</span>
+            <span class="s2">"gbt"</span><span class="p">:</span>  <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">gbt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xte</span><span class="p">)),</span>
+            <span class="s2">"mlp"</span><span class="p">:</span>  <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">mlp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xte</span><span class="p">))}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"ready — harness fit_acc(X, y) -&gt; {'tree':..., 'gbt':..., 'mlp':...}"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-04">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9186b909">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-fix-the-protocol:-one-stratified-holdout-%E2%80%94-TODO-(crucial-fragment)">Task 1 — fix the protocol: one stratified holdout — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-fix-the-protocol:-one-stratified-holdout-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> split off a single 80/20 test set that preserves the class balance and is reproducible.</p>
-<p><strong>Why it matters:</strong> every number in this lab is compared on <em>this</em> test set, touched once at the very end. Get the split wrong (unstratified, unseeded, or re-drawn later) and the whole comparison is unfair — the single most common way a "we beat the baseline" claim collapses.</p>
-<p><strong>You implement:</strong> a stratified 80/20 split with the fixed seed <code>RS</code>.</p>
-<p><strong>Hint boundary:</strong> <code>train_test_split</code> with <code>test_size=0.2</code>, <code>stratify=y</code>, and <code>random_state=RS</code>. Do not change the variable names.</p>
+<h2 id="Task-1-%E2%80%94-add-uninformative-features-%E2%80%94-TODO-(crucial-fragment)">Task 1 — add uninformative features — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-add-uninformative-features-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> implement <code>add_junk(X, k, seed)</code> — return <code>X</code> with <code>k</code> extra <strong>pure-noise</strong> columns appended.
+Each junk column is an independent Gaussian, statistically independent of the label.</p>
+<p><strong>Why it matters:</strong> this is the scalpel of Grinsztajn's Finding 2. The junk columns carry <em>zero</em>
+information about <code>y</code>, so any accuracy change when you add them is purely a model failing to ignore
+useless inputs — that is what isolates the <em>bias</em> rather than a change in the task's difficulty.</p>
+<p><strong>You implement:</strong> (1) draw a <code>(n, k)</code> matrix of standard-normal noise, and (2) horizontally stack it
+onto <code>X</code>.</p>
+<p><strong>Hint boundary:</strong> <code>rng.normal(size=(n, k))</code> makes the noise; <code>np.hstack([...])</code> appends columns. Return
+<code>X</code> unchanged when <code>k == 0</code>.</p>
+<p><strong>Toy check (not this lab's answer):</strong> appending 3 junk columns to a <code>(4000, 5)</code> matrix should give
+<code>(4000, 8)</code>, and the first 5 columns must be untouched.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-05">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d58ed281">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7972,16 +7973,25 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — one fixed, stratified holdout</span>
-<span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">____</span>     <span class="c1"># 80/20, stratified on y, random_state=RS</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"train </span><span class="si">{</span><span class="n">Xtr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">  test </span><span class="si">{</span><span class="n">Xte</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">  "</span>
-      <span class="sa">f</span><span class="s2">"train prev </span><span class="si">{</span><span class="n">ytr</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  test prev </span><span class="si">{</span><span class="n">yte</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement add_junk (the crucial fragment)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_junk</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">X</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">noise</span> <span class="o">=</span> <span class="n">____</span>                              <span class="c1"># a (n, k) block of pure-noise Gaussian columns</span>
+    <span class="k">return</span> <span class="n">____</span>                               <span class="c1"># append the noise columns to X (columns, not rows)</span>
+
+<span class="c1"># sanity: shapes and that the informative block is untouched</span>
+<span class="n">Xj</span> <span class="o">=</span> <span class="n">add_junk</span><span class="p">(</span><span class="n">Xi</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">99</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"shape before </span><span class="si">{</span><span class="n">Xi</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> -&gt; after add_junk(k=3) </span><span class="si">{</span><span class="n">Xj</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"informative block untouched? </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">Xj</span><span class="p">[:,</span><span class="w"> </span><span class="p">:</span><span class="n">D_INFORM</span><span class="p">],</span><span class="w"> </span><span class="n">Xi</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-06">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c857f34e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7990,31 +8000,40 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">Xte</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s2">"Test set should be ~20</span><span class="si">% o</span><span class="s2">f the data."</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ytr</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">yte</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mf">0.005</span><span class="p">,</span> <span class="s2">"Stratification should keep train/test prevalence equal."</span>
-<span class="k">assert</span> <span class="n">Xtr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">Xte</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"Split should partition all rows."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — </span><span class="si">{</span><span class="n">Xte</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> held-out rows, prevalence matched to </span><span class="si">{</span><span class="n">yte</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">. "</span>
-      <span class="sa">f</span><span class="s2">"Protocol fixed; the test set is now off-limits until the end."</span><span class="p">)</span>
+<span class="n">Xj</span> <span class="o">=</span> <span class="n">add_junk</span><span class="p">(</span><span class="n">Xi</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">99</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">Xj</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">Xi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Xi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">3</span><span class="p">),</span> <span class="s2">"add_junk should append k columns."</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">Xj</span><span class="p">[:,</span> <span class="p">:</span><span class="n">D_INFORM</span><span class="p">],</span> <span class="n">Xi</span><span class="p">),</span> <span class="s2">"The informative block must be left untouched."</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">add_junk</span><span class="p">(</span><span class="n">Xi</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">Xi</span><span class="p">),</span> <span class="s2">"k=0 should return X unchanged."</span>
+<span class="c1"># the junk columns must be ~uncorrelated with y (they carry no signal)</span>
+<span class="n">corr</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">Xj</span><span class="p">[:,</span> <span class="n">D_INFORM</span><span class="p">],</span> <span class="n">y</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="k">assert</span> <span class="n">corr</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s2">"A junk column should be ~uncorrelated with the label."</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 1 ok — add_junk appends pure-noise columns that carry no signal. That is Grinsztajn's scalpel."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-07">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d4608f56">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-the-reference-baseline-%E2%80%94-TODO-(crucial-fragment)">Task 2 — the reference baseline — TODO (crucial fragment)<a class="anchor-link" href="#Task-2-%E2%80%94-the-reference-baseline-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> build the pre-registered reference — a fixed-default XGBoost <em>inside a pipeline</em> — and confirm it reproduces the published range (ROC-AUC ≈ 0.92–0.93).</p>
-<p><strong>Why it matters:</strong> the reference must be reproducible and fair before you try to beat it. Wrapping the booster in the <code>pre()</code> pipeline is what keeps preprocessing per-fold-safe once we tune with CV — the leakage spine does not lapse because the model got fancier.</p>
-<p><strong>You implement:</strong> a <code>Pipeline</code> whose first step is <code>pre()</code> and whose classifier is the provided fixed-default <code>XGBClassifier</code>.</p>
-<p><strong>Hint boundary:</strong> <code>Pipeline([("pre", pre()), ("clf", &lt;the classifier&gt;)])</code>. The hyper-parameters are given — do not tune here.</p>
+<h2 id="Task-2-%E2%80%94-sweep-the-junk-and-watch-the-MLP's-lead-erode-%E2%80%94-TODO">Task 2 — sweep the junk and watch the MLP's lead erode — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-sweep-the-junk-and-watch-the-MLP's-lead-erode-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> for a grid of junk counts <code>k</code>, fit the models on the augmented data and record each one's
+accuracy. Then quantify the two robustness signatures: how much the <strong>MLP</strong> loses vs how much the
+<strong>GBT</strong> loses across the sweep.</p>
+<p><strong>Why it matters:</strong> this is Finding 2 in one comparison. On clean data (<code>k=0</code>) the MLP wins (smooth
+target). If MLPs are less robust to junk, the MLP should fall much faster than the GBT — enough to flip
+the ranking.</p>
+<p><strong>You implement:</strong> call the harness on the junk-augmented features inside the loop, then compute the
+MLP's and GBT's change from <code>k=0</code> to the largest <code>k</code>.</p>
+<p><strong>Hint boundary:</strong> <code>add_junk(Xi, k, seed=...)</code> then <code>fit_acc(...)</code>. A "change" is
+<code>acc_at_max_k[model] - acc_at_0[model]</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-08">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=baa85d88">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8022,19 +8041,28 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — assemble the reference pipeline (preprocessing INSIDE the pipeline)</span>
-<span class="n">ref_clf</span> <span class="o">=</span> <span class="n">XGBClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-                        <span class="n">subsample</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">colsample_bytree</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
-                        <span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-<span class="n">ref</span> <span class="o">=</span> <span class="n">____</span>                    <span class="c1"># Pipeline: ("pre", pre()) then ("clf", ref_clf)</span>
-<span class="n">ref</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
-<span class="n">ref_m</span> <span class="o">=</span> <span class="n">report</span><span class="p">(</span><span class="s2">"XGB reference (fixed)"</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — sweep k, record accuracies (~30s)</span>
+<span class="n">ks</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
+<span class="n">rows</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ks</span><span class="p">:</span>
+    <span class="n">Xk</span> <span class="o">=</span> <span class="n">____</span>                                 <span class="c1"># append k junk columns to the informative block</span>
+    <span class="n">rows</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">fit_acc</span><span class="p">(</span><span class="n">Xk</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'k_junk'</span><span class="si">:</span><span class="s2">&gt;6</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'tree'</span><span class="si">:</span><span class="s2">&gt;6</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'gbt'</span><span class="si">:</span><span class="s2">&gt;6</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'mlp'</span><span class="si">:</span><span class="s2">&gt;6</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'gbt-mlp'</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ks</span><span class="p">:</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">&gt;6</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'tree'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;6.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'gbt'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;6.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'mlp'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;6.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'gbt'</span><span class="p">]</span><span class="o">-</span><span class="n">r</span><span class="p">[</span><span class="s1">'mlp'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;+8.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">mlp_loss</span> <span class="o">=</span> <span class="n">____</span>                               <span class="c1"># rows[100]['mlp'] - rows[0]['mlp'] (a negative number)</span>
+<span class="n">gbt_loss</span> <span class="o">=</span> <span class="n">____</span>                               <span class="c1"># rows[100]['gbt'] - rows[0]['gbt']</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">MLP change over the sweep: </span><span class="si">{</span><span class="n">mlp_loss</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">   GBT change: </span><span class="si">{</span><span class="n">gbt_loss</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"gap (gbt-mlp): </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">]</span><span class="o">-</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> at k=0  -&gt;  </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">]</span><span class="o">-</span><span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> at k=100"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-09">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ecf7de28">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8043,30 +8071,41 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">named_steps</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s2">"pre"</span><span class="p">,</span> <span class="s2">"clf"</span><span class="p">],</span> <span class="s2">"Reference must be a Pipeline: pre -&gt; clf."</span>
-<span class="k">assert</span> <span class="mf">0.92</span> <span class="o">&lt;=</span> <span class="n">ref_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">0.935</span><span class="p">,</span> <span class="s2">"Reference ROC-AUC should land in the published range ~0.92-0.93."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — reference reproduced at ROC-AUC </span><span class="si">{</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">. "</span>
-      <span class="sa">f</span><span class="s2">"This is the number to match or beat."</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">],</span> <span class="s2">"On the clean smooth target the MLP should WIN at k=0."</span>
+<span class="k">assert</span> <span class="n">mlp_loss</span> <span class="o">&lt;</span> <span class="n">gbt_loss</span><span class="p">,</span> <span class="s2">"The MLP should lose MORE accuracy to junk than the GBT (less robust)."</span>
+<span class="k">assert</span> <span class="n">mlp_loss</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.03</span><span class="p">,</span> <span class="s2">"The MLP should visibly degrade as junk is added."</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">]</span> <span class="o">-</span> <span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">])</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">]</span> <span class="o">-</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">]),</span> \
+    <span class="s2">"Adding junk should shift the gap in the GBT's favour (widen it)."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — MLP lost </span><span class="si">{</span><span class="n">mlp_loss</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> vs GBT </span><span class="si">{</span><span class="n">gbt_loss</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">; the junk-free MLP lead eroded. "</span>
+      <span class="sa">f</span><span class="s2">"MLPs are not robust to uninformative features."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-10">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ae5ebb9f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-tune-XGBoost-and-LightGBM-(fixed-budget,-train-only-CV)-%E2%80%94-TODO-(crucial-fragment)">Task 3 — tune XGBoost and LightGBM (fixed budget, train-only CV) — TODO (crucial fragment)<a class="anchor-link" href="#Task-3-%E2%80%94-tune-XGBoost-and-LightGBM-(fixed-budget,-train-only-CV)-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> run a disclosed-budget randomized search for <strong>XGBoost</strong> (Chen 2016) and <strong>LightGBM</strong> (Ke 2017), tuning only on the training folds, and score each once on the test set.</p>
-<p><strong>Why it matters:</strong> this is the fair way to tune. <code>RandomizedSearchCV</code> with a fixed <code>n_iter</code> and CV on train only means "I searched 15 configurations," not "I searched until I won." Notice how little tuning buys over a strong default.</p>
-<p><strong>You implement:</strong> the <code>RandomizedSearchCV</code> object — the estimator pipeline, the space, <code>n_iter=15</code>, <code>scoring="roc_auc"</code>, and <code>cv=cv</code> (the train-only folds). Do this once for each booster.</p>
-<p><strong>Hint boundary:</strong> <code>RandomizedSearchCV(&lt;pipe&gt;, &lt;space&gt;, n_iter=15, scoring="roc_auc", cv=cv, random_state=RS, n_jobs=4)</code>. The pipelines and spaces are provided.</p>
+<h2 id="Task-3-%E2%80%94-see-the-gate:-root-split-gain-on-junk-vs-signal-%E2%80%94-TODO">Task 3 — see the gate: root-split gain on junk vs signal — TODO<a class="anchor-link" href="#Task-3-%E2%80%94-see-the-gate:-root-split-gain-on-junk-vs-signal-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> measure <em>why</em> the tree is robust. For each feature, compute the <strong>root-split gain</strong> — the
+Gini impurity a single best threshold removes on the full data — and compare the mean gain on the
+informative columns vs the junk columns.</p>
+<p><strong>Why it matters:</strong> a tree grows greedily, always taking the highest-gain split. If junk columns have
+~0 root gain, the tree simply never picks them near the top — that is the <em>implicit feature selection</em>
+that makes it robust. (Honest caveat: deep in a tree, spurious high-gain noise splits can appear on
+small subsets — which is why impurity-based <em>MDI</em> importance over-credits noise. The <strong>root</strong> gain on
+the full data is where the gate is real.)</p>
+<p><strong>You implement:</strong> the Gini impurity of a label array, and the gain of a threshold split
+(<code>parent − weighted children</code>).</p>
+<p><strong>Hint boundary:</strong> Gini of a binary array is <code>1 − p² − (1−p)²</code> with <code>p = mean(y)</code>. Gain =
+<code>parent_gini − (n_left/n)·gini(left) − (n_right/n)·gini(right)</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-11">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=557c1154">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8074,45 +8113,42 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — the two pipelines and their search spaces (clf__ prefixes target the classifier step).</span>
-<span class="n">xgb_pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s2">"pre"</span><span class="p">,</span> <span class="n">pre</span><span class="p">()),</span>
-                     <span class="p">(</span><span class="s2">"clf"</span><span class="p">,</span> <span class="n">XGBClassifier</span><span class="p">(</span><span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">))])</span>
-<span class="n">xgb_space</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"clf__n_estimators"</span><span class="p">:</span> <span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">800</span><span class="p">],</span> <span class="s2">"clf__max_depth"</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span>
-             <span class="s2">"clf__learning_rate"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="s2">"clf__subsample"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
-             <span class="s2">"clf__colsample_bytree"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="s2">"clf__reg_lambda"</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]}</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement Gini + best-split gain, then compare informative vs junk</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">gini</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">____</span>                               <span class="c1"># Gini impurity: 1 - p^2 - (1-p)^2</span>
 
-<span class="n">lgbm_pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s2">"pre"</span><span class="p">,</span> <span class="n">pre</span><span class="p">()),</span>
-                      <span class="p">(</span><span class="s2">"clf"</span><span class="p">,</span> <span class="n">LGBMClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">))])</span>
-<span class="n">lgbm_space</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"clf__n_estimators"</span><span class="p">:</span> <span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">800</span><span class="p">],</span> <span class="s2">"clf__num_leaves"</span><span class="p">:</span> <span class="p">[</span><span class="mi">31</span><span class="p">,</span> <span class="mi">63</span><span class="p">,</span> <span class="mi">127</span><span class="p">],</span>
-              <span class="s2">"clf__learning_rate"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="s2">"clf__subsample"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
-              <span class="s2">"clf__colsample_bytree"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="s2">"clf__reg_lambda"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">]}</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"pipelines + spaces ready"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">root_split_gain</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Best single-threshold Gini decrease for one feature on the full node."""</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+    <span class="n">parent</span> <span class="o">=</span> <span class="n">gini</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+    <span class="n">ys</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mi">19</span><span class="p">):</span>     <span class="c1"># candidate thresholds at percentiles</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">q</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">n</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">ys</span><span class="p">[:</span><span class="n">i</span><span class="p">],</span> <span class="n">ys</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="n">____</span>                              <span class="c1"># parent - weighted average of children's gini</span>
+        <span class="n">best</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">best</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">best</span>
+
+<span class="c1"># 5 informative + 20 junk; measure root gain per feature</span>
+<span class="n">Xg</span> <span class="o">=</span> <span class="n">add_junk</span><span class="p">(</span><span class="n">Xi</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">gains</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">root_split_gain</span><span class="p">(</span><span class="n">Xg</span><span class="p">[:,</span> <span class="n">j</span><span class="p">],</span> <span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Xg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
+<span class="n">g_inform</span> <span class="o">=</span> <span class="n">gains</span><span class="p">[:</span><span class="n">D_INFORM</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">g_junk</span> <span class="o">=</span> <span class="n">gains</span><span class="p">[</span><span class="n">D_INFORM</span><span class="p">:]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"root-split gain  informative mean </span><span class="si">{</span><span class="n">g_inform</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  |  junk mean </span><span class="si">{</span><span class="n">g_junk</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"gate ratio informative/junk: </span><span class="si">{</span><span class="n">g_inform</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="n">g_junk</span><span class="p">,</span><span class="w"> </span><span class="mf">1e-9</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">x"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-12">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — fixed-budget search for each booster (CV on TRAIN only)</span>
-<span class="n">xgb_search</span> <span class="o">=</span> <span class="n">____</span>     <span class="c1"># RandomizedSearchCV(xgb_pipe, xgb_space, n_iter=15, scoring="roc_auc", cv=cv, ...).fit(Xtr, ytr)</span>
-<span class="n">lgbm_search</span> <span class="o">=</span> <span class="n">____</span>    <span class="c1"># same for lgbm_pipe / lgbm_space</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"XGB  best CV ROC-AUC </span><span class="si">{</span><span class="n">xgb_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"LGBM best CV ROC-AUC </span><span class="si">{</span><span class="n">lgbm_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="n">xgb_m</span> <span class="o">=</span> <span class="n">report</span><span class="p">(</span><span class="s2">"XGB tuned"</span><span class="p">,</span> <span class="n">xgb_search</span><span class="o">.</span><span class="n">best_estimator_</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)</span>
-<span class="n">lgbm_m</span> <span class="o">=</span> <span class="n">report</span><span class="p">(</span><span class="s2">"LGBM tuned"</span><span class="p">,</span> <span class="n">lgbm_search</span><span class="o">.</span><span class="n">best_estimator_</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-13">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f2de86b8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8121,97 +8157,31 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">xgb_search</span><span class="o">.</span><span class="n">n_iter</span> <span class="o">==</span> <span class="mi">15</span> <span class="ow">and</span> <span class="n">lgbm_search</span><span class="o">.</span><span class="n">n_iter</span> <span class="o">==</span> <span class="mi">15</span><span class="p">,</span> <span class="s2">"Disclosed budget: n_iter must be 15."</span>
-<span class="k">assert</span> <span class="n">xgb_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">ref_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.002</span><span class="p">,</span> <span class="s2">"Tuned XGB should match the reference (within noise)."</span>
-<span class="k">assert</span> <span class="n">lgbm_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">ref_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.002</span><span class="p">,</span> <span class="s2">"Tuned LGBM should match the reference (within noise)."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — tuned XGB </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (delta </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">), "</span>
-      <span class="sa">f</span><span class="s2">"tuned LGBM </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (delta </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">). "</span>
-      <span class="sa">f</span><span class="s2">"Note how small the tuning gain is over a strong default."</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gini</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="s2">"Gini of a 50/50 node is 0.5."</span>
+<span class="k">assert</span> <span class="n">gini</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">"Gini of a pure node is 0."</span>
+<span class="k">assert</span> <span class="n">g_inform</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">g_junk</span><span class="p">,</span> <span class="s2">"Informative features should have MUCH higher root gain than junk (the gate)."</span>
+<span class="k">assert</span> <span class="n">g_junk</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s2">"A pure-noise column's best root split should remove almost no impurity."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — the tree's best split on junk removes ~0 impurity (</span><span class="si">{</span><span class="n">g_inform</span><span class="o">/</span><span class="nb">max</span><span class="p">(</span><span class="n">g_junk</span><span class="p">,</span><span class="mf">1e-9</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">x gate). "</span>
+      <span class="sa">f</span><span class="s2">"That greedy gain gate is the implicit feature selection an MLP lacks."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-14">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-4-%E2%80%94-leak-free-stacked-ensemble-(OOF)-%E2%80%94-TODO-(crucial-fragment)">Task 4 — leak-free stacked ensemble (OOF) — TODO (crucial fragment)<a class="anchor-link" href="#Task-4-%E2%80%94-leak-free-stacked-ensemble-(OOF)-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> stack the two tuned boosters using <strong>out-of-fold</strong> meta-features, read their correlation, and see whether combining helps.</p>
-<p><strong>Why it matters:</strong> stacking's fuel is <em>diversity</em> (<a href="../lessons/0018-ensembling-stacking.html">L018</a>). Building meta-features with <code>cross_val_predict</code> keeps the meta-learner from ever training on a base model's in-sample predictions (the leak that crowns a memorizer). The correlation tells you whether the two learners are actually different.</p>
-<p><strong>You implement:</strong> the two OOF prediction vectors via <code>cross_val_predict(..., method="predict_proba")[:, 1]</code>, using the same train-only <code>cv</code>.</p>
-<p><strong>Hint boundary:</strong> <code>cross_val_predict(best_estimator, Xtr, ytr, cv=cv, method="predict_proba")[:, 1]</code> for each booster. The meta-learner fit and test stacking are provided.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-15">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — build out-of-fold meta-features (no in-sample leak)</span>
-<span class="n">best_xgb</span> <span class="o">=</span> <span class="n">xgb_search</span><span class="o">.</span><span class="n">best_estimator_</span>
-<span class="n">best_lgbm</span> <span class="o">=</span> <span class="n">lgbm_search</span><span class="o">.</span><span class="n">best_estimator_</span>
-<span class="n">oof_xgb</span> <span class="o">=</span> <span class="n">____</span>     <span class="c1"># cross_val_predict(best_xgb, Xtr, ytr, cv=cv, method="predict_proba")[:, 1]</span>
-<span class="n">oof_lgbm</span> <span class="o">=</span> <span class="n">____</span>    <span class="c1"># same for best_lgbm</span>
-
-<span class="n">corr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">oof_xgb</span><span class="p">,</span> <span class="n">oof_lgbm</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OOF correlation XGB vs LGBM: </span><span class="si">{</span><span class="n">corr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-
-<span class="c1"># PROVIDED — fit meta on OOF features, refit base learners on full train, stack the test set</span>
-<span class="n">meta</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">oof_xgb</span><span class="p">,</span> <span class="n">oof_lgbm</span><span class="p">]),</span> <span class="n">ytr</span><span class="p">)</span>
-<span class="n">best_xgb</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">);</span> <span class="n">best_lgbm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
-<span class="n">Z_te</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">best_xgb</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">best_lgbm</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]])</span>
-<span class="n">p_stack</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Z_te</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
-<span class="n">stack_m</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"auc"</span><span class="p">:</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p_stack</span><span class="p">),</span>
-           <span class="s2">"acc"</span><span class="p">:</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="p">(</span><span class="n">p_stack</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)),</span>
-           <span class="s2">"ap"</span><span class="p">:</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p_stack</span><span class="p">)}</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="s1">'Stacked (XGB+LGBM)'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> ROC-AUC </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  "</span>
-      <span class="sa">f</span><span class="s2">"acc </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  PR-AUC </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'ap'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-16">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">oof_xgb</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">Xtr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="s2">"OOF vector must have one prediction per TRAIN row."</span>
-<span class="k">assert</span> <span class="n">corr</span> <span class="o">&gt;</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s2">"Two tuned GBDTs should be highly correlated (redundant) on this table."</span>
-<span class="n">best_single</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xgb_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">],</span> <span class="n">lgbm_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">])</span>
-<span class="k">assert</span> <span class="n">stack_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">best_single</span> <span class="o">-</span> <span class="mf">0.002</span><span class="p">,</span> <span class="s2">"Stack should not be worse than the best single model."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 4 ok — stack </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> vs best single </span><span class="si">{</span><span class="n">best_single</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> "</span>
-      <span class="sa">f</span><span class="s2">"(delta </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">best_single</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">); OOF corr </span><span class="si">{</span><span class="n">corr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">. "</span>
-      <span class="sa">f</span><span class="s2">"Two GBDTs are nearly redundant, so stacking adds almost nothing."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-17">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c9b7bb1a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary to paste back to your teacher.</p>
-<p><strong>Verdict prompt:</strong> in one sentence, state whether you <em>reproduced</em> the published range, whether tuning/stacking <em>beat</em> the reference, and by how much — honestly.</p>
+<p><strong>Takeaway prompt:</strong> in one sentence, why does adding pure-noise features hurt an MLP more than a tree,
+and what mechanism makes the tree robust?</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-18">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d8f2434f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8219,38 +8189,46 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the verdict string</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 020 (Q2 checkpoint) ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dataset: adult  prevalence </span><span class="si">{</span><span class="n">prev</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  |  metric: ROC-AUC  |  split: 80/20 stratified, seed 0"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'model'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'ROC-AUC'</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'acc'</span><span class="si">:</span><span class="s2">&gt;7</span><span class="si">}</span><span class="s2">   delta-vs-ref"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'XGB reference (fixed)'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.4f</span><span class="si">}</span><span class="s2">   --"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'XGB tuned'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.4f</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'LGBM tuned'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.4f</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Stacked (XGB+LGBM)'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.4f</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OOF correlation XGB vs LGBM: </span><span class="si">{</span><span class="n">corr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 027 ==="</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"experiment : add k pure-noise columns to 5 informative features; refit tree/GBT/MLP"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"clean (k=0): tree </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'tree'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> · GBT </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> · MLP </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (MLP wins)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"k=100 junk : tree </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'tree'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> · GBT </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> · MLP </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"robustness : MLP lost </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">]</span><span class="o">-</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'mlp'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> vs GBT </span><span class="si">{</span><span class="n">rows</span><span class="p">[</span><span class="mi">100</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">]</span><span class="o">-</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'gbt'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the gate   : root-split gain informative </span><span class="si">{</span><span class="n">g_inform</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> vs junk </span><span class="si">{</span><span class="n">g_junk</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">g_inform</span><span class="o">/</span><span class="nb">max</span><span class="p">(</span><span class="n">g_junk</span><span class="p">,</span><span class="mf">1e-9</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">x)"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"verdict:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-19">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b068e95e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-find-real-diversity">Stretch (optional, ungraded) — find real diversity<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-find-real-diversity">¶</a></h2><ol>
-<li><strong>Add a genuinely different learner.</strong> Add the Q1 <code>LogisticRegression</code> (on scaled/one-hot features) as a third base model. Its OOF correlation with the GBDTs should be much lower than 0.997 — does the stack finally move?</li>
-<li><strong>CatBoost as a third booster.</strong> Add a tuned <code>CatBoostClassifier</code> (<a href="../lessons/0016-catboost.html">L016</a>); it is still a GBDT, so predict (and check) that it stays highly correlated with XGB/LGBM.</li>
-<li><strong>Change the metric.</strong> Re-run the verdict using <strong>PR-AUC vs prevalence</strong> instead of ROC-AUC. Does the ranking of models change? Which metric would you report to a skeptic on a 24%-positive task, and why?</li>
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-probe-the-bias">Stretch (optional, ungraded) — probe the bias<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-probe-the-bias">¶</a></h2><ol>
+<li><strong>Remove, don't add.</strong> Start from <code>add_junk(Xi, 50, seed=0)</code> and use a Random Forest's
+<code>feature_importances_</code> to rank features; refit the MLP keeping only the top-<code>k</code>. Does removing junk
+help the MLP <em>more</em> than the GBT (the other direction of Finding 2)?</li>
+<li><strong>How much data buys off the bias?</strong> Ng's bound is about <em>sample complexity</em>. Re-run the <code>k=100</code>
+sweep with <code>n=20000</code> instead of <code>4000</code>. Does the MLP recover (does more data let it learn to ignore
+the junk)?</li>
+<li><strong>A learned gate.</strong> The flat-table fix is to let a neural model <em>learn to attend</em> to informative
+features. As a cheap proxy, put an L1-penalized <code>LogisticRegression</code> (<code>penalty="l1", solver="liblinear"</code>) next to the MLP: L1 is <strong>not</strong> rotationally invariant, so it should shrug off
+junk far better than the L2 MLP. Confirm it.</li>
+<li><strong>MDI vs the gate.</strong> Fit a Random Forest on the junk-augmented data and sum
+<code>feature_importances_</code> over the junk columns. Is it ≈ 0 (as the <em>gate</em> suggests) or surprisingly
+large (the known MDI-over-credits-noise artifact)? Why is root-split gain the honest measure?</li>
 </ol>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-20">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ac7fbac6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8259,11 +8237,13 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
-<span class="c1"># from sklearn.preprocessing import StandardScaler</span>
-<span class="c1"># logit = Pipeline([("pre", pre()), ("sc", StandardScaler(with_mean=False)),</span>
-<span class="c1">#                   ("clf", LogisticRegression(max_iter=2000))]).fit(Xtr, ytr)</span>
-<span class="c1"># oof_lr = cross_val_predict(logit, Xtr, ytr, cv=cv, method="predict_proba")[:, 1]</span>
-<span class="c1"># print("corr(LR, XGB):", round(float(np.corrcoef(oof_lr, oof_xgb)[0, 1]), 3), "  &lt;-- more diverse than 0.997?")</span>
+<span class="c1"># from sklearn.linear_model import LogisticRegression</span>
+<span class="c1"># Xk = add_junk(Xi, 100, seed=100)</span>
+<span class="c1"># Xs = StandardScaler().fit_transform(Xk)</span>
+<span class="c1"># from sklearn.model_selection import train_test_split</span>
+<span class="c1"># Xtr, Xte, ytr, yte = train_test_split(Xs, y, test_size=0.4, random_state=0)</span>
+<span class="c1"># l1 = LogisticRegression(penalty="l1", solver="liblinear", C=0.2).fit(Xtr, ytr)</span>
+<span class="c1"># print("L1 logistic (NOT rotation-invariant) acc:", (l1.predict(Xte) == yte).mean())</span>
 </pre></div>
 </div>
 </div>

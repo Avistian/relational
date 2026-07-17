@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 027 — Inductive Bias: Uninformative Features</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* shared viz frames */
+    .uninformative-add-viz, .uninformative-mechanism-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .ua-svg, .um-svg { display: block; max-width: 560px; margin: 0.25rem auto; }
+    .ua-lab, .ua-tick, .ua-leg, .um-title, .um-lab, .um-val, .um-ratio { font-family: var(--font-sans); }
+    .ua-lab, .um-lab { font-size: 9.5px; fill: var(--muted); }
+    .ua-tick { font-size: 9px; fill: var(--muted); }
+    .ua-leg { font-size: 10px; fill: var(--fg, #222); }
+    .um-title { font-size: 10.5px; fill: var(--fg, #222); font-weight: 600; }
+    .um-val { font-size: 8.5px; fill: var(--fg, #222); }
+    .um-ratio { font-size: 9.5px; font-weight: 600; }
+    .ua-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .ua-slabel { font-family: var(--font-sans); font-size: 0.82rem; color: var(--muted); display: flex; gap: 0.4rem; align-items: center; }
+    .ua-readout, .um-readout { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .ua-caption, .um-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .ua-pill { font-family: var(--font-mono); font-size: 0.78rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.05rem 0.4rem; }
+    .ua-mlp { color: #2e6fb0; } .ua-gbt { color: #1e6b3c; } .ua-tree { color: #8a6d3b; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>Inductive Bias: Uninformative Features</h1>
+  <p class="subtitle">Lesson 027 · Phase 1 · Q3 · ~45 min · <em>core paper: Grinsztajn, Oyallon &amp; Varoquaux 2022, §5.3</em></p>
+
+  <p>
+    This is the third and final mechanism lesson of the Grinsztajn arc.
+    <a href="0024-grinsztajn-benchmark.html">Lesson 024</a> built the fair benchmark;
+    <a href="0025-inductive-bias-smoothness.html">Lesson 025</a> dissected the first inductive bias
+    (<strong>smoothness</strong>) and <a href="0026-inductive-bias-rotation.html">Lesson 026</a> the
+    second (<strong>rotation</strong>). Today we take the third: <strong>tree-based models are robust
+    to uninformative features, and neural networks are not.</strong> It is the most practical of the
+    three — real tables are full of columns that carry little or no signal — and it is tied directly to
+    the rotation bias by a theorem we met last lesson.
+  </p>
+  <p>
+    Its single skill: <strong>explain why adding uninformative ("junk") features degrades an MLP far
+    faster than a tree, name the mechanism that makes a tree robust (greedy, gain-gated split
+    selection = implicit feature selection), connect it to Ng's rotation-invariance bound from L026,
+    and recognize the two experiments that prove it — adding junk features widens the tree–MLP gap,
+    and removing them shrinks it.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A decision tree only ever spends its capacity on features that
+    reduce impurity, so a pure-noise column is quietly ignored; a neural network feeds every column
+    into its first layer and — because it is rotationally invariant — cannot cheaply tell a useless
+    direction from a useful one, so each junk feature costs it real accuracy.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess
+    here is useful — the act of retrieval (even a failed one) encodes the idea far better than
+    re-reading it would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    This lesson leans on a few terms. Rather than send you back to earlier lessons, here is each one in
+    plain language, defined before we use it.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Uninformative (junk) feature.</strong> A column that carries no information
+    about the label — statistically independent of the target. In our experiments it is a
+    <em>pure-noise</em> column: values drawn from a Gaussian that has nothing to do with <code>y</code>.
+    Real tables are full of near-junk columns (an internal ID, a mostly-constant flag, a measurement
+    unrelated to the outcome). The question of this lesson is: <em>what does a model do when you hand
+    it a pile of such columns alongside the real ones?</em>
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Impurity &amp; Gini (recall from L011).</strong> A node's <em>impurity</em>
+    measures how mixed its labels are. The <strong>Gini impurity</strong> of a binary node with a
+    fraction <code>p</code> of positives is <code>1 − p² − (1−p)²</code> — it is 0 when the node is
+    pure (all one class) and 0.5 when the classes are evenly split. A tree wants to cut the data into
+    purer and purer regions.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Split gain.</strong> When a tree considers splitting a node on some feature
+    at some threshold, the <em>gain</em> is how much impurity the split removes:
+    <code>gain = parent_impurity − weighted average of the two children's impurities</code>. A split
+    that separates the classes has a large gain; a split on noise leaves the children as mixed as the
+    parent, so its gain is ≈ 0. A tree is <em>greedy</em>: at every node it picks the feature and
+    threshold with the <strong>highest</strong> gain. This is the gate at the centre of today's lesson.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Implicit feature selection.</strong> Because the tree only ever splits on the
+    highest-gain feature, a junk column — whose best split has ≈ 0 gain — is simply never chosen (at
+    least near the top of the tree). The tree <em>selects</em> the useful features as a side-effect of
+    how it grows, without any separate feature-selection step. Neural networks have no such built-in
+    step.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Rotational invariance &amp; Ng's bound (recall from L026).</strong> A learner
+    is <em>rotationally invariant</em> if applying the same rotation (an orthogonal matrix <code>Q</code>,
+    one that preserves all distances and angles) to the train and test features leaves its accuracy
+    unchanged. An MLP is invariant because its first layer is a full linear map:
+    <code>W·(Qx) = (WQ)·x</code>, so it can absorb the rotation into its weights. Ng (2004) proved the
+    consequence we need today: a rotationally-invariant learner needs a number of training examples
+    that grows <strong>at least linearly in the number of uninformative features</strong>. Keep that
+    sentence handy — it is the bridge from L026 to this lesson.
+  </div>
+
+  <h2>The claim, and how the paper isolates it</h2>
+  <p>
+    Grinsztajn's <strong>Finding 2</strong> (their §5.3) is stated as: <em>"MLP-like architectures are
+    not robust to uninformative features."</em> Proving a claim like this cleanly requires an
+    <strong>ablation</strong> — a controlled experiment where you change exactly one thing and hold
+    everything else fixed, so any change in the result can only be attributed to the thing you changed.
+    The paper runs two complementary ablations:
+  </p>
+  <ol>
+    <li><strong>Add uninformative features.</strong> Take a dataset, append extra pure-noise columns,
+      and refit. If MLPs are less robust, adding junk should hurt them more than the trees, so the gap
+      should <em>widen</em>.</li>
+    <li><strong>Remove uninformative features.</strong> Rank the existing features by importance and
+      drop the least useful ones. If MLPs were disproportionately hurt by junk, removing it should help
+      them more than the trees, so the gap should <em>shrink</em>.</li>
+  </ol>
+  <p>
+    We reproduce both on a synthetic task so we control exactly how much junk is present. The setup —
+    read this carefully, because the interpretation depends on it:
+  </p>
+  <ul>
+    <li><strong>Held fixed:</strong> 5 informative features and the label. The label is a
+      <em>smooth</em>, mildly-nonlinear function of those 5 features
+      (<code>y = 1</code> when <code>1.3x₁ + x₂ + 0.8x₃ + 0.6·x₄x₅</code> is above its median).</li>
+    <li><strong>Varied:</strong> the number of extra pure-noise columns <code>k</code> (0 → 100),
+      each an independent Gaussian with zero relationship to <code>y</code>.</li>
+    <li><strong>Measured:</strong> test accuracy of a decision tree, a gradient-boosted tree (GBT),
+      and an MLP, averaged over 5 seeds.</li>
+    <li><strong>Why this isolates <em>this</em> bias:</strong> we deliberately chose a
+      <strong>smooth</strong> target so that on clean data (<code>k = 0</code>) the <em>MLP wins</em>.
+      That rules out the smoothness bias (L025) and the rotation bias (L026) as the explanation — if
+      the MLP starts ahead and then loses the lead, only the junk features can be responsible.</li>
+  </ul>
+
+  <h2>Predict first</h2>
+  <p>
+    On the clean data the MLP is the best model. Now we start piling on pure-noise columns that contain
+    zero information about the label. Before you read the numbers, commit a guess about what happens.
+  </p>
+  <div id="predict-junk"></div>
+
+  <h2>See it: adding junk erodes the MLP's lead (§5.3)</h2>
+  <p>
+    Here is the add-junk experiment. Drag the slider to add noise columns and watch the three curves.
+    Read it <strong>left → right</strong> as "adding junk" and <strong>right → left</strong> as
+    "removing junk" — the same picture proves both ablations at once.
+  </p>
+
+  <div id="uninformative-add-viz"></div>
+
+  <table>
+    <thead><tr><th>Junk added (k)</th><th>Tree</th><th>GBT</th><th>MLP</th><th>GBT − MLP gap</th></tr></thead>
+    <tbody>
+      <tr><td class="n">0 (clean)</td><td class="n">0.885</td><td class="n">0.945</td><td class="n win">0.986</td><td class="n">−0.040 (MLP wins)</td></tr>
+      <tr><td class="n">5</td><td class="n">0.881</td><td class="n">0.939</td><td class="n win">0.981</td><td class="n">−0.042</td></tr>
+      <tr><td class="n">15</td><td class="n">0.877</td><td class="n">0.932</td><td class="n win">0.969</td><td class="n">−0.037</td></tr>
+      <tr><td class="n">30</td><td class="n">0.878</td><td class="n">0.924</td><td class="n win">0.952</td><td class="n">−0.029</td></tr>
+      <tr><td class="n">50</td><td class="n">0.869</td><td class="n">0.921</td><td class="n">0.929</td><td class="n">−0.008</td></tr>
+      <tr><td class="n">100</td><td class="n">0.865</td><td class="n win">0.914</td><td class="n bad">0.902</td><td class="n">+0.012 (GBT wins)</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the columns as a story. On clean data the <strong>MLP leads by a wide margin</strong> —
+    0.986 vs the GBT's 0.945 and the tree's 0.885. As junk features accumulate, the trees barely move
+    (the GBT slips only <strong>0.032</strong> across the whole sweep, the single tree
+    <strong>0.020</strong>), but the <strong>MLP falls by 0.084</strong> — more than twice as fast — and
+    by <code>k = 100</code> the GBT has <em>overtaken</em> it. Nothing informative was ever added: every
+    one of those 100 columns was pure noise. The trees shrugged them off; the MLP could not. That is
+    Finding 2 in one table, and — read right-to-left — it is also the "removing junk helps the MLP more"
+    experiment: going from <code>k = 100</code> back to <code>k = 0</code>, the MLP recovers 0.084 while
+    the GBT recovers only 0.032.
+  </p>
+
+  <h2>Why is a tree robust and an MLP not? The gate.</h2>
+  <p>
+    The mechanism is the <strong>greedy, gain-gated split selection</strong> we defined above. At each
+    node a tree scores every candidate split by its gain and keeps only the best. On the full data, a
+    pure-noise column's best possible split barely reduces impurity, so it loses the competition to a
+    real feature and is never chosen near the top. The tree's structure is therefore
+    <em>anchored</em> by the informative features; junk columns are gated out for free.
+  </p>
+  <p>
+    An MLP has no such gate. Every input feature is wired into the first linear layer, and — because
+    the MLP is rotationally invariant — it has no built-in notion that "this axis is a real feature and
+    that one is noise" (a rotation can turn one into a mix of the others). It must <em>learn</em> to
+    down-weight the junk directions from the data, and Ng's bound says that costs samples: at least one
+    more chunk of training data per useless feature. With a finite training set, the leftover weight on
+    junk directions is just extra variance — the network partly fits the noise, and test accuracy drops.
+  </p>
+  <p>
+    We can see the gate directly. On a dataset with 5 informative + 20 junk features, we measured, for
+    each feature, (left) the tree's <strong>root-split gain</strong> — the impurity it could remove with
+    its single best threshold on the full data — and (right) the trained MLP's <strong>first-layer
+    weight magnitude</strong> — how much of its input weight it spends on that feature. Each panel is
+    normalized so the informative bar is 1.0; the junk bar shows the fraction the model still spends on
+    noise.
+  </p>
+
+  <div id="uninformative-mechanism-viz"></div>
+
+  <p>
+    The contrast is the whole point. The tree's best split on a junk column removes about
+    <strong>1%</strong> as much impurity as its best split on an informative column — a
+    <strong>~118× gate</strong> — so the greedy rule never picks it. The MLP, with no gate, still puts
+    about <strong>56%</strong> as much first-layer weight on junk as on signal — barely a
+    <strong>1.8×</strong> difference. The tree <em>selects</em>; the MLP <em>dilutes</em>.
+  </p>
+
+  <div class="callout">
+    <strong>Honest subtlety (worth knowing).</strong> Trees are not <em>perfectly</em> blind to noise.
+    Deep in a tree, after the data has been split many times, a small subset can show a spurious,
+    high-gain split on a junk column purely by chance — which is exactly why <em>impurity-based</em>
+    (MDI) feature importance is known to <em>over</em>-credit noise features. That is why we measured
+    the <strong>root-split gain on the full data</strong> (where the gate is real) rather than MDI. The
+    accuracy numbers confirm the gate is what matters: those deep spurious splits are low-gain and get
+    averaged away by boosting/bagging, so the trees' accuracy barely moves. The gate is a strong
+    tendency, not a theorem — but it is more than enough to make trees robust.
+  </div>
+
+  <h2>The theory bridge: Ng (2004), spelled out</h2>
+  <p>
+    Last lesson we met Ng's theorem as a one-liner. It is worth unpacking, because it explains
+    <em>why</em> the MLP's cost grows the way it does — and it links the rotation bias (L026) to the
+    junk-feature bias (L027) as two faces of the same coin.
+  </p>
+  <p>
+    Ng studied learners that are <strong>rotationally invariant</strong> (MLPs, logistic regression
+    with L2 regularization, kernel methods with a rotation-invariant kernel). His result: for such a
+    learner, the number of training examples needed to reach a fixed accuracy grows <strong>at least
+    linearly</strong> in the number of irrelevant (uninformative) features. The intuition is exactly
+    the gate story, told from the sample-complexity side. To <em>ignore</em> a junk direction, an
+    invariant learner must first figure out <em>which</em> direction is junk — but rotation invariance
+    means it treats all directions symmetrically at the start, so it has to <em>estimate</em> the
+    orientation of the useful subspace from data. Each extra junk dimension adds one more direction it
+    could mistakenly lean on, and pinning down "don't use this one" takes more examples. By contrast, a
+    method that is <em>not</em> rotation-invariant — like L1-regularized logistic regression, or a tree
+    — can exploit the axis structure to reject junk features with far fewer samples (Ng's paper is
+    literally titled "…L1 vs L2 regularization, and rotational invariance").
+  </p>
+  <div class="callout">
+    <strong>The two biases are one idea.</strong> Rotation invariance (L026) says an MLP cannot tell a
+    meaningful axis from an arbitrary mixture. Uninformative-feature fragility (L027) is the
+    <em>price</em> of that: if you cannot tell which axis is meaningful, you cannot cheaply tell which
+    axis is <em>meaningless</em> either. A model that respects the natural basis of a table gets both
+    robustness properties for free.
+  </div>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-junk"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> This bias, like rotation, cuts both ways for the relational bet.
+    <em>Against a naïve version:</em> a relational model that ends by pooling a graph into a flat vector
+    and feeding an MLP head inherits the MLP's fragility to junk — and a database has <em>lots</em> of
+    near-junk columns (surrogate keys, audit timestamps, denormalized duplicates). "Add a GNN, then an
+    MLP" does not automatically get you the tree's implicit feature selection; you must design for it.
+    <em>For the bet:</em> the deeper reading is that a good model should <strong>select structure</strong>,
+    not drown in it — and relational learning is precisely a bet on selection at the level of
+    <em>tables and relationships</em>, not just columns. A message-passing model that learns which
+    foreign-key paths carry signal is doing implicit feature selection over the schema, the same instinct
+    that makes a tree ignore a noise column, scaled up to the whole database. On flat tables the field's
+    fix is telling: numeric-feature embeddings and attention (SAINT, FT-Transformer) let a neural model
+    <em>learn to attend to</em> the informative features — a learned gate that recovers much of the
+    robustness a tree gets for free, and a preview of Year 2.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>It is about <em>relative</em> robustness, not immunity.</strong> Enough junk hurts a
+      tree too (our GBT lost 0.032). The claim is that it hurts the MLP <em>more</em> — here more than
+      twice as much — which is enough to flip the ranking.</li>
+    <li><strong>The effect compounds with data size.</strong> Ng's bound is about sample complexity, so
+      with a very large training set an MLP <em>can</em> learn to ignore junk — it just needs the extra
+      examples. This is a small/medium-data phenomenon, like the rest of the tree advantage.</li>
+    <li><strong>Removing junk is a real, cheap win for neural nets.</strong> The remove-junk direction
+      of the experiment is not just theory: feature selection (or letting the model learn to attend)
+      helps a neural network disproportionately. If you must use an MLP on a wide table, prune
+      uninformative columns first.</li>
+    <li><strong>MDI importance over-credits noise.</strong> Do not use impurity-based feature importance
+      to argue "the tree ignores junk" — it does the opposite near the leaves. Use permutation
+      importance, or (as we did) root-split gain, when you want to see the gate.</li>
+    <li><strong>This is one of three biases.</strong> Uninformative features (L027) compound with
+      smoothness (L025) and rotation (L026); on a typical table all three push the same way at once.
+      Do not over-attribute the whole tree advantage to any single one — Grinsztajn's point is that
+      typical tabular data has all three properties together.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The core paper, now the uninformative-features section: <strong>Léo Grinsztajn, Edouard Oyallon
+    &amp; Gaël Varoquaux (2022), <em>Why do tree-based models still outperform deep learning on typical
+    tabular data?</em></strong> — <a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a>.
+    Today read <strong>§5.3 (Finding 2: MLP-like architectures are not robust to uninformative
+    features)</strong> and Figure&nbsp;4 (the add/remove-features experiments). For the theoretical
+    backbone — the theorem that a rotationally-invariant learner's sample complexity grows at least
+    linearly in the number of irrelevant features — the reference is <strong>Andrew Ng (2004),
+    <em>Feature selection, L1 vs. L2 regularization, and rotational invariance</em></strong>
+    (<a href="https://icml.cc/Conferences/2004/proceedings/papers/354.pdf">ICML 2004</a>), which you
+    began skimming for L026. This closes the three-bias arc (smoothness §5.2, rotation §5.4,
+    uninformative features §5.3).
+  </p>
+
+  <h2>Lab — reproduce the uninformative-features experiment</h2>
+  <p>
+    Notebook <code>0027-inductive-bias-uninformative-features.ipynb</code> (Tier C — synthetic, to
+    isolate the mechanism): the crucial fragment is <strong>appending <code>k</code> pure-noise columns</strong>
+    to a fixed informative block and refitting, then measuring how the tree–MLP gap changes. You will
+    watch the MLP's clean-data lead erode as junk accumulates, and then measure the gate directly by
+    comparing each feature's root-split gain. Reproduction targets: on clean data the MLP leads; adding
+    ~100 junk columns costs the MLP ≳ 2× what it costs the GBT and flips the ranking.
+    <a href="../labs/html/0027-inductive-bias-uninformative-features.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why a rotation-invariant learner needs <em>more</em> samples per junk feature, or why MDI
+    importance over-credits noise while root-split gain does not? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0026-inductive-bias-rotation.html">← Lesson 026</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0027-inductive-bias-uninformative-features.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/uninformative-add-viz.js"></script>
+<script src="../assets/uninformative-mechanism-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 27, count: 3 });
+
+  UninformativeAddViz.mount(document.getElementById("uninformative-add-viz"), {});
+  UninformativeMechanismViz.mount(document.getElementById("uninformative-mechanism-viz"), {});
+
+  Predict.mount(document.getElementById("predict-junk"), {
+    prompt: "The MLP is the best model on the clean data. You now add 100 pure-noise columns (zero information about the label). What happens to the tree-vs-MLP ranking?",
+    options: [
+      { label: "Nothing changes — noise columns carry no signal, so every model ignores them", value: "same" },
+      { label: "The MLP degrades much faster than the trees, and the GBT overtakes it", value: "mlp" },
+      { label: "The trees degrade faster — they overfit the extra columns", value: "tree" }
+    ],
+    correct: "mlp",
+    reveal: "The MLP fell 0.084 (0.986 → 0.902) while the GBT fell only 0.032 (0.945 → 0.914), so the GBT overtook it (+0.012). The trees gate junk out by gain; the MLP has no gate and must spend samples (Ng 2004) learning to ignore each junk direction."
+  });
+
+  Teachback.mount(document.getElementById("teachback-junk"), {
+    prompt: "In your own words: why does adding pure-noise features hurt an MLP much more than a tree, and what mechanism makes the tree robust?",
+    points: [
+      "A junk feature is independent of the label; a tree scores every candidate split by GAIN (impurity decrease) and a noise column's best split has ~0 gain, so the greedy rule never picks it — implicit feature selection",
+      "The tree's structure is anchored by the informative features; junk is gated out for free (root-split gain ~118x higher on informative vs junk)",
+      "An MLP feeds every feature into its first linear layer and is rotationally invariant, so it has no built-in gate to tell a useful axis from a useless one (it still spends ~56% as much weight on junk)",
+      "Ng (2004): a rotation-invariant learner's sample complexity grows at least linearly in the number of uninformative features — with finite data the leftover weight on junk is extra variance, so accuracy drops",
+      "Experiment: adding junk widens the tree-MLP gap (MLP lost 0.084 vs GBT 0.032 over 100 junk cols, flipping the ranking); removing junk shrinks it (same curve read backwards)"
+    ],
+    model: "A pure-noise feature is statistically independent of the label. A decision tree grows greedily: at each node it scores every candidate split by its GAIN — the impurity (Gini) it removes — and keeps only the best. A junk column's best split leaves the children as mixed as the parent, so its gain is ≈ 0 and it loses the competition to a real feature; the tree therefore never splits on it near the top and its structure is anchored by the informative columns. That is implicit feature selection: the tree ignores junk as a side-effect of how it grows (root-split gain was ~118x higher on informative than junk in our data). An MLP has no such gate — every feature is wired into the first linear layer, and because the MLP is rotationally invariant it cannot cheaply tell a meaningful axis from a mixture, so it still spends ~56% as much first-layer weight on junk as on signal. Ng (2004) proved the cost: a rotation-invariant learner needs at least linearly more training examples per uninformative feature, because it must estimate which directions to ignore. With finite data the leftover weight on junk directions is extra variance, so the MLP partly fits the noise and its accuracy falls. The experiment shows it directly: on a smooth target where the MLP wins clean (0.986 vs GBT 0.945), adding 100 junk columns costs the MLP 0.084 but the GBT only 0.032 — the ranking reverses — and removing junk (the same curve backwards) helps the MLP more than the tree."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why does a decision tree barely lose accuracy when you add many pure-noise features?",
+    options: [
+      { label: "Its greedy split selection scores each feature by gain, and a noise column's best split has ~0 gain, so it is never chosen near the top (implicit feature selection)", value: "a" },
+      { label: "It standardizes every feature first, which cancels out any noise column exactly", value: "b" },
+      { label: "It averages many trees, and averaging removes all noise features automatically", value: "c" },
+      { label: "It has fewer parameters than the MLP, so it cannot fit the extra columns at all", value: "d" }
+    ],
+    correct: "a",
+    explain: "A tree picks the highest-gain split at each node; a pure-noise column's best split removes almost no impurity (root-split gain ~118× lower than an informative feature), so the greedy rule gates it out. That implicit selection is why junk barely dents the tree."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "We chose a SMOOTH target so the MLP wins on clean data (k=0). Why was that design choice important?",
+    options: [
+      { label: "It isolates the uninformative-feature bias from the smoothness (L025) and rotation (L026) biases — if the MLP starts ahead and then loses the lead, only the junk can be responsible", value: "a" },
+      { label: "A smooth target is the only kind a tree can fit, so the comparison is fair", value: "b" },
+      { label: "Smoothing the target is required before you are allowed to add noise features", value: "c" },
+      { label: "It guarantees the tree and MLP have identical accuracy at k=0", value: "d" }
+    ],
+    correct: "a",
+    explain: "An ablation must change one thing at a time. Had the tree already won on clean data, we could not tell whether junk features or irregularity/orientation caused the gap. Starting from an MLP lead pins the whole change on the junk columns."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "How does Ng's (2004) theorem connect the rotation bias (L026) to this lesson's uninformative-feature bias?",
+    options: [
+      { label: "A rotationally-invariant learner needs at least linearly more samples per uninformative feature, because it must estimate which directions to ignore", value: "a" },
+      { label: "It proves a rotation always deletes exactly the uninformative features from any dataset", value: "b" },
+      { label: "It shows trees are rotationally invariant, which is why they ignore junk features", value: "c" },
+      { label: "It says uninformative features make every model rotationally invariant over time", value: "d" }
+    ],
+    correct: "a",
+    explain: "Rotation invariance means the learner treats all directions symmetrically, so to reject a junk direction it must first estimate the useful subspace's orientation from data — costing at least one more chunk of samples per junk feature. A tree, not being invariant, rejects junk by gain with far fewer samples."
+  });
+</script>
+</body>
+</html>
