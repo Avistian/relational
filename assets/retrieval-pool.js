@@ -410,6 +410,30 @@
       ],
       correct: "a",
       explain: "An MLP/ResNet is rotation-invariant (W·(Qx)=(WQ)·x); a tree and an FT-Transformer are not. On tables the original basis is privileged (age, balance mean something), so invariance blends meaningful columns away — Ng 2004: sample complexity then grows ≥ linearly in the number of junk features."
+    },
+    {
+      id: "l027-uninformative", lesson: 27, quarter: "Q3", concept: "inductive-bias", misconception: true,
+      question: "You add many pure-noise columns to a table where an MLP was winning. What happens, and why?",
+      options: [
+        { label: "The MLP degrades much faster than the trees and loses its lead — it has no gate against junk", value: "a" },
+        { label: "Nothing changes — noise columns carry no signal, so every model ignores them equally", value: "b" },
+        { label: "The trees degrade faster because they overfit the extra columns", value: "c" },
+        { label: "Every model improves — extra columns act as regularization", value: "d" }
+      ],
+      correct: "a",
+      explain: "Grinsztajn §5.3 (Finding 2): MLPs are not robust to uninformative features. A tree gates junk out by gain (never splits on ~0-gain noise); an MLP wires every feature into its first layer and (rotationally invariant, Ng 2004) needs ≥ linearly more samples per junk feature. Repro: adding 100 junk cols cost the MLP 0.084 vs the GBT 0.032, reversing the ranking."
+    },
+    {
+      id: "l027-gate", lesson: 27, quarter: "Q3", concept: "implicit-feature-selection",
+      question: "What is the mechanism that makes a decision tree robust to uninformative features?",
+      options: [
+        { label: "Greedy, gain-gated split selection — a noise column's best split has ~0 gain, so it is never chosen (implicit feature selection)", value: "a" },
+        { label: "It standardizes every feature, which cancels out noise columns exactly", value: "b" },
+        { label: "It is rotationally invariant, so it treats all features symmetrically", value: "c" },
+        { label: "Bagging averages many trees, which deletes noise features automatically", value: "d" }
+      ],
+      correct: "a",
+      explain: "At each node the tree keeps only the highest-gain split; a pure-noise column removes almost no impurity (root-split gain ~118× lower than an informative feature), so it is gated out for free. Caveat: deep spurious noise splits are why MDI importance over-credits noise — measure root gain, not MDI."
     }
   ];
 })(window);
