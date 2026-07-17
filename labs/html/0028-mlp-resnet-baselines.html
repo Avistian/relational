@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0020-q2-checkpoint</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0028-mlp-resnet-baselines</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,30 +7796,30 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-00">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6b251bec">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-020-%E2%80%94-Q2-Checkpoint:-match-a-published-tree-baseline">Lab 020 — Q2 Checkpoint: match a published tree baseline<a class="anchor-link" href="#Lab-020-%E2%80%94-Q2-Checkpoint:-match-a-published-tree-baseline">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0020-q2-checkpoint.html"><code>lessons/0020-q2-checkpoint.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q2 (capstone)</p>
-<p><strong>Papers:</strong> Chen &amp; Guestrin 2016, <em>XGBoost</em> (<a href="https://arxiv.org/abs/1603.02754">arXiv:1603.02754</a>) · Ke et al. 2017, <em>LightGBM</em> (<a href="https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html">NeurIPS 2017</a>).</p>
-<p><strong>Dataset tier:</strong> A — real, open. <code>adult</code> (OpenML 1590), income &gt; 50K, ~24% positive. One 80/20 stratified holdout, seed 0.</p>
-<p><strong>Skill you are practising:</strong> reproduce a published-style tree baseline under a <em>fair, fixed protocol</em> (same data, split, metric, disclosed tuning budget), then match or beat it with a tuned XGBoost / LightGBM and a leak-free stacked ensemble — and report the verdict honestly.</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints the comparison table (reference vs tuned XGB vs tuned LGBM vs stacked: ROC-AUC + accuracy), the base-model OOF correlation, and your one-line honest verdict on whether you matched/beat the reference.</p>
+<h1 id="Lab-028-%E2%80%94-MLP-&amp;-ResNet-tabular-baselines:-the-skip-connection">Lab 028 — MLP &amp; ResNet tabular baselines: the skip connection<a class="anchor-link" href="#Lab-028-%E2%80%94-MLP-&amp;-ResNet-tabular-baselines:-the-skip-connection">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0028-mlp-resnet-baselines.html"><code>lessons/0028-mlp-resnet-baselines.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q3</p>
+<p><strong>Paper:</strong> Gorishniy, Rubachev, Khrulkov &amp; Babenko 2021, <em>Revisiting Deep Learning Models for Tabular Data</em>, NeurIPS 2021 (<a href="https://arxiv.org/abs/2106.11959">arXiv:2106.11959</a>) — §3.2 (the MLP and ResNet baselines). Residual idea: He et al. 2015, <em>Deep Residual Learning</em> (<a href="https://arxiv.org/abs/1512.03385">arXiv:1512.03385</a>).</p>
+<p><strong>Dataset tiers:</strong> <strong>A</strong> (real <code>credit_g</code> via <code>relkit</code>, for the honest bake-off) + <strong>C</strong> (synthetic, to isolate the depth mechanism — 1000 rows can't show a degradation effect that is about training <em>deep</em> nets).</p>
+<p><strong>Skill you are practising:</strong> implement the <strong>residual block's <code>forward</code></strong> — the single line <code>return x + f(x)</code> (skip ON) vs <code>return f(x)</code> (skip OFF). Then show a deep <strong>plain</strong> net degrades (its <em>training</em> accuracy falls — optimization, not overfitting) while the <strong>ResNet</strong> holds, and run the honest MLP-vs-ResNet-vs-GBDT bake-off.</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints the plain net degrading with depth (train accuracy falling), the ResNet holding, and — on credit_g — the two neural baselines tying while the tuned GBDT leads.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells — complete boilerplate; just run.</li>
-<li><strong>TODO</strong> cells — blanks (<code>____</code> / <code># TODO</code>); you implement the skill.</li>
+<li><strong>PROVIDED</strong> cells — complete boilerplate (data, the train/score harness); just run.</li>
+<li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>scikit-learn</strong>, <strong>xgboost</strong>, <strong>lightgbm</strong>. The dataset is cached by <code>labs/data/fetch_datasets.py</code> (run once, online). No local install? Open from <a href="../notebooks.html"><code>notebooks.html</code></a> — <strong>View</strong> to read it rendered, or <strong>Run on Binder</strong>.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. This is the <strong>first PyTorch lab</strong>: it needs <strong>torch</strong> (CPU is fine) in addition to scikit-learn. <code>credit_g</code> is fetched from OpenML on first run (needs network) then cached. Training a few small nets takes ~2–3 minutes on CPU.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=eb1ce54c">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=56f3c6af">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7833,7 +7833,7 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6457e539">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5950b283">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7858,39 +7858,33 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-01">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1d6e3a41">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-the-fair-comparison-contract">Concept recap — the fair-comparison contract<a class="anchor-link" href="#Concept-recap-%E2%80%94-the-fair-comparison-contract">¶</a></h2><p>"Match or beat a published number" is meaningless unless the comparison is <strong>fair</strong>. Before touching a model you fix five things and report the sixth:</p>
-<ol>
-<li><strong>Same dataset</strong> — the exact rows and target the reference used.</li>
-<li><strong>Same split</strong> — one fixed, stratified holdout with a pinned seed; the test set is touched <em>once</em>, at the end.</li>
-<li><strong>Same metric</strong> — one headline number chosen up front (here <strong>ROC-AUC</strong>), prevalence stated so it is readable.</li>
-<li><strong>Disclosed tuning budget</strong> — tuning is cross-validation on <strong>train only</strong>, with a stated number of trials.</li>
-<li><strong>Same preprocessing scope</strong> — every fit-bearing transform lives <em>inside</em> the pipeline, so no fold sees the others (the <a href="../lessons/0010-baseline-checkpoint.html">L010</a> leakage spine).</li>
-<li><strong>Reported honestly</strong> — the verdict (matched / beat / failed) and the <em>size</em> of the gap, not a cherry-picked run.</li>
-</ol>
-<p><strong>The reference.</strong> On <code>adult</code>, a competently-configured GBDT is a commonly reported baseline at <strong>ROC-AUC ≈ 0.92–0.93</strong> / <strong>~87% accuracy</strong>. We pre-register the target as a <em>fixed-default</em> XGBoost (no tuning, disclosed params) so anyone can reproduce it, then try to beat it.</p>
-<p><strong>Toy micro-example (not this lab's answer).</strong> Suppose a paper reports "AUC 0.90" but tuned on the test set. Your fair reproduction fixes the split first, tunes on train-only CV, and scores the test set once. If you get 0.88 you report <em>0.88 with a fair protocol</em> — not 0.90 by peeking. A smaller honest number beats a larger dishonest one.</p>
-<p>Full write-up + the reproduction-protocol rubric: <a href="../lessons/0020-q2-checkpoint.html">Lesson 020</a>.</p>
+<h2 id="Concept-recap-%E2%80%94-the-residual-block,-and-the-degradation-problem-it-fixes">Concept recap — the residual block, and the degradation problem it fixes<a class="anchor-link" href="#Concept-recap-%E2%80%94-the-residual-block,-and-the-degradation-problem-it-fixes">¶</a></h2><p><strong>MLP.</strong> A stack of linear layers with a non-linearity (ReLU) between them: <code>Linear → ReLU → Linear → …</code>. Gorishniy's MLP block is <code>Dropout(ReLU(Linear(x)))</code>.</p>
+<p><strong>The problem.</strong> Make a plain MLP <em>deep</em> and it gets <strong>worse</strong> — and, tellingly, its <strong>training</strong> accuracy drops too. That rules out overfitting (which keeps train accuracy high). The deep plain stack is simply <strong>hard to optimize</strong>: the extra <code>Linear→ReLU</code> layers cannot easily learn to reproduce their own input. He et al. (2015) named this the <strong>degradation problem</strong> and showed it is <em>not</em> vanishing gradients (BatchNorm already fixes those).</p>
+<p><strong>The fix — a residual (skip) connection.</strong> Make each block output <code>x + f(x)</code> instead of <code>f(x)</code>. The branch <code>f</code> (Gorishniy's order: <code>BatchNorm → Linear → ReLU → Dropout → Linear → Dropout</code>) only learns a small <em>correction</em>; the skip carries <code>x</code> through. This makes the <strong>identity map free</strong>: <code>f(x) ≈ 0</code> is trivial to learn, so a deep ResNet can always fall back to a shallow solution — adding depth can't hurt.</p>
+<p><strong>BatchNorm</strong> stabilizes activation scale (faster, less fiddly training). <strong>Dropout</strong> randomly zeroes activations to regularize. Neither causes the depth problem; the <strong>skip</strong> is what fixes it.</p>
+<p><strong>The honest-baseline point.</strong> A <em>properly tuned</em> MLP/ResNet is the neural baseline the field reports against — many "SOTA" tabular DL papers failed to beat it. On small categorical data a tuned GBDT still wins (L024–L027), so the ResNet is an honest baseline, <strong>not</strong> a headline winner.</p>
+<p>Full write-up + the block diagram, the depth curves, and the bake-off: <a href="../lessons/0028-mlp-resnet-baselines.html">Lesson 028</a>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-02">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a3dece8a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Setup-%E2%80%94-PROVIDED">Setup — PROVIDED<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED">¶</a></h2>
+<h2 id="Setup-%E2%80%94-PROVIDED-(data-+-train/score-harness)">Setup — PROVIDED (data + train/score harness)<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED-(data-+-train/score-harness)">¶</a></h2>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-03">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=754aa447">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7898,73 +7892,97 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — data, fixed split, preprocessing factory, and a scorer.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — imports, real credit_g (Tier A) + synthetic data, and the train/score harness. Just run.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_classification</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistGradientBoostingClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardScaler</span><span class="p">,</span> <span class="n">OneHotEncoder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">roc_auc_score</span>
+
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">);</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+
+<span class="c1"># --- Tier A: real credit_g via relkit (OneHot + scale -&gt; dense float matrix for the nets) ---</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="n">_here</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">_p</span> <span class="ow">in</span> <span class="p">(</span><span class="n">_here</span><span class="p">,</span> <span class="n">_here</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">_here</span> <span class="o">/</span> <span class="s2">"labs"</span><span class="p">):</span>   <span class="c1"># put labs/ on the path (works from repo root, labs/, or labs/solutions/)</span>
-    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">_p</span><span class="p">))</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()))</span>          <span class="c1"># labs/ when run from there</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>   <span class="c1"># labs/ when run from labs/solutions/</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
+<span class="n">Xdf</span><span class="p">,</span> <span class="n">ycg</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>
+<span class="n">num</span> <span class="o">=</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"number"</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num</span><span class="p">]</span>
+<span class="n">ct</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">([</span>
+    <span class="p">(</span><span class="s2">"num"</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">num</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"cat"</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">sparse_output</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">cat</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="n">Xcg</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">Xdf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">ycg</span> <span class="o">=</span> <span class="n">ycg</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"credit_g (Tier A): X </span><span class="si">{</span><span class="n">Xcg</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, positives </span><span class="si">{</span><span class="n">ycg</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnTransformer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneHotEncoder</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogisticRegression</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">roc_auc_score</span><span class="p">,</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">average_precision_score</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">train_test_split</span><span class="p">,</span> <span class="n">StratifiedKFold</span><span class="p">,</span>
-                                     <span class="n">RandomizedSearchCV</span><span class="p">,</span> <span class="n">cross_val_predict</span><span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LGBMClassifier</span>
+<span class="c1"># --- Tier C: synthetic data with enough signal to make the DEPTH mechanism visible ---</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_synth</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_classification</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">n_informative</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">n_redundant</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+                               <span class="n">n_clusters_per_class</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">class_sep</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">flip_y</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">StandardScaler</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">y</span>
 
-<span class="n">RS</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"adult"</span><span class="p">)</span>
-<span class="n">cat_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"category"</span><span class="p">,</span> <span class="s2">"object"</span><span class="p">)]</span>
-<span class="n">num_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cat_cols</span><span class="p">]</span>
-<span class="n">prev</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"adult: </span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> rows, </span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> cols, prevalence </span><span class="si">{</span><span class="n">prev</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
-      <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">num_cols</span><span class="p">)</span><span class="si">}</span><span class="s2"> numeric, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_cols</span><span class="p">)</span><span class="si">}</span><span class="s2"> categorical)"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_net</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">bs</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">2e-3</span><span class="p">,</span> <span class="n">wd</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">):</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="n">wd</span><span class="p">)</span>
+    <span class="n">lossf</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BCEWithLogitsLoss</span><span class="p">()</span>
+    <span class="n">Xt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">);</span> <span class="n">yt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">ytr</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Xt</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">bs</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">perm</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">bs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">lossf</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">Xt</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">yt</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">model</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">pre</span><span class="p">():</span>
-    <span class="c1"># per-fold-safe preprocessing: passthrough numerics, one-hot the categoricals.</span>
-    <span class="k">return</span> <span class="n">ColumnTransformer</span><span class="p">([</span>
-        <span class="p">(</span><span class="s2">"num"</span><span class="p">,</span> <span class="s2">"passthrough"</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">"cat"</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">sparse_output</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">cat_cols</span><span class="p">),</span>
-    <span class="p">])</span>
+<span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">net_acc</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)))</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)),</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">):</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">auc</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
-    <span class="n">acc</span> <span class="o">=</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
-    <span class="n">ap</span> <span class="o">=</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> ROC-AUC </span><span class="si">{</span><span class="n">auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  acc </span><span class="si">{</span><span class="n">acc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  PR-AUC </span><span class="si">{</span><span class="n">ap</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"auc"</span><span class="p">:</span> <span class="n">auc</span><span class="p">,</span> <span class="s2">"acc"</span><span class="p">:</span> <span class="n">acc</span><span class="p">,</span> <span class="s2">"ap"</span><span class="p">:</span> <span class="n">ap</span><span class="p">}</span>
-
-<span class="n">cv</span> <span class="o">=</span> <span class="n">StratifiedKFold</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>   <span class="c1"># tuning folds — TRAIN only</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"setup ready"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"ready — helpers: make_synth(), train_net(model, Xtr, ytr), net_acc(model, X, y) -&gt; (acc, auc)"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-04">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5a15b8a1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-fix-the-protocol:-one-stratified-holdout-%E2%80%94-TODO-(crucial-fragment)">Task 1 — fix the protocol: one stratified holdout — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-fix-the-protocol:-one-stratified-holdout-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> split off a single 80/20 test set that preserves the class balance and is reproducible.</p>
-<p><strong>Why it matters:</strong> every number in this lab is compared on <em>this</em> test set, touched once at the very end. Get the split wrong (unstratified, unseeded, or re-drawn later) and the whole comparison is unfair — the single most common way a "we beat the baseline" claim collapses.</p>
-<p><strong>You implement:</strong> a stratified 80/20 split with the fixed seed <code>RS</code>.</p>
-<p><strong>Hint boundary:</strong> <code>train_test_split</code> with <code>test_size=0.2</code>, <code>stratify=y</code>, and <code>random_state=RS</code>. Do not change the variable names.</p>
+<h2 id="Task-1-%E2%80%94-implement-the-residual-block's-forward-%E2%80%94-TODO-(crucial-fragment)">Task 1 — implement the residual block's forward — TODO (crucial fragment)<a class="anchor-link" href="#Task-1-%E2%80%94-implement-the-residual-block's-forward-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> complete <code>ResNetBlock.forward</code>. Compute the residual branch <code>f(x)</code> (the six operations),
+then return <strong><code>x + f(x)</code></strong> when the skip is on, or just <strong><code>f(x)</code></strong> when it is off. That single
+<code>x +</code> is the entire difference between a ResNet and a plain MLP.</p>
+<p><strong>Why it matters:</strong> the skip connection makes the <em>identity map free</em> — the branch can learn
+<code>f(x) ≈ 0</code> and the skip carries <code>x</code> through — so stacking many blocks cannot hurt. Turn it off and
+the same deep network <strong>degrades</strong> (Task 2). This is Gorishniy 2021 §3.2 / He et al. 2015.</p>
+<p><strong>The branch f(x)</strong> (Gorishniy's pre-activation order): <code>BatchNorm → Linear → ReLU → Dropout → Linear → Dropout</code>. The layers are already created in <code>__init__</code>; you wire them together.</p>
+<p><strong>Hint boundary:</strong> apply <code>self.bn</code>, <code>self.lin1</code>, <code>F.relu</code>, <code>self.drop1</code>, <code>self.lin2</code>, <code>self.drop2</code>
+in order to get <code>z = f(x)</code>; then <code>return x + z if self.use_skip else z</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-05">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=966b4a21">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7972,16 +7990,42 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — one fixed, stratified holdout</span>
-<span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">____</span>     <span class="c1"># 80/20, stratified on y, random_state=RS</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"train </span><span class="si">{</span><span class="n">Xtr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">  test </span><span class="si">{</span><span class="n">Xte</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">  "</span>
-      <span class="sa">f</span><span class="s2">"train prev </span><span class="si">{</span><span class="n">ytr</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  test prev </span><span class="si">{</span><span class="n">yte</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement ResNetBlock.forward (the crucial fragment)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResNetBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d_main</span><span class="p">,</span> <span class="n">d_hidden</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="n">use_skip</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm1d</span><span class="p">(</span><span class="n">d_main</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lin1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_main</span><span class="p">,</span> <span class="n">d_hidden</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lin2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_hidden</span><span class="p">,</span> <span class="n">d_main</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_skip</span> <span class="o">=</span> <span class="n">use_skip</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">____</span>                                  <span class="c1"># the branch f(x): bn -&gt; lin1 -&gt; relu -&gt; drop1 -&gt; lin2 -&gt; drop2</span>
+        <span class="k">return</span> <span class="n">____</span>                               <span class="c1"># x + z if the skip is on, else just z</span>
+
+<span class="c1"># PROVIDED — the full model: embed -&gt; N blocks -&gt; head. Uses your ResNetBlock.</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TabResNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_main</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">d_hidden</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">n_blocks</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">use_skip</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_main</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">ResNetBlock</span><span class="p">(</span><span class="n">d_main</span><span class="p">,</span> <span class="n">d_hidden</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="n">use_skip</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_blocks</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head_bn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm1d</span><span class="p">(</span><span class="n">d_main</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_main</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head_bn</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"ResNetBlock + TabResNet defined"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-06">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=523c8bca">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7990,31 +8034,45 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">Xte</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s2">"Test set should be ~20</span><span class="si">% o</span><span class="s2">f the data."</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ytr</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">yte</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mf">0.005</span><span class="p">,</span> <span class="s2">"Stratification should keep train/test prevalence equal."</span>
-<span class="k">assert</span> <span class="n">Xtr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">Xte</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"Split should partition all rows."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 1 ok — </span><span class="si">{</span><span class="n">Xte</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> held-out rows, prevalence matched to </span><span class="si">{</span><span class="n">yte</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">. "</span>
-      <span class="sa">f</span><span class="s2">"Protocol fixed; the test set is now off-limits until the end."</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">ResNetBlock</span><span class="p">(</span><span class="n">d_main</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">d_hidden</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">use_skip</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">zf</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">drop2</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">lin2</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">drop1</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">lin1</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">bn</span><span class="p">(</span><span class="n">x</span><span class="p">))))))</span>   <span class="c1"># the branch f(x)</span>
+    <span class="n">out_skip</span> <span class="o">=</span> <span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">b</span><span class="o">.</span><span class="n">use_skip</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">out_plain</span> <span class="o">=</span> <span class="n">b</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">out_skip</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"A residual block must preserve shape so x + f(x) is defined."</span>
+<span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">out_skip</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">zf</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">),</span> <span class="s2">"skip ON must return x + f(x)."</span>
+<span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">out_plain</span><span class="p">,</span> <span class="n">zf</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">),</span> <span class="s2">"skip OFF must return f(x) only."</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">out_skip</span><span class="p">,</span> <span class="n">out_plain</span><span class="p">),</span> <span class="s2">"The skip must actually change the output."</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 1 ok — the block returns x + f(x) with the skip, f(x) without it. That one line is the whole lesson."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-07">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=037eac74">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-the-reference-baseline-%E2%80%94-TODO-(crucial-fragment)">Task 2 — the reference baseline — TODO (crucial fragment)<a class="anchor-link" href="#Task-2-%E2%80%94-the-reference-baseline-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> build the pre-registered reference — a fixed-default XGBoost <em>inside a pipeline</em> — and confirm it reproduces the published range (ROC-AUC ≈ 0.92–0.93).</p>
-<p><strong>Why it matters:</strong> the reference must be reproducible and fair before you try to beat it. Wrapping the booster in the <code>pre()</code> pipeline is what keeps preprocessing per-fold-safe once we tune with CV — the leakage spine does not lapse because the model got fancier.</p>
-<p><strong>You implement:</strong> a <code>Pipeline</code> whose first step is <code>pre()</code> and whose classifier is the provided fixed-default <code>XGBClassifier</code>.</p>
-<p><strong>Hint boundary:</strong> <code>Pipeline([("pre", pre()), ("clf", &lt;the classifier&gt;)])</code>. The hyper-parameters are given — do not tune here.</p>
+<h2 id="Task-2-%E2%80%94-depth:-the-plain-net-degrades,-the-ResNet-holds-%E2%80%94-TODO">Task 2 — depth: the plain net degrades, the ResNet holds — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-depth:-the-plain-net-degrades,-the-ResNet-holds-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> train the SAME architecture at growing depth, once with the skip <strong>on</strong> (ResNet) and once
+<strong>off</strong> (plain MLP), and record <strong>train and test</strong> accuracy. Watch the plain net degrade — and its
+<em>training</em> accuracy fall — while the ResNet stays put.</p>
+<p><strong>Why it matters:</strong> if the plain net's <em>training</em> accuracy drops with depth, the failure is
+<strong>optimization (the degradation problem)</strong>, not overfitting (which would keep train accuracy high).
+That is the evidence the skip connection is doing real work. (Tier C synthetic here — we need enough
+data/signal to make depth matter; on credit_g's 1000 rows it would not.)</p>
+<p><strong>You implement:</strong> inside the loop, build a <code>TabResNet</code> with the right <code>use_skip</code> flag, train it, and
+read its train and test accuracy.</p>
+<p><strong>Hint boundary:</strong> <code>TabResNet(d_in, n_blocks=nb, use_skip=&lt;True/False&gt;)</code>, then <code>train_net(...)</code>, then
+<code>net_acc(model, Xte, yte)</code> and <code>net_acc(model, Xtr, ytr)</code>. <code>net_acc</code> returns <code>(acc, auc)</code> — take <code>[0]</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-08">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=37491612">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8022,19 +8080,34 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — assemble the reference pipeline (preprocessing INSIDE the pipeline)</span>
-<span class="n">ref_clf</span> <span class="o">=</span> <span class="n">XGBClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-                        <span class="n">subsample</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">colsample_bytree</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
-                        <span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-<span class="n">ref</span> <span class="o">=</span> <span class="n">____</span>                    <span class="c1"># Pipeline: ("pre", pre()) then ("clf", ref_clf)</span>
-<span class="n">ref</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
-<span class="n">ref_m</span> <span class="o">=</span> <span class="n">report</span><span class="p">(</span><span class="s2">"XGB reference (fixed)"</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — depth sweep, skip on vs off (~1-2 min)</span>
+<span class="n">Xs</span><span class="p">,</span> <span class="n">ys</span> <span class="o">=</span> <span class="n">make_synth</span><span class="p">()</span>
+<span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">Xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">SEED</span><span class="p">)</span>
+
+<span class="n">depths</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+<span class="n">res</span><span class="p">,</span> <span class="n">plain</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">nb</span> <span class="ow">in</span> <span class="n">depths</span><span class="p">:</span>
+    <span class="n">m_r</span> <span class="o">=</span> <span class="n">____</span>                                    <span class="c1"># a TabResNet with n_blocks=nb and the skip ON</span>
+    <span class="n">m_r</span> <span class="o">=</span> <span class="n">train_net</span><span class="p">(</span><span class="n">m_r</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+    <span class="n">res</span><span class="p">[</span><span class="n">nb</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"test"</span><span class="p">:</span> <span class="n">net_acc</span><span class="p">(</span><span class="n">m_r</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"train"</span><span class="p">:</span> <span class="n">net_acc</span><span class="p">(</span><span class="n">m_r</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)[</span><span class="mi">0</span><span class="p">]}</span>
+
+    <span class="n">m_p</span> <span class="o">=</span> <span class="n">____</span>                                    <span class="c1"># the SAME TabResNet but with the skip OFF (plain MLP)</span>
+    <span class="n">m_p</span> <span class="o">=</span> <span class="n">train_net</span><span class="p">(</span><span class="n">m_p</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+    <span class="n">plain</span><span class="p">[</span><span class="n">nb</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"test"</span><span class="p">:</span> <span class="n">net_acc</span><span class="p">(</span><span class="n">m_p</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"train"</span><span class="p">:</span> <span class="n">net_acc</span><span class="p">(</span><span class="n">m_p</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)[</span><span class="mi">0</span><span class="p">]}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'depth'</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'plain test'</span><span class="si">:</span><span class="s2">&gt;10</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'resnet test'</span><span class="si">:</span><span class="s2">&gt;11</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'plain train'</span><span class="si">:</span><span class="s2">&gt;11</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">'resnet train'</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">nb</span> <span class="ow">in</span> <span class="n">depths</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">nb</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">plain</span><span class="p">[</span><span class="n">nb</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;10.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="n">nb</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;11.3f</span><span class="si">}</span><span class="s2"> | "</span>
+          <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">plain</span><span class="p">[</span><span class="n">nb</span><span class="p">][</span><span class="s1">'train'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;11.3f</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="n">nb</span><span class="p">][</span><span class="s1">'train'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;12.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">plain_train_drop</span> <span class="o">=</span> <span class="n">plain</span><span class="p">[</span><span class="n">depths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]][</span><span class="s1">'train'</span><span class="p">]</span> <span class="o">-</span> <span class="n">plain</span><span class="p">[</span><span class="n">depths</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="s1">'train'</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">plain TRAIN accuracy change </span><span class="si">{</span><span class="n">depths</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">depths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> blocks: </span><span class="si">{</span><span class="n">plain_train_drop</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-09">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1de2b2b4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8043,30 +8116,38 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">named_steps</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s2">"pre"</span><span class="p">,</span> <span class="s2">"clf"</span><span class="p">],</span> <span class="s2">"Reference must be a Pipeline: pre -&gt; clf."</span>
-<span class="k">assert</span> <span class="mf">0.92</span> <span class="o">&lt;=</span> <span class="n">ref_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">0.935</span><span class="p">,</span> <span class="s2">"Reference ROC-AUC should land in the published range ~0.92-0.93."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — reference reproduced at ROC-AUC </span><span class="si">{</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">. "</span>
-      <span class="sa">f</span><span class="s2">"This is the number to match or beat."</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">plain</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">plain</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="s1">'test'</span><span class="p">],</span> <span class="s2">"The plain MLP should DEGRADE (lose test accuracy) as depth grows."</span>
+<span class="k">assert</span> <span class="n">plain_train_drop</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"The plain net's TRAINING accuracy should fall too -&gt; optimization (degradation), not overfitting."</span>
+<span class="k">assert</span> <span class="n">res</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">plain</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.005</span><span class="p">,</span> <span class="s2">"At depth 16 the ResNet should hold at least as well as the plain net."</span>
+<span class="k">assert</span> <span class="n">res</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="s1">'train'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s2">"The ResNet's training accuracy should stay high at every depth (the skip keeps it trainable)."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — plain train fell </span><span class="si">{</span><span class="n">plain_train_drop</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> with depth (degradation, not overfitting); "</span>
+      <span class="sa">f</span><span class="s2">"the ResNet held. The skip makes the identity free."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-10">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f77c1d49">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-tune-XGBoost-and-LightGBM-(fixed-budget,-train-only-CV)-%E2%80%94-TODO-(crucial-fragment)">Task 3 — tune XGBoost and LightGBM (fixed budget, train-only CV) — TODO (crucial fragment)<a class="anchor-link" href="#Task-3-%E2%80%94-tune-XGBoost-and-LightGBM-(fixed-budget,-train-only-CV)-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> run a disclosed-budget randomized search for <strong>XGBoost</strong> (Chen 2016) and <strong>LightGBM</strong> (Ke 2017), tuning only on the training folds, and score each once on the test set.</p>
-<p><strong>Why it matters:</strong> this is the fair way to tune. <code>RandomizedSearchCV</code> with a fixed <code>n_iter</code> and CV on train only means "I searched 15 configurations," not "I searched until I won." Notice how little tuning buys over a strong default.</p>
-<p><strong>You implement:</strong> the <code>RandomizedSearchCV</code> object — the estimator pipeline, the space, <code>n_iter=15</code>, <code>scoring="roc_auc"</code>, and <code>cv=cv</code> (the train-only folds). Do this once for each booster.</p>
-<p><strong>Hint boundary:</strong> <code>RandomizedSearchCV(&lt;pipe&gt;, &lt;space&gt;, n_iter=15, scoring="roc_auc", cv=cv, random_state=RS, n_jobs=4)</code>. The pipelines and spaces are provided.</p>
+<h2 id="Task-3-%E2%80%94-the-honest-bake-off-on-credit_g-%E2%80%94-TODO">Task 3 — the honest bake-off on credit_g — TODO<a class="anchor-link" href="#Task-3-%E2%80%94-the-honest-bake-off-on-credit_g-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> on the real Tier-A <code>credit_g</code> table, compare a plain <strong>MLP</strong> (skip off, shallow), a
+<strong>ResNet</strong> (skip on), and a tuned <strong>GBDT</strong> (HistGradientBoosting), by ROC-AUC over a few seeds.</p>
+<p><strong>Why it matters:</strong> this is Gorishniy's real message. A <em>properly built</em> neural baseline makes the
+comparison <strong>fair</strong> — but on a small, categorical, irregular table the tuned tree still wins (L024–
+L027), and the two neural baselines tie. "No universal winner"; the ResNet is an honest baseline, not
+a headline winner. Reporting a weak MLP would have flattered a fake DL "win".</p>
+<p><strong>You implement:</strong> the GBDT's predicted positive-class probability, so you can score its ROC-AUC the
+same way as the nets.</p>
+<p><strong>Hint boundary:</strong> <code>gbt.predict_proba(Xte)</code> returns a 2-column array; the positive-class probability
+is column <code>[:, 1]</code>. Score with <code>roc_auc_score(yte, p)</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-11">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=99333b16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8074,45 +8155,32 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — the two pipelines and their search spaces (clf__ prefixes target the classifier step).</span>
-<span class="n">xgb_pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s2">"pre"</span><span class="p">,</span> <span class="n">pre</span><span class="p">()),</span>
-                     <span class="p">(</span><span class="s2">"clf"</span><span class="p">,</span> <span class="n">XGBClassifier</span><span class="p">(</span><span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">))])</span>
-<span class="n">xgb_space</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"clf__n_estimators"</span><span class="p">:</span> <span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">800</span><span class="p">],</span> <span class="s2">"clf__max_depth"</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span>
-             <span class="s2">"clf__learning_rate"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="s2">"clf__subsample"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
-             <span class="s2">"clf__colsample_bytree"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="s2">"clf__reg_lambda"</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]}</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — bake-off: MLP vs ResNet vs GBDT on credit_g (~1 min)</span>
+<span class="n">auc</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"mlp"</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">"resnet"</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">"gbt"</span><span class="p">:</span> <span class="p">[]}</span>
+<span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">Xcg</span><span class="p">,</span> <span class="n">ycg</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">s</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">ycg</span><span class="p">)</span>
 
-<span class="n">lgbm_pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s2">"pre"</span><span class="p">,</span> <span class="n">pre</span><span class="p">()),</span>
-                      <span class="p">(</span><span class="s2">"clf"</span><span class="p">,</span> <span class="n">LGBMClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">))])</span>
-<span class="n">lgbm_space</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"clf__n_estimators"</span><span class="p">:</span> <span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">800</span><span class="p">],</span> <span class="s2">"clf__num_leaves"</span><span class="p">:</span> <span class="p">[</span><span class="mi">31</span><span class="p">,</span> <span class="mi">63</span><span class="p">,</span> <span class="mi">127</span><span class="p">],</span>
-              <span class="s2">"clf__learning_rate"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="s2">"clf__subsample"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
-              <span class="s2">"clf__colsample_bytree"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="s2">"clf__reg_lambda"</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">]}</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"pipelines + spaces ready"</span><span class="p">)</span>
+    <span class="n">mlp</span> <span class="o">=</span> <span class="n">TabResNet</span><span class="p">(</span><span class="n">Xcg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">d_main</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">d_hidden</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_blocks</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">use_skip</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">mlp</span> <span class="o">=</span> <span class="n">train_net</span><span class="p">(</span><span class="n">mlp</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">wd</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">auc</span><span class="p">[</span><span class="s2">"mlp"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">net_acc</span><span class="p">(</span><span class="n">mlp</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">rn</span> <span class="o">=</span> <span class="n">TabResNet</span><span class="p">(</span><span class="n">Xcg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">d_main</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">d_hidden</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_blocks</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">use_skip</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">rn</span> <span class="o">=</span> <span class="n">train_net</span><span class="p">(</span><span class="n">rn</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">wd</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">auc</span><span class="p">[</span><span class="s2">"resnet"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">net_acc</span><span class="p">(</span><span class="n">rn</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">gbt</span> <span class="o">=</span> <span class="n">HistGradientBoostingClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">s</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+                                         <span class="n">max_leaf_nodes</span><span class="o">=</span><span class="mi">31</span><span class="p">,</span> <span class="n">l2_regularization</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">____</span>                                      <span class="c1"># GBDT positive-class probability on Xte</span>
+    <span class="n">auc</span><span class="p">[</span><span class="s2">"gbt"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"mlp"</span><span class="p">,</span> <span class="s2">"resnet"</span><span class="p">,</span> <span class="s2">"gbt"</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">&gt;7</span><span class="si">}</span><span class="s2"> ROC-AUC: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">auc</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">auc</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-12">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — fixed-budget search for each booster (CV on TRAIN only)</span>
-<span class="n">xgb_search</span> <span class="o">=</span> <span class="n">____</span>     <span class="c1"># RandomizedSearchCV(xgb_pipe, xgb_space, n_iter=15, scoring="roc_auc", cv=cv, ...).fit(Xtr, ytr)</span>
-<span class="n">lgbm_search</span> <span class="o">=</span> <span class="n">____</span>    <span class="c1"># same for lgbm_pipe / lgbm_space</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"XGB  best CV ROC-AUC </span><span class="si">{</span><span class="n">xgb_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"LGBM best CV ROC-AUC </span><span class="si">{</span><span class="n">lgbm_search</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="n">xgb_m</span> <span class="o">=</span> <span class="n">report</span><span class="p">(</span><span class="s2">"XGB tuned"</span><span class="p">,</span> <span class="n">xgb_search</span><span class="o">.</span><span class="n">best_estimator_</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)</span>
-<span class="n">lgbm_m</span> <span class="o">=</span> <span class="n">report</span><span class="p">(</span><span class="s2">"LGBM tuned"</span><span class="p">,</span> <span class="n">lgbm_search</span><span class="o">.</span><span class="n">best_estimator_</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-13">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=fec95fc5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8121,97 +8189,30 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">xgb_search</span><span class="o">.</span><span class="n">n_iter</span> <span class="o">==</span> <span class="mi">15</span> <span class="ow">and</span> <span class="n">lgbm_search</span><span class="o">.</span><span class="n">n_iter</span> <span class="o">==</span> <span class="mi">15</span><span class="p">,</span> <span class="s2">"Disclosed budget: n_iter must be 15."</span>
-<span class="k">assert</span> <span class="n">xgb_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">ref_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.002</span><span class="p">,</span> <span class="s2">"Tuned XGB should match the reference (within noise)."</span>
-<span class="k">assert</span> <span class="n">lgbm_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">ref_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.002</span><span class="p">,</span> <span class="s2">"Tuned LGBM should match the reference (within noise)."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — tuned XGB </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (delta </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">), "</span>
-      <span class="sa">f</span><span class="s2">"tuned LGBM </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (delta </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">). "</span>
-      <span class="sa">f</span><span class="s2">"Note how small the tuning gain is over a strong default."</span><span class="p">)</span>
+<span class="n">mlp_m</span><span class="p">,</span> <span class="n">rn_m</span><span class="p">,</span> <span class="n">gbt_m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">auc</span><span class="p">[</span><span class="s2">"mlp"</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">auc</span><span class="p">[</span><span class="s2">"resnet"</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">auc</span><span class="p">[</span><span class="s2">"gbt"</span><span class="p">])</span>
+<span class="k">assert</span> <span class="n">gbt_m</span> <span class="o">&gt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">mlp_m</span><span class="p">,</span> <span class="n">rn_m</span><span class="p">),</span> <span class="s2">"On small categorical credit_g the tuned GBDT should lead (L024-L027 territory)."</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">mlp_m</span> <span class="o">-</span> <span class="n">rn_m</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s2">"The two neural baselines should be competitive with each other (a tie)."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — GBDT </span><span class="si">{</span><span class="n">gbt_m</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> &gt; MLP </span><span class="si">{</span><span class="n">mlp_m</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ~ ResNet </span><span class="si">{</span><span class="n">rn_m</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">. No universal winner; the "</span>
+      <span class="sa">f</span><span class="s2">"neural baseline is honest, not a headline winner."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-14">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-4-%E2%80%94-leak-free-stacked-ensemble-(OOF)-%E2%80%94-TODO-(crucial-fragment)">Task 4 — leak-free stacked ensemble (OOF) — TODO (crucial fragment)<a class="anchor-link" href="#Task-4-%E2%80%94-leak-free-stacked-ensemble-(OOF)-%E2%80%94-TODO-(crucial-fragment)">¶</a></h2><p><strong>Goal:</strong> stack the two tuned boosters using <strong>out-of-fold</strong> meta-features, read their correlation, and see whether combining helps.</p>
-<p><strong>Why it matters:</strong> stacking's fuel is <em>diversity</em> (<a href="../lessons/0018-ensembling-stacking.html">L018</a>). Building meta-features with <code>cross_val_predict</code> keeps the meta-learner from ever training on a base model's in-sample predictions (the leak that crowns a memorizer). The correlation tells you whether the two learners are actually different.</p>
-<p><strong>You implement:</strong> the two OOF prediction vectors via <code>cross_val_predict(..., method="predict_proba")[:, 1]</code>, using the same train-only <code>cv</code>.</p>
-<p><strong>Hint boundary:</strong> <code>cross_val_predict(best_estimator, Xtr, ytr, cv=cv, method="predict_proba")[:, 1]</code> for each booster. The meta-learner fit and test stacking are provided.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-15">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — build out-of-fold meta-features (no in-sample leak)</span>
-<span class="n">best_xgb</span> <span class="o">=</span> <span class="n">xgb_search</span><span class="o">.</span><span class="n">best_estimator_</span>
-<span class="n">best_lgbm</span> <span class="o">=</span> <span class="n">lgbm_search</span><span class="o">.</span><span class="n">best_estimator_</span>
-<span class="n">oof_xgb</span> <span class="o">=</span> <span class="n">____</span>     <span class="c1"># cross_val_predict(best_xgb, Xtr, ytr, cv=cv, method="predict_proba")[:, 1]</span>
-<span class="n">oof_lgbm</span> <span class="o">=</span> <span class="n">____</span>    <span class="c1"># same for best_lgbm</span>
-
-<span class="n">corr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">oof_xgb</span><span class="p">,</span> <span class="n">oof_lgbm</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OOF correlation XGB vs LGBM: </span><span class="si">{</span><span class="n">corr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-
-<span class="c1"># PROVIDED — fit meta on OOF features, refit base learners on full train, stack the test set</span>
-<span class="n">meta</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">oof_xgb</span><span class="p">,</span> <span class="n">oof_lgbm</span><span class="p">]),</span> <span class="n">ytr</span><span class="p">)</span>
-<span class="n">best_xgb</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">);</span> <span class="n">best_lgbm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
-<span class="n">Z_te</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">best_xgb</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">best_lgbm</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]])</span>
-<span class="n">p_stack</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Z_te</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
-<span class="n">stack_m</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"auc"</span><span class="p">:</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p_stack</span><span class="p">),</span>
-           <span class="s2">"acc"</span><span class="p">:</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="p">(</span><span class="n">p_stack</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)),</span>
-           <span class="s2">"ap"</span><span class="p">:</span> <span class="n">average_precision_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">p_stack</span><span class="p">)}</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="s1">'Stacked (XGB+LGBM)'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> ROC-AUC </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  "</span>
-      <span class="sa">f</span><span class="s2">"acc </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  PR-AUC </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'ap'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-16">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">oof_xgb</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">Xtr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="s2">"OOF vector must have one prediction per TRAIN row."</span>
-<span class="k">assert</span> <span class="n">corr</span> <span class="o">&gt;</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s2">"Two tuned GBDTs should be highly correlated (redundant) on this table."</span>
-<span class="n">best_single</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xgb_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">],</span> <span class="n">lgbm_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">])</span>
-<span class="k">assert</span> <span class="n">stack_m</span><span class="p">[</span><span class="s2">"auc"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">best_single</span> <span class="o">-</span> <span class="mf">0.002</span><span class="p">,</span> <span class="s2">"Stack should not be worse than the best single model."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 4 ok — stack </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> vs best single </span><span class="si">{</span><span class="n">best_single</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> "</span>
-      <span class="sa">f</span><span class="s2">"(delta </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">best_single</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">); OOF corr </span><span class="si">{</span><span class="n">corr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">. "</span>
-      <span class="sa">f</span><span class="s2">"Two GBDTs are nearly redundant, so stacking adds almost nothing."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-17">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e63ebf0e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> one printed summary to paste back to your teacher.</p>
-<p><strong>Verdict prompt:</strong> in one sentence, state whether you <em>reproduced</em> the published range, whether tuning/stacking <em>beat</em> the reference, and by how much — honestly.</p>
+<p><strong>Takeaway prompt:</strong> in one sentence, what does the skip connection fix, how do you know it is an
+optimization problem (not overfitting), and what does building the neural baseline correctly buy you?</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-18">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2bd5c13a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8219,38 +8220,46 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the verdict string</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 020 (Q2 checkpoint) ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dataset: adult  prevalence </span><span class="si">{</span><span class="n">prev</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  |  metric: ROC-AUC  |  split: 80/20 stratified, seed 0"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'model'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'ROC-AUC'</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'acc'</span><span class="si">:</span><span class="s2">&gt;7</span><span class="si">}</span><span class="s2">   delta-vs-ref"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'XGB reference (fixed)'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.4f</span><span class="si">}</span><span class="s2">   --"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'XGB tuned'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.4f</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">xgb_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'LGBM tuned'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.4f</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">lgbm_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Stacked (XGB+LGBM)'</span><span class="si">:</span><span class="s2">26s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8.4f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'acc'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;7.4f</span><span class="si">}</span><span class="s2">   </span><span class="si">{</span><span class="n">stack_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="o">-</span><span class="n">ref_m</span><span class="p">[</span><span class="s1">'auc'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OOF correlation XGB vs LGBM: </span><span class="si">{</span><span class="n">corr</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 028 ==="</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"depth (synthetic): plain test </span><span class="si">{</span><span class="n">plain</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">(d2) -&gt; </span><span class="si">{</span><span class="n">plain</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">(d16); "</span>
+      <span class="sa">f</span><span class="s2">"ResNet </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="s1">'test'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"degradation      : plain TRAIN </span><span class="si">{</span><span class="n">plain</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="s1">'train'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">plain</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="s1">'train'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"(train falls -&gt; optimization, not overfitting)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"bake-off credit_g: MLP </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">auc</span><span class="p">[</span><span class="s1">'mlp'</span><span class="p">])</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ~ ResNet </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">auc</span><span class="p">[</span><span class="s1">'resnet'</span><span class="p">])</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"&lt; GBDT </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">auc</span><span class="p">[</span><span class="s1">'gbt'</span><span class="p">])</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (no universal winner)"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"verdict:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l020-19">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cee396f9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-find-real-diversity">Stretch (optional, ungraded) — find real diversity<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-find-real-diversity">¶</a></h2><ol>
-<li><strong>Add a genuinely different learner.</strong> Add the Q1 <code>LogisticRegression</code> (on scaled/one-hot features) as a third base model. Its OOF correlation with the GBDTs should be much lower than 0.997 — does the stack finally move?</li>
-<li><strong>CatBoost as a third booster.</strong> Add a tuned <code>CatBoostClassifier</code> (<a href="../lessons/0016-catboost.html">L016</a>); it is still a GBDT, so predict (and check) that it stays highly correlated with XGB/LGBM.</li>
-<li><strong>Change the metric.</strong> Re-run the verdict using <strong>PR-AUC vs prevalence</strong> instead of ROC-AUC. Does the ranking of models change? Which metric would you report to a skeptic on a 24%-positive task, and why?</li>
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-probe-the-baseline">Stretch (optional, ungraded) — probe the baseline<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-probe-the-baseline">¶</a></h2><ol>
+<li><strong>How deep does the skip start to matter?</strong> In Task 2 the gap opens up past depth ~4. Re-run with
+<code>depths = [1, 2, 4, 8, 16, 32]</code> and find the depth where the plain net's <em>training</em> accuracy first
+drops below 0.99. That is where the degradation problem bites.</li>
+<li><strong>Remove BatchNorm.</strong> Delete <code>self.bn</code> (replace with identity) from the block and re-run the depth
+sweep. Both nets get harder to train — evidence the degradation problem and vanishing gradients are
+<em>two</em> distinct failures (BatchNorm fixes the latter, the skip the former).</li>
+<li><strong>Tune the neural baseline.</strong> Give the credit_g nets a small random search over width, depth,
+dropout, and learning rate (L017 discipline, honest budget). Can a tuned ResNet close the gap to the
+GBDT — or does the tree hold? Report honestly.</li>
+<li><strong>A learned gate preview.</strong> The Year-2 fix for the tree advantage is per-feature embeddings /
+attention (FT-Transformer). As a cheap proxy, does standardizing + one-hot (already done) plus more
+epochs move the neural AUC? Where does it plateau vs the GBDT?</li>
 </ol>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l020-20">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3c7ef7f4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8259,11 +8268,11 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
-<span class="c1"># from sklearn.preprocessing import StandardScaler</span>
-<span class="c1"># logit = Pipeline([("pre", pre()), ("sc", StandardScaler(with_mean=False)),</span>
-<span class="c1">#                   ("clf", LogisticRegression(max_iter=2000))]).fit(Xtr, ytr)</span>
-<span class="c1"># oof_lr = cross_val_predict(logit, Xtr, ytr, cv=cv, method="predict_proba")[:, 1]</span>
-<span class="c1"># print("corr(LR, XGB):", round(float(np.corrcoef(oof_lr, oof_xgb)[0, 1]), 3), "  &lt;-- more diverse than 0.997?")</span>
+<span class="c1"># depths = [1, 2, 4, 8, 16, 32]</span>
+<span class="c1"># for nb in depths:</span>
+<span class="c1">#     m = TabResNet(Xs.shape[1], n_blocks=nb, use_skip=False)</span>
+<span class="c1">#     m = train_net(m, Xtr, ytr)</span>
+<span class="c1">#     print(nb, "plain train", round(net_acc(m, Xtr, ytr)[0], 3))</span>
 </pre></div>
 </div>
 </div>
