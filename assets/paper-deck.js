@@ -131,6 +131,11 @@
       id: "gorishniy2021", paper: "Gorishniy et al. — Revisiting DL Models for Tabular Data", year: 2021, lesson: 28,
       front: "Gorishniy et al. 2021 — what are the two 'simple' baselines, and what is the paper's central (methodological) finding?",
       back: "Baselines: a tuned MLP (Dropout(ReLU(Linear)) blocks) and a ResNet — a stack of pre-activation residual blocks, ResNetBlock(x)=x+Dropout(Linear(Dropout(ReLU(Linear(BatchNorm(x)))))). The skip makes the identity map free, so depth stops degrading. Central finding: once you compare against a *properly-tuned* MLP/ResNet, much prior tabular-DL 'progress' vanishes — several 'SOTA' models don't beat these baselines — and there is NO universal winner between GBDT and DL (they also introduce FT-Transformer, the stronger attention baseline, deferred to Y2). Honest baselines are the contribution."
+    },
+    {
+      id: "feurer2015", paper: "Feurer et al. — Auto-sklearn (Efficient & Robust AutoML)", year: 2015, lesson: 29,
+      front: "Feurer et al. 2015 (Auto-sklearn) — what does it automate (the CASH problem), and its two extensions over Auto-WEKA?",
+      back: "It solves CASH — Combined Algorithm Selection and Hyperparameter optimization — treating 'which algorithm' as a top-level categorical hyperparameter above each model's knobs and searching the whole space with Bayesian optimization (SMAC), keeping the best-VALIDATION config. Two extensions over Auto-WEKA: (1) meta-learning WARM-START (use dataset meta-features to begin the search from configs that won on similar past datasets) and (2) automated ENSEMBLE construction (Caruana 2004 greedy selection over the pool of trained models). It does NOT do domain feature engineering, and it ties a well-tuned GBDT on typical tabular data (credit_g: default XGB 0.775 → tuned 0.806 ≈ AutoML 0.803) — it buys automation/robustness, not new accuracy."
     }
   ];
 })(window);

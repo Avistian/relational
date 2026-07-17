@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 029 — Manual Feature Engineering vs AutoML</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* shared viz frames */
+    .cash-search-viz, .ensemble-select-viz, .automl-bakeoff-viz {
+      margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .csv-svg, .esv-svg, .abo-svg { display: block; max-width: 560px; margin: 0.25rem auto; }
+    .csv-tick, .esv-tick, .abo-tick { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+    .csv-lab, .esv-lab, .abo-lab, .abo-lab2 { font-family: var(--font-sans); font-size: 10px; fill: var(--muted); }
+    .csv-val, .esv-val, .abo-val { font-family: var(--font-mono); font-size: 10px; fill: var(--fg, #222); font-weight: 600; }
+    .esv-seg { font-family: var(--font-sans); font-size: 9px; fill: #fff; font-weight: 600; }
+    .esv-ref { font-family: var(--font-sans); font-size: 9px; fill: #b03a2e; }
+    .csv-star { font-size: 15px; fill: #d4a017; }
+    .csv-readout, .esv-readout, .abo-readout { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.55; }
+    .csv-caption, .esv-caption, .abo-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .csv-ctl, .esv-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .csv-ctl button, .esv-ctl button {
+      font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .csv-ctl button.csv-on, .esv-ctl button.esv-on {
+      background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>Manual Feature Engineering vs AutoML</h1>
+  <p class="subtitle">Lesson 029 · Phase 1 · Q3 · ~50 min · <em>core paper: Feurer et al. 2015, Auto-sklearn (skim)</em></p>
+
+  <p>
+    The last five lessons taught us how to build strong contestants by hand: a tuned GBDT
+    (<a href="0014-xgboost.html">L014</a>–<a href="0017-hyperparameter-search.html">L017</a>), a
+    leak-free stacked ensemble (<a href="0018-ensembling-stacking.html">L018</a>), and an honest neural
+    baseline (<a href="0028-mlp-resnet-baselines.html">L028</a>). Each demanded human choices: which
+    model, which hyperparameters, which features. Today's question is the natural one a skeptic asks:
+    <strong>can a machine just do all of that for you?</strong> That is the promise of
+    <strong>AutoML</strong> — and the canonical system is <strong>Auto-sklearn</strong> (Feurer et al.
+    2015). We will see exactly what it automates, what it does <em>not</em>, and run the fair fight that
+    matters for the thesis: <strong>AutoML vs a hand-tuned XGBoost</strong>.
+  </p>
+  <p>
+    Its single skill: <strong>understand what AutoML automates — the CASH problem (jointly choosing the
+    algorithm <em>and</em> its hyperparameters) solved by Bayesian optimization, plus meta-learning
+    warm-start and automated ensemble construction — and run a fair AutoML-vs-tuned-XGBoost comparison,
+    knowing that on typical tabular data AutoML usually <em>ties</em> a competently tuned GBDT at far
+    higher compute, buys automation rather than a guaranteed win, and still does not invent your domain
+    features or escape the single-table paradigm.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> AutoML automates <em>model and hyperparameter search</em> (and some
+    preprocessing) — searching a combined space, warm-starting from similar past datasets, and
+    ensembling the models it tried — but it does not replace domain <em>feature engineering</em>, and on
+    typical tabular data it ends up roughly <strong>tied</strong> with a well-tuned GBDT, so its real
+    value is convenience and robustness, not a new source of accuracy.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here
+    is useful — the act of retrieval (even a failed one) encodes the idea far better than re-reading
+    would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    This lesson names several ideas from the AutoML literature. Each is defined here, in plain language,
+    before we rely on it. Where an idea is a callback to an earlier lesson, the definition is restated
+    inline — do not assume you must remember it.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">AutoML (automated machine learning).</strong> A system that takes a raw dataset
+    and a metric and <em>automatically</em> produces a fitted model — choosing the algorithm, its
+    hyperparameters, and (often) the preprocessing, without a human tuning each by hand. The goal is to
+    turn the artisanal pipeline of L005–L018 into a push-button.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Hyperparameter optimization (HPO).</strong> Searching for the settings a model
+    does <em>not</em> learn from data — a tree's depth, a GBDT's learning rate, an MLP's width. We met it
+    in <a href="0017-hyperparameter-search.html">L017</a>: grid search tries a fixed lattice, and
+    <strong>random search</strong> (Bergstra &amp; Bengio 2012) beats it at equal budget when only a few
+    knobs matter, because it tries ~<code>n</code> distinct values on the important axis instead of
+    <code>√n</code>.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Algorithm selection.</strong> The other half of the choice: <em>which model
+    family</em> to use at all — logistic regression? random forest? gradient boosting? Traditionally a
+    human picks this up front and then tunes it. AutoML folds it into the search.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">CASH — Combined Algorithm Selection and Hyperparameter optimization.</strong>
+    The problem Auto-sklearn solves, named by Thornton et al. (2013, Auto-WEKA). Treat "which algorithm"
+    as one more (categorical) hyperparameter sitting <em>above</em> each model's own knobs, and search
+    the whole nested space at once:
+    <span class="formula">A*, λ* = argmin over (A ∈ algorithms, λ ∈ hyperparams of A)  of  ValidationLoss( A(λ) )</span>
+    So a single search jointly decides <em>both</em> the model and how it is configured — the core idea
+    of this lesson.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Bayesian optimization &amp; the surrogate model (SMAC).</strong> The search
+    strategy AutoML uses instead of blind grid/random. It fits a cheap <strong>surrogate</strong> model
+    (Auto-sklearn uses a random forest, in a method called <strong>SMAC</strong>) that predicts the
+    validation score of a configuration <em>without</em> running it, plus its uncertainty. It then picks
+    the next configuration to try by trading off <em>exploitation</em> (looks good) against
+    <em>exploration</em> (uncertain, could be good) — an <em>acquisition function</em>. The effect: it
+    spends its budget where the payoff is likeliest, so it usually needs fewer trials than random search
+    to reach a good configuration. (In our lab we use random search as an installable stand-in — the
+    <em>mechanism you must know</em> is CASH + select-by-validation; SMAC is the smarter way to pick the
+    next point.)
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Meta-learning, meta-features, warm-start.</strong> "Learning across datasets."
+    Auto-sklearn describes each dataset by a vector of <strong>meta-features</strong> — cheap summary
+    statistics (number of rows, number of features, class-imbalance ratio, skew, etc.). Offline, it
+    records which configurations worked well on ~140 reference datasets. Faced with a new dataset, it
+    finds the nearest reference datasets by meta-features and <strong>warm-starts</strong> the Bayesian
+    search from their winning configurations — so it does not begin from scratch.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Ensemble selection (Caruana et al. 2004).</strong> A search leaves behind a
+    whole <em>pool</em> of trained models, not just the winner. Ensemble selection builds a weighted
+    average greedily: start empty, then repeatedly <strong>add the pool model that most improves the
+    ensemble's validation score</strong>, <em>with replacement</em> (a strong model can be added several
+    times, giving it more weight). It is the leak-free cousin of the stacking from
+    <a href="0018-ensembling-stacking.html">L018</a> — no meta-learner to overfit, just a validated
+    weighted blend.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Feature engineering (manual).</strong> Turning raw columns into
+    <em>informative</em> ones using <strong>domain knowledge</strong> — ratios, date parts, aggregates
+    over related rows (<a href="0009-feature-engineering.html">L009</a>). This is the step AutoML
+    systems like Auto-sklearn <em>largely do not do</em>: they search models and generic preprocessing,
+    not domain-specific feature construction. Keep this distinction sharp — it is where the lesson lands.
+  </div>
+
+  <h2>What AutoML automates (1): the CASH search</h2>
+  <p>
+    Start with the heart of Auto-sklearn: it searches a <em>combined</em> space. In the paper this space
+    is large — roughly <strong>15 classifiers</strong>, about a dozen feature-preprocessing methods, a
+    few data-preprocessing methods, and <strong>~110 hyperparameters</strong> in total, all wired into
+    one structured configuration space. A single Bayesian search then hunts for the
+    <code>(algorithm, hyperparameters)</code> pair with the best <em>validation</em> score — solving the
+    CASH problem defined above.
+  </p>
+  <p>
+    To see it concretely, here is a <em>real</em> 40-iteration search we ran over a small CASH space —
+    four algorithms (logistic regression, random forest, extra-trees, HistGB) and their hyperparameters
+    — on <code>credit_g</code>. Held fixed: the preprocessing and the train/validation split. Varied:
+    the algorithm <em>and</em> its hyperparameters, drawn each iteration. Measured: the validation
+    ROC-AUC of each configuration, and the best found so far. Filter by algorithm to see how the budget
+    is spread.
+  </p>
+
+  <div id="cash-search-viz"></div>
+
+  <p>
+    Read the picture. The search does not commit to one model family — it evaluates configurations in
+    <em>every</em> algorithm lane (that is the "combined" in CASH). The black step line is the
+    best-validation-AUC-so-far, and it <strong>climbs with budget</strong> exactly like the L024 budget
+    curve: <strong>0.796 → 0.817</strong>, reaching its peak at iteration 15 with a HistGB
+    configuration. The single rule doing all the work is the one from
+    <a href="0004-grouped-nested-cv.html">L004</a>/<a href="0017-hyperparameter-search.html">L017</a>:
+    <em>keep the configuration with the best validation score</em>. AutoML's contribution is to run that
+    search over models <em>and</em> knobs together, and (with SMAC) to choose the next point cleverly.
+  </p>
+
+  <h2>What AutoML automates (2): meta-learning warm-start</h2>
+  <p>
+    A cold Bayesian search wastes its first several trials orienting itself. Auto-sklearn's first
+    extension over Auto-WEKA removes that waste: using the <strong>meta-features</strong> defined above,
+    it identifies which past datasets most resemble the new one and <strong>warm-starts</strong> the
+    search from the configurations that won there. Think of it as starting the climb near a previously
+    discovered summit instead of at sea level. It does not change <em>what</em> is being searched (still
+    CASH); it changes <em>where the search begins</em>, which matters most under a tight time budget.
+    (Our small demo has no meta-learning store, so its curve starts cold — the real system's early
+    iterations would be better.)
+  </p>
+
+  <h2>What AutoML automates (3): ensemble selection</h2>
+  <p>
+    A search trains dozens of models and then, naively, throws all but the best away. Auto-sklearn's
+    second extension keeps them: it runs <strong>greedy ensemble selection</strong> (Caruana 2004) over
+    the pool. Here is that procedure on the same <code>credit_g</code> search — the single best-validation
+    model versus the greedy weighted blend. Toggle between them.
+  </p>
+
+  <div id="ensemble-select-viz"></div>
+
+  <p>
+    The single best configuration (a HistGB) scores <strong>0.824</strong> on the held-out test set.
+    The greedy ensemble — built by repeatedly adding whichever pool model most improves the
+    <em>validation</em> AUC, with replacement — ends up a blend of <strong>three</strong> different
+    algorithms (LogReg, HistGB, ExtraTrees) and scores <strong>0.831</strong>, a
+    <strong>+0.007</strong> gain <em>for free</em>: those models were already trained during the search.
+    The mechanism is the same as L018 stacking — diversity plus a leak-free selector — but simpler
+    (a weighted average chosen on validation data, no meta-learner to overfit). Note the honest caveat
+    from L018: on a 1000-row single table the ensemble gain is real but small; ensembling is not magic.
+  </p>
+
+  <h2>Predict first</h2>
+  <p>
+    We are about to pit three things against each other on <code>credit_g</code>, scored by ROC-AUC over
+    5 seeds: an <strong>untuned default XGBoost</strong>, a <strong>hand-tuned XGBoost</strong> (random
+    search over its hyperparameters, L017 discipline), and the <strong>tiny AutoML</strong> (CASH search
+    + ensemble selection) built from the mechanisms above. Before you see the numbers, commit a guess.
+  </p>
+  <div id="predict-bakeoff"></div>
+
+  <h2>The honest bake-off: AutoML ties a tuned XGBoost</h2>
+  <p>
+    Here is the result. Bars are mean test ROC-AUC over 5 seeds; whiskers are ±1 standard deviation.
+  </p>
+
+  <div id="automl-bakeoff-viz"></div>
+
+  <table>
+    <thead><tr><th>Model</th><th>ROC-AUC (mean ± sd)</th><th>What it represents</th></tr></thead>
+    <tbody>
+      <tr><td>default XGBoost</td><td class="n bad">0.775 ± 0.025</td><td>no search at all — out-of-the-box settings</td></tr>
+      <tr><td>tuned XGBoost</td><td class="n win">0.806 ± 0.016</td><td>manual: random search over XGB's own hyperparameters</td></tr>
+      <tr><td>tiny AutoML</td><td class="n win">0.803 ± 0.020</td><td>CASH search across 4 algorithms + greedy ensemble</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Two readings, and hold both:
+  </p>
+  <ul>
+    <li><strong>The big jump is <em>tuning</em>, not AutoML.</strong> Going from the untuned default
+      (0.775) to a tuned XGBoost (0.806) buys <strong>+0.031</strong> — most of the available gain. The
+      lesson of L017 stands: <em>searching at all</em> is what matters. Reporting an untuned model is the
+      same mistake as the weak neural baseline in L028.</li>
+    <li><strong>AutoML ties the hand-tuned XGBoost.</strong> The tiny AutoML (0.803) sits
+      <strong>inside the tuned XGB's error band</strong> (−0.002; the whiskers overlap). It searched four
+      algorithms and ensembled them, at several times the compute — and landed in a statistical tie
+      (echo <a href="0023-statistical-comparison.html">L023</a>: a gap this small, with these error bars,
+      is not a real difference). It did not <em>lose</em> — but it did not unlock accuracy a competent
+      human with one strong model family could not.</li>
+  </ul>
+  <p>
+    This is the honest, and slightly deflationary, finding. On typical tabular data a well-tuned GBDT is
+    already close to the ceiling; AutoML's value is that it reaches that ceiling <strong>with far less
+    human effort and more robustly across datasets</strong> — you do not have to know that a GBDT is the
+    right family, or tune it well, or remember to ensemble. That convenience is genuinely valuable (it is
+    why Auto-sklearn won the ChaLearn AutoML challenge). It is just not a new well of predictive power.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-automl"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> AutoML is the strongest possible version of "just automate the
+    single-table pipeline," so where it stops is exactly where the relational bet begins. Three
+    consequences. <em>(1) It sharpens the bar, on one axis only.</em> An honest single-table baseline can
+    now be "whatever AutoML finds," which forecloses the cheap objection that an RDL win merely beat a
+    lazily-tuned model — but AutoML searches <em>models and knobs</em>, never the <strong>feature
+    representation</strong>, so it cannot rescue signal the flattening step already destroyed (C1).
+    <em>(2) It automates the wrong half.</em> Auto-sklearn explicitly does <em>not</em> do domain feature
+    engineering; on relational data the highest-value features are cross-table aggregates
+    (<a href="0009-feature-engineering.html">L009</a>, DFS/Featuretools), and constructing those by hand
+    is precisely the lossy, leakage-prone labor (<a href="0002-design-matrix-leakage.html">L002</a>) that
+    RDL proposes to <em>learn end-to-end</em> (C2). AutoML tunes the model on top of a flattened table;
+    RDL changes the table. <em>(3) The tie is the tell.</em> That a four-algorithm AutoML only ties a
+    tuned GBDT confirms L024–L028: within the single-table world the returns to cleverer <em>search</em>
+    are nearly exhausted, so the remaining upside must come from a better <em>representation</em> — which
+    is the thesis (C4).
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>AutoML ≠ automated feature engineering.</strong> Auto-sklearn searches algorithms,
+      hyperparameters, and <em>generic</em> preprocessing (scaling, PCA, feature selection). It does not
+      invent domain features. Systems that <em>do</em> generate features — Featuretools/DFS (L009),
+      later AutoFeat — are a different tool; they are the manual bridge RDL later learns.</li>
+    <li><strong>Random search is our installable stand-in for SMAC.</strong> Auto-sklearn's real search
+      is Bayesian (SMAC), which is more sample-efficient per trial. We used random search in the demo/lab
+      because it installs anywhere and Bergstra &amp; Bengio (L017) show it is a strong baseline. The
+      <em>mechanism</em> to remember is CASH + select-by-validation + ensemble, not the exact optimizer.</li>
+    <li><strong>Compute is not free.</strong> The AutoML result cost several times the wall-clock of the
+      tuned XGBoost for a tie. On a fixed budget, spending it all tuning one strong family can beat
+      spreading it across many — an honest cost accounting is part of the comparison
+      (<a href="0024-grinsztajn-benchmark.html">L024</a>'s budget-curve mindset).</li>
+    <li><strong>Same evaluation discipline applies.</strong> AutoML can leak just as easily as a human:
+      it must select on a proper validation split, respect temporal/grouped structure
+      (<a href="0021-data-splits-in-the-wild.html">L021</a>), and be scored on a truly held-out test set.
+      "The machine chose it" is not a defence against leakage.</li>
+    <li><strong>"No free lunch" for search, too.</strong> AutoML's edge is largest when you <em>don't</em>
+      already know the right model — on heterogeneous problems, or for non-experts. When you know a tuned
+      GBDT is the answer (as here), the automation mostly saves labor.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The core paper (skim): <strong>Matthias Feurer, Aaron Klein, Katharina Eggensperger, Jost Tobias
+    Springenberg, Manuel Blum &amp; Frank Hutter (2015), <em>Efficient and Robust Automated Machine
+    Learning</em></strong>, NeurIPS 2015 —
+    <a href="https://papers.nips.cc/paper/2015/hash/11d0e6287202fced83f79975ec59a3a6-Abstract.html">Auto-sklearn</a>.
+    Read <strong>§2 (the CASH problem statement)</strong> and <strong>§3 (the two extensions:
+    meta-learning warm-start and automated ensemble construction)</strong>; skim §6 for the results.
+    Background you can skip but should know exists: the CASH framing and the term come from
+    <strong>Thornton, Hutter, Hoos &amp; Leyton-Brown (2013), <em>Auto-WEKA</em></strong>, and the
+    ensemble trick is <strong>Caruana, Niculescu-Mizil, Crew &amp; Ksikes (2004), <em>Ensemble Selection
+    from Libraries of Models</em></strong>.
+  </p>
+
+  <h2>Lab — build a tiny AutoML and race it against a tuned XGBoost</h2>
+  <p>
+    Notebook <code>0029-manual-fe-vs-automl.ipynb</code> (Tier A — real <code>credit_g</code> via
+    <code>relkit</code>): you implement the two mechanisms that <em>are</em> AutoML — the
+    <strong>CASH selection</strong> (keep the config with the best validation score, over a combined
+    algorithm+hyperparameter space) and the <strong>greedy ensemble-selection pick</strong> (the Caruana
+    argmax) — then run the honest bake-off: default XGBoost vs a tuned XGBoost vs your tiny AutoML.
+    Reproduction targets: the ensemble beats the single best config, and the tuned XGBoost and the AutoML
+    end in a tie while both clear the untuned default.
+    <a href="../labs/html/0029-manual-fe-vs-automl.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why "select by validation" is the whole game, how greedy ensemble selection differs from L018
+    stacking, or why AutoML tying a tuned GBDT is <em>good</em> news for the relational thesis? Ask your
+    teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0028-mlp-resnet-baselines.html">← Lesson 028</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0029-manual-fe-vs-automl.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/cash-search-viz.js"></script>
+<script src="../assets/ensemble-select-viz.js"></script>
+<script src="../assets/automl-bakeoff-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 29, count: 3 });
+
+  CashSearchViz.mount(document.getElementById("cash-search-viz"), {});
+  EnsembleSelectViz.mount(document.getElementById("ensemble-select-viz"), {});
+  AutomlBakeoffViz.mount(document.getElementById("automl-bakeoff-viz"), {});
+
+  Predict.mount(document.getElementById("predict-bakeoff"), {
+    prompt: "On credit_g (5 seeds): an untuned default XGBoost, a hand-tuned XGBoost, and a 4-algorithm AutoML with ensembling. How do they rank by ROC-AUC?",
+    options: [
+      { label: "AutoML clearly wins — searching many models beats one tuned family", value: "automl" },
+      { label: "Tuned XGB ≈ AutoML (a tie), both well above the untuned default", value: "tie" },
+      { label: "Default XGBoost wins — extra search just overfits the validation set", value: "default" }
+    ],
+    correct: "tie",
+    reveal: "Default 0.775 → tuned XGB 0.806 (+0.031: the big jump is TUNING) ≈ tiny AutoML 0.803 (−0.002, bands overlap = a tie). AutoML did not beat a competently tuned GBDT; it reached the same ceiling with less human effort."
+  });
+
+  Teachback.mount(document.getElementById("teachback-automl"), {
+    prompt: "In your own words: what does AutoML (Auto-sklearn) automate, what does it NOT do, and why did it only tie a hand-tuned XGBoost on credit_g?",
+    points: [
+      "It automates the CASH problem: jointly search WHICH algorithm and its hyperparameters (algorithm selection + HPO as one combined space), selecting the config with the best VALIDATION score — Auto-sklearn does this with Bayesian optimization (SMAC)",
+      "Two extensions over Auto-WEKA: meta-learning WARM-START (start the search from configs that worked on similar past datasets, found via meta-features) and automated ENSEMBLE construction (Caruana greedy selection over the models already trained — free diversity, e.g. +0.007 here)",
+      "It does NOT do domain feature engineering (it searches models + generic preprocessing, not new features), and it does NOT escape the single-table paradigm — it tunes a model on top of an already-flattened table",
+      "On credit_g it tied the tuned XGB (0.803 vs 0.806, bands overlap): the big jump was tuning at all (default 0.775 → 0.806, +0.031); across four algorithms + ensembling AutoML only matched a competently tuned GBDT, at far higher compute",
+      "Why the tie matters for the thesis: within the single-table world the returns to cleverer SEARCH are nearly exhausted, so remaining upside must come from a better REPRESENTATION (learning over relational structure), which AutoML never touches"
+    ],
+    model: "AutoML (Auto-sklearn) automates the CASH problem — Combined Algorithm Selection and Hyperparameter optimization — treating 'which algorithm' as a top-level categorical hyperparameter above each model's own knobs and searching the whole space at once, keeping the configuration with the best validation score. Auto-sklearn runs that search with Bayesian optimization (a random-forest surrogate, SMAC) and adds two things over Auto-WEKA: meta-learning warm-start (use cheap meta-features to find similar past datasets and begin the search from their winning configs) and automated ensemble construction (Caruana greedy ensemble selection over the pool of models the search already trained — diversity for free, +0.007 on our run). What it does NOT do is invent domain features (it searches models and generic preprocessing, not feature construction) or change the representation — it tunes a model on top of an already-flattened single table. On credit_g it tied a hand-tuned XGBoost (0.803 vs 0.806, error bands overlapping) while both cleared the untuned default (0.775): the decisive gain was tuning at all (+0.031), and four algorithms plus ensembling only matched one well-tuned GBDT at much higher compute. That tie is exactly the point for the thesis: the returns to smarter search inside the single-table world are nearly used up, so the remaining accuracy must come from a better representation — learning over the database's relational structure — which AutoML never touches."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "What is the CASH problem that Auto-sklearn solves?",
+    options: [
+      { label: "Jointly choosing the algorithm AND its hyperparameters in one combined search, selected by validation score", value: "a" },
+      { label: "Compressing a trained model so it fits in a fixed memory budget", value: "b" },
+      { label: "Generating new domain features automatically from related tables", value: "c" },
+      { label: "Calibrating predicted probabilities on a held-out split", value: "d" }
+    ],
+    correct: "a",
+    explain: "CASH = Combined Algorithm Selection and Hyperparameter optimization: treat 'which model' as a top-level categorical hyperparameter above each model's own knobs and search the whole space at once, keeping the best-validation config. It is about search, not feature construction."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Greedy ensemble selection (Caruana) took the single best config from 0.824 to 0.831 on test. How does it work, and why is it safe?",
+    options: [
+      { label: "Start empty and repeatedly add the pool model that most improves VALIDATION AUC (with replacement) — a validated weighted blend, no meta-learner to overfit", value: "a" },
+      { label: "Retrain one big model on all the pooled predictions using the test labels", value: "b" },
+      { label: "Average every model in the pool with equal weight, ignoring validation", value: "c" },
+      { label: "Keep only the single highest-validation model and discard the rest", value: "d" }
+    ],
+    correct: "a",
+    explain: "It greedily grows a weighted average by picking the model that most improves validation AUC (with replacement, so strong models get more weight). The models were already trained during the search, so the +0.007 diversity gain is essentially free — and selecting on validation keeps it leak-free (cf. L018 stacking)."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "On credit_g: default XGB 0.775, tuned XGB 0.806, tiny AutoML 0.803. What is the right lesson?",
+    options: [
+      { label: "The big gain is TUNING at all (+0.031); AutoML then only TIES a tuned GBDT — it buys automation/robustness, not new accuracy, and never touches the representation", value: "a" },
+      { label: "AutoML is strictly better and should always replace manual modelling", value: "b" },
+      { label: "The default XGBoost is fine; tuning and AutoML are both a waste of time", value: "c" },
+      { label: "Ensembling four algorithms always beats any single tuned model by a wide margin", value: "d" }
+    ],
+    correct: "a",
+    explain: "Most of the available accuracy comes from searching at all (default → tuned, +0.031). A four-algorithm AutoML with ensembling then lands inside the tuned XGB's error band — a tie — at far higher compute. It automates the single-table pipeline; the thesis is that the remaining upside lives in the representation, which AutoML leaves untouched."
+  });
+</script>
+</body>
+</html>

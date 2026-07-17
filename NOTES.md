@@ -342,6 +342,45 @@
 - Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
   last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
 
+## Session 29 — 2026-07-17
+
+- **Lesson 028 complete** — user said "lesson 28 done" (no EXIT ticket → no rubric score, per the
+  L017–L027 precedent). Record [[learning-records/0069-lesson-028-complete.md]]. (Housekeeping held this
+  time: wrote both the complete record and the L029 publish record in the same session.)
+- **Lesson 029 published** — Manual FE vs AutoML (curriculum lec 029, **Feurer, Klein, Eggensperger,
+  Springenberg, Blum & Hutter 2015**, Auto-sklearn, NeurIPS 2015 — §2 CASH + §3 the two extensions).
+  Background: Thornton 2013 (Auto-WEKA, the CASH framing) + Caruana 2004 (ensemble selection). Single
+  skill: know what AutoML automates — **CASH** (jointly search algorithm + hyperparameters, select by
+  validation) via Bayesian opt (SMAC), **meta-learning warm-start**, **automated ensemble construction**
+  — and run the fair AutoML-vs-tuned-XGB fight; AutoML **ties** a tuned GBDT (buys automation, not
+  accuracy) and never touches the representation. Record
+  [[learning-records/0070-lesson-029-published.md]]. **Third application of standard #17** (thoroughness)
+  — full vocabulary section (AutoML, HPO, algorithm selection, CASH + argmin, surrogate/SMAC,
+  meta-features/warm-start, ensemble selection, manual FE) all from first principles.
+- **Three reusable viz** (standard #9, one per beat): `assets/cash-search-viz.js` (REAL 40-iter CASH
+  trace on credit_g — dots by algorithm + best-so-far step 0.796→0.817 + ★ winner; filter by algorithm),
+  `assets/ensemble-select-viz.js` (Caruana greedy ensemble vs single best; toggle shows the 3-algo blend
+  + the +0.007 test gain), `assets/automl-bakeoff-viz.js` (default/tuned XGB/AutoML with ±sd whiskers;
+  tuning is the jump +0.031, AutoML ties −0.002). Headless `labs/_viz_check_l029.js` 15/15; **browser MCP
+  still unavailable** → headless only.
+- **Verified live (`labs/_verify_l029.py`, credit_g Tier A):** CASH search (seed 0, budget 40) visits all
+  4 algorithms, best-val 0.796→0.817 (winner HistGB, single-best TEST 0.824); greedy ensemble (10 members
+  across 3 algos) TEST **0.831** (+0.007, free). Bake-off (5 seeds) ROC-AUC: default XGB **0.775** → tuned
+  XGB **0.806** (**+0.031**, the real payoff is tuning at all) ≈ tiny AutoML **0.803** (**−0.002**, bands
+  overlap = a tie). `labs/_dump_l029_trace.py` produced the real per-iteration trace for cash-search-viz.
+- **Auto-sklearn NOT installed** (Linux/version-fragile); the demo/lab reproduce its *mechanisms* on
+  sklearn + xgboost with **random search standing in for SMAC** (installable; Bergstra & Bengio 2012
+  justify it). Mechanism taught = CASH + select-by-validation + Caruana ensemble, not the optimizer.
+- **Lab** `labs/0029-manual-fe-vs-automl.ipynb` — Tier A (credit_g). Crucial fragment (Task 1) = the
+  greedy ensemble-selection pick (`cand = (ens_sum + val_probs[j])/(n_added+1)`); Task 2 = CASH selection
+  (`argmax` over validation) + single-vs-ensemble; Task 3 = bake-off (blank = tuned-XGB keep-best-val).
+  Student blank (4 `____`, 0 outputs); solution executed clean & gitignored (default 0.788 < tuned 0.804 ≈
+  AutoML 0.810). Manifest → 29; `labs/html/0029-*.html` rendered.
+- **Env note:** `.venv` from Session 28 already had torch/xgboost/sklearn 1.9.0 — **no bootstrap needed**
+  this session (the recurring "preinstall the lab venv incl. CPU torch" ask from Sessions 22–28 paid off).
+- Next: Lesson 030 — **Q3 checkpoint** (Grinsztajn 2022 full; write a 1-page benchmark report),
+  consolidating the whole Q3 arc (L021–L029).
+
 ## Session 28 — 2026-07-17
 
 - **Lesson 027 complete** — user said "lesson 27 done" (no EXIT ticket → no rubric score, per the
@@ -450,6 +489,7 @@ Track with ✓ as completed:
 - [x] Y1: Wolpert 1992 §1–3 (stacked generalization / out-of-fold meta-features) assigned in Lesson 018 (OOF blend + leak contrast + StackingClassifier in lab)
 - [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019; **§3–4 (benchmark construction + random-search budget-curve protocol) assigned in Lesson 024** (single-dataset protocol reproduction on credit-g in lab); §5.2 (smoothness) assigned in Lesson 025, §5.4 (rotation, incl. Ng 2004) assigned in Lesson 026, and §5.3 (uninformative features) assigned in Lesson 027 (add/remove-junk ablation + gate in lab) — Grinsztajn arc complete
 - [x] Y1: Gorishniy et al. 2021 (`2106.11959`) — §3.2 (MLP + ResNet baselines) assigned in Lesson 028 (residual block `forward` implemented in the first PyTorch lab; depth-degradation + honest bake-off reproduced); He et al. 2015 (`1512.03385`) as the residual/degradation-problem backing
+- [x] Y1: Feurer et al. 2015 (Auto-sklearn) — §2 (CASH) + §3 (meta-learning warm-start + ensemble selection) assigned in Lesson 029 (tiny AutoML built on sklearn+xgboost: CASH selection + Caruana greedy ensemble implemented; AutoML-vs-tuned-XGB bake-off reproduced — AutoML ties a tuned GBDT); Thornton et al. 2013 (Auto-WEKA, CASH framing) + Caruana et al. 2004 (ensemble selection) as backing
 - [~] Y1/Y2: Rubachev 2024 (TabReD, `2406.19380`) — abstract + §1 + §5.4 previewed in Lesson 021 (random vs temporal splits; optimism gap synthetic demo in lab); full core read is Y2 lec 055
 - [x] Y1: Kapoor & Narayanan 2022 (`2207.07048`) — abstract + §2 (8-type taxonomy) + §5 (civil-war reproduction) + §6 (model info sheet) assigned in Lesson 022 (illegitimate-feature collapse + FE-classification + model info sheet in lab)
 - [x] Y1: Demšar 2006 (JMLR 7, no arXiv) — §3.2 (Wilcoxon) + §3.5 (Friedman + Nemenyi CD) assigned in Lesson 023; Nadeau & Bengio 2003 (corrected resampled t-test) + Dietterich 1998 (5×2cv/McNemar) as the single-dataset companions (corrected-t + Friedman/CD implemented in lab)

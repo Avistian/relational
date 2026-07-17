@@ -458,6 +458,30 @@
       ],
       correct: "a",
       explain: "Gorishniy 2021's contribution is methodological: many 'SOTA' DL papers failed to beat a properly-tuned MLP/ResNet. On small categorical data a tuned GBDT still wins (credit_g: GBDT 0.793 vs MLP 0.752 ≈ ResNet 0.743) — no universal winner. Building the neural baseline correctly makes the comparison fair, which is the bar an RDL win must clear."
+    },
+    {
+      id: "l029-cash", lesson: 29, quarter: "Q3", concept: "automl",
+      question: "What does AutoML (Auto-sklearn) actually automate?",
+      options: [
+        { label: "The CASH problem: jointly search which algorithm AND its hyperparameters, select by validation", value: "a" },
+        { label: "The invention of new domain features from the related tables", value: "b" },
+        { label: "The choice of which rows go into the training and test sets", value: "c" },
+        { label: "The conversion of a relational database into one design matrix", value: "d" }
+      ],
+      correct: "a",
+      explain: "CASH = Combined Algorithm Selection and Hyperparameter optimization — treat 'which model' as a top-level categorical knob above each model's own knobs and search jointly (Bayesian opt/SMAC), keeping the best-validation config. It does NOT engineer domain features or change the representation."
+    },
+    {
+      id: "l029-ties", lesson: 29, quarter: "Q3", concept: "automl", misconception: true,
+      question: "AutoML searched 4 algorithms and ensembled them, yet only matched a hand-tuned XGBoost on credit_g. What is the honest reading?",
+      options: [
+        { label: "The big gain is tuning at all (default 0.775 → tuned 0.806); AutoML then ties it — automation, not new accuracy, and it never touches the representation", value: "a" },
+        { label: "AutoML is strictly superior and should always replace manual modelling", value: "b" },
+        { label: "The untuned default was fine; both tuning and AutoML wasted compute", value: "c" },
+        { label: "Ensembling four algorithms always beats a single tuned model by a wide margin", value: "d" }
+      ],
+      correct: "a",
+      explain: "Most available accuracy comes from searching at all (+0.031 default→tuned). A 4-algorithm AutoML with ensembling lands inside the tuned XGB's error band (0.803 vs 0.806) at far higher compute — it buys convenience/robustness. Remaining upside must come from a better representation (the relational thesis), which AutoML leaves untouched."
     }
   ];
 })(window);
