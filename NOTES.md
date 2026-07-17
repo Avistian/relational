@@ -342,6 +342,53 @@
 - Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
   last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
 
+## Session 28 — 2026-07-17
+
+- **Lesson 027 complete** — user said "lesson 27 done" (no EXIT ticket → no rubric score, per the
+  L017–L026 precedent). **Backfilled the missing L027 records:** the L027 publish session (merged PR
+  #11) shipped the lesson/lab but never wrote a learning record or NOTES entry — reconstructed as
+  [[learning-records/0066-lesson-027-published.md]] + [[learning-records/0067-lesson-027-complete.md]]
+  from the committed lesson. (Housekeeping note for future sessions: write the record in the same
+  session you publish.)
+- **Lesson 028 published** — MLP & ResNet tabular baselines (curriculum lec 028, **Gorishniy, Rubachev,
+  Khrulkov & Babenko 2021**, arXiv `2106.11959`, §3.2 + §5; residual idea He et al. 2015, `1512.03385`).
+  Pivots Q3 from *why trees win* into *building the honest neural contestant*. Single skill: build the
+  tabular ResNet (embed → pre-activation residual blocks → head), explain why the **skip connection**
+  (`x + f(x)`, free identity) fixes the **degradation problem**, and know a *tuned* MLP/ResNet is the
+  honest neural baseline a GBDT (and an RDL result) must beat. Record:
+  [[learning-records/0068-lesson-028-published.md]]. **Second application of standard #17** (thoroughness)
+  — full vocabulary section defining linear layer, ReLU, BatchNorm, dropout, epoch/minibatch/Adam,
+  residual connection, degradation problem, all from first principles.
+- **FIRST PyTorch lesson/lab.** Installed **torch 2.13.0+cpu** into `.venv` and added `torch>=2.2` to
+  `requirements-labs.txt`. This is the neural era — Year 2+ (and the RDL stack) all use PyTorch.
+- **Three reusable viz** (standard #9, one per beat): `assets/resnet-block-viz.js` (block anatomy, skip
+  ON/OFF toggle → `+` node appears/disappears), `assets/depth-trainability-viz.js` (test-acc vs depth,
+  plain degrades / ResNet holds; "show training accuracy" toggle exposes the degradation), and
+  `assets/baseline-bakeoff-viz.js` (MLP/ResNet/GBDT on credit_g with ±sd; AUC/acc toggle). Headless
+  `labs/_viz_check_l028.js` 18/18; **browser MCP still unavailable** → headless only.
+- **Verified live (`labs/_verify_l028.py` + executed solution):** depth trainability (synthetic, same
+  arch skip on/off, BatchNorm on both) — plain **test** 0.917→0.866 and, decisively, plain **train**
+  1.000→0.927 over depth 1→32 (train falls ⇒ **degradation/optimization, not overfitting**), while the
+  ResNet holds ~0.90 test / ~1.00 train. Honest **NOT vanishing gradients** framing (BatchNorm present;
+  the skip's free identity is the mechanism — He et al. distinguish the two). Bake-off on **credit_g**
+  (Tier A, real OpenML, 5 seeds): ROC-AUC MLP **0.752** ≈ ResNet **0.743** (tie), GBDT **0.793** ahead —
+  **no universal winner**; GBDT wins small categorical data (consistent with L024–L027).
+- **Honest-baseline discipline reinforced (Gorishniy's real point):** many "SOTA" tabular-DL papers
+  failed to beat a *properly-tuned* MLP/ResNet; the single-table bar an RDL win must clear is a tuned
+  GBDT **and** a tuned ResNet. ResNet≠FT-Transformer (attention baseline deferred to Y2 Q1, where
+  per-feature embeddings start to break the L026/L027 biases).
+- **Lab** `labs/0028-mlp-resnet-baselines.ipynb` — Tier A (bake-off, credit_g via `relkit`) + Tier C
+  (depth mechanism). Crucial fragment = `ResNetBlock.forward` (`return x + f(x)` vs `f(x)`). Lab uses a
+  shorter 40-epoch budget so the degradation is *unmistakable* (plain train collapses 0.998→0.496 by
+  depth 16); lesson/viz quote the gentler 60-epoch verify numbers — same mechanism, noted in the record.
+  Student blank (7 `____`, 0 outputs); solution executed clean & gitignored. Manifest → 28; all labs
+  re-rendered.
+- **Env note:** no venv preinstalled again; uv-bootstrapped `.venv` + installed CPU torch (~1–2 min).
+  **Env-setup agent should now preinstall the lab venv INCLUDING `torch` (CPU)** — this is a recurring
+  cost and torch is heavier than the sklearn stack; every Year 2+ lab will need it.
+- Next: Lesson 029 (Manual FE vs AutoML — Feurer et al. 2015 Auto-sklearn, skim; compare tuned XGB),
+  then L030 = Q3 checkpoint (1-page benchmark report).
+
 ## Session 11 — 2026-06-29
 
 - User started **Lesson 007** (class imbalance).
@@ -401,7 +448,8 @@ Track with ✓ as completed:
 - [x] Y1: Prokhorenkova 2018 CatBoost §3 (ordered TS) + §4 (ordered boosting) assigned in Lesson 016 (ordered TS implemented in lab)
 - [x] Y1: Bergstra & Bengio 2012 §1 (random search / low effective dimensionality) assigned in Lesson 017 (grid vs random + nested CV implemented in lab)
 - [x] Y1: Wolpert 1992 §1–3 (stacked generalization / out-of-fold meta-features) assigned in Lesson 018 (OOF blend + leak contrast + StackingClassifier in lab)
-- [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019; **§3–4 (benchmark construction + random-search budget-curve protocol) assigned in Lesson 024** (single-dataset protocol reproduction on credit-g in lab); §5.2 (smoothness) assigned in Lesson 025 and §5.4 (rotation, incl. Ng 2004) assigned in Lesson 026; §5.3 (uninformative features) still pending in L027
+- [~] Y1: Grinsztajn 2022 — abstract + §1 (three inductive biases) previewed in Lesson 019; **§3–4 (benchmark construction + random-search budget-curve protocol) assigned in Lesson 024** (single-dataset protocol reproduction on credit-g in lab); §5.2 (smoothness) assigned in Lesson 025, §5.4 (rotation, incl. Ng 2004) assigned in Lesson 026, and §5.3 (uninformative features) assigned in Lesson 027 (add/remove-junk ablation + gate in lab) — Grinsztajn arc complete
+- [x] Y1: Gorishniy et al. 2021 (`2106.11959`) — §3.2 (MLP + ResNet baselines) assigned in Lesson 028 (residual block `forward` implemented in the first PyTorch lab; depth-degradation + honest bake-off reproduced); He et al. 2015 (`1512.03385`) as the residual/degradation-problem backing
 - [~] Y1/Y2: Rubachev 2024 (TabReD, `2406.19380`) — abstract + §1 + §5.4 previewed in Lesson 021 (random vs temporal splits; optimism gap synthetic demo in lab); full core read is Y2 lec 055
 - [x] Y1: Kapoor & Narayanan 2022 (`2207.07048`) — abstract + §2 (8-type taxonomy) + §5 (civil-war reproduction) + §6 (model info sheet) assigned in Lesson 022 (illegitimate-feature collapse + FE-classification + model info sheet in lab)
 - [x] Y1: Demšar 2006 (JMLR 7, no arXiv) — §3.2 (Wilcoxon) + §3.5 (Friedman + Nemenyi CD) assigned in Lesson 023; Nadeau & Bengio 2003 (corrected resampled t-test) + Dietterich 1998 (5×2cv/McNemar) as the single-dataset companions (corrected-t + Friedman/CD implemented in lab)

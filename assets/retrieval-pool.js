@@ -434,6 +434,30 @@
       ],
       correct: "a",
       explain: "At each node the tree keeps only the highest-gain split; a pure-noise column removes almost no impurity (root-split gain ~118× lower than an informative feature), so it is gated out for free. Caveat: deep spurious noise splits are why MDI importance over-credits noise — measure root gain, not MDI."
+    },
+    {
+      id: "l028-skip", lesson: 28, quarter: "Q3", concept: "residual-connection", misconception: true,
+      question: "A plain MLP loses accuracy as you add layers — and its TRAINING accuracy falls too. What is going on, and what fixes it?",
+      options: [
+        { label: "The degradation problem (an optimization failure, not overfitting); a skip connection fixes it by making the identity map free", value: "a" },
+        { label: "Overfitting — the deeper net memorized the training set, so remove layers", value: "b" },
+        { label: "Vanishing gradients, which only a bigger learning rate can fix", value: "c" },
+        { label: "The extra layers added uninformative features that the net cannot gate out", value: "d" }
+      ],
+      correct: "a",
+      explain: "Training accuracy falling rules out overfitting — the deep plain net can't even fit the data (degradation, He et al. 2015). A residual block outputs x + f(x), so f≈0 makes the block an identity for free; a deep ResNet can always fall back to a shallow solution. Not vanishing gradients (both nets use BatchNorm). Demo: plain train 1.000→0.927 (d32), ResNet holds ~1.00."
+    },
+    {
+      id: "l028-baseline", lesson: 28, quarter: "Q3", concept: "honest-baseline",
+      question: "What is the 'honest' neural baseline a new tabular DL model (or an RDL result) must beat?",
+      options: [
+        { label: "A properly-tuned MLP and ResNet (Gorishniy 2021) — plus a tuned GBDT; weak baselines flatter fake wins", value: "a" },
+        { label: "An untuned single-layer MLP with default settings", value: "b" },
+        { label: "The best transformer architecture from the latest paper, untuned", value: "c" },
+        { label: "Whatever model scores highest on the training set", value: "d" }
+      ],
+      correct: "a",
+      explain: "Gorishniy 2021's contribution is methodological: many 'SOTA' DL papers failed to beat a properly-tuned MLP/ResNet. On small categorical data a tuned GBDT still wins (credit_g: GBDT 0.793 vs MLP 0.752 ≈ ResNet 0.743) — no universal winner. Building the neural baseline correctly makes the comparison fair, which is the bar an RDL win must clear."
     }
   ];
 })(window);

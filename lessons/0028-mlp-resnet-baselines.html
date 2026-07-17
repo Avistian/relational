@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 028 — MLP &amp; ResNet Tabular Baselines</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+
+    /* shared viz frames */
+    .resnet-block-viz, .depth-trainability-viz, .baseline-bakeoff-viz {
+      margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .rnb-svg, .dtr-svg, .bko-svg { display: block; max-width: 520px; margin: 0.25rem auto; }
+    .rnb-io { font-family: var(--font-mono); font-size: 12px; fill: var(--fg, #222); font-weight: 600; }
+    .rnb-op { font-family: var(--font-sans); font-size: 11px; fill: var(--fg, #222); font-weight: 600; }
+    .rnb-opd { font-family: var(--font-sans); font-size: 8.5px; fill: var(--muted); }
+    .rnb-fx { font-family: var(--font-mono); font-size: 12px; fill: #2e6fb0; font-weight: 600; }
+    .rnb-plus { font-family: var(--font-mono); font-size: 15px; fill: #1e6b3c; font-weight: 700; }
+    .rnb-skip { font-family: var(--font-sans); font-size: 9.5px; fill: #1e6b3c; }
+    .rnb-noskip { font-family: var(--font-sans); font-size: 9.5px; fill: #b03a2e; }
+    .dtr-tick, .bko-tick { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+    .dtr-lab, .bko-lab { font-family: var(--font-sans); font-size: 10px; fill: var(--muted); }
+    .dtr-leg, .bko-leg { font-family: var(--font-sans); font-size: 10px; fill: var(--fg, #222); }
+    .bko-val { font-family: var(--font-mono); font-size: 10px; fill: var(--fg, #222); font-weight: 600; }
+    .rnb-readout, .dtr-readout, .bko-readout { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.55; }
+    .rnb-caption, .dtr-caption, .bko-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .rnb-ctl, .dtr-ctl, .bko-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .rnb-ctl button, .dtr-ctl button, .bko-ctl button {
+      font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .rnb-ctl button.rnb-off, .dtr-ctl button.dtr-on, .bko-ctl button.bko-on {
+      background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
+  <h1>MLP &amp; ResNet Tabular Baselines</h1>
+  <p class="subtitle">Lesson 028 · Phase 1 · Q3 · ~50 min · <em>core paper: Gorishniy, Rubachev, Khrulkov &amp; Babenko 2021, §3.2</em></p>
+
+  <p>
+    For four lessons we have been building the case that <em>trees win on typical tabular data</em>
+    (<a href="0024-grinsztajn-benchmark.html">L024</a> the benchmark;
+    <a href="0025-inductive-bias-smoothness.html">L025</a>–<a href="0027-inductive-bias-uninformative-features.html">L027</a>
+    the three inductive biases). Today the argument turns a corner. If we are going to claim the
+    relational bet beats a fair baseline, we have to know how to build the <strong>neural</strong>
+    contestant properly — because half of the "deep learning loses on tables" folklore came from
+    papers comparing against <em>weak</em> neural baselines. This lesson builds the two honest neural
+    baselines everyone in the field now reports against: a plain <strong>MLP</strong> and a
+    <strong>ResNet</strong>.
+  </p>
+  <p>
+    Its single skill: <strong>build the Gorishniy 2021 tabular ResNet — a linear embedding, a stack
+    of pre-activation residual blocks (BatchNorm → Linear → ReLU → Dropout → Linear → Dropout, plus a
+    skip connection), and a prediction head — explain why the skip connection is exactly what lets a
+    deep tabular network train at all, and know that a <em>properly-tuned</em> MLP/ResNet (not the
+    latest transformer) is the honest neural baseline a GBDT must be compared against.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A deep stack of plain fully-connected layers gets <em>harder</em>
+    to train as it gets deeper (the "degradation problem"); adding a <strong>skip connection</strong>
+    — making each block output <code>x + f(x)</code> instead of <code>f(x)</code> — makes the identity
+    map free, so depth stops hurting, and the resulting ResNet is a strong, honest baseline that is
+    nonetheless still <em>tied or beaten</em> by a tuned GBDT on small tabular data.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess
+    here is useful — the act of retrieval (even a failed one) encodes the idea far better than
+    re-reading would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    This is the first lesson where we <em>build</em> a neural network rather than use one as a foil,
+    so it introduces the most machinery of any lesson so far. Every term is defined here, in plain
+    language, before we rely on it. If you have met these before, skim; if not, read slowly — the rest
+    of the lesson leans on all of them.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Baseline.</strong> A simple, well-understood model you compare a fancier
+    model against. A result only means something <em>relative to a baseline</em>: "our model scores
+    0.80" is meaningless until you know a competent baseline scores 0.78 or 0.72. A large part of this
+    lesson is about what counts as an <em>honest</em> baseline — one that is tuned well enough that
+    beating it actually demonstrates something.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Linear (fully-connected) layer.</strong> The basic building block of these
+    networks. It takes an input vector <code>x</code> of length <code>d_in</code> and produces an
+    output vector of length <code>d_out</code> by a matrix multiply plus an offset:
+    <code>Linear(x) = W·x + b</code>, where <code>W</code> is a <code>d_out × d_in</code> matrix of
+    learned weights and <code>b</code> is a learned bias vector. "Fully-connected" means every output
+    is a weighted sum of <em>all</em> the inputs. This is the same object as in
+    <a href="0026-inductive-bias-rotation.html">L026</a> — and the reason an MLP is rotationally
+    invariant: <code>W·(Qx) = (WQ)·x</code>, so a rotation of the input can be absorbed into
+    <code>W</code>.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Activation function &amp; ReLU.</strong> Between linear layers we apply a
+    non-linear function elementwise; without it, a stack of linear layers would collapse into a single
+    linear layer (a product of matrices is a matrix). The standard choice is the
+    <strong>ReLU</strong> ("rectified linear unit"): <code>ReLU(z) = max(0, z)</code> — it passes
+    positive values through unchanged and zeroes out negatives. That simple kink is what lets the
+    network represent non-linear functions.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">MLP (multilayer perceptron), hidden dimension.</strong> A
+    <strong>multilayer perceptron</strong> is just a stack of linear layers with activations between
+    them: <code>Linear → ReLU → Linear → ReLU → … → Linear</code>. The intermediate vector widths are
+    the <strong>hidden dimensions</strong> (e.g. 256); the final layer's width is set by the task (one
+    number for binary classification). This is the "MLP" that lost to trees in L025–L027 — but there
+    we used it as a black box. Today we build it.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Training: epoch, minibatch, SGD/Adam.</strong> We fit the weights by
+    <em>gradient descent</em> on a loss. One pass over the whole training set is an
+    <strong>epoch</strong>; we do many. Each step uses a small random <strong>minibatch</strong> of
+    rows (say 256) to estimate the gradient — this is <strong>stochastic gradient descent (SGD)</strong>.
+    <strong>Adam</strong>/<strong>AdamW</strong> is the standard adaptive optimizer that scales each
+    weight's step by a running estimate of its gradient magnitude; it is what actually turns the knobs.
+    You do not need the update equations today — just the vocabulary.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">BatchNorm (batch normalization).</strong> A layer that, for each feature,
+    subtracts the minibatch mean and divides by the minibatch standard deviation (then rescales by two
+    learned parameters). It keeps the activations flowing through the network at a stable scale, which
+    makes training faster and much less sensitive to initialization and learning rate. Crucially for
+    today: <em>because</em> both our networks use BatchNorm, the deep one does <strong>not</strong>
+    fail from "vanishing gradients" — we will need that fact to name the real culprit.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Dropout.</strong> A regularizer: during training it randomly sets a fraction
+    <code>p</code> of activations to zero on each step (and rescales the rest), so the network cannot
+    lean too hard on any one unit. At test time it is turned off. It reduces overfitting; it is not
+    involved in the depth problem below (we set it to zero when isolating that).
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Residual / skip connection.</strong> The idea at the heart of today. Instead
+    of a block computing <code>output = f(x)</code>, it computes <code>output = x + f(x)</code>: the
+    input is <em>added back</em> to the block's output via a "skip" (or "shortcut") that bypasses the
+    layers. Then <code>f</code> only has to learn a <strong>residual</strong> — a small correction to
+    <code>x</code> — rather than the whole transformation. Introduced for image networks by He et al.
+    (2015); Gorishniy 2021 ports it to tables.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">The degradation problem.</strong> The specific failure a skip connection
+    fixes: as a plain deep network gets deeper, its accuracy <em>gets worse</em> — and, tellingly, its
+    <strong>training</strong> accuracy gets worse too. That rules out overfitting (which would raise
+    training accuracy while lowering test accuracy). The network simply becomes <em>harder to
+    optimize</em>. He et al. named this the degradation problem and showed it is distinct from
+    vanishing gradients. We will reproduce it directly.
+  </div>
+
+  <h2>The MLP baseline (Gorishniy §3.2)</h2>
+  <p>
+    Gorishniy et al. define the MLP baseline as a stack of identical blocks, each one a linear layer,
+    a ReLU, and dropout, finished by a linear output layer:
+  </p>
+  <span class="formula">MLPBlock(x) = Dropout(ReLU(Linear(x)))
+MLP(x)      = Linear( MLPBlock( … MLPBlock(x) … ) )</span>
+  <p>
+    That is the whole model — nothing exotic. The paper's point is that when this simple thing is
+    <em>tuned properly</em> (width, depth, dropout, learning rate, weight decay), it is already a
+    respectable tabular model, and several published "state-of-the-art" architectures did not reliably
+    beat it. The trouble starts when you try to make it <strong>deep</strong>.
+  </p>
+
+  <h2>The problem: a deep plain MLP gets harder to train</h2>
+  <p>
+    Intuitively, more layers should never hurt: a deeper network <em>contains</em> the shallower one
+    as a special case (set the extra layers to the identity and you are back where you started). So in
+    the worst case a deep net should just match a shallow net. In practice it does not — plain deep
+    MLPs get <em>worse</em>. The reason is subtle and worth stating precisely: <strong>the extra
+    layers cannot easily learn to be the identity.</strong> A <code>Linear → ReLU</code> layer has to
+    <em>discover</em>, from data, the specific weights that reproduce its input; that is a surprisingly
+    awkward target for gradient descent, and every added layer multiplies the difficulty. The network
+    is not overfitting — it literally cannot fit the training data as well. This is the
+    <strong>degradation problem</strong> defined above.
+  </p>
+  <div class="callout">
+    <strong>Why it is not "vanishing gradients."</strong> You may have heard that deep nets fail
+    because gradients shrink to zero on the way back to the early layers. That was the classic pre-2015
+    story, and <strong>BatchNorm largely fixes it</strong> — which is why both networks here use
+    BatchNorm. The degradation we will see is a <em>separate</em> problem: even with healthy gradients,
+    a deep plain stack is hard to <em>optimize</em> to a good solution. Keeping these two apart is the
+    whole reason we measure <em>training</em> accuracy below.
+  </div>
+
+  <h2>The fix: the residual block</h2>
+  <p>
+    Gorishniy's ResNet block is the MLP block wrapped in a skip connection, with BatchNorm moved to
+    the front (the "pre-activation" arrangement). Reading it inside-out:
+  </p>
+  <span class="formula">ResNetBlock(x) = x + Dropout(Linear(Dropout(ReLU(Linear(BatchNorm(x))))))</span>
+  <p>
+    The six operations in the middle are the residual branch <code>f(x)</code>: normalize, project up
+    to a wider hidden dimension, apply ReLU, drop, project back down to the block's width, drop again.
+    Then — the one line that matters — the original <code>x</code> is <strong>added back</strong>.
+    Here is the block laid out; toggle the skip connection on and off to see what changes (only one
+    line) and what it means.
+  </p>
+
+  <div id="resnet-block-viz"></div>
+
+  <p>
+    Why does adding <code>x</code> back solve the degradation problem? Because it makes the
+    <strong>identity map free</strong>. If the best thing a block can do is "pass the input through
+    unchanged," the residual branch just has to learn <code>f(x) ≈ 0</code> — driving a few weights to
+    zero, which gradient descent does easily — and the skip carries <code>x</code> through untouched.
+    So a deeper residual network can <em>always</em> fall back to behaving like a shallower one; adding
+    blocks can only help or do nothing, never actively hurt. (There is a gradient bonus too: the
+    derivative of <code>x + f(x)</code> with respect to <code>x</code> is <code>1 + f′</code>, so a
+    clean "1" of gradient always flows back through the skip. But per the callout above, with BatchNorm
+    the decisive effect here is the free identity, not gradient rescue.)
+  </p>
+
+  <h2>Predict first</h2>
+  <p>
+    We are about to take the <em>exact same</em> network — same width, same BatchNorm, same optimizer —
+    and train it at depths 1, 2, 4, 8, 16, 32 blocks, once with the skip connection <strong>on</strong>
+    (ResNet) and once with it <strong>off</strong> (plain MLP). Before you see the numbers, commit a
+    guess about the plain MLP.
+  </p>
+  <div id="predict-depth"></div>
+
+  <h2>See it: depth helps the ResNet, hurts the plain MLP</h2>
+  <p>
+    Here is the result. The solid lines are <strong>test</strong> accuracy as depth grows; toggle the
+    training curves to see the tell-tale signature of the degradation problem.
+  </p>
+
+  <div id="depth-trainability-viz"></div>
+
+  <table>
+    <thead><tr><th>Depth (blocks)</th><th>Plain — test</th><th>ResNet — test</th><th>Plain — train</th><th>ResNet — train</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td class="n">0.917</td><td class="n">0.912</td><td class="n">1.000</td><td class="n">1.000</td></tr>
+      <tr><td class="n">2</td><td class="n">0.905</td><td class="n">0.897</td><td class="n">0.998</td><td class="n">0.998</td></tr>
+      <tr><td class="n">4</td><td class="n">0.900</td><td class="n">0.909</td><td class="n">0.994</td><td class="n">0.999</td></tr>
+      <tr><td class="n">8</td><td class="n">0.885</td><td class="n win">0.902</td><td class="n">0.985</td><td class="n">1.000</td></tr>
+      <tr><td class="n">16</td><td class="n">0.884</td><td class="n win">0.897</td><td class="n">0.981</td><td class="n">0.997</td></tr>
+      <tr><td class="n">32</td><td class="n bad">0.866</td><td class="n win">0.899</td><td class="n bad">0.927</td><td class="n">0.997</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the story across the rows. At depth 1–2 the two are indistinguishable — with so few layers
+    there is nothing to degrade. As depth grows the <strong>plain MLP slides</strong>: test accuracy
+    falls from <strong>0.917 to 0.866</strong>. The <strong>ResNet holds flat</strong> at ~0.90 the
+    whole way (0.912 → 0.899). The only difference between the two networks is the one line you toggled
+    above.
+  </p>
+  <p>
+    The decisive column is <strong>plain — train</strong>. If the plain net were <em>overfitting</em>,
+    its training accuracy would stay pinned at 1.000 while only test accuracy fell. Instead its
+    training accuracy <strong>also collapses</strong>, from 1.000 to <strong>0.927</strong> at depth
+    32 — the deep plain net cannot even memorize the training data. That is the degradation problem,
+    caught red-handed: an <em>optimization</em> failure, not overfitting. The ResNet's training
+    accuracy never leaves ~1.00, because the skip lets it keep the good shallow solution and add
+    near-identity blocks on top.
+  </p>
+
+  <h2>The full architecture, and its two other pieces</h2>
+  <p>
+    We now have the block. The complete Gorishniy ResNet wraps a stack of them between an input
+    embedding and a prediction head:
+  </p>
+  <span class="formula">ResNet(x) = Head( ResNetBlock( … ResNetBlock( Linear_embed(x) ) … ) )
+Head(x)   = Linear( ReLU( BatchNorm(x) ) )</span>
+  <ul>
+    <li><strong>Input embedding</strong> (<code>Linear_embed</code>): a single linear layer that maps
+      the raw feature vector up to the block width <code>d_main</code>. Every block preserves that
+      width (so <code>x + f(x)</code> is well-defined — the two must have the same shape).</li>
+    <li><strong>Prediction head</strong>: a final BatchNorm → ReLU → Linear that collapses the block
+      width down to the output (one logit for binary classification). A
+      <strong>logit</strong> is the raw pre-probability score; a <em>sigmoid</em> squashes it to a
+      probability, and the loss (binary cross-entropy) is computed from it.</li>
+  </ul>
+  <p>
+    That is the entire model. Notice what it is <em>not</em>: there is no attention, no per-feature
+    embedding, no tree. It is an MLP with skip connections and normalization — deliberately boring, so
+    that beating it means something.
+  </p>
+
+  <h2>The honest bake-off: no universal winner</h2>
+  <p>
+    So how good is this neural baseline on real data? We ran the MLP, the ResNet, and a tuned GBDT
+    (histogram gradient boosting, the L015 family) on <code>credit_g</code> — a small, categorical,
+    irregular OpenML table, i.e. exactly the regime L024–L027 say favours trees — across five random
+    splits.
+  </p>
+
+  <div id="baseline-bakeoff-viz"></div>
+
+  <table>
+    <thead><tr><th>Model</th><th>ROC-AUC (mean ± sd)</th><th>Accuracy (mean ± sd)</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>MLP</td><td class="n">0.752 ± 0.011</td><td class="n">0.734 ± 0.002</td><td>plain neural baseline</td></tr>
+      <tr><td>ResNet</td><td class="n">0.743 ± 0.010</td><td class="n">0.740 ± 0.013</td><td>tied with the MLP (bands overlap)</td></tr>
+      <tr><td>GBDT</td><td class="n win">0.793 ± 0.025</td><td class="n win">0.754 ± 0.019</td><td>strong, and far cheaper to train</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Two honest readings, and you should hold both:
+  </p>
+  <ul>
+    <li><strong>The GBDT wins here.</strong> On a 1000-row categorical table the tuned tree ensemble
+      leads on both metrics — exactly what the Grinsztajn arc predicts, and a reminder that the ResNet
+      does <em>not</em> repeal L024–L027. Building the neural baseline correctly did not make it win;
+      it made the comparison <em>fair</em>.</li>
+    <li><strong>The two neural baselines are tied.</strong> MLP (0.752) and ResNet (0.743) sit inside
+      each other's error bars. On this small dataset the skip connection's payoff — which is about
+      training <em>deep</em> networks — has little to bite on, because you do not need depth here. The
+      ResNet earns its keep on larger, harder problems (and as the default block for the neural stacks
+      of Year 2 and the RDL stack of Year 4).</li>
+  </ul>
+  <p>
+    This is the paper's real contribution, and the reason it is on our reading list: not a new winning
+    architecture, but a piece of <strong>methodology</strong>. Gorishniy et al. showed that once you
+    compare against a <em>properly-tuned</em> MLP and ResNet, a lot of the reported deep-learning
+    progress on tables evaporates — several headline models did not beat these simple baselines. From
+    now on, "our tabular DL model is SOTA" only counts if it clears these two bars first.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-resnet"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> This lesson is where the neural machinery the relational bet is
+    built from finally appears. A relational deep-learning model is, at the end,
+    <em>encoder → message passing → a head</em> — and that head, and often the row encoder, are exactly
+    the residual-block MLPs of this lesson. Three consequences for the thesis. <em>(1) The honest bar
+    just got sharper.</em> The single-table baseline an RDL result must beat is not a default MLP; it is
+    a tuned GBDT <em>and</em> a tuned ResNet — Gorishniy's whole point is that weak neural baselines
+    flatter new methods, and an RDL "win" over a weak baseline would be the same mistake. <em>(2) The
+    inductive-bias debts carry over.</em> A ResNet is still an MLP-family model, so it still inherits
+    the smoothness (L025), rotation (L026), and uninformative-feature (L027) biases; "add a skip
+    connection" buys trainable depth, not tree-like robustness. <em>(3) It is a foundation, not a
+    detour.</em> You cannot build or critique an RDL architecture without knowing what a residual
+    block, BatchNorm, and dropout do — and Year 2 (FT-Transformer, TabR, TabM) and Year 4 (PyTorch
+    Frame row encoders → GNN) assemble these very parts. Today you built the atom.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>Depth is a means, not an end.</strong> The skip connection's value is that it
+      <em>lets</em> you go deep safely — but on small tabular data you rarely need to. The ResNet ties
+      the MLP here precisely because 2 blocks are plenty. Do not reach for 32 layers on 1000 rows.</li>
+    <li><strong>ResNet ≠ FT-Transformer.</strong> Gorishniy's paper also introduces the
+      FT-Transformer, which uses per-feature embeddings and attention and tends to beat the ResNet on
+      more datasets. We defer it to Year 2 (Q1) on purpose: the ResNet is the <em>simplest</em> honest
+      neural baseline, and per-feature embeddings are the mechanism that starts to <em>break</em> the
+      rotation/junk biases (a preview of how DL claws back the tree advantage).</li>
+    <li><strong>"No universal winner" is the finding, not a hedge.</strong> Across the paper's full
+      benchmark, GBDT wins some datasets and the DL models win others; ensembling both helps. Beware
+      anyone who reports a single dataset and declares a category winner.</li>
+    <li><strong>Tuning is doing the work.</strong> Just like the untuned-XGBoost story in
+      <a href="0014-xgboost.html">L014</a>, an <em>untuned</em> MLP is a genuinely weak baseline; the
+      honest one is tuned (width, depth, dropout, learning rate, weight decay) under the L017 budget
+      discipline and the L021 split discipline.</li>
+    <li><strong>BatchNorm vs vanishing gradients.</strong> The reason we could pin the failure on the
+      degradation problem (not vanishing gradients) is that both nets used BatchNorm. Remove BatchNorm
+      and the plain net would fail even sooner, for the <em>other</em> reason too — a good example of
+      why controlled ablations change one thing at a time (L022/L024).</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The core paper: <strong>Yury Gorishniy, Ivan Rubachev, Valentin Khrulkov &amp; Artem Babenko
+    (2021), <em>Revisiting Deep Learning Models for Tabular Data</em></strong>, NeurIPS 2021 —
+    <a href="https://arxiv.org/abs/2106.11959">arXiv:2106.11959</a>. Today read <strong>§3.2 (the MLP
+    and ResNet baselines)</strong> for the exact block definitions, and skim <strong>§5 (the
+    comparison with GBDT and the "no universal winner" conclusion)</strong>. The residual idea itself
+    comes from <strong>He, Zhang, Ren &amp; Sun (2015), <em>Deep Residual Learning for Image
+    Recognition</em></strong> (<a href="https://arxiv.org/abs/1512.03385">arXiv:1512.03385</a>) — read
+    the first two pages for the degradation-problem argument (their Figure 1 is the plain-vs-residual
+    training-error plot you reproduced today). The strong-defaults follow-up
+    <strong>RealMLP / "Better by Default"</strong> is Year 2 (L053).
+  </p>
+
+  <h2>Lab — build and train the ResNet block</h2>
+  <p>
+    Notebook <code>0028-mlp-resnet-baselines.ipynb</code> (Tier A — real <code>credit_g</code> via
+    <code>relkit</code>, using <strong>PyTorch</strong>): the crucial fragment is the
+    <strong>residual block's <code>forward</code></strong> — the single line
+    <code>return x + f(x)</code> vs <code>return f(x)</code>. You will train the same network with the
+    skip on and off at increasing depth and watch the plain net degrade while the ResNet holds, then
+    run the honest MLP-vs-ResNet-vs-GBDT bake-off. Reproduction targets: the plain net's training
+    accuracy falls with depth (degradation, not overfitting) while the ResNet's holds; on
+    <code>credit_g</code> the two neural baselines tie and the tuned GBDT leads.
+    <a href="../labs/html/0028-mlp-resnet-baselines.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+    <em>(This is the first PyTorch lab — the environment now includes <code>torch</code>.)</em>
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why the identity map being "free" fixes the degradation problem, or why we measured
+    <em>training</em> accuracy to rule out overfitting, or how BatchNorm and dropout differ? Ask your
+    teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0027-inductive-bias-uninformative-features.html">← Lesson 027</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0028-mlp-resnet-baselines.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/resnet-block-viz.js"></script>
+<script src="../assets/depth-trainability-viz.js"></script>
+<script src="../assets/baseline-bakeoff-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 28, count: 3 });
+
+  ResNetBlockViz.mount(document.getElementById("resnet-block-viz"), {});
+  DepthTrainabilityViz.mount(document.getElementById("depth-trainability-viz"), {});
+  BaselineBakeoffViz.mount(document.getElementById("baseline-bakeoff-viz"), {});
+
+  Predict.mount(document.getElementById("predict-depth"), {
+    prompt: "You train the SAME network (same width, BatchNorm, optimizer) at depths 1 → 32, once with the residual skip OFF (plain MLP). What happens to the plain MLP as depth grows?",
+    options: [
+      { label: "Test accuracy keeps rising — more layers is always more capacity", value: "up" },
+      { label: "Test AND training accuracy fall — it gets harder to optimize (degradation)", value: "degrade" },
+      { label: "Test accuracy falls but training accuracy stays at 1.0 — classic overfitting", value: "overfit" }
+    ],
+    correct: "degrade",
+    reveal: "The plain net's TEST accuracy fell 0.917 → 0.866 AND its TRAINING accuracy fell 1.000 → 0.927. Training accuracy dropping rules out overfitting — this is the degradation problem: a deep plain stack is hard to optimize. The ResNet (skip ON) held ~0.90 test and ~1.00 train because the skip makes the identity free."
+  });
+
+  Teachback.mount(document.getElementById("teachback-resnet"), {
+    prompt: "In your own words: what is a residual (skip) connection, why does it fix the degradation problem, and what does it NOT fix?",
+    points: [
+      "A residual block computes output = x + f(x) instead of f(x): the input is added back via a skip that bypasses the layers, so f only learns a small correction (the residual)",
+      "The degradation problem: a plain deep MLP gets WORSE with depth — and its TRAINING accuracy falls too, so it is an optimization failure, not overfitting (demo: plain train 1.000 -> 0.927 at depth 32)",
+      "The skip fixes it by making the identity map free: f can learn ~0 (easy for gradient descent) and the skip carries x through, so a deep ResNet can always fall back to a shallow solution — adding depth can't hurt",
+      "It is NOT vanishing gradients (both nets use BatchNorm, which fixes that); the decisive effect is the free identity",
+      "It does NOT fix the inductive-bias debts: a ResNet is still an MLP-family model, so it keeps the smoothness/rotation/junk-feature biases (L025-L027). And a tuned GBDT still wins on small tabular data (credit_g: GBDT 0.793 vs MLP 0.752 ≈ ResNet 0.743)"
+    ],
+    model: "A residual (skip) connection makes a block output x + f(x) instead of just f(x): the block's input is added back through a shortcut that bypasses its layers, so the inner branch f only has to learn a residual — a small correction to x. It fixes the degradation problem, which is that a plain deep MLP gets WORSE as you add layers: crucially its TRAINING accuracy falls too (in our run, 1.000 → 0.927 at depth 32), so it is an optimization failure, not overfitting — the extra plain layers cannot easily learn to reproduce their own input. The skip makes the identity map free: the residual branch can drive f(x) ≈ 0 (trivial for gradient descent) while the skip passes x through untouched, so a deeper ResNet can always fall back to a shallower solution and adding depth can only help. It is NOT a vanishing-gradient fix — both networks use BatchNorm, which already keeps gradients healthy; the decisive effect is the free identity. And it does not repair the inductive-bias debts: a ResNet is still an MLP-family model, so it keeps the smoothness, rotation, and uninformative-feature biases from L025–L027, and on a small categorical table a tuned GBDT still wins (credit_g: GBDT 0.793 vs MLP 0.752 ≈ ResNet 0.743). The paper's real contribution is methodological: compare against a properly-tuned MLP and ResNet, or your 'SOTA' claim is against a weak baseline."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "A plain MLP's accuracy drops as you add layers, and its TRAINING accuracy drops too. What does the training-accuracy drop tell you?",
+    options: [
+      { label: "It is the degradation problem — an optimization failure, not overfitting (overfitting would keep training accuracy high)", value: "a" },
+      { label: "It is overfitting — the extra layers memorized the training set", value: "b" },
+      { label: "It is vanishing gradients, which BatchNorm cannot affect", value: "c" },
+      { label: "It is class imbalance in the training split", value: "d" }
+    ],
+    correct: "a",
+    explain: "Overfitting raises training accuracy while lowering test accuracy. Here BOTH fall, so the deep plain net cannot even fit the training data — an optimization/degradation problem. The skip connection fixes it by making the identity map free."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Why does adding the skip connection (output = x + f(x)) let a network go deep without degrading?",
+    options: [
+      { label: "The residual branch can learn f(x) ≈ 0 and the skip carries x through, so extra blocks can act as the identity — depth can't hurt", value: "a" },
+      { label: "The skip connection deletes the uninformative features before the first layer", value: "b" },
+      { label: "It makes the network rotationally invariant, which trees are not", value: "c" },
+      { label: "It doubles the number of parameters, which always improves accuracy", value: "d" }
+    ],
+    correct: "a",
+    explain: "Making the identity map free is the key: f≈0 is easy for gradient descent, and then x + f(x) = x. A deeper ResNet can always fall back to a shallower solution, so adding blocks can only help or do nothing."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "On credit_g the tuned GBDT (AUC 0.793) beats the MLP (0.752) ≈ ResNet (0.743). What is the right lesson?",
+    options: [
+      { label: "Building the neural baseline correctly makes the comparison FAIR — but a tuned GBDT still wins on small tabular data; the ResNet is an honest baseline, not a headline winner", value: "a" },
+      { label: "ResNets are broken and should never be used on tabular data", value: "b" },
+      { label: "The MLP beat the ResNet, so skip connections hurt accuracy", value: "c" },
+      { label: "Deep learning has universally overtaken GBDTs on tables", value: "d" }
+    ],
+    correct: "a",
+    explain: "Gorishniy's contribution is methodological: compare against properly-tuned MLP/ResNet baselines. On small categorical data the GBDT still wins (consistent with L024–L027), and the two neural baselines tie because depth has little to buy at 1000 rows."
+  });
+</script>
+</body>
+</html>
