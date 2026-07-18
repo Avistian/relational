@@ -342,6 +342,48 @@
 - Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
   last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
 
+## Session 30 — 2026-07-18
+
+- **Lesson 029 complete** — user said "lesson 29 done" (no EXIT ticket → no rubric score, per the
+  L017–L028 precedent). Record [[learning-records/0071-lesson-029-complete.md]].
+- **Lesson 030 published — Q3 checkpoint: Write a Benchmark Report** (curriculum lec 030, **Grinsztajn
+  2022 full**). A capstone, not a new concept (like L010/L020). Single skill: assemble the whole Q3 arc
+  (L021–L029) into one **defensible one-page benchmark report** — deployment-matched split + leakage audit
+  + budget curve over {tuned GBDT, honest neural baseline, AutoML bar} + corrected resampled t-test +
+  inductive-bias explanation → an honest verdict, **including "no significant winner."** Record
+  [[learning-records/0072-lesson-030-published.md]]. **Fourth application of standard #17** (thoroughness):
+  the Q2 fair-comparison contract's five items restated + Q3's three additions each defined from scratch.
+- **Verified live** (`labs/_verify_l030.py` + executed solution, credit_g Tier A): budget curve GBDT
+  0.804→0.809, MLP **0.819→0.805** (tuning *dipped* — small-validation overfit, disclosed as a finding);
+  paired **5×5 CV** GBDT **0.780** vs MLP **0.772**, gap **+0.0081**, naive t p=0.218, **corrected
+  resampled t p=0.643 → not significant (a tie within noise)**. The honest tie *is* the deliverable — a
+  bigger mean is not a win (L023). Lab solution CHECK + EXIT all clean; numbers match the lesson exactly.
+- **No new viz** — consistent with L010/L020 checkpoint precedent (a checkpoint introduces no new
+  mechanism; standard #9's "one viz per *new* mechanism" is satisfied by tables + reused `checklist.js`;
+  Q3 mechanism viz live in L021–L029 and are linked). First checkpoint authored under the full pedagogy
+  widget suite (#10–#14): warm-up, predict, teach-back, 3 quizzes, 10-item benchmark-report rubric.
+- **Lab** `labs/0030-q3-checkpoint.ipynb` — Tier A (credit_g), `_build_l030.py`. Two crucial fragments are
+  Q3 *evaluation* skills, not model internals: Task 1 = L024 budget-curve select-by-validation
+  (`best_va, best_te = va, te`); Task 2 = L023 corrected resampled t (`(1/n + 1/(k-1)) * var_d`); Task 3 =
+  assemble the report (leakage audit + honest verdict). Student blank (6 `____`, 0 outputs); solution
+  executed & gitignored. **CHECK subtlety fixed:** the best-so-far TEST curve is *not* monotone (best-by-
+  validation can pick a lower-test config) — the dip is the point, so the CHECK no longer asserts
+  monotonicity.
+- **Neural baseline = sklearn `MLPClassifier`** (torch-free, portable) standing in for the L028 ResNet —
+  same inductive biases; the checkpoint tests the *report*, not the architecture. **torch NOT installed**
+  this session (contradicts Session 29's note — the venv did *not* carry torch/xgboost forward reliably;
+  xgboost present, torch absent). The Q3 checkpoint deliberately avoids torch so it runs anywhere.
+- **Artifacts synced:** manifest regenerated → 30 entries (L030 `checkpoint`); `labs/html/0030-*.html`
+  rendered; `retrieval-pool.js` +2 (`l030-tie` misconception, `l030-report`); `misconceptions.md` **M27**
+  ("a benchmark must crown a winner" → a correctly-established tie is valid); `thesis-dossier.md` +1 line
+  (L030, BAR+FOR, C3/C4) and **verdict updated to "after L030 / Q3"** (full honest instrument assembled;
+  tie + L029 ⇒ single-table search/architecture returns near-exhausted, upside is representational);
+  `glossary.html` +3 (Benchmark report, Model info sheet, Statistical tie). No new paper card (Grinsztajn
+  already carded). `node labs/_check_pedagogy.js` clean.
+- Next: Lesson 031 — **Q4 opener** (Embeddings for categoricals; entity embeddings, Guo & Berkhahn 2016;
+  target-encoding pitfalls), beginning the Q4 consolidation + bridge to neural tabular. Q3 (L021–L030)
+  closes once the user completes the L030 report.
+
 ## Session 29 — 2026-07-17
 
 - **Lesson 028 complete** — user said "lesson 28 done" (no EXIT ticket → no rubric score, per the

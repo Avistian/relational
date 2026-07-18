@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 030 — Q3 Checkpoint: Write a Benchmark Report</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .muted-cell { color: var(--muted); }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+    .chk { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .chk-title { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.6rem; }
+    .chk-list { list-style: none; padding: 0; margin: 0; }
+    .chk-item { display: flex; align-items: baseline; gap: 0.55rem; margin: 0.5rem 0; font-size: 0.92rem; }
+    .chk-item input { margin-top: 0.2rem; flex: none; }
+    .chk-hint { color: var(--accent); font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .chk-feedback { margin-top: 0.75rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); }
+    .chk-feedback.done { color: #1e6b3c; font-weight: 600; }
+    .report { border: 1px solid var(--border); border-radius: 6px; background: var(--bg); padding: 0.4rem 1rem 0.8rem; margin: 1.1rem 0; font-size: 0.9rem; }
+    .report h4 { font-family: var(--font-sans); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0.9rem 0 0.3rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3 Checkpoint</p>
+  <h1>Q3 Checkpoint: Write a Benchmark Report</h1>
+  <p class="subtitle">Lesson 030 · Phase 1 · Q3 · ~50 min · capstone · <em>primary reading: Grinsztajn et al. 2022, full</em></p>
+
+  <p>
+    Q2 taught you to <em>build</em> the incumbent — a tuned, leak-free tree baseline. Q3 taught you to
+    <em>judge</em> it: honest <a href="0021-data-splits-in-the-wild.html">splits</a>,
+    <a href="0022-label-leakage-patterns.html">leakage</a> discipline,
+    <a href="0023-statistical-comparison.html">significance</a>, the
+    <a href="0024-grinsztajn-benchmark.html">benchmark protocol</a> and the three inductive
+    <a href="0025-inductive-bias-smoothness.html">biases</a>
+    (<a href="0026-inductive-bias-rotation.html">rotation</a>,
+    <a href="0027-inductive-bias-uninformative-features.html">junk features</a>) behind tree dominance, the
+    honest <a href="0028-mlp-resnet-baselines.html">neural baseline</a>, and where
+    <a href="0029-manual-fe-vs-automl.html">AutoML</a> stops. This checkpoint is not a new concept: it is
+    the moment you prove you can assemble all of it into <strong>one defensible, reproducible benchmark
+    report</strong> — the artifact a skeptic reads before believing any "model A beats model B" claim.
+    Every result the thesis makes from here — that a relational model beats the flat-table incumbent — will
+    be reported in exactly this form.
+  </p>
+
+  <p>
+    This checkpoint's single skill: <strong>assemble the whole Q3 toolkit into a one-page benchmark report
+    — a curated dataset under an honest split, a leakage audit, the right contestants (a tuned GBDT, an
+    honest neural baseline, and the AutoML bar) compared as a random-search budget curve rather than a
+    single tuned number, a significance test that proves any gap is not noise, and an inductive-bias
+    explanation of the ranking — ending in a verdict you would defend to a hostile reviewer, including the
+    verdict "no significant winner."</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A benchmark report is trustworthy only when the comparison is
+    <em>fair</em> (same data, split, metric, budget, preprocessing), the winner is <em>proven</em> (a
+    correct significance test, not a bigger mean), and the result is <em>explained</em> (which inductive
+    biases produced it) — and an honest report is willing to conclude that the gap is a
+    <strong>statistical tie</strong>.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from the Q3 arc, pulled from memory before you assemble it. A wrong guess here is
+    useful — retrieval (even a failed attempt) encodes the idea better than re-reading.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>What Q3 gave you, assembled in one place</h2>
+  <p>
+    Each Q3 lesson contributed one section of the report. A checkpoint-worthy benchmark uses all of them at
+    once — and every fit-bearing step still lives inside a per-fold pipeline, so the
+    <a href="0010-baseline-checkpoint.html">Q1 leakage spine</a> never lapses:
+  </p>
+  <table>
+    <thead><tr><th>From</th><th>Piece</th><th>Its section in the report</th></tr></thead>
+    <tbody>
+      <tr><td><a href="0021-data-splits-in-the-wild.html">021</a></td><td>splits in the wild</td><td>choose an <strong>honest split</strong> — temporal (train past → test future) whenever a time order or drift exists, random only if the rows are truly i.i.d.</td></tr>
+      <tr><td><a href="0022-label-leakage-patterns.html">022</a></td><td>leakage taxonomy</td><td>a <strong>leakage audit</strong> (model info sheet): every feature's provenance checked; a suspiciously large win is a leak hypothesis first</td></tr>
+      <tr><td><a href="0023-statistical-comparison.html">023</a></td><td>statistical comparison</td><td>a <strong>significance test</strong> — corrected resampled t on one dataset, Friedman + Nemenyi across many — plus an effect size, not a bare mean</td></tr>
+      <tr><td><a href="0024-grinsztajn-benchmark.html">024</a></td><td>benchmark protocol</td><td>a <strong>random-search budget curve</strong> (default <em>and</em> ceiling), curated datasets, per-dataset normalization</td></tr>
+      <tr><td><a href="0025-inductive-bias-smoothness.html">025</a>–<a href="0027-inductive-bias-uninformative-features.html">027</a></td><td>the three biases</td><td>the <strong>explanation</strong> of the ranking — smoothness, rotation, uninformative-feature robustness</td></tr>
+      <tr><td><a href="0028-mlp-resnet-baselines.html">028</a></td><td>neural baseline</td><td>an <strong>honest neural contestant</strong> (a tuned MLP/ResNet), so a DL result is not flattered by a weak baseline</td></tr>
+      <tr><td><a href="0029-manual-fe-vs-automl.html">029</a></td><td>AutoML</td><td>the <strong>automation bar</strong> — "whatever AutoML finds" — which forecloses the "you tuned lazily" objection</td></tr>
+      <tr><td><a href="0010-baseline-checkpoint.html">010</a>/<a href="0020-q2-checkpoint.html">020</a></td><td>leakage spine + fair contract</td><td>held-out test touched once, per-fold preprocessing, disclosed budget, honest verdict</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The benchmark-report contract</h2>
+  <p>
+    The <a href="0020-q2-checkpoint.html">Q2 fair-comparison contract</a> fixed five things before touching
+    a model (same data, split, metric, tuning budget, preprocessing scope) and reported the sixth honestly.
+    Q3 adds <strong>three requirements</strong> that turn a fair comparison into a
+    <em>defensible report</em>:
+  </p>
+
+  <div class="defbox">
+    <strong class="term">7 · The split must match deployment.</strong> A random (shuffled) split is only
+    valid when the rows are genuinely i.i.d. If a time order or distribution drift exists, use a
+    <strong>temporal split</strong> — train on the past, test on the future (<a href="0021-data-splits-in-the-wild.html">L021</a>). Random CV on
+    time-ordered data leaked the deployment period into training and was optimistic (repro: random-CV 0.846
+    vs temporal 0.758). Default to temporal until you can argue i.i.d.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">8 · Provenance is audited, not assumed.</strong> Fill a
+    <strong>model info sheet</strong> (<a href="0022-label-leakage-patterns.html">L022</a>, Kapoor &amp;
+    Narayanan 2022): for every feature, is it knowable strictly <em>before</em> the label's timestamp? An
+    <em>illegitimate feature</em> passes every split/pipeline check yet hands the model the answer, and a
+    flexible model exploits it harder than a linear one — so a huge complex-vs-simple win is a
+    <strong>leak hypothesis first</strong> (repro: gap +0.217 collapses to −0.009 when the leaked column is
+    removed).
+  </div>
+
+  <div class="defbox">
+    <strong class="term">9 · The gap is proven, then explained.</strong> A reported gap is a random
+    variable, so a "win" needs a <strong>significance test</strong> — and the obvious one lies. k-fold
+    training sets overlap, so fold scores are positively correlated; a naive paired t-test (or Wilcoxon)
+    treats them as independent and <em>over-rejects</em>. Use the <strong>corrected resampled t-test</strong>
+    on one dataset (<a href="0023-statistical-comparison.html">L023</a>, Nadeau &amp; Bengio 2003), or
+    Friedman + Nemenyi across many. Then explain the ranking with the three inductive biases
+    (<a href="0025-inductive-bias-smoothness.html">L025</a>–<a href="0027-inductive-bias-uninformative-features.html">L027</a>).
+  </div>
+
+  <div class="callout">
+    <strong>Why this is the checkpoint.</strong> The most common way a "relational model beats the baseline"
+    claim collapses is an <em>indefensible report</em> — a random split on temporal data, an unaudited
+    leaked feature, or a mean gap that a proper test dissolves. The whole thesis lives or dies by the
+    quality of this one page. Learn to be the reviewer who would reject your own sloppy comparison.
+  </div>
+
+  <h2>The reference report: three families on <code>credit_g</code></h2>
+  <p>
+    Here is the assembled benchmark, run under the full contract on real <code>credit_g</code> (1000 rows,
+    20 columns, 70% positive). Contestants: a <strong>GBDT</strong> (HistGradientBoosting, the Q2
+    incumbent), an <strong>honest neural baseline</strong> (a tuned MLP — the portable stand-in for the
+    L028 tabular ResNet, same inductive biases), and the <strong>tiny AutoML</strong> from
+    <a href="0029-manual-fe-vs-automl.html">L029</a>. <code>credit_g</code> has no timestamps, so a
+    stratified split is defensible here — but the report states that rule explicitly rather than assuming
+    it.
+  </p>
+
+  <h3>Section A — the budget curve, not one number</h3>
+  <p>
+    First, the <a href="0024-grinsztajn-benchmark.html">L024</a> protocol: for each family, run a random
+    search and plot the <em>best-validation</em> configuration's <strong>test</strong> score after each
+    iteration. Held fixed: the split and preprocessing. Varied: the config drawn each step. Measured: the
+    running best test AUC. This shows both the <strong>default</strong> (budget 1) and the tuned
+    <strong>ceiling</strong>:
+  </p>
+  <table>
+    <thead><tr><th>Family</th><th>Default (k=1)</th><th>Ceiling (k=15)</th><th>Read</th></tr></thead>
+    <tbody>
+      <tr><td>GBDT</td><td class="n">0.804</td><td class="n">0.809</td><td>strong, cheap default; tuning adds a hair</td></tr>
+      <tr><td>MLP (neural)</td><td class="n">0.819</td><td class="n">0.805</td><td>tuning <em>dipped</em> — validation overfit</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the honest wrinkle. The MLP's tuned ceiling (0.805) is <em>below</em> its default (0.819): a
+    15-config search, selected on a ~200-row validation slice, chased validation noise and picked a worse
+    test model. That is not a bug — it is exactly Grinsztajn's "not too small" dataset criterion biting
+    (<a href="0024-grinsztajn-benchmark.html">L024</a>): at this sample size the budget curve is noisy and
+    can non-monotonically dip, which is <em>itself</em> a finding your report must disclose. Both families
+    land in the same neighbourhood, ~0.80–0.82. A single tuned number would have hidden all of this.
+  </p>
+
+  <h3>Section B — the head-to-head, proven not asserted</h3>
+  <p>
+    A single split gives a fragile point estimate; run the families under one <strong>identical</strong>
+    protocol and test the gap. Here is a paired 5×5 repeated stratified CV (25 folds, same folds for both
+    families, default configs), then both significance tests from <a href="0023-statistical-comparison.html">L023</a>:
+  </p>
+  <table>
+    <thead><tr><th>Model</th><th>ROC-AUC (5×5 CV)</th><th>Paired gap</th><th>What it represents</th></tr></thead>
+    <tbody>
+      <tr><td>GBDT (default)</td><td class="n win">0.780</td><td class="n muted-cell">—</td><td>the Q2 incumbent</td></tr>
+      <tr><td>MLP (default)</td><td class="n">0.772</td><td class="n">−0.008</td><td>the honest neural baseline</td></tr>
+      <tr><td>tiny AutoML</td><td class="n muted-cell">≈ tie (L029)</td><td class="n muted-cell">—</td><td>ties a tuned GBDT — automation, not new accuracy</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The mean paired gap is <strong>+0.0081</strong> in the GBDT's favour (sd 0.0321 over 25 folds). Is that
+    real? The two tests:
+  </p>
+  <ul>
+    <li><strong>Naive paired t-test:</strong> t = 1.27, <strong>p = 0.22</strong> — not significant.</li>
+    <li><strong>Corrected resampled t-test</strong> (inflate the variance by <code>1/n + 1/(k−1)</code> for
+      the overlapping folds): t = 0.47, <strong>p = 0.64</strong> — not significant, and even
+      <em>less</em> so, as it must be (the correction can only make a gap <em>harder</em> to call
+      significant, never easier).</li>
+  </ul>
+  <p>
+    The verdict, stated plainly: <strong>on <code>credit_g</code>, the GBDT is nominally ahead by ~0.008
+    ROC-AUC, but the gap is not statistically significant — a tie within noise.</strong> A report that
+    wrote "GBDT wins" from the +0.008 mean would be making exactly the L023 mistake. Reporting the tie
+    honestly <em>is</em> the deliverable.
+  </p>
+
+  <h3>Section C — explain the (small) lean</h3>
+  <p>
+    Even a tie needs an explanation, because the small edge that <em>does</em> exist leans the way the
+    three biases predict. <code>credit_g</code> is small, single-table, heterogeneous, with several
+    weak/near-junk columns — the regime where trees have a structural advantage:
+  </p>
+  <ul>
+    <li><strong>Smoothness (<a href="0025-inductive-bias-smoothness.html">L025</a>):</strong> the target is
+      irregular; the MLP's spectral bias over-smooths it, the piecewise-constant tree follows the jags.</li>
+    <li><strong>Rotation (<a href="0026-inductive-bias-rotation.html">L026</a>):</strong> the columns
+      (credit amount, duration, age) are individually meaningful; the tree attends to each axis, the
+      rotation-invariant MLP does not.</li>
+    <li><strong>Uninformative features (<a href="0027-inductive-bias-uninformative-features.html">L027</a>):</strong>
+      the tree gates junk columns out by gain; the MLP wires all of them into its first layer.</li>
+  </ul>
+  <p>
+    The three biases turn "GBDT edges it" from a mystery into a mechanism — and predict that the edge would
+    grow on a larger, junkier single table and shrink on a clean, smooth one.
+  </p>
+
+  <h2>Predict first</h2>
+  <p>
+    Before the verdict is fixed in your head: the GBDT beat the MLP by a mean of <strong>+0.008</strong>
+    ROC-AUC across 25 paired folds. What should the report conclude?
+  </p>
+  <div id="predict-verdict"></div>
+
+  <h2>Read the honest half: a tie is a valid verdict</h2>
+  <p>
+    Beginners feel a benchmark must crown a winner. A mature report does the opposite: it reports the
+    effect size <em>and</em> whether a correct test can distinguish it from noise, and here it cannot. That
+    restraint is what makes the eventual relational claim credible — if this program will one day say "RDL
+    beats the incumbent," a reviewer has to trust that the same authors would have said "no significant
+    difference" when that was the truth. This page is the proof of that discipline. AutoML fits the same
+    picture: <a href="0029-manual-fe-vs-automl.html">L029</a> showed it only ties a tuned GBDT, so the
+    single-table ceiling is not moved by cleverer search — the remaining upside has to come from a better
+    representation.
+  </p>
+
+  <h2>Self-audit — the benchmark-report rubric</h2>
+  <p>Tick every item against the report you write in the lab. All boxes ticked = checkpoint-ready, and Q3 closes:</p>
+  <div id="checklist"></div>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea of the whole quarter — put it in your own words before moving on.</p>
+  <div id="teachback-report"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> You have now assembled the full honest bar. Not just a strong model (Q2)
+    but the whole apparatus that decides whether <em>any</em> new model — including a relational one — is
+    actually better: a deployment-matched split, an audited feature set, a budget curve over a tuned GBDT
+    <em>and</em> a tuned neural baseline <em>and</em> AutoML, a significance test, and a bias-level
+    explanation. This is not bureaucracy; it is the exact form in which the thesis must eventually be
+    argued. When Years 3–4 claim a relational model beats the flat-table incumbent, the claim will only
+    count if it clears <em>this</em> page: a fair, temporal, leak-audited, significance-tested,
+    bias-explained benchmark — the kind that, on <code>credit_g</code> today, honestly reports a tie. The
+    RDL bet is not "trees are weak"; it is that the flat table discards relational structure a model over
+    the source database could exploit. Q3 built the instrument that will measure whether that bet pays off.
+  </div>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    Read <strong>Grinsztajn, Oyallon &amp; Varoquaux (2022), <em>Why do tree-based models still outperform
+    deep learning on typical tabular data?</em></strong> —
+    <a href="https://arxiv.org/abs/2207.08815">arXiv:2207.08815</a> (NeurIPS 2022 Datasets &amp;
+    Benchmarks) — <strong>in full</strong>. You have met it in pieces across Q3: the abstract and three
+    biases (<a href="0019-when-trees-win.html">L019</a>), the benchmark protocol §3–4
+    (<a href="0024-grinsztajn-benchmark.html">L024</a>), and the mechanism sections §5.2/§5.3/§5.4
+    (<a href="0025-inductive-bias-smoothness.html">L025</a>–<a href="0027-inductive-bias-uninformative-features.html">L027</a>).
+    Now read it end to end as one argument, paying attention to how the authors report their results — the
+    aggregated budget curves, the ablations, and the honest scoping of the claim. That reporting style
+    <em>is</em> the artifact you are practising.
+  </p>
+
+  <h2>Lab — write the one-page benchmark report</h2>
+  <p>
+    Capstone notebook <code>0030-q3-checkpoint.ipynb</code> (Tier A — real <code>credit_g</code> via
+    <code>relkit</code>). You will assemble the report end to end:
+  </p>
+  <ol>
+    <li>Declare the protocol (split rule + a short <strong>leakage audit</strong> / model info sheet).</li>
+    <li>Implement the <strong>budget-curve</strong> best-so-far selection (the L024 crucial fragment) for
+      the GBDT and the neural baseline.</li>
+    <li>Run the paired 5×5 CV head-to-head and implement the <strong>corrected resampled t-test</strong>
+      (the L023 crucial fragment); read off the verdict.</li>
+    <li>Print the one-page report: dataset, protocol, budget-curve defaults/ceilings, the significance
+      verdict, the bias explanation, and your honest one-line conclusion.</li>
+  </ol>
+  <p>
+    Paste the exit-ticket report here, or say <em>"lab done."</em> That closes <strong>Q3</strong>. No
+    advancing to Q4 until the report is complete and its verdict is honest.
+    <a href="../labs/html/0030-q3-checkpoint.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring any dataset and we will stand up this exact report on it —
+    pick the split (temporal if it has timestamps), audit the features, set the budget, run the significance
+    test, and decide honestly whether one model really beats another. Running that conversation cleanly
+    <em>is</em> the Q3 skill.
+  </div>
+
+  <div class="ask-teacher">
+    Unsure why a tie is a legitimate verdict, why the corrected test can only raise the p-value, or how the
+    three biases explain the lean? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0029-manual-fe-vs-automl.html">← Lesson 029</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0030-q3-checkpoint.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/checklist.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 30, count: 3 });
+
+  Predict.mount(document.getElementById("predict-verdict"), {
+    prompt: "The GBDT beat the MLP by a mean of +0.008 ROC-AUC across 25 paired CV folds on credit_g. What should the benchmark report conclude?",
+    options: [
+      { label: "No significant winner — the gap is a tie within noise", value: "tie" },
+      { label: "GBDT wins — a positive mean gap across 25 folds is a real difference", value: "gbdt" },
+      { label: "MLP wins — neural nets are known to beat trees on tabular data", value: "mlp" }
+    ],
+    correct: "tie",
+    reveal: "The +0.008 mean is not significant: naive paired t p=0.22, corrected resampled t p=0.64 (the correction only raises p). The honest verdict is a statistical tie — and reporting that IS the checkpoint deliverable."
+  });
+
+  Teachback.mount(document.getElementById("teachback-report"), {
+    prompt: "In your own words: what are the sections of a defensible one-page benchmark report, and why does an honest report sometimes conclude 'no significant winner'?",
+    points: [
+      "A deployment-matched SPLIT (temporal if a time order/drift exists; random only if truly i.i.d.) — L021",
+      "A LEAKAGE audit / model info sheet: every feature knowable before the label's timestamp; a suspiciously large win is a leak hypothesis first — L022",
+      "The right CONTESTANTS under one identical protocol: a tuned GBDT, an honest neural baseline (tuned MLP/ResNet), and the AutoML bar — L028/L029",
+      "A random-search BUDGET CURVE (default AND ceiling), not one tuned number; curated datasets, per-dataset normalization if aggregating — L024",
+      "A SIGNIFICANCE test (corrected resampled t on one dataset / Friedman+Nemenyi across many) plus an effect size, then a BIAS-level explanation (L025-27) — and the verdict can honestly be a tie, because a mean gap that a correct test cannot distinguish from noise is not a win (on credit_g: +0.008, corrected p=0.64)"
+    ],
+    model: "A one-page benchmark report has: (1) a protocol declaration — dataset (curated by explicit criteria), a deployment-matched split (temporal when a time order or drift exists, random only if the rows are truly i.i.d.), one headline metric with prevalence stated, and a disclosed tuning budget; (2) a leakage audit / model info sheet checking every feature's provenance (knowable strictly before the label), because an illegitimate feature passes every split check yet leaks, and a big complex-vs-simple win is a leak hypothesis first; (3) the contestants under one identical, per-fold-safe protocol — a tuned GBDT (the incumbent), an honest tuned neural baseline (MLP/ResNet, so DL isn't flattered by a weak bar), and the AutoML bar (which only ties a tuned GBDT); (4) a random-search budget curve showing each family's default and tuned ceiling, not a single number, aggregated across datasets by per-dataset normalization; (5) a significance test — the corrected resampled t-test on one dataset (k-fold scores overlap, so the naive paired t over-rejects) or Friedman+Nemenyi across many — reported with an effect size; and (6) an inductive-bias explanation of the ranking (smoothness, rotation, uninformative-feature robustness). An honest report concludes 'no significant winner' whenever the effect size, tested correctly, cannot be told from noise — on credit_g the GBDT led by +0.008 ROC-AUC but the corrected t-test gave p=0.64, so the verdict is a tie. Being willing to report a tie is exactly what makes an eventual 'RDL beats the incumbent' claim from the same protocol believable."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Your dataset has an event timestamp on every row and the label is a future outcome. Which split does the benchmark report use, and why?",
+    options: [
+      { label: "A temporal split (train past → test future); a random split leaks the deployment period and is optimistic", value: "a" },
+      { label: "A random stratified split, because it preserves the class balance", value: "b" },
+      { label: "Either is fine — the split does not affect a fair comparison", value: "c" },
+      { label: "Leave-one-out CV, because it uses the most training data", value: "d" }
+    ],
+    correct: "a",
+    explain: "L021: when a time order or drift exists, a random split trains on the future and tests on rows like the training period — optimistic (repro: random-CV 0.846 vs temporal 0.758). Default to a temporal split until you can argue the rows are truly i.i.d. Stratification does not fix a temporal leak."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "On credit_g the GBDT beat the MLP by +0.008 ROC-AUC (mean over 25 paired CV folds); the corrected resampled t-test gives p=0.64. What is the correct verdict, and why is it 'corrected'?",
+    options: [
+      { label: "No significant winner (a tie); the correction inflates the variance for overlapping folds, so the naive test's small p is anticonservative", value: "a" },
+      { label: "GBDT wins; p=0.64 means 64% confidence the GBDT is better", value: "b" },
+      { label: "The result is invalid; you must re-run until the GBDT wins significantly", value: "c" },
+      { label: "MLP wins; a p-value above 0.5 means the other model is better", value: "d" }
+    ],
+    correct: "a",
+    explain: "k-fold training sets overlap, so fold scores are positively correlated and a naive paired t-test over-rejects. The corrected resampled t-test (Nadeau & Bengio) inflates the variance by 1/n + 1/(k−1); it can only raise the p-value. Here p=0.64 ≫ 0.05, so the +0.008 mean is not distinguishable from noise — an honest tie."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why does the report include a tuned MLP/ResNet and 'whatever AutoML finds' alongside the tuned GBDT?",
+    options: [
+      { label: "So a win (by any model) is fair: a weak baseline flatters DL, and AutoML forecloses the 'you tuned lazily' objection — both harden the comparison", value: "a" },
+      { label: "To pad the results table so the report looks thorough", value: "b" },
+      { label: "Because AutoML always beats a hand-tuned model and should be the reference", value: "c" },
+      { label: "Because neural nets are guaranteed to win on tabular data with enough tuning", value: "d" }
+    ],
+    correct: "a",
+    explain: "L028: many 'SOTA' DL papers only beat a weak baseline, so an honest report tunes the MLP/ResNet properly. L029: AutoML ties a tuned GBDT, so including it forecloses the objection that a win merely beat a lazily-tuned model. Strong, varied baselines are what make any eventual win — including a relational one — credible."
+  });
+
+  Checklist.mount(document.getElementById("checklist"), {
+    title: "Benchmark-report rubric",
+    items: [
+      { label: "Dataset curated by explicit criteria; rows, columns, prevalence stated.", hint: "L024" },
+      { label: "Split matches deployment — temporal if a time order/drift exists, else stated-i.i.d. random; test touched once.", hint: "L021" },
+      { label: "Leakage audit filled: every feature knowable before the label's timestamp (model info sheet).", hint: "L022" },
+      { label: "One headline metric chosen up front, with prevalence next to it.", hint: "L008" },
+      { label: "Every fit-bearing transform lives inside the per-fold pipeline.", hint: "L010" },
+      { label: "Contestants: tuned GBDT + honest neural baseline + AutoML bar, one identical protocol.", hint: "L028/L029" },
+      { label: "Budget curve reported (default AND ceiling), not a single tuned number.", hint: "L024" },
+      { label: "Gap proven with a corrected resampled t-test (or Friedman + Nemenyi), plus effect size.", hint: "L023" },
+      { label: "Ranking explained by the three inductive biases.", hint: "L025-27" },
+      { label: "Verdict honest — states the winner OR 'no significant difference', and the gap size.", hint: "honesty" }
+    ],
+    done: "Report is airtight — it would survive a hostile reviewer, including the honest verdict of a tie. Q3 is closed."
+  });
+</script>
+</body>
+</html>

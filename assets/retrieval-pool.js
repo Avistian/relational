@@ -482,6 +482,30 @@
       ],
       correct: "a",
       explain: "Most available accuracy comes from searching at all (+0.031 default→tuned). A 4-algorithm AutoML with ensembling lands inside the tuned XGB's error band (0.803 vs 0.806) at far higher compute — it buys convenience/robustness. Remaining upside must come from a better representation (the relational thesis), which AutoML leaves untouched."
+    },
+    {
+      id: "l030-tie", lesson: 30, quarter: "Q3", concept: "significance", misconception: true,
+      question: "A benchmark shows model A beating model B by a mean of +0.008 ROC-AUC over 25 paired CV folds. What should the report conclude?",
+      options: [
+        { label: "Nothing yet — run a significance test; if the corrected resampled t-test says p>0.05 the honest verdict is a TIE (no significant winner)", value: "a" },
+        { label: "Model A wins — a positive mean gap across 25 folds is a real difference", value: "b" },
+        { label: "Model B wins — small gaps always favour the simpler model", value: "c" },
+        { label: "The benchmark failed — a good experiment must produce a clear winner", value: "d" }
+      ],
+      correct: "a",
+      explain: "A reported gap is a random variable. k-fold scores overlap (positively correlated), so a bigger mean is not a win — you must test it with the corrected resampled t-test (L023). On credit_g the +0.008 gap gave corrected p=0.64, so the honest verdict is 'no significant winner'. A correctly-established tie is a valid, valuable result — and reporting it is what makes an eventual RDL win believable."
+    },
+    {
+      id: "l030-report", lesson: 30, quarter: "Q3", concept: "benchmark-report",
+      question: "What turns a fair model comparison into a DEFENSIBLE benchmark report (the Q3 additions)?",
+      options: [
+        { label: "A deployment-matched split + a leakage audit + a significance test + a bias-level explanation, on top of the fair-comparison contract", value: "a" },
+        { label: "Running more seeds until one model clearly wins", value: "b" },
+        { label: "Picking the single highest tuned number for each model family", value: "c" },
+        { label: "Using the largest available dataset and the deepest neural network", value: "d" }
+      ],
+      correct: "a",
+      explain: "Q2's fair contract (same data/split/metric/budget/preprocessing) becomes a defensible report when you add: a split that matches deployment (temporal if timestamped, L021), an audited feature set (model info sheet, L022), a proven gap (corrected resampled t / Friedman-Nemenyi, L023) reported as a budget curve not one number (L024), and an inductive-bias explanation (L025-27) — ending in an honest verdict, including a tie."
     }
   ];
 })(window);
