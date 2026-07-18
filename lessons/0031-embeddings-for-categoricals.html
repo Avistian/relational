@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 031 — Embeddings for Categoricals</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+
+    /* shared viz frames */
+    .etx-viz, .tlk-viz, .esp-viz {
+      margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .etx-ctl, .tlk-ctl, .esp-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+    .etx-ctl button, .tlk-ctl button, .esp-ctl button {
+      font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .etx-ctl button.etx-on, .tlk-ctl button.tlk-on, .esp-ctl button.esp-on {
+      background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+    .etx-tbl, .tlk-tbl { display: grid; gap: 3px; margin: 0.3rem 0; }
+    .etx-cell, .tlk-cell { padding: 0.35rem 0.5rem; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 4px; font-size: 0.82rem; }
+    .etx-mono, .tlk-mono { font-family: var(--font-mono); text-align: center; }
+    .tlk-head { font-family: var(--font-sans); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); background: transparent; border: none; }
+    .tlk-leak { background: #b03a2e; color: #fff; font-weight: 600; }
+    .tlk-safe { background: #1e6b3c; color: #fff; font-weight: 600; }
+    .tlk-flag { color: #b03a2e; font-weight: 600; border: none; background: transparent; }
+    .tlk-ok { color: #1e6b3c; border: none; background: transparent; font-size: 0.78rem; }
+    .etx-readout, .tlk-readout, .esp-readout { font-size: 0.86rem; margin: 0.6rem 0.2rem 0; line-height: 1.55; }
+    .etx-caption, .tlk-caption, .esp-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .tlk-pill { display: inline-block; font-family: var(--font-mono); font-size: 0.74rem; padding: 0.08rem 0.45rem; border-radius: 4px; margin-right: 0.35rem; }
+    .tlk-bad { background: #b03a2e; color: #fff; } .tlk-good { background: #1e6b3c; color: #fff; }
+    .esp-svg { display: block; max-width: 480px; margin: 0.25rem auto; }
+    .esp-pt { font-family: var(--font-sans); font-size: 8.5px; fill: var(--fg, #222); }
+    .esp-ax, .esp-leg { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4</p>
+  <h1>Embeddings for Categoricals</h1>
+  <p class="subtitle">Lesson 031 · Phase 1 · Q4 · ~55 min · <em>core paper: Guo &amp; Berkhahn 2016, Entity Embeddings</em></p>
+
+  <p>
+    Welcome to <strong>Q4</strong>. Q3 closed with a hard, honest verdict: inside the single-table world,
+    cleverer <em>search</em> (tuning, AutoML, L029) and cleverer <em>architecture</em> (the neural
+    baselines of L028) are nearly out of road — everything ties a well-tuned GBDT
+    (<a href="0030-q3-checkpoint.html">L030</a>). If the remaining upside is not in search or
+    architecture, it must be in the <strong>representation</strong> — how the raw data is turned into the
+    numbers a model sees. Q4 is the bridge to that idea, and it starts at the most everyday place a
+    representation is chosen: <strong>how do you turn a categorical column into numbers?</strong>
+  </p>
+  <p>
+    This is not a small question. Real databases are <em>full</em> of categoricals — product ids, zip
+    codes, merchant names, diagnosis codes — often with thousands or millions of levels. The way you
+    encode them decides how much signal survives, whether you leak the label, and how much memory you
+    burn. And one of the four encodings we meet today — the <strong>entity embedding</strong> — is your
+    first taste of a <em>learned representation</em>, the exact seed that grows into the relational deep
+    learning the thesis is betting on.
+  </p>
+  <p>
+    Its single skill: <strong>know the four ways to encode a categorical for a model — one-hot, ordinal,
+    target (mean) encoding, and learned entity embeddings — why one-hot is safe-but-wide, why ordinal
+    invents a false order, why target encoding is powerful but <em>leaks</em> unless done out-of-fold,
+    and how entity embeddings (Guo &amp; Berkhahn 2016) turn each level into a learned dense vector that
+    captures similarity; and understand that on a small single table they all roughly <em>tie</em>, so
+    the embedding's real payoff — compactness at high cardinality and a reusable learned geometry — is a
+    representational one, which is the bridge to neural tabular and RDL.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A model eats numbers, so every categorical must be encoded; one-hot is
+    safe but wide, ordinal fakes an order, target encoding is compact and strong but leaks the label
+    unless computed out-of-fold, and <strong>entity embeddings</strong> learn a dense vector per level
+    that places similar levels close together — the first learned representation, even though on a
+    1000-row table it only ties the simpler encodings.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here
+    is useful — the act of retrieval (even a failed one) encodes the idea better than re-reading would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    This lesson names several encoding ideas. Each is defined here, in plain language, before we rely on
+    it. Where an idea is a callback to an earlier lesson, the definition is restated inline — do not
+    assume you must remember it.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Categorical variable.</strong> A column whose values are <em>labels from a
+    finite set</em>, not quantities: <code>purpose ∈ {new car, education, …}</code>,
+    <code>checking_status ∈ {&lt;0, 0–200, …}</code>. There is no built-in arithmetic — "education minus
+    new car" is meaningless — so a model that only does arithmetic on numbers cannot consume it directly.
+  </div>
+  <div class="defbox">
+    <strong class="term">Cardinality.</strong> The number of distinct levels a categorical has.
+    <code>checking_status</code> has cardinality 4; a <code>zip_code</code> or <code>product_id</code>
+    can have tens of thousands. High cardinality is what makes the choice of encoding <em>matter</em>.
+  </div>
+  <div class="defbox">
+    <strong class="term">One-hot encoding.</strong> Replace a level with a vector of 0s and a single 1:
+    a categorical of cardinality <em>k</em> becomes <em>k</em> binary columns
+    (<code>is_new_car</code>, <code>is_education</code>, …). It assumes nothing false — every level is
+    equally distant from every other — but the design matrix grows by <em>k</em> columns per categorical,
+    and it encodes <em>no</em> notion that two levels might be similar.
+  </div>
+  <div class="defbox">
+    <strong class="term">Ordinal (label) encoding.</strong> Replace each level with an integer
+    (<code>&lt;0→0, 0–200→1, …</code>): one compact column. The catch: integers carry an
+    <em>order and spacing</em>, so this silently asserts <code>&lt;0 &lt; 0–200 &lt; ≥200 &lt; none</code>
+    with equal gaps — a <strong>false order</strong> when none exists. A linear model must honour that
+    fiction; a tree can split around it (we will measure exactly this).
+  </div>
+  <div class="defbox">
+    <strong class="term">Target (mean) encoding.</strong> Replace each level with the <em>mean of the
+    target</em> for rows of that level: <code>enc(purpose) = P(good | purpose)</code>. One dense column,
+    ordered by risk, that scales to any cardinality (Micci-Barreca 2001). Its power is also its danger: it
+    is computed <em>from the label</em>, so done carelessly it leaks (a whole section below).
+  </div>
+  <div class="defbox">
+    <strong class="term">Smoothing (shrinkage).</strong> A rare level's raw target mean is noisy — one
+    lucky row and its "risk" is 1.0. Smoothing pulls each level's estimate toward the global mean by its
+    count: <span class="formula">enc(L) = (n_L · mean_L + m · global) / (n_L + m)</span> where
+    <code>n_L</code> is the level's row count and <code>m</code> a smoothing strength (we use m=20). A
+    level with thousands of rows keeps its own mean; a level with three rows falls back to the prior.
+  </div>
+  <div class="defbox">
+    <strong class="term">Out-of-fold (OOF) encoding.</strong> The leak-free recipe for target encoding:
+    split the training rows into folds and encode each fold using level means computed <em>only from the
+    other folds</em> — never from the row being encoded. It is the same "fit on data you don't score"
+    discipline as cross-validation (<a href="0003-train-valid-test-cv.html">L003</a>) and leakage-safe
+    pipelines (<a href="0005-pipelines-preprocessing.html">L005</a>), applied to a feature.
+  </div>
+  <div class="defbox">
+    <strong class="term">Entity embedding.</strong> Replace each level with a short <em>learned dense
+    vector</em> (e.g. 5 or 50 numbers), initialised randomly and trained by backpropagation jointly with
+    the model (Guo &amp; Berkhahn 2016). Because it is learned to help predict the target, levels that
+    behave alike end up <em>near each other</em> in the vector space — a similarity structure no other
+    encoding has. Target encoding is the special 1-dimensional case.
+  </div>
+  <div class="defbox">
+    <strong class="term">Representation.</strong> The numeric form the raw data takes <em>before</em> the
+    model's final decision layer. One-hot, ordinal, target, and embedding are four representations of the
+    same column. Q3 showed search and architecture are exhausted on single tables; the representation is
+    the axis still open — the whole point of this quarter.
+  </div>
+
+  <h2>The problem: a model eats numbers, not words</h2>
+  <p>
+    Gradient boosting, logistic regression, neural nets — all of them ultimately do arithmetic on
+    numeric vectors. A column like <code>purpose = "education"</code> has to become numbers first, and
+    <em>how</em> you do that conversion is a modelling decision with real consequences. Here is the same
+    credit_g column, <code>checking_status</code> (4 levels), under all four encodings. Toggle between
+    them and read what each one costs and captures.
+  </p>
+
+  <div id="encoding-taxonomy-viz"></div>
+
+  <p>
+    Walk the four. <strong>One-hot</strong> is honest — it asserts nothing false — but a categorical of
+    cardinality <em>k</em> costs <em>k</em> columns (across credit_g's 13 categoricals that is
+    <strong>+54 columns</strong>; a single high-cardinality id could add thousands). <strong>Ordinal</strong>
+    is one column, but it fabricates an order and equal spacing. <strong>Target</strong> is one column
+    <em>and</em> orders levels by their actual risk — but it was built from the label.
+    <strong>Embedding</strong> is a few columns of learned numbers that can place
+    <code>&lt;0</code> and <code>0–200</code> near each other if the data says they behave alike.
+  </p>
+
+  <h2>Measuring the trade-off: which encoding, which model?</h2>
+  <p>
+    Claims are cheap; here are real numbers. We encoded <em>all</em> of credit_g's 13 categoricals three
+    ways and scored two model families by 5-fold CV, averaged over 3 seeds (target encoding done
+    out-of-fold so the comparison is honest). Held fixed: the folds, the numeric columns, the metric
+    (ROC-AUC). Varied: the categorical encoding and the model. Measured: mean test AUC and the width of
+    the design matrix.
+  </p>
+
+  <table>
+    <thead><tr><th>Encoding</th><th># columns</th><th>linear model</th><th>GBDT</th></tr></thead>
+    <tbody>
+      <tr><td>one-hot</td><td class="n">61</td><td class="n win">0.782</td><td class="n">0.778</td></tr>
+      <tr><td>ordinal</td><td class="n">20</td><td class="n bad">0.739</td><td class="n">0.774</td></tr>
+      <tr><td>target (out-of-fold)</td><td class="n">20</td><td class="n win">0.784</td><td class="n">0.769</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read it row by row and the whole story of encoding falls out:
+  </p>
+  <ul>
+    <li><strong>Ordinal wrecks the linear model but not the tree.</strong> Switching one-hot → ordinal
+      drops the linear model from <strong>0.782 to 0.739</strong> — a real fall, because the linear model
+      is forced to treat the fabricated integer order as meaningful (it can only add a constant per unit
+      of the code). The GBDT barely moves (<strong>0.778 → 0.774</strong>): axis-aligned splits can carve
+      the integer axis back into the original groups, so a false order costs a tree almost nothing. This
+      is <em>why</em> libraries like LightGBM/CatBoost happily take integer-coded categoricals while a
+      linear or neural model would choke on them.</li>
+    <li><strong>Target encoding matches one-hot at a third of the width.</strong> Out-of-fold target
+      encoding scores <strong>0.784</strong> (linear) and <strong>0.769</strong> (GBDT) using
+      <strong>20 columns instead of 61</strong>. On credit_g the accuracy is a tie; the win is
+      <em>compactness</em> — and that win becomes decisive when a categorical has 10,000 levels and
+      one-hot is simply infeasible.</li>
+    <li><strong>There is no free lunch across models.</strong> The best encoding depends on the model:
+      linear models love one-hot or target encoding and hate ordinal; trees tolerate all three. The
+      encoding and the model are a <em>pair</em>.</li>
+  </ul>
+
+  <h2>The pitfall: target encoding leaks the label</h2>
+  <p>
+    Target encoding's strength — it is built from the label — is exactly what makes it dangerous. If you
+    compute a level's mean using the very row you are about to encode (or, worse, over the whole dataset
+    before you split off a test set), you smuggle each row's own answer into its features. The model then
+    "learns" to read the label it was supposed to predict.
+  </p>
+
+  <h3>Predict first</h3>
+  <p>
+    Imagine a <code>customer_id</code> column where almost every id appears once. We target-encode it two
+    ways — <strong>naively</strong> (each id's mean over all its rows, computed before the split) and
+    <strong>out-of-fold</strong> — and feed <em>that column alone</em> to a GBDT on credit_g-sized data.
+    The id has no real predictive content. What test AUC will each produce?
+  </p>
+  <div id="predict-leak"></div>
+
+  <div id="target-leak-viz"></div>
+
+  <p>
+    The naive encoding of a near-unique id is a mirror: for an id that appears once, its "mean target" is
+    just its own label, so the feature <em>is</em> the answer. Fed to a GBDT, that content-free column
+    scores a train AUC of <strong>0.891</strong> — and because the encoding was built before the split,
+    even the <em>test</em> AUC reads <strong>0.891</strong>. A model that looks brilliant in your report
+    and collapses to chance in production. The out-of-fold version encodes each row from <em>other</em>
+    folds only, so a unique id falls back to the global prior (0.70) and carries no information: train AUC
+    <strong>0.514</strong>, test AUC <strong>0.504</strong> — chance, which is the truth.
+  </p>
+  <p>
+    The fix is a discipline you already know from <a href="0002-design-matrix-leakage.html">L002</a> and
+    <a href="0022-label-leakage-patterns.html">L022</a>, now applied to a feature:
+  </p>
+  <ol>
+    <li><strong>Compute the encoding out-of-fold</strong> (or with a leave-one-out mean) so a row is
+      never encoded using its own label.</li>
+    <li><strong>Smooth</strong> toward the global mean by count, so rare levels don't memorise a handful
+      of rows: <code>enc(L) = (n_L·mean_L + m·global)/(n_L + m)</code>.</li>
+    <li><strong>Fit the encoder inside the CV fold</strong>, exactly like any other learned preprocessing
+      step (L005) — the level means are parameters learned from training data only.</li>
+  </ol>
+  <p>
+    The danger scales with cardinality: a level with thousands of rows barely notices one row's label; a
+    near-unique id is pure leak. That is precisely why the highest-cardinality columns — the ids that
+    <em>point into other tables</em> — are the ones target encoding handles most treacherously, a thread
+    we pick up when we leave the single table behind.
+  </p>
+
+  <h2>Entity embeddings: a learned representation</h2>
+  <p>
+    Target encoding gave each level a single learned number. <strong>Entity embeddings</strong> (Guo &amp;
+    Berkhahn 2016) generalise that to a learned <em>vector</em>. Each level gets a row in an embedding
+    table — say <em>d</em> = 5 numbers — initialised at random. The vectors are fed into a neural network
+    and trained by backpropagation along with the rest of the weights, so gradient descent
+    <em>discovers</em> coordinates that help predict the target. A common rule of thumb for the width
+    (from the paper and the fast.ai library) is
+    <span class="formula">d = min(50, (cardinality + 1) // 2)</span>
+    so a 4-level column gets a 2-D embedding and a 10,000-level column gets a 50-D one — far narrower than
+    one-hot's 10,000 columns.
+  </p>
+  <p>
+    Why does this matter? Because a vector can encode <em>similarity</em>. Two levels that affect the
+    target in the same way can be pushed close together, and the model can then share statistical strength
+    between them — something one-hot (all levels equidistant) and ordinal (a single fake axis) cannot do.
+    Guo &amp; Berkhahn's headline result made this vivid: training only to predict store sales in the
+    Rossmann competition, the learned embedding of the German <em>state</em> variable, projected to 2-D,
+    <strong>recovered the geographic map of Germany</strong> — nobody told it where the states were.
+    Toggle the view below between the real (noisy) credit_g embedding and that illustrative Rossmann
+    result.
+  </p>
+
+  <div id="embedding-space-viz"></div>
+
+  <p>
+    Be honest about the two panels. On Rossmann's scale, the embedding discovered genuine structure. On
+    credit_g's 1000 rows the geometry is loose and noisy — the safe purposes drift together, but you
+    would not read a map off it. Which raises the decisive question for the thesis.
+  </p>
+
+  <h3>Predict first</h3>
+  <p>
+    We now race an <strong>entity-embedding MLP</strong> (a small net with a learned embedding per
+    categorical) against a plain <strong>one-hot MLP</strong> — but this time we make the one-hot baseline
+    <em>fair</em> (early stopping, enough epochs), remembering the L028 lesson that a crippled baseline
+    manufactures fake wins. Same 25% test split, averaged over 3 seeds. Who wins on credit_g?
+  </p>
+  <div id="predict-embed"></div>
+
+  <h2>The honest bake-off: on a small table, embeddings tie</h2>
+  <table>
+    <thead><tr><th>Model (same split, 3 seeds)</th><th>test ROC-AUC</th><th>reading</th></tr></thead>
+    <tbody>
+      <tr><td>entity-embedding MLP</td><td class="n">0.774 ± 0.033</td><td>learned dense vector per level</td></tr>
+      <tr><td>one-hot MLP (fair)</td><td class="n">0.798 ± 0.043</td><td>same net, one-hot inputs, early stopping</td></tr>
+      <tr><td><em>one-hot MLP (undertrained)</em></td><td class="n bad">0.728</td><td><em>the trap: a weak baseline "loses" by 0.07</em></td></tr>
+    </tbody>
+  </table>
+  <p>
+    Two lessons, and hold both. First, the <strong>methodology</strong> lesson, live: with an undertrained
+    one-hot MLP (0.728) the embedding looks like a <strong>+0.07 winner</strong> — a headline you will see
+    in careless blog posts. Make the baseline fair and the "win" evaporates: <strong>0.774 vs
+    0.798</strong>, a tie inside overlapping error bands (exactly the L023 / L030 discipline — a gap this
+    small with these bars is not a difference). If you ever find yourself excited that embeddings beat
+    one-hot by a mile on a small table, suspect your baseline first.
+  </p>
+  <p>
+    Second, the <strong>representation</strong> lesson. Entity embeddings did <em>not</em> unlock new
+    accuracy on credit_g — they land in the same ~0.78 band as one-hot, target encoding, the tuned GBDT
+    (L030), and everything else Q3 measured. This is not a failure of embeddings; it is a statement about
+    the <em>data</em>. On one small, already-flat table there is little similarity structure to learn and
+    little cardinality to compress, so a learned representation has nothing to bite on. Its advantages —
+    compactness at high cardinality, a similarity geometry, and (crucially) a table you can
+    <em>reuse</em> — only pay off when there is structure and scale to exploit.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-encodings"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> Entity embeddings are the hinge on which Q4 turns from "modelling a
+    table" to "learning a representation." Three consequences. <em>(1) Target encoding was an embedding
+    all along.</em> A 1-D learned number per level is the degenerate case; entity embeddings are the
+    <em>d</em>-dimensional generalisation — so the whole Q3 warning about label leakage
+    (<a href="0022-label-leakage-patterns.html">L022</a>) rides along, and learned representations must be
+    fit with the same out-of-fold discipline. <em>(2) The payoff is representational, not on this table.</em>
+    Embeddings tie one-hot on credit_g precisely because a single flat table has little similarity or
+    cardinality to exploit — which is the thesis restated: the value the single-table paradigm misses is
+    <em>structural</em>, and you only see it when there is structure. <em>(3) Embeddings are the atom of
+    RDL.</em> The highest-cardinality categoricals are the <strong>foreign keys</strong> — the ids that
+    point into other tables. One-hot cannot touch them; target encoding leaks on them; but a learned
+    embedding of an entity id, trained end-to-end, is exactly how a relational model represents a customer
+    or a product and lets a graph neural network pass messages between them. Today you learned to embed a
+    <em>column</em>; RDL embeds an <em>entity</em> and its neighbours. Same idea, one table over.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>Trees don't need embeddings; nets do.</strong> Modern GBDTs (LightGBM, CatBoost) have
+      native categorical handling — CatBoost even uses an ordered, leak-safe target statistic internally.
+      Embeddings are the <em>neural</em> answer to categoricals; part of why trees stay competitive on
+      tabular data is that they never needed one.</li>
+    <li><strong>Target encoding and embeddings are cousins, not rivals.</strong> Both learn a numeric
+      representation of a level from the data. Target encoding learns one number in closed form (a mean);
+      an embedding learns several by gradient descent. The leakage discipline is identical.</li>
+    <li><strong>Embeddings can overfit small/rare levels.</strong> A level seen twice cannot learn a
+      trustworthy 50-D vector any more than it can a trustworthy mean. Regularisation, smaller
+      <em>d</em>, and dropout matter — and rare levels still need a fallback (an "unknown" bucket).</li>
+    <li><strong>New/unseen levels need a plan.</strong> One-hot, target, and embeddings all must decide
+      what to do with a level absent at training time (an all-zero one-hot, the global prior, or a
+      dedicated "unknown" embedding). Silent failure here is a classic production bug.</li>
+    <li><strong>The bake-off ties are on <em>one</em> dataset.</strong> As always (L024), read these as a
+      single-dataset methodology demonstration, not a universal ranking. The transferable takeaways are
+      the mechanisms — false order, leakage, learned similarity — not the third-decimal numbers.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The core paper: <strong>Cheng Guo &amp; Felix Berkhahn (2016), <em>Entity Embeddings of Categorical
+    Variables</em></strong> —
+    <a href="https://arxiv.org/abs/1604.06737">arXiv:1604.06737</a>. Short and readable. Focus on
+    <strong>§2–3</strong> (how the embedding layer maps each level to a learned vector, and how it is
+    trained jointly with the network) and <strong>§4</strong> (the Rossmann results, including the
+    German-state embedding that recovered geography). Note their central claim: embeddings help
+    <em>most</em> on high-cardinality categoricals and let the learned structure be reused. Background you
+    can skim: <strong>Micci-Barreca (2001)</strong> for the smoothed target-encoding formula, and the
+    fast.ai <em>tabular</em> docs for the <code>min(50, (card+1)//2)</code> embedding-size heuristic.
+  </p>
+
+  <h2>Lab — encode credit_g four ways, break it, then fix the leak</h2>
+  <p>
+    Notebook <code>0031-embeddings-for-categoricals.ipynb</code> (Tier A — real <code>credit_g</code> via
+    <code>relkit</code>): you implement the two mechanisms that matter — the <strong>smoothed
+    out-of-fold target encoder</strong> (the crucial fragment: encode each fold from the others, with
+    shrinkage) and the <strong>encoding bake-off</strong> (one-hot vs ordinal vs OOF-target, linear vs
+    GBDT) — then reproduce the leak: naive target encoding of a near-unique id scoring ~0.89 AUC on noise,
+    fixed to ~0.50 by going out-of-fold. A short PyTorch <strong>stretch</strong> cell trains a real
+    entity-embedding net and extracts the learned vectors.
+    Reproduction targets: ordinal hurts the linear model but not the tree; OOF target encoding matches
+    one-hot at a third of the width; and the naive-vs-OOF leak gap (0.89 → 0.50).
+    <a href="../labs/html/0031-embeddings-for-categoricals.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why a tree shrugs off a false order that wrecks a linear model, why out-of-fold encoding is the
+    same idea as cross-validation, or why entity embeddings tying one-hot is <em>good</em> news for the
+    relational thesis? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0030-q3-checkpoint.html">← Lesson 030</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0031-embeddings-for-categoricals.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/encoding-taxonomy-viz.js"></script>
+<script src="../assets/target-leak-viz.js"></script>
+<script src="../assets/embedding-space-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 31, count: 3 });
+
+  EncodingTaxonomyViz.mount(document.getElementById("encoding-taxonomy-viz"), {});
+  TargetLeakViz.mount(document.getElementById("target-leak-viz"), {});
+  EmbeddingSpaceViz.mount(document.getElementById("embedding-space-viz"), {});
+
+  Predict.mount(document.getElementById("predict-leak"), {
+    prompt: "A near-unique customer_id (no real signal) target-encoded and fed alone to a GBDT. Test AUC under naive vs out-of-fold encoding?",
+    options: [
+      { label: "Both ~0.50 — a useless column is useless either way", value: "both" },
+      { label: "Naive ~0.89, out-of-fold ~0.50 — naive leaks the label, OOF tells the truth", value: "leak" },
+      { label: "Naive ~0.50, out-of-fold ~0.89 — out-of-fold adds information", value: "flip" }
+    ],
+    correct: "leak",
+    reveal: "Naive train AND test AUC 0.891 (the encoding was built before the split, so each unique id's 'mean' is its own label — pure leak). Out-of-fold: 0.514 / 0.504 — chance, the honest truth."
+  });
+
+  Predict.mount(document.getElementById("predict-embed"), {
+    prompt: "Entity-embedding MLP vs a FAIR one-hot MLP (early stopping) on credit_g, 3 seeds. Who wins?",
+    options: [
+      { label: "Entity embeddings win big — a learned representation beats one-hot", value: "emb" },
+      { label: "Roughly a tie — 0.774 vs 0.798, error bands overlap", value: "tie" },
+      { label: "One-hot wins big — embeddings always overfit small data", value: "oh" }
+    ],
+    correct: "tie",
+    reveal: "0.774 ± 0.033 vs 0.798 ± 0.043 — a tie. With an UNDERtrained one-hot MLP (0.728) embeddings appear to win by +0.07; that is the L028 weak-baseline trap, not a real gain. On a small flat table there is little similarity/cardinality for embeddings to exploit."
+  });
+
+  Teachback.mount(document.getElementById("teachback-encodings"), {
+    prompt: "In your own words: what are the four ways to encode a categorical, why does target encoding leak (and how do you fix it), and what do entity embeddings add that the others cannot — yet why do they only tie one-hot on credit_g?",
+    points: [
+      "Four encodings: one-hot (k binary columns; safe, asserts no false order, but wide and no similarity), ordinal (one integer; compact but invents a false order/spacing — hurts linear/neural models, tolerated by trees), target/mean encoding (one column = P(target|level); compact and ordered by risk, scales to any cardinality), entity embedding (a learned d-dim dense vector per level, trained end-to-end)",
+      "Target encoding leaks because it is computed FROM the label: if a row's level-mean includes its own label (or the encoding is built over all data before the split), the feature becomes a copy of the answer — a near-unique id scored 0.89 AUC on pure noise",
+      "The fix is out-of-fold encoding (encode each fold from the OTHER folds, never the row itself) plus smoothing toward the global mean by count, fit inside the CV fold like any learned preprocessing — the same leakage discipline as L002/L022. It restored the useless id to ~0.50",
+      "Entity embeddings add SIMILARITY: a learned vector can place levels that behave alike close together (Guo & Berkhahn's German-state embedding recovered geography), which one-hot (all equidistant) and ordinal (one fake axis) cannot; target encoding is the 1-D special case",
+      "On credit_g they only TIE a fair one-hot MLP (0.774 vs 0.798) because a small flat table has little similarity structure or cardinality to exploit; the payoff is representational (compactness at high cardinality, a reusable learned geometry) and shows up at scale / with foreign keys — the bridge to RDL"
+    ],
+    model: "A model does arithmetic on numbers, so every categorical column must be encoded, and there are four ways. One-hot turns a k-level column into k binary columns: it asserts nothing false (all levels equidistant) but is wide and captures no similarity. Ordinal maps each level to an integer: compact, but it fabricates an order and equal spacing, which a linear or neural model is forced to honour (credit_g: one-hot→ordinal drops the linear model 0.782→0.739) while a tree splits around it (0.778→0.774). Target (mean) encoding replaces a level with the mean target for that level: one dense column ordered by risk that scales to any cardinality — but it is built from the label, so done naively it leaks (a near-unique id's 'mean' is its own label; that content-free column scored 0.89 AUC train and test). The fix is out-of-fold encoding — encode each fold using level means from the OTHER folds only, plus smoothing toward the global mean by count, fit inside the CV fold — which restored the useless id to chance (0.50), the same leakage discipline as L002/L022. Entity embeddings (Guo & Berkhahn 2016) generalise target encoding from one learned number to a learned d-dimensional vector per level, trained end-to-end; because it is learned, levels that behave alike move close together (their German-state embedding recovered the geographic map), a similarity structure one-hot and ordinal cannot express. Yet on credit_g an entity-embedding MLP only ties a fair one-hot MLP (0.774 vs 0.798, overlapping bands) — an undertrained baseline (0.728) would have faked a +0.07 win (the L028 trap). The tie is the point: a small flat table has little similarity or cardinality to exploit, so a learned representation pays off only at scale and on high-cardinality ids — the foreign keys that point into other tables — which is exactly the seam where relational deep learning begins."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "One-hot → ordinal encoding drops the LINEAR model from 0.782 to 0.739 but leaves the GBDT ~unchanged (0.778 → 0.774). Why?",
+    options: [
+      { label: "Ordinal invents a false order the linear model must honour, while a tree's axis-aligned splits can carve the integer axis back into the original groups", value: "a" },
+      { label: "The GBDT secretly one-hot-encodes the column internally before training", value: "b" },
+      { label: "Ordinal encoding always improves trees and always hurts linear models by design", value: "c" },
+      { label: "The linear model overfit the extra columns that ordinal encoding adds", value: "d" }
+    ],
+    correct: "a",
+    explain: "Ordinal packs the levels onto one integer axis with a fabricated order and spacing. A linear model can only add a constant per unit of that code, so the fake order directly distorts it. A tree can split the axis at any threshold, recovering the true groups, so a false order costs it almost nothing — which is why GBDT libraries accept integer-coded categoricals."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Naive target encoding of a near-unique id scored test AUC 0.891 on a column with no real signal; out-of-fold scored 0.504. What happened, and what is the fix?",
+    options: [
+      { label: "Naive encoding built each id's 'mean' from its own label (before the split), so the feature copied the answer — fix: encode out-of-fold (from other folds) with smoothing, fit inside the CV fold", value: "a" },
+      { label: "The id column genuinely predicts the target; out-of-fold encoding threw the signal away", value: "b" },
+      { label: "0.891 is correct; the out-of-fold run simply used too few folds", value: "c" },
+      { label: "Target encoding is always safe as long as you smooth toward the global mean", value: "d" }
+    ],
+    correct: "a",
+    explain: "For a near-unique id, the level mean is essentially the row's own label, so naive target encoding leaks it — and because the encoding was computed over all rows before the split, even the test score inflates (0.891). Out-of-fold encoding never uses a row's own fold, so a unique id falls back to the prior and carries no information (0.504). Smoothing alone is not enough; the out-of-fold discipline is the core fix."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "An entity-embedding MLP ties a fair one-hot MLP on credit_g (0.774 vs 0.798). What is the right takeaway for the thesis?",
+    options: [
+      { label: "On a small flat table there is little similarity/cardinality to exploit, so a learned representation ties; its payoff (compactness, learned similarity, reusable embeddings of high-cardinality ids) is representational and shows up at scale — the bridge to RDL", value: "a" },
+      { label: "Entity embeddings are useless and should never be preferred over one-hot", value: "b" },
+      { label: "The result proves neural nets are strictly better than trees on tabular data", value: "c" },
+      { label: "Embeddings won by 0.07, confirming learned representations beat one-hot", value: "d" }
+    ],
+    correct: "a",
+    explain: "The tie (with a FAIR baseline — the 0.728 undertrained version would have faked a +0.07 win, the L028 trap) says the single flat table has little structure for a learned representation to exploit. Embeddings' advantages — compact at high cardinality, a similarity geometry, and reusable vectors for the foreign-key ids that point into other tables — are exactly what pays off once relational structure and scale are present."
+  });
+</script>
+</body>
+</html>

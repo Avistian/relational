@@ -148,6 +148,22 @@
     </tbody>
   </table>
 
+  <h2 class="q-head">Q4 · Consolidation &amp; bridge to neural tabular (L031–L040)</h2>
+  <table>
+    <thead><tr><th>Term</th><th>Definition</th><th>Lesson</th></tr></thead>
+    <tbody>
+      <tr><td class="term">Categorical encoding</td><td>Turning a categorical column (labels from a finite set) into the numbers a model can consume. Four ways with different trade-offs: one-hot, ordinal, target, entity embedding. The choice is a <em>representation</em> decision — the axis Q4 opens after Q3 exhausted search and architecture.</td><td class="lsn">031</td></tr>
+      <tr><td class="term">Cardinality</td><td>The number of distinct levels a categorical has (<code>checking_status</code>: 4; a <code>zip_code</code>/<code>product_id</code>: thousands). High cardinality is what makes the encoding choice matter — and is the property of the foreign-key IDs the relational thesis cares about.</td><td class="lsn">031</td></tr>
+      <tr><td class="term">One-hot encoding</td><td>A level of a <em>k</em>-level column becomes <em>k</em> binary columns (one 1, rest 0). Asserts nothing false (all levels equidistant) but is wide (+<em>k</em> columns per categorical; +54 on credit_g) and captures no similarity. Safe from leakage; infeasible at very high cardinality.</td><td class="lsn">031</td></tr>
+      <tr><td class="term">Ordinal (label) encoding</td><td>Each level → an integer (0,1,2,…): one compact column, but integers carry an order and spacing, so it invents a <strong>false order</strong>. A linear/neural model must honour it (credit_g: linear AUC 0.782→0.739); a tree splits around it (0.778→0.774), which is why GBDT libraries accept integer-coded categoricals.</td><td class="lsn">031</td></tr>
+      <tr><td class="term">Out-of-fold (OOF) target encoding</td><td>The leak-free recipe: encode each fold's rows using level means computed <em>only from the other folds</em>, never a row's own label, and fit the encoder inside the CV fold (same discipline as L003/L005). Restored a signal-free id from a leaked 0.891 AUC to 0.504 (chance).</td><td class="lsn">031</td></tr>
+      <tr><td class="term">Target-encoding smoothing (shrinkage)</td><td>Shrink each level's mean toward the global prior by its count: <code>enc(L) = (n_L·mean_L + m·global)/(n_L + m)</code>. A level with many rows keeps its mean; a rare level falls back to the prior, so it can't memorise a handful of rows. Distinct from the boosting learning-rate "shrinkage" (L013).</td><td class="lsn">031</td></tr>
+      <tr><td class="term">Entity embedding</td><td>Each level → a short <em>learned dense vector</em> (dim ≈ <code>min(50,(card+1)//2)</code>), trained by backprop jointly with the model (Guo &amp; Berkhahn 2016). Levels that behave alike end up close together — a similarity structure one-hot and ordinal lack; target encoding is the 1-D special case. The first learned representation and the atom of RDL (embedding foreign-key entities).</td><td class="lsn">031</td></tr>
+      <tr><td class="term">Embedding dimension</td><td>The width <em>d</em> of an entity-embedding vector. The Guo &amp; Berkhahn / fast.ai heuristic is <code>d = min(50, (cardinality+1)//2)</code>: far narrower than one-hot's <em>k</em> at high cardinality, and a knob trading capacity against overfitting on rare levels.</td><td class="lsn">031</td></tr>
+      <tr><td class="term">Learned representation</td><td>A numeric form of the raw data that is <em>learned</em> from the objective rather than hand-specified (an entity embedding vs one-hot). Q3 showed single-table search and architecture are exhausted; the learned representation is the open axis — and on a small flat table it ties, because there is little structure to learn (the payoff is at scale / on relational structure).</td><td class="lsn">031</td></tr>
+    </tbody>
+  </table>
+
   <div class="callout">
     <strong>Thesis vocabulary (used from Year 1, defined in full later).</strong> <em>Relational deep
     learning (RDL)</em> — learning directly over a database's entity graph rather than a flattened table.

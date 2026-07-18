@@ -136,6 +136,11 @@
       id: "feurer2015", paper: "Feurer et al. — Auto-sklearn (Efficient & Robust AutoML)", year: 2015, lesson: 29,
       front: "Feurer et al. 2015 (Auto-sklearn) — what does it automate (the CASH problem), and its two extensions over Auto-WEKA?",
       back: "It solves CASH — Combined Algorithm Selection and Hyperparameter optimization — treating 'which algorithm' as a top-level categorical hyperparameter above each model's knobs and searching the whole space with Bayesian optimization (SMAC), keeping the best-VALIDATION config. Two extensions over Auto-WEKA: (1) meta-learning WARM-START (use dataset meta-features to begin the search from configs that won on similar past datasets) and (2) automated ENSEMBLE construction (Caruana 2004 greedy selection over the pool of trained models). It does NOT do domain feature engineering, and it ties a well-tuned GBDT on typical tabular data (credit_g: default XGB 0.775 → tuned 0.806 ≈ AutoML 0.803) — it buys automation/robustness, not new accuracy."
+    },
+    {
+      id: "guo2016", paper: "Guo & Berkhahn — Entity Embeddings of Categorical Variables", year: 2016, lesson: 31,
+      front: "Guo & Berkhahn 2016 — what is an entity embedding, and what did the Rossmann state embedding reveal?",
+      back: "Map each level of a categorical to a learned dense vector (dim ≈ min(50, (card+1)//2)), initialised randomly and trained by backprop jointly with the network — a d-dimensional generalisation of target encoding (the 1-D case). Because the vectors are learned to predict the target, levels that behave alike end up close together, so the model shares statistical strength across similar levels and stays compact at high cardinality (unlike one-hot). Headline result: trained only to predict store sales, the learned embedding of the German STATE variable, projected to 2-D, recovered the geographic map of Germany — a real learned representation nobody put in by hand. Embeddings help most on high-cardinality categoricals; on a small flat table they tie one-hot. The bridge from encoding a column to embedding the foreign-key entities of a relational database (RDL)."
     }
   ];
 })(window);

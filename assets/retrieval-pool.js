@@ -506,6 +506,42 @@
       ],
       correct: "a",
       explain: "Q2's fair contract (same data/split/metric/budget/preprocessing) becomes a defensible report when you add: a split that matches deployment (temporal if timestamped, L021), an audited feature set (model info sheet, L022), a proven gap (corrected resampled t / Friedman-Nemenyi, L023) reported as a budget curve not one number (L024), and an inductive-bias explanation (L025-27) — ending in an honest verdict, including a tie."
+    },
+    {
+      id: "l031-ordinal", lesson: 31, quarter: "Q4", concept: "encoding",
+      question: "Ordinal-encoding a categorical (levels → integers 0,1,2,…) drops a LINEAR model's AUC but barely dents a GBDT. Why?",
+      options: [
+        { label: "Ordinal invents a false order/spacing the linear model must honour, while a tree's axis-aligned splits can carve the integer axis back into the true groups", value: "a" },
+        { label: "Trees secretly one-hot the column internally before training", value: "b" },
+        { label: "Ordinal encoding adds columns that the linear model overfits", value: "c" },
+        { label: "Linear models cannot read integer-valued features at all", value: "d" }
+      ],
+      correct: "a",
+      explain: "Ordinal packs levels onto one integer axis with a fabricated order and equal spacing. A linear model adds a constant per unit of the code, so the fake order distorts it (credit_g: 0.782→0.739). A tree can threshold the axis anywhere, recovering the groups (0.778→0.774) — which is why GBDT libraries accept integer-coded categoricals."
+    },
+    {
+      id: "l031-leak", lesson: 31, quarter: "Q4", concept: "target-encoding", misconception: true,
+      question: "Target-encoding a near-unique customer_id gives test AUC 0.89 on a column with NO real signal. What went wrong, and the fix?",
+      options: [
+        { label: "Naive encoding built each id's mean from its own label (before the split), so the feature copied the answer — fix: encode out-of-fold (from other folds) with smoothing, fit inside the CV fold", value: "a" },
+        { label: "The id genuinely predicts the target; the 0.89 is real", value: "b" },
+        { label: "The model overfit; use fewer trees and the leak disappears", value: "c" },
+        { label: "Target encoding is always safe once you smooth toward the global mean", value: "d" }
+      ],
+      correct: "a",
+      explain: "For a near-unique id the level mean is essentially the row's own label, so naive target encoding leaks it — and computing it over all rows before the split inflates even the test score (0.891). Out-of-fold encoding never uses a row's own fold, so a unique id falls back to the prior (0.504, chance). Smoothing alone is not enough; the out-of-fold discipline is the core fix."
+    },
+    {
+      id: "l031-embeddings", lesson: 31, quarter: "Q4", concept: "entity-embeddings",
+      question: "What does an entity embedding (Guo & Berkhahn 2016) add over one-hot/target encoding, and why does it only TIE one-hot on credit_g?",
+      options: [
+        { label: "A learned d-dim dense vector per level that captures similarity (target encoding is the 1-D case); it ties on a small flat table with little similarity/cardinality to exploit — the payoff is representational, at scale and on high-cardinality foreign keys", value: "a" },
+        { label: "It is strictly more accurate than one-hot on every dataset", value: "b" },
+        { label: "It removes the need to worry about label leakage", value: "c" },
+        { label: "It only works for trees, not neural nets", value: "d" }
+      ],
+      correct: "a",
+      explain: "An entity embedding learns a dense vector per level end-to-end, so similar levels sit close together (Guo & Berkhahn's German-state embedding recovered geography) — one-hot (equidistant) and ordinal (one fake axis) cannot. Target encoding is the 1-D special case, so the same leakage discipline applies. On credit_g it ties a FAIR one-hot MLP (0.774 vs 0.798; an undertrained baseline 0.728 would fake a +0.07 win, the L028 trap): a small flat table has little structure for a learned representation, whose payoff shows up at scale and on the foreign-key ids that point into other tables — the bridge to RDL."
     }
   ];
 })(window);

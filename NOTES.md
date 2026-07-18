@@ -342,6 +342,52 @@
 - Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
   last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
 
+## Session 31 — 2026-07-18
+
+- **Lesson 030 complete** — user said "lesson 30 done" (no EXIT ticket → no rubric score, per the
+  L017–L029 precedent). Record [[learning-records/0073-lesson-030-complete.md]]. Closes **Y1 Q3**.
+- **Lesson 031 published — Embeddings for Categoricals (Q4 opener)** (curriculum lec 031, **Guo &
+  Berkhahn 2016**, core ★). Single skill: the four categorical encodings (one-hot / ordinal / target /
+  entity embedding), why ordinal fakes an order, why target encoding **leaks** unless out-of-fold, and how
+  entity embeddings learn a dense similarity-capturing vector — the first *learned representation* and the
+  bridge to neural tabular / RDL. Record [[learning-records/0074-lesson-031-published.md]]. **Fifth
+  application of standard #17** (every term/formula defined from first principles: cardinality, one-hot,
+  ordinal false order, target encoding, smoothing, OOF, entity embedding, embedding dim, representation).
+- **torch INSTALLED this session** (user directive: "pytorch will be needed anyway"). `.venv/bin/pip
+  install torch --index-url .../cpu` → **torch 2.13.0+cpu** (aarch64). It was already in
+  `requirements-labs.txt` (line 11) but had never actually been in the venv (recurring Session 22–30 gap).
+  Now the entity-embedding experiments + lab stretch are real, not sklearn stand-ins.
+- **ENV GOTCHA (important, recurring-risk):** after the torch install, sklearn `HistGradientBoosting`
+  oversubscribed OpenMP threads → **~21 s per fit** (vs 0.28 s). Fix: set `OMP_NUM_THREADS=1` (+ OPENBLAS/
+  MKL/NUMEXPR) **before** importing numpy/sklearn, and `torch.set_num_threads(1)`. Baked into
+  `_verify_l031.py` and the lab SETUP cell. If future labs feel hung, suspect thread oversubscription first.
+- **Verified live** (`labs/_verify_l031.py`, credit_g Tier A): bake-off (5-fold × 3 seeds) — one-hot 61
+  cols linear **0.782**/gbdt 0.778; ordinal 20 cols linear **0.739** (false order hurts linear) / gbdt
+  0.774 (tree shrugs); OOF-target 20 cols linear 0.784 / gbdt 0.769. Leak: naive target-encode a
+  near-unique id → **0.891 AUC on pure noise**, OOF → **0.504** (chance). Entity-embedding MLP **0.774 ±
+  0.033** vs **fair** one-hot MLP **0.798 ± 0.043** (3 splits) = **a tie**; an *undertrained* one-hot MLP
+  (0.728) would have faked a +0.07 win — the **L028 weak-baseline trap, live**. Honest, thesis-consistent
+  landing: a learned representation buys nothing on a small flat table; the payoff is structural/at-scale.
+- **Three new reusable viz (standard #9, one per beat):** `assets/encoding-taxonomy-viz.js` (the same
+  column under all 4 encodings — toggle is right here: same mechanism, one knob), `assets/target-leak-viz.js`
+  (naive vs OOF on a unique id; real 0.891 vs 0.504), `assets/embedding-space-viz.js` (REAL credit_g
+  `purpose` embedding, PCA→2-D, + illustrative Guo-Berkhahn German-states map). Headless
+  `labs/_viz_check_l031.js` **14/14**; **browser MCP unavailable** (headless) → node verification only,
+  per L021–L030.
+- **Lab** `labs/0031-embeddings-for-categoricals.ipynb` — Tier A, `_build_l031.py`. Crucial fragment
+  (Task 1) = the **smoothed OOF target encoder** (`(count*mean + m*glob)/(count+m)`); Task 2 = the encoding
+  bake-off (fill the target branch); Task 3 = the leak (naive vs OOF on a signal-free id). Student blank
+  (4 `____`, 0 outputs); solution executed clean & gitignored; matches lesson numbers. **Runnable torch
+  stretch** (commented, ungraded) trains a real entity-embedding net.
+- **Artifacts synced:** manifest → **31 entries** (L031 Q4, published); `labs/html/0031-*.html` rendered;
+  `retrieval-pool.js` +3 (`l031-ordinal`, `l031-leak` misconception, `l031-embeddings`); `paper-deck.js`
+  +1 (`guo2016`, core ★); `misconceptions.md` **M28** (target encoding leaks unless OOF) + **M29**
+  (embeddings only tie one-hot on a small flat table — the L028 trap); `thesis-dossier.md` +1 line (L031,
+  FOR+BAR, C4/C1) and **verdict updated to "after L031 / Q4 opener"**; `glossary.html` **+ a new Q4
+  section** (9 terms). `node labs/_check_pedagogy.js` clean; `node labs/_viz_check_l031.js` 14/14.
+- Next: Lesson 032 — **TabTransformer preview** (Huang et al. 2020; read the architecture figure),
+  continuing the Q4 bridge to neural tabular.
+
 ## Session 30 — 2026-07-18
 
 - **Lesson 029 complete** — user said "lesson 29 done" (no EXIT ticket → no rubric score, per the

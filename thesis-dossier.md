@@ -58,6 +58,7 @@ Legend: **[FOR]** supports a sub-claim · **[BAR]** raises the honest baseline t
 | L029 | Feurer 2015 (Auto-sklearn): AutoML automates the **CASH** search (which algorithm + its hyperparameters, selected by validation) plus meta-learning warm-start and Caruana ensemble selection — the strongest form of "just automate the single-table pipeline." Repro on credit_g: the big jump is tuning *at all* (default XGB 0.775 → tuned 0.806, +0.031); a 4-algorithm AutoML with ensembling then only **ties** the tuned XGB (0.803, bands overlap) at far higher compute (the greedy ensemble did add a free +0.007 over the single best config). BAR: an honest single-table baseline can now be "whatever AutoML finds", foreclosing the objection that an RDL win merely beat a lazily-tuned model. FOR (indirect, C1/C2/C4): AutoML searches *models and knobs*, never the **feature representation** — it explicitly does no domain feature engineering and tunes on top of an already-flattened table, so it cannot recover what the join/flatten step discarded; and that a many-algorithm AutoML only ties a tuned GBDT shows the returns to cleverer single-table *search* are nearly exhausted, so the remaining upside must come from a better *representation* (learning over relational structure) — exactly the thesis. | BAR + FOR | C3, C1, C4 |
 | L028 | Gorishniy 2021: the honest neural baselines are a *properly-tuned* MLP and **ResNet** (pre-activation residual blocks; the skip makes the identity free, fixing the degradation problem so depth stops hurting — repro: same net, plain test 0.917→0.866 & TRAIN 1.000→0.927 over depth 1→32, ResNet holds ~0.90). Their central finding is methodological: once you compare against these baselines, much prior tabular-DL "progress" evaporates. BAR: the single-table bar an RDL result must clear is now a tuned GBDT **and** a tuned ResNet — an RDL "win" over a weak neural baseline would be exactly the mistake Gorishniy exposes; and on small categorical `credit_g` the GBDT still leads (0.793) with MLP (0.752) ≈ ResNet (0.743) tied, so the neural machinery does not repeal L024–L027. FOR (indirect): this is the machinery the thesis is *built from* — the RDL stack is encoder → message passing → a residual-MLP head — so owning the honest baseline and the residual block is a prerequisite for making (and defending) any relational win; and the inductive-bias debts (L025–L027) a flat ResNet still carries are exactly what reading structure natively is meant to pay off. | BAR + FOR | C3, C1 |
 | L030 | **Q3 checkpoint** — the whole evaluation-rigor toolkit assembled into one **benchmark report**: deployment-matched split (L021), leakage audit (L022), a random-search budget curve over a tuned GBDT + honest neural baseline + AutoML bar (L024/L028/L029), a corrected resampled significance test (L023), and an inductive-bias explanation (L025–L027). Repro on credit_g: GBDT led the honest MLP baseline by only **+0.0081 ROC-AUC** over 25 paired folds, and the corrected resampled t-test gave **p=0.64** (naive p=0.22) → **no significant winner**. BAR: this is the complete, exact instrument any RDL claim must clear — a fair, temporal, leak-audited, significance-tested, bias-explained one-pager that, crucially, *reports a tie when the data says tie*. FOR (indirect, C3/C4): the checkpoint's honesty is the thesis's credibility reserve — a program that reports "no significant winner" on credit_g today is one whose eventual "RDL beats the incumbent" verdict a skeptic can trust; and the tie confirms (with L029) that returns to single-table *search/architecture* are nearly exhausted, so the open upside is representational. | BAR + FOR | C3, C4 |
+| L031 | Guo & Berkhahn 2016 (Entity Embeddings) — Q4 opener, the first **learned representation**. The four categorical encodings and their trade-offs (repro on credit_g: ordinal's false order drops the linear model 0.782→0.739 but not the GBDT 0.778→0.774; OOF target ties one-hot at 20 cols vs 61; naive target encoding of a signal-free id **leaks** 0.891 AUC, fixed to 0.504 out-of-fold). An entity-embedding MLP **ties** a *fair* one-hot MLP (0.774 vs 0.798; an undertrained baseline 0.728 would fake a +0.07 win — the L028 trap, live). FOR (C4, C1): entity embeddings *are* the atom of RDL — target encoding is a 1-D learned embedding, entity embeddings the d-dim generalisation, and the highest-cardinality categoricals are the **foreign keys** that point into other tables, which one-hot cannot touch and naive target encoding leaks on; a learned embedding of an entity id trained end-to-end is exactly how a relational model represents a customer/product. BAR: the tie on credit_g shows a learned representation buys nothing on a *small flat* table — the payoff is structural, only visible at scale and with relational reuse, which is the thesis restated (the value single-table misses is structural). | FOR + BAR | C4, C1 |
 
 ---
 
@@ -94,7 +95,7 @@ Assembled from Q1–Q2. To make the thesis legible to a skeptic, an RDL result m
 
 ---
 
-## Current verdict (updated 2026-07-18, after L030 / Q3)
+## Current verdict (updated 2026-07-18, after L031 / Q4 opener)
 
 **Undecided, and honestly so.** Q3 completed the *instrument* rather than the *case*: the dossier now
 owns the full honest bar (C3) — not just a strong incumbent (Q2) but the whole apparatus that certifies
@@ -103,8 +104,14 @@ benchmark L024, the three inductive-bias explanations L025–L027, an honest neu
 ceiling L029), assembled into one defensible benchmark report (L030). Two Q3 findings sharpen the case
 *for* the thesis, indirectly: (a) AutoML only *ties* a tuned GBDT (L029) and (b) on credit_g the GBDT vs
 neural gap is *not significant* (L030) — together showing the returns to cleverer single-table
-search/architecture are nearly exhausted, so the remaining upside is representational (C4). The genuinely
-*supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and leakage-prone,
-and manual feature synthesis hints structure is recoverable, but no result yet shows a relational model
-*beating the fair bar by keeping structure*. That demonstration is the Y1-exit → Y3–Y4 burden. Standing
-honestly on a high, fully-instrumented baseline is the point: it is what will make an eventual win credible.
+search/architecture are nearly exhausted, so the remaining upside is representational (C4). Q4 now opens
+that representational front: L031 introduces the first *learned representation* (entity embeddings) and
+shows it too *ties* one-hot on a small flat table — deflationary on its face, but exactly the thesis
+restated (a learned representation buys nothing without structure/scale to exploit), and it names the
+concrete seam the bet lives on: the high-cardinality **foreign keys** one-hot cannot touch and naive
+target encoding leaks on are precisely what an entity embedding — the atom of RDL — is built to represent.
+The genuinely *supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and
+leakage-prone, and manual feature synthesis hints structure is recoverable, but no result yet shows a
+relational model *beating the fair bar by keeping structure*. That demonstration is the Y1-exit → Y3–Y4
+burden. Standing honestly on a high, fully-instrumented baseline is the point: it is what will make an
+eventual win credible.
