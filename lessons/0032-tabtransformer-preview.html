@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 032 — TabTransformer Preview</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+
+    /* architecture viz */
+    .tta-viz, .atc-viz {
+      margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tta-ctl, .atc-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+    .tta-ctl button, .atc-ctl button {
+      font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .tta-ctl button.tta-on, .atc-ctl button.atc-on {
+      background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+    .tta-svg { display: block; max-width: 100%; margin: 0.25rem auto; }
+    .tta-boxhead { font-family: var(--font-sans); font-size: 9.5px; font-weight: 600; }
+    .tta-boxsub { font-family: var(--font-sans); font-size: 8.5px; }
+    .tta-lane { font-family: var(--font-sans); font-size: 8.5px; letter-spacing: 0.05em; fill: var(--muted); }
+    .tta-readout, .atc-readout { font-size: 0.86rem; margin: 0.7rem 0.2rem 0; line-height: 1.55; }
+
+    /* attention viz */
+    .atc-hint { font-size: 0.82rem; color: var(--muted); margin: 0.2rem 0 0.7rem; }
+    .atc-grid { display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: flex-end; }
+    .atc-card { flex: 1 1 140px; min-width: 130px; padding: 0.6rem; border: 1px solid var(--border);
+      border-radius: 6px; background: var(--bg); text-align: center; }
+    .atc-card.atc-q { border-color: #1e6b3c; box-shadow: 0 0 0 2px rgba(30,107,60,0.18); }
+    .atc-name { font-family: var(--font-mono); font-size: 0.78rem; margin-bottom: 0.5rem; }
+    .atc-bars { display: inline-flex; gap: 3px; align-items: flex-end; height: 36px; }
+    .atc-bar { width: 10px; border-radius: 2px 2px 0 0; display: inline-block; }
+    .atc-tag { font-family: var(--font-sans); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-top: 0.4rem; }
+    .atc-weights { flex-basis: 100%; margin-top: 0.6rem; font-size: 0.8rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .atc-wlab { color: var(--muted); }
+    .atc-wpill { font-family: var(--font-mono); font-size: 0.76rem; padding: 0.12rem 0.5rem; border-radius: 4px; background: #1e6b3c; color: #fff; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4</p>
+  <h1>TabTransformer Preview</h1>
+  <p class="subtitle">Lesson 032 · Phase 1 · Q4 · ~40 min · <em>primary reading: Huang et al. 2020, TabTransformer (read the architecture figure)</em></p>
+
+  <p>
+    Last lesson (<a href="0031-embeddings-for-categoricals.html">L031</a>) you learned to turn a
+    categorical column into a <strong>learned dense vector</strong> — an entity embedding. But that
+    embedding is <em>context-free</em>: <code>checking = &lt; 0</code> gets the same vector whether the
+    customer rents or owns their home, whether the loan is for a new car or education. This lesson is a
+    <strong>preview</strong> of the first architecture that fixes that: <strong>TabTransformer</strong>
+    (Huang et al. 2020), which passes those per-column embeddings through a stack of <strong>self-attention
+    layers</strong> so each column's vector can be reshaped by the other columns in the same row —
+    turning context-free embeddings into <strong>contextual</strong> ones.
+  </p>
+  <p>
+    "Preview" is the operative word. This is a <em>reading-the-figure</em> lesson: the goal is to
+    understand what TabTransformer's architecture <em>is</em> and where its one new idea sits, not to train
+    one (that full treatment and training lab arrive in Year 2, lecture 045 in the
+    curriculum). You will leave able to sketch the data-flow diagram from memory and explain, honestly, what
+    attention buys on a table — which, spoiler, is <em>not</em> a win over gradient-boosted trees.
+  </p>
+  <p>
+    Its single skill: <strong>read and reconstruct the TabTransformer architecture — categorical
+    embeddings → a stack of Transformer self-attention layers → <em>contextual</em> embeddings, while
+    continuous features bypass the Transformer and are concatenated before an MLP head — and state its
+    honest empirical verdict: it <em>matches</em> tree ensembles (does not beat them) on supervised
+    tabular data, its measured gains are over other deep methods and in robustness / semi-supervised
+    pre-training, and the one idea that carries forward is that attention makes a column's representation
+    depend on its row-context.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> TabTransformer takes the entity embeddings of L031 and runs them through
+    Transformer self-attention so each categorical column becomes a <strong>contextual embedding</strong>
+    (its vector now depends on the other columns in the row); on a single flat table this only <em>ties</em>
+    strong trees, but the idea — a learned representation refined by attending to related information — is
+    the conceptual seed of message passing in relational deep learning.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — the act of retrieval (even a failed one) encodes the idea better than re-reading would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    This lesson introduces the Transformer's core machinery. Every term is defined here in plain language
+    before we rely on it — assume you are meeting each one fresh.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Transformer.</strong> A neural-network architecture built from stacked
+    <em>self-attention</em> layers (Vaswani et al. 2017, "Attention Is All You Need"). Originally for
+    language, it processes a <em>set/sequence</em> of vectors ("tokens") and returns a new set of the same
+    size, where each output vector has been updated using information from the others. TabTransformer treats
+    each categorical column's embedding as one token.
+  </div>
+  <div class="defbox">
+    <strong class="term">Token.</strong> One input vector to a Transformer. In NLP a token is (roughly) a
+    word; in TabTransformer a token is <strong>one categorical column's embedding</strong>. A row with
+    <em>m</em> categorical columns is a set of <em>m</em> tokens, each a vector of width <em>d</em>.
+  </div>
+  <div class="defbox">
+    <strong class="term">Self-attention.</strong> The operation at the heart of a Transformer. Each token
+    produces a <em>query</em>, a <em>key</em>, and a <em>value</em> vector (three learned linear
+    projections). A token's output is a <strong>weighted average of every token's value</strong>, where the
+    weight token <em>i</em> puts on token <em>j</em> is how much <em>i</em>'s query matches <em>j</em>'s
+    key. "Self" means the tokens attend to each other (here: the columns of the same row).
+  </div>
+  <div class="defbox">
+    <strong class="term">Attention weights.</strong> The set of non-negative numbers, summing to 1, that
+    say how much each token contributes to a given token's output. They come from a
+    <strong>softmax</strong> of scaled query·key scores:
+    <span class="formula">Attention(Q,K,V) = softmax( Q·Kᵀ / √d ) · V</span>
+    where <code>softmax</code> turns raw scores into a probability-like weighting (each ≥ 0, summing to 1),
+    and <code>√d</code> rescales so the scores don't blow up as the vector width <em>d</em> grows.
+  </div>
+  <div class="defbox">
+    <strong class="term">Context-free vs contextual embedding.</strong> A <em>context-free</em> embedding
+    (L031's entity embedding) gives a level the same vector everywhere. A <strong>contextual</strong>
+    embedding gives it a vector that depends on the rest of the input. The NLP analogy: the word "bank" has
+    one context-free vector, but a contextual model gives "river bank" and "savings bank" different vectors.
+    TabTransformer makes categorical columns contextual with respect to the <em>other columns in the row</em>.
+  </div>
+  <div class="defbox">
+    <strong class="term">Feed-forward network (FFN) / MLP head.</strong> A small stack of
+    <code>Linear → activation → Linear</code> layers. A Transformer layer applies one FFN to each token
+    after attention; TabTransformer's final <strong>MLP head</strong> maps the concatenated features to the
+    prediction. This is the ordinary multilayer perceptron of <a href="0028-mlp-resnet-baselines.html">L028</a>.
+  </div>
+  <div class="defbox">
+    <strong class="term">LayerNorm.</strong> Layer normalization — rescales a vector to zero mean and unit
+    variance across its components, with two learned parameters. It stabilises training. In TabTransformer
+    the continuous features are simply layer-normalised and passed straight to the head.
+  </div>
+
+  <h2>The architecture: read the figure</h2>
+  <p>
+    Here is TabTransformer's data-flow, the figure the curriculum asks you to read (Huang et al. 2020,
+    Fig. 1). Step through the four stages — the diagram highlights the boxes for each. Notice how little is
+    new: stages 1 and 4 you already know from L031 and L028; the <em>only</em> new machinery is the
+    Transformer stack in stage 2.
+  </p>
+
+  <div id="tabtransformer-arch-viz"></div>
+
+  <p>
+    Trace it in words. A row's <strong>categorical</strong> columns are embedded into <em>m</em> vectors
+    (stage 1 — exactly L031's entity embeddings). Those <em>m</em> vectors go through <em>N</em> stacked
+    Transformer layers, each of which lets every column attend to every other column, producing <em>m</em>
+    <strong>contextual</strong> vectors (stage 2). Meanwhile the <strong>continuous</strong> columns skip
+    the Transformer entirely — they are just layer-normalised (stage 3). Finally the contextual vectors are
+    flattened, concatenated with the normalised continuous features, and fed to an ordinary MLP that outputs
+    the prediction (stage 4). Two design facts worth committing: <strong>only categoricals get
+    contextualised</strong> (numerics bypass), and <strong>the head is a plain MLP</strong> — the novelty is
+    entirely the middle.
+  </p>
+
+  <h2>The one new idea: attention makes embeddings contextual</h2>
+  <p>
+    Everything hinges on stage 2, so let us make it concrete. Take one row with three categorical columns.
+    Before the Transformer, each column carries its own fixed embedding — the same as L031. Self-attention
+    then rewrites each column's vector as a <strong>weighted blend of all the columns in that row</strong>.
+    Click a column below to make it the <em>query</em> and watch its contextual vector assemble from its
+    neighbours; toggle "before / after" to see that the same column embedding changes once it can see its
+    row.
+  </p>
+
+  <div id="attention-context-viz"></div>
+
+  <p>
+    That is the whole idea, and the "bank" analogy nails it: just as a language model gives "bank" a
+    different vector in "river bank" than in "savings bank", TabTransformer gives <code>checking = &lt; 0</code>
+    a different vector when it sits next to <code>housing = rent</code> than next to <code>housing = own</code>.
+    The representation of a column is no longer decided in isolation — it is <em>computed from the row it
+    lives in</em>. Hold onto that sentence; it is the bridge to the whole back half of this curriculum.
+  </p>
+
+  <h3>Predict first</h3>
+  <p>
+    TabTransformer's abstract reports strong numbers. Before you read them: on ordinary
+    <strong>supervised</strong> tabular benchmarks, how does TabTransformer do against a well-tuned
+    <strong>gradient-boosted tree ensemble</strong> (GBDT)?
+  </p>
+  <div id="predict-verdict"></div>
+
+  <h2>The honest verdict: it matches trees, and that is the point</h2>
+  <p>
+    Here is what the paper actually claims, read carefully. It is easy to skim the abstract and come away
+    thinking TabTransformer "beats everything"; it does not.
+  </p>
+  <table>
+    <thead><tr><th>Claim (Huang et al. 2020)</th><th>What it is measured against</th><th>Honest reading</th></tr></thead>
+    <tbody>
+      <tr><td>+1.0% mean AUC (supervised)</td><td class="n">over other <em>deep</em> tabular models (e.g. MLP)</td><td>a within-DL improvement, not vs trees</td></tr>
+      <tr><td>"matches tree-based ensembles"</td><td class="n">GBDT (GBM/XGBoost)</td><td class="win">a tie with the incumbent — no beat</td></tr>
+      <tr><td>robust to noisy / missing features</td><td class="n">a plain MLP baseline</td><td>real, and a genuine selling point</td></tr>
+      <tr><td>+2.1% AUC (semi-supervised)</td><td class="n">SOTA, using <em>unlabeled</em> data via pre-training</td><td>the strongest result — needs unlabeled data</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the rows honestly. The headline <strong>+1.0%</strong> is <em>over other deep-learning methods</em>
+    — the same story as <a href="0028-mlp-resnet-baselines.html">L028</a>, where the contribution was an
+    honest deep baseline, not a defeat of trees. Against the actual incumbent, gradient-boosted trees,
+    TabTransformer <strong>matches</strong> — a tie, exactly like the entity-embedding MLP tied one-hot on
+    credit_g (L031) and like AutoML tied a tuned GBDT (<a href="0029-manual-fe-vs-automl.html">L029</a>).
+    Its two <em>real</em> wins are (1) <strong>robustness</strong>: contextual embeddings degrade more
+    gracefully when features are noisy or missing than a plain MLP, and (2) <strong>semi-supervised
+    pre-training</strong>: you can pre-train the Transformer on <em>unlabeled</em> rows and get a +2.1% lift
+    — a lever trees do not have, and one that matters when labels are scarce.
+  </p>
+  <div class="callout">
+    <strong>Why a tie is the expected result, again.</strong> This is now a pattern, not a coincidence
+    (L028 neural tie, L029 AutoML tie, L030 checkpoint tie, L031 embedding tie). On a single flat table the
+    returns to more single-table cleverness — deeper search, fancier architecture, richer representation —
+    are nearly exhausted against a tuned GBDT. Attention over a row's <em>columns</em> is more single-table
+    cleverness. The thesis says the untapped value is not there; it is in the <em>relational structure</em>
+    across tables that flattening throws away. TabTransformer matching trees is one more brick in that wall.
+  </div>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-contextual"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> TabTransformer is the first architecture in this curriculum that
+    <em>refines a representation by attending to related information</em>, and that is precisely the motion
+    relational deep learning generalises. Three consequences. <em>(1) Contextual = a step toward message
+    passing.</em> A column's contextual embedding is a weighted aggregate of the other columns' vectors —
+    which is exactly what a graph neural network does when it updates an entity's embedding from its
+    neighbours' embeddings. TabTransformer attends <strong>within a row</strong> (over its columns); a GNN
+    on a relational graph attends/aggregates <strong>across rows in related tables</strong> (over an
+    entity's neighbours via foreign keys). Same operation, one relational level up. <em>(2) The tie is the
+    thesis, not a disappointment.</em> Attention over columns matches trees because it is still confined to
+    one table — no new structural information enters. The bet is that the same attention/aggregation,
+    unleashed over the <em>relational graph</em>, finally clears the bar. <em>(3) Pre-training foreshadows
+    foundation models.</em> TabTransformer's semi-supervised lift from unlabeled data is a first taste of
+    the self-supervised pre-training that Year 2 (VIME/SCARF) and the relational foundation models of Year 5
+    are built on.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>Only categoricals are contextualised in the 2020 design.</strong> Continuous features
+      bypass the Transformer entirely. Later models (FT-Transformer, lecture 046
+      in Year 2) fix this by <em>tokenising numeric features too</em> — giving every feature, numeric or
+      categorical, its own token so attention runs over all of them. Remember TabTransformer as the first,
+      partial step.</li>
+    <li><strong>Attention is permutation-invariant over tokens.</strong> Self-attention treats its input as
+      a <em>set</em> — it has no built-in notion of column order (NLP adds positional encodings; here column
+      identity is carried by each column's own embedding). This is fine for tabular columns, which have no
+      natural order.</li>
+    <li><strong>"Contextual" ≠ "better" on a flat table.</strong> Making a column's vector depend on its row
+      is more expressive, but expressiveness is not accuracy: a tuned tree already captures column
+      interactions through its splits. The extra machinery earns its keep under noise, missingness, or
+      unlabeled data — not on clean, fully-labeled small tables.</li>
+    <li><strong>This is a preview, not the full treatment.</strong> We are reading the figure and the
+      verdict, not deriving multi-head attention or training the model. The mechanics (heads, residual
+      connections, the pre-training objective) and a real training lab come in Year 2. Do not over-invest in
+      the internals yet — own the data-flow and the honest verdict.</li>
+    <li><strong>One dataset / one paper.</strong> As always (<a href="0024-grinsztajn-benchmark.html">L024</a>),
+      treat the numbers as a single study, not a universal ranking. The transferable takeaway is the
+      mechanism (contextual embeddings via self-attention) and the pattern (ties trees on flat tables), not
+      the exact percentages.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The paper: <strong>Xin Huang, Ashish Khetan, Milan Cvitkovic, Zohar Karnin (2020),
+    <em>TabTransformer: Tabular Data Modeling Using Contextual Embeddings</em></strong> —
+    <a href="https://arxiv.org/abs/2012.06678">arXiv:2012.06678</a>. It is a short 7-page paper. For this
+    preview, <strong>read the architecture figure (Fig. 1) and §2 (the model)</strong> until you can redraw
+    the data-flow from memory, then skim the experiments table to confirm the honest verdict: matches
+    tree-based ensembles, +1.0% over other deep methods, +2.1% semi-supervised, robust to noise/missingness.
+    Optional background: <strong>Vaswani et al. 2017</strong>, <em>Attention Is All You Need</em>
+    (<a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a>) — §3.2 for the scaled dot-product
+    attention formula, if you want the source of <code>softmax(QKᵀ/√d)V</code>.
+  </p>
+
+  <h2>Lab — trace the shapes through the architecture</h2>
+  <p>
+    Notebook <code>0032-tabtransformer-preview.ipynb</code> (Tier C — a tiny toy row, no training): you
+    build the TabTransformer forward pass <em>by hand</em> to prove you can read the figure. You implement
+    the crucial fragment — <strong>scaled dot-product self-attention</strong>,
+    <code>softmax(QKᵀ/√d)·V</code> — verify that it produces <em>contextual</em> embeddings (the same column
+    vector changes when a neighbour changes), then assemble the full data-flow (embed → attention → bypass
+    continuous → concat → MLP head) checking the tensor shape at every stage. No GPU, no training, ~1 minute;
+    it is a "read the architecture figure" exercise made concrete.
+    <a href="../labs/html/0032-tabtransformer-preview.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure how self-attention actually computes those weights, why "contextual" is different from the L031
+    embedding, or why TabTransformer tying trees is <em>good</em> news for the relational thesis? Ask your
+    teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0031-embeddings-for-categoricals.html">← Lesson 031</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0032-tabtransformer-preview.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/tabtransformer-arch-viz.js"></script>
+<script src="../assets/attention-context-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 32, count: 3 });
+
+  TabTransformerArchViz.mount(document.getElementById("tabtransformer-arch-viz"), {});
+  AttentionContextViz.mount(document.getElementById("attention-context-viz"), {});
+
+  Predict.mount(document.getElementById("predict-verdict"), {
+    prompt: "On SUPERVISED tabular benchmarks, TabTransformer vs a well-tuned gradient-boosted tree ensemble?",
+    options: [
+      { label: "TabTransformer wins clearly — attention beats trees on tabular data", value: "win" },
+      { label: "Roughly a tie — it matches tree ensembles, and beats other DL by ~1%", value: "tie" },
+      { label: "Trees win huge — attention is useless on tables", value: "lose" }
+    ],
+    correct: "tie",
+    reveal: "It MATCHES tree-based ensembles (a tie with the incumbent). The +1.0% headline is over other DEEP methods, not trees. Its real wins are robustness to noise/missingness and a +2.1% semi-supervised lift from unlabeled data — the L028/L029/L031 tie pattern once more."
+  });
+
+  Teachback.mount(document.getElementById("teachback-contextual"), {
+    prompt: "In your own words: what does TabTransformer add over L031's entity embeddings, what is a 'contextual' embedding and how does self-attention produce it, and why does matching (not beating) trees support the relational thesis?",
+    points: [
+      "Architecture: categorical columns → entity embeddings (L031) → a stack of N Transformer self-attention layers → CONTEXTUAL embeddings; continuous features bypass the Transformer (just LayerNorm); the contextual vectors are flattened, concatenated with the numeric features, and fed to an MLP head. The only new machinery is the Transformer in the middle.",
+      "A context-free embedding gives a level the same vector everywhere (L031); a contextual embedding's vector depends on the rest of the row (the 'bank' = river vs savings analogy). Self-attention computes it: each token (column) forms a query/key/value, the attention weights are softmax(Q·Kᵀ/√d), and the column's output is the weighted sum Σ w_j·value_j over the row's columns.",
+      "Honest verdict: TabTransformer MATCHES tree ensembles on supervised tabular (a tie); its +1.0% is over other deep methods (like L028's honest baseline), and its genuine wins are robustness to noisy/missing features and a +2.1% semi-supervised lift from unlabeled data.",
+      "Thesis link: a contextual embedding is a weighted aggregate of related vectors — the same operation a GNN uses to update an entity from its neighbours. TabTransformer attends WITHIN a row (over columns); RDL aggregates ACROSS rows in related tables (over an entity's foreign-key neighbours). The tie is expected because attention over columns is still single-table cleverness — no new structural information enters; the bet is the same operation over the relational graph clears the bar."
+    ],
+    model: "L031 gave each categorical level a learned dense vector, but that vector is context-free — checking='<0' is the same everywhere. TabTransformer (Huang et al. 2020) passes those per-column embeddings through a stack of Transformer self-attention layers so each becomes a CONTEXTUAL embedding: its vector now depends on the other columns in the same row, just as a language model gives 'bank' different vectors in 'river bank' vs 'savings bank'. Self-attention produces it by having each column (token) emit a query, key and value; the attention weights are softmax(Q·Kᵀ/√d) (non-negative, summing to 1), and the column's new vector is the weighted sum of all columns' value vectors. Architecturally, only categoricals are contextualised — continuous features bypass the Transformer and are just layer-normalised — and the flattened contextual vectors are concatenated with the numeric features and passed to a plain MLP head. The honest verdict: on supervised tabular data TabTransformer MATCHES gradient-boosted tree ensembles (a tie); its +1.0% headline is over other deep methods (echoing L028's honest-baseline lesson), and its real advantages are robustness to noisy/missing features and a +2.1% lift from semi-supervised pre-training on unlabeled rows. The tie is the point: attention over a row's columns is still single-table cleverness, and the returns there are exhausted (L028/L029/L030/L031). But the operation itself — refine a representation by attending to related information — is exactly what a GNN does over a relational graph, aggregating an entity's neighbours across tables via foreign keys. TabTransformer attends within a row; relational deep learning attends across the graph. Same idea, one relational level up — which is where the thesis bets the untapped value lives."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "What is the ONLY genuinely new machinery TabTransformer adds over an entity-embedding MLP (L031)?",
+    options: [
+      { label: "A stack of Transformer self-attention layers that turn the per-column embeddings into contextual embeddings", value: "a" },
+      { label: "A new way to one-hot encode categorical columns before embedding them", value: "b" },
+      { label: "A gradient-boosted tree ensemble bolted onto the neural network output", value: "c" },
+      { label: "A method for imputing missing continuous features before training starts", value: "d" }
+    ],
+    correct: "a",
+    explain: "Stage 1 (embed categoricals) is L031's entity embeddings and stage 4 (concat + MLP head) is the L028 MLP — both already familiar. The single new component is the Transformer stack in the middle, whose self-attention layers make each column's embedding contextual (dependent on the other columns in the row). Continuous features bypass it."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "A 'contextual' embedding differs from L031's entity embedding in what way, and how does self-attention build it?",
+    options: [
+      { label: "Its vector depends on the other columns in the row; self-attention forms it as a softmax(Q·Kᵀ/√d)-weighted sum of every column's value vector", value: "a" },
+      { label: "It is always higher-dimensional; self-attention pads the vector with extra learned zeros", value: "b" },
+      { label: "It is computed from the label like target encoding; self-attention averages the target means", value: "c" },
+      { label: "It removes the need for any embedding; self-attention reads the raw category strings", value: "d" }
+    ],
+    correct: "a",
+    explain: "A context-free embedding gives a level the same vector everywhere; a contextual one lets the vector depend on the rest of the row (the 'bank': river vs savings analogy). Self-attention builds it by turning each column into a query/key/value, computing attention weights as softmax(Q·Kᵀ/√d), and returning the weighted sum of the columns' value vectors."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "How does TabTransformer actually perform, and why is that the RIGHT takeaway for the thesis?",
+    options: [
+      { label: "It MATCHES tree ensembles on supervised tabular (tie); +1.0% is over other DL, real wins are robustness + semi-supervised — attention over columns is still single-table cleverness, so the untapped value is relational structure across tables", value: "a" },
+      { label: "It beats trees decisively, proving deep learning has finally won on tabular data", value: "b" },
+      { label: "It loses badly to everything, proving attention has no place in tabular modelling", value: "c" },
+      { label: "It only works on image data, so the tabular numbers are irrelevant", value: "d" }
+    ],
+    correct: "a",
+    explain: "TabTransformer matches (does not beat) gradient-boosted trees on supervised tabular data — the same tie pattern as L028/L029/L030/L031. The +1.0% is over other deep methods; the genuine wins are robustness to noise/missingness and a +2.1% semi-supervised lift. The tie is expected because attention over a row's columns adds no new structural information; the thesis bets the value is in the relational graph across tables, which is where the same attention/aggregation operation is headed (RDL)."
+  });
+</script>
+</body>
+</html>

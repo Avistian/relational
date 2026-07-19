@@ -542,6 +542,30 @@
       ],
       correct: "a",
       explain: "An entity embedding learns a dense vector per level end-to-end, so similar levels sit close together (Guo & Berkhahn's German-state embedding recovered geography) — one-hot (equidistant) and ordinal (one fake axis) cannot. Target encoding is the 1-D special case, so the same leakage discipline applies. On credit_g it ties a FAIR one-hot MLP (0.774 vs 0.798; an undertrained baseline 0.728 would fake a +0.07 win, the L028 trap): a small flat table has little structure for a learned representation, whose payoff shows up at scale and on the foreign-key ids that point into other tables — the bridge to RDL."
+    },
+    {
+      id: "l032-contextual", lesson: 32, quarter: "Q4", concept: "contextual-embedding",
+      question: "What does a Transformer's self-attention add to L031's entity embeddings, and how does it compute the new vector?",
+      options: [
+        { label: "It makes each column CONTEXTUAL — its vector becomes a softmax(Q·Kᵀ/√d)-weighted blend of every column's value vector in the same row, so it now depends on the rest of the row", value: "a" },
+        { label: "It one-hot encodes the columns a second time to add capacity for the head", value: "b" },
+        { label: "It replaces the embeddings with the target means computed over the whole dataset", value: "c" },
+        { label: "It removes the continuous features so only categoricals reach the MLP head", value: "d" }
+      ],
+      correct: "a",
+      explain: "A context-free embedding (L031) gives a level the same vector everywhere; self-attention makes it contextual by rewriting each token as softmax(Q·Kᵀ/√d)·V — a weighted blend of all columns' values — so checking='<0' gets a different vector next to housing='rent' than housing='own' (the 'bank' river-vs-savings analogy)."
+    },
+    {
+      id: "l032-verdict", lesson: 32, quarter: "Q4", concept: "tabtransformer", misconception: true,
+      question: "How does TabTransformer actually perform on SUPERVISED tabular data, and why does that fit the thesis?",
+      options: [
+        { label: "It MATCHES tree ensembles (a tie); +1.0% is over other deep methods, real wins are robustness + semi-supervised — attention over a row's columns is still single-table cleverness, so the untapped value is relational structure across tables", value: "a" },
+        { label: "It beats gradient-boosted trees decisively, so deep learning has won on tabular data", value: "b" },
+        { label: "It loses to a plain MLP, proving attention has no place on tables", value: "c" },
+        { label: "It only reports image-classification results, so tabular numbers do not apply", value: "d" }
+      ],
+      correct: "a",
+      explain: "TabTransformer matches (does not beat) tree ensembles on supervised tabular — the L028/L029/L030/L031 tie pattern. The +1.0% is over other DEEP methods; the genuine wins are robustness to noise/missingness and a +2.1% semi-supervised lift. Attention over columns adds no new structural information; the same aggregate-over-related-vectors operation across the relational graph (a GNN over foreign-key neighbours) is where the thesis bets the value lives."
     }
   ];
 })(window);

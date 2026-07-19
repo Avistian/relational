@@ -342,6 +342,32 @@
 - Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
   last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
 
+## Session 32 — 2026-07-19
+
+- **Lesson 031 complete** — user said "lesson 31 done" (no EXIT ticket → no rubric score, per the
+  L017–L030 precedent). Record [[learning-records/0075-lesson-031-complete.md]].
+- **Lesson 032 published — TabTransformer Preview** (curriculum lec 032, **Huang et al. 2020**, `2012.06678`;
+  "read the architecture figure"). Single skill: read/reconstruct the TabTransformer data-flow (categorical
+  entity embeddings → Transformer self-attention → **contextual** embeddings; continuous features bypass →
+  concat → MLP head) and state its honest verdict. Record [[learning-records/0076-lesson-032-published.md]].
+  **Sixth application of standard #17** (every term defined first-principles: Transformer, token,
+  self-attention, `softmax(Q·Kᵀ/√d)V`, context-free vs contextual, FFN, LayerNorm). It's a **preview** —
+  the deep treatment + training lab are Y2 lec 045.
+- **Honest verdict kept:** TabTransformer **matches** tree ensembles on supervised tabular (the +1.0% AUC is
+  over *other DL*, not trees); real wins are robustness to noise/missingness + a **+2.1% semi-supervised**
+  lift. Fifth flat-table tie in a row (L028/L029/L030/L031/L032) — single-table cleverness is exhausted; the
+  thesis hook is that a contextual embedding = a weighted aggregate of related vectors = within-row message
+  passing, the exact operation RDL runs across tables via foreign keys.
+- **Two new reusable viz (standard #9, one per beat):** `assets/tabtransformer-arch-viz.js` (Fig. 1 as a
+  4-stage stepper — one figure walked stage by stage) and `assets/attention-context-viz.js` (context-free vs
+  contextual toggle + click-a-query attention blend on a 3-token row; illustrative numbers, captioned).
+  Headless `labs/_viz_check_l032.js` **14/14**; **browser MCP still unavailable** (no chrome-devtools server).
+- **Lab is Tier C (numpy, no training)** — faithful to "read the architecture figure": build self-attention
+  (`softmax(Q·Kᵀ/√d)·V`), prove the contextual property (a column's vector moves 0.865 when a *neighbour*
+  changes, its own embedding fixed), and trace the data-flow shapes (embed (3,4)→contextual (3,4)→flatten
+  (12,)→merge (14,)→logit). `_verify_l032.py` + executed solution clean. First non-Tier-A lab since the
+  concept labs — justified: this is a mechanism/figure lab, not a reproduction lab (Tier C rule, standard #7).
+
 ## Session 31 — 2026-07-18
 
 - **Lesson 030 complete** — user said "lesson 30 done" (no EXIT ticket → no rubric score, per the
