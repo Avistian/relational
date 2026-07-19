@@ -43,22 +43,28 @@ of GNN message passing that Year 3–4 RDL is built on.
     the others. Illustrative numbers (a fixed toy), captioned as such.
   - Headless check `labs/_viz_check_l032.js` — **14/14 pass**. **Browser MCP unavailable** (headless env;
     no chrome-devtools server) → node verification only, consistent with L021–L031.
-- **Lab** `labs/0032-tabtransformer-preview.ipynb` — **Tier C** (a tiny toy row, numpy only, **no
-  training**): a "read the architecture figure" exercise made concrete. Task 1 (crucial fragment) =
-  scaled dot-product self-attention `softmax(Q·Kᵀ/√d)·V`; Task 2 = the **contextual property** (a column's
-  vector moves when a *neighbour* changes though its own context-free embedding is fixed; same row is
-  deterministic); Task 3 = assemble the full data-flow checking tensor shapes at each stage. Student blank
-  (5 `____`, 0 outputs); solution executed clean & gitignored (`labs/solutions/` is in `.gitignore`).
-  Built via `_build_l032.py`; rendered to `labs/html/0032-*.html`.
+- **Lab** `labs/0032-tabtransformer-preview.ipynb` — **Tier A** (real `credit_g`), **PyTorch**,
+  **forward-only** (no training). *Redesigned mid-session* to follow the new **standard #18** (labs
+  implement the paper) after the user asked labs to be paper-faithful and very informative, and flagged
+  (correctly) that TabTransformer returns at L045 — so the implementation is **split**: this lab builds the
+  *architecture*, L045 trains/benchmarks it. Three load-bearing blanks, each annotated to a paper element:
+  Task 1 = scaled dot-product self-attention `softmax(Q·Kᵀ/√d)·V` (Vaswani §3.2); Task 2 = the **Transformer
+  block** (wire the two residual + LayerNorm sub-layers of Huang Fig. 1); Task 3 = the **full TabTransformer
+  forward** (embed → *N* blocks → flatten contextual ⊕ LayerNorm(continuous) → MLP head), forward-run on all
+  1000 rows + the contextual-property proof. A real 18,671-param module, not a toy. Student blank
+  (6 `____`, 0 outputs); solution executed clean & gitignored (`labs/solutions/` is in `.gitignore`).
+  Built via `_build_l032.py`; rendered to `labs/html/0032-*.html`. (User decisions: full Transformer block,
+  forward-only; torch not numpy.)
 - **Verify** `labs/_verify_l032.py` — ran clean; numbers below.
 
-## Verified live (`_verify_l032.py` + executed solution; numpy toy, deterministic seed 0)
-- Self-attention returns `(m, d)` with weight rows summing to 1 (matches `softmax(Q·Kᵀ/√d)·V` exactly).
-- **Contextual property:** with `checking` fixed and only `housing` changed, `checking`'s **contextual**
-  vector moved **0.865** (L2) while its context-free embedding was byte-identical; the same row re-run is
-  deterministic. This is the concrete "context-free ≠ contextual" demonstration.
-- **Data-flow shapes:** embed (3,4) → contextual (3,4) → flatten (12,) → merge (14,) = m·d + n_num =
-  12 + 2 → 1 logit. Confirms what is concatenated before the MLP head.
+## Verified live (`_verify_l032.py` + executed solution; torch, real credit_g, deterministic seed 0)
+- Self-attention returns `(B, m, d)` with weight rows summing to 1 (matches `softmax(Q·Kᵀ/√d)·V` exactly).
+- Transformer block preserves shape `(B, 13, 16)` and applies **LayerNorm last** (token mean |·| = 4.5e−8).
+- Full TabTransformer forward on **1000 real rows** → logits `(1000,)`, **18,671 params** (untrained).
+- **Contextual property:** with `checking_status` held fixed and only `housing` changed,
+  `checking_status`'s **contextual** vector moved **0.160** (L2) while its context-free entity embedding was
+  byte-identical — the concrete "context-free ≠ contextual" demonstration, now on real data.
+- Data-flow: 13×16 embeddings → contextual → flatten (208) ⊕ 7 numeric → MLP → 1 logit.
 
 ## Honest framings kept
 - **TabTransformer matches trees; it does not beat them.** The +1.0% mean AUC is over *other deep methods*

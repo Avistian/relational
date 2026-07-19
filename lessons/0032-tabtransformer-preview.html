@@ -294,15 +294,24 @@
     attention formula, if you want the source of <code>softmax(QKᵀ/√d)V</code>.
   </p>
 
-  <h2>Lab — trace the shapes through the architecture</h2>
+  <h2>Lab — implement the architecture (forward-only)</h2>
   <p>
-    Notebook <code>0032-tabtransformer-preview.ipynb</code> (Tier C — a tiny toy row, no training): you
-    build the TabTransformer forward pass <em>by hand</em> to prove you can read the figure. You implement
-    the crucial fragment — <strong>scaled dot-product self-attention</strong>,
-    <code>softmax(QKᵀ/√d)·V</code> — verify that it produces <em>contextual</em> embeddings (the same column
-    vector changes when a neighbour changes), then assemble the full data-flow (embed → attention → bypass
-    continuous → concat → MLP head) checking the tensor shape at every stage. No GPU, no training, ~1 minute;
-    it is a "read the architecture figure" exercise made concrete.
+    Notebook <code>0032-tabtransformer-preview.ipynb</code> (Tier A — real <code>credit_g</code> via
+    <code>relkit</code>, in <strong>PyTorch</strong>): you <em>build the paper's architecture and forward-run
+    it</em> — the best way to read a figure is to implement it. You write the three load-bearing pieces:
+    the crucial fragment <strong>scaled dot-product self-attention</strong> (<code>softmax(QKᵀ/√d)·V</code>,
+    Vaswani §3.2), the <strong>Transformer block</strong> (wiring the two residual + LayerNorm sub-layers of
+    Huang's Fig. 1 layer), and the <strong>full TabTransformer forward</strong> (embed → contextual → concat
+    the bypassed continuous features → MLP head). You then run it on all 1000 real rows and <em>prove the
+    contextual property on a real row</em>: with <code>checking_status</code> held fixed, changing only its
+    neighbour <code>housing</code> moves <code>checking_status</code>'s contextual vector — its context-free
+    entity embedding cannot do that.
+  </p>
+  <p>
+    Because TabTransformer is a <strong>two-lesson paper</strong>, the implementation is deliberately
+    <em>split</em>: this lab builds and forward-passes the architecture (<strong>no training</strong>);
+    <strong>Lesson 045</strong> in Year 2 trains it, adds semi-supervised pre-training, and benchmarks it
+    against trees. Forward-only, CPU, deterministic, ~a few seconds.
     <a href="../labs/html/0032-tabtransformer-preview.html">View it rendered</a> ·
     <a href="../notebooks.html">view / run in the browser</a>.
   </p>

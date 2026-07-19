@@ -7796,30 +7796,35 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bb657cdd">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e16a0486">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-032-%E2%80%94-TabTransformer-preview:-trace-the-shapes-through-the-architecture">Lab 032 — TabTransformer preview: trace the shapes through the architecture<a class="anchor-link" href="#Lab-032-%E2%80%94-TabTransformer-preview:-trace-the-shapes-through-the-architecture">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0032-tabtransformer-preview.html"><code>lessons/0032-tabtransformer-preview.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q4 (bridge to neural tabular)</p>
-<p><strong>Primary reading:</strong> Huang et al. 2020, <em>TabTransformer: Tabular Data Modeling Using Contextual Embeddings</em> (<a href="https://arxiv.org/abs/2012.06678">arXiv:2012.06678</a>) — read Fig. 1 + §2.</p>
-<p><strong>Dataset tier:</strong> <strong>C</strong> (a tiny toy row — this is a <em>read-the-architecture-figure</em> exercise, <strong>no training</strong>).</p>
-<p><strong>Skill you are practising:</strong> reading the TabTransformer figure by building its forward pass — scaled dot-product self-attention (<code>softmax(Q·Kᵀ/√d)·V</code>), the <em>contextual</em> property it produces, and the full data-flow (embed → attention → bypass continuous → concat → MLP head) with the tensor shape checked at every stage.</p>
-<p><strong>Exit criteria:</strong> EXIT TICKET prints the shape trace through the architecture, the proof that a column's contextual vector changes with its row, and your one-line takeaway.</p>
+<h1 id="Lab-032-%E2%80%94-TabTransformer-preview:-implement-the-architecture-(forward-only)">Lab 032 — TabTransformer preview: implement the architecture (forward-only)<a class="anchor-link" href="#Lab-032-%E2%80%94-TabTransformer-preview:-implement-the-architecture-(forward-only)">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0032-tabtransformer-preview.html"><code>lessons/0032-tabtransformer-preview.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q4 (bridge to neural tabular)</p>
+<p><strong>Primary reading:</strong> Huang et al. 2020, <em>TabTransformer</em> (<a href="https://arxiv.org/abs/2012.06678">arXiv:2012.06678</a>) — Fig. 1 + §2; attention from Vaswani et al. 2017 (<a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a>) §3.2.</p>
+<p><strong>Dataset tier:</strong> <strong>A</strong> (real <code>credit_g</code> via <code>relkit</code>).</p>
+<p><strong>Skill you are practising:</strong> <em>reading the architecture figure by building it.</em> You implement the paper's real machinery in <strong>torch</strong> — scaled dot-product self-attention, the Transformer block (attention + residual + FFN + LayerNorm), and the full TabTransformer forward pass — and run it on real data.</p>
+<p><strong>Implementation scope (standard #18).</strong> TabTransformer is a <strong>two-lesson paper</strong>, so its implementation is <strong>split</strong>:</p>
+<ul>
+<li><strong>This lab (L032, preview):</strong> build the <strong>architecture</strong> and <strong>forward-pass</strong> it on real <code>credit_g</code>; inspect the contextual embeddings. <strong>No training.</strong></li>
+<li><strong>Lesson 045 (Year 2):</strong> <strong>train</strong> it, add <strong>semi-supervised pre-training</strong>, and <strong>benchmark</strong> it against trees.</li>
+</ul>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints the architecture shape trace + parameter count and the proof that a column's contextual vector changes with its row, plus your one-line takeaway.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells — complete boilerplate (toy row, fixed weights, <code>softmax</code>); just run.</li>
-<li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
+<li><strong>PROVIDED</strong> cells — complete boilerplate (data, module scaffolding); just run.</li>
+<li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the load-bearing code.</li>
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
 <li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p><code>numpy</code> only — no downloads, no GPU, no training. One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Runs in a few seconds.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>torch</strong> (in <code>requirements-labs.txt</code>, installed in the lab venv). <code>credit_g</code> is fetched from OpenML on first run then cached. Forward-only, CPU, deterministic — runs in a few seconds.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6f525c09">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f786bf67">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7833,7 +7838,7 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=26a9f1a3">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2f6ff4fb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7858,44 +7863,42 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5ee848e3">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=063af49e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Concept-recap-%E2%80%94-TabTransformer-in-one-figure">Concept recap — TabTransformer in one figure<a class="anchor-link" href="#Concept-recap-%E2%80%94-TabTransformer-in-one-figure">¶</a></h2><p>TabTransformer (Huang et al. 2020) takes the <strong>entity embeddings</strong> of L031 and adds one new thing: a stack of <strong>Transformer self-attention layers</strong> that make them <strong>contextual</strong>.</p>
+<h2 id="Concept-recap-%E2%80%94-TabTransformer-in-one-figure">Concept recap — TabTransformer in one figure<a class="anchor-link" href="#Concept-recap-%E2%80%94-TabTransformer-in-one-figure">¶</a></h2><p>TabTransformer (Huang et al. 2020) takes the <strong>entity embeddings</strong> of L031 and adds one new thing: a stack of <strong>Transformer self-attention layers</strong> that make them <strong>contextual</strong>. You will build each piece.</p>
 <p><strong>The data-flow (Fig. 1):</strong></p>
-<pre><code>categorical x_cat -&gt; column embedding -&gt; [ N x Transformer (self-attention + FFN) ] -&gt; contextual embeddings -&gt; flatten -\
-continuous  x_cont -&gt; LayerNorm ------------------------------------------------------------------------------&gt; concat -&gt; MLP -&gt; y_hat
+<pre><code>categorical x_cat -&gt; column embedding -&gt; [ N x Transformer block ] -&gt; contextual embeddings -&gt; flatten -\
+continuous  x_cont -&gt; LayerNorm --------------------------------------------------------------&gt; concat -&gt; MLP -&gt; y_hat
 </code></pre>
-<ul>
-<li><strong>Stage 1 — embed categoricals.</strong> Each categorical column becomes a learned dense vector (a <em>token</em>). This is L031's entity embedding, unchanged. <em>m</em> columns → <em>m</em> vectors of width <em>d</em>.</li>
-<li><strong>Stage 2 — the Transformer (the ONLY new machinery).</strong> Self-attention lets every column attend to every other column in the row, producing <strong>contextual</strong> embeddings: a column's vector now depends on the rest of the row.</li>
-<li><strong>Stage 3 — continuous bypass.</strong> Numeric features skip the Transformer; they are just layer-normalised.</li>
-<li><strong>Stage 4 — concat + MLP head.</strong> Flatten the contextual vectors (m·d numbers), concatenate the numeric features, and an ordinary MLP predicts.</li>
-</ul>
-<p><strong>Self-attention (the crucial fragment).</strong> Each token emits a query <code>Q</code>, key <code>K</code>, value <code>V</code> (linear projections). The output is a weighted blend of the values:</p>
+<p><strong>Self-attention (Task 1 — Vaswani §3.2 eq. 1).</strong> Each token (a categorical column's embedding) emits a query <code>Q</code>, key <code>K</code>, value <code>V</code> (linear projections). The output is a weighted blend of the values:</p>
 <p><code>Attention(Q, K, V) = softmax(Q·Kᵀ / √d) · V</code></p>
-<p>the weights (a softmax, so ≥ 0 and summing to 1) say how much each token contributes to each token's output.</p>
-<p><strong>"Contextual" — the whole point.</strong> A <em>context-free</em> embedding gives <code>checking = &lt;0</code> the same vector everywhere; a <em>contextual</em> one gives it a different vector next to <code>housing = rent</code> than next to <code>housing = own</code> — exactly like "bank" in <em>river bank</em> vs <em>savings bank</em>.</p>
-<p><strong>Honest verdict (skim the experiments).</strong> On supervised tabular data TabTransformer <strong>matches</strong> tree ensembles (a tie); its +1.0% is over other <em>deep</em> methods, and its real wins are <strong>robustness</strong> to noisy/missing features and a <strong>+2.1% semi-supervised</strong> lift from unlabeled data.</p>
+<p>the weights (a softmax, ≥ 0 and summing to 1) say how much each token contributes to each token's output.</p>
+<p><strong>The Transformer block (Task 2 — Fig. 1 layer).</strong> One layer is two residual sub-layers:</p>
+<p><code>x ← LayerNorm(x + SelfAttention(x))</code>, then <code>x ← LayerNorm(x + FFN(x))</code></p>
+<p>The <strong>residual</strong> (<code>x + sublayer(x)</code>) is the L028 skip-connection idea: a sub-layer learns a <em>correction</em> to its input, so depth stays trainable. <strong>LayerNorm</strong> rescales each token to zero mean / unit variance across its features.</p>
+<p><strong>The full model (Task 3 — Fig. 1 whole).</strong> Embed the categoricals → push through <em>N</em> blocks → <strong>flatten</strong> the contextual embeddings (<code>m·d</code> numbers) → <strong>concatenate</strong> the LayerNorm'd continuous features → <strong>MLP head</strong> → prediction. Only categoricals are contextualised; numerics bypass.</p>
+<p><strong>"Contextual" — the whole point.</strong> A <em>context-free</em> embedding (L031) gives <code>checking = &lt;0</code> the same vector everywhere; a <em>contextual</em> one gives it a different vector next to <code>housing = rent</code> than <code>housing = own</code> — like "bank" in <em>river bank</em> vs <em>savings bank</em>. Task 3 proves this on a real row.</p>
+<p><strong>Honest verdict (why we don't train here).</strong> On supervised tabular data TabTransformer <strong>matches</strong> tree ensembles (a tie); the +1.0% is over other <em>deep</em> methods, and its real wins are robustness to noise/missingness and a +2.1% semi-supervised lift. Training, pre-training, and the benchmark vs trees are <strong>Lesson 045</strong>; here we own the architecture.</p>
 <p>Full write-up + visuals: <a href="../lessons/0032-tabtransformer-preview.html">Lesson 032</a>.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a927175e">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fde7858e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Setup-%E2%80%94-PROVIDED-(toy-row-+-fixed-weights-+-softmax-helper)">Setup — PROVIDED (toy row + fixed weights + softmax helper)<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED-(toy-row-+-fixed-weights-+-softmax-helper)">¶</a></h2>
+<h2 id="Setup-%E2%80%94-PROVIDED-(real-credit_g,-integer-coded-categoricals-+-standardised-numerics)">Setup — PROVIDED (real credit_g, integer-coded categoricals + standardised numerics)<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED-(real-credit_g,-integer-coded-categoricals-+-standardised-numerics)">¶</a></h2>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=91ce955f">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3ec8b5c3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7903,63 +7906,76 @@ continuous  x_cont -&gt; LayerNorm ---------------------------------------------
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — a tiny toy row + fixed random weights (no training, no downloads). Just run.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — imports, real credit_g (Tier A), integer-coded categoricals + standardised numerics. Just run.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="c1"># Cap OpenMP threads BEFORE numpy/torch import (torch+sklearn can oversubscribe on some boxes — see L031).</span>
+<span class="k">for</span> <span class="n">_v</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"OMP_NUM_THREADS"</span><span class="p">,</span> <span class="s2">"OPENBLAS_NUM_THREADS"</span><span class="p">,</span> <span class="s2">"MKL_NUM_THREADS"</span><span class="p">,</span> <span class="s2">"NUMEXPR_NUM_THREADS"</span><span class="p">):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">_v</span><span class="p">,</span> <span class="s2">"1"</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">suppress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="c1"># One toy row of a credit-style table.</span>
-<span class="n">CAT</span>   <span class="o">=</span> <span class="p">[</span><span class="s2">"purpose"</span><span class="p">,</span> <span class="s2">"checking"</span><span class="p">,</span> <span class="s2">"housing"</span><span class="p">]</span>     <span class="c1"># m = 3 categorical columns (tokens)</span>
-<span class="n">CARD</span>  <span class="o">=</span> <span class="p">{</span><span class="s2">"purpose"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">"checking"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">"housing"</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>   <span class="c1"># cardinalities (levels per column)</span>
-<span class="n">NUMC</span>  <span class="o">=</span> <span class="p">[</span><span class="s2">"age"</span><span class="p">,</span> <span class="s2">"duration"</span><span class="p">]</span>                    <span class="c1"># continuous columns (bypass the Transformer)</span>
-<span class="n">D</span>     <span class="o">=</span> <span class="mi">4</span>                                       <span class="c1"># embedding / token width d</span>
-<span class="n">M</span>     <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">CAT</span><span class="p">)</span>
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
 
-<span class="c1"># One learned embedding TABLE per categorical (context-free — this is the L031 entity embedding).</span>
-<span class="n">TABLES</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">CARD</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">D</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">CAT</span><span class="p">}</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()))</span>          <span class="c1"># labs/ when run from there</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>   <span class="c1"># labs/ when run from labs/solutions/</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>
+<span class="n">NUM</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"number"</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">CAT</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">NUM</span><span class="p">]</span>
 
-<span class="c1"># Self-attention's three learned projections (query, key, value), shared across tokens here.</span>
-<span class="n">Wq</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span> <span class="o">*</span> <span class="mf">0.5</span>
-<span class="n">Wk</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span> <span class="o">*</span> <span class="mf">0.5</span>
-<span class="n">Wv</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span> <span class="o">*</span> <span class="mf">0.5</span>
+<span class="c1"># Integer-code each categorical (the stage-1 input) and standardise the continuous features.</span>
+<span class="n">CARDS</span><span class="p">,</span> <span class="n">codes</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">CAT</span><span class="p">:</span>
+    <span class="n">levels</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+    <span class="n">lut</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">levels</span><span class="p">)}</span>
+    <span class="n">codes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">lut</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+    <span class="n">CARDS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">levels</span><span class="p">))</span>
+<span class="n">Xcat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">codes</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>      <span class="c1"># (N, m) category indices</span>
+<span class="n">_Xn</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">NUM</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">_mu</span><span class="p">,</span> <span class="n">_sd</span> <span class="o">=</span> <span class="n">_Xn</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">_Xn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-9</span>
+<span class="n">Xnum</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">((</span><span class="n">_Xn</span> <span class="o">-</span> <span class="n">_mu</span><span class="p">)</span> <span class="o">/</span> <span class="n">_sd</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>         <span class="c1"># (N, n_num) standardised</span>
+<span class="n">yt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
-<span class="c1"># Our toy row: an index into each categorical + the two continuous values.</span>
-<span class="n">row_cat</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"purpose"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"checking"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"housing"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>   <span class="c1"># e.g. new car / &lt;0 / rent</span>
-<span class="n">row_num</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.4</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.1</span><span class="p">])</span>                          <span class="c1"># standardised age, duration</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">softmax</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="o">-</span> <span class="n">z</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">e</span> <span class="o">/</span> <span class="n">e</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"toy row: </span><span class="si">{</span><span class="n">M</span><span class="si">}</span><span class="s2"> categorical tokens (width d=</span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2">) + </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">NUMC</span><span class="p">)</span><span class="si">}</span><span class="s2"> continuous features"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"ready — helper: softmax(z, axis)"</span><span class="p">)</span>
+<span class="n">M</span><span class="p">,</span> <span class="n">N_NUM</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">CAT</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">NUM</span><span class="p">),</span> <span class="mi">16</span>                               <span class="c1"># m tokens, n_num continuous, token width d</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"credit_g (Tier A): </span><span class="si">{</span><span class="n">Xcat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> rows | m=</span><span class="si">{</span><span class="n">M</span><span class="si">}</span><span class="s2"> categorical tokens | n_num=</span><span class="si">{</span><span class="n">N_NUM</span><span class="si">}</span><span class="s2"> continuous | token width d=</span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"ready — we will BUILD the architecture and forward-pass it (no training; that is Lesson 045)."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=487611b2">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=105bb4ff">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-scaled-dot-product-self-attention-(crucial-fragment)-%E2%80%94-TODO">Task 1 — scaled dot-product self-attention (crucial fragment) — TODO<a class="anchor-link" href="#Task-1-%E2%80%94-scaled-dot-product-self-attention-(crucial-fragment)-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> implement the one operation TabTransformer adds over L031 — <strong>self-attention</strong>. Given a token
-matrix <code>X</code> of shape <code>(m, d)</code> (one row = one token), it returns a new <code>(m, d)</code> matrix where each token has
-been rewritten as a weighted blend of all tokens.</p>
-<p><strong>Why it matters:</strong> this is the machinery that makes embeddings <em>contextual</em>. Each token emits a <strong>query</strong>,
-<strong>key</strong>, and <strong>value</strong> (three linear projections). The weight token <em>i</em> puts on token <em>j</em> is how well <em>i</em>'s
-query matches <em>j</em>'s key; those weights (via softmax) blend the <strong>values</strong> into each token's output.</p>
-<p><strong>The formula (Vaswani et al. 2017, §3.2):</strong>
-<code>Attention(Q, K, V) = softmax(Q·Kᵀ / √d) · V</code></p>
-<p><strong>Hint boundary:</strong> you fill (a) the <strong>scaled score matrix</strong> <code>Q·Kᵀ / √d</code> and (b) the <strong>weighted sum</strong>
-<code>weights · V</code>. The <code>softmax</code> helper (row-wise) is already provided.</p>
+<h2 id="Task-1-%E2%80%94-scaled-dot-product-self-attention-(crucial-fragment)-%E2%80%94-TODO">Task 1 — scaled dot-product self-attention (crucial fragment) — TODO<a class="anchor-link" href="#Task-1-%E2%80%94-scaled-dot-product-self-attention-(crucial-fragment)-%E2%80%94-TODO">¶</a></h2><p><strong>Paper element:</strong> Vaswani et al. 2017, §3.2 eq. 1 — the operation every Transformer (and TabTransformer)
+is built on.</p>
+<p><strong>Goal:</strong> implement <code>scaled_dot_product_attention(Q, K, V)</code>. Given queries/keys/values of shape
+<code>(batch, m, d)</code> (one row = <code>m</code> tokens of width <code>d</code>), return a new <code>(batch, m, d)</code> where each token is a
+weighted blend of all tokens, plus the <code>(batch, m, m)</code> weight matrix.</p>
+<p><strong>Why it matters:</strong> this is the one new mechanism over L031's entity embeddings — it lets a column's vector
+depend on the other columns. The weight token <em>i</em> puts on token <em>j</em> is how well <em>i</em>'s <strong>query</strong> matches
+<em>j</em>'s <strong>key</strong>; those weights blend the <strong>values</strong>.</p>
+<p><strong>The formula:</strong> <code>Attention(Q, K, V) = softmax(Q·Kᵀ / √d) · V</code></p>
+<p><strong>Hint boundary:</strong> fill (a) the <strong>scaled scores</strong> <code>Q·Kᵀ / √d</code> (use <code>K.transpose(-2, -1)</code>) and (b) the
+<strong>weighted sum</strong> <code>weights · V</code>. <code>torch.softmax</code> over the last dim is provided.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1f78233f">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4cf1d228">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7967,25 +7983,24 @@ query matches <em>j</em>'s key; those weights (via softmax) blend the <strong>va
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — fill the two blanks of scaled dot-product self-attention</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">self_attention</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Wq</span><span class="p">,</span> <span class="n">Wk</span><span class="p">,</span> <span class="n">Wv</span><span class="p">):</span>
-    <span class="n">d</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">Q</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">X</span> <span class="o">@</span> <span class="n">Wq</span><span class="p">,</span> <span class="n">X</span> <span class="o">@</span> <span class="n">Wk</span><span class="p">,</span> <span class="n">X</span> <span class="o">@</span> <span class="n">Wv</span>
-    <span class="n">scores</span>  <span class="o">=</span> <span class="n">____</span>                       <span class="c1"># (a) Q @ K.T / sqrt(d)  -&gt; shape (m, m)</span>
-    <span class="n">weights</span> <span class="o">=</span> <span class="n">softmax</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>    <span class="c1"># each row sums to 1</span>
-    <span class="n">out</span>     <span class="o">=</span> <span class="n">____</span>                       <span class="c1"># (b) weights @ V        -&gt; shape (m, d)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — fill the two blanks of scaled dot-product self-attention (Vaswani §3.2 eq. 1)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">scaled_dot_product_attention</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">):</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">scores</span>  <span class="o">=</span> <span class="n">____</span>                               <span class="c1"># (a) Q · Kᵀ / √d   -&gt; (batch, m, m)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>      <span class="c1"># each query's weights over keys sum to 1</span>
+    <span class="n">out</span>     <span class="o">=</span> <span class="n">____</span>                               <span class="c1"># (b) weights · V   -&gt; (batch, m, d)</span>
     <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">weights</span>
 
-<span class="c1"># sanity: run it on 3 random tokens</span>
-<span class="n">_X</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>
-<span class="n">_out</span><span class="p">,</span> <span class="n">_w</span> <span class="o">=</span> <span class="n">self_attention</span><span class="p">(</span><span class="n">_X</span><span class="p">,</span> <span class="n">Wq</span><span class="p">,</span> <span class="n">Wk</span><span class="p">,</span> <span class="n">Wv</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"attention output shape:"</span><span class="p">,</span> <span class="n">_out</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"| weight rows sum to 1:"</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_w</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+<span class="c1"># sanity: 2 rows of M tokens, width D</span>
+<span class="n">_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
+<span class="n">_o</span><span class="p">,</span> <span class="n">_w</span> <span class="o">=</span> <span class="n">scaled_dot_product_attention</span><span class="p">(</span><span class="n">_q</span><span class="p">,</span> <span class="n">_q</span><span class="p">,</span> <span class="n">_q</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"attention output:"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_o</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="s2">"| weight rows sum to 1:"</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_w</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="p">))))</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b40d6be4">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ad914d8f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7994,12 +8009,12 @@ query matches <em>j</em>'s key; those weights (via softmax) blend the <strong>va
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="n">_out</span><span class="p">,</span> <span class="n">_w</span> <span class="o">=</span> <span class="n">self_attention</span><span class="p">(</span><span class="n">_X</span><span class="p">,</span> <span class="n">Wq</span><span class="p">,</span> <span class="n">Wk</span><span class="p">,</span> <span class="n">Wv</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">_out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="s2">"Attention must return one (d,)-vector per token: shape (m, d)."</span>
-<span class="k">assert</span> <span class="n">_w</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">M</span><span class="p">),</span> <span class="s2">"Attention weights are token-by-token: shape (m, m)."</span>
-<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_w</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">),</span> <span class="s2">"Each token's attention weights must sum to 1 (softmax over keys)."</span>
-<span class="n">_ref</span> <span class="o">=</span> <span class="n">softmax</span><span class="p">((</span><span class="n">_X</span> <span class="o">@</span> <span class="n">Wq</span><span class="p">)</span> <span class="o">@</span> <span class="p">(</span><span class="n">_X</span> <span class="o">@</span> <span class="n">Wk</span><span class="p">)</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">D</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">@</span> <span class="p">(</span><span class="n">_X</span> <span class="o">@</span> <span class="n">Wv</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_out</span><span class="p">,</span> <span class="n">_ref</span><span class="p">),</span> <span class="s2">"Output must equal softmax(Q·Kᵀ/√d)·V."</span>
+<span class="n">_o</span><span class="p">,</span> <span class="n">_w</span> <span class="o">=</span> <span class="n">scaled_dot_product_attention</span><span class="p">(</span><span class="n">_q</span><span class="p">,</span> <span class="n">_q</span><span class="p">,</span> <span class="n">_q</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">_o</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="s2">"Attention returns one (d,)-vector per token: (batch, m, d)."</span>
+<span class="k">assert</span> <span class="n">_w</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">M</span><span class="p">),</span> <span class="s2">"Attention weights are token-by-token: (batch, m, m)."</span>
+<span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_w</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="p">)),</span> <span class="s2">"Each token's weights must sum to 1 (softmax over keys)."</span>
+<span class="n">_ref</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">_q</span> <span class="o">@</span> <span class="n">_q</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">D</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">@</span> <span class="n">_q</span>
+<span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_o</span><span class="p">,</span> <span class="n">_ref</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">),</span> <span class="s2">"Output must equal softmax(Q·Kᵀ/√d)·V."</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Task 1 ok — scaled dot-product self-attention: softmax(Q·Kᵀ/√d)·V, weights sum to 1."</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -8007,24 +8022,25 @@ query matches <em>j</em>'s key; those weights (via softmax) blend the <strong>va
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=afc18d46">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bbb01919">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-the-contextual-property-%E2%80%94-TODO">Task 2 — the contextual property — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-the-contextual-property-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> show what "contextual" <em>means</em>. First embed a row's categoricals into a token matrix (stage 1 —
-the L031 entity-embedding lookup). Then run your attention from Task 1 and check that a column's output
-vector <strong>changes when a neighbouring column changes</strong> — even though that column's own value did not.</p>
-<p><strong>Why it matters:</strong> a context-free embedding (L031) gives <code>checking = &lt;0</code> the same vector everywhere. A
-contextual embedding lets it depend on the rest of the row — the "bank" (river vs savings) idea. That row
-dependence is the entire point of putting a Transformer in the middle.</p>
-<p><strong>Hint boundary:</strong> fill the <strong>embedding lookup</strong> — stack each categorical's embedding-table row for the
-given level: <code>np.stack([TABLES[c][row[c]] for c in CAT])</code>.</p>
+<h2 id="Task-2-%E2%80%94-the-Transformer-block-(Fig.-1-layer)-%E2%80%94-TODO">Task 2 — the Transformer block (Fig. 1 layer) — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-the-Transformer-block-(Fig.-1-layer)-%E2%80%94-TODO">¶</a></h2><p><strong>Paper element:</strong> Huang et al. 2020, Fig. 1 — the "Transformer layer" the categorical embeddings are pushed
+through <em>N</em> times. A layer is <strong>two residual sub-layers</strong>: self-attention, then a position-wise feed-forward
+network (FFN), each wrapped in a <strong>residual connection + LayerNorm</strong>.</p>
+<p><strong>Why it matters:</strong> the residual (skip) connection is the same idea that made deep nets trainable in L028 —
+<code>output = LayerNorm(x + sublayer(x))</code>, so a sub-layer only has to learn a <em>correction</em> to its input. You
+already have <code>SelfAttention</code> (Q/K/V projections around your Task-1 attention) and the FFN + LayerNorms
+provided; you wire the two skips.</p>
+<p><strong>Hint boundary:</strong> fill (a) the residual around attention — <code>LayerNorm₁(x + a)</code> — and (b) the residual around
+the FFN — <code>LayerNorm₂(x + f)</code>. Do not add new layers; just combine <code>x</code>, the sub-layer output, and the norm.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=87ba5253">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=faec9adb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8032,27 +8048,39 @@ given level: <code>np.stack([TABLES[c][row[c]] for c in CAT])</code>.</p>
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — build the (m, d) token matrix by looking up each column's embedding</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">embed_row</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
-    <span class="n">tokens</span> <span class="o">=</span> <span class="n">____</span>                        <span class="c1"># np.stack of TABLES[c][row[c]] for c in CAT  -&gt; shape (m, d)</span>
-    <span class="k">return</span> <span class="n">tokens</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — Q/K/V projections wrap your Task-1 attention (this is one attention "head").</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SelfAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Wq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wk</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">scaled_dot_product_attention</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Wq</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wk</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wv</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>   <span class="c1"># (out, weights)</span>
 
-<span class="n">base</span> <span class="o">=</span> <span class="n">row_cat</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="n">ctx_base</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">self_attention</span><span class="p">(</span><span class="n">embed_row</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">Wq</span><span class="p">,</span> <span class="n">Wk</span><span class="p">,</span> <span class="n">Wv</span><span class="p">)</span>
+<span class="c1"># TODO — wire the two residual sub-layers of the Transformer block (Fig. 1 layer)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TransformerBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">ff_hidden</span><span class="o">=</span><span class="mi">32</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span>  <span class="o">=</span> <span class="n">SelfAttention</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span>   <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">ff_hidden</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">ff_hidden</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">____</span>                     <span class="c1"># (a) residual around attention:  LayerNorm1(x + a)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">____</span>                     <span class="c1"># (b) residual around the FFN:    LayerNorm2(x + f)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">w</span>
 
-<span class="c1"># change ONLY a neighbour (housing), keep 'checking' fixed, and re-contextualise</span>
-<span class="n">changed</span> <span class="o">=</span> <span class="n">row_cat</span><span class="o">.</span><span class="n">copy</span><span class="p">();</span> <span class="n">changed</span><span class="p">[</span><span class="s2">"housing"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">ctx_changed</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">self_attention</span><span class="p">(</span><span class="n">embed_row</span><span class="p">(</span><span class="n">changed</span><span class="p">),</span> <span class="n">Wq</span><span class="p">,</span> <span class="n">Wk</span><span class="p">,</span> <span class="n">Wv</span><span class="p">)</span>
-
-<span class="n">chk</span> <span class="o">=</span> <span class="n">CAT</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">"checking"</span><span class="p">)</span>
-<span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ctx_base</span><span class="p">[</span><span class="n">chk</span><span class="p">]</span> <span class="o">-</span> <span class="n">ctx_changed</span><span class="p">[</span><span class="n">chk</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'checking' context-free vector fixed, but its CONTEXTUAL vector moved by </span><span class="si">{</span><span class="n">delta</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> when 'housing' changed"</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+<span class="n">_blk</span> <span class="o">=</span> <span class="n">TransformerBlock</span><span class="p">(</span><span class="n">D</span><span class="p">)</span>
+<span class="n">_xo</span><span class="p">,</span> <span class="n">_w</span> <span class="o">=</span> <span class="n">_blk</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"block output:"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_xo</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="s2">"| finite:"</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">_xo</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()))</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=52c83ad0">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=0d479c86">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8061,41 +8089,42 @@ given level: <code>np.stack([TABLES[c][row[c]] for c in CAT])</code>.</p>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="k">assert</span> <span class="n">embed_row</span><span class="p">(</span><span class="n">row_cat</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="s2">"embed_row must return the (m, d) token matrix."</span>
-<span class="c1"># the context-free embedding of 'checking' is identical in both rows...</span>
-<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">TABLES</span><span class="p">[</span><span class="s2">"checking"</span><span class="p">][</span><span class="n">base</span><span class="p">[</span><span class="s2">"checking"</span><span class="p">]],</span> <span class="n">TABLES</span><span class="p">[</span><span class="s2">"checking"</span><span class="p">][</span><span class="n">changed</span><span class="p">[</span><span class="s2">"checking"</span><span class="p">]]),</span> \
-    <span class="s2">"'checking' was not changed, so its context-free embedding must be identical."</span>
-<span class="c1"># ...but its CONTEXTUAL vector must differ once a neighbour changed:</span>
-<span class="k">assert</span> <span class="n">delta</span> <span class="o">&gt;</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="s2">"The contextual vector of 'checking' should change when a neighbour column changes."</span>
-<span class="c1"># and re-running the SAME row is deterministic (contextual != random):</span>
-<span class="n">_again</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">self_attention</span><span class="p">(</span><span class="n">embed_row</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">Wq</span><span class="p">,</span> <span class="n">Wk</span><span class="p">,</span> <span class="n">Wv</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_again</span><span class="p">,</span> <span class="n">ctx_base</span><span class="p">),</span> <span class="s2">"Same row must give the same contextual embeddings (deterministic)."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — contextual: 'checking' kept its value but its vector moved </span><span class="si">{</span><span class="n">delta</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> with the row. "</span>
-      <span class="s2">"That is what a Transformer buys over a context-free entity embedding."</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+<span class="n">_blk</span> <span class="o">=</span> <span class="n">TransformerBlock</span><span class="p">(</span><span class="n">D</span><span class="p">)</span>
+<span class="n">_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
+<span class="n">_xo</span><span class="p">,</span> <span class="n">_w</span> <span class="o">=</span> <span class="n">_blk</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">_xo</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="s2">"A Transformer block preserves the (batch, m, d) shape."</span>
+<span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">_xo</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s2">"Block output must be finite."</span>
+<span class="c1"># LayerNorm is applied LAST, so each output token is ~zero-mean across its d features:</span>
+<span class="k">assert</span> <span class="n">_xo</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="s2">"Did you wrap the FFN sub-layer in norm2(x + f)?"</span>
+<span class="c1"># The block must transform its input (skip present, not identity, not zeros):</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">_xo</span><span class="p">,</span> <span class="n">_x</span><span class="p">)</span> <span class="ow">and</span> <span class="n">_xo</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"The block should transform x via its sub-layers."</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 2 ok — Transformer block: LayerNorm(x + attention) then LayerNorm(x + FFN). Residuals wired."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f5334969">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=135f01c3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-assemble-the-full-TabTransformer-data-flow-%E2%80%94-TODO">Task 3 — assemble the full TabTransformer data-flow — TODO<a class="anchor-link" href="#Task-3-%E2%80%94-assemble-the-full-TabTransformer-data-flow-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> put the figure together end to end and check the shape at every stage:
-<code>categorical → embed → Transformer(contextual) → flatten</code> ⊕ <code>continuous → LayerNorm(bypass)</code> → <strong>MLP head</strong>.</p>
-<p><strong>Why it matters:</strong> reading the architecture figure means knowing exactly what is concatenated before the
-head. The contextual embeddings are <strong>flattened</strong> to <code>m·d</code> numbers and concatenated with the normalised
-continuous features; an ordinary MLP maps that to the prediction. Only categoricals were contextualised;
-the numerics bypassed the Transformer.</p>
+<h2 id="Task-3-%E2%80%94-the-full-TabTransformer-forward-pass-%E2%80%94-TODO">Task 3 — the full TabTransformer forward pass — TODO<a class="anchor-link" href="#Task-3-%E2%80%94-the-full-TabTransformer-forward-pass-%E2%80%94-TODO">¶</a></h2><p><strong>Paper element:</strong> Huang et al. 2020, Fig. 1 (whole model). Assemble the data-flow and run it on <strong>real
+credit_g</strong>: <code>categorical → embed → N Transformer blocks (contextual) → flatten</code> ⊕ <code>continuous → LayerNorm</code>
+→ <strong>MLP head</strong>.</p>
+<p><strong>Why it matters:</strong> reading the figure means knowing exactly what is concatenated before the head — the
+<strong>flattened contextual embeddings</strong> (<code>m·d</code> numbers) and the <strong>normalised continuous features</strong>. Only the
+categoricals were contextualised; the numerics bypassed the Transformer. We forward-pass an untrained model
+(training is L045) and then <em>prove the contextual property on a real row</em>.</p>
 <p><strong>Hint boundary:</strong> fill the <strong>merge</strong> — concatenate the flattened contextual vector with the normalised
-continuous features: <code>np.concatenate([ctx_flat, num_norm])</code>.</p>
+continuous features along the feature dim: <code>torch.cat([ctx_flat, num], dim=1)</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b8e0604f">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a8774790">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8103,35 +8132,48 @@ continuous features: <code>np.concatenate([ctx_flat, num_norm])</code>.</p>
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED head pieces</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">layernorm</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="n">v</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">/</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — assemble the full architecture (fill the stage-4 merge)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TabTransformer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">n_num</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">D</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ff_hidden</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">head_hidden</span><span class="o">=</span><span class="mi">64</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embs</span>     <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cards</span><span class="p">])</span>              <span class="c1"># stage 1: entity embeddings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span>   <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">TransformerBlock</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">ff_hidden</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layers</span><span class="p">)])</span>  <span class="c1"># stage 2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_norm</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">n_num</span><span class="p">)</span>                                             <span class="c1"># stage 3: continuous bypass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span>     <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cards</span><span class="p">)</span> <span class="o">*</span> <span class="n">d</span> <span class="o">+</span> <span class="n">n_num</span><span class="p">,</span> <span class="n">head_hidden</span><span class="p">),</span>   <span class="c1"># stage 4: MLP head</span>
+                                      <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">head_hidden</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_cat</span><span class="p">):</span>                                                             <span class="c1"># (B, m, d)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">emb</span><span class="p">(</span><span class="n">x_cat</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">emb</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embs</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">contextual</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_cat</span><span class="p">):</span>                                                        <span class="c1"># (B, m, d) after Transformer</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">x_cat</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">blk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+            <span class="n">h</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">h</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_cat</span><span class="p">,</span> <span class="n">x_num</span><span class="p">):</span>
+        <span class="n">ctx_flat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contextual</span><span class="p">(</span><span class="n">x_cat</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># (B, m*d) flattened contextual embeddings</span>
+        <span class="n">num</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_norm</span><span class="p">(</span><span class="n">x_num</span><span class="p">)</span>                  <span class="c1"># (B, n_num) bypassed continuous</span>
+        <span class="n">merged</span>   <span class="o">=</span> <span class="n">____</span>                                  <span class="c1"># stage 4: concat [ctx_flat, num] along dim=1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">merged</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="n">W1</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">M</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">NUMC</span><span class="p">),</span> <span class="mi">8</span><span class="p">))</span> <span class="o">*</span> <span class="mf">0.3</span>   <span class="c1"># MLP head: hidden layer</span>
-<span class="n">W2</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="mf">0.3</span>                    <span class="c1"># MLP head: output</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">mlp_head</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span> <span class="o">@</span> <span class="n">W1</span><span class="p">)</span> <span class="o">@</span> <span class="n">W2</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>   <span class="c1"># Linear -&gt; ReLU -&gt; Linear -&gt; scalar logit</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">TabTransformer</span><span class="p">(</span><span class="n">CARDS</span><span class="p">,</span> <span class="n">N_NUM</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">Xcat</span><span class="p">,</span> <span class="n">Xnum</span><span class="p">)</span>
+<span class="n">n_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"forward pass on </span><span class="si">{</span><span class="n">Xcat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> real rows -&gt; logits </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">n_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> params (untrained)"</span><span class="p">)</span>
 
-<span class="c1"># TODO — assemble the forward pass</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">tabtransformer_forward</span><span class="p">(</span><span class="n">row_cat</span><span class="p">,</span> <span class="n">row_num</span><span class="p">):</span>
-    <span class="n">tokens</span>   <span class="o">=</span> <span class="n">embed_row</span><span class="p">(</span><span class="n">row_cat</span><span class="p">)</span>                     <span class="c1"># stage 1: (m, d)  entity embeddings</span>
-    <span class="n">ctx</span><span class="p">,</span> <span class="n">_</span>   <span class="o">=</span> <span class="n">self_attention</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">Wq</span><span class="p">,</span> <span class="n">Wk</span><span class="p">,</span> <span class="n">Wv</span><span class="p">)</span>     <span class="c1"># stage 2: (m, d)  CONTEXTUAL embeddings</span>
-    <span class="n">ctx_flat</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>                        <span class="c1">#          (m*d,)  flatten</span>
-    <span class="n">num_norm</span> <span class="o">=</span> <span class="n">layernorm</span><span class="p">(</span><span class="n">row_num</span><span class="p">)</span>                     <span class="c1"># stage 3: (n_num,) continuous bypass</span>
-    <span class="n">merged</span>   <span class="o">=</span> <span class="n">____</span>                                   <span class="c1"># stage 4: concat [ctx_flat, num_norm]</span>
-    <span class="k">return</span> <span class="n">mlp_head</span><span class="p">(</span><span class="n">merged</span><span class="p">),</span> <span class="p">{</span><span class="s2">"tokens"</span><span class="p">:</span> <span class="n">tokens</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"contextual"</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-                              <span class="s2">"flattened"</span><span class="p">:</span> <span class="n">ctx_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"merged"</span><span class="p">:</span> <span class="n">merged</span><span class="o">.</span><span class="n">shape</span><span class="p">}</span>
-
-<span class="n">yhat</span><span class="p">,</span> <span class="n">shapes</span> <span class="o">=</span> <span class="n">tabtransformer_forward</span><span class="p">(</span><span class="n">row_cat</span><span class="p">,</span> <span class="n">row_num</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">stage</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">shapes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">stage</span><span class="si">:</span><span class="s2">&lt;11</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"prediction (pre-sigmoid logit):"</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">yhat</span><span class="p">))</span>
+<span class="c1"># Prove the CONTEXTUAL property on a REAL row: change ONLY a neighbour column, watch 'checking_status' move.</span>
+<span class="n">chk</span><span class="p">,</span> <span class="n">hidx</span> <span class="o">=</span> <span class="n">CAT</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">"checking_status"</span><span class="p">),</span> <span class="n">CAT</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">"housing"</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">r</span>  <span class="o">=</span> <span class="n">Xcat</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+    <span class="n">r2</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">clone</span><span class="p">();</span> <span class="n">r2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">hidx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">hidx</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">CARDS</span><span class="p">[</span><span class="n">hidx</span><span class="p">]</span>        <span class="c1"># flip housing only</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">contextual</span><span class="p">(</span><span class="n">r</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="n">chk</span><span class="p">]</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">contextual</span><span class="p">(</span><span class="n">r2</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="n">chk</span><span class="p">])</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'checking_status' context-free embedding fixed, but its CONTEXTUAL vector moved </span><span class="si">{</span><span class="n">delta</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> when 'housing' changed"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c1c2782b">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=95b50154">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8140,33 +8182,37 @@ continuous features: <code>np.concatenate([ctx_flat, num_norm])</code>.</p>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — do not edit</span>
-<span class="n">yhat</span><span class="p">,</span> <span class="n">shapes</span> <span class="o">=</span> <span class="n">tabtransformer_forward</span><span class="p">(</span><span class="n">row_cat</span><span class="p">,</span> <span class="n">row_num</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">shapes</span><span class="p">[</span><span class="s2">"tokens"</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span> <span class="ow">and</span> <span class="n">shapes</span><span class="p">[</span><span class="s2">"contextual"</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="s2">"Embed &amp; attention keep shape (m, d)."</span>
-<span class="k">assert</span> <span class="n">shapes</span><span class="p">[</span><span class="s2">"flattened"</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">M</span> <span class="o">*</span> <span class="n">D</span><span class="p">,),</span> <span class="s2">"Contextual embeddings flatten to m*d numbers."</span>
-<span class="k">assert</span> <span class="n">shapes</span><span class="p">[</span><span class="s2">"merged"</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">M</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">NUMC</span><span class="p">),),</span> \
-    <span class="s2">"The head input is the flattened contextual vector CONCATENATED with the normalised continuous features."</span>
-<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">yhat</span><span class="p">)),</span> <span class="s2">"The MLP head outputs a single prediction logit."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — full data-flow assembled: </span><span class="si">{</span><span class="n">M</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2"> embeddings -&gt; contextual -&gt; flatten "</span>
-      <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">M</span><span class="o">*</span><span class="n">D</span><span class="si">}</span><span class="s2">) ⊕ </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">NUMC</span><span class="p">)</span><span class="si">}</span><span class="s2"> numeric -&gt; MLP -&gt; 1 logit. You can read the figure."</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">logits</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">Xcat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="s2">"One logit per row: shape (N,)."</span>
+<span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s2">"Forward pass must be finite."</span>
+<span class="c1"># 'checking' was NOT changed, so its context-free embedding is identical in both rows...</span>
+<span class="k">assert</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">embs</span><span class="p">[</span><span class="n">chk</span><span class="p">]</span><span class="o">.</span><span class="n">weight</span><span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">chk</span><span class="p">]],</span> <span class="n">model</span><span class="o">.</span><span class="n">embs</span><span class="p">[</span><span class="n">chk</span><span class="p">]</span><span class="o">.</span><span class="n">weight</span><span class="p">[</span><span class="n">r2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">chk</span><span class="p">]]),</span> \
+    <span class="s2">"'checking' unchanged -&gt; its entity embedding must be identical."</span>
+<span class="c1"># ...but its CONTEXTUAL vector must move once a NEIGHBOUR changed:</span>
+<span class="k">assert</span> <span class="n">delta</span> <span class="o">&gt;</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="s2">"The contextual vector of 'checking' should change when a neighbour column changes."</span>
+<span class="k">assert</span> <span class="n">n_params</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">"This should be a real (if small) TabTransformer, not a toy."</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — full TabTransformer forward on real credit_g: </span><span class="si">{</span><span class="n">M</span><span class="si">}</span><span class="s2">×</span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2"> embeddings -&gt; contextual -&gt; "</span>
+      <span class="sa">f</span><span class="s2">"flatten (</span><span class="si">{</span><span class="n">M</span><span class="o">*</span><span class="n">D</span><span class="si">}</span><span class="s2">) ⊕ </span><span class="si">{</span><span class="n">N_NUM</span><span class="si">}</span><span class="s2"> numeric -&gt; MLP -&gt; 1 logit. Contextual delta </span><span class="si">{</span><span class="n">delta</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">. You built the figure."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ecc3a2b0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=de5a8285">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> print your deliverable — the shape trace and the contextual delta — plus a one-line takeaway.</p>
+<h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p><strong>Goal:</strong> print your deliverable — the architecture shape trace, the parameter count, and the proof that a
+column's representation is contextual — plus a one-line takeaway.</p>
 <p><strong>Takeaway prompt:</strong> in one sentence, what does self-attention add over an entity-embedding MLP, what does
-"contextual" mean, and why does TabTransformer only <em>matching</em> trees support the relational thesis?</p>
+"contextual" mean, and (honestly) how does TabTransformer compare to trees — and why does that support the
+relational thesis?</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d13ecba1">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b4ad5fdb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8175,13 +8221,54 @@ continuous features: <code>np.concatenate([ctx_flat, num_norm])</code>.</p>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># TODO: complete the takeaway string</span>
-<span class="n">yhat</span><span class="p">,</span> <span class="n">shapes</span> <span class="o">=</span> <span class="n">tabtransformer_forward</span><span class="p">(</span><span class="n">row_cat</span><span class="p">,</span> <span class="n">row_num</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">Xcat</span><span class="p">,</span> <span class="n">Xnum</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 032 (TabTransformer preview) ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"data-flow shapes : embed </span><span class="si">{</span><span class="n">shapes</span><span class="p">[</span><span class="s1">'tokens'</span><span class="p">]</span><span class="si">}</span><span class="s2"> -&gt; contextual </span><span class="si">{</span><span class="n">shapes</span><span class="p">[</span><span class="s1">'contextual'</span><span class="p">]</span><span class="si">}</span><span class="s2"> -&gt; "</span>
-      <span class="sa">f</span><span class="s2">"flatten </span><span class="si">{</span><span class="n">shapes</span><span class="p">[</span><span class="s1">'flattened'</span><span class="p">]</span><span class="si">}</span><span class="s2"> -&gt; merge </span><span class="si">{</span><span class="n">shapes</span><span class="p">[</span><span class="s1">'merged'</span><span class="p">]</span><span class="si">}</span><span class="s2"> -&gt; logit ()"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"contextual proof : 'checking' vector moved </span><span class="si">{</span><span class="n">delta</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> when a neighbour column changed (context-free would move 0)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"architecture : </span><span class="si">{</span><span class="n">M</span><span class="si">}</span><span class="s2"> categorical tokens x d=</span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">blocks</span><span class="p">)</span><span class="si">}</span><span class="s2"> Transformer blocks -&gt; "</span>
+      <span class="sa">f</span><span class="s2">"contextual -&gt; flatten (</span><span class="si">{</span><span class="n">M</span><span class="o">*</span><span class="n">D</span><span class="si">}</span><span class="s2">) ⊕ </span><span class="si">{</span><span class="n">N_NUM</span><span class="si">}</span><span class="s2"> numeric -&gt; MLP head -&gt; </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2"> logit"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"model        : </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> params, forward-only (training is Lesson 045)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"contextual   : 'checking_status' vector moved </span><span class="si">{</span><span class="n">delta</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> when a neighbour changed (a context-free embedding would move 0)"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=69bd3bb6">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Stretch-(optional,-forward-only)-%E2%80%94-inspect-the-attention-weights">Stretch (optional, forward-only) — inspect the attention weights<a class="anchor-link" href="#Stretch-(optional,-forward-only)-%E2%80%94-inspect-the-attention-weights">¶</a></h2><p>Peek at which columns each column attends to in the first Transformer block, for a real row. It is
+<strong>untrained</strong>, so the pattern is not yet meaningful — the point is that the machinery is real and produces
+a valid <code>(m, m)</code> attention matrix (each row summing to 1). After training (Lesson 045) these weights tell
+you which columns inform each column's contextual embedding.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d21c2a24">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH (optional, FORWARD-ONLY) — which columns does each column attend to?</span>
+<span class="c1"># No training here: full training + semi-supervised pre-training + benchmarking vs trees is Lesson 045.</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">model</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">Xcat</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]))</span>     <span class="c1"># first block's attention weights: (1, m, m)</span>
+<span class="n">W</span> <span class="o">=</span> <span class="n">W</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="n">row</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"First-layer attention weights for real row </span><span class="si">{</span><span class="n">row</span><span class="si">}</span><span class="s2"> (weight[i, j] = how much column i attends to column j):"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"            "</span> <span class="o">+</span> <span class="s2">"  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">c</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;6</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">CAT</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">CAT</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">c</span><span class="p">[:</span><span class="mi">11</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;11</span><span class="si">}</span><span class="s2"> "</span> <span class="o">+</span> <span class="s2">"  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">W</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s2">6.2f</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">M</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Each ROW sums to 1. Untrained, so the pattern is not yet meaningful — but the machinery is real, "</span>
+      <span class="s2">"and after training (L045) these weights say which columns inform each column's contextual embedding."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

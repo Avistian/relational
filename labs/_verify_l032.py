@@ -1,76 +1,134 @@
-"""Standalone verification of the L032 lab claims (numpy only, no training, no downloads).
+"""Standalone verification of the L032 lab claims (torch, real credit_g, forward-only — no training).
 
-Reproduces:
-  * scaled dot-product self-attention softmax(Q·Kᵀ/√d)·V returns (m, d) with weight rows summing to 1;
-  * the CONTEXTUAL property: a column's output vector changes when a NEIGHBOUR column changes, though its
-    own context-free embedding is unchanged; same row is deterministic;
-  * the full data-flow shapes: embed (m,d) -> contextual (m,d) -> flatten (m·d,) -> merge (m·d+n_num,) -> logit.
+Reproduces the architecture the lab builds and checks:
+  * scaled dot-product self-attention softmax(Q·Kᵀ/√d)·V returns (B,m,d) with weight rows summing to 1;
+  * the Transformer block preserves shape and applies LayerNorm last (tokens ~zero-mean across features);
+  * the full TabTransformer forward on real credit_g yields one logit per row and is finite;
+  * the CONTEXTUAL property: a column's contextual vector moves when a NEIGHBOUR column changes, though its
+    own context-free entity embedding is unchanged.
 
 Run: .venv/bin/python labs/_verify_l032.py
 """
 from __future__ import annotations
 
+import os
+
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+    os.environ.setdefault(_v, "1")
+import math
+import sys
+import warnings
+from pathlib import Path
+
+warnings.filterwarnings("ignore")
 import numpy as np
+import torch
+import torch.nn as nn
 
-rng = np.random.default_rng(0)
+torch.set_num_threads(1)
+SEED = 0
+np.random.seed(SEED)
+torch.manual_seed(SEED)
 
-CAT = ["purpose", "checking", "housing"]
-CARD = {"purpose": 4, "checking": 4, "housing": 3}
-NUMC = ["age", "duration"]
-D, M = 4, 3
+sys.path.insert(0, str(Path("labs").resolve()))
+sys.path.insert(0, str(Path(".").resolve()))
+from relkit import load_tier_a
 
-TABLES = {c: rng.normal(size=(CARD[c], D)) for c in CAT}
-Wq = rng.normal(size=(D, D)) * 0.5
-Wk = rng.normal(size=(D, D)) * 0.5
-Wv = rng.normal(size=(D, D)) * 0.5
-row_cat = {"purpose": 0, "checking": 3, "housing": 1}
-row_num = np.array([0.4, -1.1])
-
-
-def softmax(z, axis=-1):
-    z = z - z.max(axis=axis, keepdims=True)
-    e = np.exp(z)
-    return e / e.sum(axis=axis, keepdims=True)
-
-
-def self_attention(X, Wq, Wk, Wv):
-    d = X.shape[1]
-    Q, K, V = X @ Wq, X @ Wk, X @ Wv
-    weights = softmax(Q @ K.T / np.sqrt(d), axis=1)
-    return weights @ V, weights
+X, y = load_tier_a("credit_g")
+NUM = X.select_dtypes(include="number").columns.tolist()
+CAT = [c for c in X.columns if c not in NUM]
+CARDS, codes = [], []
+for c in CAT:
+    levels = sorted(X[c].astype(str).unique())
+    lut = {v: i for i, v in enumerate(levels)}
+    codes.append(X[c].astype(str).map(lut).to_numpy())
+    CARDS.append(len(levels))
+Xcat = torch.tensor(np.stack(codes, axis=1), dtype=torch.long)
+_Xn = X[NUM].to_numpy(float)
+Xnum = torch.tensor((_Xn - _Xn.mean(0)) / (_Xn.std(0) + 1e-9), dtype=torch.float32)
+M, N_NUM, D = len(CAT), len(NUM), 16
 
 
-def embed_row(row):
-    return np.stack([TABLES[c][row[c]] for c in CAT])
+def attention(Q, K, V):
+    d = Q.shape[-1]
+    w = torch.softmax(Q @ K.transpose(-2, -1) / math.sqrt(d), dim=-1)
+    return w @ V, w
+
+
+class SelfAttention(nn.Module):
+    def __init__(self, d):
+        super().__init__()
+        self.Wq, self.Wk, self.Wv = nn.Linear(d, d), nn.Linear(d, d), nn.Linear(d, d)
+
+    def forward(self, x):
+        return attention(self.Wq(x), self.Wk(x), self.Wv(x))
+
+
+class TransformerBlock(nn.Module):
+    def __init__(self, d, ff=32):
+        super().__init__()
+        self.attn = SelfAttention(d)
+        self.ffn = nn.Sequential(nn.Linear(d, ff), nn.ReLU(), nn.Linear(ff, d))
+        self.n1, self.n2 = nn.LayerNorm(d), nn.LayerNorm(d)
+
+    def forward(self, x):
+        a, w = self.attn(x)
+        x = self.n1(x + a)
+        x = self.n2(x + self.ffn(x))
+        return x, w
+
+
+class TabTransformer(nn.Module):
+    def __init__(self, cards, n_num, d=D, n_layers=2):
+        super().__init__()
+        self.embs = nn.ModuleList([nn.Embedding(c, d) for c in cards])
+        self.blocks = nn.ModuleList([TransformerBlock(d) for _ in range(n_layers)])
+        self.num_norm = nn.LayerNorm(n_num)
+        self.head = nn.Sequential(nn.Linear(len(cards) * d + n_num, 64), nn.ReLU(), nn.Linear(64, 1))
+
+    def contextual(self, xc):
+        h = torch.stack([e(xc[:, i]) for i, e in enumerate(self.embs)], dim=1)
+        for b in self.blocks:
+            h, _ = b(h)
+        return h
+
+    def forward(self, xc, xn):
+        h = torch.cat([self.contextual(xc).flatten(1), self.num_norm(xn)], dim=1)
+        return self.head(h).squeeze(-1)
 
 
 def main():
-    out, w = self_attention(embed_row(row_cat), Wq, Wk, Wv)
-    assert out.shape == (M, D) and w.shape == (M, M)
-    assert np.allclose(w.sum(axis=1), 1.0)
-    print(f"self-attention: output {out.shape}, weight rows sum to 1: {np.allclose(w.sum(1), 1)}")
+    q = torch.randn(2, M, D)
+    o, w = attention(q, q, q)
+    assert o.shape == (2, M, D) and w.shape == (2, M, M)
+    assert torch.allclose(w.sum(-1), torch.ones(2, M))
+    print(f"self-attention: output {tuple(o.shape)}, weight rows sum to 1: {bool(torch.allclose(w.sum(-1), torch.ones(2, M)))}")
 
-    base = row_cat.copy()
-    changed = row_cat.copy(); changed["housing"] = 0
-    ctx_b, _ = self_attention(embed_row(base), Wq, Wk, Wv)
-    ctx_c, _ = self_attention(embed_row(changed), Wq, Wk, Wv)
-    chk = CAT.index("checking")
-    delta = float(np.linalg.norm(ctx_b[chk] - ctx_c[chk]))
-    assert np.allclose(TABLES["checking"][base["checking"]], TABLES["checking"][changed["checking"]])
-    assert delta > 1e-6
-    ctx_again, _ = self_attention(embed_row(base), Wq, Wk, Wv)
-    assert np.allclose(ctx_again, ctx_b)
-    print(f"contextual: 'checking' context-free vector fixed, contextual vector moved {delta:.3f} "
-          f"when 'housing' changed; same row deterministic: {np.allclose(ctx_again, ctx_b)}")
+    torch.manual_seed(SEED)
+    blk = TransformerBlock(D)
+    xo, _ = blk(torch.randn(2, M, D))
+    assert xo.shape == (2, M, D) and xo.mean(-1).abs().max() < 1e-4
+    print(f"transformer block: output {tuple(xo.shape)}, LayerNorm-last (token mean |·|<1e-4): "
+          f"{float(xo.mean(-1).abs().max()):.2e}")
 
-    ctx, _ = self_attention(embed_row(row_cat), Wq, Wk, Wv)
-    ctx_flat = ctx.reshape(-1)
-    num_norm = (row_num - row_num.mean()) / (row_num.std() + 1e-9)
-    merged = np.concatenate([ctx_flat, num_norm])
-    assert ctx_flat.shape == (M * D,) and merged.shape == (M * D + len(NUMC),)
-    print(f"data-flow: embed {ctx.shape} -> flatten {ctx_flat.shape} -> merge {merged.shape} "
-          f"(= m·d + n_num = {M*D} + {len(NUMC)})")
-    print("\nAll L032 lab claims verified.")
+    torch.manual_seed(SEED)
+    model = TabTransformer(CARDS, N_NUM).eval()
+    with torch.no_grad():
+        logits = model(Xcat, Xnum)
+    n_params = sum(p.numel() for p in model.parameters())
+    assert logits.shape == (Xcat.shape[0],) and torch.isfinite(logits).all()
+
+    chk, hidx = CAT.index("checking_status"), CAT.index("housing")
+    with torch.no_grad():
+        r = Xcat[0:1].clone()
+        r2 = r.clone(); r2[0, hidx] = (r[0, hidx] + 1) % CARDS[hidx]
+        delta = (model.contextual(r)[0, chk] - model.contextual(r2)[0, chk]).norm().item()
+    assert torch.allclose(model.embs[chk].weight[r[0, chk]], model.embs[chk].weight[r2[0, chk]])
+    assert delta > 1e-5
+    print(f"full TabTransformer: {Xcat.shape[0]} rows -> logits {tuple(logits.shape)}, {n_params:,} params (untrained)")
+    print(f"contextual: 'checking_status' entity embedding fixed, contextual vector moved {delta:.3f} "
+          f"when 'housing' changed")
+    print("\nAll L032 lab claims verified (architecture forward-only; training is L045).")
 
 
 if __name__ == "__main__":

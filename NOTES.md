@@ -362,11 +362,20 @@
   4-stage stepper — one figure walked stage by stage) and `assets/attention-context-viz.js` (context-free vs
   contextual toggle + click-a-query attention blend on a 3-token row; illustrative numbers, captioned).
   Headless `labs/_viz_check_l032.js` **14/14**; **browser MCP still unavailable** (no chrome-devtools server).
-- **Lab is Tier C (numpy, no training)** — faithful to "read the architecture figure": build self-attention
-  (`softmax(Q·Kᵀ/√d)·V`), prove the contextual property (a column's vector moves 0.865 when a *neighbour*
-  changes, its own embedding fixed), and trace the data-flow shapes (embed (3,4)→contextual (3,4)→flatten
-  (12,)→merge (14,)→logit). `_verify_l032.py` + executed solution clean. First non-Tier-A lab since the
-  concept labs — justified: this is a mechanism/figure lab, not a reproduction lab (Tier C rule, standard #7).
+- **NEW standard #18 — labs implement the paper (user directive this session):** starting with Lab 032,
+  a lab's crucial content is a **faithful (if minimal) implementation of the lesson's core paper**, and labs
+  should be *very informative*. Decide scope per paper — **whole model** / **key parts** / **gradual across
+  labs** (for a multi-lesson paper) — and state it in the lab intro. Annotate cells with the paper element
+  (fig/§/eq), keep PROVIDED minimal, prefer real data + torch, tie EXIT to the paper's claim. Recorded in
+  NOTES Preferences #18 + the `lab-authoring` skill (§ "Labs implement the paper"). Reference impl: L032.
+- **Lab 032 = Tier A, torch, forward-only** — *rebuilt this session* under #18 (initial numpy toy scrapped).
+  The user asked labs to follow paper implementation and flagged that TabTransformer recurs at L045, so the
+  paper is **split gradually**: **L032 builds the architecture** (scaled dot-product self-attention [Vaswani
+  §3.2] → the Transformer block with residual+FFN+LayerNorm [Huang Fig. 1] → the full TabTransformer forward
+  on real credit_g), **L045 trains + pre-trains + benchmarks** it. A real **18,671-param** module, forward-run
+  on 1000 rows; contextual proof: `checking_status`'s contextual vector moves **0.160** when only `housing`
+  changes, its entity embedding fixed. `_verify_l032.py` + executed solution clean; lab HTML re-rendered.
+  User decisions: *full Transformer block, forward-only; torch not numpy.*
 
 ## Session 31 — 2026-07-18
 
@@ -666,3 +675,12 @@ Recorded after the Q2 checkpoint (L020). Full rationale: [[learning-records/0052
     - **Unpack every experiment.** State what is held fixed, what is varied, what is measured, and why that isolates the mechanism, before showing the numbers. Read each results table row aloud in prose.
     - **Length is not a constraint.** Drop the ~35–45 min soft cap when the material needs more; a longer, self-contained lesson beats a shorter one that leans on unstated prior knowledge. Keep the chunking/worked-example/check-block structure so length stays digestible.
     - This *extends*, and does not replace, standards #1–#16 (still one skill per lesson, still visuals per mechanism, still the pedagogy widgets). Reference implementation: **L027**.
+
+### Labs implement the paper (2026-07-19, from L032) — applies to L032 and all future labs
+
+18. **Labs follow the paper's implementation — and are very informative (from 2026-07-19, user directive):** the user asked that, starting with **Lab 032**, a lab's crucial content be a **faithful (if minimal) implementation of the lesson's core paper**, not a generic sklearn/toy exercise; and that labs be *very informative*. Per lab, **decide the implementation scope** explicitly and state it in the lab intro:
+    - **Whole model** — build and run the paper's architecture end-to-end in one lab when it is small enough (an MLP, a single attention block, a GBDT-from-scratch stump loop).
+    - **Key parts** — implement the paper's *load-bearing* mechanism(s) faithfully and PROVIDE/borrow the rest, when the full model is too large for one sitting (e.g. implement scaled dot-product + the transformer block; use a plain MLP head).
+    - **Gradual across labs** — when one paper spans **several lessons**, split its implementation across those labs so each lab lands one coherent, runnable piece **aligned with its lesson**. Reference: **TabTransformer (Huang 2020)** — L032 (preview) builds the *architecture + forward pass* (real data, no training); Y2 lec 045 adds *training, semi-supervised pre-training, and benchmarking*. Note the split in each lab's intro and in the learning record so the arc is legible.
+    - **"Very informative" concretely:** (a) annotate each implementation cell with the paper element it realises — figure/section/equation ref (e.g. "Fig. 1 Transformer layer", "Vaswani §3.2 eq. 1"); (b) keep PROVIDED scaffolding minimal so the student writes the *load-bearing* code, not boilerplate (mid-zone, standard #3); (c) prefer **real data + a runnable result** over toys wherever feasible (Tier A; use torch now that it is installed); (d) make the EXIT ticket / reproduction target tie back to the paper's actual claim; (e) it is fine — encouraged — for a paper-implementation lab to be longer than a mechanism lab (length is not the constraint, per standard #17).
+    - This *extends* the four-block paper-reproduction structure and the "reproduction labs build incrementally" note already in Preferences; it does not replace mid-zone difficulty (#3), tiers (#7), or intro content (#8). Full rule in the `lab-authoring` skill. Reference implementation: **L032**.

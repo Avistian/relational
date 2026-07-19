@@ -43,6 +43,38 @@ Four blocks per reproduction lab:
 3. **Harness** — `import relkit` from `labs/relkit/` (CV, metrics, leakage-safe pipelines)
 4. **Reproduction target** — metric within tolerance of paper, or documented honest fail
 
+## Labs implement the paper (from L032 — standard #18)
+
+A lab's crucial content is a **faithful (if minimal) implementation of the lesson's core paper**, not a
+generic sklearn/toy exercise. Labs must be **very informative**.
+
+### Decide the implementation scope (state it in the lab intro)
+
+| Scope | When | Example |
+|-------|------|---------|
+| **Whole model** | The architecture is small enough to build + run end-to-end in one lab | MLP, single attention block, a from-scratch boosting loop |
+| **Key parts** | The full model is too large for one sitting — implement the load-bearing mechanism(s), PROVIDE/borrow the rest | scaled dot-product + transformer block, with a plain MLP head |
+| **Gradual across labs** | One paper spans **several lessons** — split its implementation so each lab lands one coherent, runnable piece aligned with its lesson | **TabTransformer (Huang 2020):** L032 = architecture + forward pass (real data, no training); Y2 L045 = training + semi-supervised pre-training + benchmarking |
+
+For a multi-lesson paper, note the split in **each** lab's intro and in the learning record so the arc is
+legible (which piece this lab lands, what an earlier/later lab covers).
+
+### "Very informative" concretely
+
+- **Annotate each implementation cell with the paper element it realises** — figure / section / equation
+  ref (e.g. "Fig. 1 Transformer layer", "Vaswani §3.2 eq. 1").
+- **Minimal PROVIDED scaffolding** — the student writes the *load-bearing* code (attention equation,
+  residual wiring, the concat before the head), not boilerplate. Still mid-zone (2–4 focused blanks/task).
+- **Real data + a runnable result** over toys wherever feasible (Tier A; use **torch** now that it is
+  installed) — even a forward-pass-only lab should run on real rows and inspect a real intermediate.
+- **EXIT / reproduction target ties back to the paper's actual claim.**
+- **Length is not the constraint** (standard #17) — a paper-implementation lab may be longer than a
+  mechanism lab.
+
+Reference implementation: **L032** (`labs/_build_l032.py`) — a faithful torch TabTransformer *architecture*
+(scaled dot-product self-attention → transformer block with residuals + FFN + LayerNorm → contextual
+embeddings → concat continuous → MLP head), forward-run on real `credit_g`, with training deferred to L045.
+
 ## Agent review when user says *lab done*
 
 Score 0–2 per axis (max 10):
