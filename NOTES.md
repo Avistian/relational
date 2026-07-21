@@ -342,6 +342,50 @@
 - Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
   last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
 
+## Session 34 — 2026-07-21
+
+- **Lesson 033 complete** — user said "lesson 33 done" (no EXIT ticket → no rubric score, per the
+  L017–L032 precedent). Record [[learning-records/0079-lesson-033-complete.md]].
+- **Lesson 034 published — Relational Data Without RDL** (curriculum lec 034, **Kimball & Ross** dimensional
+  modeling / star schema & joins). Single skill: read a 3-table schema (fact + dimensions, PK/FK) and write
+  the join + point-in-time aggregation that flattens it into one design matrix at a chosen entity grain.
+  Record [[learning-records/0080-lesson-034-published.md]]. **Eighth application of standard #17** (every
+  term defined first-principles: relational database, entity, PK, FK, fact/dimension table, star schema,
+  grain, one-to-many cardinality, join, aggregation, design matrix, PIT correctness).
+- **Kimball is a modeling summary, not an architecture** — so standard #18's scope is **operationalise the
+  flatten** (stated in the lab intro): turn a relational schema into one leak-free design matrix and prove
+  the point-in-time guard is load-bearing. Opens the L034–L035 "relational data without RDL" thread; forward
+  refs to L035 are plain text (lesson not yet published).
+- **Two new reusable viz (standard #9, one per beat):** `assets/star-schema-viz.js` (the 3-table schema —
+  customers/orders/order_items — with PK/FK badges, one-to-many ∞/1 glyphs, fact-vs-dimension labels, per-
+  table grain, and per-relationship highlight buttons) and `assets/join-flatten-viz.js` (the flatten: one
+  customer's nested orders collapse into a single fixed-width aggregate row on "Flatten"; a customer toggle
+  shows every entity yields the same columns; readout names the discarded structure — an L035 hook). Reused
+  **`leakage-viz.js`** (L002) for the point-in-time beat. Headless `labs/_viz_check_l034.js` **17/17**;
+  **browser MCP still unavailable** (no chrome-devtools server) → node verification only, consistent with
+  L021–L033.
+- **Lab 034 = Tier C, pandas-only, mechanism lab** (no relkit/OpenML → runs in seconds). Deterministic toy
+  DB (cutoff t = 2024-06-01; C1 has a future $999 order as the leakage trap; C4/C5 have zero pre-t orders).
+  Crucial fragments: Task 1 PIT filter + `groupby("customer_id")` aggregation; Task 2 the leak-free design
+  matrix (`LEFT JOIN` + `fillna(0)`, one row per customer); Task 3 prove the guard matters (leaky all-orders
+  aggregate changes C1 from n=3/total=125 to n=4/total=1124). Stretch: a two-hop `customer→orders→items`
+  distinct-product count. Solution executed **clean** (all 3 CHECK pass, EXIT + stretch print correct);
+  gitignored; lab rendered to `labs/html/0034-*.html`. 8 student blanks.
+- **Thesis:** L034 makes the join *literal* — the flat table Q1–Q3 assumed is **manufactured** by a hand-
+  written, per-task, lossy pipeline (pick grain → join FKs → aggregate one-to-many → re-impose PIT). That
+  turns C1 ("flattening is the lossy step RDL replaces") from slogan into a mechanism the learner can build
+  and audit; L035 will quantify the discarded structure. Dossier verdict updated to "after L034."
+- **Artifacts synced:** retrieval-pool **+2** (`l034-flatten` [misconception], `l034-thesis`); paper-deck
+  **+1** (`kimball2013`); misconceptions **M34** (the flat table is a given → it's a hand-built lossy flatten)
+  + **M35** (PIT is only about the label → every aggregate must filter to before t); thesis-dossier **+1**
+  (FOR, C1/C2) + verdict; `reference/glossary.html` **+9** Q4 terms (relational DB, PK, FK, fact/dimension,
+  star schema, grain, one-to-many, flatten, PIT correctness); `RESOURCES.md` +1 (Kimball). Manifest → **34**;
+  `node labs/_check_pedagogy.js` clean; `node labs/_viz_check_l034.js` 17/17.
+- Next: Lesson 035 — **What joins destroy** (Fey et al. ICML 2024 §2, the feature-engineering cost; ★
+  preview) — the intellectual pivot of Year 1: enumerate the structure a flatten discards (cardinality,
+  identity, higher-order paths, temporal order within a neighbour set). Planned new viz `flatten-loss-viz.js`
+  (two distinct neighbourhoods collapsing to the same feature row — aggregation collision).
+
 ## Session 33 — 2026-07-21
 
 - **Lesson 032 complete** — user said "lesson 32 done" (no EXIT ticket → no rubric score, per the

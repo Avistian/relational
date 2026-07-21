@@ -590,6 +590,30 @@
       ],
       correct: "a",
       explain: "The ceiling on single-table FE is the point: what still pays is cross-table structure (a customer's 90-day average, prior-default count). Deep Feature Synthesis builds these relational aggregates by hand (L009); relational deep learning learns them end-to-end — 'the returns moved across the join', the human-effort ratio Year 4 tests directly."
+    },
+    {
+      id: "l034-flatten", lesson: 34, quarter: "Q4", concept: "flatten-join-aggregate", misconception: true,
+      question: "To build one leak-free training row per customer as of cutoff t from a customers+orders schema, what do you do?",
+      options: [
+        { label: "LEFT JOIN orders on the FK, keep only orders with order_ts < t, GROUP BY customer_id into aggregates (count/sum/avg), fillna 0", value: "a" },
+        { label: "Inner-join every order to its customer and train on the resulting one-row-per-order table", value: "b" },
+        { label: "Aggregate all of the customer's orders regardless of date, since they all belong to that customer", value: "c" },
+        { label: "Drop the orders table and keep only the customer's own static columns", value: "d" }
+      ],
+      correct: "a",
+      explain: "The GROUP BY key fixes the grain (one row per customer); the LEFT JOIN + fillna(0) keeps zero-order customers; the order_ts < t filter is the point-in-time guard. Inner-joining leaves order-grain rows; aggregating all orders leaks the future; dropping orders discards the signal."
+    },
+    {
+      id: "l034-thesis", lesson: 34, quarter: "Q4", concept: "flatten-thesis-bridge",
+      question: "Why does hand-flattening a relational schema into a design matrix SET UP the relational thesis?",
+      options: [
+        { label: "The flatten is a per-task, hand-written pipeline of DFS-style aggregates that deliberately discards structure (cardinality, order, identity, multi-hop paths) — exactly what RDL learns over the PK/FK graph instead", value: "a" },
+        { label: "It proves relational databases cannot be used for machine learning at all", value: "b" },
+        { label: "It shows a LEFT JOIN always yields higher accuracy than an inner join", value: "c" },
+        { label: "It demonstrates that more columns from the same table always raise the score", value: "d" }
+      ],
+      correct: "a",
+      explain: "The design matrix Q1–Q3 assumed is the output of hand-chosen joins + aggregates + point-in-time guards, rebuilt per task, that throw away the relational structure. RDL keeps the same foreign-key edges as a graph and learns the aggregations end-to-end — the join whose returns L033 said moved."
     }
   ];
 })(window);

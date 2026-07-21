@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 034 — Relational Data Without RDL</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    pre.sql { font-family: var(--font-mono); font-size: 0.82rem; background: #0f172a; color: #e2e8f0; padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto; line-height: 1.55; margin: 0.9rem 0; }
+    pre.sql .kw { color: #7dd3fc; } pre.sql .fn { color: #fca5a5; } pre.sql .cm { color: #94a3b8; font-style: italic; }
+
+    /* reused L002 leakage timeline viz */
+    .leak-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .leak-viz-intro { font-size: 0.92rem; margin: 0 0 0.75rem; }
+    .leak-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .leak-viz-btn { font-family: var(--font-sans); font-size: 0.78rem; padding: 0.4rem 0.65rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; }
+    .leak-viz-btn.active { border-color: var(--accent); background: var(--accent-light); font-weight: 600; }
+    .leak-viz-timeline { position: relative; margin: 0.5rem 0; }
+    .leak-viz-axis { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .leak-viz-cutoff { color: var(--accent); font-weight: 600; }
+    .leak-viz-track { position: relative; height: 2.5rem; background: #eef2f5; border-radius: 4px; border: 1px solid var(--border); }
+    .leak-viz-order { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 0.85rem; height: 0.85rem; border-radius: 50%; background: #95a5a6; border: 2px solid #fff; }
+    .leak-viz-order.leak-viz-future { background: #fadbd8; }
+    .leak-viz-order.leak-viz-used { background: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+    .leak-viz-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); transform: translateX(-50%); z-index: 2; }
+    .leak-viz-caption { font-size: 0.88rem; margin-top: 0.75rem; }
+    .leak-viz-caption.leak-viz-safe { color: #2d6a4f; }
+    .leak-viz-caption.leak-viz-leak { color: #9b2226; }
+
+    /* star-schema viz */
+    .sss-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .sss-ctl { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+    .sss-ctl button { font-family: var(--font-sans); font-size: 0.78rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .sss-ctl button.sss-on { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .sss-svg { display: block; max-width: 100%; margin: 0.25rem auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .sss-tname { font-family: var(--font-mono); font-size: 12px; font-weight: 700; }
+    .sss-kind { font-family: var(--font-sans); font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; }
+    .sss-col { font-family: var(--font-mono); font-size: 11px; fill: var(--fg, #222); }
+    .sss-pk { font-family: var(--font-sans); font-size: 8.5px; font-weight: 700; fill: #b0632e; }
+    .sss-fk { font-family: var(--font-sans); font-size: 8.5px; font-weight: 700; fill: #2e6fb0; }
+    .sss-card { font-family: var(--font-sans); font-size: 13px; font-weight: 700; }
+    .sss-grain { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); font-style: italic; }
+    .sss-dim { font-family: var(--font-mono); font-size: 10px; }
+    .sss-readout { font-size: 0.86rem; color: var(--fg, #222); margin-top: 0.7rem; line-height: 1.55; min-height: 4.5rem; }
+
+    /* join-flatten viz */
+    .jf-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .jf-ctl { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.7rem; }
+    .jf-ctl button { font-family: var(--font-sans); font-size: 0.78rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .jf-ctl button.jf-on { background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+    .jf-sep { font-family: var(--font-sans); font-size: 0.75rem; color: var(--muted); margin-left: 0.4rem; }
+    .jf-svg { display: block; max-width: 100%; margin: 0.25rem auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .jf-lane { font-family: var(--font-sans); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; fill: var(--muted); }
+    .jf-nhead { font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
+    .jf-nsub { font-family: var(--font-sans); font-size: 9px; }
+    .jf-orow { font-family: var(--font-mono); font-size: 10px; font-weight: 600; }
+    .jf-oamt { font-family: var(--font-mono); font-size: 9px; }
+    .jf-op { font-family: var(--font-sans); font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; }
+    .jf-prompt { font-family: var(--font-sans); font-size: 12px; font-style: italic; }
+    .jf-fk2 { font-family: var(--font-mono); font-size: 10px; }
+    .jf-fv { font-family: var(--font-mono); font-size: 10px; font-weight: 600; }
+    .jf-note { font-family: var(--font-sans); font-size: 8.5px; font-style: italic; }
+    .jf-readout { font-size: 0.86rem; color: var(--fg, #222); margin-top: 0.7rem; line-height: 1.55; min-height: 5rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4</p>
+  <h1>Relational Data Without RDL</h1>
+  <p class="subtitle">Lesson 034 · Phase 1 · Q4 · ~45 min · <em>primary reading: Kimball &amp; Ross, dimensional modeling — “Fact Tables and Dimension Tables”</em></p>
+
+  <p>
+    Last lesson (<a href="0033-when-to-stop-feature-engineering.html">L033</a>) ended on a phrase we now have
+    to make literal: <em>“the returns moved across the join.”</em> On a single flat table, hand-crafted
+    features hit diminishing then negative returns almost immediately — yet the whole time we have been
+    assuming that flat table simply <em>exists</em>. It does not. Real data lives in a <strong>relational
+    database</strong>: several tables, linked by keys, at different <em>grains</em>. Before you can fit any of
+    the models from Q1–Q3, someone has to <strong>flatten</strong> that database into one design matrix — and
+    that flattening is a modelling choice with a cost. This lesson teaches you to <em>read</em> a small
+    relational schema and to <em>write</em> the join-and-aggregate that turns it into a single leak-free
+    training table. This is the entire single-table paradigm the thesis critiques, built by hand, so that
+    L035 (“What joins destroy”, next) can measure exactly what it throws away.
+  </p>
+  <p>
+    Its single skill: <strong>read a three-table schema (a fact table plus its dimensions, with primary and
+    foreign keys) and write the join + point-in-time aggregation that flattens it into one design matrix at a
+    chosen entity grain — keeping every aggregate strictly to information available before the prediction
+    time.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A relational database stores entities in separate tables linked by
+    foreign keys; to feed a standard model you pick a <em>grain</em> (one row per entity at one prediction
+    time) and <em>flatten</em> the neighbouring tables into columns by joining and then aggregating — and
+    every aggregate must use only rows dated before the prediction time, or you leak the future.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — the act of retrieval (even a failed one) encodes the idea better than re-reading would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    This lesson introduces the language of relational data. Each term is defined here in plain language,
+    from first principles, before we rely on it — assume you are meeting each one fresh, even if an earlier
+    lesson brushed past it.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Relational database.</strong> A collection of <em>tables</em>, each a grid of rows
+    and named columns. Rather than duplicate information, related facts are split across tables and re-linked
+    by shared key columns. “Relational” refers to each table being a mathematical <em>relation</em> (a set of
+    rows), not to the links between them — though the links are what make it useful here.
+  </div>
+  <div class="defbox">
+    <strong class="term">Entity.</strong> A thing the data is about — a customer, a product, an order. In ML
+    we usually predict <em>for</em> an entity (“will <em>this customer</em> churn?”), so one entity type
+    becomes the unit our training rows describe.
+  </div>
+  <div class="defbox">
+    <strong class="term">Primary key (PK).</strong> The column (or columns) that uniquely identifies each row
+    of a table — <code>customer_id</code> in a <code>customers</code> table. No two rows share a PK value; it
+    is the row's stable name.
+  </div>
+  <div class="defbox">
+    <strong class="term">Foreign key (FK).</strong> A column in one table that stores the primary-key value of
+    a row in <em>another</em> table, creating a link. <code>orders.customer_id</code> is a foreign key into
+    <code>customers.customer_id</code>: it says “this order belongs to that customer.” Foreign keys are the
+    edges of the database — and, later in the thesis, the edges of a <em>graph</em>.
+  </div>
+  <div class="defbox">
+    <strong class="term">Fact (event) table vs. dimension table.</strong> In dimensional modelling
+    (Kimball &amp; Ross), a <strong>fact table</strong> records <em>events / measurements</em> — an order, a
+    payment, a click — usually with a timestamp and numeric measures, and holds foreign keys pointing out to
+    <strong>dimension tables</strong>, which describe the <em>entities / context</em> (the customer, the
+    product, the store). Facts are long and grow over time; dimensions are comparatively static descriptions.
+  </div>
+  <div class="defbox">
+    <strong class="term">Star schema.</strong> The classic dimensional layout: one central fact table
+    surrounded by its dimension tables, joined by PK/FK links — drawn, it looks like a star. It is the
+    standard way analytics data is organised, and the mental model you bring to any new database: <em>find the
+    events, find the entities they point to.</em>
+  </div>
+  <div class="defbox">
+    <strong class="term">Grain.</strong> What <em>one row</em> of a table means — its unit of observation.
+    <code>order_items</code> has grain “one line item”; <code>orders</code> has grain “one order”;
+    <code>customers</code> has grain “one customer.” Choosing the grain of your <em>training</em> table (“one
+    row per customer at prediction time”) is the first and most consequential modelling decision, because it
+    fixes what a prediction is <em>about</em>.
+  </div>
+  <div class="defbox">
+    <strong class="term">Cardinality of a relationship (one-to-many).</strong> How many rows on each side a
+    link connects. One customer has <em>many</em> orders (<strong>1 : ∞</strong>); one order has many line
+    items. A one-to-many link is exactly what forces <em>aggregation</em>: to describe the “one” side with the
+    “many” side, you must summarise the many into a fixed set of numbers.
+  </div>
+  <div class="defbox">
+    <strong class="term">Join.</strong> The operation that combines rows from two tables wherever a FK matches
+    a PK, producing rows that carry columns from both. Joining <code>orders</code> to <code>customers</code>
+    on <code>customer_id</code> attaches each customer's attributes to each of their orders.
+  </div>
+  <div class="defbox">
+    <strong class="term">Aggregation.</strong> Collapsing many rows into one summary number per group —
+    <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MAX</code>, … Because a customer has many
+    orders but a model wants one row per customer, aggregation is how the “many” becomes columns on the “one.”
+    Every aggregate is <em>lossy</em> by construction: <code>AVG(amount)</code> keeps the mean and forgets the
+    individual amounts.
+  </div>
+  <div class="defbox">
+    <strong class="term">Design matrix (flat table).</strong> The single rectangular table a standard model
+    consumes: one row per training example, one column per feature, one target. Producing it from a database
+    is the <em>flatten</em>. Everything in Q1–Q3 assumed this matrix was handed to you; this lesson builds it.
+  </div>
+  <div class="defbox">
+    <strong class="term">Point-in-time (PIT) correctness.</strong> Each training row is tied to a
+    <em>prediction time</em> \(t\); every feature for that row must be computable from data available
+    <em>at or before</em> \(t\). An aggregate that sums orders placed <em>after</em> \(t\) uses the future —
+    the label leakage of <a href="0002-design-matrix-leakage.html">L002</a> / <a href="0021-data-splits-in-the-wild.html">L021</a> /
+    <a href="0022-label-leakage-patterns.html">L022</a>, now committed at the <em>feature-construction</em> step.
+  </div>
+
+  <h2>The schema you will flatten</h2>
+  <p>
+    Meet the toy database used for the rest of the lesson (and the lab): three tables — a
+    <code>customers</code> dimension and two fact tables, <code>orders</code> and its detail
+    <code>order_items</code>. Use the buttons to trace each foreign-key link and read its cardinality. The
+    grain of each table is printed beneath it.
+  </p>
+
+  <div id="star-schema-viz"></div>
+
+  <p>
+    Read the structure the way an analyst does: <code>orders</code> is the event stream (each row a purchase,
+    with a timestamp), pointing back to the <code>customers</code> who made it; <code>order_items</code> is the
+    finer grain beneath each order (each row one product line). The links are <strong>one-to-many</strong> in
+    the fact→dimension direction: one customer, many orders; one order, many items. That “many” is the crux —
+    a model that predicts per customer cannot ingest a variable-length list of orders. It needs a single row.
+  </p>
+
+  <h2>The ML row is “one entity at one time” — and the flatten fills it</h2>
+  <p>
+    Suppose the task is: <em>predict whether a customer churns in the 30 days after a cutoff date <code>t</code>.</em>
+    Then the natural training grain is <strong>one row per customer, as of <code>t</code></strong>. The label
+    comes from the future window (did they churn after <code>t</code>?); the <em>features</em> must summarise
+    everything known about that customer <em>up to</em> <code>t</code>. But the customer's behaviour lives in
+    <code>orders</code> and <code>order_items</code>, at a finer grain. Bridging that gap is the flatten:
+    <strong>join the neighbour tables in, then aggregate them into columns</strong> at the customer grain.
+  </p>
+  <p>
+    Watch it happen. Below, one customer's orders are collapsed into a single fixed-width feature row. Switch
+    customers to see that a customer with three orders and one with a single order both produce the
+    <em>same columns</em> — that uniformity is exactly what the model requires.
+  </p>
+
+  <div id="join-flatten-viz"></div>
+
+  <h3>Predict first</h3>
+  <p>
+    Before you read on: customer C1 placed <strong>three</strong> orders of $40, $55, $30. After flattening to
+    one row per customer, how is that three-order history represented in the design matrix?
+  </p>
+  <div id="predict-flatten"></div>
+
+  <h2>Writing the flatten: join, then aggregate — leak-free</h2>
+  <p>
+    Here is the skill in code. We want, for each customer and cutoff <code>t</code>, a leak-free summary of
+    their orders <em>strictly before</em> <code>t</code>. In SQL the point-in-time filter is a single
+    <code>WHERE</code> clause on the timestamp; the aggregation is a <code>GROUP BY</code> the entity key:
+  </p>
+  <pre class="sql"><span class="cm">-- one leak-free feature row per customer, as of cutoff :t</span>
+<span class="kw">SELECT</span>
+    c.customer_id,
+    c.segment,
+    <span class="fn">COUNT</span>(o.order_id)              <span class="kw">AS</span> n_orders_before_t,
+    <span class="fn">COALESCE</span>(<span class="fn">SUM</span>(o.amount), 0)     <span class="kw">AS</span> total_spend_before_t,
+    <span class="fn">COALESCE</span>(<span class="fn">AVG</span>(o.amount), 0)     <span class="kw">AS</span> avg_basket_before_t,
+    <span class="fn">MAX</span>(o.order_ts)               <span class="kw">AS</span> last_order_ts_before_t
+<span class="kw">FROM</span> customers c
+<span class="kw">LEFT JOIN</span> orders o
+       <span class="kw">ON</span> o.customer_id = c.customer_id
+      <span class="kw">AND</span> o.order_ts &lt; :t          <span class="cm">-- POINT-IN-TIME: only the past</span>
+<span class="kw">GROUP BY</span> c.customer_id, c.segment;</pre>
+  <p>
+    The same operation in pandas is a filter, a <code>groupby</code>, and a merge back onto the entity table:
+  </p>
+  <pre class="sql"><span class="cm"># orders_before = orders placed strictly before the cutoff t</span>
+past = orders[orders.order_ts &lt; t]
+agg  = (past.groupby(<span class="fn">"customer_id"</span>)
+             .agg(n_orders_before_t=(<span class="fn">"order_id"</span>, <span class="fn">"count"</span>),
+                  total_spend_before_t=(<span class="fn">"amount"</span>, <span class="fn">"sum"</span>),
+                  avg_basket_before_t=(<span class="fn">"amount"</span>, <span class="fn">"mean"</span>)))
+flat = customers.merge(agg, on=<span class="fn">"customer_id"</span>, how=<span class="fn">"left"</span>).fillna(0)</pre>
+  <p>
+    Three things make this correct, and each is a place people slip:
+  </p>
+  <ul>
+    <li><strong>The grain is fixed by the <code>GROUP BY</code> / <code>groupby</code> key.</strong> Grouping
+      by <code>customer_id</code> guarantees exactly one output row per customer — the design-matrix grain.
+      Forget it and you get one row per order (the fact grain), and your “per-customer” model is quietly
+      training on duplicated, order-level rows.</li>
+    <li><strong>The <code>LEFT JOIN</code> keeps customers with zero past orders.</strong> A plain (inner)
+      join would silently drop new customers who have not ordered yet — a biased training set. The
+      <code>COALESCE</code>/<code>fillna(0)</code> then encodes “no orders” as a count of 0, not a missing
+      value you have to explain later (<a href="0006-missingness-taxonomy.html">L006</a>).</li>
+    <li><strong>The <code>order_ts &lt; :t</code> filter is the point-in-time guard.</strong> It must live in
+      the join/aggregation itself, not be bolted on afterwards. Drop it and every aggregate peeks at orders
+      the customer placed <em>after</em> the prediction time — future information baked straight into a
+      feature.</li>
+  </ul>
+
+  <h2>Point-in-time correctness: the join can leak</h2>
+  <p>
+    Because this is the failure that quietly destroys relational pipelines, look at it concretely. The
+    timeline below places one customer's orders around a prediction cutoff <code>t</code>. Toggle the feature
+    definitions: the “safe” ones aggregate only orders at or before <code>t</code>; the “leak” ones reach
+    across <code>t</code> into the future — exactly what the <code>WHERE order_ts &lt; t</code> clause above
+    forbids.
+  </p>
+
+  <div id="leakage-viz"></div>
+
+  <p>
+    This is the <a href="0002-design-matrix-leakage.html">L002</a> lesson, now at the <em>feature-engineering</em>
+    step of a relational flatten. Notice that the schema itself gives you no protection — SQL will happily
+    average future orders. Point-in-time correctness is a discipline you impose, re-impose on <em>every</em>
+    aggregate, and re-impose again the next time the same database is flattened for a different task. That
+    “re-impose every time” is a running cost we will return to.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-flatten"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> Everything in this lesson <em>is</em> the single-table paradigm the thesis
+    argues is undervalued-against. Three observations set up the bet. <em>(1) The flatten is a hand-built
+    pipeline, not a given.</em> Someone chooses the grain, writes each join, picks each aggregate
+    (<code>COUNT</code>, <code>AVG</code>, <code>MAX</code>), and guards each with a point-in-time filter — the
+    design matrix Q1–Q3 took for granted is the <em>output</em> of exactly this human labour. <em>(2) Each
+    aggregate is a hand-designed <a href="0009-feature-engineering.html">Deep Feature Synthesis</a> primitive.</em>
+    “Average basket over the last 90 days,” “number of prior orders,” “days since last order” — these are the
+    relational features L033 said still pay, and here you see they are produced by <em>walking foreign keys and
+    summarising</em>. <em>(3) The structure is being deliberately discarded.</em> The one-to-many link, the
+    order in which baskets arrived, which products were bought, the identity of each event — the aggregation
+    throws all of it away to make a fixed-width row. L035 (next lesson) quantifies
+    that loss; Year 3–4 keep the <em>same</em> PK/FK edges as a <strong>graph</strong> and let a model learn the
+    aggregates end-to-end instead of you hand-writing them. The relational thesis, in one line: <em>don't
+    flatten the database into columns — learn over its structure directly.</em>
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>Choosing the grain is choosing the question.</strong> “One row per customer at <code>t</code>”
+      and “one row per customer <em>per month</em>” are different design matrices with different labels and
+      different leakage surfaces. The grain is not cosmetic — it defines what a prediction <em>is</em>.</li>
+    <li><strong>Aggregation is lossy on purpose, and that is the whole point of L035.</strong> The mean of a
+      basket is a deliberate compression. It buys the fixed-width row a model needs, at the price of the
+      cardinality, order, and identity of the underlying events. “Add more aggregates” recovers <em>some</em>
+      of it and never all of it.</li>
+    <li><strong>Multi-hop paths multiply the work.</strong> Reaching product categories from a customer is
+      customer → orders → order_items → products → categories — several joins, each aggregated. Every hop is
+      code to write, tune, and keep leak-free; the deeper the path, the more the manual flatten strains.</li>
+    <li><strong>The same join is redone per task.</strong> A churn model, a lifetime-value model, and a
+      fraud model over the <em>same</em> database each rebuild their own flatten with their own cutoffs and
+      aggregates. The relational structure is re-flattened, re-audited, and re-leaked-checked every time — a
+      human cost that scales with the number of tasks, which the thesis argues a learned relational model
+      amortises.</li>
+    <li><strong>Star vs. snowflake vs. raw OLTP.</strong> A clean Kimball star is the idealised analytics
+      shape; a live transactional (OLTP) database is more normalised and messier. The reading skill is the
+      same — find the fact/event tables, find the dimensions they point to, note the grains and keys — but the
+      real flatten is rarely as tidy as the toy schema above.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    <strong>Ralph Kimball &amp; Margy Ross — “Fact Tables and Dimension Tables”</strong>
+    (<a href="https://www.kimballgroup.com/2003/01/fact-tables-and-dimension-tables/">Kimball Group design tip</a>),
+    the crisp, free summary of the star-schema idea from the authors who defined it. Read it until you can
+    state, in one sentence each: what a fact table is, what a dimension table is, and how PK/FK links connect
+    them. For a fuller reference, the <a href="https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/">Kimball
+    Dimensional Modeling Techniques</a> page (drawn from <em>The Data Warehouse Toolkit</em>, 3rd ed., Ch. 2)
+    is the authoritative catalogue — skim the “Fundamental Concepts” and “Basic Fact/Dimension Table
+    Techniques” sections. You do not need the slowly-changing-dimension machinery yet; the goal is fluency in
+    fact / dimension / grain / PK / FK so you can read any schema and see where the flatten will go.
+  </p>
+
+  <h2>Lab — flatten a 3-table schema, leak-free</h2>
+  <p>
+    Notebook <code>0034-relational-data-without-rdl.ipynb</code> (Tier C — three small synthetic tables:
+    <code>customers</code>, <code>orders</code>, <code>order_items</code>): you write the crucial fragments —
+    the <strong>point-in-time filter</strong> (<code>order_ts &lt; t</code>), the <strong>entity-grain
+    aggregation</strong> (<code>groupby("customer_id")</code> into <code>n_orders_before_t</code>,
+    <code>avg_basket_before_t</code>), and the <strong>leak-free merge</strong> back onto the customer table
+    (a <code>LEFT JOIN</code> with <code>fillna(0)</code>). The deliverable is the flat design matrix plus one
+    sentence naming its grain, and a CHECK that recomputing an aggregate <em>with</em> the future changes the
+    numbers — proving your point-in-time guard is load-bearing.
+    <a href="../labs/html/0034-relational-data-without-rdl.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why the <code>GROUP BY</code> key sets the grain, how a <code>LEFT JOIN</code> differs from an inner
+    join here, or why “the same join is redone per task” is a thesis argument and not just an annoyance? Ask
+    your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0033-when-to-stop-feature-engineering.html">← Lesson 033</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0034-relational-data-without-rdl.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/star-schema-viz.js"></script>
+<script src="../assets/join-flatten-viz.js"></script>
+<script src="../assets/leakage-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 34, count: 3 });
+
+  StarSchemaViz.mount(document.getElementById("star-schema-viz"), {});
+  JoinFlattenViz.mount(document.getElementById("join-flatten-viz"), {});
+  LeakageViz.mount(document.getElementById("leakage-viz"));
+
+  Predict.mount(document.getElementById("predict-flatten"), {
+    prompt: "Customer C1 has 3 orders ($40, $55, $30). After flattening to one row per customer, how is that history represented?",
+    options: [
+      { label: "Three rows are kept — one per order — so the model sees each purchase", value: "rows" },
+      { label: "One row with aggregate columns (n_orders=3, avg_basket≈41.7, …) that lose per-order detail", value: "agg" },
+      { label: "The orders are dropped; only the customer's own attributes remain", value: "drop" }
+    ],
+    correct: "agg",
+    reveal: "One fixed-width row per customer, whose columns are aggregates: n_orders=3, total_spend=125, avg_basket≈41.7, max_basket=55. The three individual orders — their order, their exact amounts, which products — are compressed into a handful of summary numbers. That is what the flatten buys (a shape the model can eat) and what it costs (structure), the exact loss L035 measures."
+  });
+
+  Teachback.mount(document.getElementById("teachback-flatten"), {
+    prompt: "In your own words: given a 3-table schema (customers, orders, order_items), describe how you turn it into one leak-free design matrix for a per-customer prediction — name the grain, the join, the aggregation, and the point-in-time guard — and say why this whole procedure sets up the relational thesis.",
+    points: [
+      "Grain: pick one row per entity at a prediction time t (one row per customer as of t). The GROUP BY / groupby key fixes that grain; the label comes from the future window after t.",
+      "Join: attach the neighbour fact tables via foreign keys (orders.customer_id -> customers.customer_id). Use a LEFT JOIN so customers with no past orders survive, then fillna/COALESCE their aggregates to 0.",
+      "Aggregation: collapse the one-to-many orders into fixed-width columns — COUNT/SUM/AVG/MAX (n_orders, total_spend, avg_basket). This is lossy: it keeps summaries and forgets which/when/how-many.",
+      "Point-in-time guard: every aggregate filters to order_ts < t, so no feature uses information from after the prediction time (the L002/L021/L022 leakage failure, now at the feature step).",
+      "Thesis link: the flatten is a hand-built pipeline of DFS-style primitives that deliberately discards the relational structure (cardinality, order, identity, multi-hop paths) and must be rewritten per task; RDL keeps the PK/FK edges as a graph and learns the aggregates end-to-end instead."
+    ],
+    model: "Start by choosing the grain: for 'will this customer churn after date t?', one training row is one customer as of t. The label is read from the window after t; the features must summarise everything known up to t. The customer's behaviour lives in the orders and order_items fact tables at a finer grain, so I flatten: LEFT JOIN orders onto customers by the foreign key customer_id (LEFT so a customer with no orders isn't dropped), filter to order_ts < t so I only ever use the past, then GROUP BY customer_id and aggregate the many orders into fixed-width columns — n_orders_before_t = COUNT, total_spend = SUM, avg_basket = AVG, last_order = MAX — filling absent aggregates with 0. The GROUP BY key is what pins the output to one row per customer; drop it and I'd train on duplicated order-level rows. The point-in-time filter is the load-bearing guard: SQL will happily average future orders, so PIT correctness is a discipline I impose on every aggregate, every time. Now the thesis: this design matrix isn't given — it's the output of a hand-written pipeline of Deep-Feature-Synthesis primitives (walk a foreign key, summarise), and the aggregation deliberately throws away the relational structure (the one-to-many cardinality, the order baskets arrived in, which products, the identity of each event, and any multi-hop path like customer->orders->items->product->category). Worse, the same database is re-flattened, re-audited and re-leak-checked for every new task. Relational deep learning keeps those same PK/FK edges as a graph and learns the aggregations end-to-end, once — which is why 'the returns moved across the join' (L033) is literally about this join."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "In the 3-table schema, what makes customers-to-orders a ONE-TO-MANY relationship, and why does it force aggregation?",
+    options: [
+      { label: "orders.customer_id (a foreign key) points to one customers row, but one customer appears in many orders — so a per-customer row must summarise its many orders into columns", value: "a" },
+      { label: "Both tables have the same primary key, so their rows line up one-to-one and no aggregation is needed", value: "b" },
+      { label: "customers is larger than orders, so orders must be padded to match", value: "c" },
+      { label: "It is many-to-many, so a bridge table replaces any aggregation", value: "d" }
+    ],
+    correct: "a",
+    explain: "orders.customer_id is a foreign key into customers.customer_id (the PK). One customer has many orders (1:∞). A model that predicts per customer needs one row per customer, so the many orders must be collapsed — aggregated — into a fixed set of columns. The one-to-many cardinality is precisely what makes aggregation unavoidable."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "You flatten orders into per-customer features as of cutoff t. Which version is point-in-time CORRECT?",
+    options: [
+      { label: "Aggregate only orders with order_ts < t (e.g. n_orders_before_t, avg_basket_before_t)", value: "a" },
+      { label: "Aggregate ALL of the customer's orders, since they all belong to that customer", value: "b" },
+      { label: "Aggregate only orders AFTER t, because those are closest to the prediction", value: "c" },
+      { label: "Aggregate orders from any time, then drop the order_ts column so no dates remain", value: "d" }
+    ],
+    correct: "a",
+    explain: "PIT correctness means every feature uses only information available at or before the prediction time t. Only 'orders with order_ts < t' qualifies. Aggregating all orders (b) or future orders (c) leaks the future into the feature — the L002/L021/L022 failure at the feature step. Dropping the date column (d) doesn't undo the leak; the future values are already baked into the aggregate."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why does building this hand-flattened design matrix SET UP the relational thesis?",
+    options: [
+      { label: "The flatten is a hand-written pipeline of DFS-style aggregates that deliberately discards relational structure (cardinality, order, identity, multi-hop paths) and is rebuilt per task — exactly what RDL proposes to learn over the graph instead", value: "a" },
+      { label: "It proves relational databases can't be used for machine learning at all", value: "b" },
+      { label: "It shows a LEFT JOIN always beats an inner join for accuracy", value: "c" },
+      { label: "It demonstrates that more columns from one table always raise held-out score", value: "d" }
+    ],
+    correct: "a",
+    explain: "The design matrix isn't given — it's produced by choosing a grain and hand-writing joins + aggregates + point-in-time guards, which throw away the one-to-many cardinality, event order/identity, and multi-hop paths, and must be redone for every task. RDL keeps the same PK/FK edges as a graph and learns those aggregations end-to-end. L035 measures exactly what the flatten destroys."
+  });
+</script>
+</body>
+</html>
