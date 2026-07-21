@@ -342,6 +342,51 @@
 - Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
   last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
 
+## Session 33 — 2026-07-21
+
+- **Lesson 032 complete** — user said "lesson 32 done" (no EXIT ticket → no rubric score, per the
+  L017–L031 precedent). Record [[learning-records/0077-lesson-032-complete.md]].
+- **Lesson 033 published — When to Stop Feature Engineering** (curriculum lec 033, **Domingos 2012**,
+  *A Few Useful Things to Know about ML*, CACM). Single skill: allocate a fixed modeling budget between FE
+  and tuning; stop adding hand features when the marginal held-out gain sinks into the CV noise band (not
+  when you run out of ideas). Record [[learning-records/0078-lesson-033-published.md]]. **Seventh
+  application of standard #17** (every term defined first-principles: FE, marginal/diminishing returns,
+  bias–variance/overfitting tax, CV noise band ±σ, budget/opportunity cost, "more data beats a cleverer
+  algorithm").
+- **Domingos is an essay, not an architecture** — so standard #18's "implement the paper" scope is
+  **operationalise the essay's three claims as one controlled experiment** (stated in the lab intro): a
+  fixed-order feature-budget loop, a curve that peaks then declines, and a noise-band stopping rule.
+- **Verified live** (`labs/_verify_l033.py`, credit_g Tier A, seed 0, 5-fold, model held fixed): adding
+  hand features 0→10 to a **HistGB**, CV ROC-AUC peaks at **k=3 (0.7911 vs 0.7865 baseline, +0.0046 —
+  inside the ±0.032 band → not significant, L023)** then **declines to 0.7659 by k=8, below baseline** (the
+  overfitting tax). A **linear** model drifts only **+0.006** (baseline 0.7913), also within noise. On a
+  strong model + small flat table, single-table FE buys nothing provable, and then costs.
+- **One new reusable viz (standard #9):** `assets/fe-returns-viz.js` — the diminishing-returns curve
+  (two real curves GBDT + linear with ±1σ noise bands, a "stop here" marker at the GBDT peak, a k-slider
+  reading out Δ-vs-baseline and within-noise/exceeds-1σ). Reused **`feature-viz.js`** (L009) for the
+  "why FE matters for a weak model" beat. Headless `labs/_viz_check_l033.js` **11/11**; **browser MCP still
+  unavailable** (no chrome-devtools server) → node verification only, consistent with L021–L032.
+- **Lab 033 = Tier A, sklearn, experiment lab.** Crucial fragments: the feature-budget loop (Task 1), the
+  stopping rule `first_within_noise` (Task 2), and the GBDT-vs-linear model-dependence rerun (Task 3);
+  stretch points at the L023 corrected resampled t-test to prove the peak is not significant. Solution
+  executed clean (all CHECK pass, EXIT numbers match `_verify_l033.py` exactly); gitignored; lab rendered.
+  **Thread gotcha recurred** (Session 31 note): HistGB oversubscribes OpenMP after the torch install →
+  ~5 min/fit *inside the sandbox*; ran the verify + nbconvert **outside the sandbox** with
+  `OMP_NUM_THREADS=4` (SETUP cell pins the env vars too).
+- **Thesis:** the load-bearing L033 line — this **quantifies the ceiling**. Manual single-table FE returns
+  have effectively gone to zero, then negative, against a competent model (sixth Q4 deflation:
+  L028–L032 ties + now L033's decline). The features that would still pay are relational aggregates
+  *across* tables (DFS by hand, L009) → what RDL learns end-to-end; "the returns moved across the join,"
+  the human-effort ratio Y4 tests. Dossier verdict updated to "after L033."
+- **Artifacts synced:** retrieval-pool **+2** (`l033-fe-returns` [misconception], `l033-thesis`);
+  paper-deck **+1** (`domingos2012`); misconceptions **M32** (FE always helps → diminishing then negative;
+  stop at Δ<σ) + **M33** (diminishing returns is model-relative); thesis-dossier **+1** (FOR+BAR, C1/C4/C3)
+  + verdict; `reference/glossary.html` **+4** Q4 terms (diminishing returns, marginal return, CV noise band,
+  FE budget rule); `RESOURCES.md` +1 (Domingos 2012). Manifest → **33**; `node labs/_check_pedagogy.js`
+  clean; `node labs/_viz_check_l033.js` 11/11.
+- Next: Lesson 034 — **Relational data without RDL** (Kimball star schema & joins; sketch a 3-table join),
+  opening the "relational data without RDL" thread (L034–L035) that sets up the what-joins-destroy bridge.
+
 ## Session 32 — 2026-07-19
 
 - **Lesson 031 complete** — user said "lesson 31 done" (no EXIT ticket → no rubric score, per the

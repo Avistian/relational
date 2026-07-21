@@ -22,6 +22,8 @@ Organized by curriculum year. Full sequencing in [CURRICULUM.md](./CURRICULUM.md
   Three inductive biases (irregular targets, uninformative features, rotation non-invariance). Use for: Lesson 010 Q1-checkpoint primary reading + year-1 exit exam; explains why a competently-built GBDT is the baseline the thesis must beat.
 - [Designing Machine Learning Systems — Huyen](https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/)
   Evaluation, leakage, deployment. Use for: year-1 evaluation lectures.
+- [A Few Useful Things to Know about Machine Learning — Domingos, CACM 2012 (PDF)](https://homes.cs.washington.edu/~pedrod/papers/cacm12.pdf)
+  Twelve folk-truths of applied ML. Use for: Lesson 033 primary reading — the sections *"Feature engineering is the key,"* *"More data beats a cleverer algorithm,"* and *"Overfitting has many faces,"* which together give the budget-allocation / when-to-stop rule (stop when the marginal held-out gain sinks into the CV noise band). The thesis reframe: manual single-table FE returns diminish fast — the value moved *across the join*, where RDL learns the relational aggregates DFS builds by hand.
 - [On Over-fitting in Model Selection… — Cawley & Talbot, JMLR 2010](https://jmlr.org/papers/v11/cawley10a.html)
   Selection bias from tuning + scoring on the same data; argues for nested ("double") CV. Use for: Lesson 004 primary reading and the citation behind every honest tuned baseline.
 - [scikit-learn — Cross-validation iterators for grouped data (§3.1.2.4)](https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data)

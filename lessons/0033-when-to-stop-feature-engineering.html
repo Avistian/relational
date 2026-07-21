@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 033 — When to Stop Feature Engineering</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+
+    /* reused L009 feature viz */
+    .feat-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .feat-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .feat-viz-btn { font-family: var(--font-sans); font-size: 0.85rem; padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; }
+    .feat-viz-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .feat-viz-svg { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .feat-axis { stroke: #999; stroke-width: 1; }
+    .feat-lbl { font-family: var(--font-sans); font-size: 11px; fill: var(--muted); }
+    .feat-dot { stroke: #fff; stroke-width: 0.5; }
+    .feat-dot.raw { fill: #922b21; opacity: 0.75; }
+    .feat-dot.engineered { fill: #1e6b3c; opacity: 0.8; }
+    .feat-viz-caption { font-size: 0.9rem; margin-top: 0.75rem; color: var(--muted); min-height: 4rem; }
+
+    /* diminishing-returns viz */
+    .fer-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .fer-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; align-items: center; }
+    .fer-ctl button { font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .fer-ctl button.fer-on { background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+    .fer-slab { font-family: var(--font-sans); font-size: 0.8rem; color: var(--muted); display: inline-flex; align-items: center; gap: 0.35rem; }
+    .fer-svg { display: block; max-width: 100%; margin: 0.25rem auto; }
+    .fer-tick { font-family: var(--font-mono); font-size: 9px; fill: var(--muted); }
+    .fer-lab { font-family: var(--font-sans); font-size: 10px; fill: var(--muted); }
+    .fer-leg { font-family: var(--font-sans); font-size: 10px; fill: var(--fg, #222); }
+    .fer-stop { font-family: var(--font-sans); font-size: 9.5px; fill: #b0632e; font-weight: 600; }
+    .fer-readout { font-size: 0.85rem; margin: 0.6rem 0.2rem 0; line-height: 1.5; }
+    .fer-rhead { margin-bottom: 0.35rem; }
+    .fer-rrow { display: flex; align-items: center; gap: 0.4rem; margin: 0.15rem 0; flex-wrap: wrap; }
+    .fer-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    .fer-up { color: #1e6b3c; } .fer-down { color: #b03a2e; }
+    .fer-noise { font-family: var(--font-sans); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: #8a6d1a; background: #fcf3d3; padding: 0.05rem 0.4rem; border-radius: 4px; }
+    .fer-real { font-family: var(--font-sans); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: #1e6b3c; background: #d8f0e0; padding: 0.05rem 0.4rem; border-radius: 4px; }
+    .fer-caption { font-size: 0.86rem; color: var(--muted); margin-top: 0.6rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4</p>
+  <h1>When to Stop Feature Engineering</h1>
+  <p class="subtitle">Lesson 033 · Phase 1 · Q4 · ~40 min · <em>primary reading: Domingos 2012, “A Few Useful Things to Know about Machine Learning”</em></p>
+
+  <p>
+    You now know how to build features (<a href="0009-feature-engineering.html">L009</a>), encode
+    categoricals four ways (<a href="0031-embeddings-for-categoricals.html">L031</a>), and even let a
+    Transformer contextualise them (<a href="0032-tabtransformer-preview.html">L032</a>). Every one of those
+    is a way to spend <strong>human effort</strong> shaping the input a model sees. This lesson is about the
+    question nobody teaches but every practitioner faces: <strong>when do you stop?</strong> You have a fixed
+    number of hours; some go to crafting features, some go to tuning the model. Pedro Domingos' famous 2012
+    essay gives the two facts that decide the split — <em>“feature engineering is the key”</em> and, in the
+    same breath, <em>“more data beats a cleverer algorithm”</em> and <em>“overfitting has many faces”</em> —
+    and this lesson turns them into a rule you can act on.
+  </p>
+  <p>
+    Its single skill: <strong>allocate a fixed modeling budget between feature engineering and model tuning,
+    and justify the split with the feature-engineering trade-off — most of the early gains live in the
+    features, but their returns <em>diminish</em> and each added feature raises the overfitting/variance tax,
+    so you stop when the marginal held-out gain sinks into the cross-validation noise band rather than when
+    you run out of ideas.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Feature engineering is the highest-leverage thing you can do <em>early</em>,
+    but on a strong model and a small flat table its returns diminish fast and eventually go negative
+    (overfitting) — so the disciplined move is to measure the curve of held-out score vs. effort, watch it
+    against the CV noise band, and stop where the marginal gain is no longer distinguishable from noise.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — the act of retrieval (even a failed one) encodes the idea better than re-reading would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    This lesson leans on a few terms about <em>effort, returns, and risk</em>. Each is defined here in plain
+    language before we rely on it — assume you are meeting each one fresh.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Feature engineering (FE).</strong> Hand-crafting new input columns from the raw
+    ones — ratios, products, logs, aggregates, flags — so the structure a model needs becomes easier for it
+    to represent (<a href="0009-feature-engineering.html">L009</a>). A <em>hand feature</em> is one such
+    crafted column. FE is <em>human</em> work: it encodes your domain knowledge into the design matrix.
+  </div>
+  <div class="defbox">
+    <strong class="term">Marginal return (of a feature).</strong> The change in a model's honest held-out
+    score caused by <em>adding one more</em> feature, holding everything else fixed. If baseline score is
+    \(s_0\) and adding a feature gives \(s_1\), the marginal return is \(s_1 - s_0\). “Diminishing returns”
+    means each successive feature's marginal return tends to shrink.
+  </div>
+  <div class="defbox">
+    <strong class="term">Diminishing returns.</strong> The pattern where the first few features buy most of
+    the achievable gain and later ones buy progressively less — the curve of score-vs-effort <em>flattens</em>.
+    In the extreme it turns <em>negative</em>: adding features starts to <em>lower</em> the held-out score.
+  </div>
+  <div class="defbox">
+    <strong class="term">Overfitting &amp; the bias–variance trade-off.</strong> A model <em>overfits</em>
+    when it fits noise particular to the training sample and so generalises worse. Adding features raises
+    <em>variance</em> (more ways to fit noise) while lowering <em>bias</em> (more ways to fit signal); past a
+    point the variance cost outweighs the bias gain and held-out score falls. Domingos calls this
+    “overfitting has many faces” — it is not one bug but a family of them.
+  </div>
+  <div class="defbox">
+    <strong class="term">Cross-validation noise band (±1σ).</strong> A CV score is a <em>mean over folds</em>,
+    and it has a standard deviation \(\sigma\) across those folds (<a href="0003-train-valid-test-cv.html">L003</a>).
+    The “noise band” is the interval mean \(\pm\,\sigma\). A change smaller than \(\sigma\) is
+    <strong>within noise</strong> — you cannot tell it from luck of the split (the discipline of
+    <a href="0023-statistical-comparison.html">L023</a>). Real improvements clear the band; noise does not.
+  </div>
+  <div class="defbox">
+    <strong class="term">Modeling budget &amp; opportunity cost.</strong> The fixed time/compute you have for
+    a project. Every hour spent engineering a feature is an hour <em>not</em> spent tuning the model, getting
+    more data, or auditing leakage — that forgone alternative is the <em>opportunity cost</em>. Allocating
+    the budget well means putting each hour where its marginal return is highest.
+  </div>
+  <div class="defbox">
+    <strong class="term">“More data beats a cleverer algorithm.”</strong> Domingos' observation that, past a
+    competent model, adding <em>training data</em> usually raises held-out score more per unit effort than
+    adding model cleverness or more hand features — because more data reduces variance directly. A reason the
+    FE budget is not the only, or even the best, place to spend.
+  </div>
+
+  <h2>Domingos' three “useful things” that decide the budget</h2>
+  <p>
+    Domingos (2012) distils a dozen folk-truths of applied machine learning. Three of them, read together,
+    settle how to split a modeling budget. We take each at its word and then <em>test</em> it on real data
+    below.
+  </p>
+  <table>
+    <thead><tr><th>Domingos' lesson</th><th>What it claims</th><th>Consequence for your budget</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>“Feature engineering is the key”</strong></td>
+        <td>Across projects, the features used matter more than the algorithm; FE is where most of the
+          <em>time</em> and most of the <em>early</em> gains go.</td>
+        <td>Spend the <em>first</em> hours on features, not on exotic models.</td>
+      </tr>
+      <tr>
+        <td><strong>“More data beats a cleverer algorithm”</strong></td>
+        <td>Once the model is competent, extra <em>data</em> usually beats extra cleverness or extra
+          features per unit effort.</td>
+        <td>Before hand-crafting a 10th feature, ask whether more rows would pay more.</td>
+      </tr>
+      <tr>
+        <td><strong>“Overfitting has many faces”</strong></td>
+        <td>More features / capacity raise variance; held-out score eventually <em>falls</em>, and it can
+          fall in subtle, hard-to-spot ways.</td>
+        <td>There is a <em>stopping point</em> — past it, more FE is negative-return.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Notice the built-in tension: the first lesson pushes you <em>toward</em> feature engineering; the second
+    and third pull you <em>back</em>. The skill is holding both — FE is the highest-leverage thing early, and
+    a trap late. The only way to know where “early” becomes “late” is to <strong>measure the returns</strong>.
+  </p>
+
+  <h2>Why feature engineering matters at all (the case for spending early)</h2>
+  <p>
+    Before we talk about stopping, remember <em>why</em> you start. From <a href="0009-feature-engineering.html">L009</a>:
+    a model can only combine features in the ways its hypothesis space allows. A <strong>linear</strong> model
+    can only add weighted columns; it cannot, on its own, synthesise a <em>ratio of differences</em>
+    \((a-b)/(c-d)\). Engineer that ratio and the same linear model goes from a shapeless cloud to a near-perfect
+    line. Toggle the view below (the L009 result, re-shown).
+  </p>
+
+  <div id="feat-viz"></div>
+
+  <div class="callout">
+    <strong>Verified earlier (L009, target \(y=(a-b)/(c-d)\), 5-fold R²):</strong> a <strong>Ridge</strong>
+    regressor scores R² <strong>0.644</strong> on the raw columns and <strong>0.998</strong> once the ratio is
+    engineered in. This is “feature engineering is the key” in its purest form — but note it was most dramatic
+    for a <em>weak</em> (linear) model. A gradient-boosted tree, which already approximates interactions through
+    its splits, rose only <strong>0.968 → 0.980</strong>. Hold that asymmetry; it is exactly what the next
+    experiment exploits.
+  </div>
+
+  <h3>Predict first</h3>
+  <p>
+    Here is the experiment. Take real <code>credit_g</code>, fix a strong model
+    (<code>HistGradientBoosting</code>), and add hand-crafted features (ratios, products, logs of the raw
+    columns) <em>one at a time</em>, measuring 5-fold CV ROC-AUC after each. Before you see the curve: what
+    happens to held-out AUC as you go from 0 to 10 hand features on this already-strong tree?
+  </p>
+  <div id="predict-returns"></div>
+
+  <h2>The experiment: watch the returns diminish (and go negative)</h2>
+  <p>
+    Let us be explicit about the setup, because the design is what makes the result trustworthy
+    (<a href="0022-label-leakage-patterns.html">L022</a> discipline):
+  </p>
+  <ul>
+    <li><strong>Held fixed:</strong> the model (<code>HistGradientBoosting</code>, default hyperparameters),
+      the data (<code>credit_g</code>, 1000 rows), the 5-fold stratified CV, and the seed. Only the feature
+      set changes, so any movement is attributable to features alone.</li>
+    <li><strong>Varied:</strong> the number of hand features \(k = 0,1,\dots,10\), added in a <em>fixed,
+      sensible order</em> an analyst would try first (monthly payment = amount/duration, amount/age,
+      installment×amount, amount×duration, …). The order is chosen <em>in advance</em>, not greedily on the
+      label — so the curve is an honest “as effort accrues” trace, not a cherry-picked optimum.</li>
+    <li><strong>Measured:</strong> mean 5-fold CV ROC-AUC and its standard deviation \(\sigma\) (the noise band)
+      at each \(k\).</li>
+  </ul>
+  <p>
+    Drag the slider to spend more feature-effort. Watch the green (GBDT) curve and its shaded ±1σ band. The
+    dashed orange line marks the honest stopping point.
+  </p>
+
+  <div id="fe-returns-viz"></div>
+
+  <p>
+    Read it honestly, row by row. The GBDT baseline (\(k=0\)) is <strong>0.7865</strong>. The best it ever
+    reaches is <strong>0.7911</strong> at <strong>3 features</strong> — a gain of <strong>+0.0046</strong>,
+    which is <em>well inside</em> the ±0.032 noise band, i.e. not distinguishable from luck of the split
+    (<a href="0023-statistical-comparison.html">L023</a>). Push past three and the curve <strong>declines</strong>:
+    by 8 features it is <strong>0.7659</strong>, <em>below</em> the no-feature baseline — the overfitting tax,
+    live. The linear model (toggle it on) tells the complementary story: it starts higher (this dataset is
+    fairly linear) and barely moves, drifting +0.006 total, also inside its band. On this table, against a
+    competent model, <strong>single-table feature engineering buys nothing you can prove</strong> — and past a
+    handful of features it starts to <em>cost</em> you.
+  </p>
+  <div class="callout">
+    <strong>“Within noise” is the whole point.</strong> The temptation is to see 0.7911 &gt; 0.7865 and
+    declare the three features a win. But a +0.0046 mean inside a ±0.032 band is exactly the
+    <a href="0023-statistical-comparison.html">L023</a> / <a href="0030-q3-checkpoint.html">L030</a> mistake:
+    celebrating noise. The correct report is “no measurable single-table FE gain on credit_g,” and the correct
+    action is to <em>stop</em> — the marginal return has sunk below what the data can resolve.
+  </div>
+
+  <h2>The honest verdict: FE's value depends on the model and the data</h2>
+  <table>
+    <thead><tr><th>Situation</th><th>Return on hand features</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Weak model (linear) · feature it can't synthesise</td><td class="win">large (L009: 0.64 → 1.00)</td><td>you supply the hypothesis the model lacks</td></tr>
+      <tr><td>Strong model (GBDT) · small flat table</td><td class="bad">marginal, then negative (0.787 → 0.766)</td><td>the tree already captures interactions; extra features add variance</td></tr>
+      <tr><td>Any model · more <em>data</em> available</td><td>often higher per-hour than more features</td><td>“more data beats a cleverer algorithm” — data cuts variance directly</td></tr>
+      <tr><td>High-cardinality / relational keys</td><td>the real frontier (L031, and the thesis)</td><td>structure that lives <em>across tables</em>, which single-table FE can't reach</td></tr>
+    </tbody>
+  </table>
+  <p>
+    So “feature engineering is the key” is not wrong — it is <em>conditional</em>. It is the key when the
+    model is weak relative to the structure, or when the structure isn't yet in the columns at all. On a strong
+    model already fed the informative columns, single-table FE hits diminishing returns almost immediately, and
+    the honest budget rule follows.
+  </p>
+
+  <h2>The budget rule you can act on</h2>
+  <p>
+    Turn the curve into a decision procedure. Given a fixed budget, spend it greedily on whichever action has
+    the highest <em>marginal held-out return</em>, and stop each activity when its marginal return drops below
+    what you can measure:
+  </p>
+  <ol>
+    <li><strong>Front-load features.</strong> Spend the first block engineering the handful of features your
+      domain knowledge says matter — the steep part of the curve. Measure CV score <em>with its σ</em> after
+      each.</li>
+    <li><strong>Stop when Δ &lt; σ.</strong> When the marginal gain of the next feature is smaller than the CV
+      standard deviation (it has entered the noise band), stop adding features — you can no longer prove it
+      helps, and you are courting the overfitting tax.</li>
+    <li><strong>Reallocate.</strong> Move the remaining budget to the action with the higher marginal return:
+      usually <em>more data</em> (Domingos' second lesson), then <em>model tuning</em>
+      (<a href="0017-hyperparameter-search.html">L017</a>), then an <em>honest significance check</em>
+      (<a href="0023-statistical-comparison.html">L023</a>) before you believe any of it.</li>
+    <li><strong>Never “finish” by exhausting ideas.</strong> The wrong stopping rule is “I ran out of features
+      to try.” The right one is “the held-out curve flattened into the noise.” They are rarely the same point.</li>
+  </ol>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-budget"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> This lesson is quietly one of the most important for the thesis, because it
+    names the ceiling. <em>(1) Manual FE is bounded, and cheaply so.</em> On a strong model and a single flat
+    table, hand features hit diminishing (then negative) returns almost immediately — the value you can add by
+    <em>reshaping one table</em> is nearly exhausted, exactly as L028–L032 showed for search, architecture, and
+    representation. <em>(2) The unclaimed value is structural, not effort-based.</em> The features that
+    <em>would</em> pay are aggregates <em>across related tables</em> — “customer's average transaction over the
+    last 90 days,” “number of prior defaults” — which no amount of single-table cleverness can reach. Deep
+    Feature Synthesis (the DFS idea from <a href="0009-feature-engineering.html">L009</a>) automates exactly
+    those relational aggregates by hand; <strong>relational deep learning aims to <em>learn</em> them</strong>,
+    end-to-end, instead of engineering them. <em>(3) The human-effort ratio is the real prize.</em> Domingos'
+    “feature engineering is the key” is implicitly a statement about <em>human hours</em>; the RDL bet
+    (tested directly in Year 4's manual-FE-vs-RDL studies) is that a learned relational model matches or beats
+    hand-built features at a fraction of the human effort. Where this lesson says “stop hand-engineering — the
+    single-table returns are gone,” the thesis answers “because the returns moved across the join.”
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>“Within noise” ≠ “useless.”</strong> A feature that doesn't move AUC can still be worth keeping
+      for <em>interpretability</em>, <em>robustness</em> under drift, or because it makes a leak-safe pipeline
+      simpler. The budget rule is about <em>accuracy</em> returns; other objectives have their own curves.</li>
+    <li><strong>Model-dependence is the headline, not a footnote.</strong> The <em>same</em> feature can be
+      worth +0.35 R² to a linear model and ≈0 to a GBDT (L009 vs this lesson). Always ask “diminishing returns
+      <em>for which model?</em>” A tree synthesises interactions; a linear model cannot — so FE budgets differ
+      by model family.</li>
+    <li><strong>Fixed-order vs. greedy selection.</strong> We added features in a pre-chosen order to trace an
+      honest effort curve. Choosing the order <em>greedily on the label</em> would look better but is a form of
+      selection that must live <em>inside</em> the CV fold, or it leaks (L022) — a peaked greedy curve on the
+      full data is optimistic.</li>
+    <li><strong>More data is the usually-better lever.</strong> Before the 8th hand feature, Domingos says check
+      whether more <em>rows</em> would pay more. Variance (the thing overfitting inflates) falls with sample
+      size; on a 1000-row table, doubling the data often beats any single engineered column.</li>
+    <li><strong>FE can also destroy signal or leak it.</strong> A careless aggregate can compute over the future
+      (point-in-time leakage, L021/L022) or collapse a useful distinction. “Add features until it stops helping”
+      silently assumes each feature is leak-safe; verify provenance, don't just count.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    The essay: <strong>Pedro Domingos (2012), <em>A Few Useful Things to Know about Machine Learning</em></strong>,
+    Communications of the ACM 55(10):78–87 —
+    <a href="https://homes.cs.washington.edu/~pedrod/papers/cacm12.pdf">free PDF</a>. It is a short, non-technical
+    read. For this lesson, read the sections <strong>“Feature engineering is the key,” “More data beats a
+    cleverer algorithm,”</strong> and <strong>“Overfitting has many faces”</strong> until you can state each in
+    one sentence and say how it constrains where you spend a modeling budget. The rest of the essay (generalization,
+    the curse of dimensionality, ensembles) is excellent background you have already met in L025–L027 and L018.
+  </p>
+
+  <h2>Lab — measure your own diminishing-returns curve</h2>
+  <p>
+    Notebook <code>0033-when-to-stop-feature-engineering.ipynb</code> (Tier A — real <code>credit_g</code> via
+    <code>relkit</code>): you <em>operationalise Domingos' essay as an experiment</em>. You write the crucial
+    fragments — the incremental <strong>feature-budget loop</strong> (add one hand feature at a time), the
+    leak-safe <strong>CV-AUC-with-σ</strong> measurement, and the <strong>stopping rule</strong> (first \(k\)
+    where the marginal gain falls inside the noise band) — then plot the diminishing-returns curve and write
+    down “where I'd stop” with a one-line justification. You will reproduce the peak-at-3-then-decline shape
+    on the GBDT and confirm the gains sit inside the CV band.
+    <a href="../labs/html/0033-when-to-stop-feature-engineering.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure how to read the noise band, why the same feature helps a linear model but not a tree, or why
+    “the returns moved across the join” is the thesis in one line? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0032-tabtransformer-preview.html">← Lesson 032</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0033-when-to-stop-feature-engineering.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/feature-viz.js"></script>
+<script src="../assets/fe-returns-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 33, count: 3 });
+
+  FeatureViz.mount(document.getElementById("feat-viz"));
+  FeReturnsViz.mount(document.getElementById("fe-returns-viz"), {});
+
+  Predict.mount(document.getElementById("predict-returns"), {
+    prompt: "Adding 0→10 hand-crafted features to a strong tuned GBDT on credit_g. What does held-out CV AUC do?",
+    options: [
+      { label: "Climbs steadily — more features always add signal", value: "up" },
+      { label: "Small early bump then flattens/declines — gains sit inside the CV noise band", value: "plateau" },
+      { label: "Jumps to near-perfect once the right feature is added", value: "jump" }
+    ],
+    correct: "plateau",
+    reveal: "It peaks at just 3 features (+0.0046, WITHIN the ±0.032 noise band) then DECLINES to 0.766 by 8 features — below the no-feature baseline. On a strong model + small flat table, single-table FE returns diminish immediately and then go negative (overfitting). The honest report: no measurable gain."
+  });
+
+  Teachback.mount(document.getElementById("teachback-budget"), {
+    prompt: "In your own words: state the feature-engineering trade-off, give the rule for when to STOP adding hand features, and explain why single-table diminishing returns support the relational thesis.",
+    points: [
+      "The trade-off (Domingos 2012): 'feature engineering is the key' — most early gains and effort live in features — BUT 'overfitting has many faces' (each feature raises variance) and 'more data beats a cleverer algorithm', so returns diminish and eventually go negative.",
+      "The stopping rule: measure CV score WITH its σ after each feature; stop when the marginal gain Δ falls below σ (enters the noise band), because past that you can't prove it helps and you court overfitting. Don't stop by 'running out of ideas'; stop when the held-out curve flattens into the noise.",
+      "The evidence: on credit_g + a strong GBDT, hand features peak at k=3 (+0.0046, within a ±0.032 band) then decline to 0.766 by k=8 — below baseline; the linear model barely moves. Single-table FE buys nothing provable here (the L023/L030 'celebrate noise' trap avoided).",
+      "Thesis link: the value you can add by reshaping ONE table is nearly exhausted; the features that would pay are aggregates ACROSS related tables (DFS-style, L009). RDL aims to LEARN those relational aggregates end-to-end instead of hand-building them — 'the returns moved across the join' — and Year 4 tests the human-effort ratio directly."
+    ],
+    model: "Domingos' 2012 essay gives two pulls. 'Feature engineering is the key' says the features matter more than the algorithm and most early gains live there — so you front-load effort on features. But 'overfitting has many faces' (each added feature raises variance and can lower held-out score) and 'more data beats a cleverer algorithm' pull back: returns diminish and eventually turn negative. The stopping rule operationalises this: after each hand feature, measure the CV score AND its standard deviation σ; stop when the next feature's marginal gain Δ is smaller than σ — it has entered the noise band, so you cannot prove it helps and you risk the overfitting tax. The evidence is a real credit_g experiment with the model held fixed: a strong GBDT peaks at just 3 features (0.7911, only +0.0046 over the 0.7865 baseline — well inside the ±0.032 band) and then DECLINES to 0.7659 by 8 features, below where it started; a linear model drifts only +0.006, also within noise. So 'FE is the key' is conditional — huge for a weak model missing the hypothesis (L009: Ridge 0.64→1.00), marginal-then-negative for a strong model already fed the informative columns. For the thesis: the fact that single-table FE returns die so fast is the ceiling. The features that would still pay are aggregates across related tables (a customer's 90-day average, prior-default count) — Deep Feature Synthesis builds these by hand; relational deep learning learns them end-to-end. The returns didn't vanish; they moved across the join, which is exactly where the thesis bets the undervalued structure lives."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "On credit_g with a fixed strong GBDT, adding hand features 0→10, what actually happens to CV ROC-AUC?",
+    options: [
+      { label: "It peaks at ~3 features (+0.0046, within the noise band) then DECLINES below baseline — diminishing then negative returns", value: "a" },
+      { label: "It rises monotonically because every real feature adds independent signal", value: "b" },
+      { label: "It stays exactly constant because the model ignores all engineered features", value: "c" },
+      { label: "It jumps by +0.15 once the amount/duration ratio is added", value: "d" }
+    ],
+    correct: "a",
+    explain: "The measured curve peaks at k=3 (0.7911 vs 0.7865 baseline, +0.0046 — inside the ±0.032 CV band, i.e. not significant) and then falls to 0.7659 by k=8, below baseline: the overfitting tax. On a strong model + small flat table, single-table FE hits diminishing returns immediately and then goes negative."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "According to the budget rule, when should you STOP adding hand-crafted features?",
+    options: [
+      { label: "When the next feature's marginal held-out gain drops below the CV standard deviation (enters the noise band)", value: "a" },
+      { label: "When you have run out of feature ideas to try", value: "b" },
+      { label: "When training accuracy stops improving", value: "c" },
+      { label: "After exactly ten features, as a fixed rule of thumb", value: "d" }
+    ],
+    correct: "a",
+    explain: "Stop when the marginal gain Δ falls below σ — past that you cannot prove the feature helps (the L023/L030 'don't celebrate noise' discipline) and you court the overfitting tax. 'Ran out of ideas' and 'training accuracy plateaued' are the wrong rules; the stopping signal is the HELD-OUT curve flattening into the noise band."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Why do these single-table diminishing returns SUPPORT the relational thesis?",
+    options: [
+      { label: "The value of reshaping one table is nearly exhausted; the features that would pay are aggregates ACROSS related tables — which RDL aims to LEARN end-to-end rather than hand-build (DFS)", value: "a" },
+      { label: "They prove feature engineering never works, so all models are equivalent", value: "b" },
+      { label: "They show deep learning already beats trees on flat tables", value: "c" },
+      { label: "They mean you should always collect more columns from the same table", value: "d" }
+    ],
+    correct: "a",
+    explain: "The ceiling on single-table FE is the point: what still pays is cross-table structure — relational aggregates like a customer's 90-day transaction average or prior-default count. Deep Feature Synthesis engineers these by hand (L009); relational deep learning learns them end-to-end. 'The returns moved across the join' — exactly the undervalued structure the thesis targets, and the human-effort ratio Year 4 tests directly."
+  });
+</script>
+</body>
+</html>

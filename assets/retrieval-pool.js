@@ -566,6 +566,30 @@
       ],
       correct: "a",
       explain: "TabTransformer matches (does not beat) tree ensembles on supervised tabular — the L028/L029/L030/L031 tie pattern. The +1.0% is over other DEEP methods; the genuine wins are robustness to noise/missingness and a +2.1% semi-supervised lift. Attention over columns adds no new structural information; the same aggregate-over-related-vectors operation across the relational graph (a GNN over foreign-key neighbours) is where the thesis bets the value lives."
+    },
+    {
+      id: "l033-fe-returns", lesson: 33, quarter: "Q4", concept: "fe-diminishing-returns", misconception: true,
+      question: "On credit_g with a fixed strong GBDT, what happens to CV ROC-AUC as you add hand features 0→10, and when do you stop?",
+      options: [
+        { label: "It peaks at ~3 features (+0.005, WITHIN the ±0.03 noise band) then DECLINES below baseline; stop when the marginal gain sinks below the CV std, not when you run out of ideas", value: "a" },
+        { label: "It rises steadily because every engineered feature adds independent new signal", value: "b" },
+        { label: "It is exactly flat because a tree ignores all engineered feature columns", value: "c" },
+        { label: "It jumps by about +0.15 as soon as the amount/duration ratio is added", value: "d" }
+      ],
+      correct: "a",
+      explain: "Domingos 2012: FE is the key early but 'overfitting has many faces' — returns diminish then go negative. Measured on credit_g the GBDT peaked at k=3 (0.7911 vs 0.7865, +0.0046, inside the ±0.032 band → not significant, L023) then fell to 0.7659 by k=8, BELOW baseline. Stop when Δ < σ, i.e. when the held-out curve flattens into the noise band."
+    },
+    {
+      id: "l033-thesis", lesson: 33, quarter: "Q4", concept: "fe-thesis-bridge",
+      question: "Why do single-table feature-engineering diminishing returns support the relational thesis?",
+      options: [
+        { label: "The value of reshaping one table is nearly exhausted; the features that still pay are aggregates ACROSS related tables, which RDL aims to LEARN end-to-end rather than hand-build (DFS)", value: "a" },
+        { label: "They prove feature engineering never helps any model, so representation is irrelevant", value: "b" },
+        { label: "They show a deep net already beats gradient-boosted trees on a flat table", value: "c" },
+        { label: "They imply you should always collect more columns from the same single table", value: "d" }
+      ],
+      correct: "a",
+      explain: "The ceiling on single-table FE is the point: what still pays is cross-table structure (a customer's 90-day average, prior-default count). Deep Feature Synthesis builds these relational aggregates by hand (L009); relational deep learning learns them end-to-end — 'the returns moved across the join', the human-effort ratio Year 4 tests directly."
     }
   ];
 })(window);
