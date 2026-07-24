@@ -23,6 +23,11 @@
       back: "Learn directly over the database's relational entity graph (rows = nodes, foreign keys = edges) with GNNs, instead of manually flattening tables into one design matrix. The flattening step is lossy, ad hoc, and leakage-prone — RDL learns the aggregations end-to-end. Basis of the RelBench benchmark."
     },
     {
+      id: "fey2024-fecost", paper: "Fey et al. — Relational Deep Learning (§1–2, the FE cost)", year: 2024, lesson: 35,
+      front: "Fey et al. 2024 §1–2 — what are the issues with manually joining+aggregating tables, and which one is the 'lossy' claim?",
+      back: "Manual feature engineering is (1) slow/labour-intensive, (2) arbitrary/suboptimal, (3) explores only a tiny fraction of possible features, (4) LOSES fine-grain signal by aggregating into lower-granularity features (the aggregation collision — the load-bearing claim), and (5) goes obsolete under drift. Their fix: treat the DB as a relational entity graph (node per row, edge per PK/FK link) and learn over it end-to-end."
+    },
+    {
       id: "cawley2010", paper: "Cawley & Talbot — Overfitting in model selection", year: 2010, lesson: 4,
       front: "Cawley & Talbot 2010 — what bias do they warn about and what is the fix?",
       back: "Selecting hyperparameters on the same CV used to report performance overfits the model-selection step, so the reported score is optimistically biased. Fix: nested CV (inner loop selects, outer loop scores the whole procedure)."

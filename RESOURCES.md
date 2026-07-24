@@ -186,8 +186,8 @@ _Optional / extension (◆) — GNN pathologies & graph transformers:_
   Early relational DL line. Use for: historical context.
 - [Position: Relational Deep Learning — Fey et al., ICML 2024](https://proceedings.mlr.press/v235/fey24a.html)
   REG blueprint. Use for: north-star thesis and vocabulary.
-- [RelBench beta — arXiv 2312.04615](https://arxiv.org/abs/2312.04615)
-  First benchmark release. Use for: package architecture history.
+- [Relational Deep Learning — Fey et al., 2024 (arXiv:2312.04615)](https://arxiv.org/abs/2312.04615)
+  The foundational RDL paper (rows = nodes, PK/FK = edges; RelBench). Use for: **Lesson 035 primary reading — §1–2 only** (★ preview): the five issues with manually joining+aggregating tables into one training table — (1) manual/slow, (2) arbitrary/suboptimal choices, (3) only a tiny fraction of features explored, (4) **forcing data into a single table aggregates into lower-granularity features, thus losing valuable fine-grain signal** (the *aggregation collision* — the load-bearing claim), (5) drift makes hand features obsolete — and the definition of the *relational entity graph*. The Gabor-filter → raw-pixel CV analogy for "learn the features instead of authoring them." Message passing / temporal sampling / RelBench results are Y3–Y4, not now.
 - [RelBench v1 — Robinson et al., NeurIPS 2024](https://arxiv.org/abs/2407.20060)
   7 databases, FE user study. Use for: hands-on experiments; manual FE comparison.
 - [ContextGNN — Yuan et al., 2024](https://arxiv.org/abs/2411.19513)

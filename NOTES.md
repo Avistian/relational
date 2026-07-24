@@ -342,6 +342,52 @@
 - Next: Lesson 027 (Inductive bias: uninformative features — Grinsztajn 2022 **§5.3**, Finding 2), the
   last mechanism lesson of the Grinsztajn arc, linked to L026 by Ng's theorem.
 
+## Session 35 — 2026-07-24
+
+- **Lesson 034 complete** — user said "lesson 34 done" (no EXIT ticket → no rubric score, per the
+  L017–L033 precedent). Record [[learning-records/0081-lesson-034-complete.md]].
+- **Lesson 035 published — What Joins Destroy** (curriculum lec 035, **Fey et al. 2024 §1–2**, ★ preview) —
+  the **intellectual pivot of Year 1** and the close of the L034–L035 thread. Single skill: enumerate the
+  structure a flatten-then-aggregate pipeline discards (cardinality, event identity, temporal order,
+  higher-order/multi-hop paths) and recognise an **aggregation collision**. Record
+  [[learning-records/0082-lesson-035-published.md]]. **Ninth application of standard #17** (lossy vs lossless
+  map, aggregation collision, cardinality, event identity, temporal order, multi-hop path, relational entity
+  graph all defined first-principles).
+- **Fey is a *position* preview, not an architecture** — standard #18 scope (stated in the lab intro) is to
+  **demonstrate issue (4)** ("forcing data into a single table aggregates into lower-granularity features,
+  losing fine-grain signal") as a runnable collision, not implement a model. Grounded the lesson in the
+  paper's verbatim five-issue enumeration (downloaded 2312.04615 via arxiv MCP; §1–2). Message passing / REG
+  architecture / RelBench deferred to Y3–Y4 (forward refs plain text).
+- **One new reusable viz (standard #9, the single mechanistic beat):** `assets/flatten-loss-viz.js` — two
+  customer subgraphs (Ada rising $10→$30→$50 / 3 products; Bo falling $50→$30→$10 / 1 product) collapse under
+  JOIN+AGGREGATE to two **identical** rows `n=3/total=90/avg=30/max=50` (red "⚠ identical" banner); a "Reveal
+  the lost structure" toggle shows trend ↗/↘ and distinct-product counts. Headless `labs/_viz_check_l035.js`
+  **13/13**; **browser MCP still unavailable** (no chrome-devtools server) → node verification only,
+  consistent with L021–L034.
+- **Lab 035 = Tier C, pandas + sklearn, mechanism/demonstration lab** (runs in seconds). Deterministic DB,
+  cutoff t = 2024-06-01, **all orders pre-t** (PIT was L034's job — this isolates the *loss*, not leakage).
+  Crucial fragments: Task 1 flatten + confirm Ada/Bo collide; Task 2 fit `LogisticRegression` and prove
+  P(churn)=**0.502 for both** though true labels are **0 vs 1** (identical input ⇒ identical output); Task 3
+  recover structure — `spend_trend` (+40/−40, restores order) + `n_distinct_products` (3/1, restores
+  identity). Stretch: a third customer Zoe collides again (the treadmill). Solution executed **clean** (3
+  CHECK + EXIT + stretch); gitignored; rendered to `labs/html/0035-*.html`. 7 student blanks.
+- **Thesis:** L035 turns "lossy by construction" into a *demonstration* — the collision proves the loss can
+  be total (different entities → one feature row → same prediction), upstream of any model. Sharpest
+  statement yet of C1; names the four discarded dimensions. **Honesty guard:** still a demonstration of
+  *cost*, not a *win* — no result yet shows a graph model recovering the structure to beat the honest bar
+  (L028–L030); that is the Y1-exit essay + Y3–Y4 burden. Dossier verdict updated to "after L035."
+- **Artifacts synced:** retrieval-pool **+2** (`l035-collision` [misconception], `l035-thesis`); paper-deck
+  **+1** (`fey2024-fecost`, keyed to L035; broad `fey2024` stays at L001); misconceptions **M36** (a better
+  model can recover a lossy flatten → loss is before the model) + **M37** (add more aggregates → unbounded
+  per-task treadmill; lossy ≠ leaky); thesis-dossier **+1** (FOR + BAR, C1/C2) + verdict;
+  `reference/glossary.html` **+5** Q4 terms (lossy map, aggregation collision, fine-grain signal, structure a
+  flatten discards, relational entity graph); `RESOURCES.md` enriched the Fey 2312.04615 entry into the L035
+  primary-reading note. Manifest → **35**; `node labs/_check_pedagogy.js` clean; `_viz_check_l035.js` 13/13;
+  `_viz_check_l034.js` regression clean.
+- Next: Lesson 036 — **Revisit your homework pipeline** (audit the user's own `homework/report.md` against
+  the Q1–Q3 leakage-spine checklist; reuse `checklist.js` + `pipeline-viz.js`; no new concept). **Prompt the
+  user for their homework artifact at the start of that session** — L036 is personalised to their prior work.
+
 ## Session 34 — 2026-07-21
 
 - **Lesson 033 complete** — user said "lesson 33 done" (no EXIT ticket → no rubric score, per the

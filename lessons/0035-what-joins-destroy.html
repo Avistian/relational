@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 035 — What Joins Destroy</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    pre.sql { font-family: var(--font-mono); font-size: 0.82rem; background: #0f172a; color: #e2e8f0; padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto; line-height: 1.55; margin: 0.9rem 0; }
+    pre.sql .kw { color: #7dd3fc; } pre.sql .fn { color: #fca5a5; } pre.sql .cm { color: #94a3b8; font-style: italic; }
+
+    /* flatten-loss (aggregation collision) viz */
+    .fl-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .fl-ctl { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+    .fl-ctl button { font-family: var(--font-sans); font-size: 0.78rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .fl-ctl button.fl-on { background: #7a1f16; color: #fff; border-color: #7a1f16; }
+    .fl-svg { display: block; max-width: 100%; margin: 0.25rem auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .fl-lane { font-family: var(--font-sans); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; fill: var(--muted); }
+    .fl-nhead { font-family: var(--font-mono); font-size: 12px; font-weight: 700; }
+    .fl-nsub { font-family: var(--font-sans); font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .fl-orow { font-family: var(--font-mono); font-size: 10px; font-weight: 600; }
+    .fl-oprod { font-family: var(--font-mono); font-size: 9.5px; }
+    .fl-axis { font-family: var(--font-sans); font-size: 8.5px; font-style: italic; }
+    .fl-trend { font-family: var(--font-sans); font-size: 9.5px; font-weight: 700; }
+    .fl-fk { font-family: var(--font-mono); font-size: 10px; }
+    .fl-fv { font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
+    .fl-rowid { font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
+    .fl-collide { font-family: var(--font-sans); font-size: 11px; font-weight: 700; }
+    .fl-op { font-family: var(--font-sans); font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; }
+    .fl-readout { font-size: 0.86rem; color: var(--fg, #222); margin-top: 0.7rem; line-height: 1.55; min-height: 6rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4</p>
+  <h1>What Joins Destroy</h1>
+  <p class="subtitle">Lesson 035 · Phase 1 · Q4 · ~40 min · <em>primary reading: Fey et al., “Relational Deep Learning” (2024), §1–2 (★ preview)</em></p>
+
+  <p>
+    Last lesson (<a href="0034-relational-data-without-rdl.html">L034</a>) you <em>built</em> the flatten:
+    you took a three-table schema and hand-wrote the join + point-in-time aggregation that turns it into one
+    design matrix. You also saw, in passing, that aggregation is <em>lossy by construction</em> — <code>AVG</code>
+    keeps a mean and forgets the individual baskets. This lesson makes that loss <strong>precise</strong>: it
+    enumerates exactly which structural information a flatten-then-aggregate pipeline throws away, and shows a
+    case where the loss is total — two genuinely different entities collapsing to the <em>same</em> feature
+    row. This is the intellectual pivot of Year 1: it is the moment the single-table paradigm stops looking
+    like “just how data is” and starts looking like a <em>choice with a measurable cost</em>. Everything the
+    thesis proposes in Years 3–6 is an attempt to avoid paying it.
+  </p>
+  <p>
+    Its single skill: <strong>enumerate the structural information a flatten-then-aggregate pipeline discards
+    — cardinality, event identity, temporal order within a neighbour set, and higher-order (multi-hop) paths
+    — and recognise an <em>aggregation collision</em>, where two entities with different neighbourhoods map to
+    the same fixed-width feature vector.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Joining and aggregating related tables into fixed-width columns is a
+    surjective, lossy map: many different relational neighbourhoods send to the same feature row, so a model on
+    the flat table cannot recover the discarded structure (order, identity, count, multi-hop paths) no matter
+    how well it is tuned — which is the information Fey et al. argue relational deep learning keeps by learning
+    over the primary-/foreign-key graph directly.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — the act of retrieval (even a failed one) encodes the idea better than re-reading would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    This lesson leans on a few precise terms. Each is defined here from first principles before we rely on it,
+    even if L034 or an earlier lesson brushed past it.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Lossy vs. lossless map.</strong> A transformation is <em>lossless</em> if you can
+    invert it — recover the original input from the output (a random rotation of features, <a href="0026-inductive-bias-rotation.html">L026</a>,
+    is lossless: <code>Q</code> is invertible). It is <em>lossy</em> if you cannot: several distinct inputs
+    produce the same output, so the original is unrecoverable. Aggregation is lossy — that is the whole subject
+    of this lesson.
+  </div>
+  <div class="defbox">
+    <strong class="term">Aggregation collision.</strong> When two <em>different</em> inputs (here, two entities
+    with different related rows) produce the <em>identical</em> aggregated feature vector. A collision is the
+    sharpest possible proof of lossiness: the flat table literally cannot tell the two entities apart, so any
+    model — a tuned GBDT, an MLP, anything — must assign them the same prediction.
+  </div>
+  <div class="defbox">
+    <strong class="term">Cardinality (of a neighbour set).</strong> <em>How many</em> related rows an entity
+    has — the number of orders a customer placed, of items in a basket. A <code>COUNT</code> keeps it; most
+    other aggregates (<code>AVG</code>, <code>MAX</code>) discard it.
+  </div>
+  <div class="defbox">
+    <strong class="term">Event / entity identity.</strong> <em>Which</em> specific rows an entity is linked to
+    — <em>which</em> products, <em>which</em> merchant, <em>which</em> other customer. An aggregate over
+    amounts keeps magnitudes and drops identities: <code>SUM(amount)</code> does not know whether the money went
+    to milk or to wine.
+  </div>
+  <div class="defbox">
+    <strong class="term">Temporal order within a neighbour set.</strong> The <em>sequence</em> in which an
+    entity's related events arrived. Point-in-time correctness (<a href="0034-relational-data-without-rdl.html">L034</a>)
+    controls <em>which</em> events are eligible (before <code>t</code>); it does <em>not</em> preserve their
+    order. A rising vs. a falling spend trajectory can have identical <code>sum</code>/<code>mean</code>/<code>max</code>.
+  </div>
+  <div class="defbox">
+    <strong class="term">Higher-order / multi-hop path.</strong> A relationship reached by following more than
+    one foreign key: customer → orders → order_items → product → category. Each hop is a separate join, and a
+    flat aggregate over one hop cannot see two hops out — the product a customer favours is invisible to any
+    summary of their <em>orders</em> alone.
+  </div>
+  <div class="defbox">
+    <strong class="term">Relational entity graph.</strong> Fey et al.'s reframing: treat the database as a
+    graph with <em>one node per row</em> in every table and an <em>edge for every primary-/foreign-key link</em>.
+    Nothing is flattened; the schema <em>is</em> the graph. RDL learns representations by message passing over
+    this graph — the alternative to the flatten this lesson dissects.
+  </div>
+
+  <h2>The collision: two customers, one feature row</h2>
+  <p>
+    Here is the loss at its most extreme. Below are two customers with plainly <em>different</em> histories.
+    <strong>Ada</strong>'s spend rises over time ($10 → $30 → $50) across three <em>distinct</em> products;
+    <strong>Bo</strong>'s spend falls ($50 → $30 → $10) and every order is the <em>same</em> product. One looks
+    like an engaged, broadening customer; the other like a churn risk narrowing down. Now flatten both to the
+    usual per-customer aggregates (<code>n_orders</code>, <code>total_spend</code>, <code>avg_basket</code>,
+    <code>max_basket</code>) and watch what happens to the two rows.
+  </p>
+
+  <h3>Predict first</h3>
+  <p>
+    Before you press anything: after flattening to <code>count</code>/<code>sum</code>/<code>avg</code>/<code>max</code>,
+    can a model — even a perfectly tuned gradient-boosted tree — tell Ada and Bo apart?
+  </p>
+  <div id="predict-collision"></div>
+
+  <div id="flatten-loss-viz"></div>
+
+  <p>
+    Both customers collapse to the identical row <code>n_orders=3, total_spend=90, avg_basket=30,
+    max_basket=50</code>. This is not a tuning problem or a model-capacity problem: the <em>input</em> to every
+    model is the same for both customers, so no learner can separate them. The rising-vs-falling trajectory
+    (a strong churn signal) and the one-vs-three-products contrast (a loyalty signal) were <strong>destroyed by
+    the aggregation itself</strong>, before any model saw the data. Press <em>Reveal the lost structure</em>
+    to see the signal a structure-keeping model still has access to.
+  </p>
+
+  <h2>The taxonomy: what a flatten-then-aggregate pipeline discards</h2>
+  <p>
+    The collision packs several distinct losses into one example. Pulling them apart gives the checklist you
+    should run against <em>any</em> hand-built relational feature set — “what did this aggregate just throw
+    away?”
+  </p>
+  <table>
+    <thead>
+      <tr><th>Discarded structure</th><th>What it is</th><th>Which aggregates lose it</th><th>In the collision</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Cardinality</strong></td>
+        <td>How many related rows (orders, items)</td>
+        <td>Everything except <code>COUNT</code> — <code>AVG</code>/<code>MAX</code>/<code>SUM</code>-of-ratios</td>
+        <td class="n">preserved here (both n=3) — but usually the first casualty</td>
+      </tr>
+      <tr>
+        <td><strong>Event identity</strong></td>
+        <td>Which specific products / merchants / entities</td>
+        <td>Any numeric aggregate over amounts</td>
+        <td class="bad">lost — milk/bread/eggs vs. wine×3 both vanish into $90</td>
+      </tr>
+      <tr>
+        <td><strong>Temporal order</strong></td>
+        <td>The sequence the events arrived in</td>
+        <td><code>SUM</code>, <code>MEAN</code>, <code>MAX</code>, <code>MIN</code> — all order-blind</td>
+        <td class="bad">lost — rising vs. falling both give sum 90 / max 50</td>
+      </tr>
+      <tr>
+        <td><strong>Higher-order paths</strong></td>
+        <td>Signal ≥2 hops away (customer→order→item→product→category)</td>
+        <td>Any single-hop aggregate; each extra hop is a new hand-written join</td>
+        <td class="bad">lost — product-level structure never enters an order-level summary</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Notice the pattern: an aggregate is a <em>projection</em>. It maps a variable-length, structured
+    neighbourhood down to a few fixed numbers, and projections lose the dimensions they collapse. You can
+    <em>recover some</em> of a lost dimension by adding a targeted aggregate — a <code>spend_trend</code>
+    (last − first) recovers order; a <code>n_distinct_products</code> recovers a slice of identity — but each
+    is another hand-written, per-task, leak-checked feature, and you can never enumerate them all in advance.
+    That “add more aggregates forever” treadmill is the cost the thesis is about.
+  </p>
+
+  <h2>Fey et al.'s argument, in their words</h2>
+  <p>
+    This is the ★ preview of the paper the whole mission orbits:
+    <strong>Fey, Hu, Huang, Lenssen, Ranjan, Robinson, Ying et al., “Relational Deep Learning: Graph
+    Representation Learning on Relational Databases” (2024)</strong>. The paper opens by naming the problem
+    exactly as you just built it: “no machine learning method is capable of learning on multiple tables
+    interconnected by primary-foreign key relations. Current methods can only learn from a single table, so the
+    data must first be <em>manually joined and aggregated into a single training table, the process known as
+    feature engineering</em>.” It then lists five issues with that approach (§1–2):
+  </p>
+  <ol>
+    <li>it is a <strong>manual, slow and labour-intensive</strong> process;</li>
+    <li>the feature choices are <strong>essentially arbitrary and likely highly suboptimal</strong>;</li>
+    <li>only a <strong>small fraction</strong> of the space of possible features can be manually explored;</li>
+    <li><strong>by forcing data into a single table, information is aggregated into lower-granularity features,
+      thus losing out on valuable fine-grain signal</strong> — this is the collision you just saw, stated as a
+      thesis;</li>
+    <li>when the data <strong>distribution drifts</strong>, the hand-built features become obsolete and must be
+      manually reinvented.</li>
+  </ol>
+  <p>
+    Fey et al. draw the analogy to pre-deep-learning computer vision, where hand-chosen filters (e.g. Gabor)
+    fed an SVM, until deep nets learned directly on raw pixels and “skipped the feature engineering.” Their
+    proposal is the same move for databases: view the relational database as a <strong>temporal, heterogeneous
+    graph — a node per row, edges from primary-/foreign-key links</strong> — and let a message-passing GNN
+    learn representations over it end-to-end, so the aggregations you hand-wrote in L034 are <em>learned</em>,
+    not authored, and the fine-grain signal item (4) is never discarded in the first place.
+  </p>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea of Year 1 — put it in your own words before moving on.</p>
+  <div id="teachback-loss"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> L034 showed the flatten is a <em>choice</em>; L035 measures its
+    <em>cost</em>. The cost is not inefficiency — it is <strong>information</strong>: the join-then-aggregate
+    map is lossy, and the collision proves the loss can be total (different entities, one feature row).
+    Fey et al.'s bet is that this discarded structure — cardinality, identity, order, multi-hop paths — carries
+    real predictive signal, and that a model reading the <em>relational entity graph</em> (rows = nodes, foreign
+    keys = edges) can learn to use it without a human hand-writing an aggregate for each dimension of loss. This
+    closes Year 1's conceptual arc that opened at <a href="0001-single-table-assumption.html">L001</a> (“the
+    single-table assumption”): the flat table was never given, it was manufactured (L034), and manufacturing it
+    destroys structure (L035). What it does <em>not</em> yet show is a model actually <em>recovering</em> that
+    structure to beat the honest single-table bar (the tuned GBDT + ResNet + AutoML of L028–L030) — that
+    demonstration is the burden of the Year-1 exit essay and, for real, of Years 3–4 (message passing, the
+    relational entity graph).
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>Lossy is not the same as useless.</strong> Aggregates are excellent features — L009's Deep
+      Feature Synthesis and every winning Kaggle pipeline lives on them. The claim is narrower and exact:
+      aggregation <em>throws away recoverable structure</em>, and when that structure carries signal, no
+      single-table model can get it back. “Lossy” is a statement about information, not about value.</li>
+    <li><strong>You can always add another aggregate — that is the trap, not the escape.</strong> Every
+      collision can be broken by a bespoke feature (add <code>spend_trend</code>, add
+      <code>n_distinct_products</code>). But the space of collisions is unbounded, the features are per-task,
+      and each must be re-derived and re-leak-checked when the schema or the task changes (issue 5). Hand-built
+      features chase losses one at a time; a learned model over the graph addresses the class.</li>
+    <li><strong>Point-in-time correctness and lossiness are different failures.</strong> L034's leak was about
+      using the <em>future</em>; L035's loss is about discarding the <em>past's structure</em>. A pipeline can
+      be perfectly leak-free (only pre-<code>t</code> orders) and still throw away the order/identity/paths of
+      those legitimate rows. Fixing one does nothing for the other.</li>
+    <li><strong>Trees don't escape it either.</strong> A gradient-boosted tree's inductive-bias advantages
+      (<a href="0019-when-trees-win.html">L019</a>, L025–L027) are all about how it reads the columns it is
+      <em>given</em>. If the collision has already erased the signal from those columns, the tree's robustness
+      to junk features and its axis-aligned splits are irrelevant — there is nothing left in the row to split on.
+      This is why “just use XGBoost” is not an answer to the flatten's loss.</li>
+    <li><strong>The graph reframing is not free lunch, yet.</strong> Keeping the PK/FK graph poses its own hard
+      problems — time-respecting message passing, stale links, scale — which Fey et al. flag as open (and Years
+      3–6 tackle). L035's job is only to establish that the structure <em>exists and is being thrown away</em>,
+      making it worth the trouble of keeping.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    <strong>Matthias Fey, Weihua Hu, Kexin Huang, Jan Eric Lenssen, Rishabh Ranjan, Joshua Robinson, Rex Ying
+    et al. — “Relational Deep Learning: Graph Representation Learning on Relational Databases” (2024)</strong>
+    (<a href="https://arxiv.org/abs/2312.04615">arXiv:2312.04615</a>; the position version appeared at
+    <a href="https://proceedings.mlr.press/v235/fey24a.html">ICML 2024</a>). Read <strong>§1–2</strong> only for
+    now — the motivation and the five issues with manual feature engineering (the list above), and the
+    definition of the <em>relational entity graph</em> (node per row, edges from PK/FK links). This is a ★
+    <em>preview</em>: you are meeting the thesis's core claim, not yet the architecture. Read until you can
+    state, unprompted, issue (4) — “forcing data into a single table aggregates into lower-granularity
+    features, losing fine-grain signal” — and connect it to the collision you saw here. The message passing,
+    the temporal graph sampling, and the RelBench results are for Years 3–4; do not chase them yet.
+  </p>
+
+  <h2>Lab — build an aggregation collision, then break it</h2>
+  <p>
+    Notebook <code>0035-what-joins-destroy.ipynb</code> (Tier C — the same synthetic style as L034): you take
+    a flatten and <strong>construct a collision</strong> — two customers whose different order histories
+    produce byte-identical <code>count</code>/<code>sum</code>/<code>avg</code>/<code>max</code> rows — then
+    prove a fitted model gives them the same prediction, and finally <strong>recover</strong> the distinguishing
+    signal by adding structure-aware features (<code>spend_trend</code>, <code>n_distinct_products</code>) that
+    a graph would keep for free. The deliverable is the colliding pair, the identical feature rows, and one
+    sentence naming which structure each recovered feature restores — and why enumerating them by hand doesn't
+    scale.
+    <a href="../labs/html/0035-what-joins-destroy.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why an aggregation collision can't be fixed by a better model, how “lossy” differs from “leaky,” or
+    why adding one more aggregate is a treadmill rather than a fix? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0034-relational-data-without-rdl.html">← Lesson 034</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0035-what-joins-destroy.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/flatten-loss-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 35, count: 3 });
+
+  FlattenLossViz.mount(document.getElementById("flatten-loss-viz"), {});
+
+  Predict.mount(document.getElementById("predict-collision"), {
+    prompt: "Ada's spend rises across 3 products; Bo's falls on 1 product. After flattening to count/sum/avg/max, can a well-tuned model tell them apart?",
+    options: [
+      { label: "Yes — a strong model (tuned GBDT) will separate them from the features", value: "yes" },
+      { label: "No — both produce the identical feature row, so every model must predict the same", value: "no" },
+      { label: "Only if you first oversample the minority customer", value: "sample" }
+    ],
+    correct: "no",
+    reveal: "No. Both flatten to n_orders=3, total_spend=90, avg_basket=30, max_basket=50 — a byte-identical row. The model's input is the same for both, so no amount of tuning or capacity can separate them. The rising-vs-falling trajectory and the 3-vs-1 products were destroyed by the aggregation, before any model saw the data. That is an aggregation collision — lossiness made total."
+  });
+
+  Teachback.mount(document.getElementById("teachback-loss"), {
+    prompt: "In your own words: what does a flatten-then-aggregate pipeline destroy, why can't a better model recover it, and how does keeping the relational entity graph (Fey et al.) address it?",
+    points: [
+      "Join+aggregate is a lossy (surjective) map: it projects a variable-length, structured neighbourhood onto a few fixed numbers, so many different neighbourhoods send to the same row.",
+      "The discarded structure has names: cardinality (how many), event/entity identity (which), temporal order within the neighbour set (the sequence), and higher-order multi-hop paths (signal >=2 hops away).",
+      "An aggregation collision proves the loss can be total: two entities -> one identical feature row, so ANY model (tuned GBDT included) must give them the same prediction. It's an information loss, not a capacity/tuning problem.",
+      "You can break a specific collision with a bespoke aggregate (spend_trend, n_distinct_products), but the space of collisions is unbounded and the features are per-task, hand-written, and must be re-leak-checked (Fey issue 5) — a treadmill, not a fix.",
+      "RDL keeps the database AS a graph (row = node, PK/FK = edge = the relational entity graph) and learns the aggregations end-to-end via message passing, so the fine-grain signal (Fey issue 4) is never discarded in the first place."
+    ],
+    model: "A flatten picks a grain and collapses each entity's related rows into fixed-width columns with COUNT/SUM/AVG/MAX. That map is lossy: it's a projection from a variable-length, structured neighbourhood down to a handful of numbers, so many different neighbourhoods land on the identical row. The structure it destroys has four names — cardinality (how many related rows), event/entity identity (which products/merchants), temporal order within the neighbour set (the sequence the events arrived in), and higher-order multi-hop paths (signal two or more joins away). The proof that this is real information loss, not sloppiness, is an aggregation collision: Ada (rising spend, 3 products) and Bo (falling spend, 1 product) both flatten to n=3/total=90/avg=30/max=50, so a tuned GBDT literally cannot separate them — the input is identical, and no capacity or tuning fixes an identical input. You can break that one collision by hand-writing spend_trend (recovers order) or n_distinct_products (recovers identity), but there are unboundedly many collisions, each feature is task-specific and must be re-derived and re-leak-checked when the schema or task drifts (Fey's issue 5). The relational deep learning answer is to stop flattening: represent the database as its relational entity graph — one node per row, one edge per primary-/foreign-key link — and let a message-passing GNN learn the aggregations end-to-end, so the fine-grain signal that issue (4) says the single table throws away is kept and used directly.",
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Ada (spend $10→$30→$50, three products) and Bo (spend $50→$30→$10, one product) both flatten to n=3, total=90, avg=30, max=50. What does this identical-row 'collision' prove?",
+    options: [
+      { label: "Aggregation is a LOSSY map: it discarded temporal order and event identity, so no model on the flat table can tell the two customers apart", value: "a" },
+      { label: "The model is under-tuned; a deeper tree or more boosting rounds would separate them", value: "b" },
+      { label: "The two customers are genuinely identical and should be merged", value: "c" },
+      { label: "The point-in-time filter was applied incorrectly", value: "d" }
+    ],
+    correct: "a",
+    explain: "The collision is a proof of lossiness: count/sum/avg/max are order-blind and identity-blind, so a rising 3-product history and a falling 1-product history map to the same row. Since the input is identical, no model — however tuned — can separate them. It is an information loss, not a capacity or leakage problem."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Fey et al. (2024) list five issues with manually joining+aggregating tables into one training table. Which is the load-bearing one for THIS lesson?",
+    options: [
+      { label: "Forcing data into a single table aggregates it into lower-granularity features, thus losing valuable fine-grain signal", value: "a" },
+      { label: "Relational databases are too large to fit in memory", value: "b" },
+      { label: "SQL is harder to write than pandas", value: "c" },
+      { label: "Foreign keys are often missing from real schemas", value: "d" }
+    ],
+    correct: "a",
+    explain: "Issue (4): 'by forcing data into a single table, information is aggregated into lower-granularity features, thus losing out on valuable fine-grain signal.' That is exactly the aggregation collision — the paper's statement of the loss you demonstrated. (The other Fey issues — manual/slow, arbitrary choices, tiny fraction explored, drift-obsolescence — are real but not this lesson's mechanism.)"
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "You break the Ada/Bo collision by adding spend_trend and n_distinct_products. Why is this a 'treadmill,' not the fix the thesis proposes?",
+    options: [
+      { label: "Each bespoke aggregate recovers ONE lost dimension for ONE task and must be re-derived + re-leak-checked as schema/task change; the space of collisions is unbounded — RDL instead learns over the PK/FK graph so structure isn't discarded at all", value: "a" },
+      { label: "spend_trend leaks the future, so it can never be used", value: "b" },
+      { label: "Adding features always lowers held-out score (L033), so it is strictly harmful", value: "c" },
+      { label: "n_distinct_products requires a many-to-many bridge table that toy schemas lack", value: "d" }
+    ],
+    correct: "a",
+    explain: "Hand-built aggregates chase losses one at a time: each recovers a single dimension (order, identity) for a single task, is unbounded in number, and must be rebuilt and re-audited whenever the schema or task drifts (Fey issue 5). Keeping the relational entity graph and learning the aggregations end-to-end addresses the whole class of loss rather than patching collisions individually."
+  });
+</script>
+</body>
+</html>

@@ -614,6 +614,30 @@
       ],
       correct: "a",
       explain: "The design matrix Q1–Q3 assumed is the output of hand-chosen joins + aggregates + point-in-time guards, rebuilt per task, that throw away the relational structure. RDL keeps the same foreign-key edges as a graph and learns the aggregations end-to-end — the join whose returns L033 said moved."
+    },
+    {
+      id: "l035-collision", lesson: 35, quarter: "Q4", concept: "aggregation-collision", misconception: true,
+      question: "Two customers with different order histories flatten to the IDENTICAL count/sum/avg/max row (an aggregation collision). Why can't a better model tell them apart?",
+      options: [
+        { label: "Because their model INPUT is identical — aggregation is lossy (order- and identity-blind), so no capacity or tuning can recover discarded structure", value: "a" },
+        { label: "Because the model is under-tuned; more boosting rounds or a deeper net would separate them", value: "b" },
+        { label: "Because the two customers are genuinely the same and should be merged into one row", value: "c" },
+        { label: "Because the point-in-time filter was applied incorrectly to one of them", value: "d" }
+      ],
+      correct: "a",
+      explain: "A collision is a proof of lossiness: count/sum/avg/max are order- and identity-blind, so a rising 3-product history and a falling 1-product history map to the same row. Since the input is identical, every model must give the same output — it is an information loss (Fey 2024 §2, issue 4), not a capacity, tuning, or leakage problem."
+    },
+    {
+      id: "l035-thesis", lesson: 35, quarter: "Q4", concept: "flatten-loss-thesis",
+      question: "What structure does a flatten-then-aggregate pipeline discard, and how does RDL address it?",
+      options: [
+        { label: "Cardinality, event identity, temporal order, and higher-order paths — RDL keeps the DB as a PK/FK graph (row=node, key=edge) and learns the aggregations end-to-end instead of hand-writing one per lost dimension", value: "a" },
+        { label: "Only missing values, which RDL imputes more accurately than the mean", value: "b" },
+        { label: "Only the column names, which RDL preserves by using embeddings", value: "c" },
+        { label: "Nothing important — aggregation is lossless if you keep count/sum/avg/max", value: "d" }
+      ],
+      correct: "a",
+      explain: "The join+aggregate map is lossy: it discards how many (cardinality), which (identity), in what order (temporal), and multi-hop paths. Each can be patched with a bespoke per-task feature, but the space of collisions is unbounded; RDL keeps the relational entity graph and learns the aggregations end-to-end (Fey 2024 §1–2), addressing the whole class of loss."
     }
   ];
 })(window);
