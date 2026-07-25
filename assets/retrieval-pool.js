@@ -638,6 +638,30 @@
       ],
       correct: "a",
       explain: "The join+aggregate map is lossy: it discards how many (cardinality), which (identity), in what order (temporal), and multi-hop paths. Each can be patched with a bespoke per-task feature, but the space of collisions is unbounded; RDL keeps the relational entity graph and learns the aggregations end-to-end (Fey 2024 §1–2), addressing the whole class of loss."
+    },
+    {
+      id: "l036-consequence", lesson: 36, quarter: "Q4", concept: "audit-triage", misconception: true,
+      question: "Your outer CV is correctly grouped by person, but CalibratedClassifierCV(cv=5) splits the training fold internally with no groups, so a person's rows straddle the base-model/calibrator boundary. Which reported number is inflated?",
+      options: [
+        { label: "None — the leak is inside the TRAINING block, so the outer test fold (where metrics are computed) is clean; what it degrades is the shipped calibrator", value: "a" },
+        { label: "The ECE, by roughly the fraction of persons that repeat", value: "b" },
+        { label: "Both log-loss and ECE, since any leak inflates every metric", value: "c" },
+        { label: "None, and nothing is harmed — calibration is post-processing and cannot leak", value: "d" }
+      ],
+      correct: "a",
+      explain: "A leak only inflates a number computed downstream of it. This one lives entirely inside the outer training block, so the reported log-loss (1.4248) and ECE (0.0363) are honest measurements of the model actually built — but that model's isotonic map was fitted against optimistically sharp scores from partially-seen persons, so it is mis-shaped for strangers. Re-measured with a grouped inner split: log-loss 1.4232, ECE 0.0360 — correctly directed and far inside the 0.039 fold noise. 'Leak' does not imply 'inflated metric'; name the contaminated quantity first."
+    },
+    {
+      id: "l036-selection", lesson: 36, quarter: "Q4", concept: "selection-on-noise",
+      question: "A model shipped because it had the lowest mean log-loss over 5 shared CV folds, winning by 0.0032 nats — 8% of one fold's std, losing 2 of the 5 folds, and flipping to the runner-up if one fold is dropped. What kind of defect is this?",
+      options: [
+        { label: "A decision defect: every measurement is correct, but an argmin over correlated folds shipped extra complexity for a difference the data cannot resolve — the tie should go to the simpler model", value: "a" },
+        { label: "A leakage defect — the winner must have seen the test folds", value: "b" },
+        { label: "Not a defect: lowest mean log-loss is the definition of the best model", value: "c" },
+        { label: "A metric defect — log-loss should be replaced by accuracy for model selection", value: "d" }
+      ],
+      correct: "a",
+      explain: "Nothing is mismeasured: shared folds, legitimate pairing, correct numbers. The defect is in the inference — the maximum of several noisy correlated estimates is optimistically biased (the winner's curse), and here the margin is inside fold noise (naive p=0.64, Nadeau–Bengio corrected p=0.75). A deployment choice that flips when a single fold is dropped was not a choice about the models. Leakage checklists never catch this; L023's variance discipline and L017's nested CV do."
     }
   ];
 })(window);

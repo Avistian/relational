@@ -28,7 +28,7 @@ cells.append(md("""# Lab 013 — Build boosting from residuals
 - Run top to bottom. When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
 
 ### Environment
-One-time: `bash labs/setup-env.sh` from repo root → kernel **Relational Labs (.venv)**. No local install? Open this notebook from [`notebooks.html`](../notebooks.html) — **View** to read it rendered, or **Run on Binder** to execute it in the browser."""))
+One-time: `bash labs/setup-env.sh` from repo root → kernel **Relational Labs (.venv)**. No local install? Open this notebook from [`notebooks.html`](../notebooks.html) — **View** to read it rendered, or **Open in Colab** to execute it in the browser."""))
 
 cells.append(md(r"""## Concept recap — boosting fits residuals
 

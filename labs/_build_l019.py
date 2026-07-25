@@ -49,7 +49,7 @@ md("""# Lab 019 — When trees win: see the three inductive biases move
 - Run top to bottom. When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
 
 ### Environment
-One-time: `bash labs/setup-env.sh` from repo root → kernel **Relational Labs (.venv)**. Needs **scikit-learn** and **numpy** only (no boosters here). No local install? Open from [`notebooks.html`](../notebooks.html) — **View** to read it rendered, or **Run on Binder**.""")
+One-time: `bash labs/setup-env.sh` from repo root → kernel **Relational Labs (.venv)**. Needs **scikit-learn** and **numpy** only (no boosters here). No local install? Open from [`notebooks.html`](../notebooks.html) — **View** to read it rendered, or **Open in Colab** to run it.""")
 
 # ---------------------------------------------------------------- recap
 md(r"""## Concept recap — three biases, one knob each

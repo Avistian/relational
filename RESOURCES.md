@@ -73,6 +73,10 @@ _Optional / extension (◆ — read after the year exit criterion):_
 - [Interpretable Machine Learning (3rd ed., 2025) — Christoph Molnar](https://christophm.github.io/interpretable-ml-book/)
   Free book. Use for: PDP/ICE, SHAP, and "goals of interpretability" when auditing tree/MLP baselines.
 
+_Your own work (Tier-A artifact, not a published resource):_
+- **`~/Projects/homework` — the ReAction L&D response-prediction submission** (`report.md` Tasks 1–4, `src/features.py`, `src/modeling.py`, `notebooks/01–04`, `artifacts/cv_folds_*.csv` + OOF `.npz`)
+  119,498 situations joined from persons/situations/responses, 5,587 labelled (4.68 %), 5 classes, 4,851 persons of whom 675 repeat; person-grouped `StratifiedGroupKFold(5)`, LightGBM + isotonic calibration, log-loss/ECE ship-gate. **Primary reading for Lesson 036** — read as a reviewer beside `src/modeling.py`, not as its author. Use for: the Tier-A dataset and the pipeline under audit for the rest of Q4 (L037 packages the fixed version). Audit harness in this workspace: `labs/_audit_l036.py`, `labs/_selection_l036.py`.
+
 ## Knowledge — Year 2 (Advanced tabular)
 
 **Architectures**

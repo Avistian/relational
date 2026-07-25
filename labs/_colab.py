@@ -3,7 +3,9 @@
 Colab opens a lab as a lone `.ipynb` in a blank `/content` runtime; it does NOT
 clone the repo. So `from relkit import ...` and the boosters (xgboost/lightgbm/
 catboost) are missing. The bootstrap cell below fixes that on Colab and is a
-no-op on a local venv or Binder (which already have the repo + deps).
+no-op on a local venv (which already has the repo + deps).
+
+Colab is the canonical run-anywhere path for labs (Binder was dropped — NOTES #20).
 
 Build scripts prepend these cells; `scripts/add_colab_bootstrap.py` injects them
 into any already-generated notebook (idempotent via the MARKER).
@@ -19,7 +21,7 @@ Colab opens only this single file, so the course package (`relkit`) and the lab
 dependencies (xgboost, lightgbm, catboost, …) are **not** present by default. The cell
 below fixes that: on Colab it shallow-clones the course repo, installs
 `requirements-labs.txt`, and switches into `labs/` so `relkit` imports and the data cache
-resolve. **On a local venv or Binder it does nothing — just run it and continue.**"""
+resolve. **On a local venv or your own Jupyter it does nothing — just run it and continue.**"""
 
 BOOTSTRAP_CODE = """# @colab-bootstrap — PROVIDED. Makes the lab self-sufficient on Google Colab; a no-op elsewhere.
 import os, sys

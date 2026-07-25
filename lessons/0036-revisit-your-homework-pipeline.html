@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 036 — Revisit Your Homework Pipeline</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    pre.py { font-family: var(--font-mono); font-size: 0.82rem; background: #0f172a; color: #e2e8f0; padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto; line-height: 1.55; margin: 0.9rem 0; }
+    pre.py .kw { color: #7dd3fc; } pre.py .fn { color: #fca5a5; } pre.py .cm { color: #94a3b8; font-style: italic; }
+    pre.py .hl { background: rgba(176,58,46,0.28); border-radius: 3px; }
+    .finding { border: 1px solid var(--border); border-left: 4px solid #b03a2e; border-radius: 0 6px 6px 0; padding: 0.75rem 1rem; margin: 1.4rem 0 1rem; background: var(--bg-soft); }
+    .finding h3 { margin: 0 0 0.35rem; font-size: 1.02rem; }
+    .finding .cls { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .finding.declare { border-left-color: #b9770e; }
+    .finding.number { border-left-color: #2e6fb0; }
+
+    /* nested-calibration viz (new) */
+    .nc-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .nc-ctl { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+    .nc-ctl button { font-family: var(--font-sans); font-size: 0.78rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .nc-ctl button.nc-on { background: #7a1f16; color: #fff; border-color: #7a1f16; }
+    .nc-svg { display: block; max-width: 100%; margin: 0.25rem auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .nc-lane { font-family: var(--font-sans); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; fill: var(--muted); }
+    .nc-plabel { font-family: var(--font-mono); font-size: 9.5px; fill: var(--muted); }
+    .nc-legend { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+    .nc-readout { font-size: 0.86rem; margin-top: 0.7rem; line-height: 1.55; min-height: 5rem; }
+    .nc-bad { font-weight: 700; color: #b03a2e; }
+    .nc-good { font-weight: 700; color: #1e6b3c; }
+
+    /* pipeline-viz (reused from L005) */
+    .pipe-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .pipe-viz-intro { font-size: 0.92rem; margin: 0 0 0.75rem; }
+    .pipe-viz-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .pipe-viz-btn { font-family: var(--font-sans); font-size: 0.85rem; padding: 0.45rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; }
+    .pipe-viz-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .pipe-viz-row { display: flex; align-items: center; gap: 0.6rem; margin: 0.3rem 0; font-family: var(--font-sans); font-size: 0.78rem; }
+    .pipe-viz-rlabel { width: 3.5rem; color: var(--muted); flex-shrink: 0; }
+    .pipe-viz-cells { display: flex; gap: 4px; flex-wrap: wrap; }
+    .pipe-viz-cell { width: 1.1rem; height: 1.1rem; border-radius: 3px; display: inline-block; box-sizing: border-box; }
+    .pipe-viz-cell.train { background: #1a5276; }
+    .pipe-viz-cell.test { background: #922b21; }
+    .pipe-viz-cell.seen { outline: 3px solid #f4d03f; outline-offset: 1px; }
+    .pipe-viz-cell.leaked { outline-color: #e67e22; }
+    .pipe-viz-caption { font-size: 0.88rem; margin-top: 0.75rem; color: var(--muted); }
+
+    /* paired-diff-viz (reused from L023) */
+    .paired-diff-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .pd-svg { display: block; max-width: 600px; margin: 0.25rem auto; }
+    .pd-title, .pd-lab { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); }
+    .pd-tick { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); }
+    .pd-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+    .pd-ctl button { font-size: 0.8rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); cursor: pointer; font-family: var(--font-sans); }
+    .pd-ctl button.pd-active { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .pd-readout { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .pd-pill { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; padding: 0.05rem 0.4rem; border-radius: 4px; background: var(--border); margin-right: 0.3rem; }
+    .pd-bad { font-weight: 700; color: #b03a2e; }
+    .pd-win { font-weight: 700; color: #1e6b3c; }
+
+    /* checklist (reused) */
+    .chk { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .chk-title { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.6rem; }
+    .chk-list { list-style: none; padding: 0; margin: 0; }
+    .chk-item { display: flex; align-items: baseline; gap: 0.55rem; margin: 0.5rem 0; font-size: 0.92rem; }
+    .chk-item input { margin-top: 0.2rem; flex: none; }
+    .chk-hint { color: var(--accent); font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .chk-feedback { margin-top: 0.75rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4</p>
+  <h1>Revisit Your Homework Pipeline</h1>
+  <p class="subtitle">Lesson 036 · Phase 1 · Q4 · ~50 min · <em>primary reading: your own <code>homework/report.md</code>, read as a reviewer</em></p>
+
+  <p>
+    Thirty-five lessons of this curriculum have been spent learning to distrust other people's pipelines:
+    the single-table assumption (<a href="0001-single-table-assumption.html">L001</a>), leaky design matrices
+    (<a href="0002-design-matrix-leakage.html">L002</a>), folds that don't respect groups
+    (<a href="0004-grouped-nested-cv.html">L004</a>), preprocessing fitted outside the fold
+    (<a href="0005-pipelines-preprocessing.html">L005</a>), comparisons that mistake noise for a win
+    (<a href="0023-statistical-comparison.html">L023</a>). This lesson turns those instruments around and
+    points them at <strong>your own code</strong> — the ReAction L&amp;D response-prediction submission sitting
+    in <code>~/Projects/homework</code>, written before this curriculum began.
+  </p>
+  <p>
+    This is not a formality. That submission is careful work: it uses
+    <code>StratifiedGroupKFold</code> grouped by <code>person_id</code>, it asserts the absence of person
+    leakage on all 25 folds, it prefers calibration over accuracy, it refuses pseudo-labelling on principle,
+    it pre-registers numeric ship-gates, and it documents what it deliberately did <em>not</em> do. It is
+    better than most production pipelines. And it still contains four findings worth naming — one of which
+    changed which model got deployed.
+  </p>
+  <p>
+    Its single skill: <strong>audit a pipeline against the Q1–Q3 leakage spine, then triage each finding by
+    what it actually changes — the number you reported, the artifact you shipped, the decision you made, or
+    nothing but a caveat you owe the reader — and re-measure before you believe any of it.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> "I found a leak" is not a verdict but a hypothesis with a consequence, and
+    the consequences are genuinely different: a statistic fitted outside the fold <em>inflates the number you
+    reported</em>, a mis-split <em>inside</em> the training fold leaves your number honest but <em>ships a
+    worse artifact</em>, an argmin over a handful of correlated folds <em>changes your decision while every
+    metric stays correct</em>, and a missing column can mean a defect you can only <em>declare</em> — so an
+    audit's real output is a ranked list of consequences with a measurement attached to each, not a count of
+    smells.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, pulled from memory before today's material. A wrong guess here is
+    useful — the act of retrieval, even a failed one, encodes the idea better than re-reading would.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    An audit is only as sharp as the words you bring to it. Everything this lesson relies on is defined here
+    from first principles, including terms earlier lessons already used.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Audit.</strong> Reading a <em>finished</em> pipeline against a fixed checklist to
+    find the gap between what it claims and what it does. It is distinct from debugging (which starts from a
+    symptom) and from testing (which checks intended behaviour): an audit starts from a
+    <em>rubric</em> and is willing to conclude "this is fine."
+  </div>
+  <div class="defbox">
+    <strong class="term">The leakage spine.</strong> This workspace's name for the ordered set of questions
+    that decide whether a reported number is real, accumulated across Q1–Q3: is the split honest for the
+    dependence structure in the data (L003/L004), is every preprocessing statistic fitted inside the fold
+    (L005), is each feature knowable at prediction time (L002/L022), is the metric the one the decision needs
+    (L008), and is the comparison powered enough to support the claim (L023)?
+  </div>
+  <div class="defbox">
+    <strong class="term">Group (cluster) leakage.</strong> When rows are not independent — several situations
+    belonging to one person — and the same group appears in both training and test. The model then gets credit
+    for recognising a <em>person</em> it has already met (their personality scores, engagement, wearable
+    coverage) rather than for generalising to a new one. The fix is a grouped splitter:
+    <code>StratifiedGroupKFold(groups=person_id)</code> keeps every row of a person on one side.
+  </div>
+  <div class="defbox">
+    <strong class="term">Nested split.</strong> Any second split taken <em>inside</em> a fold of the first
+    one — for calibration, early stopping, feature selection, hyper-parameter search, or to train a helper
+    model that manufactures a feature. The crucial property: a nested split is <em>still a split</em>, so
+    every discipline you apply to the outer one (grouping, time ordering) applies to it too. Library defaults
+    do not inherit your grouping.
+  </div>
+  <div class="defbox">
+    <strong class="term">Calibration, and isotonic calibration.</strong> A model is <em>calibrated</em> when
+    events it calls "70&nbsp;%" happen about 70&nbsp;% of the time. A raw classifier's scores are usually not,
+    so you fit a <em>calibrator</em>: a function from raw score to honest probability.
+    <em>Isotonic</em> calibration fits a non-decreasing step function — flexible, non-parametric, and the
+    standard pairing with boosted trees. Crucially it must be fitted on data the base model did
+    <strong>not</strong> train on; otherwise it learns to trust scores that are sharper than they will ever be
+    again.
+  </div>
+  <div class="defbox">
+    <strong class="term">ECE (expected calibration error).</strong> Bin predictions by confidence
+    (here 15 equal-width bins on the top-class probability); in each bin compare mean confidence to observed
+    accuracy; average the absolute gaps weighted by bin population:
+    <code>ECE = Σ_b (|B_b|/N)·|acc(B_b) − conf(B_b)|</code>. Zero is perfect. It is the number an EU auditor
+    reads, and the submission's ship-gate threshold is 0.05 globally, 0.07 per slice.
+  </div>
+  <div class="defbox">
+    <strong class="term">Log-loss, and why it is the primary metric.</strong>
+    <code>LL = −(1/N)·Σ log p(true class)</code>. It is a <em>strictly proper scoring rule</em>: uniquely
+    minimised by reporting the true posterior, so it penalises bad ranking <em>and</em> bad calibration
+    together. Reference point for 5 balanced-ish classes: predicting the uniform prior gives
+    <code>−log(1/5) ≈ 1.6094</code>, so anything above that is worse than an honest shrug.
+  </div>
+  <div class="defbox">
+    <strong class="term">Transductive vs. inductive.</strong> An <em>inductive</em> procedure produces a rule
+    usable on a row that does not exist yet. A <em>transductive</em> one uses the unlabelled rows it will be
+    scored on while building the rule. Fitting an imputer's median or a scaler's mean on the whole table is
+    transductive: no <em>label</em> leaks, but the number you report is no longer a deployment estimate,
+    because at inference time that statistic could not have been computed.
+  </div>
+  <div class="defbox">
+    <strong class="term">Selection bias (the winner's curse).</strong> Score <em>k</em> models on the same
+    folds and take the best: the maximum of several noisy estimates is optimistically biased, and the more
+    models and the noisier the folds, the larger the bias. This is why the score that <em>chose</em> a model
+    is not a fair estimate <em>of</em> that model, and why nested CV (L017) exists.
+  </div>
+  <div class="defbox">
+    <strong class="term">Corrected resampled t-test (Nadeau &amp; Bengio, 2003).</strong> Cross-validation
+    folds share training data, so their scores are correlated and the naive paired t-test's variance,
+    <code>σ²/n</code>, is too small — it declares wins too readily. The correction inflates it by
+    <code>(1/n + n_test/n_train)</code>. For 5 folds with ~1,117 test and ~4,470 train rows that is
+    <code>0.200 + 0.250 = 0.450</code> against the naive <code>0.200</code> — more than double the variance,
+    so the confidence interval widens by about <code>√(0.450/0.200) ≈ 1.5×</code>. Assigned in L023.
+  </div>
+
+  <h2>The pipeline under audit</h2>
+  <p>
+    The task: predict which of five behavioural outcomes follows an L&amp;D recommendation
+    (<code>completed_effective</code>, <code>completed_ineffective</code>, <code>declined</code>,
+    <code>dropped_out</code>, <code>partial</code>), with calibrated probabilities, for an EU-facing
+    high-risk HR deployment. Three tables — 20,000 <code>persons</code>, 119,498 <code>situations</code>,
+    5,587 <code>responses</code> — joined to one row per situation. Only <strong>4.68&nbsp;%</strong> of
+    situations carry a label.
+  </p>
+  <p>
+    The dependence structure is the thing to hold on to, because every finding below turns on it. Persons
+    recur: a person has up to 17 situations, and among the 5,587 <em>labelled</em> rows there are
+    <strong>4,851 distinct persons</strong>, of whom <strong>675 contribute more than one labelled row</strong>
+    — <strong>1,411 rows, just over a quarter of the labelled set</strong>, belong to a person who appears
+    again. That is exactly enough repetition to make grouping matter and little enough to make its effect
+    small: both halves of that sentence get measured below.
+  </p>
+  <p>
+    Five models were compared on identical person-grouped folds: <strong>M0</strong> logistic regression,
+    <strong>M1</strong> LightGBM + isotonic calibration, and three semi-supervised variants adding a KMeans
+    block (<strong>M2a</strong>), a labelling-propensity feature (<strong>M2b</strong>), or both
+    (<strong>M2c</strong>). M2a shipped.
+  </p>
+
+  <h3>What the audit finds already correct</h3>
+  <p>
+    A rubric that only ever fires is a rubric nobody runs. These passed, and several are the reason the
+    findings below are small rather than fatal:
+  </p>
+  <table>
+    <thead><tr><th>Spine question</th><th>Verdict</th><th>Evidence in the submission</th></tr></thead>
+    <tbody>
+      <tr><td>Does the outer split respect the dependence structure?</td><td class="win">pass</td>
+          <td><code>StratifiedGroupKFold(5, groups=person_id)</code>, with a per-fold
+              <code>assert not (set(groups[tr]) &amp; set(groups[te]))</code> — 25/25 folds clean</td></tr>
+      <tr><td>Are all models compared on the <em>same</em> folds?</td><td class="win">pass</td>
+          <td>one splitter, fixed seed, reused for all five models — the deltas are genuinely fold-paired</td></tr>
+      <tr><td>Is the metric the one the decision needs?</td><td class="win">pass</td>
+          <td>log-loss primary (proper scoring rule) + ECE as a gate; accuracy explicitly demoted to
+              "human intuition only"</td></tr>
+      <tr><td>Are identifiers and the label kept out of the features?</td><td class="win">pass</td>
+          <td><code>split_xy</code> drops <code>situation_id</code>, <code>person_id</code>,
+              <code>has_label</code>, <code>response_category</code>; the encoder uses an explicit
+              <em>allow-list</em> per block with <code>remainder="drop"</code>, so a stray future column
+              cannot silently enter</td></tr>
+      <tr><td>Is the outcome timestamp kept out?</td><td class="win">pass</td>
+          <td><code>observed_at</code> (4–8 weeks <em>after</em> the event) is never merged into the feature
+              frame — only <code>response_category</code> is</td></tr>
+      <tr><td>Were features dropped using label information?</td><td class="win">pass</td>
+          <td>zero-mutual-information <code>ctx_feat_*</code> columns were deliberately <em>kept</em>, with the
+              reasoning that univariate MI on the labelled slice is itself a label-driven filter</td></tr>
+      <tr><td>Is the labelled sample checked for representativeness?</td><td class="win">pass</td>
+          <td>a propensity classifier quantifies it (CV AUC 0.65 vs 0.50 chance) and names the biased axis
+              (<code>context_domain</code>, not age)</td></tr>
+    </tbody>
+  </table>
+  <p>
+    That last row deserves emphasis: the submission went looking for a bias nobody asked it to quantify, and
+    found a real one. The findings below are the residue left after all of this went right.
+  </p>
+
+  <h2>Finding 1 — the split you didn't write</h2>
+  <div class="finding">
+    <span class="cls">Consequence class · degrades the shipped artifact, leaves the reported number honest</span>
+    <h3>The inner calibration split ignores <code>person_id</code></h3>
+    <p style="margin-bottom:0">
+      The outer CV is person-grouped and asserted. But calibration takes a <em>second</em> split, and it is
+      built from an integer:
+    </p>
+  </div>
+
+  <pre class="py"><span class="cm"># src/modeling.py — M1, and therefore also M2a/M2b/M2c and the shipped model</span>
+<span class="kw">def</span> <span class="fn">make_lgbm_calibrated</span>():
+    <span class="kw">return</span> CalibratedClassifierCV(estimator=_lgbm(), method=<span class="hl">"isotonic"</span>, <span class="hl">cv=5</span>)</pre>
+
+  <p>
+    Given <code>cv=5</code> and a classifier, <code>CalibratedClassifierCV</code> builds a plain
+    <code>StratifiedKFold(5)</code> over the rows it was handed — which are the rows of one outer
+    <em>training</em> fold. It stratifies by the label. It has never heard of <code>person_id</code>, and
+    there is no argument on that line through which it could. So inside the training block, one situation of a
+    person can be used to fit the base LightGBM while <em>another situation of the same person</em> is used to
+    fit the isotonic map.
+  </p>
+  <p>
+    Why that matters mechanically: the isotonic step function's whole job is to learn how much to trust the
+    base model's scores, and it can only learn that from scores on rows the base model has <em>not</em> seen.
+    Feed it a person the base model already trained on and those scores are sharper than the model will ever
+    manage on a stranger, so the monotone map it fits is the wrong shape for the genuinely-unseen people it
+    will meet in production.
+  </p>
+  <p>
+    Below: each capsule is a person, each square a situation. Blue squares fit the base model, amber squares
+    fit the calibrator, red squares are the outer test fold. The widget opens on the library default; switch
+    to the grouped inner split to see the difference.
+  </p>
+
+  <div id="nested-calib-viz"></div>
+
+  <h3>Predict before you measure</h3>
+  <p>
+    This is the part of an audit where intuition usually fails, so commit to an answer first. You have found a
+    genuine group leak inside the training fold. Which of the submission's numbers is wrong because of it?
+  </p>
+  <div id="predict-calib"></div>
+
+  <p>
+    The answer is <strong>none of them</strong> — and that is the finding, not an anticlimax. The leak lives
+    entirely <em>inside</em> the outer training block. The outer test fold never enters the calibrator's fit,
+    so the ECE and log-loss computed on it are honest measurements of the model that was actually built. What
+    the mis-split damages is <em>that model</em>: it is fitted with a calibrator tuned against optimistically
+    sharp scores. Your report was true; your artifact was worse than it needed to be. Most leakage lessons
+    train you to expect an inflated metric, and that expectation would have made you look for this defect in
+    the wrong place.
+  </p>
+
+  <h3>Re-measured, at full configuration</h3>
+  <p>
+    A finding is a hypothesis until it is measured. So: the submission's exact pipeline was re-run with one
+    line changed — the inner <code>cv=5</code> replaced by explicit person-grouped splits over the training
+    fold — holding everything else fixed (same encoder, same 400-tree LightGBM, same outer folds, same seed,
+    same metric code).
+  </p>
+  <pre class="py"><span class="cm"># the fix: cv also accepts an ITERABLE of (train, test) index pairs</span>
+inner = list(StratifiedGroupKFold(n_splits=5, shuffle=<span class="kw">True</span>, random_state=0)
+             .split(X[tr], y.iloc[tr], <span class="hl">groups=groups[tr]</span>))
+model = CalibratedClassifierCV(estimator=_lgbm(), method=<span class="hl">"isotonic"</span>, <span class="hl">cv=inner</span>)</pre>
+  <p>
+    The baseline arm reproduced the submission's published M1 row <strong>exactly</strong> — log-loss
+    1.4248 ± 0.0392 and top-label ECE 0.0363 ± 0.0053, matching <code>report.md</code> §3.1 and the saved
+    per-fold CSV to four decimals — so the difference between the two arms is attributable to the fix and not
+    to the environment.
+  </p>
+  <table class="num-table">
+    <thead><tr><th>M1 arm</th><th>log-loss ↓</th><th>ECE top ↓</th><th>straddling persons (inner)</th></tr></thead>
+    <tbody>
+      <tr><td>as shipped — <code>cv=5</code></td><td class="n">1.4248 ± 0.0392</td>
+          <td class="n">0.0363 ± 0.0053</td><td class="n bad">442 persons / 930 rows in fold 0 alone</td></tr>
+      <tr><td>fixed — person-grouped inner split</td><td class="n">1.4232 ± 0.0386</td>
+          <td class="n">0.0360 ± 0.0094</td><td class="n win">0</td></tr>
+      <tr><td><strong>difference</strong></td><td class="n">−0.0016</td><td class="n">−0.0003</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read that honestly. Both numbers move in the direction the theory predicts — the properly-calibrated model
+    is very slightly better on both — and <strong>both movements are far inside the noise</strong>: the
+    log-loss gain is 0.0016 against a fold-to-fold standard deviation of 0.039, about a twenty-fifth of one
+    fold's spread. The ECE gain is 0.0003 while its own fold spread <em>widened</em> from 0.0053 to 0.0094.
+    On this dataset, at this label density, the defect is real and its measured cost is negligible.
+  </p>
+  <p>
+    Which raises the honest question: then why fix it? Three reasons, and none of them is the size of today's
+    delta. First, the fix is one line and the exposure is not: only 675 of 4,851 labelled persons repeat
+    <em>now</em>, and that ratio is a property of a 4.68&nbsp;% label rate, not of the code — the same line
+    behaves differently the moment more labels arrive, which the deployment memo plans for weekly. Second, a
+    defect whose current cost is inside the noise is still a defect you cannot <em>defend</em> in the EU
+    review the submission is written for; "we measured it and it was 0.0003" is a defensible sentence, and
+    "we didn't notice" is not. Third, and most useful: the discipline generalises. Calibration is not the only
+    nested split in the file, as the next finding shows.
+  </p>
+
+  <h2>Finding 2 — the number was right and the decision was wrong</h2>
+  <div class="finding">
+    <span class="cls">Consequence class · changes the decision, leaves every measurement correct</span>
+    <h3>M2a was shipped over M1 on a margin smaller than fold noise</h3>
+    <p style="margin-bottom:0">
+      Five models, one set of folds, winner by lowest mean log-loss. M2a won by <strong>0.0032 nats</strong>.
+    </p>
+  </div>
+  <p>
+    Nothing is mismeasured here. The folds are shared, the pairing is legitimate, the numbers in
+    <code>report.md</code> §3.1 are exactly what the code produced. The defect is in the inference drawn from
+    them. Here are the five per-fold log-losses the submission saved, for the two models that mattered:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>fold</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>mean</th></tr></thead>
+    <tbody>
+      <tr><td>M1</td><td class="n">1.4138</td><td class="n">1.4946</td><td class="n">1.4018</td>
+          <td class="n">1.4073</td><td class="n">1.4065</td><td class="n">1.4248</td></tr>
+      <tr><td>M2a <em>(shipped)</em></td><td class="n">1.4254</td><td class="n">1.4679</td><td class="n">1.4065</td>
+          <td class="n">1.4051</td><td class="n">1.4028</td><td class="n">1.4215</td></tr>
+      <tr><td>difference</td><td class="n bad">+0.0116</td><td class="n win">−0.0267</td><td class="n bad">+0.0047</td>
+          <td class="n win">−0.0022</td><td class="n win">−0.0037</td><td class="n">−0.0032</td></tr>
+    </tbody>
+  </table>
+  <p>
+    M2a is <em>worse</em> than M1 on two of the five folds. Its entire average advantage comes from fold 2,
+    where it gains 0.0267 — and fold 2 is the hardest fold for both models. The mean difference is
+    <strong>8&nbsp;% of one fold's standard deviation</strong>. Below, the same five differences with the two
+    variance estimates from L023; note that here, unlike L023's headline case, the naive test does not declare
+    a winner either — 0 sits inside both intervals.
+  </p>
+  <div id="pd-selection"></div>
+  <p>
+    So the honest reading of M2a vs M1 is "indistinguishable," and the tie-break should have gone to the
+    simpler model. Instead the more complex one shipped: M2a carries a KMeans block that must be fitted,
+    persisted, versioned, and explained to an auditor, in exchange for a difference the data cannot resolve.
+  </p>
+  <p>
+    Two further things fall out of re-reading the selection code rather than the report.
+  </p>
+  <p>
+    <strong>The stated tie-break rule never fired.</strong> <code>report.md</code> §3.4 explains the choice
+    as: "lowest mean log-loss whose ECE does not exceed the loser by more than +0.02 … M2a's ECE (0.0332) is
+    lower than M1's (0.0363), so the rule promotes M2a." But the implementation starts from the log-loss
+    argmin and only ever <em>replaces</em> it with a worse-log-loss candidate that is dramatically
+    better-calibrated:
+  </p>
+  <pre class="py"><span class="kw">def</span> <span class="fn">pick_winner</span>(cmp_df):
+    s = cmp_df.sort_values(<span class="hl">'log_loss'</span>).reset_index(drop=<span class="kw">True</span>)
+    best = s.iloc[<span class="hl">0</span>]                      <span class="cm"># M2a is already here — the argmin</span>
+    <span class="kw">for</span> _, cand <span class="kw">in</span> s.iloc[1:].iterrows():
+        <span class="kw">if</span> cand[<span class="hl">'ece_top'</span>] + <span class="hl">0.02</span> &lt; best[<span class="hl">'ece_top'</span>]:   <span class="cm"># never true: 0.0296 vs 0.0332</span>
+            best = cand
+    <span class="kw">return</span> best[<span class="hl">'model'</span>]</pre>
+  <p>
+    M2a was the log-loss argmin, so it was <code>s.iloc[0]</code> before the ECE clause was consulted, and no
+    model's ECE was 0.02 better than its 0.0332 (the closest, M2c, is 0.0296 — a 0.0036 gap). The model was
+    chosen by argmin alone. The calibration-first framing the report presents as the deciding rule did no
+    work. This is worth more than the pedantry suggests: the report's narrative made a noise-driven choice
+    look principled, which is precisely how such choices survive review.
+  </p>
+  <p>
+    <strong>The winner is not stable under dropping one fold.</strong> Recompute each model's mean log-loss
+    with a single fold removed, five times:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>fold dropped</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
+    <tbody>
+      <tr><td>winner</td><td class="n">M2a</td><td class="n bad">M1</td><td class="n">M2a</td>
+          <td class="n">M2a</td><td class="n">M2a</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Remove fold 2 — the single fold supplying M2a's entire margin — and <strong>M1 becomes the winner</strong>
+    and a different artifact goes to production. A deployment decision that flips on one of five folds was not
+    a decision about the models.
+  </p>
+  <p>
+    And the same correction applied to the one comparison the report <em>did</em> call significant:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>comparison</th><th>mean Δ log-loss</th><th>p, naive paired t</th>
+      <th>p, corrected (Nadeau–Bengio)</th><th>p, Holm over the 4 reported tests</th></tr></thead>
+    <tbody>
+      <tr><td>M1 − M0 <em>(report: "significantly better")</em></td><td class="n">−0.0554</td>
+          <td class="n bad">0.0146</td><td class="n">0.0514</td><td class="n">0.0583</td></tr>
+      <tr><td>M2a − M1 <em>(the shipping decision)</em></td><td class="n">−0.0032</td>
+          <td class="n">0.6409</td><td class="n">0.7539</td><td class="n">1.0000</td></tr>
+      <tr><td>M2b − M1</td><td class="n">+0.0006</td><td class="n">0.5125</td><td class="n">0.6572</td><td class="n">1.0000</td></tr>
+      <tr><td>M2c − M1</td><td class="n">+0.0016</td><td class="n">0.4186</td><td class="n">0.5805</td><td class="n">1.0000</td></tr>
+    </tbody>
+  </table>
+  <div id="pd-m1m0"></div>
+  <p>
+    The submission's single significance claim — LightGBM beats logistic regression, naive
+    <code>p = 0.0146</code> — does <strong>not</strong> survive either correction: <code>0.0514</code> once the
+    shared training sets are accounted for, <code>0.0583</code> once you admit four tests were run. Both land
+    just outside 0.05. Be careful about what this does and does not mean. The effect is almost certainly real:
+    the gap is 0.055 nats, seventeen times the M2a margin, and M1 wins <strong>all five folds</strong>. What
+    fails is not the belief but the <em>claim of significance</em>: five folds cannot establish it, and the
+    honest sentence is "M1 beats M0 on every fold by a margin that dwarfs the others, though five folds are
+    too few to call it significant."
+  </p>
+
+  <h2>Finding 3 — the encoder that saw everything</h2>
+  <div class="finding number">
+    <span class="cls">Consequence class · <em>could</em> inflate the reported number — the only class where the size must be measured, not argued</span>
+    <h3>The <code>ColumnTransformer</code> is fitted once, on all 119,498 rows, before any CV</h3>
+  </div>
+  <pre class="py"><span class="cm"># notebooks/02_task2_modeling.ipynb, cell 3 — before the CV loop exists</span>
+pipe = make_feature_pipeline()
+X_all = pipe.<span class="hl">fit_transform</span>(X_df).astype(np.float32)   <span class="cm"># all 119,498 rows</span>
+X_lab = X_all[mask_labeled]                            <span class="cm"># then sliced for CV</span>
+<span class="cm"># ... and the same pattern for the SSL blocks:</span>
+unsup.fit(<span class="hl">X_all</span>)                       <span class="cm"># KMeans centroids from every row, test folds included</span>
+propensity.fit(<span class="hl">X_all</span>, mask_labeled)     <span class="cm"># and its inner OOF split is ungrouped too</span></pre>
+  <p>
+    The submission defends this explicitly, and the defence is half right: "the transformer is unsupervised,
+    so using the unlabeled 95&nbsp;% here is safe." No <em>label</em> leaks — that part is true, and it is why
+    this is a smaller problem than it looks. But the medians, the scaler means and standard deviations, and
+    the one-hot vocabulary were computed from rows that include every outer test fold. That makes the
+    procedure <strong>transductive</strong>: it uses the data it is scored on. At inference time, on a
+    situation that does not exist yet, those statistics could not have been computed — so the CV number is
+    not the deployment number it is being read as.
+  </p>
+  <p>
+    The mechanism is the one from L005. The widget opens on the correct regime — the transformer refitted
+    inside each fold, test cells never used for statistics. Click <em>Fit on all data (leak)</em> to see the
+    submission's arrangement, where every cell including the test fold carries the ring.
+  </p>
+  <div id="pipeline-viz"></div>
+  <p>
+    Here the audit's discipline matters more than its suspicion. This is the one finding whose class
+    <em>allows</em> the reported number to be optimistic, so it is the one where asserting the size would be
+    unforgivable. Predict before you read the table: refitting the encoder inside every outer fold — on
+    training-fold persons only, so no test person contributes a median, a scale, or a one-hot level — and
+    holding everything else fixed, how much of the 1.4248 was borrowed?
+  </p>
+  <table class="num-table">
+    <thead><tr><th>M1 arm (encoder regime)</th><th>log-loss ↓</th><th>ECE top ↓</th></tr></thead>
+    <tbody>
+      <tr><td>encoder fit once on all 119,498 rows <em>(as shipped)</em></td>
+          <td class="n">1.4248 ± 0.0392</td><td class="n">0.0363 ± 0.0053</td></tr>
+      <tr><td>encoder refitted inside each outer fold</td>
+          <td class="n">1.4237 ± 0.0382</td><td class="n">0.0350 ± 0.0059</td></tr>
+      <tr><td>encoder refit <em>and</em> grouped calibration <em>(both fixes)</em></td>
+          <td class="n">1.4352 ± 0.0499</td><td class="n">0.0411 ± 0.0061</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>None of it.</strong> The fold-honest encoder is not worse — it is <em>0.0011 nats better</em>, and
+    its ECE is 0.0013 better. That is <strong>3&nbsp;% of one fold's standard deviation</strong>, drifting in
+    the direction opposite to the one the leakage story predicts, which is exactly what a real effect of zero
+    looks like when measured with five folds. On 119,498 rows a median, a standard deviation and a one-hot
+    vocabulary are simply not sensitive to whether a fifth of the persons are withheld; the statistics the
+    encoder learns are converged long before the fold boundary matters.
+  </p>
+  <p>
+    The third row is the one worth staring at. Applying <em>both</em> fixes lands at <strong>1.4352</strong> —
+    0.0104 <em>worse</em> than the shipped arrangement, with the fold spread widening to 0.0499. That is not
+    evidence that fixing leaks hurts. It is one fold: the combined arm scores 1.5237 on fold 1 where the
+    shipped arm scores 1.4946, and the mechanism is the isotonic calibrator, not the leak. A monotone step
+    function fitted on roughly 900 rows per inner fold can map a handful of test rows to a near-zero
+    probability, and log-loss charges an unbounded price for every one of them — so the calibrator is itself a
+    variance source, and re-drawing its inner splits re-rolls that dice. The honest summary of the whole table
+    is therefore the range: <strong>1.4232 to 1.4352, a spread smaller than one fold's standard
+    deviation.</strong> At 5,587 labels over five folds, none of these four arrangements is distinguishable
+    from the others, and the case for the two fixes has to be made on reproducibility and defensibility rather
+    than on the metric. If you wanted to resolve differences this small you would need repeated CV — 5×5 folds,
+    L023's protocol — and that is the honest answer to "which is best?", not a bolder reading of this table.
+  </p>
+  <p>
+    Sit with how uncomfortable that is, because it is the point of the whole lesson. The consequence class was
+    correctly assigned — this arrangement genuinely <em>can</em> inflate a reported number, and the code is
+    genuinely not reproducible at inference time — and the measured inflation is still nil. A class tells you
+    <em>where to look</em> and <em>what kind</em> of damage is possible; only the re-measurement tells you the
+    <em>size</em>, and "indistinguishable from zero" is a legitimate finding that you can only earn by running
+    it. An auditor who stops at the class writes "leakage: CV estimate optimistic" and is wrong about this
+    pipeline. An auditor who measures writes "transductive preprocessing, effect below fold noise, fix it for
+    reproducibility rather than for the number" — and is trusted the next time the effect is large.
+  </p>
+  <p>
+    The reason to still care is the one the size of the number hides: <strong>the defence does not scale with
+    the shortcut.</strong> "Unsupervised, therefore safe" is a claim about labels, not about transduction, and
+    the same sentence gets attached to steps where it is far more expensive — a KMeans block whose centroids
+    are placed using test rows (which is exactly what <code>unsup.fit(X_all)</code> does for the
+    <em>shipped</em> model), or the propensity head, whose internal OOF split is a plain
+    <code>StratifiedKFold(5)</code> with no <code>groups</code> argument, so a person's other situations help
+    predict their own labelling probability. Each is defended by the same half-true sentence. The audit's job
+    is to notice that the sentence is doing more work than it can bear, and then to price each use of it
+    separately.
+  </p>
+  <p>
+    Priced, the KMeans one comes out the same way: fitting the 16 centroids inside each fold instead of on all
+    119,498 rows moved log-loss from 1.4271 to <strong>1.4221</strong> — again slightly <em>better</em> when
+    honest, again inside fold noise. One caveat worth stating, because it is exactly the kind of thing an audit
+    must not hide: that pair of runs uses a *reconstruction* of the semi-supervised block (cluster one-hots plus
+    centroid distances) which does not reproduce the submission's published M2a row (1.4215), so the two numbers
+    are comparable to each other and to nothing else. Finding 2's verdict does not lean on them — it is computed
+    from the submission's own saved per-fold CSVs.
+  </p>
+
+  <h2>Finding 4 — the defect you can only declare</h2>
+  <div class="finding declare">
+    <span class="cls">Consequence class · unfixable with the data as given; owed to the reader as a limitation</span>
+    <h3>There is no event timestamp, so the evaluation cannot be temporal — but the deployment is</h3>
+  </div>
+  <p>
+    L021 (TabReD) established that when a model predicts forward in time, a random split flatters it: the
+    honest protocol cuts once on time and tests on the future. This submission's deployment memo is explicitly
+    temporal — nightly batch scoring, <strong>weekly retraining on a rolling window</strong>, labels arriving
+    4–8 weeks late, monitoring on maturing cohorts. The evaluation behind it is random-in-time, person-grouped
+    5-fold CV.
+  </p>
+  <p>
+    So: apply the L021 fix and cut on time. You cannot. Inspect the schema and
+    <code>situations</code> has 59 columns — <code>module_topic</code>,
+    <code>recommended_intervention</code>, <code>context_domain</code>, <code>workload_index</code>,
+    <code>team_size</code>, <code>manager_support_score</code>, <code>season</code>, and 50 opaque
+    <code>ctx_feat_*</code> — and <strong>not one of them is an event timestamp</strong>. The only date in
+    the whole database is <code>responses.observed_at</code>, which is recorded 4–8 weeks <em>after</em> the
+    event and exists only for labelled rows. A temporal split needs to order rows by when they
+    <em>happened</em>; sorting by when they were <em>observed</em> would order them by a post-outcome quantity
+    and, worse, by one that the report itself suspects correlates with the outcome.
+  </p>
+  <p>
+    This is a third kind of finding, and it needs its own handling. It is not a bug to fix and not a number to
+    re-measure: it is a <strong>declarable limitation</strong> plus a request to the data team. Note that the
+    submission is already most of the way there — its question 4 to the data collection team asks exactly for
+    the lag distribution and whether lag correlates with the outcome. What the audit adds is the consequence:
+    until an event timestamp exists, <em>every</em> reported metric is a random-split estimate for a
+    system that will be deployed forward in time, and by TabReD's evidence that estimate is optimistic by an
+    unknown amount. That sentence belongs in the report next to the ship-gate table, not in a backlog.
+  </p>
+
+  <h2>The triage — an audit's real output</h2>
+  <p>
+    Four findings, and the useful thing about them is that no two want the same response. This table is the
+    deliverable an audit produces; the count of smells is not.
+  </p>
+  <table>
+    <thead><tr><th>Finding</th><th>What it changes</th><th>Measured effect</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Inner calibration split ignores <code>person_id</code></td>
+        <td>the <strong>artifact</strong>; the reported number stays honest</td>
+        <td class="n">log-loss −0.0016, ECE −0.0003 — inside noise</td>
+        <td>fix (one line), keep the measurement as the defence</td>
+      </tr>
+      <tr>
+        <td>Winner selected by argmin on 5 correlated folds</td>
+        <td>the <strong>decision</strong>; every measurement is correct</td>
+        <td class="n">Δ = 8&nbsp;% of fold σ; winner flips when fold 2 is dropped</td>
+        <td>ship the simpler model (M1); state the tie honestly</td>
+      </tr>
+      <tr>
+        <td>Encoder / KMeans / propensity fitted on all rows</td>
+        <td>the <strong>reported number</strong> — the only class that <em>can</em> be optimistic</td>
+        <td class="n">−0.0011 nats when refitted in-fold: <strong>no optimism detectable</strong></td>
+        <td>refit inside the fold for reproducibility; stop reusing "unsupervised ⇒ safe"</td>
+      </tr>
+      <tr>
+        <td>No event timestamp ⇒ no temporal split</td>
+        <td>nothing measurable — the <strong>caveat you owe the reader</strong></td>
+        <td class="n">unquantifiable with this data</td>
+        <td>declare beside the ship-gate; ask the data team for event time</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    A fifth observation is not a leakage finding at all, but it is what an audit turns up when it actually
+    runs the code: <code>_lgbm()</code> sets <code>n_jobs=-1</code>, and on a 12-core machine one multiclass
+    fit takes <strong>210 seconds</strong> against <strong>9.2 seconds</strong> at <code>n_jobs=6</code> — a
+    23× penalty from thread contention on 5.6k rows. Nothing about the model changes; the whole 5-model
+    comparison simply becomes cheap enough to rerun, which is what makes re-measuring a finding affordable in
+    the first place. Reproducibility findings are the ones that make every other finding checkable.
+  </p>
+
+  <div id="audit-checklist"></div>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea of the lesson — put it in your own words before moving on.</p>
+  <div id="teachback-audit"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> Two threads from this audit run straight into the mission. The first is
+    the honest-baseline discipline: the thesis will eventually claim that a relational model beats manual
+    feature engineering, and this lesson is a rehearsal of the standard that claim must meet — a margin of
+    0.003 nats over five shared folds is not a result, and a graph model that "wins" by that much has won
+    nothing. Everything Years 3–6 report will be judged by the instruments you just used on yourself. The
+    second is subtler and closes a loop back to <a href="0035-what-joins-destroy.html">L035</a>: this
+    pipeline <em>is</em> the flatten. Three tables became one 132-column matrix, and the structure the join
+    discarded is visible in the audit as the thing that keeps causing trouble —
+    <code>person_id</code> is not a feature, it is the surviving trace of a one-to-many relationship, and
+    every finding here except the timestamp is ultimately about failing to respect it somewhere. A model that
+    read the relational entity graph directly would not need a <code>groups=</code> argument threaded
+    correctly through four nested splitters, because the person would be a node rather than a column you must
+    remember to protect.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>"Leak" and "inflated metric" are not synonyms.</strong> The instinct trained by L002–L005 is
+      that a leak means an optimistic number. Finding 1 is a genuine group leak that inflates
+      <em>nothing</em>, because it happens inside the training fold. Ask "which quantity does this
+      contaminate?" before "how much did it inflate?" — otherwise you will look for the damage in the wrong
+      place and, finding none, conclude there was no defect.</li>
+    <li><strong>Severity is measured, not assumed — in both directions.</strong> Finding 1's cost turned out
+      to be a twenty-fifth of a fold's standard deviation. That is a fact about this dataset's label density,
+      not a general truth, and it would have been just as wrong to <em>assume</em> it was large as to assume
+      it was small. An audit that ranks findings by how alarming they sound will misallocate every hour it
+      spends.</li>
+    <li><strong>The most expensive defect can be the one where no number is wrong.</strong> Finding 2 breaks
+      no measurement and still put the wrong artifact in production. Leakage checklists do not catch it,
+      because it is a defect of inference, not of data flow. This is why L023's variance discipline and
+      L017's nested CV are part of the same spine as leakage.</li>
+    <li><strong>Your grouping obligation does not end at the split you wrote.</strong> The submission's outer
+      CV is asserted correct in a loop. The defect lives in a nested split created by a library from an
+      integer. Audit the splitters you <em>called</em>, not just the ones you constructed: calibration, early
+      stopping, feature selection, and any helper model that manufactures a feature each take a split of
+      their own.</li>
+    <li><strong>"Unsupervised, therefore safe" is a claim about labels only.</strong> It is true that no
+      target leaks through an imputer, a scaler, or KMeans. It does not follow that fitting them on all rows
+      is free: that is transduction, and it silently converts your CV estimate into something that is not a
+      deployment estimate. The sentence is not wrong, it is just narrower than the use it gets put to.</li>
+    <li><strong>An audit must be able to return "correct."</strong> Seven spine questions passed here, and two
+      of them — the explicit allow-list encoder and the refusal to drop features by mutual information — are
+      better than standard practice. A rubric that always fires is one you will stop running, and crediting
+      the passes is what makes the failures believable to whoever reads the audit.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    <strong>Your own <code>homework/report.md</code> and <code>homework/src/</code></strong> — read as a
+    reviewer, not as the author. Concretely: read §3.1–§3.4 (the comparison and the winner pick) beside
+    <code>src/modeling.py</code>, and ask of every number "which split produced this, and who fitted what
+    inside it?" The habit to build is reading the <em>code</em> to check the <em>prose</em> — Finding 2's
+    tie-break discrepancy is invisible from the report alone and obvious from the twelve lines of
+    <code>pick_winner</code>.
+  </p>
+  <p>
+    Method backing, if you want the source for Finding 2's arithmetic:
+    <strong>Claude Nadeau &amp; Yoshua Bengio, "Inference for the Generalization Error," <em>Machine
+    Learning</em> 52(3), 2003</strong>
+    (<a href="https://doi.org/10.1023/A:1024068626366">doi:10.1023/A:1024068626366</a>) — the
+    <code>(1/n + n_test/n_train)</code> variance correction, already assigned in
+    <a href="0023-statistical-comparison.html">L023</a>. Re-read only §3 if the correction factor felt like a
+    magic constant above.
+  </p>
+
+  <h2>Lab — audit your own pipeline, fix one defect, re-measure</h2>
+  <p>
+    Notebook <code>0036-revisit-your-homework-pipeline.ipynb</code> (<strong>Tier A — your own data</strong>,
+    with a seeded synthetic stand-in so it still runs on Colab). You build the three audit instruments rather
+    than re-reading the findings: a reusable <code>group_straddle_report</code> that catches group leakage in
+    <em>any</em> splitter (and, pointed at the outer CV, correctly reports it clean); a person-grouped nested
+    calibration CV, measured before and after; and the Nadeau–Bengio corrected resampled t-test plus a
+    leave-one-fold-out winner check applied to your own saved per-fold metrics. The deliverable is the
+    before/after numbers and a one-line consequence class for each finding.
+    <a href="../labs/html/0036-revisit-your-homework-pipeline.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why a group leak inside the training fold leaves the reported ECE honest, why inflating a variance
+    can only ever raise a p-value, or whether M1 or M2a should actually ship? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0035-what-joins-destroy.html">← Lesson 035</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0036-revisit-your-homework-pipeline.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/nested-calib-viz.js"></script>
+<script src="../assets/pipeline-viz.js"></script>
+<script src="../assets/paired-diff-viz.js"></script>
+<script src="../assets/checklist.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 36, count: 3 });
+
+  NestedCalibViz.mount(document.getElementById("nested-calib-viz"), {
+    realPersons: 675, realRows: 1411,
+    eceBefore: "0.0363", eceAfter: "0.0360"
+  });
+
+  PipelineViz.mount(document.getElementById("pipeline-viz"), { nSamples: 10, nSplits: 5 });
+
+  PairedDiffViz.mount(document.getElementById("pd-selection"), {
+    foldDiffs: [0.0116, -0.0267, 0.0047, -0.0022, -0.0037],
+    mean: -0.00325,
+    naiveHalf: 0.01791,
+    corrHalf: 0.02686,
+    pNaive: "0.64", pCorr: "0.75",
+    labelA: "M2a", labelB: "M1",
+    metricLabel: "log-loss",
+    domain: 0.04,
+    ticks: [-0.03, -0.015, 0.015, 0.03],
+    verdictNaive: "<span class='pd-win'>NOT significant</span> — p ≈ 0.64. Even the naive test cannot separate them: 0 sits <strong>inside</strong> the CI, and M2a loses 2 of the 5 folds. Note the metric is log-loss, so <em>negative</em> favours M2a.",
+    verdictCorrected: "<span class='pd-win'>Still not significant</span> — p ≈ 0.75. Correcting for the shared training sets widens the CI further. The shipped model won by 8% of one fold's standard deviation; the honest verdict is a tie, and a tie should go to the simpler model."
+  });
+
+  PairedDiffViz.mount(document.getElementById("pd-m1m0"), {
+    foldDiffs: [-0.0750, -0.0032, -0.0608, -0.0617, -0.0761],
+    mean: -0.05537,
+    naiveHalf: 0.03729,
+    corrHalf: 0.05593,
+    pNaive: "0.0146", pCorr: "0.0514",
+    labelA: "M1", labelB: "M0",
+    metricLabel: "log-loss",
+    domain: 0.12,
+    ticks: [-0.08, -0.04, 0.04, 0.08],
+    verdictNaive: "<span class='pd-bad'>SIGNIFICANT</span> — p = 0.0146. This is the report's claim: 0 sits <strong>outside</strong> the narrow CI, so LightGBM is declared significantly better than logistic regression.",
+    verdictCorrected: "<span class='pd-win'>NOT significant</span> — p = 0.0514 (0.0583 after Holm over the 4 reported tests). The CI now just touches 0. The effect is almost certainly real — M1 wins <strong>all five folds</strong> by a mean 0.055 nats — but five folds cannot establish significance. Believe the effect; drop the word."
+  });
+
+  Predict.mount(document.getElementById("predict-calib"), {
+    prompt: "The isotonic calibrator is fitted on rows whose person the base LightGBM already trained on, inside a correctly person-grouped outer fold. Which reported number is therefore optimistic?",
+    options: [
+      { label: "The reported ECE — calibration quality is measured on contaminated rows", value: "ece" },
+      { label: "The reported log-loss — the base model was scored on persons it had seen", value: "ll" },
+      { label: "Neither — the outer test fold is untouched, so the shipped model is what suffers", value: "neither" },
+      { label: "Both, by roughly the fraction of persons that repeat (about 25%)", value: "both" }
+    ],
+    correct: "neither",
+    reveal: "Neither. The mis-split happens entirely INSIDE the outer training block, so the outer test fold — where every reported metric is computed — never enters the calibrator's fit. The reported ECE (0.0363) and log-loss (1.4248) are honest measurements of the model that was actually built. What the defect damages is that model: its isotonic map was tuned against optimistically sharp scores, so it is mis-shaped for genuinely unseen persons. Re-measured with a person-grouped inner split, log-loss improves 1.4248 → 1.4232 and ECE 0.0363 → 0.0360 — real, in the predicted direction, and far inside the fold noise. This is the leakage category people miss: it costs you the artifact, not the number."
+  });
+
+  Teachback.mount(document.getElementById("teachback-audit"), {
+    prompt: "In your own words: you have found a group leak in a pipeline. What do you have to establish before you know whether it matters — and why can a leak leave every reported number correct?",
+    points: [
+      "Name the contaminated quantity first: which split does the leak live in, and which number is computed downstream of it? A leak inside the outer TRAINING fold cannot inflate a metric computed on the outer TEST fold.",
+      "Distinguish the consequence classes: inflates the reported number (transductive/preprocessing-outside-the-fold), degrades the shipped artifact only (mis-split inside the training block, e.g. calibration), changes the decision only (argmin over correlated folds), or is undeclarable/unfixable with the data as given (no event timestamp).",
+      "Measure, don't assume: re-run the pipeline with ONE thing changed and compare the delta to fold-to-fold noise. Here the grouped-calibration fix moved log-loss by 0.0016 against a fold std of 0.039 — real defect, negligible measured cost.",
+      "A decision defect needs a different instrument from a leakage defect: paired per-fold differences, the Nadeau-Bengio correction (variance inflated by 1/n + n_test/n_train), multiplicity control, and a stability check (does the winner survive dropping one fold?).",
+      "Fix anyway when the fix is cheap and the exposure scales — 675 repeating persons today is a function of a 4.68% label rate, not of the code — and because an undefendable defect fails review even when it is small.",
+      "An audit must be able to return 'correct': crediting the seven spine questions that passed is what makes the four findings credible."
+    ],
+    model: "First I name what the leak actually touches. A leak is only optimistic if a reported number is computed downstream of the contaminated data, so I trace the split it lives in. In this pipeline the outer CV is person-grouped and clean; the defect is that CalibratedClassifierCV(cv=5) takes a SECOND, nested split of the outer training block with a plain StratifiedKFold that knows nothing about person_id, so one situation of a person fits the base LightGBM while another fits the isotonic map. Because that all happens inside the training block, the outer test fold is untouched and the reported ECE and log-loss are honest — the damage is to the shipped model, whose calibrator was tuned against optimistically sharp scores and is therefore mis-shaped for unseen persons. That is a whole consequence class people miss: it costs the artifact, not the number. Then I measure instead of assuming: re-running with one line changed moved log-loss 1.4248 to 1.4232 and ECE 0.0363 to 0.0360, both inside a fold-to-fold std of about 0.039, so the defect is real and its cost here is negligible — a fact about this dataset's 4.68% label rate (only 675 of 4,851 labelled persons repeat), not a general law. I fix it anyway because it is one line, because exposure grows as labels arrive, and because 'we measured it and it was 0.0003' is defensible in review while 'we didn't notice' is not. Separately, the most expensive finding broke no measurement at all: the shipped model was picked as the argmin over five shared folds, winning by 0.0032 nats — 8% of one fold's standard deviation, losing 2 of 5 folds, and flipping to the other model when a single fold is dropped. That needs the L023 instruments rather than a leakage checklist: paired differences, the Nadeau-Bengio variance correction, multiplicity control, and a stability check. Finally, some findings can only be declared — there is no event timestamp in the schema, so a temporal split is impossible even though the deployment retrains weekly, and that limitation belongs beside the ship-gate table. So the audit's output is a ranked triage — number, artifact, decision, caveat — each with a measurement, plus the seven spine questions that passed.",
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "An outer CV is correctly grouped by person_id, but CalibratedClassifierCV(cv=5) splits the training fold internally without groups, so a person's situations land on both sides of the base-model/calibrator boundary. What is the consequence?",
+    options: [
+      { label: "The reported metrics stay honest (the outer test fold is untouched), but the shipped calibrator is fitted against optimistically sharp scores and is mis-shaped for unseen persons", value: "a" },
+      { label: "The reported ECE is inflated by roughly the fraction of repeating persons", value: "b" },
+      { label: "Nothing at all — calibration is a post-processing step and cannot leak", value: "c" },
+      { label: "The outer CV is invalidated and all five models must be re-scored", value: "d" }
+    ],
+    correct: "a",
+    explain: "The mis-split is entirely inside the outer TRAINING block, so no reported number — which is computed on the outer test fold — is contaminated. What suffers is the artifact: the isotonic map learns how much to trust scores that were measured on partially-seen persons, so it is the wrong shape for strangers. Re-measured, the fix moved log-loss 1.4248 → 1.4232 and ECE 0.0363 → 0.0360: real, correctly directed, and well inside the 0.039 fold noise. 'Leak' does not imply 'inflated metric.'"
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "M2a shipped over M1 with mean log-loss 1.4215 vs 1.4248 (Δ = −0.0032), naive p = 0.64, corrected p = 0.75, winning 3 of 5 folds — and M1 wins if fold 2 is dropped. What is the audit finding?",
+    options: [
+      { label: "A decision defect: every measurement is correct, but an argmin over 5 correlated folds shipped the more complex model on a margin ~8% of one fold's σ, so the tie should have gone to M1", value: "a" },
+      { label: "A leakage defect: the KMeans block in M2a saw the test folds, so its win is fake", value: "b" },
+      { label: "No finding — 3 of 5 folds is a majority, so M2a is the right pick", value: "c" },
+      { label: "A metric defect: log-loss is the wrong primary metric for a 5-class problem", value: "d" }
+    ],
+    correct: "a",
+    explain: "Nothing is mismeasured: shared folds, legitimate pairing, numbers exactly as the code produced them. The defect is the inference — selecting the max of several noisy correlated estimates, then shipping extra complexity (a KMeans block to persist, version and explain) for a difference the data cannot resolve. The instability under dropping one fold is the clincher: a deployment decision that flips on 1 of 5 folds was not a decision about the models. (M2a's KMeans block IS also fitted on all rows — a separate, transductive finding.)"
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "The submission's deployment retrains weekly on a rolling window, but its evaluation is random-in-time person-grouped CV. You go to add a temporal split (L021) and find no event timestamp anywhere in the schema — only responses.observed_at, recorded 4–8 weeks AFTER the event. What is the correct audit response?",
+    options: [
+      { label: "Record it as a declarable limitation next to the ship-gate table plus a request to the data team: with this data every metric is a random-split estimate for a forward-in-time system, optimistic by an unknown amount", value: "a" },
+      { label: "Sort rows by observed_at and cut on that to build the temporal split", value: "b" },
+      { label: "Ignore it — person-grouped CV already handles the dependence, so time adds nothing", value: "c" },
+      { label: "Drop the deployment memo's weekly retraining so the protocol matches the evaluation", value: "d" }
+    ],
+    correct: "a",
+    explain: "This is the fourth consequence class: a finding that is neither fixable nor measurable with the data as given, and therefore owed to the reader as an explicit caveat. Sorting by observed_at is wrong twice over — it is a post-outcome quantity, and the report itself suspects the lag correlates with the response category, so it would order rows by something downstream of the label. Person-grouping addresses WHO recurs, not WHEN; TabReD's evidence is that random-in-time splits are optimistic for exactly this deployment shape."
+  });
+
+  Checklist.mount(document.getElementById("audit-checklist"), {
+    title: "The audit rubric — run this on any pipeline, including your own",
+    items: [
+      { label: "Does the <strong>outer</strong> split respect the dependence structure (groups, time), and is it asserted rather than assumed?", hint: "L003 / L004" },
+      { label: "Have I audited every <strong>nested</strong> split I did not write — calibration, early stopping, feature selection, and any helper model that manufactures a feature?", hint: "L036 · finding 1" },
+      { label: "Is every preprocessing statistic (median, scale, one-hot vocabulary, cluster centroid) fitted <strong>inside</strong> the fold, and if not, have I measured the optimism rather than defended it with &ldquo;unsupervised&rdquo;?", hint: "L005 · finding 3" },
+      { label: "Is each feature knowable at prediction time, with no post-outcome column and no label-derived filtering?", hint: "L002 / L022" },
+      { label: "Is the metric the one the decision needs, with a proper scoring rule for probabilities?", hint: "L008" },
+      { label: "For every claimed win: paired folds, a <strong>corrected</strong> variance, multiplicity control, and a stability check (does the winner survive dropping one fold)?", hint: "L023 · finding 2" },
+      { label: "Was the model selected on the same folds it is reported on — and if so, is the reported number labelled as a selection estimate?", hint: "L017" },
+      { label: "Does the evaluation protocol match the <strong>deployment</strong> protocol (temporal if deployment is temporal), and if it cannot, is the gap declared?", hint: "L021 · finding 4" },
+      { label: "For each finding, have I named which it changes — the <strong>number</strong>, the <strong>artifact</strong>, the <strong>decision</strong>, or only the <strong>caveat</strong> — and attached a measurement?", hint: "L036 · the skill" },
+      { label: "Have I credited what the pipeline gets <strong>right</strong>, so the findings are believable?", hint: "L036" }
+    ],
+    done: "That is the full spine. An audit that ends in a ranked triage with a measurement per finding is a review; one that ends in a list of smells is a mood."
+  });
+</script>
+</body>
+</html>

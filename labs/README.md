@@ -83,4 +83,7 @@ This keeps the thesis baselines trustworthy by the time results matter.
 ## View / run in the browser
 
 - **View:** static HTML renders live in `labs/html/` (regenerate with `bash scripts/render_notebooks.sh`).
-- **Run:** the [Notebooks page](../notebooks.html) links each lab to **Binder** (real `relkit` env + OpenML fetch) and **Colab**.
+- **Run:** the [Notebooks page](../notebooks.html) links each lab to **Colab**, the canonical
+  run-anywhere path — the `@colab-bootstrap` first cell clones the repo and installs
+  `requirements-labs.txt` (full lab stack incl. torch), and a free T4 is available under
+  *Runtime → Change runtime type*. Heavy authoring jobs go to Modal instead (`modal/README.md`).

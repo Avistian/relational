@@ -153,6 +153,25 @@ yet shows a graph model *recovering* the lost structure to beat the honest bar (
 is now complete on the *diagnostic* side — the single-table assumption is exposed as a manufactured, lossy
 choice — and the *constructive* side (a model that keeps structure and wins fairly) is exactly what Years 3–6
 must deliver.
+L036 contributes nothing to C1–C2 and everything to the **credibility precondition** underneath them. The
+thesis's eventual claim ("RDL beats a fair single-table bar") is only worth reading if the person making it
+audits their *own* pipelines as hard as they audit the baselines they intend to beat — so this lesson turns
+the L001–L035 diagnostic apparatus on the learner's real submission and finds four defects in work that was
+already careful: an inner calibration split that silently drops the person grouping the outer split enforces
+(degrades the shipped artifact, leaves the reported metric honest — re-measured 1.4248→1.4232 log-loss,
+0.0363→0.0360 ECE, both far inside the 0.039 fold σ); a shipped winner chosen by argmin over five correlated
+folds on 0.0032 nats, 8 % of one fold's std, that flips to the runner-up when a single fold is dropped
+(changes the decision, every number correct); preprocessing fit on all 119,498 rows including every test fold
+(transductive, so the CV number is not a deployment number); and no event timestamp anywhere in the schema,
+so a system deployed forward in time can only be evaluated random-in-time (a declarable limitation, not a
+bug). The transferable instrument is the **consequence-class triage** — inflates the number / degrades the
+artifact / changes the decision / can only be declared — which is precisely what will be demanded of the
+Y3–Y4 RDL-vs-GBDT comparison: a leak found there must be priced, not merely announced, and a win inside the
+fold noise band is not a win. Note also which finding is *not* leakage at all: the report's only
+"significant" claim (M1−M0, naive p = 0.0146) dies under Nadeau–Bengio correction (0.0514) and Holm over its
+four tests (0.0583), while the effect itself (5/5 folds, 0.055 nats) survives — the exact discipline L023/L030
+demanded, now applied where it costs the learner something.
+
 The genuinely *supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and
 leakage-prone, and manual feature synthesis hints structure is recoverable, but no result yet shows a
 relational model *beating the fair bar by keeping structure*. That demonstration is the Y1-exit → Y3–Y4

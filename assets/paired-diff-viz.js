@@ -26,6 +26,13 @@
  * Expected states:
  *   - default (naive): narrow band, 0 OUTSIDE, readout "SIGNIFICANT p=1.2e-5"
  *   - toggle corrected: wide band, 0 INSIDE, readout "not significant p=0.19"
+ *
+ * Reused by L036 on the learner's own homework folds, where the metric is log-loss
+ * (lower is better) and one comparison is non-significant under BOTH estimates. The
+ * metric label, axis domain/ticks and both verdict strings are therefore
+ * configurable; every default reproduces the L023 case unchanged.
+ *   config: { foldDiffs, mean, naiveHalf, corrHalf, pNaive, pCorr, labelA, labelB,
+ *             metricLabel, domain, ticks, verdictNaive, verdictCorrected }
  */
 (function (global) {
   "use strict";
@@ -48,6 +55,7 @@
     var pCorr = config.pCorr || "0.19";
     var labelA = config.labelA || "LogReg";
     var labelB = config.labelB || "GaussianNB";
+    var metricLabel = config.metricLabel || "acc";
 
     container.innerHTML = "";
     container.className = "paired-diff-viz";
@@ -80,7 +88,8 @@
 
     // geometry: symmetric axis around 0
     var PL = 40, PR = W - 20;
-    var domain = 0.06; // +/- accuracy difference shown
+    var domain = config.domain != null ? config.domain : 0.06; // +/- difference shown
+    var ticks = config.ticks || [-0.04, -0.02, 0.02, 0.04];
     function sx(v) { return PL + (v + domain) / (2 * domain) * (PR - PL); }
 
     function el(name, attrs) {
@@ -98,7 +107,8 @@
 
       // titles
       svg.appendChild(el("text", { x: PL, y: 20, class: "pd-title" }))
-        .textContent = "per-fold difference  d = acc(" + labelA + ") − acc(" + labelB + ")";
+        .textContent = "per-fold difference  d = " + metricLabel + "(" + labelA + ") − " +
+                       metricLabel + "(" + labelB + ")";
 
       // zero reference line (the null: no difference)
       svg.appendChild(el("line", { x1: sx(0), y1: 30, x2: sx(0), y2: 170, stroke: "#b03a2e", "stroke-width": 1.5, "stroke-dasharray": "4,3" }));
@@ -106,10 +116,10 @@
         .textContent = "0 (no difference)";
 
       // axis ticks
-      [-0.04, -0.02, 0.02, 0.04].forEach(function (v) {
+      ticks.forEach(function (v) {
         svg.appendChild(el("line", { x1: sx(v), y1: 168, x2: sx(v), y2: 172, stroke: "var(--muted)", "stroke-width": 1 }));
         svg.appendChild(el("text", { x: sx(v), y: 186, "text-anchor": "middle", class: "pd-tick" }))
-          .textContent = (v > 0 ? "+" : "") + v.toFixed(2);
+          .textContent = (v > 0 ? "+" : "") + v.toFixed(Math.abs(v) < 0.01 ? 3 : 2);
       });
 
       // fold dots strip
@@ -135,13 +145,17 @@
       // mean marker
       svg.appendChild(el("line", { x1: sx(mean), y1: bandY - 12, x2: sx(mean), y2: bandY + 12, stroke: "var(--fg, #222)", "stroke-width": 2 }));
       svg.appendChild(el("text", { x: sx(mean), y: bandY - 16, "text-anchor": "middle", class: "pd-lab" }))
-        .textContent = "mean +" + mean.toFixed(4);
+        .textContent = "mean " + (mean >= 0 ? "+" : "−") + Math.abs(mean).toFixed(4);
 
+      var defNaive =
+        "<span class='pd-bad'>SIGNIFICANT</span> — p ≈ " + pNaive + ". 0 sits <strong>outside</strong> the narrow CI, " +
+        "so the naive test declares " + labelA + " the winner.";
+      var defCorr =
+        "<span class='pd-win'>NOT significant</span> — p ≈ " + pCorr + ". Correcting for the overlapping training sets " +
+        "widens the CI until it <strong>straddles 0</strong>: the +0.0098 gap is within noise.";
       var verdict = mode === "naive"
-        ? "<span class='pd-bad'>SIGNIFICANT</span> — p ≈ " + pNaive + ". 0 sits <strong>outside</strong> the narrow CI, " +
-          "so the naive test declares " + labelA + " the winner."
-        : "<span class='pd-win'>NOT significant</span> — p ≈ " + pCorr + ". Correcting for the overlapping training sets " +
-          "widens the CI until it <strong>straddles 0</strong>: the +0.0098 gap is within noise.";
+        ? (config.verdictNaive || defNaive)
+        : (config.verdictCorrected || defCorr);
       readout.innerHTML =
         "<span class='pd-pill'>" + (mode === "naive" ? "Naive paired t" : "Corrected resampled t") + "</span> " + verdict;
     }

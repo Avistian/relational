@@ -34,6 +34,36 @@ Use when creating, retrofitting, or reviewing lab notebooks in `labs/`.
 
 Document tier and rationale in the lab intro markdown.
 
+## Compute budget (from 2026-07-25 — NOTES standard #20)
+
+Authoring box: **12-core CPU, ~15 GB RAM, no GPU.** Two cloud paths with different operators:
+
+| Path | Operator | Use for | Limits |
+|------|----------|---------|--------|
+| **Modal** (Starter, $0) | the **agent**, unattended via CLI token | the lesson's *verified* numbers when CPU is too slow | $30/mo credits ≈ 50 T4-h; CPU ~free |
+| **Colab** (free) | the **user**, in a browser | labs where the *student* needs a GPU | T4, ~15–30 GPU-h/wk, 12 h cap, ~90 min idle disconnect |
+
+Modal is **already set up and smoke-tested** — harness `modal/common.py`, runbook `modal/README.md`.
+Colab is wired into every lab (`labs/_colab.py` bootstrap + `notebooks.html` link) and is the **only**
+run-anywhere path (Binder was dropped). **Never design a lab that needs an unattended long run on free
+Colab** — the idle timeout keys on browser-tab interaction, not on whether code is running.
+
+**Escalate in this order, never skip a rung silently:**
+
+1. **Check thread oversubscription first** — the real cause every time so far (L031 HistGB 21 s → 0.28 s with
+   `OMP_NUM_THREADS=1`; L036 LightGBM 210 s → 9.2 s at `n_jobs=6`). Free, usually 10–20×.
+2. **Shrink the measurement, not the claim** — fewer trees/epochs/folds, *identical across arms*, stated in
+   the intro (L036: 120 trees vs 400).
+3. **Change the scope, not the paper** — forward-only / key-parts / gradual-across-labs (standard #18; L032).
+4. **Tier C synthetic** or a **torch-free stand-in** (L030 `MLPClassifier` for the ResNet).
+5. **Modal** for an agent-side verified number; commit the launch script and quote the hardware in the record.
+6. **Colab-GPU for the lab** — label it "GPU recommended — open in Colab", keep it under ~20 min on a T4,
+   checkpoint to Drive, and ship a smaller CPU config that still passes the CHECK cells.
+
+**Honesty rule:** a downscaled run is a *different experiment*. State the config in the lab intro and the
+learning record; never quote a shrunken result as the paper's; if the affordable version cannot support the
+claim, say the claim is unsupported rather than shipping a toy that looks like evidence.
+
 ## Paper-reproduction labs (Q2 onward)
 
 Four blocks per reproduction lab:

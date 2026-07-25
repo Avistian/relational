@@ -1,7 +1,9 @@
 /**
  * Notebook gallery — reads lessons/manifest.json and lists every lab with:
- *   View (rendered HTML) · Source (.ipynb) · Run on Binder (real env) · Open in Colab.
- * Binder runs the true environment (relkit + OpenML fetch); Colab needs a repo clone.
+ *   View (rendered HTML) · Source (.ipynb) · Open in Colab.
+ * Colab is the canonical run-anywhere path: each lab's @colab-bootstrap cell clones the
+ * repo and installs requirements-labs.txt, so the full lab stack (torch + boosters) is
+ * present. (Binder was dropped — its image carried sklearn only; see NOTES standard #20.)
  */
 (function (global) {
   "use strict";
@@ -15,11 +17,6 @@
     // labs/0012-foo.ipynb -> labs/html/0012-foo.html
     var base = labPath.replace(/^labs\//, "").replace(/\.ipynb$/, "");
     return "labs/html/" + base + ".html";
-  }
-
-  function binderUrl(labPath) {
-    return "https://mybinder.org/v2/gh/" + REPO + "/" + BRANCH +
-      "?labpath=" + encodeURIComponent(labPath);
   }
 
   function colabUrl(labPath) {
@@ -50,7 +47,6 @@
 
     add(htmlPathFor(lesson.labPath), "View", "nb-view");
     add(lesson.labPath, "Source .ipynb", "nb-src");
-    add(binderUrl(lesson.labPath), "Run on Binder", "nb-run", true);
     add(colabUrl(lesson.labPath), "Open in Colab", "nb-run", true);
 
     li.appendChild(links);

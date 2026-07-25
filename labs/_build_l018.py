@@ -49,7 +49,7 @@ md("""# Lab 018 — Ensembling & stacking: blend, then stack without leaking
 - Run top to bottom. When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
 
 ### Environment
-One-time: `bash labs/setup-env.sh` from repo root → kernel **Relational Labs (.venv)**. Needs **scikit-learn**, **xgboost**, **lightgbm**, **catboost** (already in `requirements-labs.txt`). No local install? Open from [`notebooks.html`](../notebooks.html) — **View** to read it rendered, or **Run on Binder**.""")
+One-time: `bash labs/setup-env.sh` from repo root → kernel **Relational Labs (.venv)**. Needs **scikit-learn**, **xgboost**, **lightgbm**, **catboost** (already in `requirements-labs.txt`). No local install? Open from [`notebooks.html`](../notebooks.html) — **View** to read it rendered, or **Open in Colab** to run it.""")
 
 # ---------------------------------------------------------------- recap
 md(r"""## Concept recap — combine diverse models, without leaking
