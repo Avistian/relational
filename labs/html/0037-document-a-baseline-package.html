@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>0006-missingness</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>0037-document-a-baseline-package</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7796,29 +7796,32 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=140ad43d">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cd1c39e2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-006-%E2%80%94-Name-the-mechanism,-measure-the-bias">Lab 006 — Name the mechanism, measure the bias<a class="anchor-link" href="#Lab-006-%E2%80%94-Name-the-mechanism,-measure-the-bias">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0006-missingness-taxonomy.html"><code>lessons/0006-missingness-taxonomy.html</code></a> · <strong>Phase / Year:</strong> Phase 1 / Year 1</p>
-<p><strong>Skill you are practising:</strong> classify missingness as MCAR / MAR / MNAR by <em>what it depends on</em>, and choose handling that doesn't bias the baseline.</p>
-<p><strong>Exit criteria:</strong> the EXIT TICKET cell prints the three observed-vs-true means (MCAR ≈ unbiased; MAR &amp; MNAR biased) and the two CV scores showing whether <code>add_indicator</code> recovered signal, plus your one-sentence cause.</p>
+<h1 id="Lab-037-%E2%80%94-Document-a-baseline-package:-build-the-reproduction-gate">Lab 037 — Document a baseline package: build the reproduction gate<a class="anchor-link" href="#Lab-037-%E2%80%94-Document-a-baseline-package:-build-the-reproduction-gate">¶</a></h1><p><strong>Lesson:</strong> <a href="../lessons/0037-document-a-baseline-package.html"><code>lessons/0037-document-a-baseline-package.html</code></a> · <strong>Phase / Year:</strong> Year 1 · Q4</p>
+<p><strong>Primary reading:</strong> Pineau, Vincent-Lamarre, Sinha, Larivière, Beygelzimer, d'Alché-Buc, Fox &amp; Larochelle, <a href="https://jmlr.org/papers/v22/20-303.html"><em>Improving Reproducibility in Machine Learning Research (A Report from the NeurIPS 2019 Reproducibility Program)</em></a>, JMLR 22(164), 2021 — §5 and the ML Reproducibility Checklist in Appendix Fig. 8.</p>
+<p><strong>Dataset tier:</strong> <strong>A</strong> — <em>your own data</em>: the ReAction L&amp;D submission at <code>~/Projects/homework</code>. Set <code>HOMEWORK_DIR</code> to override. If the directory is absent (e.g. on Colab), a <strong>seeded Tier-C stand-in with the same structure</strong> is generated so every cell still runs.</p>
+<p><strong>Implementation scope (standard #18):</strong> the primary reading is a <em>protocol</em>, not an architecture, so the faithful implementation of it is the machinery that enforces it. You build three checklist items into code: "a description of the computing infrastructure used" and "all hyper-parameters used to generate results" (Task 1, the manifest), "the exact number of evaluation runs" and "a description of how experiments were run" (Task 2, the probe), and "a clear definition of the specific measure or statistics used to report results" (Task 3, the named-estimator registry). Boilerplate — git state, installed versions, host — is PROVIDED in <a href="relkit/repro.py"><code>relkit/repro.py</code></a>; the load-bearing half is yours, and belongs in that module when you are done.</p>
+<p><strong>Skill you are practising:</strong> turn an audited pipeline into a package that regenerates its own headline number on command and <strong>fails loudly when it cannot</strong> — pinning what measurably moves the number, naming the number precisely enough to compare, and pre-registering a tolerance.</p>
+<p><strong>Compute note:</strong> this lab runs a cheaper model than the submission — <strong>120 trees</strong> and a 40-column feature sample, not 400 trees over 132 features — so each of the five probe runs finishes in a few seconds. Every comparison here is internally valid because all arms use the identical reduced config; the lesson quotes the full 400-tree measurements. A downscaled run is a different experiment, and saying so is part of the skill.</p>
+<p><strong>Exit criteria:</strong> EXIT TICKET prints your manifest, your probe table, both estimators with their noise floors, and your justified tolerance.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells are complete — just run them.</li>
-<li><strong>TODO</strong> cells have blanks (<code>____</code>). Fill them in.</li>
-<li><strong>CHECK</strong> cells auto-run and give you immediate feedback — don't edit them.</li>
-<li>Run top to bottom. When the <strong>EXIT TICKET</strong> prints cleanly, paste it back to your teacher (or say <em>"lab done"</em>).</li>
+<li><strong>PROVIDED</strong> cells — complete boilerplate (loading, encoding, the CV harness); just run.</li>
+<li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
+<li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
+<li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time setup from the repo root: <code>bash labs/setup-env.sh</code><br/>
-Then select kernel <strong>Relational Labs (.venv)</strong> or interpreter <code>.venv/bin/python</code>.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p><code>pandas</code>, <code>numpy</code>, <code>scikit-learn</code>, <code>lightgbm</code> (all in <code>requirements-labs.txt</code>). One-time: <code>bash labs/setup-env.sh</code> from repo root → kernel <strong>Relational Labs (.venv)</strong>. Total runtime: about two minutes, most of it in Task 2's five CV runs.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=feeac529">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2a959f12">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7828,11 +7831,11 @@ Then select kernel <strong>Relational Labs (.venv)</strong> or interpreter <code
 dependencies (xgboost, lightgbm, catboost, …) are <strong>not</strong> present by default. The cell
 below fixes that: on Colab it shallow-clones the course repo, installs
 <code>requirements-labs.txt</code>, and switches into <code>labs/</code> so <code>relkit</code> imports and the data cache
-resolve. <strong>On a local venv or Binder it does nothing — just run it and continue.</strong></p>
+resolve. <strong>On a local venv or your own Jupyter it does nothing — just run it and continue.</strong></p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3d4c962a">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=76b63b21">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7840,13 +7843,13 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># @colab-bootstrap — PROVIDED. Makes the lab self-sufficient on Google Colab; a no-op elsewhere.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># @colab-bootstrap — PROVIDED. Makes the lab self-sufficient on Google Colab; a no-op elsewhere.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
 
 <span class="k">if</span> <span class="s2">"google.colab"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="s2">"/content/relational"</span><span class="p">):</span>
-        <span class="o">!</span>git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>https://github.com/Avistian/relational.git<span class="w"> </span>/content/relational
-    <span class="o">%</span><span class="k">pip</span> install -q -r /content/relational/requirements-labs.txt
+        <span class="err">!</span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Avistian</span><span class="o">/</span><span class="n">relational</span><span class="o">.</span><span class="n">git</span> <span class="o">/</span><span class="n">content</span><span class="o">/</span><span class="n">relational</span>
+    <span class="o">%</span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">q</span> <span class="o">-</span><span class="n">r</span> <span class="o">/</span><span class="n">content</span><span class="o">/</span><span class="n">relational</span><span class="o">/</span><span class="n">requirements</span><span class="o">-</span><span class="n">labs</span><span class="o">.</span><span class="n">txt</span>
     <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s2">"/content/relational/labs"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"Colab ready — working dir:"</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
 <span class="k">else</span><span class="p">:</span>
@@ -7857,447 +7860,162 @@ resolve. <strong>On a local venv or Binder it does nothing — just run it and c
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=12d2951a">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=008e37b2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Setup-%E2%80%94-PROVIDED-(run-me)">Setup — PROVIDED (run me)<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED-(run-me)">¶</a></h2>
+<h2 id="Concept-recap-%E2%80%94-a-package-is-a-machine,-not-a-description">Concept recap — a package is a machine, not a description<a class="anchor-link" href="#Concept-recap-%E2%80%94-a-package-is-a-machine,-not-a-description">¶</a></h2><p><a href="../lessons/0036-revisit-your-homework-pipeline.html">L036</a> asked whether your reported number was <strong>right</strong>.
+This lab asks whether it is <strong>stable</strong> — whether running the pipeline again gives it back. The two are
+independent: a leaky pipeline reproduces its leak perfectly, and an impeccable pipeline whose number cannot be
+regenerated is not evidence of anything.</p>
+<p><strong>Three rungs, and they are not the same claim.</strong> <em>Repeatability</em> is you re-running your own setup and getting
+your own answer. <em>Reproducibility</em> is someone else running <strong>your</strong> artifacts and getting your answer.
+<em>Replicability</em> is someone else, from artifacts they wrote themselves. (ACM
+<a href="https://www.acm.org/publications/badging-terms">swapped the last two definitions in 2020</a> to match the wider
+sciences, so when precision matters, say "same artifacts" or "independent artifacts" and skip the noun.) A
+package targets the middle rung.</p>
+<p><strong>Constraint ≠ pin ≠ lock.</strong> <code>lightgbm&gt;=4.0</code> says which versions you would <em>tolerate</em>. <code>lightgbm==4.6.0</code> says
+which one you want. A lockfile records the version <strong>and content hash of every package actually installed</strong>,
+transitive dependencies included. Only the third describes what you ran — and the stretch task writes the one
+this workspace is missing.</p>
+<p><strong>Bitwise beats a tolerance when you can get it.</strong> If two runs' outputs hash identically there is nothing to
+argue about, no threshold, and nothing to widen after a failure. On the reference pipeline eight of nine
+perturbations <em>were</em> bitwise identical, which is why the config below sets <code>tol: 0.0</code>. Fall back to a numeric
+tolerance only when something genuinely stochastic enters — and then derive it from measured drift.</p>
+<p><strong>Worked micro-example (not this lab's data).</strong> Score four rows at confidences <code>[0.9, 0.9, 0.6, 0.6]</code>, with
+the first of each pair correct. Pool them into one bin per confidence level: bin <code>0.9</code> has accuracy ½ against
+confidence 0.9 (gap 0.40) and bin <code>0.6</code> has accuracy ½ against 0.6 (gap 0.10), so
+<code>ECE = ½·0.40 + ½·0.10 = 0.25</code>. Now split the four rows into two folds of two and average: each fold has one
+bin, one right and one wrong is impossible in a fold of two drawn this way — you get gaps of 0.10 and 0.90
+depending on the draw, averaging <em>higher</em> than 0.25 because the absolute value stops them cancelling. That is
+the whole mechanism behind 0.0332 vs 0.018, at a scale you can check by hand.</p>
+<p>Full write-up, the perturbation ledger and the noise-floor tables:
+<a href="../lessons/0037-document-a-baseline-package.html">Lesson 037</a>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=44bfca99">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b00f4eab">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Setup-%E2%80%94-PROVIDED-(load-the-pipeline-you-are-packaging)">Setup — PROVIDED (load the pipeline you are packaging)<a class="anchor-link" href="#Setup-%E2%80%94-PROVIDED-(load-the-pipeline-you-are-packaging)">¶</a></h2>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=410c9aef">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — load the pipeline you are packaging. Just run.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">hashlib</span><span class="o">,</span><span class="w"> </span><span class="nn">time</span><span class="o">,</span><span class="w"> </span><span class="nn">platform</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.impute</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleImputer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogisticRegression</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">cross_val_score</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="n">RNG</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"setup ok"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>setup ok
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4f29e971">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Data-%E2%80%94-PROVIDED">Data — PROVIDED<a class="anchor-link" href="#Data-%E2%80%94-PROVIDED">¶</a></h2><p>A clean dataset of <code>n</code> rows. <code>x2</code> is a fully observed driver; <code>x1</code> <strong>correlates with <code>x2</code></strong> and is the column we will knock holes in. The label <code>y</code> depends on both. We record the <em>true</em> mean of <code>x1</code> before any holes appear.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=be147de0">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED</span>
-<span class="n">n</span> <span class="o">=</span> <span class="mi">2000</span>
-<span class="n">x2</span> <span class="o">=</span> <span class="n">RNG</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>                       <span class="c1"># fully observed driver</span>
-<span class="n">x1</span> <span class="o">=</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">RNG</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>          <span class="c1"># correlates with x2 (~0.7)</span>
-<span class="n">logit</span> <span class="o">=</span> <span class="mf">0.9</span> <span class="o">*</span> <span class="n">x1</span> <span class="o">+</span> <span class="mf">0.9</span> <span class="o">*</span> <span class="n">x2</span>
-<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">RNG</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">logit</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="c1"># relkit ships the boilerplate half of a manifest (git state, installed versions, host).</span>
+<span class="c1"># The interesting half is what you write below.</span>
+<span class="k">for</span> <span class="n">_c</span> <span class="ow">in</span> <span class="p">[</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">(),</span> <span class="o">*</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="o">.</span><span class="n">parents</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">_cand</span> <span class="ow">in</span> <span class="p">(</span><span class="n">_c</span><span class="p">,</span> <span class="n">_c</span> <span class="o">/</span> <span class="s2">"labs"</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">_cand</span> <span class="o">/</span> <span class="s2">"relkit"</span> <span class="o">/</span> <span class="s2">"__init__.py"</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">_cand</span><span class="p">))</span>
+            <span class="k">break</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.repro</span><span class="w"> </span><span class="kn">import</span> <span class="n">git_state</span><span class="p">,</span> <span class="n">env_versions</span><span class="p">,</span> <span class="n">host_info</span>
 
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"x1"</span><span class="p">:</span> <span class="n">x1</span><span class="p">,</span> <span class="s2">"x2"</span><span class="p">:</span> <span class="n">x2</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">:</span> <span class="n">y</span><span class="p">})</span>
-<span class="n">TRUE_MEAN_X1</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"x1"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"n=</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">  corr(x1,x2)=</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="w"> </span><span class="n">x2</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">  true mean x1=</span><span class="si">{</span><span class="n">TRUE_MEAN_X1</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>n=2000  corr(x1,x2)=0.70  true mean x1=-0.036
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9159e94c">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-1-%E2%80%94-MCAR-mask-%E2%80%94-PROVIDED-(worked-example)">Task 1 — MCAR mask — PROVIDED (worked example)<a class="anchor-link" href="#Task-1-%E2%80%94-MCAR-mask-%E2%80%94-PROVIDED-(worked-example)">¶</a></h2><p>MCAR = the probability of being missing depends on <strong>nothing</strong>. Study this; Tasks 2 and 3 follow the same shape.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=e14aacae">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED EXAMPLE — MCAR: independent of x1, x2, y.</span>
-<span class="n">mcar_mask</span> <span class="o">=</span> <span class="n">RNG</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.40</span>        <span class="c1"># a fair coin per row</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"MCAR fraction missing:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">mcar_mask</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>MCAR fraction missing: 0.391
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9ef3212a">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-2-%E2%80%94-MAR-mask-%E2%80%94-TODO">Task 2 — MAR mask — TODO<a class="anchor-link" href="#Task-2-%E2%80%94-MAR-mask-%E2%80%94-TODO">¶</a></h2><p>MAR = missingness depends on the <strong>observed</strong> column <code>x2</code>. Make <code>x1</code> more likely to be missing where <code>x2</code> is large.</p>
-<p>Fill in <code>prob_mar</code> (a probability that rises with <code>x2</code>) and <code>mar_mask</code> (boolean draw per row).</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=8fec8817">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: fill the two blanks.</span>
-<span class="n">prob_mar</span> <span class="o">=</span> <span class="n">____</span>
-<span class="n">mar_mask</span> <span class="o">=</span> <span class="n">____</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"MAR fraction missing:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">mar_mask</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=84aae8a2">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit.</span>
-<span class="k">assert</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mar_mask</span><span class="p">,</span> <span class="s2">"dtype"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="nb">bool</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mar_mask</span><span class="p">)</span> <span class="o">==</span> <span class="n">n</span><span class="p">,</span> <span class="s2">"mar_mask must be a boolean array of length n."</span>
-<span class="n">corr_x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">mar_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">x2</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-<span class="n">corr_x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">mar_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">x1</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-<span class="k">assert</span> <span class="n">corr_x2</span> <span class="o">&gt;</span> <span class="mf">0.20</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"MAR must depend on the OBSERVED x2 (corr=</span><span class="si">{</span><span class="n">corr_x2</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">). Make missingness increase with x2."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 2 ok — missingness tracks observed x2 (corr=</span><span class="si">{</span><span class="n">corr_x2</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">); incidental corr with x1=</span><span class="si">{</span><span class="n">corr_x1</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 2 ok — missingness tracks observed x2 (corr=0.58); incidental corr with x1=0.39.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b7cc5d79">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-3-%E2%80%94-MNAR-mask-%E2%80%94-TODO">Task 3 — MNAR mask — TODO<a class="anchor-link" href="#Task-3-%E2%80%94-MNAR-mask-%E2%80%94-TODO">¶</a></h2><p>MNAR = missingness depends on the <strong>value that goes missing</strong> (<code>x1</code> itself). Make <code>x1</code> more likely to be missing where <code>x1</code> is large.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=fb3c58d4">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: fill the two blanks.</span>
-<span class="n">prob_mnar</span> <span class="o">=</span> <span class="n">____</span>
-<span class="n">mnar_mask</span> <span class="o">=</span> <span class="n">____</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"MNAR fraction missing:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">mnar_mask</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=412dd409">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit.</span>
-<span class="k">assert</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mnar_mask</span><span class="p">,</span> <span class="s2">"dtype"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="nb">bool</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mnar_mask</span><span class="p">)</span> <span class="o">==</span> <span class="n">n</span><span class="p">,</span> <span class="s2">"mnar_mask must be a boolean array of length n."</span>
-<span class="n">corr_self</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">mnar_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">x1</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-<span class="k">assert</span> <span class="n">corr_self</span> <span class="o">&gt;</span> <span class="mf">0.20</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"MNAR must depend on x1 ITSELF (corr=</span><span class="si">{</span><span class="n">corr_self</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)."</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 3 ok — missingness tracks the hidden x1 itself (corr=</span><span class="si">{</span><span class="n">corr_self</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 3 ok — missingness tracks the hidden x1 itself (corr=0.59).
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d8390b8a">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-4-%E2%80%94-Observed-only-mean-vs-truth-%E2%80%94-TODO">Task 4 — Observed-only mean vs truth — TODO<a class="anchor-link" href="#Task-4-%E2%80%94-Observed-only-mean-vs-truth-%E2%80%94-TODO">¶</a></h2><p>For each mechanism, compute the mean of <code>x1</code> over the rows where it is <strong>not</strong> missing, and compare to <code>TRUE_MEAN_X1</code>. Which mechanisms bias the naive mean?</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c6be1818">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">observed_mean</span><span class="p">(</span><span class="n">mask</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Mean of x1 over rows where it is NOT missing."""</span>
-    <span class="k">return</span> <span class="n">x1</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">HOMEWORK</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"HOMEWORK_DIR"</span><span class="p">,</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"Projects"</span> <span class="o">/</span> <span class="s2">"homework"</span><span class="p">))</span>
+<span class="n">CLASSES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"completed_effective"</span><span class="p">,</span> <span class="s2">"completed_ineffective"</span><span class="p">,</span> <span class="s2">"declined"</span><span class="p">,</span> <span class="s2">"dropped_out"</span><span class="p">,</span> <span class="s2">"partial"</span><span class="p">)</span>
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">0</span>
 
-<span class="c1"># TODO: fill the three blanks using observed_mean(...)</span>
-<span class="n">mean_mcar</span> <span class="o">=</span> <span class="n">____</span>
-<span class="n">mean_mar</span>  <span class="o">=</span> <span class="n">____</span>
-<span class="n">mean_mnar</span> <span class="o">=</span> <span class="n">____</span>
 
-<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">[(</span><span class="s2">"MCAR"</span><span class="p">,</span> <span class="n">mean_mcar</span><span class="p">),</span> <span class="p">(</span><span class="s2">"MAR"</span><span class="p">,</span> <span class="n">mean_mar</span><span class="p">),</span> <span class="p">(</span><span class="s2">"MNAR"</span><span class="p">,</span> <span class="n">mean_mnar</span><span class="p">)]:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">5s</span><span class="si">}</span><span class="s2"> observed mean </span><span class="si">{</span><span class="n">m</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">   bias </span><span class="si">{</span><span class="n">m</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">TRUE_MEAN_X1</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=50ca50a1">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit.</span>
-<span class="k">for</span> <span class="n">nm</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[(</span><span class="s2">"mean_mcar"</span><span class="p">,</span> <span class="n">mean_mcar</span><span class="p">),</span> <span class="p">(</span><span class="s2">"mean_mar"</span><span class="p">,</span> <span class="n">mean_mar</span><span class="p">),</span> <span class="p">(</span><span class="s2">"mean_mnar"</span><span class="p">,</span> <span class="n">mean_mnar</span><span class="p">)]:</span>
-    <span class="k">assert</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">nm</span><span class="si">}</span><span class="s2"> not filled in."</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">mean_mcar</span> <span class="o">-</span> <span class="n">TRUE_MEAN_X1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.06</span><span class="p">,</span> <span class="s2">"MCAR mean should be ~unbiased — re-check mean_mcar."</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">mean_mnar</span> <span class="o">-</span> <span class="n">TRUE_MEAN_X1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">mean_mcar</span> <span class="o">-</span> <span class="n">TRUE_MEAN_X1</span><span class="p">),</span> <span class="s2">"MNAR should be MORE biased than MCAR."</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Task 4 ok — MCAR ~unbiased; MAR &amp; MNAR pulled away from the truth."</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 4 ok — MCAR ~unbiased; MAR &amp; MNAR pulled away from the truth.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d6ddc494">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Task-5-%E2%80%94-Does-the-missing-indicator-help?-%E2%80%94-TODO">Task 5 — Does the missing-indicator help? — TODO<a class="anchor-link" href="#Task-5-%E2%80%94-Does-the-missing-indicator-help?-%E2%80%94-TODO">¶</a></h2><p>On the <strong>MNAR</strong> data, build two Lesson-005 pipelines and compare 5-fold CV accuracy:</p>
-<ul>
-<li><code>pipe_plain</code>: median-impute <code>x1</code>, <strong>no</strong> indicator.</li>
-<li><code>pipe_ind</code>: median-impute <code>x1</code>, <strong>with</strong> <code>add_indicator=True</code>.</li>
-</ul>
-<p>Because the gap encodes “<code>x1</code> was high,” the indicator should let the model recover signal that mean-imputation destroyed.</p>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=b821dd50">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — the MNAR design matrix (x1 has holes; x2 fully observed).</span>
-<span class="n">X_mnar</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="s2">"x1"</span><span class="p">,</span> <span class="s2">"x2"</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="n">X_mnar</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mnar_mask</span><span class="p">,</span> <span class="s2">"x1"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"missing in X_mnar:</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">X_mnar</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>missing in X_mnar:
- x1    974
-x2      0
-dtype: int64
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=94abe3c2">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: fill the blanks (strategy and add_indicator settings).</span>
-<span class="n">pipe_plain</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
-    <span class="p">(</span><span class="s2">"impute"</span><span class="p">,</span> <span class="n">SimpleImputer</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">____</span><span class="p">,</span> <span class="n">add_indicator</span><span class="o">=</span><span class="n">____</span><span class="p">)),</span>
-    <span class="p">(</span><span class="s2">"clf"</span><span class="p">,</span>    <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">)),</span>
-<span class="p">])</span>
-<span class="n">pipe_ind</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
-    <span class="p">(</span><span class="s2">"impute"</span><span class="p">,</span> <span class="n">SimpleImputer</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">____</span><span class="p">,</span> <span class="n">add_indicator</span><span class="o">=</span><span class="n">____</span><span class="p">)),</span>
-    <span class="p">(</span><span class="s2">"clf"</span><span class="p">,</span>    <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">)),</span>
-<span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_real</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"data"</span>
+    <span class="n">persons</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">d</span> <span class="o">/</span> <span class="s2">"persons.parquet"</span><span class="p">)</span>
+    <span class="n">situations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">d</span> <span class="o">/</span> <span class="s2">"situations.parquet"</span><span class="p">)</span>
+    <span class="n">responses</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">d</span> <span class="o">/</span> <span class="s2">"responses.parquet"</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">situations</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">persons</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">"person_id"</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="s2">"m:1"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">responses</span><span class="p">[[</span><span class="s2">"situation_id"</span><span class="p">,</span> <span class="s2">"response_category"</span><span class="p">]],</span> <span class="n">on</span><span class="o">=</span><span class="s2">"situation_id"</span><span class="p">,</span>
+                    <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="s2">"1:1"</span><span class="p">)</span>
 
-<span class="n">score_plain</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">pipe_plain</span><span class="p">,</span> <span class="n">X_mnar</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">"y"</span><span class="p">],</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="n">score_ind</span>   <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">pipe_ind</span><span class="p">,</span>   <span class="n">X_mnar</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">"y"</span><span class="p">],</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"plain impute     : </span><span class="si">{</span><span class="n">score_plain</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"impute+indicator : </span><span class="si">{</span><span class="n">score_ind</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"delta            : </span><span class="si">{</span><span class="n">score_ind</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">score_plain</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=2ab2abcb">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — do not edit.</span>
-<span class="k">assert</span> <span class="mf">0.5</span> <span class="o">&lt;=</span> <span class="n">score_plain</span> <span class="o">&lt;=</span> <span class="mf">1.0</span> <span class="ow">and</span> <span class="mf">0.5</span> <span class="o">&lt;=</span> <span class="n">score_ind</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"Scores should be valid accuracies (x2 alone carries signal)."</span>
-<span class="k">if</span> <span class="n">score_ind</span> <span class="o">&gt;</span> <span class="n">score_plain</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 5 ok — the indicator recovered MNAR signal (+</span><span class="si">{</span><span class="n">score_ind</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">score_plain</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">load_synthetic</span><span class="p">(</span><span class="n">n_persons</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Tier-C stand-in: same shape (repeated measures, ~5% labelled, 5 classes)."""</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">n_sit</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n_persons</span><span class="p">)</span>
+    <span class="n">person_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_persons</span><span class="p">),</span> <span class="n">n_sit</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">person_id</span><span class="p">)</span>
+    <span class="n">p_age</span><span class="p">,</span> <span class="n">p_burn</span><span class="p">,</span> <span class="n">p_eng</span> <span class="o">=</span> <span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="n">n_persons</span><span class="p">),</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_persons</span><span class="p">),</span>
+                            <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_persons</span><span class="p">))</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+        <span class="s2">"situation_id"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="s2">"person_id"</span><span class="p">:</span> <span class="n">person_id</span><span class="p">,</span>
+        <span class="s2">"age"</span><span class="p">:</span> <span class="n">p_age</span><span class="p">[</span><span class="n">person_id</span><span class="p">],</span> <span class="s2">"burnout_composite"</span><span class="p">:</span> <span class="n">p_burn</span><span class="p">[</span><span class="n">person_id</span><span class="p">],</span>
+        <span class="s2">"engagement_mean"</span><span class="p">:</span> <span class="n">p_eng</span><span class="p">[</span><span class="n">person_id</span><span class="p">],</span> <span class="s2">"workload_index"</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span>
+        <span class="s2">"manager_support_score"</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span>
+        <span class="s2">"context_domain"</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="s2">"formal_training"</span><span class="p">,</span> <span class="s2">"on_the_job"</span><span class="p">,</span> <span class="s2">"external_event"</span><span class="p">],</span> <span class="n">n</span><span class="p">,</span>
+                                     <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.18</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">]),</span>
+        <span class="s2">"region"</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="s2">"DE"</span><span class="p">,</span> <span class="s2">"FR"</span><span class="p">,</span> <span class="s2">"PL"</span><span class="p">,</span> <span class="s2">"ES"</span><span class="p">,</span> <span class="s2">"NL"</span><span class="p">],</span> <span class="n">n</span><span class="p">),</span>
+    <span class="p">})</span>
+    <span class="n">lin</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.9</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">"burnout_composite"</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">"engagement_mean"</span><span class="p">]</span>
+           <span class="o">+</span> <span class="mf">0.4</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">"workload_index"</span><span class="p">]</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">"response_category"</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">qcut</span><span class="p">(</span><span class="n">lin</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.047</span><span class="p">,</span> <span class="s2">"response_category"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.30</span><span class="p">,</span> <span class="s2">"burnout_composite"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.07</span><span class="p">,</span> <span class="s2">"age"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<span class="k">if</span> <span class="p">(</span><span class="n">HOMEWORK</span> <span class="o">/</span> <span class="s2">"data"</span> <span class="o">/</span> <span class="s2">"situations.parquet"</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">load_real</span><span class="p">(</span><span class="n">HOMEWORK</span><span class="p">)</span>
+    <span class="n">SOURCE</span><span class="p">,</span> <span class="n">DATA_ROOT</span> <span class="o">=</span> <span class="s2">"REAL (your own submission)"</span><span class="p">,</span> <span class="n">HOMEWORK</span> <span class="o">/</span> <span class="s2">"data"</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Task 5 ran. Indicator delta </span><span class="si">{</span><span class="n">score_ind</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">score_plain</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2"> — small here; note why in your takeaway."</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">load_synthetic</span><span class="p">()</span>
+    <span class="n">SOURCE</span><span class="p">,</span> <span class="n">DATA_ROOT</span> <span class="o">=</span> <span class="s2">"SYNTHETIC stand-in (homework/ not found — structure is the same)"</span><span class="p">,</span> <span class="kc">None</span>
+
+<span class="n">ID_COLS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"situation_id"</span><span class="p">,</span> <span class="s2">"person_id"</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_num</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_bool_dtype</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+
+<span class="n">NUMERIC</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">_is_num</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">c</span><span class="p">])</span> <span class="ow">and</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ID_COLS</span><span class="p">][:</span><span class="mi">40</span><span class="p">]</span>
+<span class="n">CATEGORICAL</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+               <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_num</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">c</span><span class="p">])</span> <span class="ow">and</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ID_COLS</span> <span class="o">|</span> <span class="p">{</span><span class="s2">"response_category"</span><span class="p">}]</span>
+
+<span class="n">mask</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"response_category"</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="s2">"response_category"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="n">groups</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="s2">"person_id"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="n">y_idx</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="n">c</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)})</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"source          : </span><span class="si">{</span><span class="n">SOURCE</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rows            : </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> labelled = </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">mask</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"persons         : </span><span class="si">{</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> in the labelled set"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"features        : </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">NUMERIC</span><span class="p">)</span><span class="si">}</span><span class="s2"> numeric + </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">CATEGORICAL</span><span class="p">)</span><span class="si">}</span><span class="s2"> categorical"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Task 5 ok — the indicator recovered MNAR signal (+0.016).
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d394f637">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e8f681ed">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Exit-ticket-%E2%80%94-TODO">Exit ticket — TODO<a class="anchor-link" href="#Exit-ticket-%E2%80%94-TODO">¶</a></h2><p>Fill the one-sentence takeaway, run, and paste the output back to your teacher.</p>
+<h3 id="PROVIDED-%E2%80%94-the-encoder,-the-CV-harness,-and-the-baseline-config">PROVIDED — the encoder, the CV harness, and the baseline config<a class="anchor-link" href="#PROVIDED-%E2%80%94-the-encoder,-the-CV-harness,-and-the-baseline-config">¶</a></h3>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=35e747e9">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=674254af">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8305,22 +8023,106 @@ dtype: int64
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># TODO: complete the takeaway sentence.</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"=== EXIT TICKET — Lesson 006 ==="</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"true mean x1            : </span><span class="si">{</span><span class="n">TRUE_MEAN_X1</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"observed mean | MCAR    : </span><span class="si">{</span><span class="n">mean_mcar</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  (bias </span><span class="si">{</span><span class="n">mean_mcar</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">TRUE_MEAN_X1</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"observed mean | MAR     : </span><span class="si">{</span><span class="n">mean_mar</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  (bias </span><span class="si">{</span><span class="n">mean_mar</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">TRUE_MEAN_X1</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"observed mean | MNAR    : </span><span class="si">{</span><span class="n">mean_mnar</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  (bias </span><span class="si">{</span><span class="n">mean_mnar</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">TRUE_MEAN_X1</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CV acc plain impute     : </span><span class="si">{</span><span class="n">score_plain</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CV acc impute+indicator : </span><span class="si">{</span><span class="n">score_ind</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"takeaway:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — the encoder, the outer person-grouped CV, and the BASELINE CONFIG.</span>
+<span class="c1"># The config dict is the point: every value below is a knob that could, in principle,</span>
+<span class="c1"># move the reported number. Task 2 finds out which ones actually do.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.impute</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleImputer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneHotEncoder</span><span class="p">,</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">StratifiedGroupKFold</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_loss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LGBMClassifier</span>
+
+<span class="n">CONFIG</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"data"</span><span class="p">:</span>   <span class="p">{</span><span class="s2">"dtype"</span><span class="p">:</span> <span class="s2">"float32"</span><span class="p">},</span>
+    <span class="s2">"split"</span><span class="p">:</span>  <span class="p">{</span><span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"stratified_group_kfold"</span><span class="p">,</span> <span class="s2">"n_splits"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">"group"</span><span class="p">:</span> <span class="s2">"person_id"</span><span class="p">,</span> <span class="s2">"seed"</span><span class="p">:</span> <span class="n">SEED</span><span class="p">},</span>
+    <span class="s2">"model"</span><span class="p">:</span>  <span class="p">{</span><span class="s2">"n_estimators"</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s2">"num_leaves"</span><span class="p">:</span> <span class="mi">31</span><span class="p">,</span>
+               <span class="s2">"min_child_samples"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">"reg_lambda"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"seed"</span><span class="p">:</span> <span class="n">SEED</span><span class="p">,</span> <span class="s2">"n_jobs"</span><span class="p">:</span> <span class="mi">4</span><span class="p">},</span>
+    <span class="s2">"report"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"metric"</span><span class="p">:</span> <span class="s2">"log_loss"</span><span class="p">,</span> <span class="s2">"estimator"</span><span class="p">:</span> <span class="s2">"mean_over_outer_folds"</span><span class="p">,</span> <span class="s2">"tol"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">encoder</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">(</span>
+    <span class="p">[(</span><span class="s2">"num"</span><span class="p">,</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s2">"imp"</span><span class="p">,</span> <span class="n">SimpleImputer</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">"median"</span><span class="p">)),</span> <span class="p">(</span><span class="s2">"sc"</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">())]),</span> <span class="n">NUMERIC</span><span class="p">),</span>
+     <span class="p">(</span><span class="s2">"cat"</span><span class="p">,</span> <span class="n">Pipeline</span><span class="p">([(</span><span class="s2">"imp"</span><span class="p">,</span> <span class="n">SimpleImputer</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">"most_frequent"</span><span class="p">)),</span>
+                       <span class="p">(</span><span class="s2">"oh"</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">sparse_output</span><span class="o">=</span><span class="kc">False</span><span class="p">))]),</span>
+      <span class="n">CATEGORICAL</span><span class="p">)],</span>
+    <span class="n">remainder</span><span class="o">=</span><span class="s2">"drop"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">X64</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">encoder</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">df</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)[</span><span class="n">mask</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">matrix</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The design matrix at the requested precision — one of the knobs under test."""</span>
+    <span class="k">return</span> <span class="n">X64</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s2">"float32"</span> <span class="k">else</span> <span class="n">X64</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">make_model</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">over</span><span class="p">):</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">cfg</span> <span class="ow">or</span> <span class="n">CONFIG</span><span class="p">)[</span><span class="s2">"model"</span><span class="p">],</span> <span class="o">**</span><span class="n">over</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">LGBMClassifier</span><span class="p">(</span>
+        <span class="n">objective</span><span class="o">=</span><span class="s2">"multiclass"</span><span class="p">,</span> <span class="n">n_estimators</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="s2">"n_estimators"</span><span class="p">],</span> <span class="n">learning_rate</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="s2">"learning_rate"</span><span class="p">],</span>
+        <span class="n">num_leaves</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="s2">"num_leaves"</span><span class="p">],</span> <span class="n">min_child_samples</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="s2">"min_child_samples"</span><span class="p">],</span>
+        <span class="n">reg_lambda</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="s2">"reg_lambda"</span><span class="p">],</span> <span class="n">random_state</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">],</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="s2">"n_jobs"</span><span class="p">],</span>
+        <span class="n">verbose</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">over</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"deterministic"</span><span class="p">,</span> <span class="s2">"force_row_wise"</span><span class="p">)},</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">splitter</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">cfg</span> <span class="ow">or</span> <span class="n">CONFIG</span><span class="p">)[</span><span class="s2">"split"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">StratifiedGroupKFold</span><span class="p">(</span><span class="n">n_splits</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s2">"n_splits"</span><span class="p">],</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_cv</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_over</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">permute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""One full person-grouped CV. Returns (oof_probs, per_fold_log_loss)."""</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">cfg</span> <span class="ow">or</span> <span class="n">CONFIG</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">(</span><span class="n">dtype</span> <span class="ow">or</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"dtype"</span><span class="p">])</span>
+    <span class="n">oof</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">y_idx</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">per_fold</span><span class="p">,</span> <span class="n">rng</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">12345</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tr</span><span class="p">,</span> <span class="n">te</span> <span class="ow">in</span> <span class="n">splitter</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_idx</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">):</span>
+        <span class="n">tr_used</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span> <span class="k">if</span> <span class="n">permute</span> <span class="k">else</span> <span class="n">tr</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">make_model</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">model_over</span> <span class="ow">or</span> <span class="p">{}))</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">tr_used</span><span class="p">],</span> <span class="n">y_idx</span><span class="p">[</span><span class="n">tr_used</span><span class="p">])</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">te</span><span class="p">])</span>
+        <span class="n">oof</span><span class="p">[</span><span class="n">te</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="n">per_fold</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">log_loss</span><span class="p">(</span><span class="n">y_idx</span><span class="p">[</span><span class="n">te</span><span class="p">],</span> <span class="n">p</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">))))))</span>
+    <span class="k">return</span> <span class="n">oof</span><span class="p">,</span> <span class="n">per_fold</span>
+
+
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">OOF_REF</span><span class="p">,</span> <span class="n">FOLDS_REF</span> <span class="o">=</span> <span class="n">run_cv</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"reference run: mean log-loss </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">FOLDS_REF</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"(fold sd </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">FOLDS_REF</span><span class="p">,</span><span class="w"> </span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">) in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7242f6d5-4d5f-410d-87c3-d97d774e89d2">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=42357670">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-1-%E2%80%94-the-run-manifest">Task 1 — the run manifest<a class="anchor-link" href="#Task-1-%E2%80%94-the-run-manifest">¶</a></h2><p><strong>Goal.</strong> Write <code>content_hash()</code> and <code>build_manifest()</code>, so that every run emits a machine-written record of
+what it was: the code, the config, the data, the environment, the machine, the seeds and the results.</p>
+<p><strong>Why it matters.</strong> The Pineau checklist asks for "a description of the computing infrastructure used", "the
+exact number of evaluation runs", and "specification of all hyper-parameters used to generate results". Those
+are answerable from memory today and from nothing at all in six months. A manifest makes the question <em>was
+this the same experiment?</em> mechanical — and it is the file <code>make verify</code> diffs.</p>
+<p>Two hashes matter and they are not interchangeable:</p>
+<ul>
+<li><strong><code>data_sha256</code></strong> — over the <em>bytes of the input files</em>. Catches a silent data swap, which nothing else will.</li>
+<li><strong><code>config_sha256</code></strong> — over the config <em>serialised canonically</em>, i.e. with sorted keys, so that two configs
+that differ only in dict insertion order hash the same. Catches "someone changed a knob".</li>
+</ul>
+<p><strong>Hint boundary.</strong> For the data hash, read each file in sorted-name order and feed the bytes to one hash
+object, so the digest covers the whole set rather than one file. For the config hash, serialise to JSON with
+sorted keys before encoding. Both must be <em>stable</em>: hashing the same input twice must give the same digest,
+today and next year.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=24839167">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8328,7 +8130,492 @@ dtype: int64
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span> 
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — Task 1: the run manifest.</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">content_hash</span><span class="p">(</span><span class="n">paths_or_obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""SHA-256 of the *content* of the inputs, stable across runs.</span>
+
+<span class="sd">    Accepts either an iterable of file paths (hash the raw bytes of each, in a</span>
+<span class="sd">    deterministic order) or a plain Python object (serialise canonically first).</span>
+<span class="sd">    Return the first 16 hex characters.</span>
+<span class="sd">    """</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">paths_or_obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">Path</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths_or_obj</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">____</span><span class="p">:</span>                       <span class="c1"># deterministic order — do NOT rely on the filesystem</span>
+            <span class="n">h</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">____</span><span class="p">)</span>                   <span class="c1"># the file's bytes</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">____</span><span class="p">)</span>                       <span class="c1"># canonical JSON: sorted keys, then encode to bytes</span>
+    <span class="k">return</span> <span class="n">h</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">build_manifest</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">oof</span><span class="p">,</span> <span class="n">per_fold</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">seconds</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Everything needed to interpret this run's output, six months from now."""</span>
+    <span class="n">data_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">DATA_ROOT</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"*.parquet"</span><span class="p">))</span> <span class="k">if</span> <span class="n">DATA_ROOT</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"git"</span><span class="p">:</span>     <span class="n">____</span><span class="p">,</span>                     <span class="c1"># from relkit.repro — commit AND dirty flag</span>
+        <span class="s2">"env"</span><span class="p">:</span>     <span class="n">____</span><span class="p">,</span>                     <span class="c1"># from relkit.repro — resolved installed versions</span>
+        <span class="s2">"host"</span><span class="p">:</span>    <span class="n">____</span><span class="p">,</span>                     <span class="c1"># from relkit.repro</span>
+        <span class="s2">"data_sha256"</span><span class="p">:</span>   <span class="n">content_hash</span><span class="p">(</span><span class="n">data_files</span><span class="p">)</span> <span class="k">if</span> <span class="n">data_files</span> <span class="k">else</span> <span class="s2">"synthetic-stand-in"</span><span class="p">,</span>
+        <span class="s2">"config_sha256"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>               <span class="c1"># hash the config object itself</span>
+        <span class="s2">"config"</span><span class="p">:</span>  <span class="n">cfg</span><span class="p">,</span>
+        <span class="s2">"seeds"</span><span class="p">:</span>   <span class="p">{</span><span class="s2">"split"</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span> <span class="s2">"model"</span><span class="p">:</span> <span class="n">____</span><span class="p">},</span>   <span class="c1"># name them separately — they are not the same knob</span>
+        <span class="s2">"results"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"log_loss_mean_over_folds"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">per_fold</span><span class="p">)),</span>
+                    <span class="s2">"log_loss_fold_sd"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">per_fold</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))},</span>
+        <span class="s2">"n_runs"</span><span class="p">:</span>  <span class="nb">len</span><span class="p">(</span><span class="n">per_fold</span><span class="p">),</span>
+        <span class="s2">"wall_seconds"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="p">}</span>
+
+
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">manifest</span> <span class="o">=</span> <span class="n">build_manifest</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">,</span> <span class="n">OOF_REF</span><span class="p">,</span> <span class="n">FOLDS_REF</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">manifest</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)[:</span><span class="mi">1200</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1e55a7f4">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK 1 — do not edit.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+
+<span class="n">required</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"git"</span><span class="p">,</span> <span class="s2">"env"</span><span class="p">,</span> <span class="s2">"host"</span><span class="p">,</span> <span class="s2">"data_sha256"</span><span class="p">,</span> <span class="s2">"config_sha256"</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="s2">"seeds"</span><span class="p">,</span>
+            <span class="s2">"results"</span><span class="p">,</span> <span class="s2">"n_runs"</span><span class="p">,</span> <span class="s2">"wall_seconds"</span><span class="p">}</span>
+<span class="k">assert</span> <span class="n">required</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">manifest</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"manifest is missing </span><span class="si">{</span><span class="n">required</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">manifest</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+<span class="k">assert</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"git"</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s2">"dirty"</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"git"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"record whether the working tree was dirty — a commit alone looks trustworthy and isn't"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="s2">"python"</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"env"</span><span class="p">]</span> <span class="ow">and</span> <span class="s2">"lightgbm"</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"env"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"the env block must record RESOLVED installed versions, not a requirements file"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"seeds"</span><span class="p">][</span><span class="s2">"split"</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"seeds"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
+    <span class="s2">"name the two seeds separately: L037 measured one as inert and one as load-bearing"</span><span class="p">)</span>
+
+<span class="c1"># stability: the same input must hash the same way twice</span>
+<span class="k">assert</span> <span class="n">content_hash</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">)</span> <span class="o">==</span> <span class="n">content_hash</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">),</span> <span class="s2">"content_hash must be deterministic"</span>
+<span class="c1"># ... and be blind to key order, so a reformat is not a false alarm</span>
+<span class="n">shuffled</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">CONFIG</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">))}</span>
+<span class="k">assert</span> <span class="n">content_hash</span><span class="p">(</span><span class="n">shuffled</span><span class="p">)</span> <span class="o">==</span> <span class="n">content_hash</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">),</span> <span class="p">(</span>
+    <span class="s2">"serialise canonically (sorted keys) — dict order is not a configuration change"</span><span class="p">)</span>
+<span class="c1"># ... but sensitive to an actual change</span>
+<span class="n">bumped</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">);</span> <span class="n">bumped</span><span class="p">[</span><span class="s2">"model"</span><span class="p">][</span><span class="s2">"n_estimators"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="k">assert</span> <span class="n">content_hash</span><span class="p">(</span><span class="n">bumped</span><span class="p">)</span> <span class="o">!=</span> <span class="n">content_hash</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">),</span> <span class="s2">"a changed knob MUST change the config hash"</span>
+<span class="c1"># ... and the data hash must not move when only the config does</span>
+<span class="n">m2</span> <span class="o">=</span> <span class="n">build_manifest</span><span class="p">(</span><span class="n">bumped</span><span class="p">,</span> <span class="n">OOF_REF</span><span class="p">,</span> <span class="n">FOLDS_REF</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">m2</span><span class="p">[</span><span class="s2">"data_sha256"</span><span class="p">]</span> <span class="o">==</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"data_sha256"</span><span class="p">],</span> <span class="s2">"the config hash and the data hash are separate axes"</span>
+<span class="k">assert</span> <span class="n">m2</span><span class="p">[</span><span class="s2">"config_sha256"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"config_sha256"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"CHECK 1 passed — the run now describes itself."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  config </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'config_sha256'</span><span class="p">]</span><span class="si">}</span><span class="s2">  data </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'data_sha256'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  env    lightgbm </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'env'</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'lightgbm'</span><span class="p">)</span><span class="si">}</span><span class="s2"> / "</span>
+      <span class="sa">f</span><span class="s2">"scikit-learn </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'env'</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'scikit-learn'</span><span class="p">)</span><span class="si">}</span><span class="s2"> / python </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'env'</span><span class="p">][</span><span class="s1">'python'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7e3ecb9a">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-2-%E2%80%94-fingerprint-the-output,-then-probe-one-knob-at-a-time">Task 2 — fingerprint the output, then probe one knob at a time<a class="anchor-link" href="#Task-2-%E2%80%94-fingerprint-the-output,-then-probe-one-knob-at-a-time">¶</a></h2><p><strong>Goal.</strong> Write <code>fingerprint()</code> (a stable hash of the out-of-fold probability matrix) and <code>probe()</code> (compare
+a perturbed run against the reference and report <em>how</em> it differs), then run four perturbations.</p>
+<p><strong>Why it matters.</strong> This is the experiment the lesson is built on, and the reason its conclusions are worth
+anything: instead of repeating generic advice about seeds and threads, you <em>measure</em> which knobs move your
+number. On the full 400-tree pipeline, eight of nine perturbations were byte-identical — including thread
+count and the model seed — and the one that moved changed the predicted class for <strong>258 of 5,587 people</strong>
+while shifting mean log-loss by only +0.00133.</p>
+<p>A fingerprint must be sensitive to any change and insensitive to nothing else. Two traps: a non-contiguous
+array's <code>.tobytes()</code> is fine but its memory layout is not what you think, and a float32 array and a float64
+array holding "the same" numbers have different bytes — which here is a feature, since that is exactly the
+difference you are hunting.</p>
+<p><strong>Hint boundary.</strong> Cast to a fixed dtype and force C-contiguity before hashing, so the digest depends on the
+values and not on how they were produced. For <code>probe()</code>, report at minimum: whether the matrices are exactly
+equal, the largest absolute probability change, how many rows changed their argmax, and the change in mean
+log-loss. The hash is the alarm; those three are the diagnosis.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5b42f999">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — Task 2: fingerprint + probe.</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">fingerprint</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Stable 16-hex-char SHA-256 of a numeric array's contents."""</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">____</span>                       <span class="c1"># fix dtype AND memory layout before hashing</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">tobytes</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">probe</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">oof_new</span><span class="p">,</span> <span class="n">folds_new</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">oof_ref</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">folds_ref</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Compare a perturbed run to the reference. Returns a dict; also prints a row."""</span>
+    <span class="n">oof_ref</span> <span class="o">=</span> <span class="n">OOF_REF</span> <span class="k">if</span> <span class="n">oof_ref</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">oof_ref</span>
+    <span class="n">folds_ref</span> <span class="o">=</span> <span class="n">FOLDS_REF</span> <span class="k">if</span> <span class="n">folds_ref</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">folds_ref</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">oof_new</span> <span class="o">-</span> <span class="n">oof_ref</span><span class="p">)</span>
+    <span class="n">rec</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
+        <span class="s2">"sha"</span><span class="p">:</span> <span class="n">fingerprint</span><span class="p">(</span><span class="n">oof_new</span><span class="p">),</span>
+        <span class="s2">"identical"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">____</span><span class="p">),</span>                       <span class="c1"># exact equality of the two matrices</span>
+        <span class="s2">"max_abs_dp"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">____</span><span class="p">),</span>                     <span class="c1"># largest single-probability change</span>
+        <span class="s2">"argmax_flips"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">____</span><span class="p">),</span>                     <span class="c1"># rows whose predicted CLASS changed</span>
+        <span class="s2">"d_mean_log_loss"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">____</span><span class="p">),</span>                <span class="c1"># change in the reported number</span>
+    <span class="p">}</span>
+    <span class="n">flag</span> <span class="o">=</span> <span class="s2">"same"</span> <span class="k">if</span> <span class="n">rec</span><span class="p">[</span><span class="s2">"identical"</span><span class="p">]</span> <span class="k">else</span> <span class="s2">"DIFFERS"</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">label</span><span class="si">:</span><span class="s2">&lt;28s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">rec</span><span class="p">[</span><span class="s1">'sha'</span><span class="p">]</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">flag</span><span class="si">:</span><span class="s2">&lt;8s</span><span class="si">}</span><span class="s2"> "</span>
+          <span class="sa">f</span><span class="s2">"flips=</span><span class="si">{</span><span class="n">rec</span><span class="p">[</span><span class="s1">'argmax_flips'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;5d</span><span class="si">}</span><span class="s2"> max|dp|=</span><span class="si">{</span><span class="n">rec</span><span class="p">[</span><span class="s1">'max_abs_dp'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2"> "</span>
+          <span class="sa">f</span><span class="s2">"dLL=</span><span class="si">{</span><span class="n">rec</span><span class="p">[</span><span class="s1">'d_mean_log_loss'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rec</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="s1">'perturbation'</span><span class="si">:</span><span class="s2">&lt;28s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'fingerprint'</span><span class="si">:</span><span class="s2">&lt;16s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="s1">'verdict'</span><span class="si">:</span><span class="s2">&lt;8s</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">probes</span> <span class="o">=</span> <span class="p">[</span><span class="n">probe</span><span class="p">(</span><span class="s2">"reference (rerun)"</span><span class="p">,</span> <span class="o">*</span><span class="n">run_cv</span><span class="p">())]</span>
+<span class="n">probes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probe</span><span class="p">(</span><span class="s2">"n_jobs 4 -&gt; 1"</span><span class="p">,</span> <span class="o">*</span><span class="n">run_cv</span><span class="p">(</span><span class="n">model_over</span><span class="o">=</span><span class="p">{</span><span class="s2">"n_jobs"</span><span class="p">:</span> <span class="mi">1</span><span class="p">})))</span>
+<span class="n">probes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probe</span><span class="p">(</span><span class="s2">"model seed 0 -&gt; 7"</span><span class="p">,</span> <span class="o">*</span><span class="n">run_cv</span><span class="p">(</span><span class="n">model_over</span><span class="o">=</span><span class="p">{</span><span class="s2">"seed"</span><span class="p">:</span> <span class="mi">7</span><span class="p">})))</span>
+<span class="n">probes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probe</span><span class="p">(</span><span class="s2">"float32 -&gt; float64"</span><span class="p">,</span> <span class="o">*</span><span class="n">run_cv</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">"float64"</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4ce85562">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK 2 — do not edit.</span>
+<span class="n">by</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="p">[</span><span class="s2">"label"</span><span class="p">]:</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">probes</span><span class="p">}</span>
+
+<span class="k">assert</span> <span class="n">fingerprint</span><span class="p">(</span><span class="n">OOF_REF</span><span class="p">)</span> <span class="o">==</span> <span class="n">fingerprint</span><span class="p">(</span><span class="n">OOF_REF</span><span class="o">.</span><span class="n">copy</span><span class="p">()),</span> <span class="p">(</span>
+    <span class="s2">"the fingerprint must depend on VALUES, not on the object — copy and original must agree"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">fingerprint</span><span class="p">(</span><span class="n">OOF_REF</span><span class="p">)</span> <span class="o">!=</span> <span class="n">fingerprint</span><span class="p">(</span><span class="n">OOF_REF</span> <span class="o">+</span> <span class="mf">1e-12</span><span class="p">),</span> <span class="p">(</span>
+    <span class="s2">"the fingerprint must be sensitive: a 1e-12 nudge is still a different matrix"</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">by</span><span class="p">[</span><span class="s2">"reference (rerun)"</span><span class="p">][</span><span class="s2">"identical"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"rerunning the same configuration must be bitwise identical — if not, something is unpinned"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">by</span><span class="p">[</span><span class="s2">"n_jobs 4 -&gt; 1"</span><span class="p">][</span><span class="s2">"identical"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"thread count changed the output. On the reference pipeline it does not; if it does here, "</span>
+    <span class="s2">"record it in the manifest rather than assuming it away"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">by</span><span class="p">[</span><span class="s2">"model seed 0 -&gt; 7"</span><span class="p">][</span><span class="s2">"identical"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"the model seed should be INERT: this configuration sets no bagging_fraction, feature_fraction "</span>
+    <span class="s2">"or extra_trees, so LightGBM never consults its RNG"</span><span class="p">)</span>
+
+<span class="n">dt</span> <span class="o">=</span> <span class="n">by</span><span class="p">[</span><span class="s2">"float32 -&gt; float64"</span><span class="p">]</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="n">dt</span><span class="p">[</span><span class="s2">"identical"</span><span class="p">],</span> <span class="s2">"dropping the float32 cast should change the matrix"</span>
+<span class="k">assert</span> <span class="n">dt</span><span class="p">[</span><span class="s2">"argmax_flips"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"and it should flip at least one predicted class"</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dt</span><span class="p">[</span><span class="s2">"d_mean_log_loss"</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.02</span><span class="p">,</span> <span class="p">(</span>
+    <span class="s2">"...while barely moving the aggregate: that gap between artifact damage and number damage "</span>
+    <span class="s2">"is the finding"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"CHECK 2 passed — you measured which knobs matter instead of guessing."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  inert here : thread count, model seed  (bitwise identical)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  moves it   : the dtype cast — </span><span class="si">{</span><span class="n">dt</span><span class="p">[</span><span class="s1">'argmax_flips'</span><span class="p">]</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">y_idx</span><span class="p">)</span><span class="si">}</span><span class="s2"> predicted classes "</span>
+      <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">dt</span><span class="p">[</span><span class="s1">'argmax_flips'</span><span class="p">]</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">y_idx</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%) change, "</span>
+      <span class="sa">f</span><span class="s2">"mean log-loss only </span><span class="si">{</span><span class="n">dt</span><span class="p">[</span><span class="s1">'d_mean_log_loss'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.5f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  the cast lives in a notebook cell, not in the config. After this lab, it lives in CONFIG."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9009d49b">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Task-3-%E2%80%94-name-the-number,-find-its-noise-floor,-and-gate-on-it">Task 3 — name the number, find its noise floor, and gate on it<a class="anchor-link" href="#Task-3-%E2%80%94-name-the-number,-find-its-noise-floor,-and-gate-on-it">¶</a></h2><p><strong>Goal.</strong> Implement <code>ece()</code>, register <strong>two named estimators</strong> of it, measure the <strong>noise floor</strong> of each, and
+write the <code>assert_reproduces()</code> gate — then make the gate fail on purpose.</p>
+<p><strong>Why it matters.</strong> The submission reports top-label ECE as <strong>0.0332</strong> in the model-selection table and
+<strong>0.018</strong> in the README and the ship-gate table, for the same model on the same predictions. Neither is
+wrong; they are different estimators of the same metric, and "ECE" does not distinguish them. A package that
+emits <code>{"metric": "ece_top", "estimator": "pooled_oof", "bins": 15, "n": 5587}</code> cannot make that mistake.</p>
+<p><strong>Predict before you run it.</strong> The model in <em>this</em> notebook is deliberately uncalibrated — no isotonic step —
+so it is much worse calibrated than the shipped one. Will the gap between the two estimators be <em>wider</em> here
+than the submission's 1.87×, or <em>narrower</em>? Commit to an answer; the check cell will tell you, and the
+reasoning matters more than the number.</p>
+<p>The noise floor is the second half. ECE is a weighted sum of <strong>absolute</strong> gaps over bins, so sampling noise
+cannot cancel — it accumulates, and the estimate is biased upward as bins get sparser. You measure the bias
+directly by building a control that is perfectly calibrated <em>by construction</em>: resample each row's label from
+that row's own predicted probability vector. Its true ECE is exactly zero, so whatever your estimator reports
+for it is pure bias.</p>
+<p><strong>Formula.</strong> <code>ECE = Σ_b (|B_b| / N) · |accuracy(B_b) − confidence(B_b)|</code>, where rows are placed in <code>B_b</code> by
+their top-class probability, over 15 equal-width bins on [0, 1].</p>
+<p><strong>Hint boundary.</strong> For <code>ece()</code>: take the max probability per row as the confidence and whether the argmax was
+right as the outcome, bin the confidences, and weight each bin's absolute gap by its share of rows — skipping
+empty bins. For <code>noise_floor()</code>: draw one label per row from that row's probability vector, score it with the
+same estimator, and repeat; return the mean and standard deviation. For <code>assert_reproduces()</code>: raise
+<code>AssertionError</code> with a message naming the estimator, the expected value, what was observed and the tolerance
+— a gate that fails without saying what moved costs you the afternoon it was supposed to save.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=78e730b7">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — Task 3: named estimators, the noise floor, and the gate.</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">ece</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">y_true_idx</span><span class="p">,</span> <span class="n">n_bins</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Expected calibration error on the top-label probability, equal-width bins."""</span>
+    <span class="n">conf</span> <span class="o">=</span> <span class="n">____</span>                              <span class="c1"># per-row confidence</span>
+    <span class="n">correct</span> <span class="o">=</span> <span class="n">____</span>                           <span class="c1"># per-row 0/1 outcome</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_bins</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">conf</span><span class="p">,</span> <span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n_bins</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_bins</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">==</span> <span class="n">b</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="k">continue</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="n">____</span>                        <span class="c1"># weight x |accuracy - confidence| for this bin</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">total</span><span class="p">)</span>
+
+
+<span class="c1"># A registry, so a number can never travel without the recipe that produced it.</span>
+<span class="n">ESTIMATORS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"pooled_oof"</span><span class="p">:</span>        <span class="k">lambda</span> <span class="n">probs</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">folds</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>   <span class="c1"># one value over ALL rows at once</span>
+    <span class="s2">"mean_over_folds"</span><span class="p">:</span>   <span class="k">lambda</span> <span class="n">probs</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">folds</span><span class="p">:</span> <span class="n">____</span><span class="p">,</span>   <span class="c1"># per-fold value, then averaged</span>
+<span class="p">}</span>
+
+<span class="n">fold_test_idx</span> <span class="o">=</span> <span class="p">[</span><span class="n">te</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">te</span> <span class="ow">in</span> <span class="n">splitter</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">matrix</span><span class="p">(),</span> <span class="n">y_idx</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">)]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">noise_floor</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">estimator</span><span class="p">,</span> <span class="n">folds</span><span class="p">,</span> <span class="n">reps</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""What this estimator reports for a PERFECTLY calibrated model (true ECE = 0)."""</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">vals</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">reps</span><span class="p">):</span>
+        <span class="n">y_syn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">),</span> <span class="n">p</span><span class="o">=</span><span class="n">r</span> <span class="o">/</span> <span class="n">r</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">probs</span><span class="p">])</span>
+        <span class="n">vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">____</span><span class="p">)</span>                    <span class="c1"># score the synthetic labels with the SAME estimator</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">vals</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">assert_reproduces</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">observed</span><span class="p">,</span> <span class="n">expected</span><span class="p">,</span> <span class="n">tol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The gate. Bitwise when tol == 0; otherwise |observed - expected| &lt;= tol."""</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">observed</span> <span class="o">-</span> <span class="n">expected</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">____</span><span class="p">:</span>                                 <span class="c1"># the failing condition</span>
+        <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="n">____</span><span class="p">)</span>           <span class="c1"># must name: estimator, expected, observed, delta, tol</span>
+    <span class="k">return</span> <span class="n">delta</span>
+
+
+<span class="n">reported</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">ESTIMATORS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">OOF_REF</span><span class="p">,</span> <span class="n">y_idx</span><span class="p">,</span> <span class="n">fold_test_idx</span><span class="p">)</span>
+    <span class="n">floor_mu</span><span class="p">,</span> <span class="n">floor_sd</span> <span class="o">=</span> <span class="n">noise_floor</span><span class="p">(</span><span class="n">OOF_REF</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">fold_test_idx</span><span class="p">)</span>
+    <span class="n">reported</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"value"</span><span class="p">:</span> <span class="n">val</span><span class="p">,</span> <span class="s2">"floor"</span><span class="p">:</span> <span class="n">floor_mu</span><span class="p">,</span> <span class="s2">"floor_sd"</span><span class="p">:</span> <span class="n">floor_sd</span><span class="p">,</span>
+                      <span class="s2">"signal"</span><span class="p">:</span> <span class="n">val</span> <span class="o">-</span> <span class="n">floor_mu</span><span class="p">}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  ece_top / </span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">&lt;17s</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">   "</span>
+          <span class="sa">f</span><span class="s2">"noise floor </span><span class="si">{</span><span class="n">floor_mu</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> +- </span><span class="si">{</span><span class="n">floor_sd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">   signal </span><span class="si">{</span><span class="n">val</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">floor_mu</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># The gate, exercised both ways.</span>
+<span class="n">tol</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">"report"</span><span class="p">][</span><span class="s2">"tol"</span><span class="p">]</span>
+<span class="n">expected_ll</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">FOLDS_REF</span><span class="p">))</span>
+<span class="n">assert_reproduces</span><span class="p">(</span><span class="s2">"log_loss/mean_over_outer_folds"</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">run_cv</span><span class="p">()[</span><span class="mi">1</span><span class="p">])),</span> <span class="n">expected_ll</span><span class="p">,</span> <span class="n">tol</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">  gate PASSED on a faithful rerun (tol = </span><span class="si">{</span><span class="n">tol</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">assert_reproduces</span><span class="p">(</span><span class="s2">"log_loss/mean_over_outer_folds"</span><span class="p">,</span>
+                      <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">run_cv</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">"float64"</span><span class="p">)[</span><span class="mi">1</span><span class="p">])),</span> <span class="n">expected_ll</span><span class="p">,</span> <span class="n">tol</span><span class="p">)</span>
+    <span class="n">gate_caught</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">except</span> <span class="ne">AssertionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">gate_caught</span><span class="p">,</span> <span class="n">gate_message</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  gate FAILED on the float64 run, as it should:</span><span class="se">\n</span><span class="s2">    </span><span class="si">{</span><span class="n">gate_message</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4417a7b0">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK 3 — do not edit.</span>
+<span class="c1"># ece() sanity: a model that is always right and always maximally confident is perfectly calibrated.</span>
+<span class="n">n_toy</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">perfect</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_toy</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)));</span> <span class="n">perfect</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="k">assert</span> <span class="n">ece</span><span class="p">(</span><span class="n">perfect</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_toy</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">))</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">"ece must be 0 for a perfect confident model"</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ece</span><span class="p">(</span><span class="n">perfect</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_toy</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">))</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">,</span> <span class="p">(</span>
+    <span class="s2">"...and 1 for a maximally confident model that is always wrong"</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">ESTIMATORS</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"pooled_oof"</span><span class="p">,</span> <span class="s2">"mean_over_folds"</span><span class="p">},</span> <span class="s2">"register both estimators by name"</span>
+<span class="n">p</span><span class="p">,</span> <span class="n">f</span> <span class="o">=</span> <span class="n">reported</span><span class="p">[</span><span class="s2">"pooled_oof"</span><span class="p">],</span> <span class="n">reported</span><span class="p">[</span><span class="s2">"mean_over_folds"</span><span class="p">]</span>
+<span class="k">assert</span> <span class="n">p</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"value"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"the two estimators of the SAME metric on the SAME predictions must not be identical"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">f</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">p</span><span class="p">[</span><span class="s2">"value"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"per-fold ECE should be LARGER: sparser bins add absolute-valued noise that cannot cancel"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">f</span><span class="p">[</span><span class="s2">"floor"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">p</span><span class="p">[</span><span class="s2">"floor"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"and the noise floor must grow the same way, since it has the same cause"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">f</span><span class="p">[</span><span class="s2">"floor"</span><span class="p">]</span> <span class="o">/</span> <span class="n">p</span><span class="p">[</span><span class="s2">"floor"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">1.5</span><span class="p">,</span> <span class="p">(</span>
+    <span class="s2">"the floors should separate substantially — a fifth of the rows per bin is a much noisier ruler"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">p</span><span class="p">[</span><span class="s2">"signal"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">f</span><span class="p">[</span><span class="s2">"signal"</span><span class="p">],</span> <span class="p">(</span>
+    <span class="s2">"so the pooled estimator resolves more real signal above its own floor — it is the one to gate on"</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">gate_caught</span><span class="p">,</span> <span class="s2">"assert_reproduces must FAIL on the float64 run; a gate that cannot fail is a comment"</span>
+<span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"expected"</span><span class="p">,</span> <span class="s2">"observed"</span><span class="p">,</span> <span class="s2">"tol"</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">gate_message</span><span class="p">,</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"the failure message must name '</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">' — a gate that will not say what moved is a riddle"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"CHECK 3 passed — the number now travels with its recipe, its floor and its gate."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  pooled_oof      </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s1">'value'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  (floor </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s1">'floor'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">) -&gt; signal </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s1">'signal'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  mean_over_folds </span><span class="si">{</span><span class="n">f</span><span class="p">[</span><span class="s1">'value'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  (floor </span><span class="si">{</span><span class="n">f</span><span class="p">[</span><span class="s1">'floor'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">) -&gt; signal </span><span class="si">{</span><span class="n">f</span><span class="p">[</span><span class="s1">'signal'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  values differ by </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s1">'value'</span><span class="p">]</span><span class="o">/</span><span class="n">p</span><span class="p">[</span><span class="s1">'value'</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">%, "</span>
+      <span class="sa">f</span><span class="s2">"but the FLOORS differ by </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s1">'floor'</span><span class="p">]</span><span class="o">/</span><span class="n">p</span><span class="p">[</span><span class="s1">'floor'</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">%."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"  Read that carefully, because it is the opposite of what you were set up to expect."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  This model is UNCALIBRATED (no isotonic step) and genuinely bad: ECE </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s1">'value'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> is"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s1">'value'</span><span class="p">]</span><span class="o">/</span><span class="n">p</span><span class="p">[</span><span class="s1">'floor'</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">x its own noise floor. When the miscalibration is that large it"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"  swamps the estimator's bias, so both recipes agree and the choice is harmless."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"  The submission's SHIPPED model is calibrated: ECE 0.018 pooled against a floor of"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"  0.0149, and 0.0332 per-fold against a floor of 0.0335. There the same choice is"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"  worth 1.87x — nearly the entire reported difference."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"  So: the estimator you pick matters LEAST when the number is bad, and MOST when it is"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"  good. Naming it is cheap insurance you buy before you know which case you are in."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=53443ee9">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="EXIT-TICKET">EXIT TICKET<a class="anchor-link" href="#EXIT-TICKET">¶</a></h2><p>Prints the manifest summary, the probe table, both named estimators with their noise floors, and your
+tolerance decision. Paste it to your teacher, or say <em>"lab done"</em>.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ed1073f5">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — EXIT TICKET: your four decisions.</span>
+<span class="n">knobs_that_moved</span> <span class="o">=</span> <span class="s2">"____"</span>     <span class="c1"># of the four you probed, which changed the out-of-fold matrix?</span>
+<span class="n">estimator_of_record</span> <span class="o">=</span> <span class="s2">"____"</span>  <span class="c1"># "pooled_oof" or "mean_over_folds" — and it is not a coin toss</span>
+<span class="n">tolerance_choice</span> <span class="o">=</span> <span class="s2">"____"</span>     <span class="c1"># the value you would put in CONFIG["report"]["tol"]</span>
+<span class="n">tolerance_reason</span> <span class="o">=</span> <span class="s2">"____"</span>     <span class="c1"># one sentence, referring to a number you measured above</span>
+<span class="n">takeaway</span> <span class="o">=</span> <span class="s2">"____"</span>             <span class="c1"># one sentence: what you will build into your next pipeline</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">78</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"LAB 037 EXIT TICKET — the reproduction gate"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">78</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pipeline           : </span><span class="si">{</span><span class="n">SOURCE</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"config / data hash : </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'config_sha256'</span><span class="p">]</span><span class="si">}</span><span class="s2"> / </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'data_sha256'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"env                : lightgbm </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'env'</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'lightgbm'</span><span class="p">)</span><span class="si">}</span><span class="s2">, "</span>
+      <span class="sa">f</span><span class="s2">"scikit-learn </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'env'</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'scikit-learn'</span><span class="p">)</span><span class="si">}</span><span class="s2">, python </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'env'</span><span class="p">][</span><span class="s1">'python'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"headline           : log-loss </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'results'</span><span class="p">][</span><span class="s1">'log_loss_mean_over_folds'</span><span class="p">]</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> "</span>
+      <span class="sa">f</span><span class="s2">"(fold sd </span><span class="si">{</span><span class="n">manifest</span><span class="p">[</span><span class="s1">'results'</span><span class="p">][</span><span class="s1">'log_loss_fold_sd'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">), "</span>
+      <span class="sa">f</span><span class="s2">"OOF </span><span class="si">{</span><span class="n">fingerprint</span><span class="p">(</span><span class="n">OOF_REF</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"PROBES — which knobs move the number"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">pr</span> <span class="ow">in</span> <span class="n">probes</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">pr</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;28s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'same'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">pr</span><span class="p">[</span><span class="s1">'identical'</span><span class="p">]</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'DIFFERS'</span><span class="si">:</span><span class="s2">&lt;8s</span><span class="si">}</span><span class="s2"> "</span>
+          <span class="sa">f</span><span class="s2">"flips=</span><span class="si">{</span><span class="n">pr</span><span class="p">[</span><span class="s1">'argmax_flips'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;5d</span><span class="si">}</span><span class="s2"> dLL=</span><span class="si">{</span><span class="n">pr</span><span class="p">[</span><span class="s1">'d_mean_log_loss'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  knobs that moved it : </span><span class="si">{</span><span class="n">knobs_that_moved</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"ESTIMATOR OF RECORD — the same metric, two recipes"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">nm</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">reported</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  ece_top/</span><span class="si">{</span><span class="n">nm</span><span class="si">:</span><span class="s2">&lt;17s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'value'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  floor </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'floor'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  "</span>
+          <span class="sa">f</span><span class="s2">"signal </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'signal'</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  estimator I would gate on : </span><span class="si">{</span><span class="n">estimator_of_record</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TOLERANCE : </span><span class="si">{</span><span class="n">tolerance_choice</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  because : </span><span class="si">{</span><span class="n">tolerance_reason</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TAKEAWAY  : </span><span class="si">{</span><span class="n">takeaway</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">78</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6235e75a">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-write-this-workspace's-missing-lockfile">Stretch (optional, ungraded) — write this workspace's missing lockfile<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-write-this-workspace's-missing-lockfile">¶</a></h2><p>Everything above packaged <em>the submission</em>. This task turns the same instrument on the workspace you are
+learning in, which currently has the weaker half of the setup: <code>requirements-labs.txt</code> states lower bounds
+(<code>lightgbm&gt;=4.0</code>, <code>scikit-learn&gt;=1.5</code>, <code>numpy&gt;=1.26</code>) and there is no lockfile at all. Every verified number
+in every learning record here was produced by one particular resolution of those constraints, and that
+resolution is written down nowhere.</p>
+<p><strong>Predict first.</strong> How many packages do you think are actually installed — how many transitive dependencies
+sit behind the eight lines of <code>requirements-labs.txt</code>? Then run it.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=53dfdccc">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH (optional, ungraded) — write the lockfile this workspace does not have.</span>
+<span class="c1"># requirements-labs.txt pins nothing: `lightgbm&gt;=4.0`, `scikit-learn&gt;=1.5`, `numpy&gt;=1.26`.</span>
+<span class="c1"># Those constraints admit combinations that do not work together — L037 measured one:</span>
+<span class="c1"># lightgbm 4.5.0 with scikit-learn 1.9.0 raises TypeError, because scikit-learn deleted</span>
+<span class="c1"># `force_all_finite` in 1.8 and LightGBM 4.5.0 still calls it. Every verified number in</span>
+<span class="c1"># this workspace came from one particular resolution of those constraints, recorded nowhere.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">root</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span>
+<span class="k">while</span> <span class="n">root</span> <span class="o">!=</span> <span class="n">root</span><span class="o">.</span><span class="n">parent</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">"requirements-labs.txt"</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">parent</span>
+<span class="n">lock</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="s2">"requirements-labs.lock.txt"</span>
+
+<span class="n">frozen</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="s2">"-m"</span><span class="p">,</span> <span class="s2">"pip"</span><span class="p">,</span> <span class="s2">"freeze"</span><span class="p">],</span>
+                        <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">stdout</span>
+<span class="k">if</span> <span class="n">frozen</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"# Generated by Lab 037. The EXACT environment that produced the numbers in</span><span class="se">\n</span><span class="s2">"</span>
+              <span class="s2">"# this workspace's learning records. Rebuild with:</span><span class="se">\n</span><span class="s2">"</span>
+              <span class="s2">"#     pip install -r requirements-labs.lock.txt</span><span class="se">\n</span><span class="s2">"</span>
+              <span class="s2">"# requirements-labs.txt states what we TOLERATE; this states what we RAN.</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">lock</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">header</span> <span class="o">+</span> <span class="n">frozen</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"wrote </span><span class="si">{</span><span class="n">lock</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">frozen</span><span class="o">.</span><span class="n">splitlines</span><span class="p">())</span><span class="si">}</span><span class="s2"> pinned packages)"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">the four that decide the numbers:"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">frozen</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"=="</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"lightgbm"</span><span class="p">,</span> <span class="s2">"scikit-learn"</span><span class="p">,</span> <span class="s2">"numpy"</span><span class="p">,</span> <span class="s2">"pandas"</span><span class="p">}:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"  "</span> <span class="o">+</span> <span class="n">line</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"pip freeze produced nothing — skipping (are you in a venv?)"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">A lockfile is only half the job. The other half is `make verify`: re-run the entry"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"point, rebuild the manifest, and diff it field by field against the committed one."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"A changed env with an unchanged OOF fingerprint is an upgrade you have just proven"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"safe. An unchanged env with a changed fingerprint is a bug you introduced. And a"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"changed data hash nobody announced is the worst news the file can carry — which is"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"exactly why it is the one nothing else would ever tell you."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

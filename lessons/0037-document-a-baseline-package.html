@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 037 — Document a Baseline Package</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    pre.py { font-family: var(--font-mono); font-size: 0.82rem; background: #0f172a; color: #e2e8f0; padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto; line-height: 1.55; margin: 0.9rem 0; }
+    pre.py .kw { color: #7dd3fc; } pre.py .fn { color: #fca5a5; } pre.py .cm { color: #94a3b8; font-style: italic; }
+    pre.py .hl { background: rgba(176,58,46,0.28); border-radius: 3px; }
+    pre.py .good { background: rgba(30,107,60,0.35); border-radius: 3px; }
+    pre.tree { font-family: var(--font-mono); font-size: 0.8rem; background: var(--bg-soft); border: 1px solid var(--border); padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto; line-height: 1.6; margin: 0.9rem 0; }
+    pre.tree .new { color: #1e6b3c; font-weight: 600; }
+    pre.tree .cm { color: var(--muted); }
+    .finding { border: 1px solid var(--border); border-left: 4px solid #b03a2e; border-radius: 0 6px 6px 0; padding: 0.75rem 1rem; margin: 1.4rem 0 1rem; background: var(--bg-soft); }
+    .finding h3 { margin: 0 0 0.35rem; font-size: 1.02rem; }
+    .finding .cls { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .finding.calm { border-left-color: #1e6b3c; }
+    .finding.number { border-left-color: #2e6fb0; }
+
+    /* repro-probe-viz (new) */
+    .rp-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .rp-ctl { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+    .rp-ctl button { font-family: var(--font-sans); font-size: 0.76rem; padding: 0.26rem 0.6rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .rp-ctl button.rp-on { background: #7a1f16; color: #fff; border-color: #7a1f16; }
+    .rp-svg { display: block; max-width: 100%; margin: 0.25rem auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .rp-stage { font-family: var(--font-sans); font-size: 10.5px; }
+    .rp-mark { font-family: var(--font-sans); font-size: 9px; letter-spacing: 0.03em; }
+    .rp-lab { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .rp-chip { font-family: var(--font-mono); font-size: 10.5px; }
+    .rp-verdict { font-family: var(--font-sans); font-size: 12px; font-weight: 700; }
+    .rp-readout { font-size: 0.87rem; margin-top: 0.7rem; line-height: 1.6; min-height: 8.5rem; }
+    .rp-readout p { margin: 0.45rem 0; }
+    .rp-pill { display: inline-block; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; padding: 0.1rem 0.45rem; border-radius: 4px; color: #fff; margin-right: 0.35rem; }
+    .rp-pill.rp-ok { background: #1e6b3c; }
+    .rp-pill.rp-moved { background: #b9770e; }
+    .rp-pill.rp-broke { background: #b03a2e; }
+
+    /* ece-estimator-viz (new) */
+    .ee-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .ee-ctl { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+    .ee-ctl button { font-family: var(--font-sans); font-size: 0.78rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .ee-ctl button.ee-on { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .ee-svg { display: block; max-width: 100%; margin: 0.25rem auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .ee-n { font-family: var(--font-mono); font-size: 8.5px; }
+    .ee-gapv { font-family: var(--font-mono); font-size: 9px; font-weight: 700; }
+    .ee-axis, .ee-cap { font-family: var(--font-sans); font-size: 9.5px; fill: var(--muted); }
+    .ee-empty { font-family: var(--font-sans); font-size: 12px; fill: var(--muted); }
+    .ee-readout { font-size: 0.87rem; margin-top: 0.7rem; line-height: 1.6; min-height: 7rem; }
+    .ee-readout p { margin: 0.45rem 0; }
+    .ee-where { color: var(--muted); }
+    .ee-good { font-weight: 700; color: #1e6b3c; }
+    .ee-bad { font-weight: 700; color: #b03a2e; }
+
+    /* tolerance-gate-viz (new) */
+    .tg-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tg-ctl { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; font-family: var(--font-sans); font-size: 0.8rem; color: var(--muted); }
+    .tg-ctl input[type=range] { flex: 1 1 220px; max-width: 320px; }
+    .tg-slabel { font-family: var(--font-mono); font-size: 0.82rem; color: var(--fg, #222); }
+    .tg-svg { display: block; max-width: 100%; margin: 0.25rem auto; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .tg-tick { font-family: var(--font-mono); font-size: 9px; fill: var(--muted); }
+    .tg-mark { font-family: var(--font-sans); font-size: 9.5px; font-weight: 600; }
+    .tg-zero { font-family: var(--font-sans); font-size: 9px; fill: #1e6b3c; }
+    .tg-tolmark { font-family: var(--font-sans); font-size: 10px; font-weight: 700; fill: #7a1f16; }
+    .tg-region { font-family: var(--font-sans); font-size: 9px; fill: #1e6b3c; }
+    .tg-readout { font-size: 0.87rem; margin-top: 0.6rem; line-height: 1.6; min-height: 6.5rem; }
+    .tg-readout p { margin: 0.45rem 0; }
+    .tg-pill { display: inline-block; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; padding: 0.1rem 0.45rem; border-radius: 4px; color: #fff; margin-right: 0.35rem; }
+    .tg-pill.tg-tight { background: #1e6b3c; }
+    .tg-pill.tg-mid { background: #b9770e; }
+    .tg-pill.tg-loose { background: #b03a2e; }
+    .tg-c { font-weight: 600; color: #b03a2e; }
+    .tg-w { font-weight: 600; color: #94a3b8; }
+
+    /* checklist (reused) */
+    .chk { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .chk-title { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.6rem; }
+    .chk-list { list-style: none; padding: 0; margin: 0; }
+    .chk-item { display: flex; align-items: baseline; gap: 0.55rem; margin: 0.5rem 0; font-size: 0.92rem; }
+    .chk-item input { margin-top: 0.2rem; flex: none; }
+    .chk-hint { color: var(--accent); font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .chk-feedback { margin-top: 0.75rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4</p>
+  <h1>Document a Baseline Package</h1>
+  <p class="subtitle">Lesson 037 · Phase 1 · Q4 · ~55 min · <em>primary reading: Pineau et al., <em>JMLR</em> 22(164), 2021</em></p>
+
+  <p>
+    <a href="0036-revisit-your-homework-pipeline.html">L036</a> ended with three fixes owed to a pipeline
+    that had just been audited: a person-grouped inner calibration split, in-fold preprocessing, and shipping
+    M1 rather than M2a. Every one of those is a change you would have to <em>re-measure</em> to believe. And
+    the moment you say that out loud, a prior question appears that the whole audit quietly assumed: when you
+    run that pipeline again tomorrow, do you get the same number back?
+  </p>
+  <p>
+    Most people answer yes without checking, on the strength of a sentence like the one in the submission's
+    own README — <em>"All randomness is seeded."</em> That sentence is true. This lesson measures what it
+    actually buys, on the same pipeline, and the answer is: on one reading, nothing at all, because the seed
+    it refers to is never consulted. On another reading, it is the largest controllable term in the entire
+    report. Both readings use the same variable.
+  </p>
+  <p>
+    Its single skill: <strong>turn an audited pipeline into a package that regenerates its own headline
+    number on command and fails loudly when it cannot</strong> — which means pinning the things that
+    <em>measurably</em> move the number rather than the things folklore says do, naming the number precisely
+    enough that two people compute the same one, and choosing a tolerance you could have justified before you
+    saw the answer.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A baseline package is not a description of a result — it is a machine that
+    <em>reproduces</em> the result and <em>refuses</em> when it can't, and building one forces three things
+    into the open that prose lets you leave vague: which inputs the number actually depends on, which
+    estimator the number actually is, and how far it may move before you should stop believing it.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, from memory, before today's material. A failed retrieval still
+    encodes better than a re-read.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    "Reproducible" is one of those words everyone uses and nobody defines, which is exactly how two people
+    end up satisfied by different things. Everything this lesson relies on is defined here from first
+    principles.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Artifact.</strong> In the reproducibility literature this is a term of art, not a
+    synonym for "model file." An artifact is <em>any digital object created to run the study or produced by
+    it</em>: the source code, the scripts that launch the experiments, the input data, the raw outputs, and
+    the analysis scripts that turn outputs into the tables in your report
+    (<a href="https://www.acm.org/publications/policies/artifact-review-and-badging-current">ACM Artifact
+    Review and Badging v1.1</a>). "Package your pipeline" means: assemble those objects so that someone else
+    can run them.
+  </div>
+  <div class="defbox">
+    <strong class="term">Repeatability, reproducibility, replicability.</strong> Three rungs, distinguished
+    by <em>who</em> runs it and <em>with what</em>. <strong>Repeatability</strong> = same team, same setup:
+    you can re-run your own computation and get your own answer. <strong>Reproducibility</strong> = different
+    team, same setup: an independent group gets your result using <em>your</em> artifacts.
+    <strong>Replicability</strong> = different team, different setup: an independent group gets your result
+    from artifacts they wrote themselves. A warning worth carrying: ACM
+    <a href="https://www.acm.org/publications/badging-terms">swapped the definitions of "reproduced" and
+    "replicated" in May 2020</a> to match the wider scientific community, so any paper older than that may
+    use them the other way round. When it matters, say "same artifacts" or "independent artifacts" and skip
+    the noun.
+  </div>
+  <div class="defbox">
+    <strong class="term">Determinism, and bitwise vs. statistical reproduction.</strong> A computation is
+    <em>deterministic</em> if the same inputs always produce the same outputs, down to the last bit.
+    <strong>Bitwise reproduction</strong> means the new output is byte-for-byte identical to the old one —
+    you can check it with a hash and there is nothing to argue about. <strong>Statistical reproduction</strong>
+    means the new number is close enough to the old one, which requires you to have said, in advance, what
+    "close enough" is. Bitwise is a much stronger claim, and — this is the surprise of the lesson — it is
+    often available for free on CPU tabular pipelines, so it is worth checking before settling for the
+    weaker one.
+  </div>
+  <div class="defbox">
+    <strong class="term">Fingerprint (content hash).</strong> A short digest of a large object, such that any
+    change to the object changes the digest. Here: run SHA-256 over the raw bytes of the out-of-fold
+    probability matrix and keep the first 16 hex characters. Two runs producing
+    <code>d2f0e4bf9b4fd761</code> agree on all 27,935 predicted probabilities; two runs producing different
+    digests disagree somewhere, and the digest does not tell you where — you still need the max
+    <code>|Δp|</code> and the count of flipped predictions for that. The hash is the alarm, not the diagnosis.
+  </div>
+  <div class="defbox">
+    <strong class="term">Constraint, pin, and lockfile.</strong> A <em>constraint</em> such as
+    <code>lightgbm&gt;=4.0</code> says which versions you will <em>tolerate</em>; it is a statement about the
+    future. A <em>pin</em> such as <code>lightgbm==4.6.0</code> says which version you want. A
+    <em>lockfile</em> (<code>uv.lock</code>, <code>poetry.lock</code>, <code>pip freeze</code> output) records
+    the version and content hash of <em>every</em> package that was actually installed, transitive
+    dependencies included, so the environment can be rebuilt exactly. Only the third of these describes what
+    you ran. The submission has one; this workspace, as we will see, does not.
+  </div>
+  <div class="defbox">
+    <strong class="term">Entry point.</strong> One named command that runs the whole thing —
+    <code>make baseline</code>, <code>python -m hw.run baseline</code>, <code>uv run hw-baseline</code>. Its
+    defining property is that there is no correct <em>order</em> for the reader to get wrong. Three notebooks
+    that must be executed 01 → 02 → 03 is not an entry point; it is an ordering constraint expressed in
+    English, and English does not raise exceptions.
+  </div>
+  <div class="defbox">
+    <strong class="term">Run manifest.</strong> A machine-written record, emitted <em>by</em> the run, of
+    everything needed to interpret its output: the git commit, whether the working tree was dirty, the
+    resolved versions of every dependency, a content hash of the input data, every seed, the thread count,
+    the machine, the wall time, and the numbers produced. Its purpose is to make the question "was this the
+    same experiment?" answerable months later without relying on memory.
+  </div>
+  <div class="defbox">
+    <strong class="term">Estimator of record.</strong> The exact recipe by which a metric is turned into a
+    single number — not just <em>log-loss</em> or <em>ECE</em>, but "mean over the five outer folds of the
+    per-fold value" or "one value computed over all pooled out-of-fold rows at once." Two estimators of the
+    same metric on the same predictions can disagree substantially, and neither is wrong. §"Name the
+    number" below is entirely about this.
+  </div>
+  <div class="defbox">
+    <strong class="term">Noise floor of an estimator.</strong> The value your estimator reports for a model
+    that is <em>perfect</em> on the thing being measured. For a mean it is zero. For a binned statistic like
+    ECE it is emphatically not: bin a small sample and you will observe gaps between confidence and accuracy
+    that are pure sampling noise, and because ECE sums <em>absolute</em> gaps, that noise cannot cancel — it
+    accumulates. Any reported value below its own noise floor is a measurement of the ruler.
+  </div>
+  <div class="defbox">
+    <strong class="term">Tolerance.</strong> The threshold in a reproduction check: fail unless
+    <code>|new − expected| ≤ tol</code>. A tolerance chosen <em>after</em> seeing the new number is not a
+    test, it is a rationalisation, so <code>tol</code> belongs in the config file next to the expected value.
+  </div>
+  <div class="defbox">
+    <strong class="term">Configuration debt.</strong> Sculley et&nbsp;al.'s name (in
+    <a href="https://papers.nips.cc/paper/2015/hash/86df7dcfd896fcaf2674f757a2463eba-Abstract.html"><em>Hidden
+    Technical Debt in Machine Learning Systems</em></a>, NeurIPS 2015, §6) for the observation that mature ML
+    systems accumulate enormous configuration surfaces — every feature, every threshold, every seed, every
+    sampling rule — which are typically treated as an afterthought, are rarely reviewed, and are where a
+    surprising share of production errors live. Their prescription is that configuration should be a
+    first-class, reviewable, diff-able artifact. It is the difference between a number scattered across four
+    notebook cells and a number appearing once in a file.
+  </div>
+
+  <h2>Where we are starting from</h2>
+  <p>
+    The subject is the same artifact as L036: the ReAction L&amp;D response-prediction submission in
+    <code>~/Projects/homework</code>. As with the audit, the honest place to begin is with what it already
+    gets right, because that is what makes the gaps worth taking seriously.
+  </p>
+  <table>
+    <thead><tr><th>Reproducibility question</th><th>Verdict</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>Is the environment recorded exactly, not just constrained?</td><td class="win">pass</td>
+          <td><code>uv.lock</code>, 2,415 lines, every transitive dependency with a version and a
+              <code>sha256</code> — and <code>uv sync</code> as the documented setup command, which honours
+              it</td></tr>
+      <tr><td>Are seeds set at all?</td><td class="win">pass</td>
+          <td><code>RANDOM_STATE = 0</code> defined once in <code>src/modeling.py</code> and passed to the
+              splitter, the estimator, KMeans and the propensity model</td></tr>
+      <tr><td>Are the intermediate outputs kept?</td><td class="win">pass</td>
+          <td>per-fold metric CSVs, out-of-fold probability arrays, the fitted pipeline and model as
+              <code>.joblib</code>, SHAP tables, figures — 30-odd files under <code>artifacts/</code></td></tr>
+      <tr><td>Does anything check the outputs?</td><td class="win">pass</td>
+          <td>end-to-end asserts inside each notebook: no NaNs or infinities, shapes agree, OOF arrays align
+              with the labelled index, a reloaded <code>joblib</code> reproduces the matrix bit-for-bit</td></tr>
+      <tr><td>Is there one command that regenerates the headline number?</td><td class="bad">fail</td>
+          <td>three <code>nbconvert --execute --inplace</code> invocations that must be run in order, each
+              consuming the previous one's artifacts</td></tr>
+      <tr><td>Does anything compare a fresh run against the reported number?</td><td class="bad">fail</td>
+          <td>the asserts check internal consistency — that the run agrees with <em>itself</em> — not that it
+              agrees with <code>report.md</code></td></tr>
+      <tr><td>Is the estimator behind each reported number stated?</td><td class="bad">fail</td>
+          <td>"top-label ECE" appears as <strong>0.0332</strong> in §3.1 and <strong>0.018</strong> in the
+              README and the §4 ship-gate table, for the same model on the same predictions</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Note the shape of that list. The submission is <em>ahead</em> of most published ML on the first four rows
+    — a real lockfile is more than many papers ship. What it is missing is not hygiene but a
+    <strong>gate</strong>: nothing anywhere in the repository would notice if a rerun produced a different
+    answer. The rest of this lesson builds that gate, and in the course of building it discovers which
+    inputs the number actually depends on — which turns out not to be the list you would guess.
+  </p>
+  <div class="callout">
+    <strong>Read the experiments in the right units.</strong> Everything measured below runs the
+    <em>uncalibrated</em> LightGBM arm — the same 400-tree model, the same person-grouped 5-fold splitter,
+    the same encoded matrix, but without the isotonic wrapper. That is deliberate:
+    <code>CalibratedClassifierCV</code> takes five inner splits of its own, so leaving it in would mean each
+    "run" contained six models and any difference could be blamed on the calibrator. The cost is that the
+    absolute level is <strong>1.6322</strong> rather than L036's calibrated <strong>1.4248</strong>, and one
+    fold's standard deviation is <strong>0.0350</strong> rather than 0.0392. When a delta measured here is
+    compared to the 0.0032 margin from L036, treat it as a comparison of magnitudes in the same units on the
+    same data, not as a like-for-like difference of two numbers from one table.
+  </div>
+
+  <h2>Nine ways to break it — and the eight that didn't</h2>
+  <p>
+    The standard advice about ML reproducibility is a list of hazards: set your seeds, pin your threads,
+    beware floating-point non-associativity, distrust GPU reductions. It is good advice and it is
+    <em>generic</em>, which means it tells you what to worry about but never what is actually true of the
+    code in front of you. So rather than repeat the list, we ran it.
+  </p>
+  <p>
+    The design is a paired perturbation study, and it is worth stating in the L036 style before the numbers
+    appear. <strong>Held fixed:</strong> the data, the joined feature frame, the encoder, the outer
+    person-grouped 5-fold splits, the model hyper-parameters, the metric code, and the machine.
+    <strong>Varied:</strong> exactly one knob per configuration. <strong>Measured:</strong> the full
+    out-of-fold probability matrix, 5,587&nbsp;×&nbsp;5 float64 values, hashed with SHA-256, plus the mean
+    per-fold log-loss and — where the hash differs — the largest single-probability change and the number of
+    rows whose predicted class flipped. This isolates the knob because a hash mismatch cannot come from
+    anywhere else: nothing but the knob was allowed to move.
+  </p>
+
+  <h3>Predict before you read</h3>
+  <p>
+    Commit first. Of the nine perturbations below, how many do you expect to change the out-of-fold matrix
+    even slightly?
+  </p>
+  <div id="predict-knobs"></div>
+
+  <p>
+    Explore them one at a time. Each knob acts at a specific stage of the pipeline — the widget marks where —
+    and reports the measured consequence.
+  </p>
+  <div id="repro-probe"></div>
+
+  <p>
+    The full ledger, so nothing is hidden behind a widget:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>Perturbation</th><th>OOF fingerprint</th><th>mean log-loss</th>
+      <th>rows whose class flipped</th></tr></thead>
+    <tbody>
+      <tr><td>reference (n_jobs=6, seed 0, float32, lightgbm 4.6.0)</td>
+          <td class="n">d2f0e4bf9b4fd761</td><td class="n">1.632168</td><td class="n">—</td></tr>
+      <tr><td>rerun, nothing changed</td><td class="n win">same</td><td class="n">1.632168</td><td class="n">0</td></tr>
+      <tr><td><code>n_jobs</code> = 1</td><td class="n win">same</td><td class="n">1.632168</td><td class="n">0</td></tr>
+      <tr><td><code>n_jobs</code> = 2</td><td class="n win">same</td><td class="n">1.632168</td><td class="n">0</td></tr>
+      <tr><td><code>n_jobs</code> = 12</td><td class="n win">same</td><td class="n">1.632168</td><td class="n">0</td></tr>
+      <tr><td><code>deterministic=true, force_row_wise=true</code> (at 1, 2, 6, 12 threads)</td>
+          <td class="n win">same</td><td class="n">1.632168</td><td class="n">0</td></tr>
+      <tr><td><code>force_col_wise=true</code> instead of row-wise</td><td class="n win">same</td>
+          <td class="n">1.632168</td><td class="n">0</td></tr>
+      <tr><td>training rows presented in a shuffled order</td><td class="n win">same</td>
+          <td class="n">1.632168</td><td class="n">0</td></tr>
+      <tr><td>model <code>random_state</code> = 1, 2, 3, 4</td><td class="n win">same</td>
+          <td class="n">1.632168</td><td class="n">0</td></tr>
+      <tr><td><strong>input kept float64 instead of float32</strong></td>
+          <td class="n bad">a4377f2a443dc970</td><td class="n mid">1.633497 <em>(+0.00133)</em></td>
+          <td class="n bad">258</td></tr>
+      <tr><td><strong>splitter <code>random_state</code> = 1, 2, 3, 4</strong></td>
+          <td class="n bad">four more</td><td class="n mid">1.6191 – 1.6357 <em>(range 0.0166)</em></td>
+          <td class="n">n/a — different test rows</td></tr>
+      <tr><td><strong>lightgbm 4.6.0 → 4.5.0, everything else pinned identical</strong></td>
+          <td class="n bad">—</td><td class="n bad">did not run</td><td class="n">—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The eight that didn't move: what a negative result is worth</h3>
+  <p>
+    Eight perturbations, one hash. Thread count from 1 to 12 — the knob that L036 turned to make the audit
+    affordable — changes only wall time. LightGBM's own <code>deterministic</code> flag, documented as
+    ensuring <a href="https://lightgbm.readthedocs.io/en/stable/Parameters.html">"stable results when using
+    the same data and the same parameters (and different <code>num_threads</code>)"</a>, has nothing to
+    stabilise. Forcing the histogram construction row-wise or column-wise — the choice LightGBM otherwise
+    makes by <em>timing both on your machine at fit time</em>, and therefore in principle a dependence on how
+    busy the box was — makes no difference to the model. Shuffling the training rows makes no difference
+    either, because LightGBM buckets each feature into at most 255 bins before summing anything, and a bin's
+    total does not care in what order its members arrived.
+  </p>
+  <p>
+    It would be easy to read that as "the warnings were overblown, skip the pins." That is exactly the wrong
+    conclusion, for a reason worth being precise about. The value of these eight runs is not that they
+    let you <em>remove</em> anything; it is that they let you <em>say something</em>. Before, you had a README
+    sentence expressing a hope. Now you have a measurement: on this data, this model and this machine, the
+    result is bit-stable under every threading and ordering perturbation available, and one line in the run
+    manifest — <code>n_jobs</code> — can be varied by whoever reproduces you without invalidating the
+    comparison. That is a real permission, it is only granted by evidence, and it cost about eleven minutes
+    of CPU.
+  </p>
+  <p>
+    The permission is also strictly local. It holds for CPU histogram gradient boosting on 5,587 rows. It
+    will not survive contact with Year&nbsp;2: a GPU reduction sums partial results in whatever order the
+    blocks finish, cuDNN picks algorithms by benchmarking, and PyTorch's own
+    <a href="https://docs.pytorch.org/docs/stable/notes/randomness.html">reproducibility notes</a> open by
+    saying that completely reproducible results are not guaranteed across releases, platforms, or even
+    between CPU and GPU on one machine. The habit to build is not "threads are safe"; it is "measure whether
+    threads are safe here, and write down the answer."
+  </p>
+
+  <h3>The one that moved: a cast nobody documented</h3>
+  <div class="finding">
+    <span class="cls">Consequence class · degrades the artifact for individual people; the aggregate barely notices</span>
+    <h3><code>.astype(np.float32)</code> — in a notebook cell, in neither the README nor <code>src/</code></h3>
+  </div>
+  <pre class="py"><span class="cm"># notebooks/02_task2_modeling.ipynb, cell 3</span>
+X_all = pipe.fit_transform(X_df)<span class="hl">.astype(np.float32)</span>   <span class="cm"># halve the memory, and...?</span></pre>
+  <p>
+    Drop that cast — change nothing else, not the seed, not the folds, not a hyper-parameter — and the
+    out-of-fold matrix is a different object. The mechanism is not mysterious. LightGBM does not split on raw
+    feature values; it first <em>bins</em> each feature into at most 255 buckets and searches only over bin
+    boundaries. A value stored as float32 carries about 7 decimal digits; the same value in float64 carries
+    about 16. For the overwhelming majority of rows the two land in the same bucket and nothing happens. For
+    a few, near a boundary, they do not — and once one split threshold moves, every tree grown after it in
+    the boosted sequence is grown on different residuals, so the divergence compounds.
+  </p>
+  <p>
+    What it costs depends entirely on which question you ask, and the two answers point in opposite
+    directions:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>Question</th><th>Answer</th><th>Read against</th></tr></thead>
+    <tbody>
+      <tr><td>How much did the reported number move?</td><td class="n">Δ mean log-loss <strong>+0.00133</strong></td>
+          <td class="n">3.8&nbsp;% of one fold's σ (0.0350) — invisible</td></tr>
+      <tr><td>How many folds even changed?</td><td class="n">2 of 5 (folds 2 and 3)</td>
+          <td class="n">folds 0, 1 and 4 are bit-identical</td></tr>
+      <tr><td>How far did a single prediction move?</td><td class="n bad">max |Δp| = <strong>0.326</strong></td>
+          <td class="n">a probability of 0.60 becoming 0.27</td></tr>
+      <tr><td>How many people got a different predicted outcome?</td>
+          <td class="n bad"><strong>258 of 5,587 — 4.6&nbsp;%</strong></td>
+          <td class="n">every one of them a real person in an EU-facing HR system</td></tr>
+    </tbody>
+  </table>
+  <p>
+    This is the L036 consequence-class distinction reappearing in a new place, and it is the reason that
+    lesson came first. A defect can be <em>invisible to the number and severe in the artifact</em>. The mean
+    is an average over 5,587 rows and it absorbs 258 flips without flinching; the 258 individuals do not have
+    the luxury of being averaged. If your report says "the model recommends X for this person," and an
+    undocumented dtype cast decides that for 4.6&nbsp;% of them, then the cast is part of the model — and it
+    belongs in the config file, under review, next to the learning rate, rather than in a notebook cell that
+    exists to save memory.
+  </p>
+  <p>
+    Put next to the other measurement we have on this data: the margin by which M2a was chosen over M1 —
+    the difference that decided which artifact went to production — was <strong>0.0032 nats</strong>. The
+    dtype cast is worth <strong>0.00133</strong>, about <strong>42&nbsp;%</strong> of it. (Different arm,
+    same data and units; read it as an order of magnitude, not a subtraction.) A deployment decision made on
+    a margin that undocumented representation choices can supply half of was not, in any useful sense, a
+    decision about the models.
+  </p>
+
+  <h3>The one that didn't run at all</h3>
+  <div class="finding">
+    <span class="cls">Consequence class · the reproduction fails closed — the good outcome, and the reason to prefer it</span>
+    <h3>lightgbm 4.5.0 with scikit-learn 1.9.0: <code>TypeError</code></h3>
+  </div>
+  <pre class="py">TypeError: check_X_y() got an unexpected keyword argument <span class="hl">'force_all_finite'</span></pre>
+  <p>
+    The experiment: build a second virtual environment pinning <em>identical</em> versions of numpy, pandas,
+    scipy, scikit-learn, pyarrow, joblib and threadpoolctl, changing only <code>lightgbm==4.6.0</code> to
+    <code>4.5.0</code>, and run the reference configuration. It never reaches a number. scikit-learn renamed
+    <code>force_all_finite</code> to <code>ensure_all_finite</code> in
+    <a href="https://scikit-learn.org/stable/whats_new/v1.6.html">version 1.6</a> and
+    <a href="https://github.com/scikit-learn/scikit-learn/pull/32452">deleted the old name in 1.8</a>;
+    LightGBM 4.5.0 still calls it.
+  </p>
+  <p>
+    Two things follow, and the second is the one that changes how you write a dependency file.
+  </p>
+  <p>
+    First: an environment drift does not politely present as a slightly different number. Its most common
+    presentation is a crash, and a crash is the <em>merciful</em> case, because you cannot mistake it for a
+    result. The dangerous version of this same event is a library that silently changes a default — and you
+    only know which kind you got if something regenerates the number and compares it.
+  </p>
+  <p>
+    Second, and this is close to home: both of those versions satisfy this workspace's own
+    <code>requirements-labs.txt</code>, which asks for <code>lightgbm&gt;=4.0</code> and
+    <code>scikit-learn&gt;=1.5</code> and ships <strong>no lockfile at all</strong>. A constraint is a
+    statement about which futures you are willing to accept, and it accepts far more of them than you think —
+    including futures in which two individually valid packages cannot be installed together. Every verified
+    number in every learning record in this workspace was produced by a specific resolution of those
+    constraints that is currently written down nowhere. That is today's most actionable finding, and the lab
+    fixes it.
+  </p>
+
+  <h2>Name the number</h2>
+  <p>
+    Suppose the environment is nailed down and the fingerprint matches. There is still a way for two honest
+    people to disagree about whether a result reproduced, and it has nothing to do with computers. It is that
+    "the ECE" is not one number.
+  </p>
+  <p>
+    Here is the same shipped model (M2a), the same saved out-of-fold predictions, the same metric name, in
+    two places in the same repository:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>Document</th><th>Says</th><th>Estimator actually used</th></tr></thead>
+    <tbody>
+      <tr><td><code>report.md</code> §3.1 — the model-selection table</td><td class="n">ECE 0.0332 ± 0.0100</td>
+          <td>compute ECE inside each of the 5 outer folds (n ≈ 1,117), then average</td></tr>
+      <tr><td><code>README.md</code> headline and <code>report.md</code> §4 ship-gate table</td>
+          <td class="n">ECE 0.018</td>
+          <td>pool all 5,587 out-of-fold rows and compute ECE once</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Recomputed from the saved artifact: <strong>0.017760</strong> pooled against <strong>0.033200</strong>
+    averaged over folds. Neither is a mistake, neither is a leak, and the gap is a factor of
+    <strong>1.87</strong>. Note also which is which: the model was <em>selected</em> using the larger
+    estimator and <em>ship-gated</em> using the smaller one.
+  </p>
+  <p>
+    Before explaining it, rule out the obvious suspect. Does pooling versus averaging always disagree? No —
+    on the same predictions, log-loss comes out at <strong>1.4215533</strong> pooled and
+    <strong>1.4215443</strong> averaged, agreeing to five decimals. Log-loss is a plain mean of one term per
+    row, so averaging five near-equal-sized means of it recovers almost exactly the mean of all of them; the
+    two operations commute. ECE is not a mean of per-row terms. It is
+  </p>
+  <p style="text-align:center; font-family:var(--font-mono); font-size:0.92rem;">
+    ECE = Σ<sub>b</sub> (|B<sub>b</sub>| / N) · | accuracy(B<sub>b</sub>) − confidence(B<sub>b</sub>) |
+  </p>
+  <p>
+    — a weighted sum over <em>bins</em> of the <em>absolute</em> gap between how often the model was right in
+    that bin and how confident it was. Two features of that formula do the damage. Binning depends on how
+    many rows you have: cut the sample into five and every bin has a fifth as many rows, so each bin's
+    accuracy is estimated from a fifth as much evidence and is correspondingly noisier. And the absolute
+    value means that noise <strong>cannot cancel</strong>: a bin that happens to run 5 points hot and a bin
+    that happens to run 5 points cold both contribute +0.05, where in a signed average they would have
+    annihilated. Sparser bins therefore do not merely make ECE noisier — they make it systematically
+    <em>larger</em>.
+  </p>
+  <p>
+    You can watch it happen. Below, the same predictions binned two ways; the red bars are bins holding fewer
+    than 25 rows.
+  </p>
+  <div id="ece-estimator"></div>
+  <p>
+    Look at the rightmost bar in each view. Pooled, the top populated bin holds <strong>17</strong> rows and
+    shows a gap of 0.19. In fold 0 that same region of confidence holds <strong>2</strong> rows — one
+    predicted correctly, one not — and shows a gap of <strong>0.40</strong>, a number produced entirely by
+    the arithmetic of ½ against a confidence of 0.90.
+  </p>
+
+  <h3>How much of the 0.0332 is real?</h3>
+  <p>
+    "Systematically larger" is a mechanism, not a size, so measure it. Two experiments, both on the saved
+    predictions, both in <code>labs/_ece_estimator_l037.py</code>.
+  </p>
+  <p>
+    <strong>Experiment one — is it the folds, or just the sample size?</strong> Take the pooled matrix and cut
+    it into five <em>random</em> blocks of 1,117 rows — no person grouping, no fold structure, nothing but
+    the size — and average their ECEs. Repeat 500 times. Result:
+    <strong>0.03432 ± 0.00336</strong>, with a 90&nbsp;% interval of [0.0289, 0.0402]. The real per-fold mean
+    of 0.0332 sits comfortably inside that. Whatever the five folds are doing, it is not distinguishable from
+    what five arbitrary blocks of the same size do.
+  </p>
+  <p>
+    <strong>Experiment two — what would a perfect model score?</strong> Build a control with true ECE exactly
+    zero by construction: take the model's own probability vector for each row and <em>resample the label
+    from it</em>. Now the model is, by definition, perfectly calibrated. Run the identical estimator, at each
+    sample size, 300 times:
+  </p>
+  <table class="num-table">
+    <thead><tr><th>rows in the sample</th><th>ECE reported for the <em>real</em> model</th>
+      <th>ECE reported for a <em>perfectly calibrated</em> model</th><th>difference = signal</th></tr></thead>
+    <tbody>
+      <tr><td class="n">5,587 <em>(pooled)</em></td><td class="n">0.0178</td>
+          <td class="n">0.0149 ± 0.0038</td><td class="n win">+0.0029</td></tr>
+      <tr><td class="n">3,000</td><td class="n">0.0227</td><td class="n">0.0200 ± 0.0059</td>
+          <td class="n">+0.0027</td></tr>
+      <tr><td class="n">1,117 <em>(one fold)</em></td><td class="n">0.0344</td>
+          <td class="n">0.0335 ± 0.0087</td><td class="n bad">+0.0009</td></tr>
+      <tr><td class="n">500</td><td class="n">0.0495</td><td class="n">0.0496 ± 0.0130</td>
+          <td class="n bad">−0.0001</td></tr>
+      <tr><td class="n">200</td><td class="n">0.0788</td><td class="n">0.0763 ± 0.0193</td>
+          <td class="n bad">+0.0025</td></tr>
+      <tr><td class="n">107 <em>(the failing ship-gate slice)</em></td><td class="n">—</td>
+          <td class="n">0.1071 ± 0.0297</td><td class="n">—</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Read the middle column downwards. It is the noise floor, and it grows as the sample shrinks, closely
+    following <code>a + b/√n</code>: fitting that form on the two largest sample sizes alone gives
+    <code>a = 0.0042, b = 1.017</code>, which then predicts the other four to within 3.5&nbsp;%. (Two points
+    fitted, four predicted — but it is still an extrapolation of a heuristic form, not a theorem, so treat
+    <code>a</code> as an indication that the true value is small, not as a measurement of it.)
+  </p>
+  <p>
+    The consequences for the submission are three, in increasing order of seriousness.
+  </p>
+  <p>
+    <strong>The §3.1 selection number is almost all ruler.</strong> At fold size the estimator reports 0.0335
+    for a perfect model and 0.0344 for this one. The models in that table were compared, in part, on a
+    quantity whose informative content is roughly 0.001 out of 0.033.
+  </p>
+  <p>
+    <strong>The README's 0.018 is the better number, and should say so.</strong> Pooled, the floor is 0.0149
+    and the model reads 0.0178 — a signal of about 0.003, small but real, and about three times better
+    resolved than the per-fold version. The right fix is not to pick a favourite but to <em>name</em> it:
+    "top-label ECE, 15 equal-width bins, computed once over all 5,587 pooled out-of-fold rows."
+  </p>
+  <p>
+    <strong>The one gate the submission failed cannot be passed by anything.</strong> §4.7 records a
+    CONDITIONAL verdict, failing the slice gate on the 107-row <code>age = missing</code> cell at ECE
+    <strong>0.094</strong> against a threshold of 0.05. At n = 107 this estimator reports
+    <strong>0.1071 ± 0.0297</strong> for a model that is calibrated exactly right. The observed 0.094 is
+    <em>below</em> the noise floor. There may well be a real calibration problem in that slice — but this
+    measurement cannot see it, and the gate as written would fail a perfect model. A ship-gate whose
+    threshold sits under its own estimator's noise floor is not a safety check; it is a coin flip with a
+    procedure attached.
+  </p>
+  <p>
+    There is a counter-intuitive corollary, and <a href="../labs/0037-document-a-baseline-package.ipynb">the
+    lab</a> makes you predict it before it shows you. Strip the isotonic step out of this pipeline and the
+    resulting model is genuinely badly calibrated — pooled ECE around <strong>0.093</strong>, roughly eight
+    times its own floor. On that model the two estimators agree to within 1&nbsp;%, because a large real
+    miscalibration swamps the bias. <strong>The estimator you pick matters least when the number is bad, and
+    most when it is good.</strong> Which is to say: it matters precisely when you are about to ship, and
+    precisely when you would most like to believe the smaller of the two figures in front of you.
+  </p>
+  <div class="callout">
+    <strong>What this has to do with packaging.</strong> Everything, and it is the point of the section. The
+    reason the same repository contains 0.0332 and 0.018 is that no single place <em>defines</em> the number.
+    A run manifest that emits <code>{"metric": "ece_top", "bins": 15, "estimator": "pooled_oof", "n": 5587,
+    "value": 0.01776}</code> makes the two impossible to confuse, makes the ship-gate's threshold reviewable
+    against the estimator it is applied to, and makes a reproduction check meaningful — because you cannot
+    compare two numbers until you know they are the same number.
+  </div>
+
+  <h2>Which seed?</h2>
+  <p>
+    <code>src/modeling.py</code> defines <code>RANDOM_STATE = 0</code> once and hands the same integer to the
+    estimator and to the splitter. The README summarises this as "all randomness is seeded." Both statements
+    are correct, and they conceal a factor-of-infinity difference in importance.
+  </p>
+  <div class="finding calm">
+    <span class="cls">The model seed · inert</span>
+    <h3>Seeds 0, 1, 2, 3, 4 produce one identical hash</h3>
+    <p style="margin-bottom:0">
+      LightGBM consults its random number generator only when it <em>samples</em>: row subsampling
+      (<code>bagging_fraction &lt; 1</code>), column subsampling (<code>feature_fraction &lt; 1</code>), or
+      randomised split thresholds (<code>extra_trees</code>). This configuration sets none of the three, so
+      the RNG is never asked for a number and the seed cannot matter. Setting it was harmless and reasonable;
+      believing it bought reproducibility was not.
+    </p>
+  </div>
+  <div class="finding">
+    <span class="cls">The splitter seed · the largest controllable term in the report</span>
+    <h3>Five fold draws span 0.0166 nats</h3>
+  </div>
+  <table class="num-table">
+    <thead><tr><th>splitter <code>random_state</code></th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead>
+    <tbody>
+      <tr><td>mean log-loss</td><td class="n">1.632168</td><td class="n">1.635713</td><td class="n">1.621849</td>
+          <td class="n">1.619148</td><td class="n">1.626732</td></tr>
+      <tr><td>fold σ within that draw</td><td class="n">0.0350</td><td class="n">0.0534</td><td class="n">0.0239</td>
+          <td class="n">0.0415</td><td class="n">0.0463</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Nothing about the model changed across those five runs. The same 400 trees, the same hyper-parameters,
+    the same encoded matrix. All that changed is <em>which persons landed in which fold</em>, and the
+    reported headline moved over a range of <strong>0.0166 nats</strong> — five times the margin that
+    decided which model shipped, twelve times the dtype effect, and about half of one fold's own standard
+    deviation.
+  </p>
+  <p>
+    Three things follow. <strong>Reporting a single fold draw is reporting a sample of one</strong> from a
+    distribution with a visible spread; L023's answer to this is repeated cross-validation (5×5), and this
+    is what that recommendation costs and buys. <strong>The splitter seed is load-bearing config</strong> and
+    belongs in the manifest by name, not folded into a variable called <code>RANDOM_STATE</code> that also
+    feeds three things where it does nothing. And <strong>"seeded" is not a property, it is a question</strong>:
+    seeded where, consulted by what, and with what consequence if it changes? Probing each seed
+    independently is a ten-minute experiment that turns a slogan into two facts.
+  </p>
+
+  <h2>Choosing the tolerance</h2>
+  <p>
+    Now the gate itself. The check is <code>|new − expected| ≤ tol</code>, and everything hinges on
+    <code>tol</code>, because the measured landmarks on this pipeline span four orders of magnitude. Slide it
+    and read what each choice buys.
+  </p>
+  <div id="tolerance-gate"></div>
+  <p>
+    The reasoning behind the recommended setting runs as follows. <strong>Start from the strongest claim the
+    evidence supports.</strong> Eight of nine perturbations were bitwise identical, which means a hash
+    equality check — tolerance zero — will not produce false alarms on this pipeline, so that is the default
+    gate, and it has the enormous practical advantage of needing no threshold at all. <strong>Fall back only
+    when you must, and say why.</strong> When a genuinely stochastic component enters (a GPU reduction, an
+    early-stopping split, torch), bitwise becomes unachievable and you switch to a numeric tolerance —
+    at which point the tolerance must be <em>derived from a measurement</em>, not chosen for looking
+    reasonable. <strong>Bound it from below and above.</strong> Below: it must exceed the drift you have
+    measured and accepted, or it fires on nothing but itself. Above: it must stay well under the smallest
+    difference you intend to make a decision on — and on this pipeline that is 0.0032 nats, which rules out
+    anything approaching the fold σ.
+  </p>
+  <div class="callout">
+    <strong>The tolerance trap.</strong> The failure mode is not choosing badly, it is choosing
+    <em>afterwards</em>. You run the reproduction, get 1.6335 against an expected 1.6322, and set
+    <code>tol = 0.002</code> so the test passes. That gate has no power: it was fitted to the observation it
+    was supposed to judge. The discipline is the same one L023 taught for p-values and L017 for model
+    selection — the threshold is part of the protocol, so it is written down before the number that will be
+    compared against it, and it lives in the config file where a reviewer can see it.
+  </div>
+
+  <h2>What the package actually looks like</h2>
+  <p>
+    Everything above is a requirement. Here is the shape that satisfies it. Nothing exotic — the point is
+    that each piece exists because a specific failure above demands it.
+  </p>
+  <pre class="tree">homework/
+├── pyproject.toml          <span class="cm"># deps + [build-system] + [project.scripts]</span>
+├── uv.lock                 <span class="cm"># already there: exact resolved environment</span>
+├── <span class="new">baseline.yaml</span>           <span class="cm"># NEW — every choice that can move the number, in one file</span>
+├── <span class="new">Makefile</span>                <span class="cm"># NEW — `make baseline`, `make verify`</span>
+├── src/hw/
+│   ├── features.py         <span class="cm"># unchanged</span>
+│   ├── modeling.py         <span class="cm"># unchanged, minus the hard-coded constants</span>
+│   ├── <span class="new">config.py</span>           <span class="cm"># NEW — load baseline.yaml into a frozen dataclass</span>
+│   ├── <span class="new">manifest.py</span>         <span class="cm"># NEW — git sha, env, data hash, seeds, threads, timings</span>
+│   └── <span class="new">run.py</span>              <span class="cm"># NEW — the entry point; `python -m hw.run baseline`</span>
+├── notebooks/              <span class="cm"># narrative only; they IMPORT hw, they do not define it</span>
+├── artifacts/
+│   ├── model.joblib
+│   ├── cv_folds_M1.csv
+│   └── <span class="new">run_manifest.json</span>   <span class="cm"># NEW — written by every run, committed</span>
+└── <span class="new">RESULTS.md</span>              <span class="cm"># NEW — the headline numbers, each with its estimator and tolerance</span></pre>
+
+  <h3>The config file is the interesting part</h3>
+  <p>
+    Sculley et&nbsp;al.'s configuration-debt argument says the configuration surface of an ML system is large,
+    under-reviewed, and disproportionately responsible for errors. This lesson found two concrete instances
+    on one pipeline: a <code>.astype(np.float32)</code> that changes 258 predictions and lives in a notebook
+    cell, and a <code>RANDOM_STATE</code> that means two unrelated things in two places. Both are
+    configuration masquerading as code. Pulling them into one reviewable file is the fix:
+  </p>
+  <pre class="py"><span class="cm"># baseline.yaml — every knob this lesson measured, in one diffable place</span>
+data:
+  source: data/          <span class="cm"># persons|situations|responses .parquet</span>
+  <span class="good">dtype: float32</span>        <span class="cm"># MEASURED: float64 flips 258 of 5,587 predictions</span>
+
+split:
+  kind: stratified_group_kfold
+  n_splits: 5
+  group: person_id
+  <span class="good">seed: 0</span>               <span class="cm"># MEASURED: seeds 0-4 span 0.0166 nats. Load-bearing.</span>
+
+model:
+  n_estimators: 400
+  learning_rate: 0.05
+  num_leaves: 31
+  min_child_samples: 50
+  reg_lambda: 1.0
+  <span class="good">seed: 0</span>               <span class="cm"># MEASURED: inert (no bagging/feature sampling). Kept for the day it isn't.</span>
+  <span class="good">n_jobs: 6</span>             <span class="cm"># MEASURED: no effect on output; 3.5 s/fit vs 9.8 at 1 and 13.7 at 12</span>
+
+report:
+  primary:
+    metric: log_loss
+    <span class="good">estimator: mean_over_outer_folds</span>
+    expected: 1.632168
+    <span class="good">tol: 0.0</span>              <span class="cm"># bitwise; 8 of 9 perturbations were byte-identical</span>
+  calibration:
+    metric: ece_top
+    <span class="good">estimator: pooled_oof</span>   <span class="cm"># NOT mean_over_folds: at n=1117 the noise floor is 0.0335</span>
+    bins: 15
+    expected: 0.017760
+    tol: 0.0</pre>
+  <p>
+    Read the comments. Each one is a measurement from this lesson, and each answers the question a reviewer
+    would otherwise have to ask. That is what distinguishes a config file from a pile of constants: the
+    constants are the same, but the file records <em>why each value is the value</em> and what happens if it
+    changes. Note also what the <code>estimator:</code> keys have accomplished — the 0.0332/0.018 ambiguity
+    is now unrepresentable, because there is nowhere to write "the ECE" without also writing how it is
+    computed.
+  </p>
+
+  <h3>The manifest, and the check it enables</h3>
+  <p>
+    The manifest is written <em>by</em> the run, not by you, which is the whole point: a hand-maintained
+    record of what you ran is a record of what you meant to run.
+  </p>
+  <pre class="py"><span class="cm"># artifacts/run_manifest.json — emitted by every `make baseline`</span>
+{
+  <span class="hl">"git_sha"</span>: "8518888", <span class="hl">"git_dirty"</span>: false,
+  <span class="hl">"data_sha256"</span>: "3f9c…",        <span class="cm"># hash the inputs: a silent data swap is otherwise invisible</span>
+  <span class="hl">"config_sha256"</span>: "b1e0…",      <span class="cm"># hash baseline.yaml: proves which knobs were in force</span>
+  <span class="hl">"env"</span>: {"python": "3.12.6", "lightgbm": "4.6.0", "scikit-learn": "1.9.0",
+           "numpy": "2.5.0", "pandas": "3.0.3"},
+  <span class="hl">"host"</span>: {"platform": "Linux-6.6-WSL2", "machine": "x86_64", "cores": 12},
+  <span class="hl">"seeds"</span>: {"split": 0, "model": 0},
+  <span class="hl">"oof_sha256"</span>: "d2f0e4bf9b4fd761",   <span class="cm"># the fingerprint the gate compares</span>
+  <span class="hl">"results"</span>: {"log_loss_mean_over_folds": 1.632168, "ece_top_pooled_oof": 0.017760},
+  <span class="hl">"wall_seconds"</span>: 23.2
+}</pre>
+  <p>
+    With that file, <code>make verify</code> is four lines of logic and answers a question no amount of prose
+    can: re-run the entry point, compare the new manifest to the committed one field by field, and on any
+    mismatch report <em>which</em> field moved. A changed <code>env</code> with an unchanged
+    <code>oof_sha256</code> is a dependency upgrade you have just proven safe. An unchanged <code>env</code>
+    with a changed <code>oof_sha256</code> is a bug you introduced. A changed <code>data_sha256</code> that
+    nobody announced is the worst news the file can carry, and the only mechanism you have for hearing it.
+  </p>
+
+  <h3>One deletion: <code>nbconvert --execute --inplace</code></h3>
+  <p>
+    The submission's documented reproduction path runs three notebooks with
+    <code>nbconvert --to notebook --execute --inplace</code>. Three problems, in ascending order.
+  </p>
+  <p>
+    The ordering is enforced by a sentence in the README — "run the three notebooks in order" — and running
+    them out of order produces artifacts silently derived from a stale predecessor rather than an error. The
+    <code>--inplace</code> flag then makes the notebook both the source and the output, so every run rewrites
+    the file you are versioning and a <code>git diff</code> after a successful reproduction is a wall of
+    changed execution counts and re-serialised base64 images. And most subtly: a notebook's state depends on
+    execution <em>history</em>, not just on its contents, so a cell deleted after it ran still shapes
+    everything downstream of it, and nothing in the saved file records that it was ever there.
+  </p>
+  <p>
+    The fix is not to abandon notebooks. It is to invert which one is authoritative: the logic moves into
+    <code>src/hw/</code> where it can be imported, tested and diffed, and the notebooks keep the narrative,
+    the plots and the explanation, importing <code>hw</code> like any other consumer. They become an
+    excellent way to <em>read</em> the pipeline and stop being the only way to <em>run</em> it.
+  </p>
+
+  <div id="package-checklist"></div>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-repro"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> The mission's bet is that relational deep learning is undervalued, and
+    the way that bet gets settled is a comparison: an RDL model against a tuned GBDT with manual feature
+    engineering, on RelBench, with numbers a skeptic will attack. Everything in this lesson is a
+    precondition for that comparison being worth running. The RelBench leaderboard gaps you will be trying to
+    move in Years&nbsp;3–4 are frequently a few percent; this lesson found an undocumented dtype cast worth
+    42&nbsp;% of a shipping margin and a fold draw worth five times one. If your baseline cannot regenerate
+    its own number, you cannot tell your improvement from your environment — and a reviewer who suspects
+    that has no reason to read further. There is a sharper version too. The thesis's strongest claim is
+    comparative, so it requires <em>two</em> reproducible pipelines, and the honest baseline is the one you
+    are least motivated to package carefully. The discipline that makes the claim credible is packaging the
+    GBDT baseline to exactly the standard you would demand of a paper that beat you.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>A negative result is a deliverable, not a wasted afternoon.</strong> Eight perturbations
+      changed nothing, and that is a finding you can put in the manifest: whoever reproduces this may vary
+      the thread count freely. Generic advice cannot grant that permission; only a measurement on this
+      pipeline can. The eleven minutes bought a sentence you are entitled to say.</li>
+    <li><strong>"Seeded" is a question, not a property.</strong> One <code>RANDOM_STATE = 0</code> fed two
+      consumers: one where the RNG is never consulted, and one that moves the headline by five times the
+      shipping margin. Any claim about seeding that does not name the consumer is unfalsifiable — probe each
+      seed separately and record what each is worth.</li>
+    <li><strong>Aggregate stability is not individual stability.</strong> The dtype cast moved the mean
+      log-loss by 3.8&nbsp;% of one fold's σ and changed the predicted outcome for 258 people. Reproducing a
+      table is a weaker check than reproducing an artifact, and in a deployment where individual predictions
+      have consequences, it is the weaker check that most reports perform.</li>
+    <li><strong>A metric name is not an estimator.</strong> "ECE 0.0332" and "ECE 0.018" are the same metric,
+      the same model and the same predictions. Until the aggregation rule, the bin count and the sample size
+      travel with the number, two people can reproduce each other's work exactly and still disagree about
+      whether they did.</li>
+    <li><strong>Check a threshold against its estimator's noise floor.</strong> A gate at ECE &lt; 0.05
+      applied to a 107-row slice, where a perfect model scores 0.107 ± 0.030, cannot be passed. Before
+      believing any small reported value, ask what the same procedure would report for a model that was
+      exactly right — and if you cannot answer, build the control by resampling labels from the model's own
+      probabilities.</li>
+    <li><strong>Failing closed is the good outcome.</strong> The version rollback crashed rather than
+      returning a subtly different number, and the crash is the merciful case. Every design choice here —
+      the hash, the manifest comparison, the pre-registered tolerance — is an attempt to convert silent
+      drift into loud failure, because silent drift is indistinguishable from a result.</li>
+    <li><strong>Reproducible is not correct.</strong> A pipeline with a leak reproduces its leak perfectly.
+      L036 asked whether the number is <em>right</em>; this lesson asks whether it is <em>stable</em>. Both
+      are necessary and neither implies the other, which is why the audit came first and the package second.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    <strong>Joelle Pineau, Philippe Vincent-Lamarre, Koustuv Sinha, Vincent Larivière, Alina Beygelzimer,
+    Florence d'Alché-Buc, Emily Fox &amp; Hugo Larochelle, "Improving Reproducibility in Machine Learning
+    Research (A Report from the NeurIPS 2019 Reproducibility Program)," <em>JMLR</em> 22(164):1–20, 2021</strong>
+    (<a href="https://jmlr.org/papers/v22/20-303.html">jmlr.org/papers/v22/20-303</a>, open access).
+    Read <strong>§5 and the checklist reproduced in Appendix Figure 8</strong> — twelve or so questions that
+    are, in effect, the field's agreed definition of "documented enough."
+  </p>
+  <p>
+    Read it with one question in hand: <em>for each checklist item, where in the package skeleton above does
+    the answer live?</em> Most map cleanly onto a file — hyper-parameter ranges and the selection method onto
+    <code>baseline.yaml</code>, the computing infrastructure and the exact number of evaluation runs onto
+    <code>run_manifest.json</code>, the central tendency and error bars onto <code>RESULTS.md</code>. The
+    items that do not map are the interesting ones.
+  </p>
+  <p>
+    Two short companions if you have the appetite. Raff's
+    <a href="https://arxiv.org/abs/1909.06674">"A Step Toward Quantifying Independently Reproducible Machine
+    Learning Research"</a> (NeurIPS 2019) hand-implemented 255 papers <em>without</em> looking at the
+    authors' code and reproduced <strong>63.5&nbsp;%</strong> — the base rate for the top rung of the ladder.
+    And Sculley et&nbsp;al.'s
+    <a href="https://papers.nips.cc/paper/2015/hash/86df7dcfd896fcaf2674f757a2463eba-Abstract.html">"Hidden
+    Technical Debt in Machine Learning Systems"</a> (NeurIPS 2015) §6 is two pages on configuration debt and
+    the origin of the argument for <code>baseline.yaml</code>.
+  </p>
+
+  <h2>Lab — build the reproduction gate</h2>
+  <p>
+    Notebook <code>0037-document-a-baseline-package.ipynb</code> (<strong>Tier A — your own pipeline</strong>,
+    with a seeded synthetic stand-in so it still runs on Colab). You implement the machinery rather than
+    reading about it: a <code>run_manifest()</code> that fingerprints code, config, data, environment and
+    host; a <code>probe()</code> that re-runs a fit under one perturbation and reports whether the
+    fingerprint survived; an <code>assert_reproduces()</code> gate with a pre-registered tolerance that you
+    then make fail on purpose; and a named-estimator metric registry that makes the 0.0332/0.018 confusion
+    impossible to express. The reusable parts land in <code>labs/relkit/repro.py</code> so every later lab —
+    and every Year&nbsp;3–4 RelBench reproduction — can import them. The stretch task writes this workspace's
+    missing lockfile.
+    <a href="../labs/html/0037-document-a-baseline-package.html">View it rendered</a> ·
+    <a href="../notebooks.html">view / run in the browser</a>.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why binning makes ECE upward-biased but leaves log-loss alone, why a bitwise gate is safer than a
+    generous tolerance, or how to choose <code>tol</code> once Year 2 brings a GPU into the picture? Ask your
+    teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0036-revisit-your-homework-pipeline.html">← Lesson 036</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0037-document-a-baseline-package.html">Lab notebook (rendered)</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/repro-probe-viz.js"></script>
+<script src="../assets/ece-estimator-viz.js"></script>
+<script src="../assets/tolerance-gate-viz.js"></script>
+<script src="../assets/checklist.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 37, count: 3 });
+
+  ReproProbeViz.mount(document.getElementById("repro-probe"), {});
+
+  EceEstimatorViz.mount(document.getElementById("ece-estimator"), {});
+
+  ToleranceGateViz.mount(document.getElementById("tolerance-gate"), {});
+
+  Predict.mount(document.getElementById("predict-knobs"), {
+    prompt: "Nine perturbations of one pipeline — thread count, LightGBM's deterministic flag, histogram mode, training-row order, the model seed, the input dtype, the splitter seed, and a one-minor-version dependency rollback. How many change the out-of-fold predictions at all?",
+    options: [
+      { label: "Almost all of them — floating-point work is rarely bit-stable", value: "most" },
+      { label: "About half — the threading ones move it, the rest do not", value: "half" },
+      { label: "Three: the dtype, the splitter seed, and the version rollback", value: "three" },
+      { label: "None: a seeded CPU pipeline is deterministic by construction", value: "none" }
+    ],
+    correct: "three",
+    reveal: "Three — and not the three most people name. Thread count (1/2/6/12), LightGBM's deterministic flag, row-wise vs column-wise histograms, shuffled training-row order and the model seed all produce the SAME out-of-fold matrix, hashing to d2f0e4bf9b4fd761. What moved: (1) dropping the notebook's .astype(np.float32) — 258 of 5,587 predicted classes flip, max |dp| = 0.326, though the mean log-loss shifts only +0.00133; (2) the SPLITTER seed, which changes which persons land in which fold and spans 0.0166 nats over five draws — 5x the margin that decided which model shipped; (3) rolling lightgbm back one minor version with everything else pinned identical, which does not return a different number but raises TypeError, because scikit-learn deleted the argument LightGBM 4.5.0 still calls. The model seed, meanwhile, is inert: this configuration never samples, so LightGBM's RNG is never consulted."
+  });
+
+  Teachback.mount(document.getElementById("teachback-repro"), {
+    prompt: "In your own words: what does it take to say a pipeline 'reproduces its headline number', and why is setting a seed nowhere near enough?",
+    points: [
+      "Say which rung you are claiming: same team + same setup (repeatability), different team + your artifacts (reproducibility), or different team + their own artifacts (replicability). Each demands more from the package than the last.",
+      "Pin what MEASURABLY moves the number, not what folklore says does. On this pipeline threads, histogram mode, row order and the model seed were all bit-identical; the input dtype, the splitter seed and a one-minor-version dependency rollback were not.",
+      "'Seeded' is a question, not a property: the same RANDOM_STATE = 0 was inert in the model (no sampling, so the RNG is never consulted) and worth 0.0166 nats in the splitter — 5x the margin that chose the shipped model.",
+      "Name the number, not just the metric: the same ECE on the same predictions reads 0.0332 averaged over folds and 0.0178 pooled, because ECE sums ABSOLUTE gaps over bins and sparser bins cannot let noise cancel. The estimator, bin count and sample size travel with the value or it is not a value.",
+      "Check the threshold against the estimator's noise floor: at n = 1,117 a perfectly calibrated model scores 0.0335, so the per-fold number is almost entirely ruler; at n = 107 it scores 0.107, so a gate at 0.05 on that slice cannot be passed.",
+      "Pre-register the tolerance. Bitwise (hash equality) whenever the evidence supports it — here it does — and a numeric tolerance only when something genuinely stochastic enters, derived from measured drift and bounded well below the smallest difference you would act on (0.0032 nats).",
+      "Ship the machinery, not the prose: one entry point, config as a diffable file, a manifest the RUN writes (git sha, env, data hash, seeds, threads, results), and a verify command that fails loudly and names the field that moved.",
+      "Reproducible is not correct — a leak reproduces perfectly. L036 asked whether the number is right; this asks whether it is stable."
+    ],
+    model: "Reproducing a number means a specific claim about who can regenerate it and with what, so I start by naming the rung: repeatability is me re-running my own setup, reproducibility is someone else running MY artifacts, replicability is someone else running artifacts they wrote. A package aims at the middle rung, and the way to build one is to stop guessing which inputs matter and measure it. On this pipeline I ran nine perturbations, holding everything else fixed and hashing the full out-of-fold matrix each time. Eight were bit-identical: thread counts from 1 to 12, LightGBM's deterministic flag, row-wise versus column-wise histogram building, shuffled training-row order, and the model seed. That last one is the punchline about seeding — the seed is inert here, because LightGBM only consults its RNG when it samples rows, columns or split thresholds, and this configuration does none of those. Meanwhile the SAME literal RANDOM_STATE = 0, handed to the splitter, moves the headline over 0.0166 nats across five fold draws: five times the 0.0032 margin that decided which model shipped. So 'all randomness is seeded' was simultaneously vacuous and hiding the largest controllable term in the report. The one code change that did move the predictions was a .astype(np.float32) in a notebook cell: it shifts values across LightGBM's bin boundaries, so a different tree gets built, and 258 of 5,587 people get a different predicted class — while the mean log-loss moves only 0.00133, under 4% of one fold's sigma. That is the L036 lesson again: a defect can be invisible in the number and severe in the artifact. Rolling one dependency back a minor version did not produce a different number at all; it crashed, because scikit-learn deleted an argument LightGBM 4.5.0 still calls — which is the merciful failure, and the argument for a lockfile rather than the '>=' constraints this workspace actually ships. Then there is the number itself. 'ECE' on the same saved predictions is 0.0332 if you compute it per fold and average, and 0.0178 if you pool all 5,587 rows, because ECE is a weighted sum of ABSOLUTE gaps over bins: smaller samples give sparser bins, and absolute values stop the noise cancelling, so the estimate is biased upward. I verified that is all it is by re-cutting the pooled predictions into five RANDOM blocks of the same size — 0.0343, indistinguishable from the real folds — and by scoring a perfectly calibrated control, which reads 0.0335 at fold size and 0.0149 pooled. So the per-fold figure is nearly all ruler, and the one ship-gate the submission failed, ECE 0.094 on a 107-row slice against a 0.05 threshold, sits below the 0.107 a perfect model would score there. Finally the gate: because eight of nine perturbations were bitwise identical, I set the tolerance to zero and compare hashes, which needs no threshold and cannot be fudged; when Year 2 brings something genuinely stochastic I will fall back to a numeric tolerance derived from measured drift and kept well below 0.0032, written into the config before the comparison rather than after it. All of that gets carried by one entry point, a diffable baseline.yaml, and a run manifest the run itself writes — git sha, environment, data hash, both seeds, thread count, the OOF fingerprint and the results — so 'was this the same experiment?' is answerable without memory. And none of it makes the number correct: a leaky pipeline reproduces its leak exactly. Stability and correctness are separate audits, which is why L036 came first.",
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "A pipeline is re-run under nine perturbations. Thread count (1/2/6/12), LightGBM's deterministic flag, histogram mode, shuffled training-row order and the model seed all give a byte-identical out-of-fold matrix. What is the correct conclusion?",
+    options: [
+      { label: "You have earned a specific, local permission — a reproducer may vary those knobs freely on this pipeline — and it holds only for this data, model and machine, not for the GPU work that starts in Year 2", value: "a" },
+      { label: "Those knobs are safe in general, so the pins for them can be dropped from the environment file", value: "b" },
+      { label: "The experiment was mis-run: floating-point reductions are never bit-stable across thread counts", value: "c" },
+      { label: "Nothing — a negative result carries no information and the eleven minutes were wasted", value: "d" }
+    ],
+    correct: "a",
+    explain: "A measured negative is a deliverable: it converts a hopeful README sentence into a statement you can defend, and it belongs in the run manifest. But its scope is exactly the configuration measured. LightGBM's own documentation warns that results are expected to differ across LightGBM versions, compilers and systems; PyTorch's reproducibility notes say the same about releases, platforms and CPU-vs-GPU. Generalising the permission is how you get burned; recording it is how you save the next reproducer an afternoon."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "The same model's out-of-fold predictions give top-label ECE 0.0332 when computed inside each of 5 folds (n ≈ 1,117) and averaged, and 0.0178 when all 5,587 rows are pooled. Log-loss on the same predictions agrees to 5 decimals either way. Why do they differ, and which should the ship-gate use?",
+    options: [
+      { label: "ECE sums ABSOLUTE gaps over bins, so sparser bins add sampling noise that cannot cancel — at n = 1,117 a perfectly calibrated model already scores 0.0335, so the gate should use the pooled estimator and name it", value: "a" },
+      { label: "The folds are person-grouped, so per-fold ECE correctly measures generalisation to unseen persons and pooling leaks across the fold boundary", value: "b" },
+      { label: "One of the two is a bug; the log-loss agreement proves the pooled number is the only valid one", value: "c" },
+      { label: "Averaging five numbers always exceeds the pooled value because of Jensen's inequality, so the difference carries no information", value: "d" }
+    ],
+    correct: "a",
+    explain: "Log-loss is a plain mean of one term per row, so pooling and averaging near-equal folds commute. ECE bins first, then sums |accuracy − confidence| weighted by bin population: fifth-sized samples give fifth-sized bins, and the absolute value prevents hot and cold bins from annihilating, so the estimate is biased UPWARD as n falls. Verified two ways: re-cutting the pooled rows into five RANDOM blocks of 1,117 gives 0.0343 ± 0.0034 (the real folds' 0.0332 sits inside), and a control with true ECE = 0 by construction scores 0.0335 at n = 1,117 versus 0.0149 pooled. Option (b) is a real consideration for the MODEL but not for this estimator gap — random blocks reproduce it with no grouping at all."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "You are adding `make verify` to the package. Eight of nine measured perturbations were bitwise identical; the smallest difference the project makes decisions on is 0.0032 nats; one fold's σ is 0.0350. A colleague suggests tol = 0.01 because \"that's clearly small\". What is wrong with that?",
+    options: [
+      { label: "It is above the 0.0032 decision threshold, so the gate would wave through a change large enough to flip which model ships — and since bitwise equality is achievable here, no numeric tolerance is needed at all", value: "a" },
+      { label: "It is too tight: at 0.01 the gate will fire every time the fold draw changes, producing constant false alarms", value: "b" },
+      { label: "Nothing is wrong — 0.01 sits comfortably below one fold's standard deviation of 0.0350", value: "c" },
+      { label: "Tolerances should always be expressed as a percentage of the metric rather than in absolute units", value: "d" }
+    ],
+    correct: "a",
+    explain: "A tolerance has to be bounded from BOTH sides: above the drift you have measured and accepted, and well below the smallest difference you would act on. At 0.01 the gate passes changes three times the size of the margin that decided the deployment, so it protects nothing that matters. Option (c) makes the common mistake of anchoring to fold σ, which is the spread WITHIN a run and says nothing about what a reproduction may drift by. And the deeper point: because eight of nine perturbations were byte-identical, the strongest gate — hash equality, tol = 0 — is available for free, needs no threshold argument, and cannot be quietly widened after a failing run."
+  });
+
+  Checklist.mount(document.getElementById("package-checklist"), {
+    title: "The packaging rubric — run this before any number leaves your machine",
+    items: [
+      { label: "Is there <strong>one command</strong> that regenerates the headline number, with no correct order for the reader to get wrong?", hint: "L037 · entry point" },
+      { label: "Is the environment <strong>locked</strong> (exact versions + hashes for every transitive dependency), not merely constrained with <code>&gt;=</code>?", hint: "L037 · lightgbm 4.5.0 crash" },
+      { label: "Have I <strong>probed</strong> each knob I claim is irrelevant — threads, dtype, row order, each seed separately — and recorded the measured result rather than the folklore?", hint: "L037 · nine perturbations" },
+      { label: "Does every reported number carry its <strong>estimator</strong> (aggregation rule, bin count, sample size), not just its metric name?", hint: "L037 · 0.0332 vs 0.0178" },
+      { label: "Have I compared each threshold against its estimator's <strong>noise floor</strong> — what would a model that is exactly right score here?", hint: "L037 · the 107-row gate" },
+      { label: "Is the <strong>tolerance pre-registered</strong> in the config, chosen before the comparison, bitwise wherever the evidence allows?", hint: "L037 · the tolerance trap" },
+      { label: "Does the run write a <strong>manifest</strong> — git sha + dirty flag, resolved env, data hash, config hash, every seed, thread count, host, output fingerprint, timings?", hint: "L037 · run_manifest.json" },
+      { label: "Is every value that can move the number in <strong>one diffable config file</strong>, including the ones hiding as code (a dtype cast, a hard-coded constant)?", hint: "L037 · configuration debt" },
+      { label: "Do the notebooks <strong>import</strong> the pipeline rather than define it, so no result depends on cell execution history?", hint: "L037 · --inplace" },
+      { label: "Have I confirmed the package is <strong>correct</strong> as well as stable — the L036 audit — since a leaky pipeline reproduces its leak perfectly?", hint: "L036 + L037" }
+    ],
+    done: "That is the package. The test of it is not that it looks thorough — it is that `make verify` can fail, and that you know which field it will name when it does."
+  });
+</script>
+</body>
+</html>

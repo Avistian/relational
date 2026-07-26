@@ -172,6 +172,26 @@ fold noise band is not a win. Note also which finding is *not* leakage at all: t
 four tests (0.0583), while the effect itself (5/5 folds, 0.055 nats) survives — the exact discipline L023/L030
 demanded, now applied where it costs the learner something.
 
+L037 finishes the precondition L036 opened, and it does so by *measuring* the thing everyone asserts. A
+comparison is only evidence if it can be regenerated, so the lesson probes nine one-knob perturbations of the
+learner's own pipeline against a hash of the full out-of-fold matrix. **Eight were bit-identical** — thread
+counts 1–12, LightGBM's `deterministic` flag, row-wise vs column-wise histogram building, shuffled training
+row order, and the **model seed**, which is inert here because this configuration never samples. The one that
+moved was an undocumented `.astype(np.float32)` living in a notebook cell: **258 of 5,587 predicted classes
+change** (max Δp = 0.326) for a mean log-loss shift of only **+0.00133** — which is nonetheless **42 % of the
+0.0032 margin that chose which model shipped** (L036). Two more results bear directly on the honest bar. The
+*same literal* `RANDOM_STATE = 0`, handed to the splitter instead of the model, spans **0.0166 nats across
+five fold draws — 5× that margin**, making the fold draw the largest controllable term in the report and any
+future RDL-vs-GBDT delta smaller than it uninterpretable. And rolling LightGBM back one minor version does not
+change the number, it **crashes**: `lightgbm 4.5.0` + `scikit-learn 1.9.0`, both satisfying this workspace's
+own constraints, raise `TypeError: check_X_y() got an unexpected keyword argument 'force_all_finite'`. The
+transferable instruments are the **run manifest** (the run describes itself), the **output fingerprint**
+(strictly stronger than agreeing on a summary metric), the **estimator of record** (the same ECE reads 0.0332
+per-fold and 0.0178 pooled, a 1.87× spread that is about the ruler, not the model), and the **noise floor**
+(what a perfectly-calibrated control scores at that n — which exposes one ship-gate in the submission that no
+model could pass). Y3–Y4 will compare an RDL model to this baseline; every one of those instruments is what
+makes the comparison mean something rather than merely happen.
+
 The genuinely *supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and
 leakage-prone, and manual feature synthesis hints structure is recoverable, but no result yet shows a
 relational model *beating the fair bar by keeping structure*. That demonstration is the Y1-exit → Y3–Y4

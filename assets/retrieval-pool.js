@@ -662,6 +662,42 @@
       ],
       correct: "a",
       explain: "Nothing is mismeasured: shared folds, legitimate pairing, correct numbers. The defect is in the inference — the maximum of several noisy correlated estimates is optimistically biased (the winner's curse), and here the margin is inside fold noise (naive p=0.64, Nadeau–Bengio corrected p=0.75). A deployment choice that flips when a single fold is dropped was not a choice about the models. Leakage checklists never catch this; L023's variance discipline and L017's nested CV do."
+    },
+    {
+      id: "l037-inert-seed", lesson: 37, quarter: "Q4", concept: "reproducibility", misconception: true,
+      question: "Your README says \"all randomness is seeded (RANDOM_STATE = 0)\". You rerun with seeds 1–4 and every out-of-fold matrix hashes identically. What have you learned?",
+      options: [
+        { label: "That this model never consults its RNG, so the seed is inert here — and that some other unseeded input, not the seed, is where your reproducibility risk actually lives", value: "a" },
+        { label: "That the pipeline is reproducible, since changing the seed changes nothing", value: "b" },
+        { label: "That the seed is being silently overridden somewhere and the bug should be found", value: "c" },
+        { label: "That the model has converged, so further training would not change the result", value: "d" }
+      ],
+      correct: "a",
+      explain: "LightGBM reads random_state only when it samples — bagging_fraction<1, feature_fraction<1, extra_trees — and this configuration sets none, so the seed is genuinely inert and the sentence in the README is true and uninformative. Meanwhile the same literal RANDOM_STATE = 0 handed to StratifiedGroupKFold(shuffle=True) spans 0.0166 nats of mean log-loss over five draws — 5× the 0.0032 margin that chose the shipped model — and an undocumented .astype(np.float32) flips 258 of 5,587 predicted classes. Name each seed by its role, and probe rather than assert."
+    },
+    {
+      id: "l037-fingerprint", lesson: 37, quarter: "Q4", concept: "reproduction-gate",
+      question: "Two runs of the same pipeline agree on mean log-loss to within 0.00133 nats. One changed a float64 input to float32. How much can you conclude about whether the runs agree?",
+      options: [
+        { label: "Very little — a mean over thousands of rows absorbs offsetting changes; here 258 of 5,587 predicted CLASSES differ, with a largest single-probability move of 0.326", value: "a" },
+        { label: "They agree: 0.00133 nats is far inside one fold's standard deviation of 0.035", value: "b" },
+        { label: "They disagree, and the size of the log-loss gap measures how badly", value: "c" },
+        { label: "Nothing, because log-loss is not a proper scoring rule for multiclass problems", value: "d" }
+      ],
+      correct: "a",
+      explain: "A summary statistic is a lossy comparison. The aggregate barely moved (+0.00133, though that is still 42 % of the margin that chose which model shipped), while 258 people would receive a different predicted category. Gate on a hash of the full prediction matrix — dtype and layout normalised first — whenever bitwise reproduction is achievable; on this pipeline eight of nine perturbations were byte-identical, so the strict gate costs no false alarms. A numeric tolerance is the fallback, chosen before the first failure and kept below the smallest difference you would act on."
+    },
+    {
+      id: "l037-noise-floor", lesson: 37, quarter: "Q4", concept: "estimator-of-record", misconception: true,
+      question: "A ship-gate fails a 107-row slice on top-label ECE 0.094 against a threshold of 0.05. Before you investigate that slice, what should you check?",
+      options: [
+        { label: "The estimator's noise floor at n = 107: a perfectly calibrated model scores 0.1071 ± 0.0297 there, so this gate cannot be passed by anything and the observed value is below the floor", value: "a" },
+        { label: "Whether the slice is large enough to be worth a fix, since 107 rows is only 2 % of the data", value: "b" },
+        { label: "Whether the other slices also fail, to establish whether it is a systematic problem", value: "c" },
+        { label: "Whether a different calibrator (Platt rather than isotonic) would pass the same gate", value: "d" }
+      ],
+      correct: "a",
+      explain: "ECE sums |accuracy − confidence| over bins, so sampling noise accumulates rather than cancelling, and the estimate is biased upward as bins thin. Measure the bias with a control that is perfect by construction — resample each row's label from its own predicted probability vector, giving true ECE = 0 — and the floor reads 0.0149 at n = 5,587, 0.0335 at n = 1,117, and 0.1071 at n = 107. The observed 0.094 sits below its own floor: the measurement cannot see a real problem even if one exists. A threshold beneath its estimator's noise floor is a coin flip with a procedure attached."
     }
   ];
 })(window);
