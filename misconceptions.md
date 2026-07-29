@@ -89,6 +89,13 @@ Status legend: **active** = still re-testing · **retired** = answered correctly
 | M46 | L039 | A Year 1 synthesis is a chronological recap of lessons 001–038 | A synthesis is an **argument** organised around a **falsifiable claim**, not a tour of what you studied. Year 1 supplies four *moves* (measurement → incumbent → mechanism → frontier), and the essay is organised by those moves. A chronological recap never forces you to distinguish a win from a tie, never names a **boundary condition**, and never admits an **open burden** — so a hostile reader has nothing to accept or revise | active |
 | M47 | L039 | Trees beat deep learning on tabular data because they are more powerful | Trees are not universally "more powerful." They win on *typical* flat tables because three **inductive biases** match that regime — irregular targets, privileged column orientation, junk-feature robustness (Grinsztajn 2022) — and the claim has **flip conditions** (smooth targets, rotated bases, low junk) plus silence about signal a **lossy join** already destroyed. Against honest neural baselines and AutoML the usual Year-1 result is a **tie or small lead**, not a crush (L028–L030 corrected p=0.64 on credit_g; L029 AutoML ties tuned XGB) | active |
 
+## Q4 · Year 1 exit exam (Lesson 040)
+
+| # | Lesson | Wrong belief | Correct belief | Status |
+|---|--------|--------------|----------------|--------|
+| M48 | L040 | Any positive delta over the XGBoost reference is a Year-1 exit "beat" | A beat requires clearing a **disclosed noise band** under a fair protocol (on adult, ±0.002 ROC-AUC). Δ=+0.0014 (L020 tuned LGBM vs fixed XGB) is a **TIE** — and a TIE plus a written three-bias explanation is a full exit pass. Soft-selling tiny positives repeats the homework's 0.0032-nat winner's curse (L036) | active |
+| M49 | L040 | The Year 1 exit is failed unless you beat XGBoost | The curriculum exit requires a **regenerable tree baseline** + **written understanding of Grinsztajn's three biases**. "Beat XGB or explain why not" is the experimental fork; TIE / EXPLAIN are legitimate passes. Demanding a leaderboard win would contradict Year 1's own exhaustion-cascade evidence | active |
+
 ---
 
 *Seeded 2026-07-08 from learning records 0001–0051. Add new rows as misconceptions surface; keep the

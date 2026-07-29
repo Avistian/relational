@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 040 — Year 1 Exit Exam</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .chk { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .chk-title { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.6rem; }
+    .chk-list { list-style: none; padding: 0; margin: 0; }
+    .chk-item { display: flex; align-items: baseline; gap: 0.55rem; margin: 0.5rem 0; font-size: 0.92rem; }
+    .chk-item input { margin-top: 0.2rem; flex: none; }
+    .chk-hint { color: var(--accent); font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .chk-feedback { margin-top: 0.75rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); }
+    .report { border: 1px solid var(--border); border-radius: 6px; background: var(--bg); padding: 0.4rem 1rem 0.9rem; margin: 1.1rem 0; font-size: 0.9rem; }
+    .report h4 { font-family: var(--font-sans); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0.9rem 0 0.3rem; }
+
+    /* exit-verdict-viz */
+    .ev-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .ev-grid { display: grid; grid-template-columns: 1fr; gap: 0.65rem; }
+    @media (min-width: 820px) { .ev-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    .ev-zone { background: #fff; border: 1px solid var(--border); border-top-width: 4px; border-radius: 6px; padding: 0.55rem 0.65rem 0.7rem; }
+    .ev-zone-head { display: block; width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer; padding: 0; margin-bottom: 0.45rem; }
+    .ev-zone-lab { display: block; font-family: var(--font-sans); font-weight: 700; font-size: 0.88rem; }
+    .ev-zone-tag { display: block; font-family: var(--font-sans); font-size: 0.74rem; color: var(--muted); margin-top: 0.15rem; }
+    .ev-points { display: flex; flex-direction: column; gap: 0.35rem; }
+    .ev-pt { font-family: var(--font-sans); font-size: 0.8rem; text-align: left; padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: 5px; background: #fff; cursor: pointer; color: var(--fg, #222); }
+    .ev-pt:hover { border-color: var(--ev-c, var(--accent)); background: var(--bg-soft); }
+    .ev-pt.ev-on { border-color: var(--ev-c, var(--accent)); background: var(--bg-soft); font-weight: 600; box-shadow: inset 0 0 0 1px var(--ev-c, var(--accent)); }
+    .ev-readout { font-size: 0.87rem; margin-top: 0.75rem; line-height: 1.6; min-height: 8.5rem; }
+    .ev-readout p { margin: 0.45rem 0; }
+    .ev-r-head { margin-bottom: 0.35rem; }
+    .ev-r-badge { display: inline-block; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.1rem 0.45rem; border-radius: 4px; color: #fff; }
+    .ev-r-title { font-weight: 600; }
+    .ev-r-ev { color: var(--fg, #222); }
+    .ev-r-essay { border-left: 3px solid var(--accent); padding-left: 0.6rem; }
+
+    /* exit-gates-viz */
+    .eg-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .eg-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.7rem; font-family: var(--font-sans); font-size: 0.76rem; color: var(--muted); }
+    .eg-key { display: inline-flex; align-items: center; gap: 0.3rem; }
+    .eg-dot { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; }
+    .eg-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .eg-chip { font-family: var(--font-sans); font-size: 0.78rem; padding: 0.35rem 0.6rem; border: 1px solid var(--border); border-radius: 5px; background: #fff; cursor: pointer; color: var(--fg, #222); }
+    .eg-chip:hover { border-color: var(--eg-c, var(--accent)); background: var(--bg-soft); }
+    .eg-chip.eg-on { border-color: var(--eg-c, var(--accent)); background: var(--bg-soft); font-weight: 600; box-shadow: inset 0 0 0 1px var(--eg-c, var(--accent)); }
+    .eg-chip-lab { pointer-events: none; }
+    .eg-readout { font-size: 0.87rem; margin-top: 0.75rem; line-height: 1.6; min-height: 8.5rem; }
+    .eg-readout p { margin: 0.45rem 0; }
+    .eg-r-head { margin-bottom: 0.35rem; }
+    .eg-r-badge { display: inline-block; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.1rem 0.45rem; border-radius: 4px; color: #fff; }
+    .eg-r-title { font-weight: 600; }
+    .eg-r-ev { color: var(--fg, #222); }
+    .eg-r-fail { border-left: 3px solid #b03a2e; padding-left: 0.6rem; }
+
+    /* reused biases-viz */
+    .biases-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .bv-ctl, .bv-sub { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .bv-ctl button, .bv-sub button {
+      font-size: 0.8rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); cursor: pointer; font-family: var(--font-sans);
+    }
+    .bv-ctl button.bv-active { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .bv-sub button.bv-on { background: #34495e; color: #fff; border-color: #34495e; }
+    .bv-svg { display: block; max-width: 360px; margin: 0.25rem auto; }
+    .bv-title { font-family: var(--font-sans); font-size: 8.5px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .bv-readout { font-size: 0.85rem; margin: 0.6rem 0; }
+    .bv-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4 · Exit exam</p>
+  <h1>Year 1 Exit Exam</h1>
+  <p class="subtitle">Lesson 040 · Phase 1 · Q4 · ~60 min · capstone · <em>primary reading: Grinsztajn et al. 2022 (exit re-read) + your L039 essay</em></p>
+
+  <p>
+    Forty lessons ago the mission asked you to prove a contrarian bet: that relational deep learning is
+    undervalued because the single-table paradigm misses structure a flatten destroys. Year 1 did not ask
+    you to prove the bet. It asked you to build the <em>bar</em> the bet must clear — a leak-free, tuned
+    tree ensemble on a flat table — and to understand <em>why</em> that bar is stubborn. This lesson is
+    the gate. The curriculum names it plainly: <strong>beat XGBoost on a flat task, or explain why not</strong>.
+  </p>
+  <p>
+    Either fork is a pass. A real beat under a fair protocol is rare on typical flat tables — Year 1 spent
+    a quarter measuring that. An honest match, followed by a written explanation that cites Grinsztajn's
+    three inductive biases and stands on (or revises) your
+    <a href="0039-year-1-synthesis-essay.html">L039 synthesis</a>, is the modal Year-1 exit. What fails
+    the exit is a soft-sold "win," a non-regenerable number, or an explanation that says "trees are more
+    powerful" without mechanisms.
+  </p>
+  <p>
+    Its single skill: <strong>under a fair fixed protocol on a flat Tier-A task, regenerate a disclosed
+    XGBoost baseline, attempt one honest Year-1 challenger, classify the outcome as BEAT / TIE / EXPLAIN,
+    and — whether you beat or not — write Grinsztajn's three inductive biases with evidence of record,
+    ending in a regenerable number and an explicit STAND or REVISE stance on the L039 synthesis claim.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> The Year 1 exit is passed by a <em>regenerable</em> XGBoost number plus
+    a <em>written</em> inductive-bias understanding — and "I matched the bar within noise, here is why
+    further single-table cleverness did not clear it" is a full pass, not a consolation prize.
+  </div>
+
+  <h2>Warm up — recall before you exit</h2>
+  <p>
+    Three questions drawn from earlier lessons. A wrong guess is useful: retrieval (even failed) encodes
+    better than re-reading the synthesis.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>What Year 1 built, assembled as an exit</h2>
+  <p>
+    Every quarter contributes one gate of the exit. Skipping a gate is how "we beat the baseline" claims
+    collapse under review:
+  </p>
+  <table>
+    <thead><tr><th>From</th><th>Piece</th><th>In the exit</th></tr></thead>
+    <tbody>
+      <tr><td><a href="0010-baseline-checkpoint.html">010</a></td><td>leakage spine</td><td>held-out test once; every fit-bearing transform inside a per-fold pipeline</td></tr>
+      <tr><td><a href="0020-q2-checkpoint.html">020</a></td><td>fair-comparison contract</td><td>same data / split / metric / budget / preprocessing; regenerable XGB bar on <code>adult</code></td></tr>
+      <tr><td><a href="0025-inductive-bias-smoothness.html">025</a>–<a href="0027-inductive-bias-uninformative-features.html">027</a></td><td>three biases</td><td>the written exit criterion — mechanisms, numbers, flip conditions</td></tr>
+      <tr><td><a href="0030-q3-checkpoint.html">030</a></td><td>tie as verdict</td><td>permission to report "no significant winner" when a correct test says so</td></tr>
+      <tr><td><a href="0033-when-to-stop-feature-engineering.html">033</a>–<a href="0035-what-joins-destroy.html">035</a></td><td>exhaustion + join</td><td>why a non-beat on a flat table can still be consistent with the thesis</td></tr>
+      <tr><td><a href="0037-document-a-baseline-package.html">037</a>–<a href="0038-peer-review-your-evaluation.html">038</a></td><td>package + review</td><td>regenerability and two-pipelines-one-standard credibility</td></tr>
+      <tr><td><a href="0039-year-1-synthesis-essay.html">039</a></td><td>synthesis claim</td><td>the written argument the exit stands on or revises</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The exit contract — six gates</h2>
+  <p>
+    Before any of BEAT / TIE / EXPLAIN is legitimate, six gates must close. Click each gate. The default
+    is the regenerable baseline — the first concrete deliverable the curriculum names
+    ("reproducible tuned tree baseline").
+  </p>
+  <div id="exit-gates"></div>
+
+  <div class="defbox">
+    <strong class="term">Exit criterion (curriculum).</strong> Reproducible tuned tree baseline + written
+    understanding of Grinsztajn's three inductive biases. The lab title ("beat XGB or explain why not")
+    is the <em>experimental fork</em> that produces those two deliverables — not a demand that you must
+    win.
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Noise band (this exit).</strong> On <code>adult</code> under the L020 protocol, a
+    gap of <strong>±0.002 ROC-AUC</strong> is treated as a match (the same tolerance L020's CHECK cells
+    used). A challenger must clear the reference by more than that band before the exit calls it a BEAT
+    candidate. Smaller positives are TIEs — remember the homework's 0.0032-nat winner's curse
+    (<a href="0036-revisit-your-homework-pipeline.html">L036</a>).
+  </div>
+
+  <div class="defbox">
+    <strong class="term">Essay stance.</strong> After the number, one explicit word:
+    <strong>STAND</strong> (the exit agrees with your L039 working claim) or <strong>REVISE</strong>
+    (name what changed). Revising because you found a real beat, a broken boundary, or a protocol defect
+    is scientific. Revising to claim an RDL fair-bar win Year 1 has not shown is not.
+  </div>
+
+  <h2>The three-way fork</h2>
+  <p>
+    The curriculum's "or" is load-bearing. Explore each fork. The default is the honest modal outcome on
+    a typical flat table: <strong>TIE</strong> at the adult ceiling.
+  </p>
+  <div id="exit-verdict"></div>
+
+  <div id="predict-fork"></div>
+
+  <h2>Evidence of record — what "beating XGB" looked like in Year 1</h2>
+  <p>
+    This exit introduces <em>no new bake-off</em>. Every number below was verified in an earlier lesson.
+    Your lab regenerates the adult reference under the same protocol; treat a match to the published band
+    as the gate, not a new paper claim.
+  </p>
+  <table>
+    <thead><tr><th>Source</th><th>Finding</th><th>Exit use</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><a href="0020-q2-checkpoint.html">L020</a> adult</td>
+        <td class="n">ref XGB 0.9282; tuned XGB 0.9294; LGBM 0.9296; stack 0.9297; OOF corr 0.997</td>
+        <td>Regenerable bar; modal TIE; stacking adds nothing when bases are redundant</td>
+      </tr>
+      <tr>
+        <td><a href="0030-q3-checkpoint.html">L030</a> credit_g</td>
+        <td class="n">GBDT−MLP +0.008; corrected p=0.64</td>
+        <td>Permission to report a statistical tie</td>
+      </tr>
+      <tr>
+        <td><a href="0025-inductive-bias-smoothness.html">L025</a>–<a href="0027-inductive-bias-uninformative-features.html">L027</a></td>
+        <td>smoothness gap collapses when target is smoothed; rotation 0.987→0.747; junk reverses MLP win</td>
+        <td>The three biases + flip conditions for the written criterion</td>
+      </tr>
+      <tr>
+        <td><a href="0029-manual-fe-vs-automl.html">L029</a>–<a href="0033-when-to-stop-feature-engineering.html">L033</a></td>
+        <td>AutoML ≈ tuned XGB; embeddings tie; FE +0.0046 inside ±0.03</td>
+        <td>Exhaustion cascade — why EXPLAIN is earned</td>
+      </tr>
+      <tr>
+        <td><a href="0035-what-joins-destroy.html">L035</a></td>
+        <td class="n">Ada/Bo collision → P(churn)=0.502</td>
+        <td>Where the flat claim goes silent — open burden stays open</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Written criterion — three biases, cold</h2>
+  <p>
+    The curriculum's second exit deliverable is written understanding, not a quiz score. Restate each
+    bias from first principles (standard #17), then use the widget to preview the geometry. Your lab EXIT
+    ticket will ask for one sentence per bias with a verified number and a flip condition.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">1 · Irregular (non-smooth) targets.</strong> Gradient descent on neural nets has a
+    <em>spectral</em> / smoothness bias: it fits smooth functions easily and irregular ones poorly.
+    Tabular targets are often jagged — thresholds, fees, hard cuts. Trees place axis-aligned steps;
+    nets round them off. <em>Flip:</em> Gaussian-smooth the target and the GBT–MLP gap collapses toward
+    zero (L025).
+  </div>
+  <div class="defbox">
+    <strong class="term">2 · Privileged column orientation.</strong> A tree's splits attend to each
+    meaningful column in the original basis. An MLP is <em>rotationally invariant</em>
+    (<code>W·(Qx) = (WQ)·x</code>) — a feature when pixels are arbitrary orientations, a liability when
+    columns carry individual meaning. <em>Flip:</em> a lossless random rotation collapses the tree
+    (0.987→0.747) and leaves the MLP unmoved (L026 / Ng 2004).
+  </div>
+  <div class="defbox">
+    <strong class="term">3 · Junk-feature robustness.</strong> Trees gate uninformative columns via
+    greedy, gain-gated splits (implicit selection). MLPs feed every column into layer 1 and, being
+    rotation-invariant, need at least linearly more samples per junk feature. <em>Flip:</em> on a smooth
+    target where the MLP wins clean, adding pure-noise columns reverses the ranking (L027).
+  </div>
+
+  <div id="biases-viz"></div>
+
+  <div id="teachback-exit"></div>
+
+  <h2>Homework bridge — what the exit does <em>not</em> re-litigate</h2>
+  <p>
+    Q4's Tier-A artifact was your ReAction homework pipeline
+    (<a href="0036-revisit-your-homework-pipeline.html">L036</a>–<a href="0038-peer-review-your-evaluation.html">L038</a>):
+    person-grouped CV, the 0.0032-nat winner's curse, the ECE estimator gap, no event timestamp. The Year-1
+    <em>curriculum</em> exit uses OpenML <code>adult</code> so anyone can regenerate the XGB bar without
+    the private submission. That does not retire the homework findings — it reuses their discipline:
+  </p>
+  <ul>
+    <li>A Δ inside noise is a TIE, not a ship decision (L036 selection defect).</li>
+    <li>Name the estimator and the split; omissions are findings (L037 / L038).</li>
+    <li>Hold the baseline to the model's standard — especially the XGB you hope to beat (M45).</li>
+  </ul>
+  <p>
+    Stretch in the lab: if <code>~/Projects/homework</code> is present with the L037 package, run
+    <code>make verify</code> and paste the regenerable homework number beside the adult exit number.
+  </p>
+
+  <h2>Thesis bridge</h2>
+  <div class="callout">
+    <strong>Why this exit is the mission's Year-1 hinge.</strong> The skeptic says: "Just beat XGBoost on
+    a table — why invent RDL?" Year 1's honest answer is often: <em>on a typical flat table, under a fair
+    protocol, I matched the bar, and here is the inductive-bias reason further single-table cleverness did
+    not clear it — while the unpaid signal may already have been destroyed by the join.</em> That is not
+    a failed exit. That is the setup for Years 2–6. A Year-1 beat of XGB, if you get one, must still
+    survive the peer-review checklist — and still leaves the relational open burden open.
+  </div>
+
+  <h2>Check yourself</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading</h2>
+  <p>
+    <a href="https://arxiv.org/abs/2207.08815">Grinsztajn, Oyallon &amp; Varoquaux — <em>Why do tree-based
+    models still outperform deep learning on tabular data?</em>, NeurIPS 2022</a> — exit re-read of the
+    abstract, §5 (three biases), and the discussion of when the claim flips. Keep your
+    <a href="0039-year-1-synthesis-essay.html">L039 essay</a> beside it: the exit either stands on that
+    claim or revises it in public.
+  </p>
+  <p>
+    Companions: Chen &amp; Guestrin 2016 (XGBoost, the bar);
+    <a href="0020-q2-checkpoint.html">L020</a> fair-comparison contract;
+    Lones 2024 / <a href="0038-peer-review-your-evaluation.html">L038</a> (two pipelines, one standard).
+  </p>
+
+  <h2>Lab — run the exit</h2>
+  <p>
+    Capstone notebook: <a href="../labs/0040-year-1-exit-exam.ipynb"><code>labs/0040-year-1-exit-exam.ipynb</code></a>
+    · <a href="../labs/html/0040-year-1-exit-exam.html">view rendered</a>
+    · <a href="../notebooks.html">open in Colab</a>.
+  </p>
+  <ol>
+    <li><strong>Regenerate</strong> the fixed-default XGBoost reference on OpenML <code>adult</code> under the L020 protocol (pipeline-safe preprocessing, 80/20 stratified holdout, seed 0). Land in the 0.92–0.93 ROC-AUC band.</li>
+    <li><strong>Attempt</strong> one honest challenger under the same contract (disclosed LightGBM config + optional leak-free stack helper).</li>
+    <li><strong>Classify</strong> the fork: implement <code>classify_verdict(ref, chall, noise=0.002) → BEAT | TIE | FAIL</code>.</li>
+    <li><strong>Write</strong> three bias sentences (mechanism + verified number + flip) and an explicit STAND / REVISE stance on the L039 claim.</li>
+    <li><strong>EXIT TICKET</strong> prints regenerable numbers, the fork, the bias paragraph, and the essay stance. Paste it to your teacher or say <em>"lab done."</em></li>
+  </ol>
+  <p>
+    A TIE or FAIL+EXPLAIN that closes all six gates is a Year-1 pass. A BEAT that skips the leak audit or
+    soft-sells Δ=+0.001 is not.
+  </p>
+
+  <div id="exit-checklist"></div>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring the EXIT ticket. We will grade it as a hostile competent
+    reader: Is the number regenerable? Is the fork honest? Do the three biases have numbers and flips?
+    Does STAND/REVISE match the evidence? That conversation <em>is</em> the exit.
+  </div>
+
+  <div class="ask-teacher">
+    Unsure whether Δ=+0.0015 is a beat, stuck naming a flip condition, or want a hostile pass on your
+    bias paragraph before submitting? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0039-year-1-synthesis-essay.html">← Lesson 039</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../labs/html/0040-year-1-exit-exam.html">Lab notebook (rendered)</a></li>
+      <li><a href="../reference/glossary.html">Glossary</a></li>
+      <li><a href="../flashcards.html">Paper flashcards</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/exit-verdict-viz.js"></script>
+<script src="../assets/exit-gates-viz.js"></script>
+<script src="../assets/biases-viz.js"></script>
+<script src="../assets/checklist.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 40, count: 3 });
+
+  ExitGatesViz.mount(document.getElementById("exit-gates"), {});
+  ExitVerdictViz.mount(document.getElementById("exit-verdict"), {});
+  BiasesViz.mount(document.getElementById("biases-viz"), {
+    caption: "L019 geometry preview of irregular targets and orientation — the exit still requires the L025–L027 numbers and flip conditions in writing."
+  });
+
+  Predict.mount(document.getElementById("predict-fork"), {
+    prompt: "On adult under the L020 protocol, your fixed-default XGB reference scores 0.9282 and your tuned LightGBM challenger scores 0.9296 (Δ=+0.0014). Which exit fork is correct?",
+    options: [
+      { label: "BEAT — any positive delta over the reference is a win", value: "beat" },
+      { label: "TIE — the gap is inside the ±0.002 noise band; report a match and prepare the bias explanation", value: "tie" },
+      { label: "FAIL the exit — you must keep tuning until you clear 0.01 ROC-AUC", value: "fail" },
+      { label: "Invalid — LightGBM is not an allowed challenger against XGBoost", value: "invalid" }
+    ],
+    correct: "tie",
+    reveal: "Δ=+0.0014 < 0.002 → TIE. This is exactly the L020 verified pattern (tuned LGBM 0.9296 vs ref 0.9282). Calling it a beat would repeat the homework's winner's-curse defect. A TIE plus a written three-bias explanation is a full Year-1 pass."
+  });
+
+  Teachback.mount(document.getElementById("teachback-exit"), {
+    prompt: "In your own words: what does the Year 1 exit require, and why is 'I matched XGBoost within noise; here are the three inductive biases and why further single-table effort failed' a legitimate passing verdict?",
+    points: [
+      "Two curriculum deliverables: a regenerable tuned/fixed tree baseline AND a written understanding of Grinsztajn's three inductive biases (with numbers and flip conditions).",
+      "The experimental fork is BEAT / TIE / EXPLAIN — not 'you must win.' Ties inside a disclosed noise band (±0.002 ROC-AUC on adult) are full passes.",
+      "A BEAT requires a fair protocol (same data/split/metric/budget/preprocessing), a gap above noise, and a leak audit first — Year 1 evidence says large beats of a tuned GBDT on typical flat tables are uncommon (exhaustion cascade L028–L033).",
+      "EXPLAIN cites inductive-bias match (irregular targets, privileged orientation, junk robustness), not 'trees are more powerful,' and may end on the join silence / open burden without claiming an RDL win.",
+      "Essay stance STAND or REVISE links the experiment to the L039 synthesis claim; the open burden (no fair-bar RDL win yet) stays open unless actually discharged."
+    ],
+    model: "The Year 1 exit is passed by regenerating a disclosed XGBoost baseline under the fair-comparison contract and writing Grinsztajn's three inductive biases with evidence of record — not by posting a leaderboard win. On typical flat tables (adult under L020), tuned challengers and stacks land within a few thousandths of a strong default (0.9282 → 0.9296; OOF corr 0.997), so the honest fork is usually TIE. A TIE is legitimate because L030 already trained the skill of reporting 'no significant winner' when a correct test says so, and because calling Δ=+0.001 a beat would repeat the 0.0032-nat winner's curse. The written half then explains the non-beat: trees match irregular targets, privileged columns, and junk-heavy feature sets; those edges flip under smooth/rotated/low-junk regimes; further single-table upgrades (honest nets, AutoML, embeddings, attention, hand FE) have repeatedly tied or failed; and the flat claim is silent on signal a lossy join destroyed. STAND means that story still matches your L039 claim; REVISE means you name what the exit changed — without inventing an RDL fair-bar win Year 1 has not earned."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Which outcome fails the Year 1 exit?",
+    options: [
+      { label: "A regenerable XGB reference, a challenger within ±0.002, and a three-bias paragraph that STANDS on the L039 claim", value: "a" },
+      { label: "A claimed 'beat' of Δ=+0.001 with no noise band, no leak audit, and the sentence 'trees are just more powerful'", value: "b" },
+      { label: "A TIE on adult plus EXPLAIN that cites rotation 0.987→0.747 and the exhaustion cascade", value: "c" },
+      { label: "A real BEAT above noise under the fair protocol, with STAND replaced by REVISE naming the new gap", value: "d" }
+    ],
+    correct: "b",
+    explain: "(b) fails both deliverables: the number is not classified honestly, and the written half uses the M47 folklore ontology instead of inductive biases. (a) and (c) are modal passes; (d) is the rare but allowed BEAT fork with an honest essay revision."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "Why does this exit use OpenML adult for the runnable bar, after Q4 spent three lessons on the homework pipeline?",
+    options: [
+      { label: "So anyone can regenerate the XGB number without the private submission, while still reusing homework discipline (noise bands, named estimators, baseline parity)", value: "a" },
+      { label: "Because the homework results were invalid and must be discarded", value: "b" },
+      { label: "Because adult has timestamps and the homework does not", value: "c" },
+      { label: "Because XGBoost cannot run on the homework feature matrix", value: "d" }
+    ],
+    correct: "a",
+    explain: "The curriculum exit needs a public regenerable bar (L020 adult). The homework remains the Q4 audit/package/review artifact; its findings (winner's curse, ECE estimator, no timestamp) still discipline how you classify gaps and report claims. Adult does not have a deployment timestamp requirement for this i.i.d.-style income task — the report states that explicitly, as L021 requires."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Your EXIT ticket says REVISE because 'Year 1 proved RDL beats tuned XGBoost.' What is wrong?",
+    options: [
+      { label: "REVISE invented an RDL fair-bar win Year 1 has not shown — the open burden must stay open; revise only what the exit actually measured", value: "a" },
+      { label: "Nothing; the mission requires declaring the thesis proven at the Year 1 exit", value: "b" },
+      { label: "REVISE is never allowed; the L039 claim is frozen forever", value: "c" },
+      { label: "You should have used accuracy instead of ROC-AUC before revising", value: "d" }
+    ],
+    correct: "a",
+    explain: "STAND/REVISE tracks the exit experiment and the synthesis claim's boundaries — not the mission's hope. Year 1 demonstrated the cost of flattening and built the honest bar; it did not run a fair RelBench comparison. Claiming that win now would be propaganda. REVISE is allowed when the adult number truly changes the claim (e.g. a real beat, or a boundary you had wrong)."
+  });
+
+  Checklist.mount(document.getElementById("exit-checklist"), {
+    title: "Year 1 exit rubric — both deliverables",
+    items: [
+      { label: "<strong>Regenerable baseline.</strong> Fixed-default XGB on adult in the 0.92–0.93 ROC-AUC band, pipeline-safe, seed disclosed?", hint: "L020" },
+      { label: "<strong>Fair protocol.</strong> Same data/split/metric/budget/preprocessing; test touched once; prevalence stated?", hint: "contract" },
+      { label: "<strong>Honest challenger.</strong> At least one Year-1 attempt under the identical contract?", hint: "L015–L018" },
+      { label: "<strong>Fork.</strong> BEAT / TIE / FAIL classified against a disclosed noise band (±0.002) — no soft-sold wins?", hint: "L030 / L036" },
+      { label: "<strong>Three biases.</strong> Irregular targets, orientation, junk — each with a verified number and a flip condition?", hint: "L025–L027" },
+      { label: "<strong>Essay stance.</strong> Explicit STAND or REVISE on the L039 claim, without inventing an RDL fair-bar win?", hint: "L039" },
+      { label: "<strong>Credibility.</strong> Baseline held to the same standard as the challenger (two pipelines, one standard)?", hint: "L038" },
+      { label: "<strong>Open burden.</strong> Exit refuses to claim Years 3–6 results Year 1 has not earned?", hint: "thesis" }
+    ],
+    done: "Year 1 is closed — regenerable bar + written biases, with an honest fork. Year 2 can begin without a fake win on the ledger."
+  });
+</script>
+</body>
+</html>
