@@ -176,6 +176,11 @@
       id: "grinsztajn2022-synthesis", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win (full, synthesis re-read)", year: 2022, lesson: 39,
       front: "Grinsztajn et al. 2022 (full, L039 synthesis re-read) — what claim should a Year 1 essay make, and where does that claim stop?",
       back: "Claim: on typical medium-sized flat tabular tasks, a leak-free tuned GBDT matches or beats honest neural baselines because three inductive biases fit that regime — irregular (non-smooth) targets, privileged column orientation (trees are NOT rotation-invariant), and junk-feature robustness via gain-gated splits. Boundaries: smooth the target / rotate the basis / remove junk and the edge shrinks or reverses; against honest MLP/ResNet and AutoML the usual result is a tie or small lead, not a crush. The essay must also name the silence: trees can only win on what survived a lossy flatten (aggregation collisions destroy recoverable signal), so 'trees win on tabular' is the setup for the relational thesis, not a refutation of it. Open burden: no fair-bar RDL win yet."
+    },
+    {
+      id: "grinsztajn2022-exit", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win (Year 1 exit re-read)", year: 2022, lesson: 40,
+      front: "Grinsztajn et al. 2022 (L040 Year 1 exit) — what two deliverables close Year 1, and why is matching XGBoost within noise a pass?",
+      back: "Deliverables: (1) a regenerable tuned/fixed tree baseline under a fair protocol, and (2) a written account of the three inductive biases with verified numbers and flip conditions. The lab fork is beat-XGB OR explain-why-not — ties inside a disclosed noise band (adult ±0.002 ROC-AUC; L020 pattern ref 0.9282 vs LGBM 0.9296) are full passes because Year 1 evidence says further single-table cleverness usually plateaus. Explaining a non-beat means inductive-bias match + exhaustion cascade + join silence, not 'trees are more powerful.' STAND/REVISE links the exit number to the L039 claim without inventing an RDL fair-bar win."
     }
   ];
 })(window);

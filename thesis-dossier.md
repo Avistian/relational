@@ -64,6 +64,7 @@ Legend: **[FOR]** supports a sub-claim · **[BAR]** raises the honest baseline t
 | L034 | Kimball dimensional modeling (star schema & joins) — makes the flatten **literal**: real data is a relational schema (fact/event tables + dimensions, linked by PK/FK), and to feed any Q1–Q3 model you must **choose a grain** (one entity at one prediction time), **join** neighbour tables via foreign keys, and **aggregate** the one-to-many rows into fixed-width columns — guarded by a point-in-time filter (`order_ts < t`) or the future leaks (demo on the toy DB: dropping the guard moved C1 from n=3/total=125 to n=4/total=1124). FOR (C1, C2): this *is* the single-table paradigm the thesis critiques, now shown to be (a) a **hand-built, per-task pipeline** of DFS-style aggregates rather than a given, (b) **lossy by construction** — the mean/count discard the one-to-many cardinality, event order, identity, and multi-hop paths — and (c) **leakage-prone at the feature step**, re-imposing PIT discipline on every aggregate and every re-flatten. These are exactly the costs RDL claims to remove by keeping the PK/FK edges as a **graph** and learning the aggregations end-to-end (Y3 message passing, Y4 REG). BAR: the demonstration is still *conceptual/mechanical* — flattening is shown to be a choice with a cost, but no result yet shows a model **beating the fair bar by keeping structure** (that is L035's setup and the Y1-exit → Y3–Y4 burden). | FOR | C1, C2 |
 | L035 | Fey et al. 2024 §1–2 (★ preview) — the flatten's cost measured. Join+aggregate is a **lossy (surjective) map**, proven by an **aggregation collision**: two customers with different histories (Ada rising $10→$30→$50 over 3 products; Bo falling $50→$30→$10 on 1 product) flatten to the **byte-identical** row `n=3/total=90/avg=30/max=50`, so a fitted classifier gives them the **same** P(churn)=0.502 although their true labels differ (0 vs 1) — an *information* loss before any model, not a capacity/tuning/leakage problem. The discarded structure has four names — **cardinality, event identity, temporal order, higher-order paths** — matching Fey §2's five issues with manual feature engineering, of which issue (4) ("forcing data into a single table aggregates into lower-granularity features, thus losing fine-grain signal") is the load-bearing claim. FOR (C1, C2 — the pivot of Year 1): this is the thesis's central mechanism made concrete and runnable — the single-table paradigm doesn't just cost effort (L033) or risk leakage (L034), it **destroys recoverable signal**, and hand-built recovery (spend_trend restores order +40/−40; n_distinct_products restores identity 3/1) is an **unbounded per-task treadmill** (a third customer Zoe collides again), which is exactly why keeping the DB as its **relational entity graph** (row=node, PK/FK=edge) and learning aggregations end-to-end is the proposed escape. BAR (honesty guard): still a *demonstration of cost*, not a win — no result yet shows a graph model **recovering** the discarded structure to beat the honest single-table bar (tuned GBDT + ResNet + AutoML, L028–L030); that is the Y1-exit essay's argument and the Y3–Y4 empirical burden. A future "RDL keeps signal the flatten loses" claim must clear that fair bar, not merely exhibit a collision. | FOR + BAR | C1, C2 |
 | L039 | **Year 1 synthesis essay** — turns L001–L038 into a single falsifiable claim a hostile reader can grade. Grants Grinsztajn's flat-table result, explains it with the three inductive biases, documents the Q4 **exhaustion cascade** (honest nets / AutoML / embeddings / TabTransformer / hand FE repeatedly tie or fail), names **boundary conditions** (smooth / rotated / low-junk; silence after a lossy join), and ends on the **open burden** (no fair-bar RDL win yet). FOR (C1, C4): absorbs the skeptic's strongest objection instead of dodging it — "trees win on flat tables" becomes the *setup* for "the unpaid upside sits across the join." BAR: the essay's credibility coda binds every comparative sentence to the L038 peer-review checklist (two pipelines, one standard), so an eventual RDL claim inherits the same immune system. | FOR + BAR | C1, C3, C4 |
+| L040 | **Year 1 exit exam** — closes the year on the curriculum's two deliverables: a **regenerable** XGBoost baseline under the L020 fair protocol on OpenML `adult`, plus a **written** account of Grinsztajn's three inductive biases with numbers and flip conditions. The experimental fork is BEAT / TIE / EXPLAIN against a disclosed ±0.002 ROC-AUC noise band; the modal honest outcome (L020 evidence of record: ref 0.9282 vs LGBM 0.9296) is a **TIE**, and a TIE plus explanation is a full pass. FOR (C3, C4): the exit institutionalises "matching the stubborn flat bar is success" — so an eventual RDL win cannot be faked by soft-selling tiny deltas (M48) or by demanding a leaderboard scalp Year 1 never promised (M49). BAR: STAND/REVISE binds the regenerable number to the L039 claim without inventing a fair-bar RDL win; the open burden stays open as Year 2 begins. | FOR + BAR | C3, C4, C1 |
 
 ---
 
@@ -100,7 +101,7 @@ Assembled from Q1–Q2. To make the thesis legible to a skeptic, an RDL result m
 
 ---
 
-## Current verdict (updated 2026-07-29, after L039 / Year 1 synthesis essay)
+## Current verdict (updated 2026-07-29, after L040 / Year 1 exit exam)
 
 **Undecided, and honestly so.** Q3 completed the *instrument* rather than the *case*: the dossier now
 owns the full honest bar (C3) — not just a strong incumbent (Q2) but the whole apparatus that certifies
@@ -220,8 +221,17 @@ that bar. The transferable instrument is the genre itself — synthesis ≠ reca
 binds every comparative sentence to L038's checklist. L040 will ask the learner to beat XGBoost on a flat task
 *or explain why not*; this essay is the explanation they will stand on or revise.
 
+L040 (Year 1 exit exam) **closes Year 1** on those two curriculum deliverables. The runnable bar is OpenML
+`adult` under the L020 fair protocol (public, regenerable — homework remains the Q4 audit/package/review
+artifact). The fork classifier treats gaps inside ±0.002 ROC-AUC as ties; the L020 evidence of record
+(ref XGB 0.9282, tuned LGBM 0.9296, stack 0.9297, OOF corr 0.997) predicts the modal honest outcome is
+**TIE**, and the exit grades that as a pass when paired with a cold written account of the three biases and
+an explicit STAND/REVISE on the L039 claim. Soft-selling Δ=+0.001 as a beat (M48) or treating a non-win as
+exit failure (M49) are the failure modes the lesson exists to kill. Year 1 ends with a high, regenerable
+flat-table bar and a written inductive-bias understanding — not with a fake RDL scalp on the ledger.
+
 The genuinely *supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and
 leakage-prone, and manual feature synthesis hints structure is recoverable, but no result yet shows a
-relational model *beating the fair bar by keeping structure*. That demonstration is the Y1-exit → Y3–Y4
-burden. Standing honestly on a high, fully-instrumented baseline is the point: it is what will make an
-eventual win credible.
+relational model *beating the fair bar by keeping structure*. That demonstration is now the **Year 2–4**
+burden (neural tabular honesty → GNNs → RelBench). Standing honestly on a high, fully-instrumented baseline
+is the point: it is what will make an eventual win credible.

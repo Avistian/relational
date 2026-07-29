@@ -770,6 +770,42 @@
       ],
       correct: "a",
       explain: "L035's Ada/Bo collision (identical row → identical P=0.502 despite different labels) is the boundary that connects the flat-table claim to the thesis. L031 showed embeddings *tie* fair one-hot; Year 1 has not shown an RDL fair-bar win — that is the open burden. A synthesis that grants Grinsztajn and then points at the join is how you absorb the skeptic's strongest objection instead of dodging it."
+    },
+    {
+      id: "l040-softbeat", lesson: 40, quarter: "Q4", concept: "exit-verdict", misconception: true,
+      question: "On adult, fixed-default XGB scores 0.9282 and your LightGBM challenger scores 0.9296 (Δ=+0.0014). Which Year-1 exit fork is correct?",
+      options: [
+        { label: "TIE — the gap is inside the ±0.002 noise band; report a match and write the bias explanation", value: "a" },
+        { label: "BEAT — any positive delta over the XGBoost reference counts as clearing the exit", value: "b" },
+        { label: "FAIL the exit — you must keep searching until the gap exceeds 0.01 ROC-AUC", value: "c" },
+        { label: "Invalid — LightGBM is never an allowed challenger against an XGBoost bar", value: "d" }
+      ],
+      correct: "a",
+      explain: "The exit uses a disclosed noise band (±0.002 ROC-AUC on adult, matching L020). Δ=+0.0014 is a TIE — the modal Year-1 outcome — and a TIE plus a written three-bias explanation is a full pass. Calling it a beat repeats the homework's 0.0032-nat winner's curse (L036). Soft-selling tiny positives is the load-bearing exit failure mode."
+    },
+    {
+      id: "l040-deliverables", lesson: 40, quarter: "Q4", concept: "year1-exit", misconception: true,
+      question: "What two deliverables does the Year 1 curriculum exit actually require?",
+      options: [
+        { label: "A regenerable tuned/fixed tree baseline AND a written understanding of Grinsztajn's three inductive biases", value: "a" },
+        { label: "A leaderboard win over XGBoost on every OpenML dataset in the Grinsztajn suite", value: "b" },
+        { label: "A trained relational GNN that beats the flat bar on RelBench", value: "c" },
+        { label: "A chronological recap of lessons 001–039 with no experimental number", value: "d" }
+      ],
+      correct: "a",
+      explain: "CURRICULUM.md: reproducible tuned tree baseline + written understanding of the three biases. 'Beat XGB or explain why not' is the experimental fork that produces those deliverables — not a demand that you must win. An RDL RelBench win is the open burden of later years, not Year 1."
+    },
+    {
+      id: "l040-stance", lesson: 40, quarter: "Q4", concept: "essay-stance",
+      question: "Your EXIT ticket says REVISE because 'Year 1 proved RDL beats tuned XGBoost.' What is wrong?",
+      options: [
+        { label: "REVISE invented an RDL fair-bar win Year 1 has not shown — revise only what the exit measured; keep the open burden open", value: "a" },
+        { label: "Nothing; the mission requires declaring the thesis proven at the Year 1 exit", value: "b" },
+        { label: "REVISE is never allowed; the L039 synthesis claim is frozen forever", value: "c" },
+        { label: "You must switch the headline metric to accuracy before any revision is valid", value: "d" }
+      ],
+      correct: "a",
+      explain: "STAND/REVISE tracks the exit experiment against the L039 claim. Year 1 built the honest flat bar and showed flattening's cost; it did not discharge the relational open burden. Inventing that win is propaganda. REVISE is allowed when the regenerable number truly changes the claim (a real beat, a broken boundary)."
     }
   ];
 })(window);

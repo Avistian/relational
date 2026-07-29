@@ -1,5 +1,26 @@
 # Teaching Notes
 
+## Session 40 — 2026-07-29
+
+- **Lesson 039 complete** — user said "lesson 39 done" (no essay pasted → no hostile-reader rubric score,
+  per L017–L038 precedent). Record: [[learning-records/0091-lesson-039-complete.md]].
+- **Lesson 040 published — Year 1 Exit Exam** (curriculum lec 040, checkpoint). Single skill: regenerate
+  a disclosed XGBoost baseline under a fair protocol, attempt one honest challenger, classify
+  BEAT / TIE / FAIL against ±0.002 ROC-AUC noise, write Grinsztajn's three biases, STAND or REVISE the
+  L039 claim. Record: [[learning-records/0092-lesson-040-published.md]].
+- **TIE is a full pass.** Modal expected outcome on adult (L020 evidence of record). Soft-selling
+  Δ=+0.001 as a beat = M48; demanding a must-win = M49.
+- **Two new reusable viz (standard #9, one per beat):** `assets/exit-verdict-viz.js` (BEAT/TIE/EXPLAIN)
+  and `assets/exit-gates-viz.js` (six protocol gates). Reused `biases-viz.js`. Headless
+  `labs/_viz_check_l040.js` all pass; browser MCP unavailable → node only. No new bake-off.
+- **Lab** `labs/0040-year-1-exit-exam.ipynb` — Tier A OpenML `adult` (public regenerable bar). Homework
+  kept as stretch/`make verify` because the private submission is outside the repo; NOTES #19 discipline
+  (noise bands, baseline parity) still governs the fork classifier.
+- **Artifacts synced:** retrieval-pool +3; glossary +4; paper-deck +1 (`grinsztajn2022-exit`);
+  misconceptions M48/M49; thesis-dossier +L040; RESOURCES Grinsztajn extended; manifest → **40**;
+  L039 nav → L040.
+- Next: user completes the exit lab; then Year 2 opens at Lesson 041.
+
 ## Session 39 — 2026-07-29
 
 - **Lesson 038 complete** — user said "lesson 38 completed" (no written review pasted → no rubric score,
