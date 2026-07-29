@@ -734,6 +734,42 @@
       ],
       correct: "a",
       explain: "Omissions are findings. The reviewer's stance is adversarial toward the CLAIM: you reason from what is on the page, so an unnamed estimator (the same ECE reads 0.0332 or 0.018) or an undescribed split is a defect, not a detail to assume away. It is usually a major or minor rather than an automatic reject — but it is never free, because a choice you cannot see is a choice you cannot trust."
+    },
+    {
+      id: "l039-recap", lesson: 39, quarter: "Q4", concept: "synthesis-essay", misconception: true,
+      question: "You are writing the Year 1 synthesis. A classmate turns in a chronological tour of lessons 001–038 with no explicit claim. What is the load-bearing defect?",
+      options: [
+        { label: "It is a recap, not a synthesis — without a falsifiable claim, boundaries, and an open burden, a hostile reader has nothing to grade", value: "a" },
+        { label: "It is too long; synthesis essays must stay under five hundred words to count", value: "b" },
+        { label: "It should have skipped Q1, since evaluation discipline is unrelated to what trees beat", value: "c" },
+        { label: "It should have declared that RDL already beats tuned XGBoost, to match the mission", value: "d" }
+      ],
+      correct: "a",
+      explain: "Genre is the defect. A synthesis is organised by the claim's logic (measurement → incumbent → mechanism → frontier); a recap is organised by calendar order. Length is not the issue, Q1 is load-bearing (you cannot claim a win without the measurement contract), and declaring an RDL win Year 1 has not earned would be propaganda — the open burden must stay open."
+    },
+    {
+      id: "l039-biases", lesson: 39, quarter: "Q4", concept: "inductive-bias", misconception: true,
+      question: "Why do tree ensembles still match or beat honest neural nets on typical flat tabular tasks?",
+      options: [
+        { label: "Three inductive biases match that regime — irregular targets, privileged columns, junk robustness — and the claim has named flip conditions", value: "a" },
+        { label: "Trees are universally more powerful than any neural architecture on every data modality", value: "b" },
+        { label: "Neural nets cannot be tuned fairly, so every comparison secretly favours the tree", value: "c" },
+        { label: "AutoML has already solved tabular learning, so architecture comparisons no longer matter", value: "d" }
+      ],
+      correct: "a",
+      explain: "Grinsztajn 2022: trees win when targets are jagged, columns carry individual meaning, and junk abounds — and those edges shrink or reverse when you smooth, rotate, or remove junk. Against honest MLP/ResNet and AutoML the usual result is a tie or small lead (L030 corrected p=0.64; L029 tie), not a universal crush. 'More powerful' is the wrong ontology; inductive-bias match is the right one."
+    },
+    {
+      id: "l039-frontier", lesson: 39, quarter: "Q4", concept: "thesis-frontier",
+      question: "Your synthesis grants that trees win on typical flat tables. Which sentence correctly names where that claim stops being the whole story?",
+      options: [
+        { label: "An aggregation collision shows the flatten can destroy signal no flat model — tree or net — can recover, so the unpaid upside sits across the join", value: "a" },
+        { label: "LightGBM's leaf-wise growth is always faster than XGBoost's level-wise growth on every dataset", value: "b" },
+        { label: "Entity embeddings always beat one-hot encoding, so representation inside one table still has huge unpaid upside", value: "c" },
+        { label: "Year 1 already proved relational models beat a fair tuned GBDT on RelBench", value: "d" }
+      ],
+      correct: "a",
+      explain: "L035's Ada/Bo collision (identical row → identical P=0.502 despite different labels) is the boundary that connects the flat-table claim to the thesis. L031 showed embeddings *tie* fair one-hot; Year 1 has not shown an RDL fair-bar win — that is the open burden. A synthesis that grants Grinsztajn and then points at the join is how you absorb the skeptic's strongest objection instead of dodging it."
     }
   ];
 })(window);
