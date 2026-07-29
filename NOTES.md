@@ -1,5 +1,24 @@
 # Teaching Notes
 
+## Session 39 — 2026-07-29
+
+- **Lesson 038 complete** — user said "lesson 38 completed" (no written review pasted → no rubric score,
+  per L017–L037 precedent). Record: [[learning-records/0089-lesson-038-complete.md]].
+- **Lesson 039 published — Year 1 Synthesis Essay** (curriculum lec 039, **Grinsztajn et al. 2022 full**
+  re-read). Penultimate Y1 unit before the exit exam. Single skill: compose a synthesis essay arguing
+  **what trees beat and why** — three inductive biases, exhaustion cascade, flip conditions, join frontier,
+  credibility coda — ending in a claim a hostile reviewer could grade. Record:
+  [[learning-records/0090-lesson-039-published.md]].
+- **Genre lesson, not a new bake-off.** No new verified numbers; every figure is evidence of record from
+  L010 / L019–L038. Lab is a written essay (like L038), `labPath: null`.
+- **Two new reusable viz (standard #9, one per beat):** `assets/y1-arc-viz.js` (Year 1 as four argument
+  moves; 12 milestone chips) and `assets/trees-frontier-viz.js` (WIN / EXHAUSTED / FRONTIER zones). Reused
+  `biases-viz.js`. Headless `labs/_viz_check_l039.js` all pass; browser MCP unavailable → node only.
+- **Misconceptions M46** (synthesis = chronological recap) and **M47** (trees win because more powerful).
+- **Artifacts synced:** retrieval-pool +3; glossary +7 Q4 terms; paper-deck +1 (`grinsztajn2022-synthesis`);
+  thesis-dossier +L039 (FOR+BAR); RESOURCES Grinsztajn entry extended; manifest → **39**.
+- Next: Lesson 040 — Year 1 exit exam (beat XGB on a flat task or explain why not).
+
 ## Session 0 — 2025-06-24
 
 - User invoked `/teach` with a contrarian thesis: relational deep learning and foundational relational models are undervalued and may outperform current approaches.
