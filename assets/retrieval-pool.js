@@ -698,6 +698,42 @@
       ],
       correct: "a",
       explain: "ECE sums |accuracy − confidence| over bins, so sampling noise accumulates rather than cancelling, and the estimate is biased upward as bins thin. Measure the bias with a control that is perfect by construction — resample each row's label from its own predicted probability vector, giving true ECE = 0 — and the floor reads 0.0149 at n = 5,587, 0.0335 at n = 1,117, and 0.1071 at n = 107. The observed 0.094 sits below its own floor: the measurement cannot see a real problem even if one exists. A threshold beneath its estimator's noise floor is a coin flip with a procedure attached."
+    },
+    {
+      id: "l038-triage", lesson: 38, quarter: "Q4", concept: "review-triage", misconception: true,
+      question: "You are peer reviewing an ML evaluation. What is the correct OUTPUT of the review, and what is the load-bearing move that makes it useful?",
+      options: [
+        { label: "A verdict with required changes, reached by triaging findings on two axes: conclusion-impact and artifact severity", value: "a" },
+        { label: "An exhaustive list of every flaw you can find, so the author can see the full picture at once", value: "b" },
+        { label: "A single overall score from 1 to 10 summarising how good the evaluation felt to read", value: "c" },
+        { label: "A rejection whenever any leak, unnamed estimator, or missing lockfile is present anywhere", value: "d" }
+      ],
+      correct: "a",
+      explain: "A review triages, it does not enumerate. Grade each finding blocker/major/minor/nit on TWO independent axes — conclusion-impact (does fixing it change the claim?) and artifact severity (how broken is the thing itself?) — because they come apart: a training-block leak is severe yet leaves the reported number honest, while a 0.0032-nat margin decides everything though every number is correct. End on a verdict (accept/minor/major/reject) with required changes; a list with no severities buries the one blocker under the nits."
+    },
+    {
+      id: "l038-baseline-parity", lesson: 38, quarter: "Q4", concept: "fair-comparison",
+      question: "You are reviewing your own team's result, which beats a GBDT baseline. What most protects the review from a skeptic?",
+      options: [
+        { label: "Hold the baseline to exactly your model's standard: equal tuning budget, same leakage sweep, same corrected test", value: "a" },
+        { label: "Report the single highest number your model reached across all of its many training runs", value: "b" },
+        { label: "Give the novel model far more tuning, since it is the contribution that deserves the compute", value: "c" },
+        { label: "Lead with whichever metric shows your model's lead over the baseline at its very widest", value: "d" }
+      ],
+      correct: "a",
+      explain: "The mission's claim is comparative, so it needs two pipelines reviewed to one standard, and the baseline you want to beat is the one you are least motivated to scrutinise. (b) is reporting the max (winner's curse), (c) is a hyper-parameter budget mismatch Lones names as a classic unfair comparison, (d) is metric cherry-picking — exactly what a skeptic re-checks. A generous review of the model you love plus a lazy one of the baseline is how honest people publish false wins."
+    },
+    {
+      id: "l038-omission", lesson: 38, quarter: "Q4", concept: "reviewer-stance",
+      question: "A report does not state which estimator its headline ECE uses, nor how the data was split. As a reviewer, how do you treat these gaps?",
+      options: [
+        { label: "As findings in their own right — an undescribed choice is untrustworthy and cannot be believed on faith", value: "a" },
+        { label: "As acceptable, since a competent author almost certainly did the reasonable thing off the page", value: "b" },
+        { label: "As nits, because missing prose never affects whether the reported numbers are actually correct", value: "c" },
+        { label: "As grounds for immediate rejection, since any omission means the whole study is irreproducible", value: "d" }
+      ],
+      correct: "a",
+      explain: "Omissions are findings. The reviewer's stance is adversarial toward the CLAIM: you reason from what is on the page, so an unnamed estimator (the same ECE reads 0.0332 or 0.018) or an undescribed split is a defect, not a detail to assume away. It is usually a major or minor rather than an automatic reject — but it is never free, because a choice you cannot see is a choice you cannot trust."
     }
   ];
 })(window);

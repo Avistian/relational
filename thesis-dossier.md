@@ -192,6 +192,21 @@ per-fold and 0.0178 pooled, a 1.87× spread that is about the ruler, not the mod
 model could pass). Y3–Y4 will compare an RDL model to this baseline; every one of those instruments is what
 makes the comparison mean something rather than merely happen.
 
+L038 closes the credibility arc by converting the self-audit stance into the *reviewer's* stance — the one a
+skeptic will actually adopt when the thesis's comparative claim ("RDL beats a fair single-table bar") lands on
+their desk. It is a method lesson, not a new measurement: it re-reads every verified L036/L037 finding through
+a peer-review checklist across three axes (leakage, tuning, metrics) and, crucially, triages them on **two
+independent axes** — *conclusion-impact* vs *artifact severity* — that a novice collapses into one. Applied to
+the learner's own submission the verdict is **major revision**: sound engineering, but all three headline
+claims are overstated (the 0.0032-nat selection fails a corrected test and flips on one dropped fold; "the
+ECE" is 0.0332 or 0.018 depending on an unnamed estimator, with one gate below its noise floor; "reproducible"
+is true-but-inert and ships no lockfile). The load-bearing point *for the thesis* is the discipline it names
+explicitly: a comparative claim needs **two** pipelines reviewed to **one** standard, and the baseline you
+want to beat is the one you are least motivated to scrutinise — so the review that makes an eventual RDL win
+credible is the hostile review of the GBDT baseline, run first, to the exact standard a reviewer would demand
+of the model you love. This is the immune system the Y1 exit (L040) and every Y3–Y4 RelBench comparison run
+on.
+
 The genuinely *supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and
 leakage-prone, and manual feature synthesis hints structure is recoverable, but no result yet shows a
 relational model *beating the fair bar by keeping structure*. That demonstration is the Y1-exit → Y3–Y4

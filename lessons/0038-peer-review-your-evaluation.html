@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 038 — Peer Review Your Evaluation</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .verdict { border: 1px solid var(--border); border-left: 4px solid #2e6fb0; border-radius: 0 6px 6px 0; padding: 0.75rem 1rem; margin: 1.4rem 0 1rem; background: var(--bg-soft); }
+    .verdict h3 { margin: 0 0 0.35rem; font-size: 1.02rem; }
+    .verdict .tag { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .verdict.major { border-left-color: #b9770e; }
+    .verdict.reject { border-left-color: #b03a2e; }
+    .verdict.accept { border-left-color: #1e6b3c; }
+
+    /* leakage-taxonomy-viz (reused from L022) */
+    .ltv { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .ltv-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+    .ltv-fam { border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 0.75rem; background: #fff; }
+    .ltv-fam-title { font-family: var(--font-sans); font-weight: 600; font-size: 0.9rem; color: var(--accent); }
+    .ltv-fam-blurb { font-family: var(--font-sans); font-size: 0.78rem; color: var(--muted); margin: 0.2rem 0 0.5rem; }
+    .ltv-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .ltv-chip { font-family: var(--font-sans); font-size: 0.8rem; text-align: left; padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 5px; background: #fff; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .ltv-chip:hover { border-color: var(--accent); background: var(--bg-soft); }
+    .ltv-chip.active { border-color: var(--accent); background: var(--accent-light); font-weight: 600; }
+    .ltv-code { font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); }
+    .ltv-chip.active .ltv-code { color: var(--accent); }
+    .ltv-detail { margin-top: 0.85rem; padding: 0.75rem 0.9rem; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 5px; background: #fff; font-size: 0.9rem; }
+    .ltv-d-code { font-family: var(--font-sans); font-weight: 600; color: var(--accent); margin-bottom: 0.35rem; }
+    .ltv-detail p { margin: 0.4rem 0; }
+    .ltv-d-seen { color: var(--muted); font-size: 0.86rem; }
+    .ltv-d-fix { font-size: 0.88rem; }
+
+    /* review-triage-viz (new) */
+    .rt-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .rt-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.6rem; font-family: var(--font-sans); font-size: 0.76rem; color: var(--muted); }
+    .rt-key { display: inline-flex; align-items: center; gap: 0.3rem; }
+    .rt-dot { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; }
+    .rt-svg-holder { background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+    .rt-svg { display: block; max-width: 100%; margin: 0 auto; }
+    .rt-guide { stroke: var(--border); stroke-width: 1; stroke-dasharray: 4 4; }
+    .rt-axis { font-family: var(--font-sans); font-size: 11px; fill: var(--muted); }
+    .rt-quad { font-family: var(--font-sans); font-size: 10px; fill: #9aa4b2; font-style: italic; }
+    .rt-pt { cursor: pointer; }
+    .rt-circ { stroke: #fff; stroke-width: 1.5; opacity: 0.55; transition: opacity 0.15s, stroke 0.15s; }
+    .rt-pt:hover .rt-circ { opacity: 0.85; }
+    .rt-pt.rt-active .rt-circ { opacity: 1; stroke: #222; stroke-width: 2.5; }
+    .rt-code { font-family: var(--font-mono); font-size: 11px; font-weight: 700; fill: #fff; pointer-events: none; }
+    .rt-readout { font-size: 0.87rem; margin-top: 0.7rem; line-height: 1.6; min-height: 10rem; }
+    .rt-readout p { margin: 0.45rem 0; }
+    .rt-r-head { margin-bottom: 0.35rem; }
+    .rt-r-badge { display: inline-block; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.1rem 0.45rem; border-radius: 4px; color: #fff; }
+    .rt-r-title { font-weight: 600; }
+    .rt-r-origin { font-family: var(--font-sans); font-size: 0.72rem; color: var(--muted); }
+    .rt-r-ev { color: var(--fg, #222); }
+    .rt-r-req { border-left: 3px solid var(--accent); padding-left: 0.6rem; color: var(--fg, #222); }
+
+    /* checklist (reused) */
+    .chk { margin: 1.25rem 0; padding: 1rem 1.15rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .chk-title { font-family: var(--font-sans); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.6rem; }
+    .chk-list { list-style: none; padding: 0; margin: 0; }
+    .chk-item { display: flex; align-items: baseline; gap: 0.55rem; margin: 0.5rem 0; font-size: 0.92rem; }
+    .chk-item input { margin-top: 0.2rem; flex: none; }
+    .chk-hint { color: var(--accent); font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .chk-feedback { margin-top: 0.75rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); }
+    .axis-head { font-family: var(--font-sans); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent); margin: 0.9rem 0 0.2rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 1 · Q4</p>
+  <h1>Peer Review Your Evaluation</h1>
+  <p class="subtitle">Lesson 038 · Phase 1 · Q4 · ~50 min · <em>primary reading: Lones, <em>Patterns</em> 5(10), 2024</em></p>
+
+  <p>
+    Two lessons ago you put on a mechanic's overalls and audited your own homework pipeline for whether the
+    number was <em>right</em> (<a href="0036-revisit-your-homework-pipeline.html">L036</a>). Last lesson you
+    put on an engineer's and asked whether it was <em>stable</em> — whether the pipeline regenerates its own
+    headline on command (<a href="0037-document-a-baseline-package.html">L037</a>). This lesson hands you a
+    third hat, and it is the uncomfortable one: the <strong>reviewer's</strong>. Someone drops an evaluation
+    on your desk — a report, a results table, a claim that model A beats model B — and asks the only question
+    that ultimately decides whether the work counts: <em>would this survive a hostile, competent reader who
+    is not you?</em>
+  </p>
+  <p>
+    This is not the same skill as auditing your own code, and the difference is the point. An auditor has the
+    source; a reviewer usually has only what was <em>reported</em>, and must decide what to believe from it.
+    An auditor lists defects; a reviewer must <strong>triage</strong> them — separate the flaw that changes
+    the conclusion from the flaw that merely dents the artifact — and end on a <strong>verdict</strong> with
+    required changes, not a pile of grievances. Doing that fairly, under a fixed checklist, is a distinct and
+    learnable craft, and it is the craft the whole mission runs on.
+  </p>
+  <p>
+    Its single skill: <strong>run a structured, severity-graded review of an evaluation across three axes —
+    leakage, tuning, metrics — and reach a defensible verdict that names what must change</strong>, while
+    holding the baseline to exactly the standard you would demand of a result that beat you.
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> A peer review is not a list of everything wrong; it is a sorted judgement —
+    which defects invalidate the <em>conclusion</em>, which merely degrade the <em>artifact</em>, and which
+    are nits — delivered as a verdict a fair author could act on, and its hardest discipline is applying the
+    same scrutiny to the baseline you <em>want</em> to lose.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from earlier lessons, from memory, before today's material. A failed retrieval still
+    encodes better than a re-read.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Why review at all — and why it is the mission's immune system</h2>
+  <p>
+    The mission's bet is contrarian: that relational deep learning is undervalued, and the way that bet is
+    settled is a comparison a skeptic will attack — an RDL model against a tuned gradient-boosted tree with
+    hand-built features, on RelBench, with numbers a reviewer will try to break. So the reviewer you are most
+    afraid of is the one you must <em>become</em>, twice over. First, because you cannot pre-empt an attack you
+    cannot perform: to publish a win that holds, you have to review your own result as its harshest reader
+    would. Second — and this is the subtler discipline — because the claim is <em>comparative</em>, it needs
+    <em>two</em> pipelines reviewed to the same standard, and the one you are least motivated to scrutinise is
+    the GBDT baseline you are hoping to beat. A generous review of your model and a lazy review of the
+    baseline is how honest people publish false wins. The checklist exists to make the standard the same for
+    both, whatever you are rooting for.
+  </p>
+  <p>
+    This is not an abstract worry. Kapoor &amp; Narayanan (whose leakage taxonomy you met in
+    <a href="0022-label-leakage-patterns.html">L022</a>) found data leakage across
+    <strong>17 fields and 329 papers</strong>, and in their own civil-war reproduction, <em>every</em> claim
+    that a complex model beat logistic regression evaporated once the leak was removed. Those papers were
+    reviewed — by competent people — and the flaws got through. Peer review is the field's immune system, and
+    like any immune system it only works if the antibodies are specific: a vague "seems fine" catches
+    nothing. This lesson gives you the specific antibodies, organised as a checklist.
+  </p>
+
+  <h2>First, the vocabulary (nothing here is assumed)</h2>
+  <p>
+    A review has its own small language, and using it precisely is most of what separates a useful review
+    from a taste-based one. Everything this lesson relies on is defined here from first principles.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">The reviewer's stance.</strong> You review the <em>reported</em> evaluation, not the
+    author's intentions or their character. Two consequences. You must reason from what is on the page plus
+    what a competent author would have had to do — so <em>omissions are findings</em>: "the split is not
+    described" is itself a defect, because an undescribed choice cannot be trusted. And you extend the
+    author no benefit of the doubt you would not extend to a rival's paper. The stance is adversarial toward
+    the <em>claim</em> and generous toward the <em>person</em>.
+  </div>
+  <div class="defbox">
+    <strong class="term">Blocker, major, minor, nit.</strong> The four severities a review sorts findings
+    into. A <strong>blocker</strong> means the central claim is not supported as written — you cannot
+    recommend acceptance until it is resolved. A <strong>major</strong> issue materially weakens the work but
+    leaves the headline standing. A <strong>minor</strong> issue should be fixed but changes no conclusion. A
+    <strong>nit</strong> is cosmetic. The single most common review failure is grading everything the same —
+    a wall of nits reads as thoroughness and buries the one blocker that mattered.
+  </div>
+  <div class="defbox">
+    <strong class="term">Conclusion-impact vs artifact severity.</strong> The two <em>independent</em> axes
+    this lesson turns on. <em>Conclusion-impact</em>: if the defect were fixed, would the paper's claim (or
+    the shipped decision) change? <em>Artifact severity</em>: how broken is the thing itself, regardless of
+    the headline? They come apart in both directions — a group-straddle buried in a training block can leave
+    the reported number perfectly honest (high severity, low conclusion-impact), while a 0.0032-nat selection
+    margin can decide everything while every number is correctly measured (low severity, high
+    conclusion-impact). Grading only one axis is how reviewers either nuke a sound paper over a cosmetic flaw
+    or wave through a fatal one dressed as a small number.
+  </div>
+  <div class="defbox">
+    <strong class="term">Verdict.</strong> The single required output of a review, in four grades:
+    <strong>accept</strong> (claims supported), <strong>minor revision</strong> (fixable without changing the
+    story), <strong>major revision</strong> (the conclusion is overstated but the work is salvageable with
+    named changes), <strong>reject</strong> (the central claim is unsupported and cannot be rescued by
+    revision). A review without a verdict is a mood; a verdict without required changes is a veto. You owe
+    both.
+  </div>
+  <div class="defbox">
+    <strong class="term">Sequential overfitting (over-hyping).</strong> Lones' name for one of the most
+    pernicious leaks, because it is almost never written down: you train model after model, using each one's
+    <em>test-set</em> score to choose the next, so the test set silently becomes part of training and the
+    final number is optimistic. It is the informal cousin of the selection bias
+    <a href="0004-grouped-nested-cv.html">L004</a> fixed with nested CV — and a reviewer catches it not in
+    the code but in the <em>process</em>: "how many models did you evaluate on this test set, and did any
+    earlier result guide a later choice?"
+  </div>
+  <div class="defbox">
+    <strong class="term">Hyper-parameter (HP) budget parity.</strong> A fair comparison optimises every
+    compared model <em>to the same degree</em>. If your new model had a 200-trial search and the baseline ran
+    on defaults, the gap you measured is a tuning-effort gap wearing a model-quality mask (Lones: "do not
+    assume a bigger number means a better model"). The reviewer's question is not "did you tune?" but "did you
+    tune <em>both</em>, equally, and report the budget?" — which is exactly why <a
+    href="0024-grinsztajn-benchmark.html">L024</a> reports a budget <em>curve</em> rather than one peak.
+  </div>
+  <div class="defbox">
+    <strong class="term">Multiplicity effect (multiple comparisons).</strong> Each significance test at
+    95&nbsp;% confidence has a 1-in-20 chance of a false positive; run twenty and one is likely spurious.
+    A benchmark that compares many models on one test set, or a community that compares thousands on a shared
+    benchmark, is running exactly this gauntlet — so a small "win" is the expected behaviour of noise, not
+    evidence. The fixes are a correction (Bonferroni/Holm) and refusing to read significance into a marginal
+    lead. You met the single-dataset version in <a href="0023-statistical-comparison.html">L023</a>.
+  </div>
+  <div class="defbox">
+    <strong class="term">Meaningful vs naive baseline.</strong> A comparison is only informative against the
+    right floor. A <em>naive</em> (dummy) baseline — predict the majority class, predict last-value — proves
+    the model does something non-trivial at all. A <em>meaningful</em> baseline is the strong, established
+    approach a skeptic would reach for (here: a tuned GBDT, and per <a href="0028-mlp-resnet-baselines.html">
+    L028</a> a tuned MLP/ResNet). Beating a weak baseline proves nothing; Lones' rule is to freshly implement
+    and equally tune every model you compare.
+  </div>
+  <div class="defbox">
+    <strong class="term">Significance vs effect size.</strong> Two different questions. <em>Significance</em>
+    asks "is the difference distinguishable from noise?"; <em>effect size</em> asks "is it big enough to
+    care?" With enough samples a trivial difference becomes significant, and with few samples a real
+    difference is not — so a review demands both a correct test (L023) <em>and</em> the raw magnitude, and
+    treats "p&lt;0.05" with no effect size, or a mean gap with no test, as half an answer.
+  </div>
+  <div class="defbox">
+    <strong class="term">Model info sheet / REFORMS.</strong> Two checklists this lesson's checklist descends
+    from. Kapoor &amp; Narayanan's <em>model info sheet</em> (L022) forces one leakage question per leak type
+    before publication. <em>REFORMS</em> (Kapoor, Cantrell, … Lones, Malik et&nbsp;al., 2024) is a
+    consensus-based reporting checklist for ML-based science. A checklist's value is that it makes you
+    <em>answer</em> a question rather than assume it — which is the entire mechanism by which review catches
+    what taste misses.
+  </div>
+
+  <h2>The evaluation under review</h2>
+  <p>
+    Rather than review a toy, we review the artifact you already know inside-out: the ReAction L&amp;D
+    response-prediction submission in <code>~/Projects/homework</code>, whose <code>report.md</code> makes
+    three headline claims. Treat it now as a stranger's paper — the fact that you have the source is a luxury
+    a real reviewer rarely has, so we will lean on <em>reported</em> evidence and use the source only to
+    confirm. The claims:
+  </p>
+  <ol>
+    <li><strong>"M2a (LightGBM + isotonic calibration) is our best model,"</strong> selected by lowest mean
+      cross-validated log-loss.</li>
+    <li><strong>"Calibration is good: ECE 0.018,"</strong> reported in the README and the ship-gate table.</li>
+    <li><strong>"Reproducible: all randomness is seeded."</strong></li>
+  </ol>
+  <p>
+    Everything the review cites below was <em>measured</em> in L036 (the audit) or L037 (the package). No new
+    numbers appear in this lesson; the skill on show is not measuring, it is <em>reading the existing
+    measurements as a reviewer</em> — sorting them by the two axes and turning them into a verdict.
+  </p>
+
+  <h2>Axis 1 — the leakage sweep</h2>
+  <p>
+    Leakage is first because it is the failure that most often makes a good number a lie, and because it has a
+    structure you can sweep rather than hope to notice. A reviewer does not "look for leaks"; they walk the
+    <strong>eight-type taxonomy</strong> (Kapoor &amp; Narayanan, L022) and, for each type, ask <em>which
+    reported sentence answers it</em> — and treat silence as a finding. Click through the map and, for each,
+    hold the homework submission against it.
+  </p>
+  <div id="leakage-taxonomy"></div>
+  <p>
+    Swept against the submission, the taxonomy comes back mostly clean, and saying so precisely is part of the
+    review. <strong>L1.2 / L1.3 (preprocessing and feature selection on all data):</strong> the audit found a
+    <em>transductive</em> fit — <code>pipe.fit_transform(X_all)</code> over all rows before the CV loop — so
+    the reported CV number is not strictly a deployment estimate; a real but bounded major.
+    <strong>L3.1 (temporal):</strong> the task is not timestamped in a way that supports a temporal split, so
+    this is a <em>declarable limitation</em>, not a defect — the reviewer's note is "state that the split is
+    random and why." <strong>L3.2 (non-independence):</strong> the outer CV is correctly person-grouped —
+    credit where due — but the calibration wrapper takes an <em>ungrouped</em> inner split, a contained
+    group-straddle we return to below.
+  </p>
+  <div class="callout">
+    <strong>The leak that does not inflate the number.</strong> The instinct — "there's a leak, so the number
+    is inflated" — is wrong, and the review has to be precise about it. The ungrouped inner calibration split
+    lives entirely <em>inside</em> the outer training block, so the outer test fold never enters the
+    calibrator's fit: the reported log-loss (1.4248) and ECE (0.0363) are honest measurements of the model
+    actually built. Re-measured with a grouped inner split, they move to 1.4232 / 0.0360 — the change is far
+    inside the 0.039 fold σ, and it is in the <em>correct direction</em> (the honest number is slightly
+    better, not worse). So this finding is <strong>high artifact severity</strong> (the shipped calibrator is
+    mis-shaped for strangers) and <strong>low conclusion-impact</strong> (the reported number stands). Name
+    the contaminated quantity before you estimate damage; "leak" does not imply "inflated."
+  </div>
+
+  <h2>Axis 2 — the tuning &amp; selection sweep</h2>
+  <p>
+    The second axis is the one leakage checklists miss entirely, and where claim&nbsp;1 lives. It asks whether
+    the <em>choice</em> the evaluation made — which model won, and by how much it was tuned — is supported.
+    Three questions.
+  </p>
+  <p>
+    <strong>Was the test set touched more than once (sequential overfitting)?</strong> A reviewer asks how
+    many models were compared on the same folds and whether any earlier score guided a later decision.
+    Here the answer is bounded — a fixed set of candidate models on shared grouped folds — but the shared-fold
+    comparison sets up the real problem, the winner's curse.
+  </p>
+  <p>
+    <strong>Is the winning margin real?</strong> This is the blocker. The submission ships M2a over M1 on a
+    mean-log-loss margin of <strong>0.0032 nats</strong> — 8&nbsp;% of one fold's σ, losing 2 of the 5 folds,
+    with a naive paired <em>p</em>&nbsp;=&nbsp;0.64 and a Nadeau–Bengio corrected <em>p</em>&nbsp;=&nbsp;0.75 —
+    and the winner <em>flips to M1</em> the moment fold&nbsp;2, which supplies M2a's entire margin, is dropped
+    (L036). Every number here is correctly measured; the defect is the inference. The maximum of several noisy,
+    correlated estimates is optimistically biased (the winner's curse, L036 / <a
+    href="0017-hyperparameter-search.html">L017</a>), so an argmin over shared folds is a <em>decision</em>,
+    not a measurement — and a decision that flips when one fold is dropped was never a decision about the
+    models. The reviewer's required change: give the tie to the simpler model, or report "no significant
+    winner."
+  </p>
+  <p>
+    <strong>Was the comparison budget-fair?</strong> Here the axis borrows a finding from the reproducibility
+    probe. An undocumented <code>.astype(np.float32)</code>, sitting in a notebook cell mentioned in neither
+    the README nor <code>src/</code>, moves the mean log-loss by only +0.00133 — but that is
+    <strong>42&nbsp;% of the 0.0032 margin</strong> that decided claim&nbsp;1 (L037). A representation choice
+    nobody declared supplies nearly half the evidence for the headline. That is not a rounding detail; it is
+    part of the model, and it belongs in the comparison's config where a reviewer can see it.
+  </p>
+
+  <h2>Axis 3 — the metrics sweep</h2>
+  <p>
+    The third axis asks whether the numbers mean what the report says they mean, and it is where claim&nbsp;2
+    fails. Two findings, both from L037.
+  </p>
+  <p>
+    <strong>Is each number's estimator named?</strong> "Top-label ECE" on the same model's same out-of-fold
+    predictions reads <strong>0.0332</strong> in the selection table (binned per fold, then averaged) and
+    <strong>0.018</strong> in the README and ship-gate (pooled, binned once) — a 1.87× spread that says
+    nothing about the model, because ECE sums <em>absolute</em> gaps over bins and thin bins bias it upward,
+    while log-loss (a plain per-row mean) agrees to five decimals either way. The model was <em>selected</em>
+    on the larger estimator and <em>ship-gated</em> on the smaller one. Neither is wrong; the defect is that a
+    metric name is not an estimator, and until the aggregation rule, bin count and sample size travel with the
+    number, the two are not comparable.
+  </p>
+  <p>
+    <strong>Is each threshold above its estimator's noise floor?</strong> The submission's one failed
+    ship-gate — the 107-row <code>age = missing</code> slice, ECE 0.094 against a 0.05 threshold — sits
+    <em>below</em> the <strong>0.1071 ± 0.0297</strong> that a perfectly calibrated model scores at
+    n&nbsp;=&nbsp;107 (L037). The gate cannot be passed by <em>any</em> model, so its CONDITIONAL verdict is
+    uninterpretable in either direction. Before believing any small reported value, a reviewer asks what the
+    same procedure would report for a model that was exactly right — and a threshold beneath its own floor is
+    a coin flip with a procedure attached.
+  </p>
+
+  <h2>Triage: the two axes that decide the verdict</h2>
+  <p>
+    Now the skill this whole lesson is built to teach. You have a sweep's worth of findings; a novice review
+    lists them and a good review <em>sorts</em> them, on the two independent axes from the vocabulary. Below,
+    each defect from the three sweeps (plus the two reproducibility findings that back them) is placed by
+    <em>conclusion-impact</em> (does fixing it change the claim?) against <em>artifact severity</em> (how
+    broken is the thing itself?). Click each to see its evidence and the required change. Watch what the grid
+    does that a list cannot: it puts the ungrouped split and the no-lockfile finding <em>high but to the
+    left</em> — serious, but not why you would reject the conclusion — and the selection margin, the estimator
+    ambiguity and the single fold draw <em>to the right</em>, where the claims actually live.
+  </p>
+  <div id="review-triage"></div>
+  <p>
+    Read the right-hand column top to bottom and you have the review's spine: the three headline claims are
+    each undercut by a right-side finding. That is the difference between "here are seven things I noticed" and
+    "here is why I cannot accept the paper as written, and exactly what would change my mind."
+  </p>
+
+  <h3>Predict the verdict before you read it</h3>
+  <p>
+    Commit first. You have swept three axes and triaged the findings. What verdict does this evaluation earn?
+  </p>
+  <div id="predict-verdict"></div>
+
+  <div class="verdict major">
+    <span class="tag">Verdict · with required changes</span>
+    <h3>Major revision — the machinery is sound; the three headline claims are overstated</h3>
+    <p style="margin-bottom:0">
+      Not a reject: the data, the grouped outer CV, the saved artifacts and the internal checks are better than
+      most published ML, and every defect is fixable without redoing the study. Not an accept, because each of
+      the three claims fails as written. <strong>Claim&nbsp;1 ("M2a is best")</strong> rests on a 0.0032-nat
+      margin that does not survive a corrected test and flips on dropping one fold (blocker) — and 42&nbsp;% of
+      it is an undeclared dtype cast. Required: report the tie, or justify M2a on grounds other than the mean.
+      <strong>Claim&nbsp;2 ("ECE 0.018")</strong> uses an unnamed estimator that disagrees 1.87× with the
+      selection table's, and the one failed gate sits below its noise floor (blocker). Required: name the
+      estimator everywhere and re-scope the sub-floor gate. <strong>Claim&nbsp;3 ("reproducible")</strong> is
+      true and uninformative — the seed is inert — and the pipeline ships no lockfile, so a reviewer cannot
+      regenerate it (major). Required: a lockfile and a fingerprint gate. The submission is a revise, and a
+      good one; the review's job is to make the write-up as honest as the engineering already is.
+    </p>
+  </div>
+
+  <h2>The peer-review checklist (your deliverable)</h2>
+  <p>
+    This is what you take away — the reusable instrument, organised by the three axes, with a reporting/repro
+    coda that L037 already built. Run it against any evaluation, your own included. Each item is a question you
+    must <em>answer</em>, not assume; the hint names where in this course the mechanism lives.
+  </p>
+  <div id="review-checklist"></div>
+
+  <h2>Explain it back</h2>
+  <p>This is the load-bearing idea — put it in your own words before moving on.</p>
+  <div id="teachback-review"></div>
+
+  <div class="callout">
+    <strong>Thesis bridge.</strong> Year&nbsp;1 ends (L040) by asking you to beat XGBoost on a flat task or
+    explain why not — and Years&nbsp;3–4 ask the same question of RDL against a GBDT baseline on RelBench,
+    where the leaderboard gaps you are trying to move are frequently a few percent. This lesson is the tool
+    that decides whether such a gap is believable. The winner's-curse finding says a 0.0032-nat "win" is
+    noise; the RelBench deltas you will chase are not always much larger, so the same corrected test and the
+    same "report the tie" discipline are what will separate your real result from your enthusiasm. And the
+    hardest half is the one the lesson keeps returning to: the review that makes an RDL win credible is the
+    one where you audited the <em>baseline</em> — the model you wanted to lose — to exactly the standard you
+    demanded of your own. A skeptic reading your paper will do precisely that; do it first.
+  </div>
+
+  <h2>Where this is subtle (know this too)</h2>
+  <ul>
+    <li><strong>A review is triage, not enumeration.</strong> The output is a sorted judgement with a verdict,
+      not a list. Seven findings with no severities is a worse review than three findings correctly graded,
+      because the reader cannot tell the blocker from the nit — and burying one real blocker under a drift of
+      cosmetic notes is how fatal flaws get waved through.</li>
+    <li><strong>"Leak" does not imply "inflated number."</strong> Name the contaminated quantity first. A leak
+      confined to the training block (the ungrouped calibrator) degrades the shipped artifact while leaving
+      the reported metric honest — high artifact severity, low conclusion-impact. The reverse also happens: a
+      correctly-measured 0.0032-nat margin decides everything while nothing is mismeasured.</li>
+    <li><strong>Omissions are findings.</strong> "The estimator is not named," "the split is not described,"
+      "no lockfile" — an undescribed choice is an untrustworthy one, and a reviewer scores it as such rather
+      than assuming the author did the right thing off-page.</li>
+    <li><strong>Hold the baseline to the model's standard.</strong> The failure mode of an honest researcher
+      is a generous review of the model they love and a lazy one of the baseline they want to beat. Equal HP
+      budget, equal leakage sweep, equal significance test — whatever you are rooting for.</li>
+    <li><strong>Significance and effect size are both required, and neither is enough alone.</strong> A
+      corrected <em>p</em> with no magnitude cannot tell you if a real difference matters; a mean gap with no
+      test cannot tell you if it is real. The winner's-curse blocker here needed both the corrected p=0.75
+      <em>and</em> the "flips on dropping one fold" magnitude to be damning.</li>
+    <li><strong>Community benchmarks are a shared multiple-comparisons trap.</strong> Even if everyone uses the
+      test set once, a thousand papers on one leaderboard means the top model is partly the luckiest
+      (Lones; L024). A reviewer discounts a marginal SOTA lead accordingly — which is exactly the caution the
+      RelBench leaderboard will demand of your own entry.</li>
+    <li><strong>The verdict must be actionable and bounded.</strong> "Major revision" with named required
+      changes is a service to the author; "reject, it feels weak" is a veto. Match the grade to the ceiling of
+      what revision can fix: reject only when no revision rescues the claim.</li>
+  </ul>
+
+  <h2>Check your understanding</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading (today)</h2>
+  <p>
+    <strong>Michael A. Lones, "Avoiding common machine learning pitfalls," <em>Patterns</em> 5(10):101046,
+    2024</strong> (<a href="https://doi.org/10.1016/j.patter.2024.101046">doi:10.1016/j.patter.2024.101046</a>,
+    open access; the continuously-updated preprint is
+    <a href="https://arxiv.org/abs/2108.02497">arXiv:2108.02497</a>, "How to avoid machine learning pitfalls:
+    a guide for academic researchers"). It is a checklist by construction — a "dos and don'ts" tour of the ML
+    lifecycle — and its middle three sections <em>are</em> this lesson's three axes:
+    <strong>"How to robustly evaluate models"</strong> (leakage, sequential overfitting, choose metrics
+    carefully, evaluate multiple times), <strong>"How to compare models fairly"</strong> (do not assume a
+    bigger number means a better model, use meaningful baselines, statistical tests, correct for multiple
+    comparisons), and <strong>"How to report your results"</strong> (be transparent, report performance
+    multiple ways, be careful with significance, use an ML checklist).
+  </p>
+  <p>
+    Read it with one question in hand: <em>for each "do not," which axis of your checklist catches it, and
+    where has this course already shown it happening?</em> Almost every item maps onto something you have
+    measured — "do not assume a bigger number means a better model" is the 0.0032-nat winner's curse; "be
+    careful when reporting statistical significance" is L023's corrected test; "choose metrics carefully" is
+    the ECE estimator ambiguity. The items that do <em>not</em> map to something you have already met are the
+    ones worth flagging for later.
+  </p>
+  <p>
+    Two companions if you have the appetite, both checklists your deliverable descends from. Kapoor &amp;
+    Narayanan's <a href="https://doi.org/10.1016/j.patter.2023.100804"><em>Leakage and the reproducibility
+    crisis in ML-based science</em></a> (<em>Patterns</em>, 2023) gives the eight-type taxonomy and the
+    <em>model info sheet</em> — one leakage question per type. And
+    <a href="https://doi.org/10.1126/sciadv.adk3452">REFORMS</a> (Kapoor, Cantrell, Peng, … Lones, Malik
+    et&nbsp;al., <em>Science Advances</em>, 2024) is the consensus reporting checklist the whole field is
+    converging on; skim its item list and notice how much of it your three axes already cover.
+  </p>
+
+  <h2>Practice — review it as if it were a stranger's</h2>
+  <p>
+    The lab for this lesson is a review you write, not a notebook you run. Take the homework
+    <code>report.md</code> (or, if you would rather review something you did not build, ask your teacher for a
+    short evaluation write-up to critique) and produce a real review: sweep the three axes with the checklist
+    above, grade each finding as blocker / major / minor / nit, place the two or three that matter on the
+    conclusion-impact × artifact-severity grid, and end on a verdict with required changes. Then paste it into
+    chat — <em>your teacher will review your review</em>, checking that you graded severity correctly, caught
+    the blockers, held the baseline to the model's standard, and did not bury the one finding that changes the
+    claim under a drift of nits.
+  </p>
+
+  <div class="ask-teacher">
+    Unsure why a leak can leave the reported number honest, when "major revision" is the right verdict rather
+    than "reject," or how to hold a baseline you want to beat to the same standard as the model you love? Ask
+    your teacher in Cursor chat — and bring your written review of the homework report for feedback.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0037-document-a-baseline-package.html">← Lesson 037</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../reference/glossary.html">Glossary</a></li>
+      <li><a href="../flashcards.html">Paper flashcards</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/review-triage-viz.js"></script>
+<script src="../assets/leakage-taxonomy-viz.js"></script>
+<script src="../assets/checklist.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 38, count: 3 });
+
+  LeakageTaxonomyViz.mount(document.getElementById("leakage-taxonomy"), {});
+
+  ReviewTriageViz.mount(document.getElementById("review-triage"), {});
+
+  Predict.mount(document.getElementById("predict-verdict"), {
+    prompt: "You have swept three axes of the homework submission. Leakage: outer CV correctly person-grouped, one contained ungrouped calibration split that does NOT inflate the reported number; the split is not temporal but the task is not timestamped. Tuning: M2a shipped over M1 on 0.0032 nats (corrected p=0.75, flips on dropping one fold), and an undeclared float32 cast is 42% of that margin. Metrics: 'the ECE' is 0.0332 or 0.018 depending on an unnamed estimator, and the one failed ship-gate sits below its own noise floor. What verdict does the evaluation earn?",
+    options: [
+      { label: "Accept — the outer CV is grouped and the artifacts are unusually complete", value: "accept" },
+      { label: "Minor revision — name the ECE estimator and add a lockfile, nothing else", value: "minor" },
+      { label: "Major revision — the machinery is sound but all three headline claims are overstated", value: "major" },
+      { label: "Reject — a leak and a sub-floor gate make the whole study unsalvageable", value: "reject" }
+    ],
+    correct: "major",
+    reveal: "Major revision. Reject is too harsh: the data, the grouped outer CV, the saved artifacts and the internal checks are better than most published ML, and every defect is fixable without redoing the study. Accept is impossible: each of the three claims fails as written. Claim 1 ('M2a is best') rests on a 0.0032-nat margin that does not survive a corrected test (p=0.75) and flips on dropping fold 2 — a blocker on the ranking — of which 42% is an undeclared dtype cast. Claim 2 ('ECE 0.018') names no estimator and disagrees 1.87x with the selection table's number, and the one failed gate (0.094 at n=107) sits below the 0.1071 a perfect model scores there — a second blocker. Claim 3 ('reproducible') is true and uninformative (the seed is inert) and ships no lockfile, so it cannot be regenerated — a major. Sound engineering, overstated write-up: revise."
+  });
+
+  Teachback.mount(document.getElementById("teachback-review"), {
+    prompt: "In your own words: what makes a peer review defensible, and why is 'list every flaw you can find' the wrong output?",
+    points: [
+      "A review triages on TWO independent axes, not one: conclusion-impact (does fixing it change the claim?) and artifact severity (how broken is the thing itself?). They come apart — a training-block leak can be severe yet leave the reported number honest; a 0.0032-nat margin can decide everything while every number is correct.",
+      "The output is a graded, sorted judgement ending in a VERDICT with required changes (accept / minor / major / reject) — not an enumeration. A wall of nits with no severities buries the one blocker and reads as thoroughness while catching nothing.",
+      "Sweep the three axes systematically rather than hunting: leakage (walk the 8-type taxonomy, treat silence as a finding), tuning/selection (winner's curse, sequential overfitting, HP budget parity), metrics (name the estimator, check thresholds against their noise floor).",
+      "Omissions are findings: an undescribed split, an unnamed estimator, a missing lockfile are defects, because an untrustworthy-because-unstated choice cannot be believed on faith.",
+      "Significance AND effect size, both: a corrected p with no magnitude, or a mean gap with no test, is half an answer (the winner's-curse blocker needed p=0.75 AND 'flips on dropping one fold').",
+      "Hold the baseline to the model's standard — the honest researcher's failure mode is a generous review of the model they love and a lazy one of the baseline they want to beat; the checklist exists to make the standard identical for both.",
+      "Match the verdict to what revision can fix: reject only when no revision rescues the claim. Here the machinery is sound and every defect is fixable, so the honest verdict is major revision, not reject."
+    ],
+    model: "A defensible review is a sorted judgement, not a list, and the sorting happens on two axes that a novice collapses into one. Conclusion-impact asks whether fixing the defect would change the paper's claim or the shipped decision; artifact severity asks how broken the thing is regardless of the headline. The whole craft is that these come apart. In the homework submission the ungrouped inner calibration split is high severity — the shipped isotonic map is mis-shaped for unseen persons — but low conclusion-impact, because the leak is confined to the training block, so the reported log-loss 1.4248 and ECE 0.0363 are honest (re-measured grouped: 1.4232 / 0.0360, inside the fold sigma and in the right direction). The mirror image is the selection of M2a over M1 on 0.0032 nats: every number is correctly measured, so artifact severity is low, but it decides the entire first claim, and it does not survive a corrected test (p=0.75) and flips when fold 2 is dropped — so its conclusion-impact is maximal. That is a blocker, and no list that treats it like the other six findings would surface it. I sweep three axes rather than hunting for flaws: leakage by walking the eight-type taxonomy and treating any type the report is silent on as a finding; tuning by asking whether the test set was touched repeatedly, whether the winning margin survives a corrected test, and whether both models had the same HP budget — here an undeclared float32 cast supplies 42% of the selection margin, which is part of the model masquerading as code; and metrics by demanding that every number name its estimator (the same ECE is 0.0332 per-fold or 0.018 pooled) and that every threshold sit above its estimator's noise floor (the 107-row gate at 0.05 is below the 0.1071 a perfect model scores). Then I grade each finding blocker/major/minor/nit, place the two or three that matter on the two-axis grid, and end on a verdict with required changes. Enumeration is the wrong output because a reader cannot act on it: fifteen ungraded observations hide the blocker under the nits, give the author no priority, and let a fatal flaw dressed as a small number slip through. And the discipline that makes the whole thing credible for the mission is applying it identically to the baseline I want to beat as to the model I am hoping wins — because the skeptic reading my eventual RDL result will do exactly that, so I had better do it first. The verdict here is major revision, not reject, because the engineering is sound and every defect is fixable without redoing the study; the job is to make the write-up as honest as the pipeline already is."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Reviewing an evaluation, you find that the outer cross-validation is correctly grouped by person, but the calibration wrapper takes an ungrouped inner split, so a person's rows straddle the base-model/calibrator boundary inside the training fold. How should the review grade this?",
+    options: [
+      { label: "High artifact severity, low conclusion-impact: the shipped calibrator is mis-shaped for unseen persons, but the leak is confined to the training block so the reported test-fold metric stays honest — a required fix, not a blocker on the number", value: "a" },
+      { label: "A blocker: any leak invalidates the reported metric, so the whole evaluation must be rejected", value: "b" },
+      { label: "A nit: calibration is post-processing, so an inner split can never matter", value: "c" },
+      { label: "High conclusion-impact: the ECE is inflated by roughly the fraction of persons that repeat across the inner split", value: "d" }
+    ],
+    correct: "a",
+    explain: "A leak only inflates a number computed DOWNSTREAM of it. This one lives entirely inside the outer training block, so the outer test fold — where the metric is computed — never enters the calibrator's fit; the reported 1.4248 / 0.0363 are honest (grouped re-measure: 1.4232 / 0.0360, inside the 0.039 fold sigma and in the correct direction). The defect is real but its severity is in the ARTIFACT (the deployed isotonic map), not the reported number. Grading it a blocker (b) nukes a sound result; grading it a nit (c) waves through a genuinely mis-shaped shipped model. Name the contaminated quantity before estimating damage."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "A paper reports that model A beats model B by a mean of 0.0032 nats of log-loss over 5 shared, person-grouped CV folds, and selects A as the deployed model on that basis. As a reviewer, what is the correct finding?",
+    options: [
+      { label: "A blocker on the ranking with LOW artifact severity: every number is correctly measured, but an argmin over correlated folds is a decision, not a measurement — 0.0032 is 8% of one fold's sigma, the corrected p is 0.75, and the winner flips on dropping one fold, so the tie should go to the simpler model", value: "a" },
+      { label: "Accept: lowest mean CV log-loss is the definition of the best model, and it was measured on grouped folds, so the selection is sound", value: "b" },
+      { label: "A leakage blocker: a margin that small can only come from the test folds leaking into training", value: "c" },
+      { label: "A metrics nit: switch from log-loss to accuracy and the winner will become unambiguous", value: "d" }
+    ],
+    correct: "a",
+    explain: "Nothing is mismeasured — shared folds, correct pairing, correct numbers — so artifact severity is low, but the CONCLUSION rests entirely on this margin, so conclusion-impact is maximal. The maximum of several noisy correlated estimates is optimistically biased (the winner's curse, L017/L036): a naive paired p=0.64, Nadeau-Bengio corrected p=0.75, and dropping fold 2 (which supplies A's whole margin) flips the winner to B. A choice that flips on one dropped fold was never a choice about the models. This is exactly the class of defect a leakage checklist (option c) never catches; L023's variance discipline does. The required change is to report the tie or give it to the simpler model."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "You are reviewing your own team's RDL result, which beats a gradient-boosted-tree baseline on a RelBench task. To make the review defensible for a skeptical reader, which is the MOST important thing to get right?",
+    options: [
+      { label: "Hold the baseline to exactly the standard you demand of the RDL model — equal HP budget, the same leakage sweep, the same corrected significance test with an effect size — because a generous review of your model plus a lazy one of the baseline is how honest people publish false wins", value: "a" },
+      { label: "Report the single highest RDL number you obtained across all your runs, since that is the model's true ceiling", value: "b" },
+      { label: "Tune the RDL model much harder than the baseline, because it is the novel contribution and deserves the compute", value: "c" },
+      { label: "Choose the metric on which the RDL model's lead is largest, and lead the paper with it", value: "d" }
+    ],
+    correct: "a",
+    explain: "The mission's claim is comparative, so it needs TWO pipelines reviewed to the same standard, and the one you are least motivated to scrutinise is the baseline you want to beat. Options (b), (c) and (d) are exactly the failure modes a skeptic will attack: (b) is sequential overfitting / reporting the max (winner's curse), (c) is a hyper-parameter budget mismatch that Lones names as a classic unfair comparison, and (d) is metric cherry-picking. A skeptic reading your paper will re-run the baseline properly and re-test the gap; doing that yourself first, with an identical checklist for both models, is what makes the RDL win credible instead of enthusiastic."
+  });
+
+  Checklist.mount(document.getElementById("review-checklist"), {
+    title: "The peer-review checklist — sweep three axes, grade every finding, end on a verdict",
+    items: [
+      { label: "<strong>Leakage.</strong> Have I walked all 8 leak types and named which reported sentence answers each — treating any type the report is silent on as a finding?", hint: "L022 · taxonomy" },
+      { label: "<strong>Leakage.</strong> For every leak I found, did I name the <em>contaminated quantity</em> and its consequence class before estimating damage (inflated number / degraded artifact / changed decision / caveat)?", hint: "L036 · leak \u2260 inflated" },
+      { label: "<strong>Leakage.</strong> Does the split match deployment (temporal if timestamped, grouped by the dependent entity), or is a random/ungrouped split an undeclared assumption?", hint: "L021 / L004" },
+      { label: "<strong>Tuning.</strong> How many models were compared on the same test data, and did any earlier score guide a later choice (sequential overfitting)?", hint: "Lones · over-hyping" },
+      { label: "<strong>Tuning.</strong> Does the winning margin survive a <em>corrected</em> significance test, and does it hold when one fold is dropped (winner's curse)?", hint: "L023 / L036" },
+      { label: "<strong>Tuning.</strong> Were all compared models tuned to the same budget, and is that budget reported (HP parity) rather than one peak number?", hint: "L024 · budget curve" },
+      { label: "<strong>Tuning.</strong> Is the comparison against a <em>meaningful</em> baseline (a tuned GBDT, a tuned MLP/ResNet), not a straw one \u2014 and is any undeclared choice (a dtype cast) part of that comparison?", hint: "L028 / L037" },
+      { label: "<strong>Metrics.</strong> Does every number carry its <em>estimator of record</em> (aggregation rule, bin count, sample size), so two places cannot report the same metric as two different numbers?", hint: "L037 · 0.0332 vs 0.018" },
+      { label: "<strong>Metrics.</strong> Is each threshold above its estimator's <em>noise floor</em> \u2014 what would a model that is exactly right score here?", hint: "L037 · the 107-row gate" },
+      { label: "<strong>Metrics.</strong> Is the metric appropriate to the problem (PR + prevalence under imbalance, calibration if probabilities are used), and are both significance <em>and</em> effect size reported?", hint: "L008 / L023" },
+      { label: "<strong>Reporting / repro.</strong> Is the result reported with a spread across splits (repeated CV), not a single fold draw?", hint: "L037 · splitter seed 0.0166" },
+      { label: "<strong>Reporting / repro.</strong> Could I independently regenerate the number \u2014 locked environment, one entry point, a fingerprint gate \u2014 or is \"reproducible\" an unbacked claim?", hint: "L037 · lockfile" },
+      { label: "<strong>Verdict.</strong> Have I graded every finding (blocker / major / minor / nit), placed the deciding ones on the conclusion-impact \u00d7 artifact-severity grid, and ended on a verdict with <em>required changes</em>?", hint: "L038 · triage" },
+      { label: "<strong>Verdict.</strong> Did I hold the baseline to exactly the standard I held the model \u2014 especially the baseline I wanted to lose?", hint: "L038 · the mission's immune system" }
+    ],
+    done: "That is the review. The test of it is not that it looks thorough \u2014 it is that a fair author could act on it: the blockers are separated from the nits, and each blocker names the change that would move your verdict."
+  });
+</script>
+</body>
+</html>
