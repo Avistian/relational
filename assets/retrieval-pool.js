@@ -806,6 +806,43 @@
       ],
       correct: "a",
       explain: "STAND/REVISE tracks the exit experiment against the L039 claim. Year 1 built the honest flat bar and showed flattening's cost; it did not discharge the relational open burden. Inventing that win is propaganda. REVISE is allowed when the regenerable number truly changes the claim (a real beat, a broken boundary)."
+    },
+    // ---- Y2 Q1: neural tabular architectures ----
+    {
+      id: "l041-revisit", lesson: 41, quarter: "Y2Q1", concept: "strong-baseline",
+      question: "What is the central methodological contribution of Gorishniy et al. 2021 ('Revisiting DL for tabular data')?",
+      options: [
+        { label: "A strong simple baseline (tuned ResNet) plus a shared tuning protocol, so DL-tabular models can be compared fairly", value: "a" },
+        { label: "A proof that deep learning is universally superior to gradient boosting on tabular data", value: "b" },
+        { label: "A new gradient-boosting library that is faster than XGBoost and LightGBM", value: "c" },
+        { label: "A demonstration that hyper-parameter tuning has no effect on tabular results", value: "d" }
+      ],
+      correct: "a",
+      explain: "The paper's contribution is comparability: without a strong tuned baseline (ResNet) and one shared protocol, prior DL-beats-trees claims were unfair (an HP-budget gap, L038). It introduces FT-Transformer, not a GBDT library, and shows tuning matters a great deal."
+    },
+    {
+      id: "l041-tokenizer", lesson: 41, quarter: "Y2Q1", concept: "ft-transformer",
+      question: "What does FT-Transformer's Feature Tokenizer do that TabTransformer's embedding layer does not?",
+      options: [
+        { label: "It tokenises numeric features too (x_j·W_j+b_j), so continuous columns become attention tokens — not just categoricals", value: "a" },
+        { label: "It removes the [CLS] token and averages all feature tokens instead", value: "b" },
+        { label: "It one-hot encodes categoricals before the Transformer instead of embedding them", value: "c" },
+        { label: "It replaces self-attention with a gradient-boosted tree over the embeddings", value: "d" }
+      ],
+      correct: "a",
+      explain: "TabTransformer (L032) contextualises only categoricals; numerics bypass attention. FT-Transformer maps each numeric feature to its own token via a learned per-column weight+bias, so numbers attend to categoricals and each other — why it is the stronger, more universal classic neural model. It keeps the [CLS] token and embeds (not one-hots) categoricals."
+    },
+    {
+      id: "l041-nowinner", lesson: 41, quarter: "Y2Q1", concept: "no-universal-winner", misconception: true,
+      question: "Under a fair shared protocol, does Gorishniy 2021 show FT-Transformer beating a tuned GBDT on most tabular datasets?",
+      options: [
+        { label: "No — FT-Transformer narrows the gap and is the best DL model, but GBDT still wins on a large share; the winner is dataset-dependent", value: "a" },
+        { label: "Yes — a transformer with attention over all features finally wins on tables universally", value: "b" },
+        { label: "Yes, but only because rtdl tunes the transformer far harder than the GBDT", value: "c" },
+        { label: "The paper never compares any neural model against GBDT", value: "d" }
+      ],
+      correct: "a",
+      explain: "No universal winner. The paper gives a strong reproducible DL baseline (ResNet) and a strong universal model (FT-Transformer), but a tuned GBDT still wins on a large share of datasets — the best model is dataset-dependent. Same verdict as Grinsztajn 2022 (L024), reached from the architecture side. 'DL finally beats trees' is the M50 misreading."
     }
   ];
 })(window);

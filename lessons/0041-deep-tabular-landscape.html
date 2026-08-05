@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 041 — The Deep-Tabular Landscape &amp; rtdl</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .fig-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0 1rem; line-height: 1.6; }
+
+    /* tabular-dl-map-viz */
+    .tdm-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tdm-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.7rem; font-family: var(--font-sans); font-size: 0.76rem; color: var(--muted); }
+    .tdm-key { display: inline-flex; align-items: center; gap: 0.3rem; }
+    .tdm-dot { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; }
+    .tdm-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .tdm-chip { display: inline-flex; align-items: baseline; gap: 0.4rem; font-family: var(--font-sans); font-size: 0.78rem; padding: 0.35rem 0.6rem; border: 1px solid var(--border); border-radius: 5px; background: #fff; cursor: pointer; color: var(--fg, #222); }
+    .tdm-chip:hover { border-color: var(--tdm-c, var(--accent)); background: var(--bg-soft); }
+    .tdm-chip.tdm-on { border-color: var(--tdm-c, var(--accent)); background: var(--bg-soft); font-weight: 600; box-shadow: inset 0 0 0 1px var(--tdm-c, var(--accent)); }
+    .tdm-chip-lab { pointer-events: none; }
+    .tdm-chip-lsn { pointer-events: none; font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); }
+    .tdm-readout { font-size: 0.87rem; margin-top: 0.75rem; line-height: 1.6; min-height: 8.5rem; }
+    .tdm-readout p { margin: 0.45rem 0; }
+    .tdm-r-head { margin-bottom: 0.35rem; }
+    .tdm-r-badge { display: inline-block; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.1rem 0.45rem; border-radius: 4px; color: #fff; }
+    .tdm-r-lesson { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+    .tdm-r-title { font-weight: 600; }
+    .tdm-r-ev { color: var(--fg, #222); }
+
+    /* tokenizer schematic */
+    .tok { margin: 1rem 0; padding: 0.8rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.8; overflow-x: auto; }
+    .tok .cls { color: #7c3aed; font-weight: 700; }
+    .tok .num { color: #2e6fb0; }
+    .tok .cat { color: #1e6b3c; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 2 · Q1 · Neural tabular architectures</p>
+  <h1>The Deep-Tabular Landscape &amp; rtdl</h1>
+  <p class="subtitle">Lesson 041 · Phase 2 · Q1 · ~50 min · <em>primary reading: Gorishniy et al. 2021, "Revisiting Deep Learning Models for Tabular Data"</em></p>
+
+  <p>
+    Year 1 is closed. You built a high, regenerable single-table bar — a leak-free, tuned gradient-boosted
+    tree ensemble under the <a href="0020-q2-checkpoint.html">L020</a> fair-comparison contract — and you
+    wrote, cold, <em>why</em> that bar is stubborn (Grinsztajn's three inductive biases,
+    <a href="0025-inductive-bias-smoothness.html">L025</a>–<a href="0027-inductive-bias-uninformative-features.html">L027</a>).
+    You also watched a quarter's worth of single-table upgrades — honest MLP/ResNet nets
+    (<a href="0028-mlp-resnet-baselines.html">L028</a>), AutoML (<a href="0029-manual-fe-vs-automl.html">L029</a>),
+    entity embeddings (<a href="0031-embeddings-for-categoricals.html">L031</a>), a TabTransformer preview
+    (<a href="0032-tabtransformer-preview.html">L032</a>) — repeatedly <strong>tie or fail</strong> against
+    that bar (the exhaustion cascade).
+  </p>
+  <p>
+    Year 2 does not abandon that discipline; it <em>weaponises</em> it. The goal of the year:
+    <strong>know every major neural tabular architecture and tabular foundation model, know when each
+    wins, and know exactly why strong trees and MLPs still often win on single tables.</strong> This is
+    the year that makes you <em>honest about neural baselines</em> — so that when a relational model
+    eventually claims a win in Years 3–4, the single-table opponent it beats is the strongest fair one,
+    not a strawman.
+  </p>
+  <p>
+    Lesson 041 is the map and the toolkit for that year. The opener is deliberately a <em>methods</em>
+    paper, not the flashiest architecture: Gorishniy, Rubachev, Khrulkov &amp; Babenko (NeurIPS 2021),
+    <em>Revisiting Deep Learning Models for Tabular Data</em>. Its contribution is not one model but a
+    correction to the field: there was <strong>no strong, simple, shared baseline</strong>, so a lot of
+    reported "deep learning beats trees on tables" progress was measured against weak or unequally-tuned
+    opponents. The paper gives us three things we will lean on all year: a strong <strong>ResNet</strong>
+    baseline, a strong universal <strong>FT-Transformer</strong>, and an honest headline —
+    <em>no universal winner</em> against a tuned GBDT.
+  </p>
+
+  <p>
+    Its single skill: <strong>read the neural-tabular literature as a map anchored by a fair protocol and
+    two reference models (a ResNet baseline + FT-Transformer), so that any "DL beats GBDT" claim is judged
+    against a strong, equally-tuned baseline — not a strawman — and set up the <code>rtdl</code> reference
+    implementations you will train from Lesson 042 on.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Before you believe any deep-tabular result, you need a strong simple
+    baseline (ResNet) and a shared tuning protocol; Gorishniy 2021 supplies both, adds FT-Transformer as
+    the strong universal model, and still finds no architecture that universally beats a tuned GBDT.
+  </div>
+
+  <h2>Warm up — recall before the new year</h2>
+  <p>
+    Three questions drawn from earlier lessons. A wrong guess is useful: effortful retrieval (even failed)
+    encodes far better than re-reading. Year 2 will keep interleaving Year 1's evaluation spine, because
+    every new architecture is judged by it.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Why "revisiting"? The baseline problem</h2>
+  <p>
+    A recurring pattern in the 2017–2021 deep-tabular literature: a paper proposes an architecture, reports
+    that it beats "the MLP" and some trees, and claims deep learning has arrived on tables. The catch,
+    named by Gorishniy 2021, is that these comparisons were not on equal footing — baselines were often
+    weak, differently preprocessed, or unequally tuned, and there was no shared, tested implementation to
+    compare against. When each paper brings its own baseline, the numbers are not comparable, and apparent
+    progress can be a <em>tuning-effort gap wearing a model-quality mask</em>.
+  </p>
+  <p>
+    You have seen this exact failure mode from the reviewer's side:
+    <a href="0038-peer-review-your-evaluation.html">L038</a>'s <em>meaningful vs naive baseline</em> and
+    <em>HP-budget parity</em>, and <a href="0023-statistical-comparison.html">L023</a>'s corrected tests.
+    Gorishniy 2021 is that discipline applied to a whole subfield: fix a strong baseline, fix a shared
+    tuning protocol, then re-run everyone.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Strong simple baseline.</strong> A model that is cheap and unglamorous but,
+    <em>when tuned under the same protocol as the fancy model</em>, is genuinely hard to beat. Gorishniy's
+    is a well-tuned <strong>ResNet</strong> (an MLP with residual connections). The claim that stings: it
+    alone matches many published "novel" architectures — so it must be run first.
+  </div>
+  <div class="defbox">
+    <strong class="term">Shared tuning protocol.</strong> One fixed recipe for hyper-parameter search
+    (search space, budget, optimiser, validation split, metric) applied identically to every model.
+    Without it, "model A beat model B" may only mean "A got more Optuna trials." This is
+    <a href="0017-hyperparameter-search.html">L017</a>'s fair-budget rule, promoted to a field standard.
+  </div>
+
+  <h2>The landscape — families of neural tabular models</h2>
+  <p>
+    Here is the whole Year-2 Q1 syllabus as a map. Each chip is a model family we will train or read
+    critically over Lessons 042–049; the grey <strong>GBDT</strong> chip is the Year-1 bar they are all
+    measured against. Click through them — the default is <strong>ResNet</strong>, the baseline Gorishniy
+    says to run before believing anything else. Notice the map is organised by <em>mechanism</em>
+    (baseline · attention · tree-inspired · feature crosses · incumbent), not by publication hype.
+  </p>
+  <div id="dl-map"></div>
+  <p class="fig-caption">
+    Reading the map: every family is an attempt to buy back one of the tree inductive biases (irregular
+    targets, privileged columns, junk robustness) with a differentiable mechanism — soft trees (NODE),
+    sparse masks (TabNet), attention (FT-Transformer/SAINT), explicit crosses (DCNv2) — while staying
+    trainable by gradient descent. Whether any of them clears the fair GBDT bar is the year's question.
+  </p>
+
+  <h2>Two models that anchor the year</h2>
+  <p>
+    Of the ten chips, two are load-bearing because Gorishniy 2021 establishes them as the reference points
+    the rest of the year uses: the <strong>ResNet baseline</strong> and <strong>FT-Transformer</strong>.
+  </p>
+  <p>
+    <strong>ResNet</strong> you already met in <a href="0028-mlp-resnet-baselines.html">L028</a>: an MLP
+    whose blocks add a <em>residual</em> (skip) connection, <code>output = x + f(x)</code>, so a deep stack
+    can represent the identity easily and gradients flow without vanishing. Nothing exotic — the point is
+    that <em>tuned under a shared protocol</em> it is strong, and it is the honest floor every attention
+    model must clear.
+  </p>
+  <p>
+    <strong>FT-Transformer</strong> (Feature Tokenizer + Transformer) is the paper's headline architecture
+    and the one Q1 builds toward (full treatment in L046). Its one new idea over the
+    <a href="0032-tabtransformer-preview.html">TabTransformer</a> you previewed is the
+    <strong>Feature Tokenizer</strong>: it turns <em>every</em> feature into an embedding token — including
+    numeric ones — where TabTransformer only embedded categoricals and let numbers bypass the attention.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Feature Tokenizer.</strong> The layer that makes a row look like a sentence of
+    tokens the Transformer can attend over. A numeric feature <code>x_j</code> becomes a vector
+    <code>T_j = x_j · W_j + b_j</code> (one learned weight vector <code>W_j</code> and bias per column, so
+    the single number is scaled into an embedding); a categorical value becomes an embedding-table lookup
+    (as in <a href="0031-embeddings-for-categoricals.html">L031</a>). Every column now has its own
+    <em>d</em>-dimensional token, numeric and categorical alike.
+  </div>
+  <div class="defbox">
+    <strong class="term">[CLS] token.</strong> A single extra learnable token prepended to the sequence
+    (borrowed from BERT). It carries no input feature; after the Transformer layers, its output vector is a
+    pooled summary of the whole row, and the prediction head reads only it. It is how a set of per-feature
+    tokens is turned back into one prediction.
+  </div>
+
+  <p>The tokenized row that FT-Transformer feeds to its Transformer stack looks like this:</p>
+  <div class="tok">
+    row = [ age=39, hours=40, workclass="Gov", education="HS" ]<br>
+    tokens = [
+    <span class="cls">[CLS]</span>,
+    <span class="num">Tok(age)</span>,
+    <span class="num">Tok(hours)</span>,
+    <span class="cat">Emb(workclass)</span>,
+    <span class="cat">Emb(education)</span>
+    ]<br>
+    → L× Transformer self-attention layers →
+    read <span class="cls">[CLS]</span> → linear head → ŷ
+  </div>
+  <p>
+    Why tokenising numerics matters: in TabTransformer a continuous column can only influence the output
+    through the final MLP, never through attention, so numeric–categorical interactions are weak. FT-T lets
+    <code>age</code> and <code>workclass</code> attend to each other directly. That is the architectural
+    reason FT-Transformer is the stronger, more <em>universal</em> classic neural model — and why L046
+    spends a full lesson on it.
+  </p>
+
+  <h2>The honest headline — no universal winner</h2>
+  <p>
+    Before the reveal, commit a prediction. This is the pretesting effect: guessing first, even wrong,
+    makes the result stick.
+  </p>
+  <div id="predict-winner"></div>
+
+  <p>
+    Gorishniy 2021's re-run, under one shared protocol on a broad suite, lands on a conclusion that should
+    feel familiar from <a href="0024-grinsztajn-benchmark.html">L024</a> and your
+    <a href="0039-year-1-synthesis-essay.html">L039 synthesis</a> — reached here from the
+    <em>architecture</em> side rather than the inductive-bias side:
+  </p>
+  <table>
+    <thead><tr><th>Finding (Gorishniy 2021)</th><th>What it means for us</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>A tuned <strong>ResNet</strong> is a strong baseline that matches many prior "novel" DL architectures.</td>
+        <td>Run ResNet before believing any new model. A win over a weak MLP is not a win (L038).</td>
+      </tr>
+      <tr>
+        <td><strong>FT-Transformer</strong> is the most <em>universally</em> good DL model — best or near-best DL across the suite.</td>
+        <td>It is the neural single-table bar to reproduce (L046) — the strongest classic net an RDL result must eventually beat fairly.</td>
+      </tr>
+      <tr>
+        <td><strong>No universal winner vs GBDT.</strong> GBDT still wins on a large share of datasets; DL wins on others; the ranking is dataset-dependent.</td>
+        <td>Same verdict as Grinsztajn, from architecture design: single-table cleverness narrows the gap but does not close it universally (M50).</td>
+      </tr>
+      <tr>
+        <td>Fair <strong>tuning</strong> and <strong>ensembling</strong> move results as much as architecture choice.</td>
+        <td>Protocol is not a footnote — it is the experiment. This is why the year fixes one shared protocol.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="defbox">
+    <strong class="term">No universal winner.</strong> There is no single tabular architecture that beats
+    all others on all datasets — the best model is dataset-dependent, and a tuned GBDT remains a top
+    contender. "DL is finally better on tables" is not what a fair re-run shows; "we now have a strong,
+    reproducible DL baseline, and it ties or trades wins with GBDT" is.
+  </div>
+
+  <div id="teachback-baseline"></div>
+
+  <h2>rtdl — the toolkit for the year</h2>
+  <p>
+    <strong>rtdl</strong> ("Research on Tabular Deep Learning") is the code released with the paper: tested,
+    reference PyTorch implementations of the MLP, the ResNet baseline, and FT-Transformer, plus the
+    preprocessing and tuning conventions the paper used. We use it for exactly the reason the paper exists —
+    so our neural baselines are <em>strong and standard</em>, not something we half-implemented and then
+    beat by accident. A win against a reference implementation means something; a win against your own
+    buggy MLP does not.
+  </p>
+  <p>
+    The maintained package is <a href="https://github.com/yandex-research/rtdl"><code>rtdl</code></a>
+    (the FT-Transformer/ResNet models live in the <code>rtdl_revisiting_models</code> package on PyPI). The
+    Lesson 042 lab trains a ResNet baseline with it; today's setup just gets it importing.
+  </p>
+
+  <h2>Thesis bridge</h2>
+  <div class="callout">
+    <strong>Why a methods paper opens Year 2.</strong> The mission's eventual claim is comparative: a
+    relational model, keeping structure the flatten destroys, beats the fair single-table bar. Year 1 made
+    the <em>tree</em> half of that bar honest and strong. Year 2 makes the <em>neural</em> half honest and
+    strong — because a skeptic will say "you only beat GBDT; a good tabular transformer would have won on a
+    flat table too." FT-Transformer and rtdl are how we make sure that when we run the comparison, the
+    single-table DL opponent is the best fair one. Beating a strawman net would be as worthless as beating
+    an undertuned XGBoost.
+  </div>
+
+  <h2>Check yourself</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+
+  <h2>Primary reading</h2>
+  <p>
+    <a href="https://arxiv.org/abs/2106.11959">Gorishniy, Rubachev, Khrulkov &amp; Babenko —
+    <em>Revisiting Deep Learning Models for Tabular Data</em>, NeurIPS 2021</a>. Read the abstract and
+    introduction (the baseline problem), §3 (the models — MLP, ResNet, FT-Transformer and the Feature
+    Tokenizer), and §5 (results and the "no universal winner" conclusion). Read it the L038 way: for every
+    comparison, ask whether both models were tuned under the same protocol.
+  </p>
+  <p>
+    Companions: <a href="0024-grinsztajn-benchmark.html">L024</a> / Grinsztajn 2022 (the same conclusion
+    from the data side); <a href="0032-tabtransformer-preview.html">L032</a> (TabTransformer, the model
+    FT-Transformer improves on); <a href="0028-mlp-resnet-baselines.html">L028</a> (the ResNet baseline you
+    already trained). Optional survey: Borisov et al. 2021, <em>Deep Neural Networks and Tabular Data</em>
+    (arXiv:2110.01889) — a map of the same landscape.
+  </p>
+
+  <h2>Lab — set up rtdl</h2>
+  <p>
+    This is an environment-setup station, not a bake-off; the training starts in L042. Goal: get the
+    reference models importing and a smoke-test forward pass running, so nothing about your neural baseline
+    is home-made.
+  </p>
+  <ol>
+    <li>In the labs environment, install the reference models: <code>pip install rtdl_revisiting_models</code> (plus <code>torch</code> if not present). Record the resolved versions in your run manifest (<a href="0037-document-a-baseline-package.html">L037</a> discipline).</li>
+    <li>Import and instantiate all three: <code>MLP</code>, <code>ResNet</code>, and <code>FTTransformer</code>. Run one forward pass on a small random batch with a handful of numeric + categorical features; confirm the output shape matches the number of targets.</li>
+    <li>Print the parameter count of each and note which grows with the number of features vs with depth/width — build intuition for where FT-Transformer spends capacity (the tokenizer + attention).</li>
+    <li>Write one sentence in your notes: what does <code>rtdl</code> give you that re-implementing an MLP from scratch would not? (Answer to check against: a <em>strong, standard</em> baseline, so a later win is credible.)</li>
+  </ol>
+  <p>
+    No verdict to classify today — the deliverable is a working import and the one-sentence answer. Paste
+    it to your teacher or say <em>"lab done."</em>
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your one-sentence answer and your parameter-count observations.
+    We will sanity-check that you can state <em>why</em> a strong simple baseline plus a shared protocol is
+    the precondition for any deep-tabular claim — the load-bearing idea of the whole year.
+  </div>
+
+  <div class="ask-teacher">
+    Unsure how the Feature Tokenizer differs from a plain embedding, why "no universal winner" is not a
+    cop-out, or how rtdl's protocol maps onto our L020 contract? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0040-year-1-exit-exam.html">← Lesson 040</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../reference/glossary.html">Glossary</a></li>
+      <li><a href="../flashcards.html">Paper flashcards</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/tabular-dl-map-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 41, count: 3 });
+
+  TabularDLMapViz.mount(document.getElementById("dl-map"), {});
+
+  Predict.mount(document.getElementById("predict-winner"), {
+    prompt: "Under one shared tuning protocol on a broad suite of tabular datasets, does FT-Transformer beat a tuned GBDT on most of them?",
+    options: [
+      { label: "Yes — a transformer with attention over all features finally wins on tables", value: "yes" },
+      { label: "No — it narrows the gap and is the best DL model, but GBDT still wins on a large share; the winner is dataset-dependent", value: "no" },
+      { label: "Yes — but only because rtdl tunes it far harder than the GBDT", value: "unfair" },
+      { label: "The paper does not compare against GBDT at all", value: "nogbdt" }
+    ],
+    correct: "no",
+    reveal: "No universal winner. Gorishniy 2021 gives a strong, reproducible DL baseline (ResNet) and a strong universal model (FT-Transformer), but a tuned GBDT still wins on a large share of datasets — the best model is dataset-dependent. This is the same verdict as Grinsztajn 2022 (L024), reached from the architecture side. The protocol IS the experiment: both models are tuned under the same shared recipe, which is exactly what makes the comparison believable."
+  });
+
+  Teachback.mount(document.getElementById("teachback-baseline"), {
+    prompt: "In your own words: why does Gorishniy 2021 open Year 2, and why is 'we now have a strong, reproducible DL baseline that ties or trades wins with GBDT' a more valuable result than 'a new transformer beats trees'?",
+    points: [
+      "The field lacked a strong, simple, shared baseline (a well-tuned ResNet) and a shared tuning protocol, so reported DL-beats-trees progress was often measured against weak or unequally-tuned opponents — a tuning-effort gap wearing a model-quality mask (L038 HP-budget parity).",
+      "The paper fixes both: ResNet as the strong simple baseline (run it first) and one shared protocol applied to every model.",
+      "FT-Transformer's one new idea over TabTransformer is the Feature Tokenizer — it tokenises numeric features too (x_j·W_j+b_j), so numbers can attend, not just categoricals; a [CLS] token pools the row for the head.",
+      "The honest headline is no universal winner: GBDT still wins on a large share of datasets; the best model is dataset-dependent — the same conclusion as Grinsztajn 2022 from the architecture side (M50).",
+      "For the thesis: this makes the NEURAL half of the single-table bar strong and fair, so an eventual RDL win is credible — you beat the best fair net (FT-Transformer via rtdl), not a strawman."
+    ],
+    model: "Gorishniy 2021 is a methods paper, and that is exactly why it opens the year: it shows that most 'deep learning beats trees on tables' claims up to 2021 were unreliable because there was no strong simple baseline and no shared tuning protocol, so architectures were compared unfairly. It fixes that by establishing a well-tuned ResNet baseline (which alone matches many 'novel' models) and a shared protocol, then adds FT-Transformer — whose Feature Tokenizer turns every feature, numeric included, into an attention token and reads a [CLS] summary — as the strong universal DL model. Run fairly, the result is no universal winner: GBDT still wins on a large share of datasets and the best model is dataset-dependent, the same verdict Grinsztajn reached from the inductive-bias side. That is more valuable than a headline win because a reproducible strong baseline is what lets every later comparison mean something. For the mission it is essential: the RDL thesis is comparative, so the single-table neural opponent it must beat has to be the strongest fair one (FT-Transformer via rtdl), or a skeptic will say a good tabular transformer would have won on a flat table anyway."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "What is the central methodological contribution of Gorishniy et al. 2021?",
+    options: [
+      { label: "A strong simple baseline (tuned ResNet) plus a shared tuning protocol, so deep-tabular models can finally be compared fairly", value: "a" },
+      { label: "A proof that deep learning is universally superior to gradient boosting on tabular data", value: "b" },
+      { label: "A new gradient-boosting library that is faster than XGBoost and LightGBM", value: "c" },
+      { label: "A demonstration that hyper-parameter tuning never affects tabular results", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). The paper's point is comparability: without a strong tuned baseline (ResNet) and one shared protocol, prior DL-beats-trees claims were unfair. It explicitly does NOT show universal DL superiority — its own headline is 'no universal winner' vs GBDT (b is the M50 misconception). It introduces FT-Transformer, not a GBDT library (c), and shows tuning matters a great deal (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "What does FT-Transformer's Feature Tokenizer do that TabTransformer's embedding layer does not?",
+    options: [
+      { label: "It tokenises numeric features too (x_j·W_j+b_j), so continuous columns become attention tokens — not just categoricals", value: "a" },
+      { label: "It removes the [CLS] token and averages all feature tokens instead", value: "b" },
+      { label: "It one-hot encodes categoricals before the Transformer instead of embedding them", value: "c" },
+      { label: "It replaces self-attention with a gradient-boosted tree over the embeddings", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). TabTransformer (L032) only contextualises categoricals; continuous features bypass attention and meet the MLP head directly. FT-Transformer's tokenizer maps each numeric feature to its own token via a learned per-column weight and bias, so numbers can attend to categoricals and to each other — the reason it is the stronger, more universal classic neural model. It keeps the [CLS] token (b) and embeds, not one-hots, categoricals (c)."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "A 2023 paper reports its tabular transformer 'surpasses GBDT.' Given Year 1 + Gorishniy 2021, what is the first thing to check?",
+    options: [
+      { label: "Whether the GBDT baseline was freshly implemented and tuned under the SAME protocol/budget as the transformer", value: "a" },
+      { label: "Whether the transformer has more parameters than the GBDT has trees", value: "b" },
+      { label: "Whether the paper was published at a top-tier venue", value: "c" },
+      { label: "Whether the authors used PyTorch rather than TensorFlow", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). The whole reason Gorishniy 2021 exists is that 'beats GBDT' is only as strong as the baseline it beats and the protocol it beats it under — HP-budget parity, same splits, same preprocessing (L038). This is exactly how L049 reads ExcelFormer/Trompt. Parameter count (b), venue prestige (c), and framework (d) say nothing about fairness."
+  });
+</script>
+</body>
+</html>

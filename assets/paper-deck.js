@@ -181,6 +181,11 @@
       id: "grinsztajn2022-exit", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win (Year 1 exit re-read)", year: 2022, lesson: 40,
       front: "Grinsztajn et al. 2022 (L040 Year 1 exit) — what two deliverables close Year 1, and why is matching XGBoost within noise a pass?",
       back: "Deliverables: (1) a regenerable tuned/fixed tree baseline under a fair protocol, and (2) a written account of the three inductive biases with verified numbers and flip conditions. The lab fork is beat-XGB OR explain-why-not — ties inside a disclosed noise band (adult ±0.002 ROC-AUC; L020 pattern ref 0.9282 vs LGBM 0.9296) are full passes because Year 1 evidence says further single-table cleverness usually plateaus. Explaining a non-beat means inductive-bias match + exhaustion cascade + join silence, not 'trees are more powerful.' STAND/REVISE links the exit number to the L039 claim without inventing an RDL fair-bar win."
+    },
+    {
+      id: "gorishniy2021-ftt", paper: "Gorishniy et al. — FT-Transformer & the deep-tabular landscape", year: 2021, lesson: 41,
+      front: "Gorishniy et al. 2021 (arXiv:2106.11959), L041 landscape view — what is FT-Transformer's one new idea over TabTransformer, and what is the paper's headline verdict vs GBDT?",
+      back: "FT-Transformer = Feature Tokenizer + Transformer. Its one new idea over TabTransformer (which embeds only categoricals) is the FEATURE TOKENIZER: EVERY feature becomes an embedding token — a numeric x_j → T_j = x_j·W_j + b_j (a learned per-column weight vector and bias scale the single number into a d-dim vector), a categorical → embedding-table lookup. A learnable [CLS] token is prepended, L Transformer self-attention layers run, and the [CLS] output is read by a linear head — so numerics attend to categoricals and each other, not just bypass to an MLP. That makes it the strongest, most UNIVERSAL classic neural single-table model. Headline verdict: NO UNIVERSAL WINNER — under one shared tuning protocol a tuned GBDT still wins on a large share of datasets, DL on others; fair tuning + ensembling move results as much as architecture choice (same conclusion as Grinsztajn 2022, from the architecture side). Practically: run the strong ResNet baseline first, and use the rtdl reference implementations so the neural bar is standard, not home-made."
     }
   ];
 })(window);

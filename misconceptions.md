@@ -96,6 +96,12 @@ Status legend: **active** = still re-testing · **retired** = answered correctly
 | M48 | L040 | Any positive delta over the XGBoost reference is a Year-1 exit "beat" | A beat requires clearing a **disclosed noise band** under a fair protocol (on adult, ±0.002 ROC-AUC). Δ=+0.0014 (L020 tuned LGBM vs fixed XGB) is a **TIE** — and a TIE plus a written three-bias explanation is a full exit pass. Soft-selling tiny positives repeats the homework's 0.0032-nat winner's curse (L036) | active |
 | M49 | L040 | The Year 1 exit is failed unless you beat XGBoost | The curriculum exit requires a **regenerable tree baseline** + **written understanding of Grinsztajn's three biases**. "Beat XGB or explain why not" is the experimental fork; TIE / EXPLAIN are legitimate passes. Demanding a leaderboard win would contradict Year 1's own exhaustion-cascade evidence | active |
 
+## Y2 Q1 · neural tabular architectures (Lesson 041)
+
+| # | Lesson | Wrong belief | Correct belief | Status |
+|---|--------|--------------|----------------|--------|
+| M50 | L041 | Gorishniy et al. 2021 ("Revisiting DL for tabular data") shows deep learning finally beats trees on tables | The paper's own headline is **no universal winner**. Its contribution is *methodological*: the field lacked a **strong simple baseline** (a well-tuned ResNet, which alone matches many prior "novel" architectures) and a **shared tuning protocol**, so earlier DL-beats-trees claims were unfair (an HP-budget gap, L038). Run fairly, a tuned **GBDT still wins on a large share of datasets**; the best model is dataset-dependent — the same verdict as Grinsztajn 2022 (L024) from the architecture side. What the paper *does* give is a strong, reproducible DL baseline (ResNet) and a strong universal model (**FT-Transformer**, whose Feature Tokenizer tokenises numerics too), plus the rtdl reference implementations | active |
+
 ---
 
 *Seeded 2026-07-08 from learning records 0001–0051. Add new rows as misconceptions surface; keep the

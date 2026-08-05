@@ -90,8 +90,8 @@ _Your own work (Tier-A artifact, not a published resource):_
   Differentiable oblivious trees. Use for: piecewise / irregular-function modeling.
 - [TabTransformer — Huang et al., 2020](https://arxiv.org/abs/2012.06678)
   Contextual embeddings for columns. Use for: bridge to transformers on tables.
-- [FT-Transformer / Revisiting DL — Gorishniy et al., NeurIPS 2021](https://arxiv.org/abs/2106.11959)
-  rtdl baselines. Use for: FT-Transformer reproduction; strongest *classic* neural single-table model.
+- [FT-Transformer / Revisiting DL — Gorishniy et al., NeurIPS 2021](https://arxiv.org/abs/2106.11959) ★
+  rtdl baselines. Use for: **Lesson 041 primary reading** (Year 2 opener — abstract + intro for the baseline problem, §3 for the models and the Feature Tokenizer, §5 for the *no universal winner* verdict); FT-Transformer reproduction (L046); strongest *classic* neural single-table model. The methodological point that opens the year: a strong simple baseline (tuned ResNet) + a shared tuning protocol are the precondition for believing any "DL beats GBDT" claim — the L038 discipline applied to a whole subfield. Reference implementations: [`rtdl`](https://github.com/yandex-research/rtdl) / the `rtdl_revisiting_models` PyPI package. Companion survey: [Borisov et al. 2021, *Deep Neural Networks and Tabular Data*](https://arxiv.org/abs/2110.01889).
 - [SAINT — Somepalli et al., 2021](https://arxiv.org/abs/2106.01342)
   Row + column attention. Use for: inter-sample attention idea.
 - [ExcelFormer — Chen et al., 2023](https://arxiv.org/abs/2301.02819) · [Trompt — Chen et al., 2023](https://arxiv.org/abs/2305.18446)
