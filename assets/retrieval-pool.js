@@ -843,6 +843,30 @@
       ],
       correct: "a",
       explain: "No universal winner. The paper gives a strong reproducible DL baseline (ResNet) and a strong universal model (FT-Transformer), but a tuned GBDT still wins on a large share of datasets — the best model is dataset-dependent. Same verdict as Grinsztajn 2022 (L024), reached from the architecture side. 'DL finally beats trees' is the M50 misreading."
+    },
+    {
+      id: "l042-first", lesson: 42, quarter: "Y2Q1", concept: "baseline-first", misconception: true,
+      question: "Your new tabular network beats a tuned GBDT. Per Gorishniy 2021, have you cleared the neural bar?",
+      options: [
+        { label: "Not yet — you must also run a tuned MLP and ResNet FIRST, same protocol; a ResNet alone matches many 'novel' models", value: "a" },
+        { label: "Yes — beating a tuned GBDT is the whole bar; the MLP/ResNet are irrelevant once you win", value: "b" },
+        { label: "Yes — as long as your network has more parameters than the GBDT has trees", value: "c" },
+        { label: "No — you must beat FT-Transformer, and the MLP/ResNet baselines never matter", value: "d" }
+      ],
+      correct: "a",
+      explain: "The 'do these first' rule: a properly-tuned MLP and ResNet are the honest neural floor, run before the fancy model under the same protocol. A tuned ResNet alone matches many published architectures, so a GBDT-only comparison is insufficient — beating a weak or absent neural baseline is a tuning-effort gap wearing a model-quality mask (L038)."
+    },
+    {
+      id: "l042-protocol", lesson: 42, quarter: "Y2Q1", concept: "shared-protocol",
+      question: "What makes a ResNet-vs-GBDT comparison 'fair' under a shared tuning protocol?",
+      options: [
+        { label: "Same split, metric, and search budget with validation selection — only each model's search space (its knobs) differs", value: "a" },
+        { label: "Both models are forced to use identical hyper-parameters (same depth, dropout, learning rate)", value: "b" },
+        { label: "The ResNet gets more trials, since neural nets are harder to tune than trees", value: "c" },
+        { label: "Both are scored on the test set directly, so no validation data is wasted", value: "d" }
+      ],
+      correct: "a",
+      explain: "Fairness is a shared FRAME (same split, metric, budget, validation-selected); the per-model search SPACE legitimately differs because a GBDT and a ResNet have different knobs. Unequal trial budgets (c) are the exact unfairness the protocol prevents; identical hyper-parameters (b) are meaningless across architectures; scoring on test (d) is the leak the frame forbids."
     }
   ];
 })(window);

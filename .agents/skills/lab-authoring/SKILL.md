@@ -5,6 +5,55 @@ description: Author mid-difficulty lab notebooks with PROVIDED/TODO/CHECK/EXIT c
 
 Use when creating, retrofitting, or reviewing lab notebooks in `labs/`.
 
+## The lab ships WITH the lesson (NOTES standard #21 — read first)
+
+**A lesson is not "created" or "published" until its lab notebook exists.** When the task is "create
+lesson N", the `Lab` column in `CURRICULUM.md` is a deliverable, not a suggestion — the lab
+`labs/NNNN-<slug>.ipynb` ships in the **same session** as the lesson HTML. Do not defer it, do not leave
+`labPath: null` on a lesson that trains/reads/benchmarks/implements anything.
+
+- **`labPath: null` is allowed ONLY for genuine writing lessons** with no code deliverable (essay /
+  peer-review / synthesis / checkpoint-essay — e.g. L038, L039). "Environment setup" or "forward-pass
+  only" is **not** an exemption.
+- **Build-before-done checklist (every non-writing lesson):**
+  1. `labs/_verify_lNNN.py` run; numbers recorded (or a Modal job — standard #20).
+  2. `labs/_build_lNNN.py` → student `labs/NNNN-*.ipynb` (PROVIDED/TODO/CHECK/EXIT, concept recap,
+     `@colab-bootstrap` first cell) **and** `labs/solutions/NNNN-*.ipynb`.
+  3. Execute the solution with nbconvert so the numbers are real; render `labs/html/NNNN-*.html`.
+  4. `lessons/manifest.json` `labPath` set; `notebooks.html` renders it (auto from manifest).
+  5. Any new lab dependency added to `requirements-labs.txt`.
+  6. The lesson HTML's inline "Lab" section points at the notebook.
+- **Reconcile numbers:** if `_verify` contradicts numbers already written into the lesson/viz/dossier,
+  fix the lesson to the verified numbers (honesty rule, standard #20) — never ship the borrowed story.
+- **Miss of record (do not repeat):** L042 ("Train ResNet baseline") was first published `labPath: null`
+  with only an inline lab; retrofitted the same day into a full rtdl training notebook.
+
+## Build from scratch; libraries only VALIDATE (NOTES standard #22)
+
+The load-bearing model/mechanism is **implemented from scratch** — the student writes the forward pass /
+update / algorithm. A reference library (**rtdl** for MLP/ResNet/FT-Transformer; the canonical impl for
+other topics) is a **validation point, not the teacher**:
+
+- Preferred: same architecture + copied weights → assert `torch.allclose` on outputs.
+- Practical: train both under the same protocol → assert `|Δ metric| < tol` (e.g. 0.03) over seeds.
+- Only peripheral boilerplate is imported. Promote reusable from-scratch models into `labs/relkit/`
+  (e.g. `relkit/nets.py`) so later labs build on them.
+- **Exception:** a lesson whose *skill is the tool itself* (e.g. L041 "set up rtdl") may use it directly —
+  say so in the intro.
+
+## Never conclude from one dataset (NOTES standard #23)
+
+Any "A beats/ties B" claim (especially "no universal winner") needs **multiple datasets + rank stats**:
+
+- **≥3 real datasets** (small OpenML tables keep it CPU-cheap: credit_g/diabetes/blood_transfusion/kc1/
+  phoneme are registered in `relkit.data`; or subsample larger ones and *state it*).
+- **Per-dataset mean ± std over ≥3 seeds** — CIs, never a bare point estimate.
+- **Cross-dataset summary = mean ranks + Friedman test + a Nemenyi critical-difference diagram**
+  (reuse `assets/cd-diagram-viz.js`; method from L023/L030), not one t-test.
+- When compute can't reach the N the claim needs, **cite the big benchmark** for the strong version
+  (Grinsztajn 2022 ~45 datasets; Gorishniy 2021; TabArena) and separate "verified here on k" from
+  "established in the literature on N". A single-dataset number is a *demonstration*, never the evidence.
+
 ## Cell convention
 
 | Tag | Student sees | Agent writes |

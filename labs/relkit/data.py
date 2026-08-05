@@ -12,6 +12,13 @@ SPECS = {
     "credit_g": {"openml_id": 31, "target": "class"},
     "adult": {"openml_id": 1590, "target": "class"},
     "bank_marketing": {"openml_id": 1461, "target": "Class"},
+    # Small binary tables for multi-dataset comparisons (NOTES standard #23). Mostly numeric
+    # (favour nets) vs credit_g's categorical (favours trees) — so model ranks flip across them.
+    "diabetes": {"openml_id": 37, "target": "class"},            # 768 rows, 8 numeric
+    "blood_transfusion": {"openml_id": 1464, "target": "Class"}, # 748 rows, 4 numeric
+    "kc1": {"openml_id": 1067, "target": "defects"},             # 2109 rows, 21 numeric
+    "phoneme": {"openml_id": 1489, "target": "Class"},           # 5404 rows, 5 numeric
+    "churn": {"openml_id": 40701, "target": "class"},            # 5000 rows, 20 (4 categorical)
 }
 
 

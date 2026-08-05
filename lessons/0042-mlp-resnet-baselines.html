@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 042 — MLP &amp; ResNet Baselines (do these first)</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .fig-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0 1rem; line-height: 1.6; }
+    .rank { color: var(--muted); font-size: 0.78rem; }
+    tr.summary-row td { border-top: 2px solid var(--border); background: var(--bg-soft); }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
+
+    /* reused viz frames: resnet-block-viz (.rnb-), depth-trainability-viz (.dtr-) */
+    .resnet-block-viz, .depth-trainability-viz {
+      margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .rnb-svg, .dtr-svg { display: block; max-width: 520px; margin: 0.25rem auto; }
+    .rnb-io { font-family: var(--font-mono); font-size: 12px; fill: var(--fg, #222); font-weight: 600; }
+    .rnb-op { font-family: var(--font-sans); font-size: 11px; fill: var(--fg, #222); font-weight: 600; }
+    .rnb-opd { font-family: var(--font-sans); font-size: 8.5px; fill: var(--muted); }
+    .rnb-fx { font-family: var(--font-mono); font-size: 12px; fill: #2e6fb0; font-weight: 600; }
+    .rnb-plus { font-family: var(--font-mono); font-size: 15px; fill: #1e6b3c; font-weight: 700; }
+    .rnb-skip { font-family: var(--font-sans); font-size: 9.5px; fill: #1e6b3c; }
+    .rnb-noskip { font-family: var(--font-sans); font-size: 9.5px; fill: #b03a2e; }
+    .dtr-tick { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+    .dtr-lab { font-family: var(--font-sans); font-size: 10px; fill: var(--muted); }
+    .dtr-leg { font-family: var(--font-sans); font-size: 10px; fill: var(--fg, #222); }
+    .rnb-readout, .dtr-readout { font-size: 0.86rem; margin: 0.5rem 0.2rem 0; line-height: 1.55; }
+    .rnb-caption, .dtr-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+    .rnb-ctl, .dtr-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .rnb-ctl button, .dtr-ctl button {
+      font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .rnb-ctl button.rnb-off, .dtr-ctl button.dtr-on {
+      background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+
+    /* protocol-bakeoff-viz (.pbo-) */
+    .pbo-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .pbo-banner { font-family: var(--font-sans); font-size: 0.78rem; color: var(--fg, #222); background: var(--bg); border: 1px dashed var(--border); border-radius: 5px; padding: 0.4rem 0.6rem; margin-bottom: 0.6rem; line-height: 1.5; }
+    .pbo-svg { display: block; max-width: 520px; margin: 0.25rem auto; }
+    .pbo-tick { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+    .pbo-axis { font-family: var(--font-sans); font-size: 10px; fill: var(--muted); }
+    .pbo-name { font-family: var(--font-sans); font-size: 11px; fill: var(--fg, #222); cursor: pointer; }
+    .pbo-name-on { font-weight: 700; }
+    .pbo-val { font-family: var(--font-mono); font-size: 10px; fill: var(--fg, #222); font-weight: 600; }
+    .pbo-readout { font-size: 0.87rem; margin-top: 0.6rem; line-height: 1.6; min-height: 8rem; }
+    .pbo-readout p { margin: 0.4rem 0; }
+    .pbo-r-head { margin-bottom: 0.3rem; }
+    .pbo-r-badge { display: inline-block; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em; padding: 0.1rem 0.45rem; border-radius: 4px; color: #fff; }
+    .pbo-r-role { font-weight: 600; }
+    .pbo-r-score { font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); }
+    .pbo-r-space { color: var(--fg, #222); }
+    .pbo-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 2 · Q1 · Neural tabular architectures</p>
+  <h1>MLP &amp; ResNet Baselines <span style="color:var(--muted);font-weight:400">(do these first)</span></h1>
+  <p class="subtitle">Lesson 042 · Phase 2 · Q1 · ~50 min · <em>primary reading: Gorishniy et al. 2021, §3.2 (MLP &amp; ResNet)</em></p>
+
+  <p>
+    Last lesson you unrolled the whole Year-2 map and set up <code>rtdl</code>
+    (<a href="0041-deep-tabular-landscape.html">L041</a>): tested reference implementations of the MLP,
+    the ResNet baseline, and FT-Transformer, importing and running a forward pass. The map's default
+    chip — the one the paper says to reach for <em>before believing anything else</em> — was the
+    <strong>ResNet</strong>. This lesson is where that stops being a diagram and becomes a trained model:
+    you build and <strong>train</strong> the rtdl ResNet baseline under a shared protocol, and read its
+    number honestly against a tuned GBDT.
+  </p>
+  <p>
+    You have met this architecture once before, in <a href="0028-mlp-resnet-baselines.html">L028</a>,
+    where we dissected the residual block on a torch-free stand-in to understand <em>why</em> depth needs
+    a skip connection. Year 1 could only afford the concept. Now that <code>rtdl</code> and <code>torch</code>
+    are installed, Year 2 affords the real thing — the strong simple baseline every later architecture
+    (TabNet L043, NODE L044, FT-Transformer L046, SAINT L047) will be measured against, tuned under the
+    <em>same</em> protocol so the comparison is fair.
+  </p>
+  <p>
+    Its single skill: <strong>train the rtdl ResNet (and MLP) baseline under a shared tuning protocol
+    — same split, metric, and search budget as every other model — and read the result honestly against
+    a tuned GBDT, internalising Gorishniy 2021's rule that these strong simple baselines are run
+    <em>first</em>, because a "win" over a weak or unequally-tuned net measures a tuning-effort gap, not
+    model quality.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Before you believe any fancy tabular network, you must show it beats a
+    <em>properly tuned</em> MLP and ResNet under the same protocol — so this lesson trains those two
+    baselines correctly, and on a small categorical table (credit_g) they land <em>right alongside</em> a
+    tuned GBDT: a three-way tie within noise, a live instance of "no universal winner"
+    (<a href="0041-deep-tabular-landscape.html">L041</a>).
+  </div>
+
+  <h2>Warm up — recall before you train</h2>
+  <p>
+    Three questions pulled from memory before today's material. A wrong guess is useful: effortful
+    retrieval encodes far better than re-reading. Year 2 keeps interleaving Year 1's evaluation spine,
+    because every neural baseline you train is still judged by it.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Recap: the residual block you are about to train</h2>
+  <p>
+    The ResNet is nothing exotic — it is an MLP whose blocks add a <strong>skip connection</strong>. Each
+    block computes a small correction <code>f(x)</code> and returns <code>x + f(x)</code> rather than
+    <code>f(x)</code>. Here is one block; toggle the skip off to see the plain-MLP block it reverts to.
+  </p>
+  <div id="resnet-block"></div>
+  <p class="fig-caption">
+    One residual block, the Gorishniy 2021 §3.2 form:
+    <code>x + Dropout(Linear(Dropout(ReLU(Linear(BatchNorm(x))))))</code>. The six operations in the
+    branch <code>f(x)</code> are identical either way; the single line that turns a plain MLP block into a
+    ResNet block is the skip.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Skip (residual) connection.</strong> The wire that carries the block's input
+    <code>x</code> around its transformation and adds it back: <code>output = x + f(x)</code>. Because the
+    branch <code>f</code> can settle near <em>zero</em>, the block can act as the <strong>identity</strong>
+    for free — so stacking more blocks can never make the network strictly worse. Removing it
+    (<code>output = f(x)</code>) forces every added block to re-learn an approximate identity, which is
+    hard. (First built in <a href="0028-mlp-resnet-baselines.html">L028</a>.)
+  </div>
+  <div class="defbox">
+    <strong class="term">BatchNorm.</strong> A layer that normalises each activation across the current
+    mini-batch (subtract the batch mean, divide by the batch std, then apply a learned scale and shift).
+    It keeps the scale of activations stable as they flow through many layers, which is what makes deep
+    stacks trainable without exploding or vanishing values. Both the plain net and the ResNet below use
+    it — so any difference between them is the <em>skip</em>, not normalisation.
+  </div>
+
+  <h2>Why the skip is not optional: the degradation problem</h2>
+  <p>
+    You might expect a deeper plain MLP to be at least as good as a shallow one — worst case, the extra
+    layers learn to pass their input through unchanged. In practice they do not. Below is the same
+    architecture trained at growing depth with the skip <em>on</em> (ResNet) vs <em>off</em> (plain MLP);
+    the numbers are the verified run from <a href="0028-mlp-resnet-baselines.html">L028</a>'s lab.
+  </p>
+  <div id="depth"></div>
+  <p class="fig-caption">
+    Test accuracy vs depth. Adding blocks hurts the plain MLP (0.917 → 0.866) but leaves the ResNet flat
+    (0.912 → 0.899). Toggle the training curves: the plain net's <em>training</em> accuracy also falls
+    (1.000 → 0.927), so it cannot even fit the data — this is an <strong>optimization</strong> failure,
+    not overfitting.
+  </p>
+  <div class="defbox">
+    <strong class="term">Degradation problem (He et al. 2015).</strong> A deeper plain network reaches a
+    <em>higher</em> training error than a shallower one — the optimizer cannot find the identity-preserving
+    solution that would make depth harmless. The residual skip fixes it by making that identity solution
+    free (set <code>f ≈ 0</code>), which is the entire reason ResNets exist. Because both nets here use
+    BatchNorm, this is not vanishing gradients; it is the optimizer failing to fit.
+  </div>
+
+  <h2>The shared tuning protocol — what "trained fairly" means</h2>
+  <p>
+    Training a ResNet well is not the hard part; training it <em>comparably</em> is. Gorishniy 2021's real
+    contribution is a <strong>shared protocol</strong>: one fixed recipe applied identically to every
+    model, so that a difference in scores is a difference in models, not in effort. It is
+    <a href="0017-hyperparameter-search.html">L017</a>'s fair-budget rule and
+    <a href="0038-peer-review-your-evaluation.html">L038</a>'s HP-budget parity, promoted to a field
+    standard. The recipe has two halves — a shared <em>frame</em> and a per-model <em>search space</em>.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Shared frame (identical for every model).</strong> The same train/validation/test
+    split (<a href="0020-q2-checkpoint.html">L020</a> contract), the same evaluation metric, the same
+    hyper-parameter <em>search budget</em> (number of trials), and selection by <em>validation</em> score
+    with the test set touched once. Change any of these between two models and "A beat B" may just mean
+    "A got more trials" or "A was scored on an easier split."
+  </div>
+  <div class="defbox">
+    <strong class="term">Per-model search space.</strong> The knobs each model is allowed to vary, drawn
+    from the same budget. For the ResNet: number of blocks, main width <code>d_main</code>, hidden width
+    <code>d_hidden</code>, the two dropout rates, learning rate, and weight decay. Different models have
+    different knobs — that is fine; what must match is the <em>budget</em> spent searching them.
+  </div>
+
+  <p>
+    Two training-recipe terms the neural baselines rely on, defined before we use them:
+  </p>
+  <div class="defbox">
+    <strong class="term">AdamW &amp; weight decay.</strong> <strong>Adam</strong> is the standard optimiser
+    for these nets: it adapts a per-parameter step size from running estimates of the gradient's mean and
+    variance, which makes deep nets train reliably without hand-tuning a single global learning rate.
+    <strong>Weight decay</strong> gently shrinks the weights toward zero each step (an L2-style
+    regulariser that fights overfitting); <strong>AdamW</strong> is the variant that applies it correctly,
+    decoupled from the adaptive step. Learning rate and weight decay are two of the ResNet's search knobs.
+  </div>
+  <div class="defbox">
+    <strong class="term">Early stopping.</strong> Train for many epochs but keep the weights from the
+    epoch with the best <em>validation</em> metric, and stop once validation stops improving for a set
+    patience. It is how a neural baseline picks its own training length fairly — the analogue of a GBDT's
+    early-stopped <code>n_estimators</code> — so neither model is under- or over-trained by accident.
+  </div>
+  <div class="defbox">
+    <strong class="term">Build it yourself; let the library check you.</strong> You learn a model by
+    <em>implementing</em> it — the residual block you wrote in <a href="0028-mlp-resnet-baselines.html">L028</a>
+    is the ResNet used here (now in <code>relkit.nets</code>), not a black box you imported. A reference
+    library — here <a href="https://github.com/yandex-research/rtdl">rtdl</a>, Gorishniy's own
+    implementation — is used as a <em>validation point</em>: train your version and the reference under
+    the identical protocol and confirm they land within noise of each other. A from-scratch model can
+    hide a silent bug or be quietly under-powered (the weak-baseline trap again); the reference is the
+    checker that catches it. The lab does exactly this.
+  </div>
+
+  <h2>The rule: run the strong simple baselines first</h2>
+  <p>
+    Put the frame and the recipe together and you get Gorishniy 2021's practical instruction. Before you
+    trust a TabNet, a NODE, or a transformer, you run the tuned MLP and ResNet <em>first</em>, under the
+    same protocol. The paper's sting is that a tuned ResNet <em>alone</em> matches a large fraction of
+    published "novel" architectures — so a new model that fails to beat it has demonstrated nothing, no
+    matter how clever its mechanism.
+  </p>
+  <div class="defbox">
+    <strong class="term">Baseline-first rule ("do these first").</strong> The strong simple baselines
+    (tuned MLP + ResNet) are computed <em>before</em> the fancy model, to the same protocol, and reported
+    alongside it. Skipping them — or comparing only against a GBDT, or against an untuned MLP — is the
+    exact failure mode that made the pre-2021 literature unreliable. Beating a weak baseline is a
+    tuning-effort gap wearing a model-quality mask (<a href="0038-peer-review-your-evaluation.html">L038</a>).
+  </div>
+
+  <h2>The honest result on credit_g</h2>
+  <p>
+    Before the reveal, commit a prediction. Guessing first — even wrong — makes the result stick (the
+    pretesting effect).
+  </p>
+  <div id="predict-resnet"></div>
+
+  <p>
+    Trained under one shared protocol on OpenML <code>credit_g</code> (the small, categorical-heavy German
+    credit table used throughout Year 1), the three baselines land like this. Click each bar for its role
+    and search space.
+  </p>
+  <div id="bakeoff"></div>
+  <p class="fig-caption">
+    Verified in this workspace (<code>labs/_verify_l042.py</code>: our <em>from-scratch</em>
+    <code>relkit.nets</code> models — validated against rtdl, |Δ&nbsp;ROC-AUC|&nbsp;=&nbsp;0.000 — test
+    ROC-AUC, mean&nbsp;±&nbsp;std over 3 seeds, shared 6-trial search budget). The three land within one
+    standard deviation of each other — MLP 0.802&nbsp;±&nbsp;0.020, ResNet 0.790&nbsp;±&nbsp;0.033, GBDT
+    0.780&nbsp;±&nbsp;0.016 — a statistical <em>tie</em>. The point is not "nets win" but that a
+    <em>properly tuned</em> neural baseline is right there with the tree. <strong>But this is one
+    dataset</strong> — a demonstration, not evidence; the honest verdict needs the
+    <a href="#across-datasets">cross-dataset view below</a>.
+  </p>
+
+  <table>
+    <thead><tr><th>Baseline (credit_g, shared protocol)</th><th>Test ROC-AUC</th><th>Reading</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>MLP</strong> (simplest net floor)</td>
+        <td class="n">0.802 ± 0.020</td>
+        <td>A properly-tuned MLP — the most basic honest neural baseline; here nominally on top, but within one std of the others. If a fancy net can't beat this, its architecture isn't why it won.</td>
+      </tr>
+      <tr>
+        <td><strong>ResNet</strong> (strong simple baseline)</td>
+        <td class="n">0.790 ± 0.033</td>
+        <td>The one Gorishniy says to run first. Ties the MLP and the GBDT here; on other tables (e.g. kc1 below) it is the stronger of the two nets.</td>
+      </tr>
+      <tr>
+        <td>Tuned <strong>GBDT</strong> (incumbent bar)</td>
+        <td class="n">0.780 ± 0.016</td>
+        <td>The Year-1 bar. Here it does <em>not</em> lead — the two properly-tuned nets match it within noise. One datapoint, not a repeal of L024–L027.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div id="teachback-baseline"></div>
+
+  <h2 id="across-datasets">Why one dataset is not evidence — the cross-dataset view</h2>
+  <p>
+    A comparison on a single table is a <em>demonstration</em>, never proof — the winner can change with
+    the dataset, so a claim like "no universal winner" is a statement <em>about datasets</em> and can only
+    be read across many. So we ran the identical protocol on four small real tables and summarised with
+    <strong>mean ranks</strong> (1&nbsp;=&nbsp;best per dataset), the field-standard cross-dataset method
+    (<a href="0023-statistical-comparison.html">L023</a>, <a href="0030-benchmark-report.html">L030</a>).
+  </p>
+  <table>
+    <thead><tr>
+      <th>Dataset (features)</th><th>ResNet</th><th>MLP</th><th>tuned GBDT</th>
+    </tr></thead>
+    <tbody>
+      <tr><td><code>credit_g</code> (categorical)</td><td class="n">0.790 ± 0.033 <span class="rank">(2)</span></td><td class="n">0.802 ± 0.020 <span class="rank">(1)</span></td><td class="n">0.780 ± 0.016 <span class="rank">(3)</span></td></tr>
+      <tr><td><code>diabetes</code> (8 numeric)</td><td class="n">0.811 ± 0.020 <span class="rank">(2)</span></td><td class="n">0.816 ± 0.022 <span class="rank">(1)</span></td><td class="n">0.805 ± 0.019 <span class="rank">(3)</span></td></tr>
+      <tr><td><code>blood_transfusion</code> (4 numeric)</td><td class="n">0.735 ± 0.037 <span class="rank">(2)</span></td><td class="n">0.740 ± 0.027 <span class="rank">(1)</span></td><td class="n">0.727 ± 0.018 <span class="rank">(3)</span></td></tr>
+      <tr><td><code>kc1</code> (21 numeric)</td><td class="n">0.814 ± 0.015 <span class="rank">(1)</span></td><td class="n">0.795 ± 0.006 <span class="rank">(2)</span></td><td class="n">0.789 ± 0.024 <span class="rank">(3)</span></td></tr>
+      <tr class="summary-row"><td><strong>Mean rank (1 = best)</strong></td><td class="n"><strong>1.75</strong></td><td class="n"><strong>1.25</strong></td><td class="n"><strong>3.00</strong></td></tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_verify_l042.py</code> — from-scratch models (validated vs rtdl, |Δ|&nbsp;≤&nbsp;0.001),
+    test ROC-AUC, mean&nbsp;±&nbsp;std over 3 seeds, shared 6-trial budget. The nominal per-dataset winner
+    <em>flips between the two nets</em> (MLP on three, ResNet on kc1); the GBDT trails on all four
+    (Friedman χ²&nbsp;=&nbsp;6.5, <em>p</em>&nbsp;=&nbsp;0.039).
+  </p>
+
+  <div class="defbox">
+    <strong class="term">…but read it honestly: a small, biased sample is not the verdict.</strong> Taken at
+    face value this says "the tuned nets significantly beat the GBDT" — which would <em>contradict</em> the
+    well-established result that trees usually win on tabular data. The catch is the <em>sample</em>: four
+    tables, three of them all-numeric — exactly the regime <a href="0024-grinsztajn-benchmark.html">Grinsztajn
+    2022</a> shows favours neural nets. A tiny, non-representative set can produce a "significant"
+    <em>p</em> that does not generalise. This is itself the rigor lesson: <strong>which</strong> datasets you
+    pick decides the answer, so the conclusion must come from a large, varied benchmark — not four tables
+    of our choosing, and certainly not one.
+  </div>
+  <div class="defbox">
+    <strong class="term">No universal winner — the version that actually holds.</strong> The authoritative
+    cross-dataset verdict is <a href="https://arxiv.org/abs/2207.08815">Grinsztajn 2022</a>'s ~45-dataset
+    study (and Gorishniy 2021): <em>no single model dominates</em>, with tree ensembles typically ahead on
+    categorical/irregular tables and neural nets competitive-to-ahead on large, numeric ones. What we
+    verified here on four tables is the honest, narrow claim — <strong>a fair, from-scratch neural baseline
+    is genuinely strong</strong>, so any fancier model has a real bar to clear — plus the <em>method</em>
+    (per-dataset CIs + mean ranks + a Friedman/critical-difference read). The strong claim is cited to the
+    big benchmark; our small run is a demonstration of how you'd earn it.
+  </div>
+
+  <h2>Thesis bridge</h2>
+  <div class="callout">
+    <strong>Why train these before touching a transformer.</strong> The mission's claim is comparative: a
+    relational model that keeps the structure a flatten destroys beats the fair single-table bar. That bar
+    is now two-sided — a tuned GBDT (Year 1) <em>and</em> a tuned MLP/ResNet (today). A skeptic's easiest
+    dismissal of an eventual RDL win is "you only beat trees; a good neural net would have won on a flat
+    table too." Training the neural baselines correctly, first, forecloses that move. And the machinery is
+    the same you will reuse: an RDL model is an encoder → message passing → a <em>residual-MLP head</em>,
+    so the block you train today is a component of the relational model you build in Years 3–5.
+  </div>
+
+  <h2>Check yourself</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+  <div id="quiz4"></div>
+  <div id="quiz5"></div>
+
+  <h2>Primary reading</h2>
+  <p>
+    <a href="https://arxiv.org/abs/2106.11959">Gorishniy, Rubachev, Khrulkov &amp; Babenko —
+    <em>Revisiting Deep Learning Models for Tabular Data</em>, NeurIPS 2021</a>, <strong>§3.2 (MLP &amp;
+    ResNet)</strong> and the tuning appendix. Read §3.2 for the exact block definition you just trained,
+    then the appendix for the search spaces and the shared protocol. Read it the L038 way: for every model
+    in the results, ask whether it was tuned under the same budget as its rivals.
+  </p>
+  <p>
+    On <em>why one dataset cannot settle it</em>: <a href="https://arxiv.org/abs/2207.08815">Grinsztajn,
+    Oyallon &amp; Varoquaux — <em>Why do tree-based models still outperform deep learning on typical
+    tabular data?</em>, NeurIPS 2022</a> reaches "no universal winner" across <strong>~45 datasets</strong>
+    with rank-based tests — the authoritative large-N version of the flip you reproduce on a handful of
+    tables in the lab. That is the standard of evidence a comparative claim needs
+    (<a href="0024-grinsztajn-benchmark.html">L024</a>).
+  </p>
+  <p>
+    Companions: <a href="0028-mlp-resnet-baselines.html">L028</a> (the block, built from scratch);
+    <a href="0017-hyperparameter-search.html">L017</a> (fair-budget search);
+    <a href="0041-deep-tabular-landscape.html">L041</a> (the landscape + rtdl). Next lesson,
+    <strong>L043 (TabNet)</strong>, is the first "novel" architecture — and the first chance to hold it to
+    the baseline-first rule.
+  </p>
+
+  <h2>Lab — the shared protocol, from scratch, across datasets</h2>
+  <div class="callout">
+    <strong>Notebook:</strong>
+    <a href="../labs/html/0042-mlp-resnet-baselines.html">view</a> ·
+    <a href="../labs/0042-mlp-resnet-baselines.ipynb">source .ipynb</a> ·
+    <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0042-mlp-resnet-baselines.ipynb">open in Colab</a>
+    — or browse all labs on the <a href="../notebooks.html">notebooks page</a>. You (1) write the fair
+    early-stopping training loop <em>from scratch</em> for your own <code>relkit.nets</code> models, (2)
+    <em>validate</em> that from-scratch ResNet against the rtdl reference, and (3) run the bake-off across
+    several datasets and read it with <em>mean ranks</em>. Runs on CPU in ~5–8&nbsp;minutes.
+  </div>
+  <p>
+    Hands-on training station: take the residual net you built by hand in
+    <a href="0028-mlp-resnet-baselines.html">L028</a> (now in <code>relkit.nets</code>), tune it under the
+    shared protocol, and compare it fairly to a tuned MLP and GBDT — on <em>several</em> small real tables,
+    leak-free (pipeline per fold, <a href="0005-pipelines-preprocessing.html">L005</a>).
+  </p>
+  <ol>
+    <li>Write the <strong>early-stopping training loop</strong> yourself (AdamW, keep the best-validation weights) and a validation-selected search over each model's own space — same budget for all (<a href="0038-peer-review-your-evaluation.html">L038</a> parity).</li>
+    <li><strong>Validate from scratch against the reference:</strong> train your <code>TabResNet</code> and rtdl's <code>ResNet</code> under the identical protocol and confirm they agree within noise (|Δ&nbsp;ROC-AUC|&nbsp;&lt;&nbsp;0.04). The library is the checker, not the teacher — a from-scratch net can hide a bug or be under-powered.</li>
+    <li>Run the bake-off (MLP, ResNet, tuned GBDT) on <strong>≥3 datasets</strong> (<code>credit_g</code>, <code>diabetes</code>, <code>kc1</code>), per-dataset mean&nbsp;±&nbsp;std over seeds, and summarise with <strong>mean ranks</strong>. Does the winner <em>flip</em> across datasets?</li>
+    <li>Read it the rigorous way (<a href="0023-statistical-comparison.html">L023</a>/<a href="0030-benchmark-report.html">L030</a>): mean ranks + a Friedman test / critical-difference diagram, not a single t-test. A one-dataset result is a demonstration, never the evidence.</li>
+  </ol>
+  <p>
+    <strong>Compute note.</strong> The tables are small; the multi-dataset sweep runs on CPU in a few
+    minutes. If a search is slow, check thread oversubscription first (<code>OMP_NUM_THREADS=1</code>),
+    then shrink the trial/seed count <em>identically</em> across models and state it — never give one
+    model a bigger budget.
+  </p>
+  <p>
+    Deliverable: the rtdl-validation check, the per-dataset scores + mean ranks, and one sentence — <em>why
+    do you build the model yourself and use rtdl only to validate, and why can't you conclude "no universal
+    winner" from a single dataset?</em> Paste it to your teacher or say <em>"lab done."</em>
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your validation check, per-dataset ranks, and verdict. We
+    will sanity-check that you gave every model the <em>same</em> budget, that your from-scratch ResNet
+    validated against rtdl, and that you read the rank-flip across datasets as "no universal winner."
+  </div>
+
+  <div class="ask-teacher">
+    Unsure why a deeper plain MLP trains <em>worse</em>, what makes the protocol "shared," or why a GBDT
+    win on credit_g is not a defeat for deep learning? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0041-deep-tabular-landscape.html">← Lesson 041</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../reference/glossary.html">Glossary</a></li>
+      <li><a href="../flashcards.html">Paper flashcards</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/resnet-block-viz.js"></script>
+<script src="../assets/depth-trainability-viz.js"></script>
+<script src="../assets/protocol-bakeoff-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 42, count: 3 });
+
+  ResNetBlockViz.mount(document.getElementById("resnet-block"), {});
+  DepthTrainabilityViz.mount(document.getElementById("depth"), {});
+  ProtocolBakeoffViz.mount(document.getElementById("bakeoff"), {});
+
+  Predict.mount(document.getElementById("predict-resnet"), {
+    prompt: "Trained under one shared protocol on the small, categorical credit_g table, how does a tuned ResNet land against a tuned GBDT?",
+    options: [
+      { label: "It's a tie within noise — properly tuned, the nets land right alongside the GBDT (whiskers overlap)", value: "tie" },
+      { label: "The GBDT crushes both nets by a wide, significant margin", value: "gbdt" },
+      { label: "The ResNet beats the tree decisively — deep learning simply wins on tables now", value: "nets" },
+      { label: "The ResNet edges ahead, but only because it got far more tuning trials than the GBDT", value: "unfair" }
+    ],
+    correct: "tie",
+    reveal: "A tie. Verified here under the SAME trial budget (labs/_verify_l042.py, our from-scratch models validated against rtdl): MLP 0.802 ± 0.020, ResNet 0.790 ± 0.033, GBDT 0.780 ± 0.016 — all within one std, so the nets even edge the tree nominally but not significantly. It is not a tuning gap (same budget), and not 'nets win on tables': it is ONE dataset, a demonstration. The honest 'no universal winner' needs the cross-dataset view (and the ~45-dataset benchmark, Grinsztajn 2022) — never a single table."
+  });
+
+  Teachback.mount(document.getElementById("teachback-baseline"), {
+    prompt: "In your own words: why does Gorishniy 2021 insist you train and report the tuned MLP and ResNet BEFORE any fancier model — and why is a within-noise tie with a GBDT on credit_g the expected, healthy result rather than a disappointment?",
+    points: [
+      "A result only means something relative to a baseline; a 'win' over a weak or unequally-tuned net measures a tuning-effort gap, not model quality (L038 HP-budget parity).",
+      "A tuned ResNet alone matches many published 'novel' architectures, so a new model that fails to beat it has shown nothing — hence run the strong simple baselines FIRST, under the same protocol.",
+      "'Same protocol' = shared frame (same split, metric, search budget, validation selection) + a per-model search space; only the knobs differ, never the budget.",
+      "The nets are trained fairly here (AdamW + weight decay + early stopping, same trials as the GBDT), and are built from scratch and validated against rtdl (|Δ| = 0.000), so their scores (MLP 0.802, ResNet 0.790) are honest — not artifacts of under-tuning or a buggy implementation.",
+      "credit_g gives a within-noise tie (GBDT 0.780) — but that is ONE dataset; across four tables the nets rank ahead here, yet the sample is numeric-skewed, so the representative 'no universal winner' comes from the ~45-dataset benchmark (Grinsztajn 2022), not from any small set we pick."
+    ],
+    model: "Gorishniy 2021's rule is 'do these first': you compute a properly-tuned MLP and ResNet under one shared protocol before you trust any novel architecture, because a result is only meaningful against a baseline and much of the pre-2021 'DL beats trees' literature was really beating weak or unequally-tuned nets — an HP-budget gap wearing a model-quality mask (L038). A tuned ResNet alone matches many 'novel' models, so it is the honest floor a new mechanism must clear. 'Shared protocol' means a shared frame — same train/valid/test split, same metric, same search budget, selection by validation — plus a per-model search space where only the knobs differ, never the budget; the nets are tuned with AdamW, weight decay, and early stopping to the same number of trials as the GBDT, and (this session) built from scratch and validated against rtdl. Under exactly that fairness, credit_g gives MLP 0.802 ≈ ResNet 0.790 ≈ GBDT 0.780 — a three-way tie inside the noise (verified). That is the healthy result: it shows the neural baseline is strong and fair, not that 'nets beat trees'. And crucially it is one dataset: a comparison must be read across many with mean ranks (here nets lead on four numeric-heavy tables, Friedman p = 0.039 — but that sample is biased toward nets, so the real verdict is Grinsztajn 2022's ~45-dataset 'no universal winner'). For the thesis, this makes the neural half of the single-table bar strong and fair, so an eventual RDL win can't be waved away as 'a good tabular net would have won on the flat table anyway.'"
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why does a deeper PLAIN MLP often reach a higher TRAINING error than a shallower one?",
+    options: [
+      { label: "The degradation problem — the optimizer fails to find the identity-preserving solution; a skip connection fixes it by making the identity free", value: "a" },
+      { label: "Overfitting — the deeper net memorized the training set, so its training error should be lower, not higher", value: "b" },
+      { label: "Vanishing gradients that only a larger learning rate can cure", value: "c" },
+      { label: "The deeper net has fewer parameters, so it cannot fit the data", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Training error RISING with depth rules out overfitting (b) — the net can't even fit. It is the degradation problem (He et al. 2015): the optimizer can't find the identity-preserving solution, and the residual skip makes that solution free (set f≈0). Both nets use BatchNorm, so it isn't vanishing gradients (c); depth adds parameters, not removes them (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "What makes a comparison between a ResNet and a GBDT 'fair' under a shared tuning protocol?",
+    options: [
+      { label: "Same split, metric, and search BUDGET, with selection by validation — only each model's search space (its knobs) differs", value: "a" },
+      { label: "Both models are given the exact same hyper-parameters (same learning rate, depth, dropout)", value: "b" },
+      { label: "The ResNet is given more trials because neural nets are harder to tune", value: "c" },
+      { label: "Both are scored directly on the test set so no validation data is wasted", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Fairness is a shared FRAME (same split, metric, budget, validation selection); the per-model search SPACE legitimately differs — a GBDT and a ResNet have different knobs. Giving one model more trials (c) is exactly the unfairness the protocol prevents; forcing identical hyper-parameters (b) is meaningless across architectures; scoring on test (d) is the leak the frame forbids."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "Your tuned ResNet scores 0.790 ± 0.033 and a tuned GBDT scores 0.780 ± 0.016 on credit_g, same protocol. What is the correct reading?",
+    options: [
+      { label: "A tie within noise (whiskers overlap) — one datapoint; you cannot conclude a winner from a single dataset", value: "a" },
+      { label: "Neural networks have now been proven to beat trees on tabular data", value: "b" },
+      { label: "The GBDT must have been under-tuned; a fair tree always beats a net", value: "c" },
+      { label: "The result is invalid because the two models had different search spaces", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). The 0.010 gap is smaller than either std, so it's a tie — the nets nominally edge the tree but not significantly. And it is one dataset: a demonstration, not a verdict. Trained fairly (same budget, AdamW, early stopping), this is consistent with no universal winner (L041/L024), not proof nets beat trees (b). A fair tree does NOT always win either (c), and different search spaces are expected and correct under a shared budget (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz4"), {
+    question: "Across four small tables your nets rank ahead of the GBDT (mean ranks 1.25 / 1.75 vs 3.00, Friedman p = 0.039). Can you conclude 'tuned nets beat GBDTs on tabular data'?",
+    options: [
+      { label: "No — four datasets (three all-numeric) is a small, biased sample; the representative verdict needs a large, varied benchmark (Grinsztajn's ~45 datasets)", value: "a" },
+      { label: "Yes — p < 0.05 across datasets is conclusive proof the nets are better", value: "b" },
+      { label: "Yes — the mean rank ordering never changed, so the result must generalise everywhere", value: "c" },
+      { label: "No — because a Friedman test is never valid for comparing machine-learning models", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). A significant p on a tiny, non-representative sample does not generalise — three of four tables are all-numeric, exactly where Grinsztajn 2022 shows nets do relatively well. Which datasets you pick decides the answer, so the strong claim must come from a large, varied benchmark, not four tables of your choosing. p < 0.05 is not 'proof' (b); a stable ordering on a biased sample still doesn't generalise (c); Friedman is precisely the right cross-dataset test (d) — the problem is the sample, not the method."
+  });
+
+  Quiz.mount(document.getElementById("quiz5"), {
+    question: "You built the ResNet from scratch, then trained rtdl's reference ResNet under the same protocol and got |Δ ROC-AUC| = 0.000. What is that check for?",
+    options: [
+      { label: "Validation — it confirms your from-scratch implementation is correct and not silently buggy or under-powered", value: "a" },
+      { label: "It replaces your code — you should now discard your implementation and use rtdl instead", value: "b" },
+      { label: "It proves the ResNet is the best model on this dataset", value: "c" },
+      { label: "Nothing useful — matching a reference tells you nothing about your code", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). You learn by building the model yourself; a reference implementation is a validation point — if your version lands within noise of it, your code is trustworthy; if far below, you have a bug (the weak-baseline trap). It does not replace your code (b), says nothing about which model wins (c), and matching a trusted reference is exactly what tells you your implementation is right (d)."
+  });
+</script>
+</body>
+</html>
