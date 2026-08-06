@@ -1,5 +1,20 @@
 # Teaching Notes
 
+## Session 41 — 2026-08-06
+
+- **NEW standard #24 — paper-mirror doctrine (user directive this session):** future lessons/labs must
+  **always try to mirror paper implementations from scratch** — not just the architecture, but also the
+  **datasets / protocol** and **reproducibility discipline** — so we learn as much as possible *from the
+  papers themselves*. Consolidates and elevates #18 (implement the paper), #22 (from scratch; libraries
+  validate), #23 (multi-dataset rigor), and #20 (honesty/compute). Record:
+  [[learning-records/0098-paper-mirror-from-scratch.md]]. Full rule in Preferences #24 + `lab-authoring`.
+- **What "mirror" means here:** (1) implement the paper's load-bearing mechanism from scratch; (2) prefer
+  the paper's own datasets/splits when affordable, else a documented substitute with an honest gap;
+  (3) ship a reproducibility ledger (seeds, versions, protocol deviations, verify harness + results JSON).
+- Does **not** replace mid-zone (#3), lab-with-lesson (#21), or compute escalation (#20) — it tells those
+  standards *what* to build when a paper is the lesson's core source.
+- Next: apply #24 on the next paper-implementation unit (post-L042).
+
 ## Session 40 — 2026-07-29
 
 - **Lesson 039 complete** — user said "lesson 39 done" (no essay pasted → no hostile-reader rubric score,
@@ -915,3 +930,26 @@ Recorded after the Q2 checkpoint (L020). Full rationale: [[learning-records/0052
     - (c) summarise **across** datasets with a **rank-based** method — mean ranks + **Friedman test** and a **Nemenyi critical-difference diagram** (the L023/L030 method; reuse `assets/cd-diagram-viz.js`) — with effect sizes, not a single t-test;
     - (d) when our own compute can't reach the N the strong claim needs, **ground the strong version in the large published benchmark and cite it** (Grinsztajn 2022 ≈45 datasets; Gorishniy 2021; TabArena) — clearly separating "verified here on k datasets" from "established in the literature on N". A single-dataset result is a **demonstration**, never the evidence.
     - Extends standards #17 (thoroughness) and #20 (honesty/compute). Reference implementation: **L042** (credit_g + small-OpenML set: per-dataset CIs, mean-rank/Friedman summary, big-benchmark citation).
+
+### Paper-mirror doctrine — implementation, datasets, reproducibility (2026-08-06, user directive) — applies to all future lessons/labs
+
+24. **Always try to mirror paper implementations from scratch — including datasets and reproducibility (from 2026-08-06, user directive: "make sure that future lessons/labs will always try to mirror paper implementations from scratch, so we can learn as much as possible from papers. Also in terms of datasets and reproducibility point of view").** When a lesson's core source is a paper, the unit is a *paper mirror*, not a loosely inspired exercise. Three axes, all required unless an exception is stated in the lab intro:
+
+    **(A) Implementation (extends #18 + #22).** Implement the paper's load-bearing algorithm/architecture **from scratch**. Annotate cells with paper figure/section/equation refs. Choose scope (whole model / key parts / gradual across labs) and state it. Reference libraries validate only — they do not teach the mechanism.
+
+    **(B) Datasets (extends #7 + #23).** Prefer the **paper's own datasets, splits, and preprocessing** when they are open and affordable under #20. If that is impossible (license, size, egress, compute):
+    - pick the closest Tier-A/B substitute (or a documented subsample of the paper's data);
+    - **name the paper datasets you are *not* running** and what claim therefore cannot be reproduced here;
+    - never present a substitute bake-off as "we reproduced Paper X" without that gap statement;
+    - for comparative claims, still obey #23 (≥3 datasets, seeds, ranks/Friedman/CD) — and when the paper itself used a large suite, cite that suite for the strong claim.
+
+    **(C) Reproducibility (extends #20 honesty + the L037 ledger pattern).** Every paper-mirror lab ships a minimal reproducibility contract in the intro + EXIT:
+    - fixed seeds (and splitter seeds called out, not just model seeds — L037 lesson);
+    - library versions via `requirements-labs.txt` / lockfile when numbers are claimed;
+    - protocol held identical across arms; downscales stated as a *different experiment*;
+    - `_verify_lNNN.py` (+ optional Modal job) produces committed `_*_results.json`;
+    - EXIT target = paper metric within a stated tolerance **or** an honest fail / protocol-deviation note (never a silent toy that looks like the paper's table).
+
+    - **Exception (narrow):** pure writing lessons (`labPath: null`), or a lesson whose skill is explicitly *using* a tool/API (e.g. L041). Still cite the paper; do not pretend the notebook is a reproduction.
+    - **Compatibility:** the "reproduction labs build incrementally" preference still holds for *harness* code (`relkit/`) — reuse loaders/CV/metrics; do **not** reuse that as an excuse to import the model from a library instead of writing it.
+    - Reference stack: **L032** (paper architecture mirror), **L037** (reproducibility ledger), **L042** (from-scratch + multi-dataset + rtdl validate). Full authoring checklist in the `lab-authoring` skill.
