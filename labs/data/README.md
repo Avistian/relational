@@ -28,3 +28,15 @@ python labs/data/fetch_datasets.py
 Caches parquet files under `labs/data/cache/` (gitignored).
 
 Each lab documents which tier and dataset key it uses in the intro markdown.
+
+## Paper-mirror datasets (standard #24)
+
+When the lesson mirrors a paper, **prefer that paper's own datasets, splits, and preprocessing** if
+they are open and affordable. If you substitute (Tier A OpenML stand-in, subsample, synthetic for
+mechanism isolation):
+
+- Name the paper datasets you are *not* running.
+- State which paper claim therefore cannot be reproduced here.
+- Do not present the substitute run as a full reproduction without that gap.
+
+Comparative claims still need ≥3 datasets + seeds + rank/Friedman/CD (standard #23).

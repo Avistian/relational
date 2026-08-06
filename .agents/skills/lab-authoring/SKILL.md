@@ -28,7 +28,14 @@ lesson N", the `Lab` column in `CURRICULUM.md` is a deliverable, not a suggestio
 - **Miss of record (do not repeat):** L042 ("Train ResNet baseline") was first published `labPath: null`
   with only an inline lab; retrofitted the same day into a full rtdl training notebook.
 
-## Build from scratch; libraries only VALIDATE (NOTES standard #22)
+## Paper-mirror doctrine (NOTES standard #24 — read with #18/#22/#23/#20)
+
+When the lesson's core source is a paper, **always try to mirror that paper from scratch** — implementation,
+datasets/protocol, and reproducibility — so the student learns from the paper itself, not a loosely
+inspired toy. State the mirror scope in the lab intro. Narrow exceptions: genuine writing lessons
+(`labPath: null`), or a lesson whose skill is *using a tool/API* (e.g. L041).
+
+### (A) Implementation from scratch (#18 + #22)
 
 The load-bearing model/mechanism is **implemented from scratch** — the student writes the forward pass /
 update / algorithm. A reference library (**rtdl** for MLP/ResNet/FT-Transformer; the canonical impl for
@@ -41,18 +48,37 @@ other topics) is a **validation point, not the teacher**:
 - **Exception:** a lesson whose *skill is the tool itself* (e.g. L041 "set up rtdl") may use it directly —
   say so in the intro.
 
-## Never conclude from one dataset (NOTES standard #23)
+### (B) Datasets — prefer the paper's (#7 + #23 + #24)
 
-Any "A beats/ties B" claim (especially "no universal winner") needs **multiple datasets + rank stats**:
+- **Default:** use the paper's own datasets, splits, and preprocessing when open and affordable (#20).
+- **If not:** closest Tier-A/B substitute or documented subsample; **name the paper datasets you skip**
+  and which claim therefore cannot be reproduced here. Never label a substitute bake-off as "we
+  reproduced Paper X" without that gap.
+- Comparative claims still need **multiple datasets + rank stats** (#23):
+  - **≥3 real datasets** (small OpenML tables keep it CPU-cheap: credit_g/diabetes/blood_transfusion/kc1/
+    phoneme are registered in `relkit.data`; or subsample larger ones and *state it*).
+  - **Per-dataset mean ± std over ≥3 seeds** — CIs, never a bare point estimate.
+  - **Cross-dataset summary = mean ranks + Friedman test + a Nemenyi critical-difference diagram**
+    (reuse `assets/cd-diagram-viz.js`; method from L023/L030), not one t-test.
+  - When compute can't reach the N the claim needs, **cite the big benchmark** for the strong version
+    (Grinsztajn 2022 ~45 datasets; Gorishniy 2021; TabArena) and separate "verified here on k" from
+    "established in the literature on N". A single-dataset number is a *demonstration*, never the evidence.
+- Document tier, dataset keys, and paper↔lab mapping in the lab intro (`labs/data/README.md`).
 
-- **≥3 real datasets** (small OpenML tables keep it CPU-cheap: credit_g/diabetes/blood_transfusion/kc1/
-  phoneme are registered in `relkit.data`; or subsample larger ones and *state it*).
-- **Per-dataset mean ± std over ≥3 seeds** — CIs, never a bare point estimate.
-- **Cross-dataset summary = mean ranks + Friedman test + a Nemenyi critical-difference diagram**
-  (reuse `assets/cd-diagram-viz.js`; method from L023/L030), not one t-test.
-- When compute can't reach the N the claim needs, **cite the big benchmark** for the strong version
-  (Grinsztajn 2022 ~45 datasets; Gorishniy 2021; TabArena) and separate "verified here on k" from
-  "established in the literature on N". A single-dataset number is a *demonstration*, never the evidence.
+### (C) Reproducibility contract (#20 + L037 pattern + #24)
+
+Every paper-mirror lab's intro + EXIT must make the run regenerable:
+
+| Requirement | Concrete |
+|-------------|----------|
+| Seeds | Fix model **and** splitter seeds; call out both (L037: splitter seed moved the metric more than model seed) |
+| Versions | Claim numbers against `requirements-labs.txt` / lockfile; note library pins that matter |
+| Protocol | Identical across arms; downscales = different experiment (honesty rule #20) |
+| Verify harness | `_verify_lNNN.py` (+ Modal if needed) → committed `_*_results.json` |
+| EXIT target | Paper metric within stated tolerance **or** honest fail / protocol-deviation note |
+
+Harness reuse (`relkit/` loaders/CV/metrics) is encouraged; importing the *model* from a library instead
+of writing it is not (#22).
 
 ## Cell convention
 
@@ -122,10 +148,11 @@ Four blocks per reproduction lab:
 3. **Harness** — `import relkit` from `labs/relkit/` (CV, metrics, leakage-safe pipelines)
 4. **Reproduction target** — metric within tolerance of paper, or documented honest fail
 
-## Labs implement the paper (from L032 — standard #18)
+## Labs implement the paper (from L032 — standard #18; elevated by #24)
 
 A lab's crucial content is a **faithful (if minimal) implementation of the lesson's core paper**, not a
-generic sklearn/toy exercise. Labs must be **very informative**.
+generic sklearn/toy exercise. Labs must be **very informative**. Standard **#24** elevates this: mirror
+the paper on **implementation + datasets + reproducibility**, not architecture alone.
 
 ### Decide the implementation scope (state it in the lab intro)
 

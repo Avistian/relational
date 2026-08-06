@@ -54,14 +54,25 @@ Re-run `bash labs/setup-env.sh` after pulling new dependencies.
 
 ## Running
 
-## Reproduction labs build incrementally (future)
+## Paper-mirror doctrine (standard #24 — applies now)
 
-Concept labs (like `0006`) are self-contained. But **paper-reproduction / experiment labs**
+When a lesson's core source is a paper, the lab **mirrors that paper from scratch** — not a loosely
+inspired toy. Three axes (full rule in `NOTES.md` Preferences #24 and
+`.agents/skills/lab-authoring/SKILL.md`):
+
+1. **Implementation** — write the paper's load-bearing mechanism; libraries only validate.
+2. **Datasets** — prefer the paper's own data/splits; document substitutes and honest gaps.
+3. **Reproducibility** — fixed seeds, versions, verify harness + results JSON; EXIT ties to the
+   paper metric or records an honest fail.
+
+## Reproduction labs build incrementally (harness reuse)
+
+Concept labs (like `0006`) are self-contained. **Paper-reproduction / experiment labs**
 (RelBench baselines, GBDT/RealMLP/TabM, RDL) must build on what earlier labs already wrote —
-a cumulative, reusable codebase, not isolated one-offs. When that phase starts:
+a cumulative, reusable *harness*, not isolated one-offs:
 
-- Promote shared code out of notebooks into a small importable package (e.g. `labs/relkit/`):
-  data loaders, the CV/eval harness, leakage-safe pipelines, metrics.
+- Promote shared code out of notebooks into `labs/relkit/`: data loaders, CV/eval, leakage-safe
+  pipelines, metrics. Reuse the harness; still implement the model from scratch (#22 / #24).
 - Reproduction notebooks `import` that package and extend it; each lab leaves the harness
   stronger and better-tested for the next.
 
