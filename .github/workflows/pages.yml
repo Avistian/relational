@@ -3,6 +3,26 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
+    # Teaching-workspace bookkeeping is not part of the published site, so a
+    # doc-only commit should not spend a Pages deployment. A commit touching
+    # both these and site files still deploys.
+    paths-ignore:
+      - 'NOTES.md'
+      - 'MISSION.md'
+      - 'RESOURCES.md'
+      - 'SESSION.md'
+      - 'GLOSSARY.md'
+      - 'CURRICULUM.md'
+      - 'CURRICULUM_STAGE.md'
+      - 'misconceptions.md'
+      - 'thesis-dossier.md'
+      - 'learning-records/**'
+      - 'reviews/**'
+      - 'plan/**'
+      - 'modal/**'
+      - 'solutions/**'
+      - '.agents/**'
+      - '.cursor/**'
   workflow_dispatch:
 
 permissions:
@@ -18,7 +38,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build site
         run: |
@@ -33,10 +53,10 @@ jobs:
           cp labs/README.md public/labs/ 2>/dev/null || true
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: public
 
@@ -47,12 +67,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # GitHub Pages deploy occasionally fails with "try again later" even when
-      # the artifact is valid (seen on L15 + L17). Retry before surfacing error.
+      # Do NOT wrap this in an outer retry. When the Pages backend stalls in
+      # `deployment_queued`, deploy-pages cancels the deployment on timeout, and
+      # a deployment is keyed on the commit SHA — so a retry within the same run
+      # recreates the cancelled record and fails instantly ("Deployment
+      # cancelled"), turning a slow deploy into a hard failure. Transient status
+      # errors are already retried inside the action via `error_count`; a slow
+      # queue needs a longer timeout instead.
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: Wandalen/wretry.action@v3.8.0
+        uses: actions/deploy-pages@v5
         with:
-          action: actions/deploy-pages@v5
-          attempt_limit: 3
-          attempt_delay: 30000
+          timeout: 1200000
