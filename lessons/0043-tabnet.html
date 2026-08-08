@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 043 — TabNet (sequential attention)</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .fig-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0 1rem; line-height: 1.6; }
+    .rank { color: var(--muted); font-size: 0.78rem; }
+    tr.summary-row td { border-top: 2px solid var(--border); background: var(--bg-soft); }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; line-height: 1.7; }
+
+    /* tabnet-mask-viz (.tnm-) */
+    .tnm-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tnm-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .tnm-ctl button {
+      font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .tnm-ctl button.tnm-on { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .tnm-glab { font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg, #222); margin-left: 0.4rem; }
+    .tnm-slider { width: 130px; }
+    .tnm-svg { display: block; max-width: 560px; margin: 0.25rem auto; }
+    .tnm-feat { font-family: var(--font-sans); font-size: 7.5px; fill: var(--muted); }
+    .tnm-feat-on { fill: var(--fg, #222); font-weight: 700; }
+    .tnm-rowlab { font-family: var(--font-mono); font-size: 9px; fill: var(--fg, #222); }
+    .tnm-cell { font-family: var(--font-mono); font-size: 8px; fill: var(--fg, #222); }
+    .tnm-cell-on { fill: #fff; font-weight: 700; }
+    .tnm-axis { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+    .tnm-readout { font-size: 0.87rem; margin-top: 0.6rem; line-height: 1.6; min-height: 7rem; }
+    .tnm-readout p { margin: 0.4rem 0; }
+    .tnm-mono { font-family: var(--font-mono); font-size: 0.8rem; }
+    .tnm-note { color: var(--muted); font-size: 0.83rem; }
+    .tnm-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 2 · Q1 · Neural tabular architectures</p>
+  <h1>TabNet <span style="color:var(--muted);font-weight:400">(sequential attention)</span></h1>
+  <p class="subtitle">Lesson 043 · Phase 2 · Q1 · <em>primary reading: Arik &amp; Pfister 2019, <a href="https://arxiv.org/abs/1908.07442">TabNet: Attentive Interpretable Tabular Learning</a></em></p>
+
+  <p>
+    Last lesson you built the bar. <a href="0042-mlp-resnet-baselines.html">L042</a> trained a tuned MLP
+    and ResNet from scratch under one shared protocol and established the <strong>baseline-first rule</strong>:
+    the strong simple baselines are run <em>first</em>, because a "win" over a weak or unequally-tuned net
+    measures a tuning-effort gap, not model quality. This lesson is the first time we point that bar at a
+    <strong>novel architecture</strong> — and the first time the answer is unflattering.
+  </p>
+  <p>
+    TabNet is the most-cited attempt at a "canonical" deep architecture for tables. Its idea is genuinely
+    interesting and worth understanding on its own terms: instead of feeding every feature into every
+    layer, it takes several <strong>decision steps</strong>, and at each step it <em>chooses a small
+    subset of features to look at</em> — a learned, sparse, per-row feature selection. That gives it two
+    claims: a useful inductive bias (capacity is not wasted on irrelevant columns) and
+    <strong>interpretability for free</strong> (the selection masks tell you which features it used).
+  </p>
+  <p>
+    Its single skill: <strong>implement TabNet's sequential attention from scratch — sparsemax, the
+    attentive transformer, and the prior scale — train it, read its masks as feature attributions, and
+    hold it to the baseline-first rule against the tuned MLP/ResNet from L042.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> TabNet's masks really do recover which features matter when relevance
+    is global (verified: 77% of the mask mass on the four truly-relevant columns of the paper's own Syn2),
+    but on four small real tables it lands <em>behind</em> both simple baselines from L042 (mean rank 2.50
+    vs MLP 1.75 and ResNet 2.00) — so the honest verdict on the first novel architecture is
+    <em>interesting mechanism, unproven advantage</em>.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from memory before today's material. Retrieval that feels effortful is what builds
+    durable memory; re-reading only feels productive. Today's warm-up matters more than usual, because
+    the whole point of this lesson is applying <em>last</em> lesson's rule.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Why sparse feature selection is the idea</h2>
+  <p>
+    Start from why a plain MLP is a poor fit for tables (<a href="0025-inductive-bias-smoothness.html">L025</a>–<a href="0027-inductive-bias-uninformative-features.html">L027</a>).
+    A tree carves the space with axis-aligned splits on <em>one feature at a time</em>, and it ignores
+    uninformative columns almost for free. An MLP mixes every feature into every unit from the first
+    layer, so noise columns get multiplied in everywhere and the model must learn to undo them.
+  </p>
+  <p>
+    TabNet's bet (paper §"TabNet for Tabular Learning", Fig. 3) is that you can build a tree-like decision
+    manifold out of ordinary neural blocks <em>if</em> you add one ingredient: a multiplicative mask that
+    selects features before the block processes them. Mask, then transform, then add the pieces up — that
+    is a soft, learned version of "split on this feature, then that one."
+  </p>
+  <div class="defbox">
+    <strong class="term">Decision step.</strong> One round of "choose features → process them → contribute
+    to the answer." TabNet runs <code>N_steps</code> of these (the paper's sweet spot is 3–10), and sums
+    their contributions into the final prediction. Loosely analogous to depth, but each step also decides
+    <em>what it is allowed to see</em> — that is the part no MLP does.
+  </div>
+  <div class="defbox">
+    <strong class="term">Instance-wise (per-row) feature selection.</strong> The selected subset is
+    computed <em>from the row itself</em>, so two rows can use different features. This is strictly more
+    expressive than <strong>global</strong> selection (one fixed subset for the whole dataset, e.g. Lasso
+    or a feature-importance cut). It matters whenever relevance is conditional — "for retail customers
+    look at basket size, for wholesale look at contract terms."
+  </div>
+
+  <h2>The mechanism, piece by piece</h2>
+  <p>
+    Four components. We define each one fully, including the pieces you have not met yet, and then the
+    visualization below lets you drive the whole thing.
+  </p>
+
+  <h3>1. sparsemax — the reason the mask can contain real zeros</h3>
+  <p>
+    A mask that "selects" features must be able to output <em>exactly zero</em> for a feature. Softmax
+    cannot: <code>exp(z)/Σexp(z)</code> is strictly positive, so every feature always leaks through with
+    some small weight. TabNet uses <strong>sparsemax</strong> (Martins &amp; Astudillo 2016) instead.
+  </p>
+  <div class="defbox">
+    <strong class="term">sparsemax.</strong> The <em>Euclidean projection of a vector onto the probability
+    simplex</em>: among all vectors that are non-negative and sum to 1, it returns the one closest to the
+    input. Because the simplex has flat faces and corners, the closest point frequently lies <em>on</em> a
+    face where some coordinates are exactly 0 — that is where the sparsity comes from. Concretely
+    (Algorithm 1):
+    <span class="formula">sort z descending → z₍₁₎ ≥ z₍₂₎ ≥ … ≥ z₍K₎
+k(z) = max{ k : k·z₍k₎ &gt; (Σ_{j≤k} z₍j₎) − 1 }
+τ(z) = ( (Σ_{j≤k(z)} z₍j₎) − 1 ) / k(z)
+sparsemax(z)ᵢ = max(zᵢ − τ(z), 0)</span>
+    In words: find a single threshold <code>τ</code>, subtract it from every coordinate, and clip
+    negatives to zero — with <code>τ</code> chosen precisely so the survivors sum to 1. Coordinates below
+    the threshold are switched <strong>off</strong>, not merely made small.
+  </div>
+  <p>
+    Two consequences worth holding onto. First, the mask still sums to 1 across features, so it behaves
+    like an attention distribution — the model is <em>allocating</em> a fixed budget of attention, not
+    scaling features freely. Second, gradients flow only through the surviving coordinates, so an
+    unselected feature receives no gradient at that step.
+  </p>
+
+  <h3>2. The attentive transformer — how the mask is computed</h3>
+  <p>
+    At step <code>i</code>, the mask is produced from the previous step's leftover representation
+    <code>a[i−1]</code>:
+  </p>
+  <span class="formula">M[i] = sparsemax( P[i−1] · h_i(a[i−1]) )</span>
+  <p>
+    where <code>h_i</code> is a single fully-connected layer followed by batch normalisation, and
+    <code>P[i−1]</code> is the prior scale defined next. <code>M[i]</code> has one weight per input
+    feature; the step then processes the masked row <code>M[i] · f</code>.
+  </p>
+
+  <h3>3. The prior scale — what makes the attention <em>sequential</em></h3>
+  <p>
+    If each step computed its mask independently, all steps would tend to grab the same few strong
+    features. The prior scale is the memory that prevents this:
+  </p>
+  <span class="formula">P[i] = ∏_{j≤i} ( γ − M[j] )        P[0] = 1</span>
+  <div class="defbox">
+    <strong class="term">Prior scale <code>P</code> and the relaxation factor <code>γ</code>.</strong>
+    <code>P[i]</code> records how much each feature has already been used. Every step multiplies its
+    attention logits by it, so a feature that earlier steps spent gets <em>discounted</em> and sparsemax is
+    more likely to zero it out. <code>γ</code> controls how strict this is: at <strong>γ = 1</strong>, a
+    feature that received the full mask weight 1 has prior exactly <code>1 − 1 = 0</code> afterwards and is
+    <strong>banned</strong> from every later step; as <code>γ</code> grows, reuse is permitted. The paper
+    searches γ ∈ {1.0, 1.2, 1.5, 2.0} and notes a larger <code>N_steps</code> usually wants a larger γ.
+  </div>
+
+  <h3>4. The sparsity penalty — how sparse is "sparse"</h3>
+  <p>
+    sparsemax <em>can</em> produce zeros; a regulariser <em>encourages</em> it to. TabNet adds the mask's
+    entropy to the loss:
+  </p>
+  <span class="formula">L_sparse = Σ_i Σ_b Σ_j  −M_{b,j}[i] · log( M_{b,j}[i] + ε )  /  (N_steps · B)</span>
+  <p>
+    Entropy is maximal when the mask is spread evenly and zero when it is one-hot, so <em>minimising</em>
+    it pushes each step toward committing to few features. It enters the total loss with a coefficient
+    <code>λ_sparse</code>. The paper's ablation (Table 11) shows both directions can hurt: too high
+    (λ = 0.01) costs 3.1 accuracy points on Forest Cover, and turning it off entirely costs 0.5.
+  </p>
+
+  <h3>5. The feature transformer — the part that does the actual computing</h3>
+  <div class="defbox">
+    <strong class="term">GLU (gated linear unit).</strong> A fully-connected layer emits <em>twice</em> the
+    values it needs, splits them in half, and returns <code>a · sigmoid(b)</code>: half the activations act
+    as a learned gate on the other half. It is the non-linearity TabNet uses instead of ReLU, and the
+    paper's ablation shows the swap matters (replacing GLU with ReLU costs up to 3.1 points).
+  </div>
+  <div class="defbox">
+    <strong class="term">Shared vs step-dependent layers.</strong> Every step sees the same input features,
+    so it would be wasteful to relearn low-level processing at each step. The paper's default splits the
+    feature transformer into <strong>2 layers shared across all steps</strong> plus <strong>2
+    step-dependent layers</strong> — parameter-efficient, and the ablation shows this partial sharing beats
+    both fully shared and fully independent.
+  </div>
+  <div class="defbox">
+    <strong class="term">The √0.5 residual.</strong> Blocks are wired as
+    <code>(x + block(x)) · √0.5</code>. Adding two signals of similar variance roughly doubles the
+    variance; multiplying by <code>√0.5</code> restores it, so activations do not grow as blocks stack
+    (Gehring et al. 2017). Same motive as L042's skip connections, with an explicit rescale.
+  </div>
+  <div class="defbox">
+    <strong class="term">Ghost BatchNorm and the virtual batch size <code>B_V</code>.</strong> TabNet
+    trains with very large batches (the paper suggests 1–10% of the training set). Normalising such a large
+    batch as one unit averages away too much of the noise that helps generalisation, so BatchNorm is
+    applied independently to <em>virtual sub-batches</em> of size <code>B_V</code> (Hoffer et al. 2017).
+    One detail that bites in practice: the paper's momentum <code>m_B</code> ∈ [0.6, 0.98] is
+    TensorFlow-style <em>decay</em>, so a PyTorch implementation must pass <code>1 − m_B</code>.
+  </div>
+  <p>
+    Each step splits its transformer output in two: <code>d[i]</code> (width <code>N_d</code>) contributes
+    to the prediction, and <code>a[i]</code> (width <code>N_a</code>) is what the next step's attention
+    reads. The contributions are aggregated tree-style and mapped to the output:
+  </p>
+  <span class="formula">[ d[i], a[i] ] = f_i( M[i] · f )        d_out = Σ_i ReLU( d[i] )        ŷ = W_final · d_out</span>
+
+  <h2>Drive it: sequential attention on one row</h2>
+  <p>
+    Step through the decision steps and watch the prior do its work. Then drag <code>γ</code> down to 1.0
+    and see a spent feature get banned outright.
+  </p>
+  <div id="masks"></div>
+  <p class="fig-caption">
+    The masks in this widget are an illustrative pattern for a legible 10-feature row, not fitted scores —
+    but every number on screen is computed live and exactly: the sparsemax projection, the prior product
+    <code>∏(γ − M[j])</code>, and the normalised aggregate. The <em>verified</em> mask measurements are the
+    Syn2/Syn4 results below.
+  </p>
+
+  <h2>Reading the masks — on the paper's own data</h2>
+  <p>
+    "Interpretability" is a claim that must be tested, and you cannot test it on real data: you do not know
+    which features truly matter. So the paper uses synthetic datasets where the answer is known by
+    construction (Table 1, Fig. 5), and so do we. Two of them, from
+    <a href="https://arxiv.org/abs/1802.07814">L2X (Chen et al. 2018)</a> in the 11-feature form TabNet
+    cites:
+  </p>
+  <ul>
+    <li><strong>Syn2</strong> — <code>P(y=1) ∝ exp(X₃² + X₄² + X₅² + X₆² − 4)</code>. Only
+      <strong>X₃–X₆</strong> matter, and they matter for <em>every</em> row: relevance is
+      <strong>global</strong>.</li>
+    <li><strong>Syn4</strong> — if <code>X₁₁ &lt; 0</code> the label comes from <code>exp(X₁·X₂)</code>,
+      otherwise from the Syn2 rule. Relevance is <strong>instance-wise</strong>: no fixed subset is right
+      for all rows, and a model must read <strong>X₁₁</strong> to know where to look.</li>
+  </ul>
+
+  <p>
+    Syn2 first. The aggregate mask <code>M_agg</code> across the test rows:
+  </p>
+  <table>
+    <thead><tr>
+      <th>Feature</th><th>X₁</th><th>X₂</th><th class="win">X₃</th><th class="win">X₄</th><th class="win">X₅</th><th class="win">X₆</th><th>X₇</th><th>X₈</th><th>X₉</th><th>X₁₀</th><th>X₁₁</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><code>M_agg</code></td>
+        <td class="n">.023</td><td class="n">.072</td>
+        <td class="n win">.173</td><td class="n win">.197</td><td class="n win">.188</td><td class="n win">.211</td>
+        <td class="n">.065</td><td class="n">.006</td><td class="n">.036</td><td class="n">.028</td><td class="n">.002</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified (<code>labs/_verify_l043.py</code>, from-scratch TabNet, 4000 rows, test ROC-AUC 0.804): the
+    <strong>top four features are exactly X₃, X₄, X₅, X₆</strong> — the truly relevant set — carrying
+    <strong>76.8%</strong> of the total mask mass, with the four strongest irrelevant columns at .072 or
+    below. This is the paper's interpretability claim, reproduced: when relevance is global, the mask finds
+    it.
+  </p>
+
+  <p>
+    Now the harder one. Commit a prediction before you look.
+  </p>
+  <div id="predict-syn4"></div>
+
+  <table>
+    <thead><tr>
+      <th>Syn4 — mean mask mass on each group</th><th>rows with X₁₁ &lt; 0<br><span class="rank">(truth: X₁–X₂ matter)</span></th><th>rows with X₁₁ &gt; 0<br><span class="rank">(truth: X₃–X₆ matter)</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td>mask mass on <strong>X₁–X₂</strong></td><td class="n">0.211</td><td class="n">0.089</td></tr>
+      <tr><td>mask mass on <strong>X₃–X₆</strong></td><td class="n">0.540</td><td class="n">0.585</td></tr>
+      <tr class="summary-row"><td><strong>rows whose mask favours the correct group</strong></td><td class="n bad">15.6%</td><td class="n win">97.9%</td></tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified (<code>labs/_verify_l043.py</code>, 6000 rows, test ROC-AUC 0.666). The mask <em>does</em>
+    react to the switch: X₁₁ itself gets weight 0.118 (the largest single feature), and the X₁–X₂ mass more
+    than doubles (0.089 → 0.211) on exactly the rows where that group is the relevant one. But it is only a
+    <strong>partial</strong> recovery — on 84% of those rows the mask still puts more weight on X₃–X₆ than
+    on the group that actually generates the label.
+  </p>
+  <div class="defbox">
+    <strong class="term">Read that honestly — and note what the paper itself says.</strong> The direction is
+    right and the switch feature is found, so the mechanism is doing something real. But "TabNet gives you
+    instance-wise interpretability" is stronger than what a 6000-row run supports. The paper is candid
+    about the cost of sharp masks: for its Fig. 5 visualisations it trained on <strong>10M samples rather
+    than 10k</strong> precisely because that is what made the selection masks sharp. So the honest lesson
+    is: <em>masks are evidence, not ground truth</em> — their crispness is itself a function of how much
+    data you had. The XOR group (<code>X₁·X₂</code>) is also the hardest case for a mask, because neither
+    feature is informative alone; only the product is.
+  </div>
+
+  <h2>Now the bar: does TabNet clear the baselines?</h2>
+  <p>
+    Mechanism understood, masks read. Time for the L042 discipline. Predict first.
+  </p>
+  <div id="predict-bakeoff"></div>
+
+  <p>
+    Four small real tables, one shared frame — same splits, same metric, same 6-trial search budget,
+    validation-selected, three seeds each. TabNet's search space follows the paper's Appendix F
+    (<code>N_d = N_a</code> ∈ {8, 16, 24}, <code>N_steps</code> ∈ {3, 4, 5}, γ ∈ {1.0, 1.2, 1.5, 2.0},
+    λ_sparse ∈ {0, 10⁻⁶, 10⁻⁴, 10⁻³, 10⁻²}, learning rate ∈ {0.005, 0.01, 0.02, 0.025}).
+  </p>
+  <table>
+    <thead><tr>
+      <th>Dataset (features)</th><th>TabNet</th><th>MLP</th><th>ResNet</th><th>tuned GBDT</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><code>credit_g</code> (categorical)</td>
+        <td class="n bad">0.748 ± 0.021 <span class="rank">(4)</span></td>
+        <td class="n">0.796 ± 0.028 <span class="rank">(2)</span></td>
+        <td class="n win">0.810 ± 0.030 <span class="rank">(1)</span></td>
+        <td class="n">0.780 ± 0.016 <span class="rank">(3)</span></td>
+      </tr>
+      <tr>
+        <td><code>diabetes</code> (8 numeric)</td>
+        <td class="n">0.824 ± 0.019 <span class="rank">(2)</span></td>
+        <td class="n win">0.833 ± 0.026 <span class="rank">(1)</span></td>
+        <td class="n">0.820 ± 0.021 <span class="rank">(3)</span></td>
+        <td class="n">0.805 ± 0.019 <span class="rank">(4)</span></td>
+      </tr>
+      <tr>
+        <td><code>blood_transfusion</code> (4 numeric)</td>
+        <td class="n">0.755 ± 0.025 <span class="rank">(2)</span></td>
+        <td class="n win">0.760 ± 0.043 <span class="rank">(1)</span></td>
+        <td class="n">0.754 ± 0.046 <span class="rank">(3)</span></td>
+        <td class="n">0.727 ± 0.018 <span class="rank">(4)</span></td>
+      </tr>
+      <tr>
+        <td><code>kc1</code> (21 numeric)</td>
+        <td class="n">0.7939 ± 0.003 <span class="rank">(2)</span></td>
+        <td class="n">0.7938 ± 0.003 <span class="rank">(3)</span></td>
+        <td class="n win">0.805 ± 0.012 <span class="rank">(1)</span></td>
+        <td class="n">0.789 ± 0.024 <span class="rank">(4)</span></td>
+      </tr>
+      <tr class="summary-row">
+        <td><strong>Mean rank (1 = best)</strong></td>
+        <td class="n"><strong>2.50</strong></td>
+        <td class="n win"><strong>1.75</strong></td>
+        <td class="n"><strong>2.00</strong></td>
+        <td class="n"><strong>3.75</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_verify_l043.py</code> — from-scratch TabNet (<code>relkit.tabnet</code>) and the
+    from-scratch L042 baselines (<code>relkit.nets</code>), test ROC-AUC, mean&nbsp;±&nbsp;std over 3 seeds,
+    shared 6-trial budget, ~14&nbsp;min on CPU. TabNet is <strong>last on the categorical table</strong>
+    (0.748, a 0.062 deficit to the ResNet — twice its own std) and a close second elsewhere; the kc1
+    TabNet/MLP gap is 0.0001, i.e. a tie. <strong>Friedman χ² = 5.70, <em>p</em> = 0.127</strong> across the
+    four datasets.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">What <em>p</em> = 0.127 licenses you to say — and what it does not.</strong> The
+    Friedman test across four datasets does <strong>not</strong> reach significance, so the disciplined
+    statement is: <em>we cannot distinguish these four models on this sample</em>. That cuts both ways. You
+    may not claim "TabNet is significantly worse" from this run — but neither may TabNet's advocate claim
+    it is better, and the burden of proof sits with the <em>new</em> model. Under the baseline-first rule
+    the outcome is unambiguous in the only sense that matters: <strong>TabNet did not clear the bar.</strong>
+    It ranks behind both simple baselines it was supposed to beat, and its one clear-signal result is a
+    loss. Compare L042, where the same harness on the same tables gave <em>p</em> = 0.039 — a reminder that
+    adding a fourth model changes the test's sensitivity, and that a small N makes any single p fragile
+    (<a href="0023-statistical-comparison.html">L023</a>).
+  </div>
+  <div class="defbox">
+    <strong class="term">And this is four datasets — a demonstration, not the verdict.</strong> The
+    representative claim comes from the large benchmarks, and they agree with the direction found here:
+    <a href="https://arxiv.org/abs/2106.11959">Gorishniy 2021</a> finds TabNet well behind a properly-tuned
+    ResNet, and <a href="https://arxiv.org/abs/2207.08815">Grinsztajn 2022</a> (~45 datasets) does not place
+    it near the top either. Our four tables reproduce the <em>method</em> and the direction; the strength of
+    the claim is borrowed from the benchmarks, never from our N.
+  </div>
+
+  <div id="teachback-attention"></div>
+
+  <h2>An honest failure of validation (read this one carefully)</h2>
+  <p>
+    L042 established the rule that a from-scratch model should be checked against a reference
+    implementation. We did that here against <a href="https://github.com/dreamquark-ai/tabnet">pytorch-tabnet</a>,
+    and the result was <strong>not clean</strong> — which is more instructive than a pass.
+  </p>
+  <table>
+    <thead><tr><th>Check</th><th>Result</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>sparsemax vs the reference's sparsemax (same inputs)</td>
+        <td class="n">max |Δ| = 2.3 × 10⁻⁷</td>
+        <td class="win">exact match</td>
+      </tr>
+      <tr>
+        <td>Paper invariants (masks sum to 1, exact zeros present, γ = 1 bans reuse, higher λ_sparse lowers mask entropy, <code>M_agg</code> normalised)</td>
+        <td class="n">22 / 22 checks</td>
+        <td class="win">pass</td>
+      </tr>
+      <tr>
+        <td>Parameter count, same config</td>
+        <td class="n">7,660 vs 7,688</td>
+        <td class="win">0.4% apart</td>
+      </tr>
+      <tr>
+        <td>End-to-end score, <code>diabetes</code>, reference given a longer leash</td>
+        <td class="n">0.824 vs 0.785 (|Δ| = 0.039)</td>
+        <td class="mid">just inside tol 0.04</td>
+      </tr>
+      <tr>
+        <td>End-to-end score, <code>credit_g</code></td>
+        <td class="n">0.748 vs 0.694 (|Δ| = 0.053)</td>
+        <td class="bad">outside tolerance</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_check_l043.py</code> (mechanism), <code>labs/_verify_l043.py</code> (scores),
+    <code>labs/_verify_l043_refcheck.py</code> and <code>labs/_verify_l043_refsched.py</code> (the two
+    follow-ups below).
+  </p>
+  <div class="defbox">
+    <strong class="term">What we did about it, and what is still open.</strong> Our model scoring
+    <em>higher</em> than the reference is the suspicious direction — it usually means the comparison is
+    unfair rather than the model being good. So we tested two explanations and <strong>both were
+    refuted</strong>: (1) <em>training length</em> — giving the reference patience 25 / 200 epochs left
+    credit_g at 0.686, no better; (2) <em>the learning-rate schedule</em> — our loop implements the paper's
+    "large initial rate, gradually decayed" (Appendix F) and the library's default <code>fit()</code> does
+    not, but adding the same StepLR decay to the reference gave 0.680, also no better. So the credit_g
+    discrepancy is <strong>unexplained</strong>, and the correct thing to write down is exactly that:
+    <em>mechanism validated exactly; end-to-end agreement holds on one table and fails on another, cause
+    not yet identified.</em> The most likely remaining suspect is that the reference runs its own training
+    loop, so "identical protocol" never fully transfers — you can only hold a library to a shared protocol
+    on the axes you actually control.
+  </div>
+  <div class="defbox">
+    <strong class="term">Why this does not rescue TabNet.</strong> Note the direction: the reference scores
+    <em>lower</em> than our implementation (0.694 vs 0.748 on credit_g). Our from-scratch TabNet is the
+    <strong>charitable</strong> version, and it still ranks behind the tuned MLP and ResNet. The
+    lesson's conclusion is therefore robust to which implementation you trust.
+  </div>
+
+  <h2>So what is TabNet actually for?</h2>
+  <p>
+    Not nothing. Two things survive contact with the bar, and both matter later:
+  </p>
+  <ul>
+    <li><strong>Sparse, learned, per-row feature selection as an inductive bias.</strong> The mechanism is
+      the first serious answer to "how do you give a neural net the tree-like ability to ignore columns?"
+      — and it works best exactly where the paper says: many redundant features, plenty of data. Its own
+      Appendix A is refreshingly honest that on saturated KDD tables it merely ties XGBoost and CatBoost.</li>
+    <li><strong>Attention as built-in attribution.</strong> Masks come out of the forward pass, so you get
+      attributions without a separate SHAP/LIME step. That idea does not die with TabNet — it reappears in
+      FT-Transformer (<strong>L046</strong>) and, crucially for us, in the relational models of Years 4–5,
+      where attention over <em>joined rows</em> is how an RDL model shows which related records drove a
+      prediction.</li>
+  </ul>
+
+  <h2>Thesis bridge</h2>
+  <div class="callout">
+    <strong>What today buys the thesis.</strong> Two things, one methodological and one architectural.
+    <em>Methodologically</em>, this is the first time we ran the baseline-first rule on a famous model and
+    got a negative — good practice for the moment the model on trial is <strong>ours</strong>. When an RDL
+    result eventually looks good, the same protocol must be pointed at it, with the same willingness to
+    write down "did not clear the bar." <em>Architecturally</em>, sequential attention over features is the
+    single-table rehearsal for attention over <em>relational neighbourhoods</em>: RelGT and the
+    Relational Transformer decide which related rows to attend to, and the honest reading of masks you
+    practised today — evidence, not ground truth — is exactly the discipline needed when a relational
+    model claims to show you "which customer history mattered."
+  </div>
+
+  <h2>Check yourself</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+  <div id="quiz4"></div>
+  <div id="quiz5"></div>
+
+  <h2>Primary reading</h2>
+  <p>
+    <a href="https://arxiv.org/abs/1908.07442">Arik &amp; Pfister — <em>TabNet: Attentive Interpretable
+    Tabular Learning</em>, AAAI 2021 (arXiv 2019)</a>. Read the architecture section (Fig. 4a–4d) for the
+    mask, prior scale, and feature transformer you implemented, then <strong>Appendix E (ablations)</strong>
+    and <strong>Appendix F (hyper-parameter guidance)</strong> — that is where the paper is most useful and
+    most candid. Read it the <a href="0038-peer-review-your-evaluation.html">L038</a> way: for each headline
+    table, ask which baselines were tuned under the same budget. Then read
+    <strong>Appendix A (KDD)</strong>, where TabNet ties or slightly trails XGBoost and CatBoost — and ask
+    why that table is in an appendix.
+  </p>
+  <p>
+    Companions: <a href="https://arxiv.org/abs/1602.02068">Martins &amp; Astudillo 2016</a> (sparsemax,
+    Algorithm 1 — the projection you implemented);
+    <a href="https://arxiv.org/abs/1802.07814">Chen et al. 2018</a> (the synthetic generators);
+    <a href="0042-mlp-resnet-baselines.html">L042</a> (the bar);
+    <a href="0027-inductive-bias-uninformative-features.html">L027</a> (why ignoring columns is hard for a
+    net). Next: <strong>L044 (NODE)</strong> — differentiable trees, the other 2019 attempt at the same
+    problem, and the same bar waiting for it.
+  </p>
+
+  <h2>Lab — implement sequential attention, then read the masks</h2>
+  <div class="callout">
+    <strong>Notebook:</strong>
+    <a href="../labs/html/0043-tabnet.html">view</a> ·
+    <a href="../labs/0043-tabnet.ipynb">source .ipynb</a> ·
+    <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0043-tabnet.ipynb">open in Colab</a>
+    — or browse all labs on the <a href="../notebooks.html">notebooks page</a>. You implement
+    <strong>sparsemax</strong> and the <strong>attentive transformer + prior scale</strong> from the paper's
+    equations, validate your sparsemax against the reference, read masks on Syn2/Syn4, then run the
+    baseline-first comparison. CPU, ~2–4&nbsp;min (measured 126&nbsp;s).
+  </div>
+  <ol>
+    <li><strong>Implement sparsemax</strong> from Algorithm 1 and check the properties that make it usable
+      as a mask: sums to 1, non-negative, contains <em>exact</em> zeros, and agrees with the reference
+      implementation.</li>
+    <li><strong>Implement the attentive transformer and the prior scale</strong> —
+      <code>M[i] = sparsemax(P[i−1] · h_i(a[i−1]))</code> and <code>P[i] = ∏(γ − M[j])</code> — and verify
+      the property that defines γ: at γ = 1 a fully-spent feature is banned from later steps.</li>
+    <li><strong>Read the masks</strong> on Syn2 (global relevance) and Syn4 (instance-wise): does
+      <code>M_agg</code> land on the true features, and does the selection switch with X₁₁? Report the
+      partial recovery honestly.</li>
+    <li><strong>Apply the baseline-first rule</strong>: TabNet vs the tuned MLP/ResNet from L042 on ≥3
+      tables, same frame, mean ranks + Friedman — and write the verdict, including what <em>p</em> &gt; 0.05
+      does and does not license.</li>
+  </ol>
+  <p>
+    <strong>Compute note.</strong> Small tables, CPU only; set <code>OMP_NUM_THREADS=1</code> to avoid
+    thread oversubscription (it has been the real cause of every slow lab so far). If you shrink the trial
+    or seed count, shrink it <em>identically</em> for every model and say so — a downscaled run is a
+    different experiment, never a smaller version of the paper's.
+  </p>
+  <p>
+    Deliverable: your sparsemax property checks, the γ = 1 ban check, the Syn2/Syn4 mask readings, and the
+    rank table with one sentence — <em>did TabNet clear the bar, and what does your p-value actually
+    license you to claim?</em> Paste it to your teacher or say <em>"lab done."</em>
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your mask readings and your rank table. We will check that
+    your sparsemax really produces zeros (not just small numbers), that you can say why the prior scale is
+    what makes the attention <em>sequential</em>, and that your verdict separates "did not clear the bar"
+    from "is significantly worse" — those are different claims.
+  </div>
+
+  <div class="ask-teacher">
+    Unclear why softmax cannot produce a selection mask, what <code>γ</code> is really doing, or why a
+    model that beats the reference implementation is a warning rather than good news? Ask your teacher in
+    Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0042-mlp-resnet-baselines.html">← Lesson 042</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../reference/glossary.html">Glossary</a></li>
+      <li><a href="../flashcards.html">Paper flashcards</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/tabnet-mask-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 43, count: 3 });
+
+  TabnetMaskViz.mount(document.getElementById("masks"), {});
+
+  Predict.mount(document.getElementById("predict-syn4"), {
+    prompt: "On Syn4 the relevant features SWITCH per row (X1-X2 when X11 < 0, else X3-X6). TabNet is built for exactly this. What do its masks actually do?",
+    options: [
+      { label: "Partial: it finds the switch feature and shifts weight the right way, but most switched rows still favour the wrong group", value: "partial" },
+      { label: "Clean: nearly every row's mask concentrates on precisely its own relevant group", value: "clean" },
+      { label: "Nothing: the masks ignore X11 entirely and pick one fixed subset for all rows", value: "none" },
+      { label: "Inverted: the masks systematically select the group that does not generate the label", value: "inverted" }
+    ],
+    correct: "partial",
+    reveal: "Partial. Verified (labs/_verify_l043.py, 6000 rows): X11 gets the single largest mask weight (0.118) and the X1-X2 mass more than doubles (0.089 -> 0.211) on the rows where that group matters — the mechanism is real. But only 15.6% of those rows end up favouring X1-X2 over X3-X6, versus 97.9% correct on the other side. The paper itself trained on 10M rather than 10k samples to get sharp masks for its Fig. 5 — mask crispness is a function of data volume. Masks are evidence, not ground truth."
+  });
+
+  Predict.mount(document.getElementById("predict-bakeoff"), {
+    prompt: "TabNet vs the tuned MLP and ResNet from L042, identical frame and search budget, four small real tables. Where does TabNet land on mean rank?",
+    options: [
+      { label: "Behind both simple baselines (rank 2.50 vs MLP 1.75 and ResNet 2.00), and last on the categorical table", value: "behind" },
+      { label: "First — the sparse-selection inductive bias wins as advertised", value: "first" },
+      { label: "First on categorical tables (its masks handle them), behind only on numeric ones", value: "cat" },
+      { label: "Dead last of all four, well behind even the tuned GBDT", value: "last" }
+    ],
+    correct: "behind",
+    reveal: "Behind both. Verified: mean ranks MLP 1.75, ResNet 2.00, TabNet 2.50, tuned GBDT 3.75 (Friedman chi2 = 5.70, p = 0.127). It beats only the GBDT on average, and on the categorical credit_g it is LAST at 0.748 — 0.062 behind the ResNet, twice its own std. Note the two traps: it is not 'significantly worse' (p > 0.05 means we cannot distinguish these four on four tables), and it is not last overall. But under the baseline-first rule the verdict is clear — it did not clear the bar it had to clear."
+  });
+
+  Teachback.mount(document.getElementById("teachback-attention"), {
+    prompt: "In your own words: what makes TabNet's attention 'sequential' rather than just 'sparse', and why is a mask that puts 0.118 weight on the true switch feature still not proof of interpretability?",
+    points: [
+      "The prior scale P[i] = prod_j (gamma - M[j]) carries a memory of what earlier steps spent, and multiplies the next step's attention logits — so steps are pushed toward DIFFERENT features instead of all grabbing the same strong ones. That coupling across steps is the 'sequential' part.",
+      "gamma is the strictness knob: at gamma = 1 a fully-used feature has prior exactly 0 and is banned from later steps; larger gamma permits reuse.",
+      "sparsemax is what makes selection real — it projects onto the simplex, so coordinates below a threshold tau become EXACT zeros (softmax can never switch a feature off), and unselected features get no gradient at that step.",
+      "The masks are the model's own account of itself, validated only where ground truth is known (Syn2: 76.8% of mass on the true X3-X6, top-4 exactly right). On Syn4 the same read is only partially correct — 15.6% of switched rows favour the right group — so the mask can be confidently wrong.",
+      "Mask sharpness depends on data volume: the paper used 10M rather than 10k samples to get its Fig. 5 masks. So attributions are evidence to be checked against known-answer data, not a free explanation you can trust by default."
+    ],
+    model: "Sparsity and sequentiality are two different things here. Sparsity comes from sparsemax: it returns the closest point on the probability simplex, so it subtracts a single threshold tau and clips negatives to exact zero — a genuine on/off selection, unlike softmax, which always leaks a little weight to every feature, and it means an unselected feature receives no gradient at that step. Sequentiality comes from the prior scale P[i] = prod_j (gamma - M[j]), which starts at 1 and shrinks on every feature a previous step used; because each step multiplies its attention logits by this prior, a feature already spent is discounted and sparsemax is more likely to drop it. That is what makes the steps divide the features between them instead of all attending to the same strong columns, and gamma sets the strictness — at gamma = 1 a fully-spent feature has prior 0 and is banned outright, while larger gamma allows revisiting. On interpretability: the masks are the model's own account of what it used, so they need validating against data where the truth is known. On Syn2, where relevance is global, they pass convincingly — the top four features are exactly X3-X6 with 76.8% of the mask mass. On Syn4, where relevance switches per row, the same mask reading is only partly right: X11 (the switch) does get the largest single weight, 0.118, and the X1-X2 mass doubles on the rows where it matters, but only 15.6% of those rows actually favour the correct group. A mask can therefore be confidently wrong, and its crispness depends on how much data you had — the paper trained on 10M rather than 10k samples specifically to sharpen its Fig. 5 masks. So attributions are evidence, not ground truth, which is exactly the posture to carry into Years 4-5 when a relational model claims to show which related rows drove a prediction."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "Why does TabNet use sparsemax instead of softmax for its feature-selection mask?",
+    options: [
+      { label: "Softmax is strictly positive, so it can never switch a feature off; sparsemax projects onto the simplex and yields exact zeros", value: "a" },
+      { label: "Sparsemax is faster to compute than softmax on tabular data", value: "b" },
+      { label: "Softmax cannot produce outputs that sum to 1, which a mask requires", value: "c" },
+      { label: "Sparsemax lets the mask weights exceed 1, giving the model more capacity", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). exp(z) > 0 always, so softmax leaks a little weight to every feature — no real selection, and every feature keeps receiving gradient. Sparsemax subtracts a threshold tau and clips at zero, so features are genuinely switched off. Both sum to 1, so (c) is wrong — sparsemax also sums to 1 and its weights stay within [0,1], ruling out (d). Speed is not the motivation (b); sparsemax needs a sort."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "What does the prior scale P[i] = prod_j (gamma - M[j]) accomplish, and what does gamma = 1 do?",
+    options: [
+      { label: "It discounts features already used by earlier steps so later steps pick different ones; gamma = 1 bans a fully-used feature outright (its prior becomes 0)", value: "a" },
+      { label: "It normalises the masks so each one sums to 1; gamma = 1 disables normalisation", value: "b" },
+      { label: "It decays the learning rate across decision steps; gamma = 1 means no decay", value: "c" },
+      { label: "It penalises mask entropy; gamma = 1 removes the sparsity penalty", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). The prior is the memory that makes the attention sequential: it multiplies the next step's logits, so spent features are pushed down. At gamma = 1 a feature with mask weight 1 gets prior 1 - 1 = 0 and can never be selected again; larger gamma permits reuse. Mask normalisation is sparsemax's job (b); gamma is unrelated to learning rates (c); the entropy penalty is a separate term with coefficient lambda_sparse (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "On four tables TabNet's mean rank is 2.50 vs MLP 1.75 and ResNet 2.00, with Friedman p = 0.127. What is the disciplined verdict?",
+    options: [
+      { label: "TabNet did not clear the baseline-first bar — but p > 0.05 means you cannot claim it is significantly worse either", value: "a" },
+      { label: "TabNet is significantly worse than both simple baselines", value: "b" },
+      { label: "The result is a tie, so TabNet's advocate can fairly call it competitive and move on", value: "c" },
+      { label: "The comparison is void because a Friedman test needs at least 30 datasets", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Two claims must stay separate. Statistically, p = 0.127 means this sample cannot distinguish the four models — so 'significantly worse' (b) is unsupported. Methodologically, the burden of proof is on the NEW model: ranking behind both baselines it had to beat means it did not clear the bar, so (c) reverses who owes the evidence. Friedman is valid at small N (d) — it is simply low-powered, which is why the strong claim is cited to Gorishniy 2021 and Grinsztajn 2022 instead."
+  });
+
+  Quiz.mount(document.getElementById("quiz4"), {
+    question: "Your from-scratch TabNet scores 0.748 on credit_g and the reference library scores 0.694 under your protocol. Why is that a warning rather than good news?",
+    options: [
+      { label: "Beating a trusted reference usually means the comparison is unfair, not that your model is better — so the discrepancy must be explained before either number is trusted", value: "a" },
+      { label: "It proves your implementation is better and should replace the library", value: "b" },
+      { label: "It means your model is overfitting and the reference is not", value: "c" },
+      { label: "It is meaningless — implementations always differ by this much", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). A from-scratch model beating a well-tested reference is the suspicious direction: the likely cause is that the protocol did not transfer (the library runs its own training loop) rather than a genuine improvement. Here two candidate explanations — training length and the paper's learning-rate decay — were tested and BOTH refuted, so the honest record says 'mechanism validated exactly, end-to-end cause unidentified'. That is not a licence to declare victory (b), overfitting is a different diagnosis needing train/test evidence (c), and 0.05 AUC is far too large to wave away (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz5"), {
+    question: "TabNet's masks put 76.8% of their mass on the truly relevant features of Syn2 but recover the correct group on only 15.6% of Syn4's switched rows. What is the right conclusion about attention-as-interpretability?",
+    options: [
+      { label: "Masks are evidence to validate against known-answer data, not a free explanation — and their sharpness depends on data volume", value: "a" },
+      { label: "Attention weights are a faithful explanation of any model's reasoning", value: "b" },
+      { label: "The masks are useless, since they failed on Syn4", value: "c" },
+      { label: "Syn2's result is the real one; Syn4 is too artificial to count", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). The Syn2 result shows the mechanism genuinely works when relevance is global; the Syn4 result shows the same reading can be confidently wrong when relevance is conditional — and the paper's own use of 10M rather than 10k samples for its Fig. 5 masks shows crispness scales with data. So attributions must be checked where ground truth is known. They are not automatically faithful (b), but they are not useless either — Syn4 still found the switch feature and moved weight the right way (c). And Syn4 is the MORE relevant test (d): it is the instance-wise case that motivates the architecture."
+  });
+</script>
+</body>
+</html>

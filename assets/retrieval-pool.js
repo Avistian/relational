@@ -867,6 +867,54 @@
       ],
       correct: "a",
       explain: "Fairness is a shared FRAME (same split, metric, budget, validation-selected); the per-model search SPACE legitimately differs because a GBDT and a ResNet have different knobs. Unequal trial budgets (c) are the exact unfairness the protocol prevents; identical hyper-parameters (b) are meaningless across architectures; scoring on test (d) is the leak the frame forbids."
+    },
+    {
+      id: "l043-sparsemax", lesson: 43, quarter: "Y2Q1", concept: "sparsemax",
+      question: "Why does TabNet use sparsemax rather than softmax for its feature-selection mask?",
+      options: [
+        { label: "sparsemax projects onto the simplex, so some coordinates come out EXACTLY zero — a real selection", value: "a" },
+        { label: "sparsemax is cheaper to compute, since it needs no exponentials and no sorting pass", value: "b" },
+        { label: "sparsemax outputs can exceed 1, letting a step amplify the features it considers important", value: "c" },
+        { label: "sparsemax is differentiable everywhere, whereas softmax has undefined gradients at zero", value: "d" }
+      ],
+      correct: "a",
+      explain: "softmax uses exp(z), which is strictly positive, so EVERY feature keeps a little weight and a little gradient — it can only ever weight features, never switch them off. sparsemax is the Euclidean projection onto the probability simplex (subtract one threshold tau, clip negatives): the result still sums to 1 but usually lands on a face where several coordinates are exactly 0. That is what makes a TabNet mask a *selection*. It is not cheaper (it sorts, b) and it never exceeds the simplex (c)."
+    },
+    {
+      id: "l043-prior", lesson: 43, quarter: "Y2Q1", concept: "prior-scale",
+      question: "TabNet's prior scale is P[i] = ∏_{j≤i} (γ − M[j]). What does it buy that sparsemax alone does not?",
+      options: [
+        { label: "SEQUENTIALITY — it remembers what earlier steps spent, so later steps pick different features", value: "a" },
+        { label: "SPARSITY — it is what forces most of each mask's entries down to exactly zero", value: "b" },
+        { label: "NORMALISATION — it is what makes each step's mask sum to exactly one across features", value: "c" },
+        { label: "STABILITY — it rescales the logits so BatchNorm statistics stay constant across steps", value: "d" }
+      ],
+      correct: "a",
+      explain: "Sparsity and sequentiality are different properties. sparsemax gives sparsity (b) and normalisation (c) on its own. The prior is the MEMORY that couples the steps: it multiplies the next step's logits, so a feature already used is discounted and the steps divide the features between them instead of all grabbing the same strong ones. γ is the strictness knob — at γ = 1 the leftover budget is exactly 1 − M, so a fully-used feature is banned from every later step; larger γ permits reuse."
+    },
+    {
+      id: "l043-masks", lesson: 43, quarter: "Y2Q1", concept: "attention-interpretability", misconception: true,
+      question: "TabNet's masks give per-row feature attributions straight out of the forward pass. What does that entitle you to claim?",
+      options: [
+        { label: "Only what you can verify — masks are evidence to test on known-answer data, not a free explanation", value: "a" },
+        { label: "That the attributions are faithful, because the mask literally gates what the model can see", value: "b" },
+        { label: "That the attributions match SHAP, because both are additive attributions summing to the output", value: "c" },
+        { label: "Nothing at all — mask weights are internal activations and carry no information about features", value: "d" }
+      ],
+      correct: "a",
+      explain: "'The mask gates the input, so it must be faithful' (b) is the trap: gating tells you what a step CONSUMED, not that the ranking is the causal explanation you want, and it says nothing about resolution. Verified on the paper's own generators (L043): on Syn2, where relevance is GLOBAL, the mask nails it — 76.8% of the mass on the true X3–X6. On Syn4, where relevance is INSTANCE-WISE, only 15.6% of X11<0 rows favour their own group (vs 97.9% on the other side), and the paper needed 10M rather than 10k samples for sharp masks. Same mechanism, one clean success and one partial — which is exactly why you validate attributions against ground truth instead of trusting them."
+    },
+    {
+      id: "l043-bar-vs-sig", lesson: 43, quarter: "Y2Q1", concept: "claim-calibration", misconception: true,
+      question: "TabNet ranks behind your tuned MLP/ResNet (mean ranks 2.50 vs 1.75/2.00) but the Friedman p = 0.127. What may you claim?",
+      options: [
+        { label: "It did not clear the baseline-first bar — but NOT that it is significantly worse; the burden of proof is the new model's", value: "a" },
+        { label: "Nothing either way — p > 0.05 means the comparison is uninformative, so the bar has not been tested", value: "b" },
+        { label: "That TabNet is significantly worse, since it lost on the majority of the datasets tested", value: "c" },
+        { label: "That the models are equivalent — p > 0.05 is positive evidence that their true performance is equal", value: "d" }
+      ],
+      correct: "a",
+      explain: "Two separate statements. (1) STATISTICS: p = 0.127 on 4 datasets means you cannot distinguish these models on this sample — so 'significantly worse' (c) is unlicensed, and so is 'equivalent' (d), because failing to reject is not evidence of equality (L023). (2) BURDEN OF PROOF: the baseline-first rule (L042) puts the burden on the NEW model. Ranking behind the baselines it was designed to beat means it did not clear the bar — that is a claim about *unmet burden*, not about significance, which is why the bar is still testable when p is large (b)."
     }
   ];
 })(window);

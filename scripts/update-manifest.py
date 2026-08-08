@@ -58,6 +58,9 @@ def main() -> None:
         meta["title"] = title_from_html(html)
         prev = existing.get(meta["id"], {})
         meta["published"] = prev.get("published", True)
+        # Some checkpoints are not named "checkpoint" (e.g. the Year 1 exit exam), so the flag can only
+        # be set by hand — never let a regeneration silently clear it.
+        meta["checkpoint"] = meta["checkpoint"] or bool(prev.get("checkpoint", False))
         lessons.append(meta)
 
     MANIFEST.write_text(

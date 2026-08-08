@@ -1,5 +1,33 @@
 # Teaching Notes
 
+## Session 43 — 2026-08-08
+
+- **Lesson 043 published with lab — TabNet (sequential attention)**, the first novel architecture put
+  through L042's baseline-first bar, and the first full application of standard **#24** (paper-mirror).
+  Record: [[learning-records/0101-lesson-043-published.md]].
+- **The bar bit, and that is the lesson.** From-scratch TabNet under one shared frame on 4 small tables:
+  mean ranks **TabNet 2.50** vs **MLP 1.75** / **ResNet 2.00** (GBDT 3.75), Friedman **p = 0.127**. Say it
+  in two separate sentences (now **M55**): p > 0.05 licenses only *"cannot distinguish on this sample"* —
+  never "significantly worse", and never "equivalent" — **but** the burden of proof is the *new* model's,
+  so it did **not clear the bar**. The paper's own **Appendix A (KDD)** ties/trails XGBoost + CatBoost.
+- **Sparsity ≠ sequentiality** (**M54**), the most compressible-but-wrong summary of TabNet. sparsemax buys
+  exact zeros (a real *selection*, since softmax's `exp(z) > 0` can never switch a feature off); the
+  **prior scale** `P[i] = ∏(γ − M[j])` is the memory that makes the attention *sequential*. At γ = 1 the
+  leftover budget is `1 − M`, so a fully-used feature is banned from all later steps.
+- **Interpretability was tested, not asserted** (**M53**) — on the paper's *own* generators, because on real
+  data no attribution is falsifiable. **Syn2** (global relevance): clean success, top-4 exact, 76.8% of
+  `M_agg` mass on the truth. **Syn4** (instance-wise): only **partial** — switch feature found (0.118),
+  mass moves the right way, but 15.6% vs 97.9% of rows favour their own group. The paper needed **10M**
+  rather than 10k samples for its sharp Fig. 5 masks. Masks are *evidence to validate*, not free
+  explanation.
+- **An unexplained discrepancy is on the record, not smoothed over.** From-scratch TabNet *outscored*
+  `pytorch_tabnet` end-to-end (credit_g 0.748 vs 0.694; diabetes 0.824 vs 0.766, tol 0.04). Two hypotheses
+  — training length and LR schedule — were tested in committed harnesses and **refuted**. Direction is the
+  safe one for #22, but it is still a gap, and it does *not* license "ours is better". Definitive next test
+  = weight transplant + `torch.allclose` (shipped as a lab stretch task).
+- Verification: `labs/_check_l043.py` **22/22**, `labs/_viz_check_l043.js` **81/81**,
+  `labs/_check_pedagogy.js` **40/40**, solution notebook executed end-to-end (**25/25** CHECKs, 126 s CPU).
+
 ## Session 42 — 2026-08-08
 
 - **Lesson 042 complete** — user said "lesson 42 done" (no EXIT numbers pasted → no hostile-reader rubric
