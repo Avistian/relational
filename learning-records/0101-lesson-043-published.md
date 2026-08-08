@@ -85,12 +85,17 @@ learning sanity check on a sparse signal (AUC 0.998, mask puts 83% of mass on th
 End-to-end, the **from-scratch TabNet outscored the reference** `pytorch_tabnet` under the same protocol:
 credit_g **0.748 vs 0.694**, diabetes **0.824 vs 0.766** (|Δ| ≈ 0.05–0.06, tolerance 0.04 → **out of
 tolerance**). Two hypotheses were tested and **refuted**:
-1. *Training length* (`_verify_l043_refcheck.py`) — gave the reference a longer leash (more epochs, more
-   patience): the gap did not close.
-2. *Learning-rate schedule* (`_verify_l043_refsched.py`) — applied the paper's StepLR geometric decay to
-   the reference: the gap did not close.
+1. *Training length* (`_verify_l043_refcheck.py`) — gave the reference a longer leash (patience 25 /
+   200 epochs). On **credit_g** it did not help at all: 0.694 → **0.686**, |Δ| *widening* to 0.062. On
+   **diabetes** it did help partially: 0.766 → **0.785**, |Δ| **0.039**, which lands just inside the 0.04
+   tolerance. So under-training explains *some* of the diabetes gap but **none** of the credit_g gap.
+2. *Learning-rate schedule* (`_verify_l043_refsched.py`) — our loop implements the paper's "large initial
+   rate, gradually decayed" (App. F) and the library's default `fit()` does not, so we added the same
+   StepLR decay to the reference: credit_g **0.680**, no better.
 
-So the gap **stands unexplained** and is stated as such in the lesson, not smoothed over. Note the
+So the **credit_g** gap stands unexplained, and the lesson states exactly that scope — *mechanism
+validated exactly; end-to-end agreement holds on one table and fails on another, cause not identified* —
+rather than the looser "the gap did not close everywhere". Note the
 direction is the *safe* one for standard #22 (our implementation is not weaker than the library), but it is
 still a discrepancy, and it does **not** license "our TabNet is better than the library's" — the two
 differ in defaults we did not fully control. The lesson names the definitive next test (stretch task 4):

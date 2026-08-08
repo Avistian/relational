@@ -22,9 +22,12 @@
   explanation.
 - **An unexplained discrepancy is on the record, not smoothed over.** From-scratch TabNet *outscored*
   `pytorch_tabnet` end-to-end (credit_g 0.748 vs 0.694; diabetes 0.824 vs 0.766, tol 0.04). Two hypotheses
-  — training length and LR schedule — were tested in committed harnesses and **refuted**. Direction is the
-  safe one for #22, but it is still a gap, and it does *not* license "ours is better". Definitive next test
-  = weight transplant + `torch.allclose` (shipped as a lab stretch task).
+  were tested in committed harnesses: *training length* (a longer leash left credit_g at **0.686** — no
+  help — but moved diabetes to **0.785**, |Δ| 0.039, just inside tolerance) and *LR schedule* (the paper's
+  StepLR decay on the reference gave credit_g **0.680** — no help). So the **credit_g** gap is unexplained;
+  scope the claim to that table rather than saying nothing closed. Direction is the safe one for #22, but it
+  is still a gap, and it does *not* license "ours is better". Definitive next test = weight transplant +
+  `torch.allclose` (shipped as a lab stretch task).
 - Verification: `labs/_check_l043.py` **22/22**, `labs/_viz_check_l043.js` **81/81**,
   `labs/_check_pedagogy.js` **40/40**, solution notebook executed end-to-end (**25/25** CHECKs, 126 s CPU).
 
