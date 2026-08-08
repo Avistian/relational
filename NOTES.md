@@ -1,5 +1,19 @@
 # Teaching Notes
 
+## Session 42 — 2026-08-08
+
+- **Lesson 042 complete** — user said "lesson 42 done" (no EXIT numbers pasted → no hostile-reader rubric
+  score, per the L017–L041 precedent). Record: [[learning-records/0099-lesson-042-complete.md]].
+- **GitHub Pages publish fixed.** The `deploy` job's `wretry` wrapper *was* the bug: a Pages deployment is
+  keyed on the commit SHA, `deploy-pages` cancels it at its timeout when the backend stalls in
+  `deployment_queued`, and the retry then recreated the cancelled record and failed instantly — 3 attempts
+  exhausted, 12m22s red run on the doctrine commit. Removed the wrapper, added `paths-ignore` so
+  bookkeeping-only commits don't spend a deployment, bumped the actions off Node 20. Record:
+  [[learning-records/0100-pages-deploy-fix.md]].
+- **Two publishing facts worth remembering:** the deploy `timeout` input is **clamped to 600000 ms** (a
+  longer value is silently ignored), and a stalled deployment is recovered by **pushing a new commit**, not
+  by re-running the same SHA.
+
 ## Session 41 — 2026-08-06
 
 - **NEW standard #24 — paper-mirror doctrine (user directive this session):** future lessons/labs must
