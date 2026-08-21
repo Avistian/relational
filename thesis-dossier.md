@@ -290,6 +290,30 @@ is BAR-raising with an indirect FOR: *instance-wise* selection is the single-tab
 claim — different rows genuinely need different context — and TabNet shows how expensive that is to buy
 by masking columns of an already-flattened table.
 
+L044 (NODE — differentiable oblivious trees) is the sharpest single illustration so far of *why* the thesis
+cares about structure at all, precisely because it is an honest **loss** on flat tables. NODE and CatBoost
+are the **same tree shape** — an ensemble of oblivious (symmetric) trees, one shared (feature, threshold)
+per level (L016) — so the experiment isolates one variable: *make the tree differentiable*. Three discrete
+steps are softened — **entmax15** feature choice (α = 1.5, the middle of softmax → entmax15 → sparsemax,
+real zeros with a smoother gradient than L043's sparsemax), the **entmoid** soft split, and **outer-product
+routing** that sends a fraction of the row to all 2^d leaves as a distribution — so hundreds of trees per
+layer train by backprop and stack **DenseNet-style**. Built from scratch and validated to machine precision
+against the `entmax` package (entmax15 \|Δ\| = 5.6e-16, entmoid \|Δ\| = 3.3e-16, `relkit.node`), then held
+to the shared frame on four small tables, NODE lands **last**: mean ranks NODE **3.50** vs CatBoost 2.50,
+MLP 2.00, ResNet 2.00 (Friedman χ² = 3.6, **p = 0.308**), beats CatBoost on **1/4**, and trains **~70×
+slower** (60.2 s vs 0.9 s on credit_g; `labs/_verify_l044.py`). The disciplined reading is the same as L043:
+a large *p* on four datasets licenses only "cannot distinguish on this sample", but the burden sits with the
+expensive new model, and it did not clear it *here* (this is a down-scaled demonstration; the paper's small
+win over GBDT is at benchmark scale with thousands of trees + heavy tuning). What makes this **FOR** the
+thesis rather than merely against NODE is the diagnosis of *what* differentiability buys: a GBDT's greedy
+splits have **no gradient**, so it can never co-learn embeddings, stack hierarchically so later trees split
+on earlier decisions, or sit inside an end-to-end multi-modal pipeline. On one flat table that capability is
+pure liability (it loses and costs 70×); it earns its keep only when the tree must **compose with more
+structure** — which is exactly the relational regime. The lineage matters: this is CatBoost's symmetric tree
+(Y1 L016) made to plug into deep learning, and it is the first concrete demonstration that "keep the
+structure / keep the gradient" is a bet you *lose* on isolated tables and only win when the surrounding
+structure exists to connect to.
+
 The genuinely *supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and
 leakage-prone, and manual feature synthesis hints structure is recoverable, but no result yet shows a
 relational model *beating the fair bar by keeping structure*. That demonstration is now the **Year 2–4**

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 044 — NODE (differentiable trees)</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .fig-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0 1rem; line-height: 1.6; }
+    .rank { color: var(--muted); font-size: 0.78rem; }
+    tr.summary-row td { border-top: 2px solid var(--border); background: var(--bg-soft); }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; line-height: 1.7; }
+
+    /* node-tree-viz (.nod-) */
+    .nod-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .nod-ctl { display: flex; gap: 0.7rem; margin-bottom: 0.7rem; flex-wrap: wrap; align-items: center; }
+    .nod-ctl button { font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .nod-ctl button.nod-on { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .nod-glab { font-family: var(--font-sans); font-size: 0.8rem; color: var(--fg, #222); display: inline-flex; align-items: center; gap: 0.4rem; }
+    .nod-slider { width: 130px; vertical-align: middle; }
+    .nod-zslider { width: 150px; vertical-align: middle; }
+    .nod-mono { font-family: var(--font-mono); font-size: 0.8rem; }
+    .nod-levels { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.4rem 0 0.7rem; }
+    .nod-lrow { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; font-size: 0.83rem; }
+    .nod-lname { min-width: 12rem; }
+    .nod-lval { color: var(--muted); }
+    .nod-svg { display: block; max-width: 560px; margin: 0.25rem auto; }
+    .nod-leaflab { font-family: var(--font-mono); font-size: 8px; fill: var(--muted); }
+    .nod-leafw { font-family: var(--font-mono); font-size: 8px; fill: var(--fg, #222); }
+    .nod-leafr { font-family: var(--font-mono); font-size: 7px; fill: var(--muted); }
+    .nod-axis { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+    .nod-readout { font-size: 0.87rem; margin-top: 0.5rem; line-height: 1.6; min-height: 6rem; }
+    .nod-readout p { margin: 0.4rem 0; }
+    .nod-note { color: var(--muted); font-size: 0.83rem; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 2 · Q1 · Neural tabular architectures</p>
+  <h1>NODE <span style="color:var(--muted);font-weight:400">(differentiable oblivious trees)</span></h1>
+  <p class="subtitle">Lesson 044 · Phase 2 · Q1 · <em>primary reading: Popov, Morozov &amp; Babenko 2019, <a href="https://arxiv.org/abs/1909.06312">Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data</a></em></p>
+
+  <p>
+    Last lesson, <a href="0043-tabnet.html">TabNet</a> tried to give a neural net a tree's instinct with
+    <em>sparse attention over features</em>, and did not clear the baseline-first bar. NODE, published the
+    same year, attacks the same problem from the opposite end: instead of making a neural net act
+    tree-like, it takes an actual <strong>ensemble of decision trees</strong> and makes it
+    <strong>differentiable</strong>, so it can be trained end-to-end by gradient descent and stacked into
+    deep, hierarchical layers like any other neural network.
+  </p>
+  <p>
+    This is the most direct architectural rhyme with a model you already tuned. NODE's trees are
+    <strong>oblivious</strong> — the same split feature and threshold at every node of a level — which is
+    exactly CatBoost's <em>symmetric</em> tree from <a href="0016-catboost.html">L016</a>. So NODE and
+    CatBoost are the same tree shape; the only difference is <em>how the splits are chosen</em>: CatBoost
+    grows them greedily, NODE learns them by backprop. That makes the comparison unusually clean, and it
+    is the comparison this lesson is built around.
+  </p>
+  <p>
+    Its single skill: <strong>describe an oblivious differentiable decision tree — the entmax feature
+    choice, the entmoid soft split, and the outer-product leaf routing — build it from scratch, and say
+    when making a tree differentiable actually buys you anything over a GBDT that is already cheap and
+    strong.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Making an oblivious tree ensemble differentiable is elegant and it
+    trains — but on four small real tables our from-scratch NODE lands <em>last</em> of four models (mean
+    rank 3.50, behind CatBoost 2.50, MLP 2.00, ResNet 2.00) while costing <strong>~70× more compute</strong>
+    than the CatBoost it is imitating, so the honest verdict is <em>the differentiability is the point, not
+    the accuracy</em>: it matters when you need the tree to <em>compose</em> with other learned modules, not
+    when you just want the best number on one table.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from memory before today's material. Retrieval that feels effortful is what builds
+    durable memory; re-reading only feels productive. One of today's ideas — oblivious/symmetric trees —
+    you first met back in <a href="0016-catboost.html">L016</a>, so let the spacing do its work.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Where NODE comes from: the oblivious tree</h2>
+  <p>
+    A standard decision tree chooses a <em>different</em> feature and threshold at every internal node. An
+    <strong>oblivious</strong> decision tree is deliberately more rigid: at each <em>level</em> of the tree
+    it uses <strong>one</strong> feature and <strong>one</strong> threshold, shared by every node on that
+    level. You met this in <a href="0016-catboost.html">L016</a> as CatBoost's <em>symmetric</em> tree — a
+    weaker individual learner that CatBoost leans on precisely because it regularises, and because it turns
+    the tree into something with a very regular structure.
+  </p>
+  <div class="defbox">
+    <strong class="term">Oblivious (symmetric) decision tree.</strong> A tree of depth <code>d</code> in
+    which level <code>i</code> tests the same <code>(feature, threshold)</code> pair for all its nodes. A
+    row's path is then fully described by <code>d</code> yes/no answers, so the tree has exactly
+    <code>2^d</code> leaves and is completely specified by <code>d</code> features, <code>d</code>
+    thresholds, and <code>2^d</code> leaf values. That regularity is the hinge of this whole lesson: it is
+    what makes the tree cheap to evaluate (it is a lookup into a <code>2^d</code> table) <em>and</em> what
+    makes it possible to write down as a smooth, differentiable function.
+  </div>
+  <p>
+    Why does anyone want a tree to be differentiable? Because a GBDT is a dead end for representation
+    learning. Its splits are chosen by a greedy, discrete search — you cannot take a gradient of "which
+    feature to split on" — so a GBDT cannot be a <em>layer</em> inside a larger model, cannot learn
+    embeddings jointly with its splits, and cannot be stacked into a hierarchy that composes features. NODE
+    asks: what if we keep the tree's inductive bias but replace every discrete choice with a differentiable
+    one, so the whole ensemble is just another neural network?
+  </p>
+
+  <h2>The mechanism, piece by piece</h2>
+  <p>
+    Three discrete operations have to be softened. We define each one fully, then the visualization lets
+    you drive the whole tree.
+  </p>
+
+  <h3>1. entmax — the differentiable feature <em>choice</em></h3>
+  <p>
+    A tree level "picks a feature." NODE replaces that hard pick with a weighted average over all features,
+    <code>f̂ᵢ(x) = ⟨x, choiceᵢ⟩</code>, where <code>choiceᵢ</code> is a learned distribution over the input
+    columns. For this to behave like a real choice, the distribution must be able to put <em>exactly zero</em>
+    on most features — otherwise every column leaks into every split and the tree bias is gone. That is the
+    same requirement TabNet had (<a href="0043-tabnet.html">L043</a>), and NODE solves it with the same
+    family of functions, one notch softer.
+  </p>
+  <div class="defbox">
+    <strong class="term">α-entmax, and why α = 1.5.</strong> <code>entmax_α</code> is a whole family of
+    simplex maps controlled by a knob <code>α</code>: it returns the distribution that maximises
+    <code>⟨p, z⟩ + H_α(p)</code>, where <code>H_α</code> is the <em>Tsallis entropy</em> of order
+    <code>α</code>. The knob interpolates between the two maps you already know:
+    <span class="formula">α → 1 : softmax   (dense, no zeros)
+α = 1.5 : entmax15  (sparse, the middle ground)
+α = 2   : sparsemax (sparsest, L043)</span>
+    All three have the same closed shape <code>pᵢ = [ (α−1)zᵢ − τ ]₊^{1/(α−1)}</code> for a single threshold
+    <code>τ</code> chosen so the result sums to 1. At <code>α = 1.5</code> the exponent is 2, so survivors
+    grow <em>quadratically</em> above the threshold — sparser than softmax (there are real zeros) but gentler
+    than sparsemax (fewer of them, and a smoother gradient). Popov et al. found this middle setting trained
+    best for feature choice, and it is the paper's default.
+  </div>
+  <p>
+    Concretely, on the logits <code>z = [2.0, 1.5, 0.5, 0.0, −1.0]</code> the three maps place their weight
+    very differently:
+  </p>
+  <table>
+    <thead><tr><th>map</th><th>p₁</th><th>p₂</th><th>p₃</th><th>p₄</th><th>p₅</th><th>zeros</th></tr></thead>
+    <tbody>
+      <tr><td>softmax (α→1)</td><td class="n">.496</td><td class="n">.301</td><td class="n">.111</td><td class="n">.067</td><td class="n">.025</td><td class="n">0</td></tr>
+      <tr><td><strong>entmax15 (α=1.5)</strong></td><td class="n">.671</td><td class="n">.324</td><td class="n">.005</td><td class="n win">.000</td><td class="n win">.000</td><td class="n">2</td></tr>
+      <tr><td>sparsemax (α=2)</td><td class="n">.750</td><td class="n">.250</td><td class="n win">.000</td><td class="n win">.000</td><td class="n win">.000</td><td class="n">3</td></tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified against the reference <code>entmax</code> package (Peters et al. 2019). softmax keeps every
+    feature alive; entmax15 zeroes the two weakest while staying differentiable on the survivors; sparsemax
+    is hardest. entmax15 is the "sparse but not brutal" choice NODE wants for selecting features.
+  </p>
+
+  <h3>2. entmoid — the differentiable <em>split</em></h3>
+  <p>
+    Having chosen a feature value <code>f̂ᵢ(x)</code>, a tree compares it to a threshold: go left or right.
+    That hard comparison is the second thing to soften. NODE replaces <code>1[f̂ᵢ &gt; bᵢ]</code> with a
+    smooth, temperature-controlled probability of going right:
+  </p>
+  <span class="formula">cᵢ(x) = entmoid( (f̂ᵢ(x) − bᵢ) / τᵢ )      ∈ [0, 1]</span>
+  <div class="defbox">
+    <strong class="term">entmoid — the two-class entmax.</strong> Just as the sigmoid is the two-class
+    softmax, the <strong>entmoid</strong> is the two-class <code>entmax15</code>: <code>entmoid(x)</code> is
+    exactly <code>entmax15([x, 0])</code> read off the first coordinate. Because it is entmax, once the gap
+    <code>|x|</code> is large enough it saturates to an <em>exact</em> 0 or 1 — a genuinely committed
+    left/right decision — but it reaches that decision smoothly, so a gradient flows. The per-level
+    <strong>temperature <code>τᵢ</code></strong> is the softness knob: small <code>τ</code> makes the split
+    nearly hard (a real tree), large <code>τ</code> spreads the row across both sides.
+  </div>
+
+  <h3>3. Outer-product routing — how a row reaches 2^d leaves at once</h3>
+  <p>
+    A hard oblivious tree sends a row down <em>one</em> path to <em>one</em> leaf. A soft tree sends a
+    <em>fraction</em> of the row to <em>every</em> leaf. Because the tree is oblivious, the weight of a leaf
+    is just the product, over the <code>d</code> levels, of the per-level choice that leads there:
+  </p>
+  <span class="formula">leaf ℓ has bits (r₁,…,r_d);   wₗ(x) = ∏ᵢ [ cᵢ if rᵢ = right else (1 − cᵢ) ]</span>
+  <p>
+    Stacking <code>[cᵢ, 1−cᵢ]</code> for each level and taking the <strong>outer product</strong> gives all
+    <code>2^d</code> leaf weights at once, and they automatically sum to 1 — the row is a probability
+    distribution over leaves. The tree's output is then just the weighted average of the leaf responses
+    <code>R</code>:
+  </p>
+  <span class="formula">ĥ(x) = Σ_ℓ wₗ(x) · R_ℓ        ( = a smooth lookup into the 2^d response table )</span>
+  <p>
+    Every parameter here — the feature-choice logits, the thresholds <code>bᵢ</code>, the temperatures
+    <code>τᵢ</code>, the responses <code>R</code> — sits inside differentiable operations, so the entire
+    tree trains by backprop. Drive it below.
+  </p>
+
+  <div id="tree"></div>
+  <p class="fig-caption">
+    A depth-3 oblivious tree (2³ = 8 leaves) routing one row. The feature at each level is fixed here for
+    legibility; in a trained NODE it is itself chosen by an entmax over all columns. Every number is
+    computed live — the entmoid soft splits and the outer-product leaf weights (which always sum to 1).
+    Drag <code>τ</code> to 0.1 and the 8 soft leaves collapse onto the single argmax leaf (an ordinary hard
+    tree, which the toggle reproduces); push it to 3 and they spread toward uniform.
+  </p>
+
+  <h3>NODE the network: many trees, stacked DenseNet-style</h3>
+  <p>
+    One differentiable tree is weak. A NODE <em>layer</em> is an <em>ensemble</em> of many such trees run in
+    parallel (the paper uses hundreds to a couple thousand), their outputs concatenated. NODE then stacks
+    several layers <strong>DenseNet-style</strong> (Huang et al. 2017): each layer sees the original input
+    <em>plus</em> every earlier layer's tree outputs, so later trees can split on the decisions of earlier
+    ones — the "multi-layer hierarchical representation" the abstract advertises. The final prediction
+    averages the responses of all trees across all layers. This stacking is the thing a GBDT structurally
+    cannot do, and it is the only real reason to pay for differentiability.
+  </p>
+
+  <h2>The clean comparison: NODE vs CatBoost</h2>
+  <p>
+    NODE and CatBoost are the <em>same tree shape</em> — ensembles of oblivious/symmetric trees — differing
+    only in how the splits are chosen (greedy vs gradient). So a head-to-head isolates one question: does
+    learning the splits by backprop beat choosing them greedily? Predict before you look.
+  </p>
+  <div id="predict-catboost"></div>
+
+  <p>
+    Four small real tables, one shared frame — same splits, same metric, same 4-trial validation-selected
+    search budget, three seeds each. NODE searches <code>num_trees</code> ∈ {64, 128}, <code>depth</code> ∈
+    {3, 4, 5}, <code>n_layers</code> ∈ {1, 2}; CatBoost searches depth, learning rate, and L2 with 400
+    symmetric-tree iterations; the MLP and ResNet are the from-scratch L042 baselines. Everything is run
+    <em>first</em>, to the same protocol — the baseline-first rule from <a href="0042-mlp-resnet-baselines.html">L042</a>.
+  </p>
+  <table>
+    <thead><tr>
+      <th>Dataset (features)</th><th>NODE</th><th>CatBoost</th><th>MLP</th><th>ResNet</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><code>credit_g</code> (categorical)</td>
+        <td class="n bad">0.776 ± 0.010 <span class="rank">(4)</span></td>
+        <td class="n">0.798 ± 0.032 <span class="rank">(2)</span></td>
+        <td class="n win">0.808 ± 0.026 <span class="rank">(1)</span></td>
+        <td class="n">0.785 ± 0.035 <span class="rank">(3)</span></td>
+      </tr>
+      <tr>
+        <td><code>diabetes</code> (8 numeric)</td>
+        <td class="n bad">0.811 ± 0.021 <span class="rank">(4)</span></td>
+        <td class="n">0.815 ± 0.025 <span class="rank">(3)</span></td>
+        <td class="n win">0.831 ± 0.024 <span class="rank">(1)</span></td>
+        <td class="n">0.823 ± 0.016 <span class="rank">(2)</span></td>
+      </tr>
+      <tr>
+        <td><code>blood_transfusion</code> (4 numeric)</td>
+        <td class="n">0.737 ± 0.048 <span class="rank">(3)</span></td>
+        <td class="n bad">0.734 ± 0.013 <span class="rank">(4)</span></td>
+        <td class="n">0.742 ± 0.019 <span class="rank">(2)</span></td>
+        <td class="n win">0.774 ± 0.021 <span class="rank">(1)</span></td>
+      </tr>
+      <tr>
+        <td><code>kc1</code> (21 numeric)</td>
+        <td class="n">0.791 ± 0.010 <span class="rank">(3)</span></td>
+        <td class="n win">0.817 ± 0.014 <span class="rank">(1)</span></td>
+        <td class="n bad">0.790 ± 0.014 <span class="rank">(4)</span></td>
+        <td class="n">0.804 ± 0.013 <span class="rank">(2)</span></td>
+      </tr>
+      <tr class="summary-row">
+        <td><strong>Mean rank (1 = best)</strong></td>
+        <td class="n bad"><strong>3.50</strong></td>
+        <td class="n"><strong>2.50</strong></td>
+        <td class="n win"><strong>2.00</strong></td>
+        <td class="n win"><strong>2.00</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_verify_l044.py</code> — from-scratch NODE (<code>relkit.node</code>) and CatBoost
+    (symmetric trees, <a href="0016-catboost.html">L016</a>) and the from-scratch L042 baselines, test
+    ROC-AUC, mean&nbsp;±&nbsp;std over 3 seeds, shared 4-trial budget, ~7.5&nbsp;min on CPU. NODE is
+    <strong>last</strong> overall (mean rank 3.50), beats CatBoost on only <strong>1 of 4</strong> tables,
+    and is last outright on the two largest tables. <strong>Friedman χ² = 3.60, <em>p</em> = 0.308</strong>.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Read this the disciplined way (twice over).</strong> Two claims must stay separate,
+    exactly as in <a href="0043-tabnet.html">L043</a>. <em>Statistically</em>, <em>p</em> = 0.308 on four
+    datasets means we <strong>cannot distinguish</strong> these four models on this sample — you may
+    <em>not</em> say NODE is "significantly worse" (failing to reject is not evidence of equality,
+    <a href="0023-statistical-comparison.html">L023</a>). <em>Evidentially</em>, the baseline-first rule puts
+    the burden of proof on the <strong>new, expensive</strong> model, and ranking last behind the very
+    CatBoost it generalises means the burden was not met here. So the honest verdict on these four tables is
+    the same shape as TabNet's: <em>interesting mechanism, unproven advantage</em>.
+  </div>
+  <div class="defbox">
+    <strong class="term">And be fair to the paper — this is a down-scaled experiment (#20).</strong> NODE's
+    published claim is that it beats GBDTs on <em>most</em> of 40+ datasets, <em>by a small margin</em>, at
+    scale — with up to ~2000 trees per layer, multiple layers, and a large tuning budget. Our four small
+    tables at 64–128 trees and a 4-trial budget are a <strong>demonstration of the method, not a
+    reproduction of that benchmark</strong>, and small tables are exactly where simple baselines and cheap
+    GBDTs are hardest to beat. We do <em>not</em> claim to have reproduced "NODE beats GBDT" — on this
+    scale it does the opposite. What <em>does</em> reproduce robustly is (a) the mechanism (validated to
+    machine precision, below) and (b) the cost.
+  </div>
+
+  <h2>The other half of the honest verdict: cost</h2>
+  <p>
+    Accuracy is only one axis. The reason the numbers above matter is what they cost. Predict first.
+  </p>
+  <div id="predict-cost"></div>
+  <table>
+    <thead><tr><th>credit_g, depth 6</th><th>train time (CPU)</th><th>test ROC-AUC</th></tr></thead>
+    <tbody>
+      <tr><td>CatBoost (400 symmetric trees)</td><td class="n win">0.9 s</td><td class="n">0.813</td></tr>
+      <tr><td>NODE (128 differentiable trees)</td><td class="n bad">60.2 s</td><td class="n">0.793</td></tr>
+      <tr class="summary-row"><td><strong>NODE / CatBoost</strong></td><td class="n bad"><strong>≈ 70× slower</strong></td><td class="n"><strong>−0.020 AUC</strong></td></tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_verify_l044.py</code> (cost section). On this one table NODE takes ~70× the
+    wall-clock of the CatBoost it imitates and scores slightly <em>lower</em> — on CPU, and before its real
+    hyper-parameters (thousands of trees, GPU) would push the cost far higher still. Differentiability is
+    not free, and here it bought nothing on the metric.
+  </p>
+
+  <h2>So when <em>does</em> differentiability matter?</h2>
+  <p>
+    Not for squeezing the last AUC out of one table — CatBoost already does that, cheaply. The honest answer
+    is that NODE's differentiability is valuable exactly when the tree must stop being the whole model and
+    start being a <strong>component</strong> of a larger differentiable system:
+  </p>
+  <ul>
+    <li><strong>Joint representation learning.</strong> Because every split has a gradient, a NODE layer can
+      be trained <em>together</em> with learned embeddings, an encoder, or another network — the splits and
+      the features they split on co-adapt. A GBDT must take its input features as fixed.</li>
+    <li><strong>Depth and composition.</strong> The DenseNet stacking lets later trees split on earlier
+      trees' decisions, building a hierarchy of features. A boosted ensemble is a flat sum of trees; it
+      cannot compose in this way.</li>
+    <li><strong>Multi-modal and end-to-end pipelines.</strong> When tabular columns arrive alongside text or
+      image features, a differentiable tree can be the tabular head of a single model trained by one
+      optimiser — no two-stage "featurise, then boost."</li>
+  </ul>
+  <p>
+    This is the thread to hold onto, because it is <em>the</em> argument for the whole rest of the
+    curriculum. On a single flat table the differentiable tree loses to the greedy one. The moment the data
+    stops being a single flat table — the moment the useful signal lives in <em>related</em> rows that must
+    be encoded and learned jointly — the ability to train the whole thing end-to-end stops being a luxury
+    and becomes the only option. NODE is the first clean demonstration of both halves of that trade.
+  </p>
+
+  <div id="teachback-diff"></div>
+
+  <h2>The from-scratch mechanism, validated</h2>
+  <p>
+    Per the paper-mirror standard, the load-bearing operations are built from the paper, not imported —
+    <code>relkit.node</code> implements <code>entmax15</code> (by bisection on the threshold), the
+    <code>entmoid</code> soft split, and the oblivious tree's outer-product routing. The reference
+    <code>entmax</code> package (Peters et al. 2019) is used only to <em>check</em> them:
+  </p>
+  <table>
+    <thead><tr><th>Check</th><th>Result</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>from-scratch <code>entmax15</code> vs <code>entmax.entmax15</code></td><td class="n">max |Δ| = 5.6 × 10⁻¹⁶</td><td class="win">exact</td></tr>
+      <tr><td>from-scratch <code>entmoid</code> vs two-class <code>entmax15([x,0])</code></td><td class="n">max |Δ| = 3.3 × 10⁻¹⁶</td><td class="win">exact</td></tr>
+      <tr><td>entmax15 sparsity on random logits</td><td class="n">84% exact zeros</td><td class="win">sparse</td></tr>
+      <tr><td>oblivious tree: leaf-routing weights sum to 1 per row</td><td class="n">max dev 1.2 × 10⁻⁷</td><td class="win">a distribution</td></tr>
+      <tr><td>one feature-choice distribution per (tree, level)</td><td class="n">15 / 15 checks</td><td class="win">oblivious</td></tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_check_l044.py</code> (15 / 15 pass) and <code>labs/_verify_l044.py</code> (mechanism
+    section). The mechanism is reproduced to machine precision; the accuracy verdict above is where the
+    honest story lives.
+  </p>
+
+  <h2>Thesis bridge</h2>
+  <div class="callout">
+    <strong>What today buys the thesis.</strong> Two things. <em>Methodologically</em>, this is the second
+    consecutive famous architecture to fail the baseline-first bar on flat tables — reinforcing the habit
+    you will need when the model on trial is a relational one: run the cheap strong baseline first, and be
+    willing to write "did not clear the bar, and cost 70× more." <em>Architecturally</em>, NODE isolates the
+    real dividing line in this field. On a single table, end-to-end differentiability is a liability you pay
+    for and rarely recoup. Its value appears only when the tree must <em>compose</em> — learn jointly with
+    encoders, stack into a hierarchy, sit inside a multi-part model. That is precisely the situation
+    relational deep learning is in: the signal spans joined tables, the row encoders must be learned, and
+    the whole pipeline has to train together. NODE is the toy proof that differentiability earns its keep
+    exactly when a GBDT's greedy splits can no longer see the structure that matters.
+  </div>
+
+  <h2>Check yourself</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+  <div id="quiz4"></div>
+  <div id="quiz5"></div>
+
+  <h2>Primary reading</h2>
+  <p>
+    <a href="https://arxiv.org/abs/1909.06312">Popov, Morozov &amp; Babenko — <em>Neural Oblivious Decision
+    Ensembles for Deep Learning on Tabular Data</em>, ICLR 2020 (arXiv 2019)</a>. Read <strong>§2</strong>
+    for the architecture you implemented — the entmax feature choice, the entmoid split, and the
+    outer-product routing (Eq. 1–4) — and the DenseNet stacking in Fig. 1. Then read the experiments the
+    <a href="0038-peer-review-your-evaluation.html">L038</a> way: the headline is "beats GBDT on most tasks
+    by a small margin", so ask on <em>which</em> datasets, at what <em>tuning budget</em> and tree count,
+    and whether the GBDTs were tuned to the same budget. Companion:
+    <a href="https://arxiv.org/abs/1905.05702">Peters, Niculae &amp; Martins 2019</a> (sparse sequence
+    models — where entmax comes from);
+    <a href="0016-catboost.html">L016</a> (oblivious/symmetric trees);
+    <a href="0043-tabnet.html">L043</a> (sparsemax, the α = 2 endpoint of entmax; the same bar). Next:
+    <strong>L045 (TabTransformer)</strong> — training and pre-training the architecture you forward-ran in
+    L032.
+  </p>
+
+  <h2>Lab — build a differentiable oblivious tree, then race CatBoost</h2>
+  <div class="callout">
+    <strong>Notebook:</strong>
+    <a href="../labs/html/0044-node.html">view</a> ·
+    <a href="../labs/0044-node.ipynb">source .ipynb</a> ·
+    <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0044-node.ipynb">open in Colab</a>
+    — or browse all labs on the <a href="../notebooks.html">notebooks page</a>. You implement
+    <strong>entmax15</strong> (by bisection) and the <strong>oblivious tree forward pass</strong> (feature
+    choice → entmoid split → outer-product routing) from the paper's equations, validate them against the
+    reference <code>entmax</code> package, then run the NODE-vs-CatBoost-vs-baselines comparison and the cost
+    measurement. CPU, ~4–8&nbsp;min.
+  </div>
+  <ol>
+    <li><strong>Implement <code>entmax15</code></strong> by bisection on the threshold <code>τ</code>, and
+      check the properties that make it a feature <em>selector</em>: sums to 1, non-negative, contains
+      <em>exact</em> zeros, sits between softmax and sparsemax, and matches the reference to ~10⁻⁶.</li>
+    <li><strong>Implement the oblivious tree forward pass</strong> — the entmoid soft split and the
+      outer-product leaf routing — and verify the routing is a probability distribution over 2^d leaves and
+      that τ → 0 collapses it to a single hard leaf.</li>
+    <li><strong>Race CatBoost</strong>: NODE vs CatBoost (both oblivious ensembles) vs the L042 MLP/ResNet on
+      ≥3 tables, same frame, mean ranks + Friedman — and write the verdict, keeping "did not clear the bar"
+      separate from "significantly worse".</li>
+    <li><strong>Measure the cost</strong>: time NODE against CatBoost on one table and state the slowdown, so
+      your verdict weighs accuracy <em>and</em> compute.</li>
+  </ol>
+  <p>
+    <strong>Compute note.</strong> Small tables, CPU only; set <code>OMP_NUM_THREADS=1</code> to avoid thread
+    oversubscription. If you shrink the trial or seed count, shrink it <em>identically</em> for every model
+    and say so — a downscaled run is a different experiment, never a smaller version of the paper's.
+  </p>
+  <p>
+    Deliverable: your entmax15 property checks, the leaf-routing distribution check, the NODE-vs-CatBoost
+    rank table, the cost ratio, and one sentence — <em>when would you actually reach for a differentiable
+    tree over CatBoost?</em> Paste it to your teacher or say <em>"lab done."</em>
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your entmax15 checks, your rank table, and your cost ratio. We
+    will check that your entmax15 really produces exact zeros (not just small numbers), that you can explain
+    why the outer product gives a distribution over leaves, and that your verdict names the <em>one</em>
+    situation where NODE's differentiability is worth its cost.
+  </div>
+
+  <div class="ask-teacher">
+    Unclear how α interpolates softmax → entmax → sparsemax, why an oblivious tree is a <code>2^d</code>
+    lookup, or why differentiability is worthless on one flat table but essential for relational data? Ask
+    your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0043-tabnet.html">← Lesson 043</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../reference/glossary.html">Glossary</a></li>
+      <li><a href="../flashcards.html">Paper flashcards</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/node-tree-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 44, count: 3 });
+
+  NodeTreeViz.mount(document.getElementById("tree"), {});
+
+  Predict.mount(document.getElementById("predict-catboost"), {
+    prompt: "NODE and CatBoost are the SAME tree shape (oblivious/symmetric ensembles) — NODE just learns the splits by gradient descent instead of greedily. On four small real tables, same budget, who wins?",
+    options: [
+      { label: "NODE ranks LAST of four models and beats CatBoost on only 1 of 4 tables", value: "last" },
+      { label: "NODE clearly beats CatBoost — end-to-end learning finds better splits", value: "node" },
+      { label: "Exact tie: same tree shape means same accuracy", value: "tie" },
+      { label: "NODE wins on categorical tables, CatBoost on numeric ones", value: "split" }
+    ],
+    correct: "last",
+    reveal: "Last. Verified (labs/_verify_l044.py, 3 seeds, budget 4): mean ranks NODE 3.50, CatBoost 2.50, MLP 2.00, ResNet 2.00 (Friedman chi2 = 3.60, p = 0.308). NODE beats CatBoost on only blood_transfusion and is last outright on the two largest tables. On a single flat table, greedy split search is both better AND ~70x cheaper than learning the splits by backprop. p > 0.05 means we cannot call it 'significantly worse' — but under the baseline-first rule the expensive new model did not clear the bar. (The paper's win is at benchmark scale with far more trees and tuning; this small run is a demonstration of the method, not that reproduction.)"
+  });
+
+  Predict.mount(document.getElementById("predict-cost"), {
+    prompt: "On credit_g at depth 6, how does NODE's training time compare to the CatBoost it is imitating?",
+    options: [
+      { label: "NODE is ~70x slower (60 s vs 0.9 s) and scores slightly lower", value: "slow" },
+      { label: "About the same — both are oblivious tree ensembles", value: "same" },
+      { label: "NODE is faster because gradient descent is more efficient than greedy search", value: "fast" },
+      { label: "NODE is ~5x slower but scores clearly higher, justifying the cost", value: "worth" }
+    ],
+    correct: "slow",
+    reveal: "~70x slower. Verified: NODE (128 trees) 60.2 s vs CatBoost (400 symmetric trees) 0.9 s on CPU, and NODE actually scores lower here (0.793 vs 0.813). And that is before NODE's real hyper-parameters — thousands of trees, ideally a GPU — would push the cost higher. Differentiability is a real expense; on one flat table it buys nothing on the metric. It pays off only when the tree must compose with other learned modules."
+  });
+
+  Teachback.mount(document.getElementById("teachback-diff"), {
+    prompt: "In your own words: what three discrete operations does NODE make differentiable to turn an oblivious tree into a trainable neural layer, and when is that differentiability actually worth its ~70x cost?",
+    points: [
+      "Feature CHOICE: replace 'pick feature j' with f_hat = <x, entmax15(logits)> — a sparse distribution over columns that can put EXACT zeros on most features (entmax15 sits between dense softmax and sparsest sparsemax).",
+      "The SPLIT: replace the hard comparison 1[f_hat > b] with c = entmoid((f_hat - b)/tau), the two-class entmax; it saturates to exact 0/1 for large gaps (a real decision) but is smooth, so a gradient flows. tau is the softness knob.",
+      "ROUTING: replace 'go to one leaf' with the OUTER PRODUCT over levels of [c, 1-c], giving a weight to all 2^d leaves that sums to 1; the output is the weighted average of leaf responses. All parameters now sit in differentiable ops.",
+      "On a single flat table the payoff is negative: CatBoost's greedy oblivious trees rank ABOVE NODE and cost ~70x less. Differentiability is not for accuracy on one table.",
+      "It matters when the tree must COMPOSE: train jointly with learned embeddings/encoders, stack DenseNet-style so later trees split on earlier trees' decisions, or sit inside an end-to-end multi-modal model — none of which a greedy GBDT can do. That is exactly the relational setting."
+    ],
+    model: "NODE softens the three discrete steps of an oblivious decision tree so the whole ensemble becomes an ordinary differentiable network. First the feature CHOICE: instead of hard-picking a column, each level computes f_hat = <x, choice> where choice = entmax15(logits) is a learned, sparse distribution over features — entmax15 is the alpha=1.5 member of a family running from dense softmax (alpha->1) to sparsest sparsemax (alpha=2), so it yields real zeros (a genuine selection) while staying smooth on the survivors. Second the SPLIT: the hard test f_hat > b becomes c = entmoid((f_hat - b)/tau), the two-class entmax, which saturates to an exact 0 or 1 for a decisive gap but reaches it smoothly so gradients flow; the temperature tau tunes how hard the split is. Third the ROUTING: because the tree is oblivious, a leaf's weight is the product over levels of c or 1-c, so the outer product of the per-level [c, 1-c] gives all 2^d leaf weights at once, summing to 1, and the tree outputs their weighted average of the leaf responses. Now every parameter is inside differentiable ops, so hundreds of these trees train by backprop and stack DenseNet-style into deep layers. The catch is cost versus payoff: on a single flat table this buys nothing — our from-scratch NODE ranks last behind the very CatBoost it generalises and trains ~70x slower. Differentiability earns its keep only when the tree must be a COMPONENT of a larger learned system: co-trained with embeddings or encoders, stacked so later trees split on earlier decisions, or embedded in an end-to-end multi-modal pipeline. That is the relational setting, where the signal spans joined tables and the whole pipeline has to be learned together — which is why NODE is the clean toy proof of when a differentiable tree is worth it and when it is not."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "What is an 'oblivious' (symmetric) decision tree, and why does NODE build on it?",
+    options: [
+      { label: "It uses the same (feature, threshold) at every node of a level, so a depth-d tree is a 2^d lookup — a regular structure that can be written as a smooth, differentiable function", value: "a" },
+      { label: "It ignores the target variable and splits purely on feature variance", value: "b" },
+      { label: "It forgets earlier splits, so each leaf depends on only one feature", value: "c" },
+      { label: "It is a tree pruned to a single path, used to save memory", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). An oblivious tree fixes one (feature, threshold) per level (CatBoost's symmetric tree, L016), so a row's path is d yes/no answers and the tree is a 2^d response table. That regularity is exactly what lets NODE replace each discrete step with a differentiable one. It still uses the target to fit thresholds and responses (b), each leaf depends on all d level-features not one (c), and it keeps all 2^d leaves (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "entmax15 (alpha = 1.5) is used for NODE's feature choice. How does it relate to softmax and sparsemax?",
+    options: [
+      { label: "It is the middle of a family: softmax (alpha->1, dense) — entmax15 (alpha=1.5, some exact zeros) — sparsemax (alpha=2, sparsest)", value: "a" },
+      { label: "It is a faster approximation of softmax with identical outputs", value: "b" },
+      { label: "It is sparsemax with a temperature added, and produces no zeros", value: "c" },
+      { label: "It is unrelated to softmax; it is a hard argmax made differentiable", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). All three maximise <p,z> + Tsallis entropy H_alpha and share the shape p = [(alpha-1)z - tau]_+^(1/(alpha-1)); alpha interpolates from dense softmax to sparsest sparsemax, and 1.5 is the sparse-but-gentle middle NODE prefers. On z=[2,1.5,.5,0,-1] softmax has 0 zeros, entmax15 has 2, sparsemax has 3 — so (b)/(c) are wrong (its outputs differ from softmax and it DOES produce zeros), and it is a smooth simplex map, not a hardened argmax (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "In a soft oblivious tree, how does one row reach all 2^d leaves, and what guarantees the leaf weights form a distribution?",
+    options: [
+      { label: "Each level gives P(go right) = c; the outer product over levels of [c, 1-c] gives the 2^d leaf weights, which sum to 1 by construction", value: "a" },
+      { label: "The row is sent to the single argmax leaf, and the other weights are set to zero", value: "b" },
+      { label: "Each leaf weight is c summed (not multiplied) across levels, then normalised by softmax", value: "c" },
+      { label: "The weights are the raw entmax logits, which happen to sum to 1", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Because the tree is oblivious, a leaf's weight is the PRODUCT over levels of the per-level choice (c for right, 1-c for left); stacking [c,1-c] and taking the outer product yields all 2^d weights at once, and since each [c,1-c] sums to 1 the product distribution does too. Sending to one leaf (b) is the hard tree, not the soft one; the routing is a product not a sum (c); and the weights come from the entmoid splits, not the feature-choice logits (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz4"), {
+    question: "NODE and CatBoost are both oblivious tree ensembles. On four small tables NODE ranks last (3.50) and trains ~70x slower. What is the disciplined verdict?",
+    options: [
+      { label: "On flat tables the expensive differentiable tree did not clear the baseline-first bar — though p = 0.308 means we cannot call it 'significantly worse'", value: "a" },
+      { label: "NODE is proven significantly worse than CatBoost and should never be used", value: "b" },
+      { label: "The result refutes the NODE paper, which must have been wrong", value: "c" },
+      { label: "It is a tie, so the extra compute is justified by future-proofing", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Keep the two claims apart: p = 0.308 forbids 'significantly worse' (b), but the burden of proof is on the new, costly model and it ranked last, so it did not clear the bar. It does not refute the paper (c): NODE's win is at benchmark scale with thousands of trees and heavy tuning, while this is a small-scale demonstration — different experiment (honesty rule #20). And ranking last at 70x the cost is not a 'tie' that future-proofing excuses (d); the future-proofing argument is about composition, made honestly elsewhere."
+  });
+
+  Quiz.mount(document.getElementById("quiz5"), {
+    question: "Given that CatBoost beats NODE cheaply on flat tables, when is making a tree differentiable actually worth it?",
+    options: [
+      { label: "When the tree must COMPOSE with other learned modules — joint training with encoders/embeddings, DenseNet-style stacking, or end-to-end multi-modal pipelines", value: "a" },
+      { label: "Whenever the dataset is large, since gradient descent always beats greedy search at scale", value: "b" },
+      { label: "Only for categorical features, which greedy trees handle poorly", value: "c" },
+      { label: "Never — differentiable trees have no use case over GBDTs", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). A GBDT's greedy splits are not differentiable, so it cannot be a layer inside a bigger model, cannot co-learn embeddings, and cannot stack hierarchically. NODE can do all three — which is worthless on one flat table (CatBoost wins cheaply) but essential when the tabular signal must be learned jointly with other components, e.g. relational data across joined tables. It is not simply a scale effect (b) — CatBoost handles large data too — nor a categorical trick (c: CatBoost is excellent on categoricals), and 'never' (d) ignores the composition case."
+  });
+</script>
+</body>
+</html>

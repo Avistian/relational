@@ -915,6 +915,42 @@
       ],
       correct: "a",
       explain: "Two separate statements. (1) STATISTICS: p = 0.127 on 4 datasets means you cannot distinguish these models on this sample — so 'significantly worse' (c) is unlicensed, and so is 'equivalent' (d), because failing to reject is not evidence of equality (L023). (2) BURDEN OF PROOF: the baseline-first rule (L042) puts the burden on the NEW model. Ranking behind the baselines it was designed to beat means it did not clear the bar — that is a claim about *unmet burden*, not about significance, which is why the bar is still testable when p is large (b)."
+    },
+    {
+      id: "l044-entmax", lesson: 44, quarter: "Y2Q1", concept: "entmax-family",
+      question: "NODE selects a tree level's feature with entmax15 (α = 1.5). Where does it sit relative to softmax and sparsemax?",
+      options: [
+        { label: "In the MIDDLE — sparser than softmax (real zeros) but gentler than sparsemax (fewer zeros, smoother gradient)", value: "a" },
+        { label: "It is identical to softmax but faster to compute on tabular data", value: "b" },
+        { label: "It is sparser than sparsemax — α = 1.5 produces the most zeros of the three", value: "c" },
+        { label: "It is a hardened argmax, so it always selects exactly one feature", value: "d" }
+      ],
+      correct: "a",
+      explain: "α-entmax is one family maximising ⟨p,z⟩ + Tsallis entropy H_α, with the shape p = [(α−1)z − τ]_+^(1/(α−1)). α → 1 is softmax (dense, no zeros), α = 2 is sparsemax (sparsest, L043), and α = 1.5 is the middle: on z = [2, 1.5, .5, 0, −1] softmax has 0 zeros, entmax15 has 2, sparsemax has 3. So it is NOT the sparsest (c) and NOT dense like softmax (b); it produces real zeros (a genuine selection) while keeping a smoother gradient than sparsemax, which is why NODE prefers it. It is a smooth simplex map, not a hard argmax (d)."
+    },
+    {
+      id: "l044-oblivious-routing", lesson: 44, quarter: "Y2Q1", concept: "oblivious-tree-routing",
+      question: "In a differentiable oblivious tree, how does one row reach all 2^d leaves, and why do the weights form a distribution?",
+      options: [
+        { label: "Each level gives P(right) = c via entmoid; the OUTER PRODUCT over levels of [c, 1−c] gives 2^d leaf weights that sum to 1", value: "a" },
+        { label: "The row goes to the single argmax leaf; the other 2^d − 1 weights are set to zero", value: "b" },
+        { label: "Each leaf weight is c SUMMED across levels, then softmax-normalised", value: "c" },
+        { label: "The leaf weights are the entmax feature-choice logits, which already sum to 1", value: "d" }
+      ],
+      correct: "a",
+      explain: "Because the tree is OBLIVIOUS (one shared feature+threshold per level, L016), a leaf's weight is the PRODUCT over levels of its per-level choice (c for right, 1−c for left). Stacking [c, 1−c] and taking the outer product yields all 2^d weights at once, and since each [c, 1−c] sums to 1 the product distribution does too — every leaf gets a fraction, so the tree output is a smooth weighted average of leaf responses and the whole thing is differentiable. Sending to one leaf (b) is the HARD tree (what τ → 0 recovers); routing is a product not a sum (c); and the weights come from the entmoid splits, not the feature-choice logits (d)."
+    },
+    {
+      id: "l044-diff-cost", lesson: 44, quarter: "Y2Q1", concept: "differentiability-value", misconception: true,
+      question: "NODE and CatBoost are the SAME tree shape; NODE just learns the splits by gradient descent. When is that differentiability worth its ~70× cost?",
+      options: [
+        { label: "When the tree must COMPOSE with other learned modules — joint embeddings, DenseNet stacking, end-to-end multi-modal", value: "a" },
+        { label: "Always at scale — gradient descent beats greedy split search once the dataset is large enough", value: "b" },
+        { label: "On a single flat table, because learned splits are strictly better than greedy ones", value: "c" },
+        { label: "For categorical features, which greedy trees like CatBoost handle poorly", value: "d" }
+      ],
+      correct: "a",
+      explain: "Verified (L044, labs/_verify_l044.py): on 4 small tables NODE ranks LAST (mean rank 3.50 vs CatBoost 2.50, MLP 2.00, ResNet 2.00) and trains ~70× slower than CatBoost (60 s vs 0.9 s). So on a single flat table differentiability buys nothing (c is false) and it is not simply a scale effect (b — CatBoost handles large data too, cheaply), nor a categorical trick (d — CatBoost is excellent on categoricals). Its value is COMPOSITION: a GBDT's greedy splits have no gradient, so it can never co-learn embeddings, stack DenseNet-style so later trees split on earlier decisions, or sit inside an end-to-end multi-modal model. That is exactly the relational setting the thesis cares about."
     }
   ];
 })(window);
