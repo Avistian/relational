@@ -47,6 +47,34 @@ Open the lesson in a browser (`file://` or local server). Run this for **every v
 
 Use `browser-testing-with-devtools` skill if available.
 
+### How to actually run the browser pass (no workspace dependency)
+
+"Browser MCP unavailable" is **not** a reason to skip this — it downgraded the check to an aspiration for
+~22 lessons (L021–L042). This machine has `/usr/local/bin/google-chrome`; drive it with puppeteer-core
+installed **outside the repo** so the workspace keeps its zero-dependency, no-`package.json` posture:
+
+```bash
+mkdir -p /tmp/pptr && cd /tmp/pptr && npm install puppeteer-core
+# then a throwaway script that loads file:///workspace/lessons/NNNN-*.html
+```
+
+The script should: fail on any `console` error / `pageerror` / `requestfailed`; re-mount each widget so it
+holds the returned api; drive **every** stage, preset and slider extreme through that api; assert the SVG
+painted (non-trivial height, a plausible label count, a non-empty readout) and that no label renders
+outside the svg box; and screenshot each state at **900 px and 375 px**. Then *look at the screenshots* —
+that is the part that finds the real bugs. L043's pass caught an SVG **z-order bug** (edge labels are
+painted before boxes, so a label on a box edge disappears behind it), two label collisions, and a bar
+scale that used a third of its vertical space in the default state. None are visible to a fake-DOM check.
+
+### Assert the geometry, don't eyeball it twice
+
+Hand-written SVG coordinates rot silently under later edits. In `labs/_viz_check_lNNN.js`, add for every
+hand-laid-out diagram: **every filled box and every label inside the viewBox**, and **no two boxes
+overlapping** (strict inequalities, so boxes that merely touch pass). Also assert exact arithmetic for any
+operator the widget teaches, and that public setters **clamp** when the drawing uses a fixed pixel scale.
+Reference implementation: `labs/_viz_check_l043.js` (`geometry()`), whose fake DOM also implements
+`firstChild`/`removeChild` so redraws really clear instead of accumulating children.
+
 ## Retrofit priority (Q1 gaps)
 
 - L002 — join / PIT leakage (`leakage-viz.js`)
