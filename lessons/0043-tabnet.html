@@ -41,6 +41,55 @@
     .tnm-mono { font-family: var(--font-mono); font-size: 0.8rem; }
     .tnm-note { color: var(--muted); font-size: 0.83rem; }
     .tnm-caption { font-size: 0.8rem; color: var(--muted); margin: 0.5rem 0.2rem 0; line-height: 1.5; }
+
+    /* tabnet-arch-viz (.tna-) · sparsemax-viz (.spx-) · tabnet-fblock-viz (.tnf-) */
+    .tna-viz, .spx-viz, .tnf-viz {
+      margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border);
+      border-radius: 6px; background: var(--bg-soft); }
+    .tna-ctl, .spx-ctl, .tnf-ctl {
+      display: flex; gap: 0.4rem; margin-bottom: 0.7rem; flex-wrap: wrap; align-items: center; }
+    .tna-ctl button, .spx-ctl button, .tnf-ctl button {
+      font-family: var(--font-sans); font-size: 0.78rem; padding: 0.28rem 0.62rem;
+      border: 1px solid var(--border); border-radius: 5px; background: #fff;
+      color: var(--fg, #222); cursor: pointer; }
+    .tna-ctl button.tna-on, .spx-ctl button.spx-on, .tnf-ctl button.tnf-on {
+      background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .tna-scroll, .spx-scroll, .tnf-scroll { overflow-x: auto; }
+    .tna-svg, .tnf-svg { display: block; width: 100%; min-width: 520px; }
+    .spx-svg { display: block; width: 100%; min-width: 420px; }
+    .tna-head, .tnf-head { font-family: var(--font-sans); font-size: 9.5px; font-weight: 600; }
+    .tna-sub, .tnf-sub { font-family: var(--font-sans); font-size: 8.5px; }
+    .tna-lane, .tnf-lane { font-family: var(--font-sans); font-size: 8px; letter-spacing: 0.05em; fill: var(--muted); }
+    .tnf-lane-on { fill: var(--fg, #222); font-weight: 600; }
+    .tna-edge { font-family: var(--font-mono); font-size: 8.5px; fill: var(--muted); }
+    .tna-edge-on { fill: var(--fg, #222); font-weight: 700; }
+    .tnf-plus { font-family: var(--font-sans); font-size: 12px; font-weight: 700; }
+    .tnf-scale { font-family: var(--font-mono); font-size: 7.5px; fill: var(--muted); }
+    .tnf-scale-on { fill: #b9770e; font-weight: 700; }
+    .tnf-note-svg { font-family: var(--font-sans); font-size: 7.5px; fill: var(--muted); }
+    .spx-feat { font-family: var(--font-sans); font-size: 8px; fill: var(--muted); }
+    .spx-feat-on { fill: var(--fg, #222); font-weight: 700; }
+    .spx-rowlab { font-family: var(--font-mono); font-size: 8.5px; fill: var(--fg, #222); }
+    .spx-tau { font-family: var(--font-mono); font-size: 8.5px; fill: #b03a2e; font-weight: 700; }
+    .spx-val { font-family: var(--font-mono); font-size: 7.5px; fill: var(--muted); }
+    .spx-cell { font-family: var(--font-mono); font-size: 8.5px; fill: var(--fg, #222); }
+    .spx-cell-on { fill: #fff; font-weight: 700; }
+    .spx-axis { font-family: var(--font-sans); font-size: 8px; fill: var(--muted); }
+    .spx-lab { font-family: var(--font-mono); font-size: 0.8rem; margin-left: 0.3rem; }
+    .spx-slider { width: 130px; }
+    .tna-readout, .spx-readout, .tnf-readout {
+      font-size: 0.86rem; margin: 0.75rem 0.2rem 0; line-height: 1.6; }
+    .tna-readout p, .spx-readout p, .tnf-readout p { margin: 0.45rem 0; }
+    .tna-readout, .tnf-readout { min-height: 9rem; }
+    .spx-readout { min-height: 11rem; }
+    .tna-m, .spx-m, .tnf-m { font-family: var(--font-mono); font-size: 0.82rem; }
+    .tna-eq, .tnf-eq {
+      display: block; font-family: var(--font-mono); font-size: 0.85rem; background: #fff;
+      border: 1px solid var(--border); border-radius: 5px; padding: 0.45rem 0.6rem;
+      margin: 0.5rem 0; overflow-x: auto; }
+    .spx-note { color: var(--muted); }
+    .tna-caption, .spx-caption, .tnf-caption {
+      font-size: 0.8rem; color: var(--muted); margin: 0.6rem 0.2rem 0; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -113,10 +162,30 @@
     look at basket size, for wholesale look at contract terms."
   </div>
 
+  <h2>The whole encoder, before any equations</h2>
+  <p>
+    The next five subsections define TabNet's parts one at a time, and each arrives with a formula. Those
+    formulas are much easier to read if you already know <em>where in the network</em> each one lives, so
+    here is the map first: the paper's Fig. 4a, with one decision step drawn and the equations attached to
+    the blocks that compute them. Every symbol you are about to meet — <code>f</code>, <code>a[i]</code>,
+    <code>M[i]</code>, <code>P[i]</code>, <code>d[i]</code>, <code>d_out</code>, <code>M_agg</code> — is a
+    labelled box or edge in this diagram. Walk the six stages in order before reading on, and come back to
+    it whenever a formula below feels unmoored.
+  </p>
+  <div id="arch"></div>
+  <p class="fig-caption">
+    A redrawing of the paper's Fig. 4a, checked line by line against the from-scratch implementation the
+    lesson's numbers come from (<code>labs/relkit/tabnet.py</code>, <code>TabNetEncoder.forward</code>).
+    Only one decision step is drawn: the two edges that return to the attentive transformer —
+    <code>a[i]</code> and the prior scale <code>P[i]</code> — are the loop, and they are the difference
+    between <em>sparse</em> attention and <em>sequential</em> attention. The mask viz further down then
+    unrolls that loop across three steps.
+  </p>
+
   <h2>The mechanism, piece by piece</h2>
   <p>
-    Four components. We define each one fully, including the pieces you have not met yet, and then the
-    visualization below lets you drive the whole thing.
+    Five components, each a box in the diagram above. We define each one fully, including the pieces you
+    have not met yet.
   </p>
 
   <h3>1. sparsemax — the reason the mask can contain real zeros</h3>
@@ -140,6 +209,22 @@ sparsemax(z)ᵢ = max(zᵢ − τ(z), 0)</span>
     the threshold are switched <strong>off</strong>, not merely made small.
   </div>
   <p>
+    Those four lines are much easier to believe as a picture. Draw the logits as bars and <code>τ</code> as
+    a water line: sparsemax keeps exactly the parts that poke above it. Drag the spread and watch two things
+    the algebra hides — the total shaded area <em>never changes</em> (that is precisely what solving for
+    <code>τ</code> guarantees), and the number of survivors is decided by how <em>separated</em> the logits
+    are, not by any threshold anyone sets.
+  </p>
+  <div id="sparsemax"></div>
+  <p class="fig-caption">
+    One line of the paper, drawn. The two extremes are the ones to sit with. At <strong>flat</strong>,
+    <code>τ</code> goes negative, every feature survives, and sparsemax has quietly become a dense mask —
+    sparsity is a property of the <em>logits</em>, not a promise of the operator. At <strong>peaked</strong>,
+    one feature's lead exceeds the mask's entire budget of 1 and everything else is crushed to exactly zero.
+    Softmax, on the same logits at every setting, never reaches zero. The mask-entropy figure in the readout
+    is the quantity <code>L_sparse</code> penalises (§4 below).
+  </p>
+  <p>
     Two consequences worth holding onto. First, the mask still sums to 1 across features, so it behaves
     like an attention distribution — the model is <em>allocating</em> a fixed budget of attention, not
     scaling features freely. Second, gradients flow only through the surviving coordinates, so an
@@ -157,6 +242,15 @@ sparsemax(z)ᵢ = max(zᵢ − τ(z), 0)</span>
     <code>P[i−1]</code> is the prior scale defined next. <code>M[i]</code> has one weight per input
     feature; the step then processes the masked row <code>M[i] · f</code>.
   </p>
+  <div class="defbox">
+    <strong class="term">Where <code>a[0]</code> comes from.</strong> The formula reads the
+    <em>previous</em> step's representation, which leaves step 1 with nothing to read. The paper's Fig. 4a
+    answers this and the equations do not: before any masking happens, TabNet runs one extra feature
+    transformer over the <strong>unmasked</strong> features and keeps the <code>a</code> half of its output
+    as <code>a[0]</code> — the seed for the first mask. The <code>d</code> half of that step-0 output is
+    discarded; it never reaches the prediction. It is the top row of the diagram above, and it is the piece
+    people most often leave out when reimplementing TabNet from the equations alone.
+  </div>
 
   <h3>3. The prior scale — what makes the attention <em>sequential</em></h3>
   <p>
@@ -216,6 +310,18 @@ sparsemax(z)ᵢ = max(zᵢ − τ(z), 0)</span>
     TensorFlow-style <em>decay</em>, so a PyTorch implementation must pass <code>1 − m_B</code>.
   </div>
   <p>
+    Those four definitions — the gate, the sharing, the rescaled residual, the ghost batch norm — are all
+    one block, and it is far easier to hold as a picture than as a list. This is the paper's Fig. 4c, with
+    an inset that opens a single layer:
+  </p>
+  <div id="fblock"></div>
+  <p class="fig-caption">
+    Checked against <code>FeatureTransformer.forward</code> in <code>labs/relkit/tabnet.py</code>. Note the
+    asymmetry the diagram makes obvious and the prose does not: the <em>first</em> layer is the only one
+    without a residual, because it is the only one that changes the width
+    (<code>D → N_d + N_a</code>) — there is nothing of matching size to add it to.
+  </p>
+  <p>
     Each step splits its transformer output in two: <code>d[i]</code> (width <code>N_d</code>) contributes
     to the prediction, and <code>a[i]</code> (width <code>N_a</code>) is what the next step's attention
     reads. The contributions are aggregated tree-style and mapped to the output:
@@ -224,8 +330,10 @@ sparsemax(z)ᵢ = max(zᵢ − τ(z), 0)</span>
 
   <h2>Drive it: sequential attention on one row</h2>
   <p>
-    Step through the decision steps and watch the prior do its work. Then drag <code>γ</code> down to 1.0
-    and see a spent feature get banned outright.
+    The architecture diagram drew a single step and left the repetition to a dashed frame. Here that loop is
+    unrolled across three steps on one row, so you can see the thing the loop exists for: the steps dividing
+    the features between them. Step through them and watch the prior do its work. Then drag <code>γ</code>
+    down to 1.0 and see a spent feature get banned outright.
   </p>
   <div id="masks"></div>
   <p class="fig-caption">
@@ -577,6 +685,9 @@ sparsemax(z)ᵢ = max(zᵢ − τ(z), 0)</span>
 </article>
 
 <script src="../assets/quiz.js"></script>
+<script src="../assets/tabnet-arch-viz.js"></script>
+<script src="../assets/sparsemax-viz.js"></script>
+<script src="../assets/tabnet-fblock-viz.js"></script>
 <script src="../assets/tabnet-mask-viz.js"></script>
 <script src="../assets/retrieval-pool.js"></script>
 <script src="../assets/retrieval-bank.js"></script>
@@ -585,6 +696,9 @@ sparsemax(z)ᵢ = max(zᵢ − τ(z), 0)</span>
 <script>
   RetrievalBank.mount(document.getElementById("warmup"), { upTo: 43, count: 3 });
 
+  TabnetArchViz.mount(document.getElementById("arch"), {});
+  SparsemaxViz.mount(document.getElementById("sparsemax"), {});
+  TabnetFblockViz.mount(document.getElementById("fblock"), {});
   TabnetMaskViz.mount(document.getElementById("masks"), {});
 
   Predict.mount(document.getElementById("predict-syn4"), {
