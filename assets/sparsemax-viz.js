@@ -25,7 +25,7 @@
  * Expected states (D = 8 features):
  *   - default (spread 1.0x): k = 4 survive, 4 exact zeros, tau ~ 0.54
  *   - "flat" (0.2x):   k = 8 — nothing is switched off, and tau goes NEGATIVE (line below the baseline)
- *   - "peaked" (3.0x): k = 2 — six exact zeros
+ *   - "peaked" (2.0x): k = 2 — six exact zeros
  *   - every spread: the sparsemax row sums to 1, the softmax row sums to 1, and softmax has NO zeros
  *   - sparsemax entropy < softmax entropy at every spread (this is what L_sparse penalises)
  *
@@ -36,7 +36,7 @@
   "use strict";
 
   var SVGNS = "http://www.w3.org/2000/svg";
-  var W = 520, H = 244;
+  var W = 520, H = 234;
   var PL = 98, PR = 508;
 
   // One illustrative row of attention logits, in feature order (names shared with tabnet-mask-viz so
@@ -45,8 +45,9 @@
   var LOGITS = [0.9, 1.0, 0.35, 0.7, 0.15, 0.0, 0.55, 0.25];
   var D = FEATURES.length;
 
-  var BASE = 118;          // the zero line for the logit bars
-  var PXU = 28;            // pixels per logit unit — FIXED, so dragging the slider really moves the bars
+  var BASE = 104;          // the zero line for the logit bars
+  var PXU = 40;            // pixels per logit unit — FIXED, so dragging the slider really moves the bars
+  var SPREAD_MAX = 2;      // max bar = LOGITS max (1.0) * SPREAD_MAX * PXU = 80px, the headroom above BASE
   var EPS = 1e-15;
 
   /** Euclidean projection onto the simplex, with the threshold and support size exposed. */
@@ -105,7 +106,7 @@
 
     var ctl = document.createElement("div");
     ctl.className = "spx-ctl";
-    var presets = [["flat", 0.2], ["default", 1.0], ["peaked", 3.0]];
+    var presets = [["flat", 0.2], ["default", 1.0], ["peaked", SPREAD_MAX]];
     var pbtn = {};
     presets.forEach(function (p) {
       var b = document.createElement("button");
@@ -117,7 +118,7 @@
     var lab = document.createElement("span");
     lab.className = "spx-lab";
     var slider = document.createElement("input");
-    slider.type = "range"; slider.min = "0.2"; slider.max = "3"; slider.step = "0.05";
+    slider.type = "range"; slider.min = "0.2"; slider.max = String(SPREAD_MAX); slider.step = "0.05";
     slider.value = String(spread); slider.className = "spx-slider";
     slider.addEventListener("input", function () { spread = parseFloat(slider.value); draw(); });
     ctl.appendChild(lab);
@@ -186,7 +187,7 @@
       // baseline
       svg.appendChild(el("line", { x1: PL - 4, y1: BASE, x2: PR, y2: BASE,
         stroke: "var(--border)", "stroke-width": 1 }));
-      svg.appendChild(el("text", { x: PL - 8, y: BASE + 4, "text-anchor": "end",
+      svg.appendChild(el("text", { x: PL - 8, y: BASE - 6, "text-anchor": "end",
         class: "spx-rowlab" }, "logits z"));
 
       // the bars: grey below tau, green above it (the part sparsemax keeps)
@@ -200,7 +201,8 @@
           svg.appendChild(el("rect", { x: x, y: top, width: w, height: cut - top,
             fill: "#1e6b3c", opacity: 0.85, rx: 1.5 }));
         }
-        svg.appendChild(el("text", { x: x + w / 2, y: top - 3, "text-anchor": "middle",
+        // values on a fixed row below the baseline: above the bar they collide with the tau line
+        svg.appendChild(el("text", { x: x + w / 2, y: BASE + 12, "text-anchor": "middle",
           class: "spx-val" }, fmt(st.z[j])));
       }
 
@@ -210,15 +212,15 @@
       svg.appendChild(el("text", { x: PL - 8, y: tauY + 3.5, "text-anchor": "end",
         class: "spx-tau" }, "τ = " + st.tau.toFixed(3)));
 
-      svg.appendChild(el("text", { x: (PL + PR) / 2, y: 140, "text-anchor": "middle",
+      svg.appendChild(el("text", { x: (PL + PR) / 2, y: 131, "text-anchor": "middle",
         class: "spx-axis" },
         "green = the part above τ · the green areas always total exactly 1"));
 
-      strip(152, st.mask, "#1e6b3c", "sparsemax(z)", 0.5);
-      strip(196, st.soft, "#2e6fb0", "softmax(z)", 0.5);
-      svg.appendChild(el("text", { x: PR, y: 186, "text-anchor": "end", class: "spx-axis" },
+      strip(142, st.mask, "#1e6b3c", "sparsemax(z)", 0.5);
+      strip(190, st.soft, "#2e6fb0", "softmax(z)", 0.5);
+      svg.appendChild(el("text", { x: PR, y: 177, "text-anchor": "end", class: "spx-axis" },
         st.zeros + " exact zeros — those features are switched OFF"));
-      svg.appendChild(el("text", { x: PR, y: 230, "text-anchor": "end", class: "spx-axis" },
+      svg.appendChild(el("text", { x: PR, y: 225, "text-anchor": "end", class: "spx-axis" },
         "no zeros, ever — smallest weight " + st.softMin.toFixed(3)));
 
       var html = "<p><strong>k(z) = " + st.k + "</strong> of " + D + " features clear the threshold, so " +
@@ -252,7 +254,13 @@
       readout.innerHTML = html;
     }
 
-    function setSpread(s) { spread = s; slider.value = String(s); draw(); }
+    // clamped: the bar heights are on a fixed pixel scale, so a spread past the slider's range would
+    // draw off the top of the canvas
+    function setSpread(s) {
+      spread = Math.min(Math.max(s, 0.2), SPREAD_MAX);
+      slider.value = String(spread);
+      draw();
+    }
 
     draw();
     return {

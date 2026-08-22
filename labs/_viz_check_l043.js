@@ -201,7 +201,7 @@ const atext = texts(ac);
 ["f", "a[0]", "a[i]", "M[i]", "P[i−1]", "d[i]"].forEach((e) =>
   check("TNA: edge labelled " + e, atext.includes(e)));
 check("TNA: the step is marked as repeating N_steps times",
-  atext.some((t) => /REPEATS N_steps TIMES/.test(t)));
+  atext.some((t) => /REPEATS × N_steps/.test(t)));
 
 check("TNA: default readout summarises the whole encoder", /whole encoder/i.test(aread.innerHTML));
 aapi.setStage("seed");
@@ -263,7 +263,7 @@ check("SPX: flat mask still sums to 1", near(sum(sst.mask), 1, 1e-9));
 check("SPX: flat readout says sparsity is a property of the logits",
   /negative/i.test(sread.innerHTML) && /separated/i.test(sread.innerHTML));
 
-sapi.setSpread(3.0);
+sapi.setSpread(2.0);
 sst = sapi.state();
 check("SPX: peaked logits -> 2 survivors, 6 zeros", sst.k === 2 && sst.zeros === 6);
 check("SPX: peaked mask still sums to 1", near(sum(sst.mask), 1, 1e-9));
@@ -277,7 +277,7 @@ check("SPX: readout notes both operators are shift-invariant",
 
 // monotonicity: more separated logits can only ever mean fewer survivors
 let prevK = 9;
-for (let s = 0.2; s <= 3.0001; s += 0.1) {
+for (let s = 0.2; s <= 2.0001; s += 0.1) {
   sapi.setSpread(s);
   const k = sapi.state().k;
   if (k > prevK) { prevK = -1; break; }
@@ -285,10 +285,22 @@ for (let s = 0.2; s <= 3.0001; s += 0.1) {
 }
 check("SPX: survivor count is non-increasing as the logits separate", prevK !== -1);
 
+// the bars are on a fixed pixel scale, so an out-of-range spread must be clamped, not drawn off-canvas
+sapi.setSpread(99);
+check("SPX: a spread above the range is clamped", near(sapi.getSpread(), 2.0, 1e-9));
+sapi.setSpread(0);
+check("SPX: a spread below the range is clamped", near(sapi.getSpread(), 0.2, 1e-9));
+
 const sbtns = walk(sc, (x) => x.tag === "button", []);
 check("SPX: three preset buttons", sbtns.length === 3);
 sbtns[0].click();
 check("SPX: the 'flat' preset sets spread 0.2", near(sapi.getSpread(), 0.2, 1e-9));
+
+// geometry at BOTH extremes: the fixed bar scale must fit the canvas at max spread too
+sapi.setSpread(2.0);
+const sc2 = bind(makeEl("div"));
+SPX.mount(sc2, {}).setSpread(2.0);
+geometry("SPX at max spread", sc2);
 
 // --------------------------------------------------- tabnet-fblock-viz (paper Fig. 4c)
 load("tabnet-fblock-viz.js");

@@ -89,14 +89,15 @@
       pts: [[180, 68], [180, 74], [56, 74], [56, 218], [72, 218]] },
 
     // a[i-1]: from the step-0 split at the first step, from the previous step's split after that
-    { from: "split0", to: "att",    head: false, label: "a[0]", labelAt: [431, 80, "start"],
-      pts: [[425, 68], [425, 86]] },
-    { from: "split",  to: "att",    label: "a[i]", labelAt: [656, 100, "end"],
-      pts: [[516, 218], [662, 218], [662, 86], [140, 86], [140, 106]] },
+    { from: "split0", to: "att",    head: false, label: "a[0]", labelAt: [419, 78, "end"],
+      pts: [[425, 68], [425, 80]] },
+    { from: "split",  to: "att",    label: "a[i]", labelAt: [656, 74, "end"],
+      pts: [[516, 218], [662, 218], [662, 80], [140, 80], [140, 106]] },
 
     { from: "att",    to: "prior",  label: "M[i]", labelAt: [362, 131, "middle"],
       pts: [[286, 137], [436, 137]] },
-    { from: "prior",  to: "att",    label: "P[i−1]", labelAt: [258, 118, "start"],
+    // the label sits under the run it names: on the box edge it would be painted over by the box
+    { from: "prior",  to: "att",    label: "P[i−1]", labelAt: [330, 112, "middle"],
       pts: [[545, 110], [545, 100], [250, 100], [250, 106]] },
 
     { from: "att",    to: "mask",   label: "M[i]", labelAt: [141, 182, "start"],
@@ -258,8 +259,10 @@
       // the decision step repeats: draw the frame first, behind everything
       svg.appendChild(el("rect", { x: 64, y: 92, width: 592, height: 160, rx: 10,
         fill: "none", stroke: "var(--border)", "stroke-width": 1, "stroke-dasharray": "5,4" }));
-      svg.appendChild(el("text", { x: 656, y: 86, "text-anchor": "end", class: "tna-lane" },
-        "ONE DECISION STEP i — REPEATS N_steps TIMES (PAPER: 3–10)"));
+      svg.appendChild(el("text", { x: 650, y: 236, "text-anchor": "end", class: "tna-lane" },
+        "ONE DECISION STEP i"));
+      svg.appendChild(el("text", { x: 650, y: 248, "text-anchor": "end", class: "tna-lane" },
+        "REPEATS × N_steps (PAPER: 3–10)"));
       svg.appendChild(el("text", { x: 12, y: 18, class: "tna-lane" },
         "INPUT, AND THE SEED FOR THE FIRST MASK"));
       svg.appendChild(el("text", { x: 12, y: 292, class: "tna-lane" }, "OUTPUTS"));

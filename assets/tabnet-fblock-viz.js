@@ -212,8 +212,8 @@
       svg.appendChild(defs);
 
       // group frames: shared vs step-dependent
-      [[86, 192, "2 SHARED LAYERS — ONE SET OF WEIGHTS FOR EVERY STEP", ["b1", "b2"]],
-       [308, 250, "2 STEP-DEPENDENT LAYERS — THIS STEP'S OWN", ["b3", "b4"]]].forEach(function (fr) {
+      [[86, 192, "SHARED — SAME WEIGHTS EVERY STEP", ["b1", "b2"]],
+       [308, 250, "STEP-DEPENDENT — THIS STEP ONLY", ["b3", "b4"]]].forEach(function (fr) {
         var on = fr[3].some(active);
         svg.appendChild(el("rect", { x: fr[0], y: 32, width: fr[1], height: 70, rx: 8,
           fill: "none", stroke: "var(--border)", "stroke-width": 1, "stroke-dasharray": "5,4",
