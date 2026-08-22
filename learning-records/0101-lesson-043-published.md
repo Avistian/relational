@@ -28,7 +28,8 @@ split contract, rank-based comparison + under-powered tests (L023/L030), and HP-
 - **(A) Implementation.** `labs/relkit/tabnet.py` implements the paper's load-bearing pieces from scratch,
   annotated with figure/section refs: `sparsemax` (Martins Alg. 1), `GhostBatchNorm` (Hoffer 2017),
   `GLUBlock`, `FeatureTransformer` (Fig. 4c — 2 shared + 2 step-dependent layers, `sqrt(0.5)` residuals),
-  `AttentiveTransformer` (Fig. 4b), `TabNetEncoder` (Fig. 4a — prior scale, sparsity entropy loss,
+  `AttentiveTransformer` (Fig. 4d — 4b is the *decoder*; corrected in LR-0103), `TabNetEncoder`
+  (Fig. 4a — prior scale, sparsity entropy loss,
   `d_out = ∑ ReLU(d[i])`, `M_agg` weighted by `η[i] = ∑_c ReLU(d_c[i])`), plus `train_tabnet` with the
   paper's geometric LR decay (App. F). The library is a **checker only**.
 - **(B) Datasets.** The interpretability claim is run on the **paper's own evaluation data**:

@@ -1,5 +1,35 @@
 # Teaching Notes
 
+## Session 44 — 2026-08-22
+
+- **L043 retrofitted with architecture diagrams** on user request ("pure equations make it hard to read
+  and understand"). Record: [[learning-records/0103-l043-diagrams-and-browser-verification.md]].
+  L043 had **one** viz for **five** mechanisms, and it sat *after* every equation — the recorded L019
+  anti-pattern (standard #9) resurfacing in Y2. Three new components, each inline with its prose:
+  `tabnet-arch-viz` (Fig. 4a encoder, 7-stage stepper, each stage printing the equation its block
+  computes, placed **before** the mechanism subsections), `sparsemax-viz` (Algorithm 1 as a water line:
+  `τ` solved for, the shaded area always totalling exactly 1, softmax's never-zero contrast, and the mask
+  entropy `L_sparse` penalises), `tabnet-fblock-viz` (Fig. 4c: shared vs step-dependent GLU layers, the
+  three `√0.5` merges, the split, plus an inset opening one layer).
+- **Draw from the code, not from the figure — a diagram is a consistency check on the prose.** Laying the
+  boxes out against `labs/relkit/tabnet.py` forced every tensor to be named, and one had no source in the
+  lesson: **`a[0]` comes from an extra feature transformer over the *unmasked* features at step 0, whose
+  `d` half is discarded.** Fig. 4a shows it, the equations never mention it, and it is what people omit
+  when reimplementing from the paper. Now a defbox. Do this on every equation-heavy retrofit.
+- **The mandatory browser check IS runnable here — stop writing "Browser MCP unavailable".** There is a
+  `/usr/local/bin/google-chrome`, and `npm install puppeteer-core` in **`/tmp`** drives it while the
+  workspace keeps its zero-dependency, no-`package.json` posture. It immediately caught three things the
+  fake-DOM harness cannot see: an SVG **z-order bug** (an edge label painted behind a box, since arrows
+  are drawn before boxes), two **label collisions**, and a **bar scale** that used ~30% of its vertical
+  space at the default slider setting. Method + screenshot recipe in the record.
+- **New assertions worth copying into every future `_viz_check_lNNN.js`:** geometry checks on hand-laid-out
+  diagrams (every box/label inside the viewBox, **no two boxes overlapping**), exact-arithmetic checks on
+  the operator being taught, clamping on public setters that feed a fixed pixel scale, and readout↔equation
+  coupling per stage. Also gave that file's fake DOM `firstChild`/`removeChild` so redraws really clear.
+- Verification: `labs/_viz_check_l043.js` **81 → 222 checks**, all pass; `labs/_check_pedagogy.js` 40/40;
+  browser pass clean at 900 px and 375 px for all four widgets. Fixed in passing: LR-0101 cited the
+  attentive transformer as Fig. 4b; per arXiv:1908.07442v5 it is **4d** (4b is the decoder).
+
 ## Session 43 — 2026-08-08
 
 - **Lesson 043 published with lab — TabNet (sequential attention)**, the first novel architecture put
