@@ -314,6 +314,35 @@ structure** — which is exactly the relational regime. The lineage matters: thi
 structure / keep the gradient" is a bet you *lose* on isolated tables and only win when the surrounding
 structure exists to connect to.
 
+L045 (TabTransformer — contextual categorical embeddings + self-supervised pre-training) trains and
+pre-trains the architecture L032 previewed forward-only, and lands the same **BAR + FOR** shape as the rest
+of the Q4/Y2Q1 cascade. The mechanism is the L031 static **entity embedding** promoted to a **contextual**
+one: a stack of Transformer self-attention blocks re-mixes each categorical column's vector with the other
+columns *in the same row*, so the same category can mean different things in different rows. Built from
+scratch and validated to machine precision against torch's own kernels (`scaled_dot_product_attention`
+\|Δ\| = 6.7e-16, `nn.MultiheadAttention` \|Δ\| = 1.1e-16, `relkit.tabtransformer`), with the contextual
+property confirmed on a real row — a column's vector moves **0.259** under a neighbour flip **with**
+attention and exactly **0** at `n_layers=0`, the ablation that *is* the L031/L032 static-embedding model.
+Held to the shared frame on three categorical-rich tables × three seeds (`labs/_verify_l045.py`): contextual
+edges the context-free MLP on **2/3** — a **small, within-noise** gain (mean ranks TabTransformer **2.33** vs
+context-free **2.67**) — but beats **CatBoost** on **0/3** (CatBoost mean rank **1.00**, Friedman p = 0.097).
+The ceiling is the paper's own limitation, and it is the thesis-relevant point: **only categoricals go
+through the attention; numeric features are LayerNorm'd and concatenated, never attending to anything** —
+which is exactly what FT-Transformer (L046) removes by tokenising numerics too. The **self-supervised**
+half is the one genuinely new lever: RTD pre-training (corrupt categorical tokens, detect the swaps —
+detector ROC-AUC ≈ 0.82) learns from **unlabeled** rows, something a GBDT structurally cannot do, and the
+detector can only succeed because a swap is visible **only in context**, so the pretext sharpens the very
+contextualisation the architecture adds. But the payoff is honestly **small and fragile**: +0.008 AUC at 3%
+labels (all seeds positive) shrinking to +0.001 at 10%, and it **collapses to negative** under a small
+unlabeled pool or an aggressive fine-tune LR (catastrophic forgetting; the fix was a gentle FT-LR of 5e-4).
+For the thesis this is **BAR** (another deep single-table architecture that ties the static embedding and
+loses to trees — an RDL win cannot lean on "attention is powerful" applied *within a flattened row*) with a
+double **FOR**: a contextual embedding is a weighted aggregate of related vectors — the exact operation a
+GNN runs, here *within a row over columns*, that RDL runs *across rows over foreign-key neighbours* — and
+self-supervision on abundant unlabeled rows foreshadows the relational foundation models of Year 5. The
+same lesson recurs: adding attention inside one table adds no new **structural** information, so the
+untapped value stays across the join.
+
 The genuinely *supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and
 leakage-prone, and manual feature synthesis hints structure is recoverable, but no result yet shows a
 relational model *beating the fair bar by keeping structure*. That demonstration is now the **Year 2–4**

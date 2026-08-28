@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 045 — TabTransformer (training + pre-training)</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .fig-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0 1rem; line-height: 1.6; }
+    .rank { color: var(--muted); font-size: 0.78rem; }
+    tr.summary-row td { border-top: 2px solid var(--border); background: var(--bg-soft); }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; line-height: 1.7; }
+
+    /* reused from L032: architecture viz (.tta-) + contextual viz (.atc-) */
+    .tta-viz, .atc-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tta-ctl, .atc-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+    .tta-ctl button, .atc-ctl button { font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .tta-ctl button.tta-on, .atc-ctl button.atc-on { background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+    .tta-svg { display: block; max-width: 100%; margin: 0.25rem auto; }
+    .tta-boxhead { font-family: var(--font-sans); font-size: 9.5px; font-weight: 600; }
+    .tta-boxsub { font-family: var(--font-sans); font-size: 8.5px; }
+    .tta-lane { font-family: var(--font-sans); font-size: 8.5px; letter-spacing: 0.05em; fill: var(--muted); }
+    .tta-readout, .atc-readout { font-size: 0.86rem; margin: 0.7rem 0.2rem 0; line-height: 1.55; }
+    .atc-hint { font-size: 0.82rem; color: var(--muted); margin: 0.2rem 0 0.7rem; }
+    .atc-grid { display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: flex-end; }
+    .atc-card { flex: 1 1 140px; min-width: 130px; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); text-align: center; }
+    .atc-card.atc-q { border-color: #1e6b3c; box-shadow: 0 0 0 2px rgba(30,107,60,0.18); }
+    .atc-name { font-family: var(--font-mono); font-size: 0.78rem; margin-bottom: 0.5rem; }
+    .atc-bars { display: inline-flex; gap: 3px; align-items: flex-end; height: 36px; }
+    .atc-bar { width: 10px; border-radius: 2px 2px 0 0; display: inline-block; }
+    .atc-tag { font-family: var(--font-sans); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-top: 0.4rem; }
+    .atc-weights { flex-basis: 100%; margin-top: 0.6rem; font-size: 0.8rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .atc-wlab { color: var(--muted); }
+    .atc-wpill { font-family: var(--font-mono); font-size: 0.76rem; padding: 0.12rem 0.5rem; border-radius: 4px; background: #1e6b3c; color: #fff; }
+
+    /* new: rtd-pretrain-viz (.rtd-) */
+    .rtd-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .rtd-ctl { display: flex; gap: 0.7rem; margin-bottom: 0.8rem; flex-wrap: wrap; align-items: center; }
+    .rtd-glab { font-family: var(--font-sans); font-size: 0.82rem; color: var(--fg, #222); }
+    .rtd-mono { font-family: var(--font-mono); }
+    .rtd-slider { width: 150px; vertical-align: middle; }
+    .rtd-ctl button { font-family: var(--font-sans); font-size: 0.78rem; padding: 0.25rem 0.6rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .rtd-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .rtd-cell { flex: 1 1 96px; min-width: 92px; padding: 0.45rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); text-align: center; }
+    .rtd-cell.rtd-rep { border-color: #b03a2e; background: rgba(176,58,46,0.09); box-shadow: 0 0 0 1.5px rgba(176,58,46,0.25); }
+    .rtd-cname { font-family: var(--font-sans); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+    .rtd-cval { font-family: var(--font-mono); font-size: 0.8rem; margin: 0.2rem 0; }
+    .rtd-ctag { font-family: var(--font-sans); font-size: 0.66rem; }
+    .rtd-cell.rtd-rep .rtd-ctag { color: #b03a2e; font-weight: 600; }
+    .rtd-readout { font-size: 0.87rem; margin-top: 0.8rem; line-height: 1.6; min-height: 4.5rem; }
+
+    /* new: label-efficiency-viz (.leff-) */
+    .leff-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .leff-ctl { display: flex; gap: 0.7rem; margin-bottom: 0.7rem; align-items: center; flex-wrap: wrap; }
+    .leff-glab { font-family: var(--font-sans); font-size: 0.82rem; color: var(--fg, #222); }
+    .leff-mono { font-family: var(--font-mono); }
+    .leff-slider { width: 160px; vertical-align: middle; }
+    .leff-svg { display: block; max-width: 520px; margin: 0.25rem auto; }
+    .leff-axis { font-family: var(--font-sans); font-size: 9px; fill: var(--muted); }
+    .leff-leg { font-family: var(--font-sans); font-size: 9px; fill: var(--fg, #222); }
+    .leff-readout { font-size: 0.87rem; margin-top: 0.6rem; line-height: 1.6; min-height: 3.5rem; }
+    .leff-pos { color: #1e6b3c; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 2 · Q1 · Neural tabular architectures</p>
+  <h1>TabTransformer <span style="color:var(--muted);font-weight:400">(training &amp; self-supervised pre-training)</span></h1>
+  <p class="subtitle">Lesson 045 · Phase 2 · Q1 · <em>primary reading: Huang, Khetan, Cvitkovic &amp; Karnin 2020, <a href="https://arxiv.org/abs/2012.06678">TabTransformer: Tabular Data Modeling Using Contextual Embeddings</a></em></p>
+
+  <p>
+    Back in <a href="0032-tabtransformer-preview.html">L032</a> you built TabTransformer's architecture and
+    ran it <em>forward only</em> — embed the categorical columns, push them through self-attention to make
+    them <strong>contextual</strong>, concatenate the continuous features, read out a prediction. We
+    deliberately stopped there and promised the rest for Year 2. This is that lesson: we now
+    <strong>train</strong> it, we test its distinctive lever — <strong>semi-supervised pre-training</strong>
+    on unlabeled rows — and we hold it to the same baseline-first bar that
+    <a href="0043-tabnet.html">TabNet</a> and <a href="0044-node.html">NODE</a> both failed on flat tables.
+  </p>
+  <p>
+    There are two questions worth answering, and they are different. First: does making a categorical
+    embedding <em>contextual</em> — letting a column's vector depend on the rest of the row — actually buy
+    accuracy over the <em>context-free</em> entity embedding of <a href="0031-embeddings-for-categoricals.html">L031</a>?
+    Second, and more interesting for the thesis: TabTransformer can be <strong>pre-trained on data with no
+    labels at all</strong>, then fine-tuned on a few — a lever gradient-boosted trees structurally lack. Does
+    that pay when labels are scarce?
+  </p>
+  <p>
+    Its single skill: <strong>train TabTransformer, show that contextual categorical embeddings give a small
+    edge over context-free ones while both still lose to a tree on a flat table, pre-train it self-supervised
+    with replaced-token detection to win back label-efficiency, and name its structural limitation — numeric
+    features never enter the attention.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Trained from scratch our TabTransformer's <em>contextual</em> embeddings
+    edge the <em>context-free</em> static-embedding MLP on 2 of 3 categorical tables (mean rank 2.33 vs 2.67)
+    but both lose to CatBoost on all 3 (rank 1.00) — yet TabTransformer alone can be
+    <strong>pre-trained on unlabeled rows</strong> and, at 3&nbsp;% labels, that pre-training lifts test AUC
+    <strong>+0.008 on every seed</strong>: the accuracy on one flat table is a tie-or-loss, but the
+    ability to learn from <em>unlabeled</em> data is the lever trees don't have — and the seed of the
+    relational thesis.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from memory before today's material. One of today's ideas — the contextual embedding —
+    you first met in <a href="0032-tabtransformer-preview.html">L032</a>; effortful retrieval now is what
+    makes it stick.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Recap: the architecture you already built</h2>
+  <p>
+    TabTransformer (Huang et&nbsp;al. 2020, Fig.&nbsp;1) is four stages. You wrote each one in Lab&nbsp;032;
+    here is the data-flow again, because the training and pre-training below act on specific pieces of it.
+  </p>
+  <div id="arch"></div>
+  <p class="fig-caption">
+    The paper's Fig.&nbsp;1, walked stage by stage. <strong>(1)</strong> each categorical column becomes a
+    learned <em>d</em>-vector (an entity embedding, <a href="0031-embeddings-for-categoricals.html">L031</a>);
+    <strong>(2)</strong> a stack of <em>N</em> Transformer blocks lets those vectors attend to each other, so
+    each becomes <em>contextual</em>; <strong>(3)</strong> the continuous features skip the Transformer and
+    are LayerNorm'd; <strong>(4)</strong> the flattened contextual embeddings and the normalised numerics are
+    concatenated and passed to an MLP head. Stage 2 is the only thing that is new over a plain
+    entity-embedding MLP — and, crucially, it touches <em>only</em> the categorical columns.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Context-free vs contextual (the one idea).</strong> A <em>context-free</em> embedding
+    (L031) maps <code>checking = &lt; 0</code> to the same fixed vector in every row. A <em>contextual</em>
+    embedding rewrites that vector as a weighted blend of the whole row's columns via self-attention
+    (<code>softmax(Q·Kᵀ/√d)·V</code>), so <code>checking = &lt; 0</code> gets a <em>different</em> vector next
+    to <code>housing = rent</code> than next to <code>housing = own</code> — the tabular echo of "bank"
+    meaning <em>river bank</em> vs <em>savings bank</em>. Setting <code>n_layers = 0</code> (no Transformer
+    blocks) turns TabTransformer <em>back</em> into the context-free MLP — which is exactly the ablation we
+    use below to isolate what contextualisation buys.
+  </div>
+  <div id="contextual"></div>
+  <p class="fig-caption">
+    Toggle <em>before → after</em>: the same column embedding changes once it can see its neighbours. Numbers
+    are an illustrative 3-token toy. This is the mechanism; the next section asks whether it is worth
+    anything on real data.
+  </p>
+
+  <h2>Training it: the fair protocol</h2>
+  <p>
+    Nothing about training is TabTransformer-specific — that is the point. We reuse the same
+    shared-protocol recipe as every neural arm since <a href="0042-mlp-resnet-baselines.html">L042</a>:
+    mini-batch AdamW, early stopping on validation ROC-AUC, identical split / metric / selection rule for
+    every model. Our from-scratch <code>relkit.tabtransformer</code> promotes the Lab-032 architecture and
+    adds <code>train_tabtransformer</code> (supervised) and <code>pretrain_rtd</code> (self-supervised,
+    below). The load-bearing operation — multi-head self-attention — is validated against torch's own
+    kernels (last section), not imported.
+  </p>
+
+  <h2>Does context help? Contextual vs context-free vs a tree</h2>
+  <p>
+    The cleanest experiment runs the <em>same class</em> two ways — with the Transformer
+    (<code>n_layers = 3</code>, contextual) and without it (<code>n_layers = 0</code>, the L031/L032
+    context-free embedding MLP) — so the only variable is contextualisation. Then we add the honest bar: a
+    <strong>CatBoost</strong> with native categorical handling. Predict before you look.
+  </p>
+  <div id="predict-contextual"></div>
+
+  <p>
+    Three categorical-rich tables, one shared frame, three seeds. <code>adult</code> is subsampled to 4000
+    rows to keep it CPU-cheap — a down-scaled demonstration, not the paper's 15-dataset benchmark.
+  </p>
+  <table>
+    <thead><tr>
+      <th>Dataset (cat / num)</th><th>TabTransformer <span class="rank">(contextual)</span></th><th>MLP <span class="rank">(context-free)</span></th><th>CatBoost</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><code>credit_g</code> (13 / 7)</td>
+        <td class="n">0.787 ± 0.016 <span class="rank">(3)</span></td>
+        <td class="n">0.792 ± 0.027 <span class="rank">(2)</span></td>
+        <td class="n win">0.804 ± 0.024 <span class="rank">(1)</span></td>
+      </tr>
+      <tr>
+        <td><code>adult</code> (8 / 6, n=4000)</td>
+        <td class="n">0.866 ± 0.009 <span class="rank">(2)</span></td>
+        <td class="n">0.866 ± 0.009 <span class="rank">(3)</span></td>
+        <td class="n win">0.903 ± 0.006 <span class="rank">(1)</span></td>
+      </tr>
+      <tr>
+        <td><code>churn</code> (4 / 16)</td>
+        <td class="n">0.886 ± 0.010 <span class="rank">(2)</span></td>
+        <td class="n">0.882 ± 0.010 <span class="rank">(3)</span></td>
+        <td class="n win">0.922 ± 0.014 <span class="rank">(1)</span></td>
+      </tr>
+      <tr class="summary-row">
+        <td><strong>Mean rank (1 = best)</strong></td>
+        <td class="n mid"><strong>2.33</strong></td>
+        <td class="n bad"><strong>2.67</strong></td>
+        <td class="n win"><strong>1.00</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_verify_l045.py</code> — from-scratch TabTransformer (<code>relkit.tabtransformer</code>,
+    contextual vs the <code>n_layers=0</code> context-free ablation) and CatBoost (native categoricals), test
+    ROC-AUC, mean&nbsp;±&nbsp;std over 3 seeds. Contextual beats context-free on <strong>2 of 3</strong>
+    tables (mean rank 2.33 vs 2.67); <strong>CatBoost wins all 3</strong> (rank 1.00), and TabTransformer
+    beats it on <strong>0 of 3</strong>. <strong>Friedman χ² = 4.67, <em>p</em> = 0.097</strong> (k = 3, N = 3).
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Read this the disciplined way.</strong> Two separate readings, same as
+    <a href="0043-tabnet.html">L043</a>/<a href="0044-node.html">L044</a>. On the <em>contextual vs
+    context-free</em> question, the direction matches the paper (contextual embeddings help), but the margin
+    is <em>tiny</em> — a rank of 2.33 vs 2.67 and near-identical means. On the <em>vs trees</em> question, the
+    verdict is unambiguous on these tables: a well-tuned tree wins every one, and it is far cheaper. This is
+    the paper's own honest framing — TabTransformer's headline "+1.0% AUC" is measured <em>over other deep
+    methods</em>, and it only <em>matches</em> GBDTs on supervised tabular data (it does not beat them). Our
+    small run reproduces exactly that shape: a small win over the deep baseline, a loss to the tree.
+  </div>
+
+  <h2>The structural limitation: numerics never see the attention</h2>
+  <p>
+    Look again at stage 3 of the architecture. The continuous features are LayerNorm'd and concatenated
+    <em>after</em> the Transformer — they never become tokens, never attend, never get contextualised. All
+    of TabTransformer's cleverness is spent on the categorical columns. On a table like <code>churn</code>
+    (16 numeric, 4 categorical) most of the signal lives in features the attention never touches, which is a
+    large part of why the contextual edge is so thin.
+  </p>
+  <div class="defbox">
+    <strong class="term">Why this matters, and where it goes next.</strong> This is not a tuning detail — it
+    is the design's ceiling, and it is <em>the</em> reason <strong>L046 (FT-Transformer)</strong> exists.
+    FT-Transformer's one upgrade is a <em>feature tokenizer</em> that turns each
+    <strong>numeric</strong> feature into a token too (a learned linear embedding per feature), so numerics
+    join the attention and the whole row is contextualised. Keep that thread: TabTransformer contextualises
+    half the row; FT-Transformer contextualises all of it, and is the stronger neural baseline because of it.
+  </p>
+
+  <h2>The lever trees lack: self-supervised pre-training</h2>
+  <p>
+    Here is where TabTransformer does something a GBDT cannot. Because it is a differentiable encoder, it can
+    be trained on rows with <strong>no labels</strong> using a <em>pretext task</em> — a fake supervised
+    problem you can generate for free — and then fine-tuned on the few labels you actually have. The paper's
+    best pretext is <strong>replaced token detection (RTD)</strong>.
+  </p>
+  <div class="defbox">
+    <strong class="term">Self-supervised pre-training.</strong> Learning a representation from unlabeled data
+    by inventing a task whose answer is knowable without human labels, then transferring the learned encoder
+    to the real task. <strong>RTD (replaced token detection)</strong>, borrowed from ELECTRA: independently,
+    with probability <em>p</em>, replace each categorical cell with another value drawn from that column;
+    a per-column binary detector must then predict, from each cell's <em>contextual</em> embedding, whether
+    it was replaced. To solve it, the encoder has to learn which category values plausibly
+    <em>co-occur</em> in a real row — structure that transfers. <strong>Fine-tuning</strong> then keeps those
+    pre-trained embeddings + Transformer weights and trains a fresh classifier head on the labeled set.
+  </div>
+  <div id="rtd"></div>
+  <p class="fig-caption">
+    The RTD pretext on an illustrative row. Drag the replace probability; tampered cells turn red. Note the
+    subtlety the readout calls out: a uniform redraw sometimes lands back on the original value, so the
+    <em>effective</em> replaced fraction is only <code>p·(1 − 1/card)</code> — those cells stay "real". No
+    label is ever used; the corruption <em>is</em> the supervision.
+  </p>
+
+  <p>
+    Does it pay? The test: take a table with plenty of rows (<code>adult</code>, 16&nbsp;000), hide almost
+    all the labels, and compare training from scratch on the few labels against pre-training the encoder on
+    <em>all</em> the rows' features (unlabeled) and then fine-tuning on those same few. Predict first.
+  </p>
+  <div id="predict-ssl"></div>
+  <div id="leff"></div>
+  <p class="fig-caption">
+    Verified: <code>labs/_verify_l045.py</code> (semi-supervised section) — <code>adult</code>, 16&nbsp;000
+    rows, unlabeled pool ~11&nbsp;200, test ROC-AUC, mean over 3 seeds; a gentle fine-tune learning rate
+    (5×10⁻⁴) avoids catastrophic forgetting of the pre-trained weights. At <strong>3&nbsp;% labels</strong>
+    (~250 rows) pre-training lifts AUC <strong>+0.008 on every seed</strong> (0.825 → 0.833); at
+    <strong>10&nbsp;%</strong> the gap nearly closes (+0.001). The lift is small at this down-scaled scale —
+    the paper reports ~+2.1% with far more unlabeled data — but the <em>shape</em> is the point: free
+    unlabeled data helps most exactly when labels are scarcest.
+  </p>
+
+  <div id="teachback-ssl"></div>
+
+  <h2>The from-scratch mechanism, validated</h2>
+  <p>
+    Per the paper-mirror standard, the load-bearing operation is built from the paper, not imported.
+    <code>relkit.tabtransformer</code> implements scaled dot-product attention and multi-head self-attention;
+    torch's own reference kernels are used only to <em>check</em> them, and the contextual property is
+    verified on a real row.
+  </p>
+  <table>
+    <thead><tr><th>Check</th><th>Result</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>from-scratch <code>scaled_dot_product_attention</code> vs <code>F.scaled_dot_product_attention</code></td><td class="n">max |Δ| ≈ 7 × 10⁻¹⁶</td><td class="win">exact</td></tr>
+      <tr><td>from-scratch <code>MultiHeadSelfAttention</code> vs <code>nn.MultiheadAttention</code> (copied weights)</td><td class="n">max |Δ| ≈ 1 × 10⁻¹⁶</td><td class="win">exact</td></tr>
+      <tr><td>a column's <em>contextual</em> vector moves when a neighbour changes</td><td class="n">L2 move 0.259</td><td class="win">contextual</td></tr>
+      <tr><td>the <code>n_layers=0</code> ablation is context-<em>free</em> (does not move)</td><td class="n">L2 move 0.0</td><td class="win">isolates it</td></tr>
+      <tr><td>RTD detector learns above chance on unlabeled rows</td><td class="n">acc 0.82</td><td class="win">real signal</td></tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_check_l045.py</code> (15 / 15 pass) and <code>labs/_verify_l045.py</code> (mechanism
+    section). The attention is reproduced to machine precision; the contextual and semi-supervised
+    <em>directions</em> are reproduced; the honest verdict vs trees is where the real story lives.
+  </p>
+
+  <h2>Thesis bridge</h2>
+  <div class="callout">
+    <strong>What today buys the thesis.</strong> Two things. <em>Methodologically</em>, this is the third
+    famous neural architecture in a row (TabNet, NODE, now TabTransformer) that only <em>ties or loses</em> to
+    a cheap tree on a single flat table — the habit of running the strong baseline first and reporting the
+    honest verdict is now reflex. <em>Architecturally</em>, TabTransformer isolates the one operation the rest
+    of the curriculum is built on: a column's representation refined by <strong>attending to related
+    information</strong>. Within a row that is only a mild win. But that same operation — aggregate an
+    entity's <em>related</em> vectors into a contextual representation — is precisely message passing over a
+    relational graph, where the related vectors live in <em>other tables</em> reached by foreign keys, and
+    carry information no single flat row contains. And the pre-training lever generalises too: the value of
+    learning from <em>unlabeled</em> structure only grows when the structure is a database, not a table. Today
+    is the within-row rehearsal of the across-table idea the thesis is betting on.
+  </div>
+
+  <h2>Check yourself</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+  <div id="quiz4"></div>
+  <div id="quiz5"></div>
+
+  <h2>Primary reading</h2>
+  <p>
+    <a href="https://arxiv.org/abs/2012.06678">Huang, Khetan, Cvitkovic &amp; Karnin — <em>TabTransformer:
+    Tabular Data Modeling Using Contextual Embeddings</em>, 2020</a>. Read <strong>§3</strong> for the
+    architecture you trained (column embedding, the Transformer stack, the head) and <strong>§3.3</strong> for
+    the pre-training (MLM and RTD; RTD is the one implemented here). Then read the experiments the
+    <a href="0038-peer-review-your-evaluation.html">L038</a> way: the headline "+1.0% AUC" is over
+    <em>deep</em> baselines, and the supervised result <em>matches</em> GBDTs — so ask on which datasets, at
+    what tuning budget, and note that the strongest claims are the robustness and semi-supervised ones.
+    Companion: <a href="https://arxiv.org/abs/1706.03762">Vaswani et&nbsp;al. 2017</a> §3.2 (attention);
+    <a href="0032-tabtransformer-preview.html">L032</a> (the architecture, forward-only);
+    <a href="0031-embeddings-for-categoricals.html">L031</a> (context-free entity embeddings). Next:
+    <strong>Lesson 046 (FT-Transformer)</strong> — tokenise the numerics too, and get the strongest single
+    neural baseline.
+  </p>
+
+  <h2>Lab — train TabTransformer, then pre-train it on unlabeled rows</h2>
+  <div class="callout">
+    <strong>Notebook:</strong>
+    <a href="../labs/html/0045-tabtransformer.html">view</a> ·
+    <a href="../labs/0045-tabtransformer.ipynb">source .ipynb</a> ·
+    <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0045-tabtransformer.ipynb">open in Colab</a>
+    — or browse all labs on the <a href="../notebooks.html">notebooks page</a>. You wire the
+    <strong>RTD corruption</strong> and the <strong>fine-tune-from-pretrained</strong> step from the paper's
+    §3.3, then run the contextual-vs-context-free-vs-CatBoost bake-off and the label-efficiency comparison.
+    CPU, ~5–9&nbsp;min.
+  </div>
+  <ol>
+    <li><strong>Train &amp; compare</strong>: run the from-scratch TabTransformer (contextual) against its
+      own <code>n_layers=0</code> context-free ablation and CatBoost on ≥3 categorical tables, same frame,
+      mean ranks + Friedman — and write what context bought and where it didn't.</li>
+    <li><strong>Implement RTD corruption</strong>: with probability <em>p</em>, replace each categorical
+      token with a uniform draw from its column, and build the 0/1 "replaced" target — verify the effective
+      replaced fraction is <code>p·(1 − 1/card)</code>, not <code>p</code>.</li>
+    <li><strong>Pre-train then fine-tune</strong>: pre-train the encoder on the unlabeled pool with the RTD
+      detector, then fine-tune on a small labeled fraction with a gentle LR — and compare test AUC to
+      training from scratch on the same labels.</li>
+    <li><strong>Read the label-efficiency curve</strong>: show the lift is largest at the smallest label
+      fraction and shrinks as labels grow, and state the numeric-bypass limitation in one sentence.</li>
+  </ol>
+  <p>
+    <strong>Compute note.</strong> Small / subsampled tables, CPU only; set <code>OMP_NUM_THREADS=1</code> to
+    avoid thread oversubscription. If you shrink the pool or seeds, shrink it <em>identically</em> for every
+    arm and say so — a downscaled run is a different experiment, never a smaller version of the paper's.
+  </p>
+  <p>
+    Deliverable: your bake-off rank table, the RTD replaced-fraction check, the pre-train-vs-scratch AUCs at
+    two label fractions, and one sentence — <em>when is TabTransformer's pre-training worth it, and why do
+    the numerics limit it?</em> Paste it to your teacher or say <em>"lab done."</em>
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your rank table, your RTD check, and your label-efficiency AUCs.
+    We will check that you can explain why the context-free ablation is <em>n_layers=0</em>, why the RTD
+    effective fraction is below <em>p</em>, and why pre-training helps most when labels are scarce.
+  </div>
+
+  <div class="ask-teacher">
+    Unclear why a contextual embedding differs from a bigger context-free one, why RTD needs no labels, or
+    why numerics bypassing the attention is TabTransformer's ceiling (and FT-Transformer's opening)? Ask your
+    teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0044-node.html">← Lesson 044</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../reference/glossary.html">Glossary</a></li>
+      <li><a href="../flashcards.html">Paper flashcards</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/tabtransformer-arch-viz.js"></script>
+<script src="../assets/attention-context-viz.js"></script>
+<script src="../assets/rtd-pretrain-viz.js"></script>
+<script src="../assets/label-efficiency-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 45, count: 3 });
+
+  TabTransformerArchViz.mount(document.getElementById("arch"), {});
+  AttentionContextViz.mount(document.getElementById("contextual"), {});
+  RtdPretrainViz.mount(document.getElementById("rtd"), {});
+  LabelEfficiencyViz.mount(document.getElementById("leff"), {});
+
+  Predict.mount(document.getElementById("predict-contextual"), {
+    prompt: "Same class run two ways — WITH the Transformer (contextual) vs WITHOUT it (n_layers=0, the context-free L031/L032 embedding MLP) — plus CatBoost, on 3 categorical tables. Who wins?",
+    options: [
+      { label: "CatBoost wins all 3; contextual edges context-free but only 2/3, by a hair", value: "cat" },
+      { label: "Contextual TabTransformer wins clearly — attention beats trees on categorical data", value: "tt" },
+      { label: "Context-free wins — the Transformer overfits small tables", value: "cf" },
+      { label: "Three-way tie — contextualisation makes no measurable difference", value: "tie" }
+    ],
+    correct: "cat",
+    reveal: "CatBoost wins all 3 (mean rank 1.00); TabTransformer beats it on 0/3. Contextual edges context-free on only 2/3 (mean rank 2.33 vs 2.67) with near-identical means. Verified (labs/_verify_l045.py, 3 seeds): Friedman chi2=4.67, p=0.097. This is the paper's honest verdict — the +1.0% AUC is over DEEP baselines, and it only MATCHES GBDTs. On a flat table contextualisation is a mild win over the deep model and a loss to the tree."
+  });
+
+  Predict.mount(document.getElementById("predict-ssl"), {
+    prompt: "On adult with almost all labels hidden, does RTD pre-training on the unlabeled rows (then fine-tuning) beat training from scratch on the few labels — and where is the gain biggest?",
+    options: [
+      { label: "Yes, and the lift is biggest at the FEWEST labels (+0.008 at 3%), shrinking as labels grow", value: "few" },
+      { label: "Yes, and the lift GROWS with more labels", value: "more" },
+      { label: "No — pre-training always hurts on tabular data", value: "no" },
+      { label: "Only at 100% labels, where there is the most unlabeled data to reuse", value: "full" }
+    ],
+    correct: "few",
+    reveal: "Biggest at the fewest labels. Verified (labs/_verify_l045.py, adult 16k, 3 seeds): at 3% labels (~250 rows) pre-train+finetune 0.833 vs scratch 0.825 — +0.008 on EVERY seed; at 10% the gap is +0.001. Free unlabeled data helps most exactly when labeled data is scarce; once you have enough labels the supervised model already learns the structure. (The lift is small here at down-scaled scale; the paper's ~+2.1% uses far more unlabeled data.)"
+  });
+
+  Teachback.mount(document.getElementById("teachback-ssl"), {
+    prompt: "In your own words: what does RTD pre-training do, why does it need no labels, when does it pay, and what structural limitation caps TabTransformer on flat tables?",
+    points: [
+      "RTD (replaced token detection): with prob p, replace each categorical cell with a random value from its column; a per-column detector predicts, from each cell's CONTEXTUAL embedding, whether it was replaced. Solving it forces the encoder to learn which category values co-occur in a coherent row.",
+      "No labels are used — the corruption itself is the supervision, so ANY unlabeled row is training signal. Fine-tuning then keeps the pre-trained embeddings + Transformer and trains a fresh classifier head on the few labels (gentle LR to avoid catastrophic forgetting).",
+      "It pays most when labels are SCARCE and unlabeled data is plentiful: +0.008 at 3% labels (all seeds), shrinking to +0.001 at 10%. With enough labels the supervised model already learns the structure.",
+      "Limitation: only CATEGORICAL features become tokens and get contextualised; numeric features bypass the Transformer entirely (LayerNorm + concat before the head). So on numeric-heavy tables the attention touches little of the signal — which FT-Transformer (L046) fixes by tokenising numerics too.",
+      "Honest verdict: contextual only edges context-free (2/3, tiny margin) and BOTH lose to CatBoost (0/3) — the value is not flat-table accuracy but (a) learning from unlabeled data and (b) the attend-to-related-vectors operation that generalises to across-table message passing."
+    ],
+    model: "TabTransformer's distinctive lever is that it is a differentiable encoder, so it can be pre-trained on unlabeled rows. RTD (replaced token detection, from ELECTRA) is the pretext: independently with probability p, replace each categorical cell with a value drawn uniformly from that column, and train a per-column binary detector to predict — from each cell's CONTEXTUAL embedding — whether it was replaced. No human label is used; the corruption is the supervision, so every unlabeled row provides signal. To flag the tampered cells the encoder must learn which category values plausibly co-occur in a genuine row, and that representation transfers: we then keep the pre-trained embeddings and Transformer, attach a fresh classifier head, and fine-tune on the few real labels with a gentle learning rate so we don't wipe out what pre-training learned. It pays most when labels are scarce and unlabeled data is plentiful — verified, +0.008 test AUC on every seed at 3% labels on adult, shrinking to +0.001 at 10% — because once you have enough labels the supervised model already captures the structure. The catch is structural: only categorical columns become tokens and get contextualised; the numeric features skip the Transformer and are merely LayerNorm'd and concatenated before the head, so on numeric-heavy tables the attention touches little of the signal (this is exactly what FT-Transformer removes in L046 by tokenising numerics too). So the honest verdict is that contextual embeddings only edge the context-free MLP by a hair (2/3 tables) and both lose to a cheap CatBoost (0/3); the real value is not flat-table accuracy but the unlabeled-data lever trees lack and the attend-to-related-vectors operation that becomes across-table message passing in the relational thesis."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "What is the difference between a context-free and a contextual embedding, and how do you turn one into the other in TabTransformer?",
+    options: [
+      { label: "Context-free maps a category to a fixed vector; contextual rewrites it as a self-attention blend of the row's columns (softmax(Q·Kᵀ/√d)·V), so its vector depends on the rest of the row", value: "a" },
+      { label: "Contextual just uses a higher embedding dimension d than context-free", value: "b" },
+      { label: "Context-free is for numeric features, contextual is for categorical features", value: "c" },
+      { label: "Contextual embeddings are trained; context-free ones are random and frozen", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). A context-free entity embedding (L031) gives 'checking = <0' the same vector everywhere; the Transformer's self-attention blends the row's columns so that vector becomes row-dependent (contextual). It is not about dimension (b) — the ablation n_layers=0 keeps the same d and is context-free. Both apply to categoricals (c), and both are learned (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "In the bake-off, TabTransformer (contextual) vs its n_layers=0 context-free ablation vs CatBoost. What was the disciplined verdict?",
+    options: [
+      { label: "Contextual edges context-free on 2/3 (rank 2.33 vs 2.67) but both lose to CatBoost on all 3 (rank 1.00) — a mild win over the deep baseline, a loss to the tree", value: "a" },
+      { label: "TabTransformer beat CatBoost, proving attention wins on categorical data", value: "b" },
+      { label: "Context-free beat contextual, so the Transformer is useless", value: "c" },
+      { label: "All three tied; p = 0.097 proves they are equivalent", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Verified: contextual 2.33, context-free 2.67, CatBoost 1.00; TabTransformer beats CatBoost 0/3. That matches the paper's honest framing (the +1% is over deep methods; it MATCHES GBDTs). It did not beat CatBoost (b); contextual did edge context-free, so the Transformer is not useless (c); and p=0.097 fails to reject but is not proof of equivalence (d) — and CatBoost still wins every table regardless."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "RTD pre-training corrupts categorical cells with probability p and detects them. Why is the EFFECTIVE replaced fraction below p, and why does the task need no labels?",
+    options: [
+      { label: "A uniform redraw sometimes lands on the original value (prob 1/card), so effective ≈ p·(1−1/card); and the corruption itself is the target, so no human label is used", value: "a" },
+      { label: "Because half the cells are numeric and cannot be corrupted; labels come from the target column", value: "b" },
+      { label: "The detector only looks at p/2 of the cells; the labels are the row's class", value: "c" },
+      { label: "Effective equals p exactly; the labels are provided by the pre-training dataset", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). If the uniform redraw equals the original (probability 1/card), the cell is unchanged and labeled 'real', so the effective replaced fraction is p·(1−1/card). The replaced/real mask is generated by the corruption, so no class label is needed — that is what makes it self-supervised. Numerics aren't corrupted here but that's not the reason (b); the detector sees all cells (c); and effective is strictly below p (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz4"), {
+    question: "The label-efficiency result: pre-train+fine-tune vs from-scratch on adult. Where is the gain, and what does it tell you?",
+    options: [
+      { label: "Biggest at the fewest labels (+0.008 at 3%, all seeds), shrinking to +0.001 at 10% — unlabeled data helps most when labels are scarce", value: "a" },
+      { label: "Biggest at the most labels, because there is more data to fine-tune on", value: "b" },
+      { label: "Constant across label fractions — pre-training adds a fixed bonus", value: "c" },
+      { label: "Negative everywhere — pre-training hurt", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Verified: +0.008 at 3% labels (positive on every seed) → +0.001 at 10%. The scarcer the labels, the more the free self-supervised signal matters; once labels are plentiful the supervised model already learns the structure, so the gap closes. Not bigger with more labels (b), not constant (c), and it is a real (if small) positive gain at the low end, not a loss (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz5"), {
+    question: "What is TabTransformer's structural limitation, and which lesson's model removes it?",
+    options: [
+      { label: "Only categorical features become tokens and get contextualised; numerics bypass the attention — FT-Transformer (L046) tokenises numerics too", value: "a" },
+      { label: "It cannot handle missing values; TabNet (L043) fixes this", value: "b" },
+      { label: "It has no residual connections, so it can't go deep; ResNet (L042) fixes this", value: "c" },
+      { label: "It can only do regression; NODE (L044) adds classification", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Continuous features skip the Transformer (LayerNorm + concat before the head), so the attention only refines categorical columns — a real ceiling on numeric-heavy tables. FT-Transformer's feature tokenizer embeds each numeric feature as a token so numerics join the attention too (L046). It does handle missing/robustness (b), it has residuals in each block (c), and it does binary classification here (d)."
+  });
+</script>
+</body>
+</html>

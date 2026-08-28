@@ -1,0 +1,185 @@
+{
+  "paper": "Huang, Khetan, Cvitkovic & Karnin 2020, arXiv:2012.06678 (TabTransformer)",
+  "metric": "roc_auc",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "datasets": [
+    "credit_g",
+    "adult",
+    "churn"
+  ],
+  "subsample": {
+    "adult": 4000
+  },
+  "tt_cfg": {
+    "d": 32,
+    "n_layers": 3,
+    "n_heads": 4,
+    "head_hidden": 128,
+    "dropout": 0.1
+  },
+  "cf_cfg": {
+    "d": 32,
+    "n_layers": 0,
+    "head_hidden": 128,
+    "dropout": 0.1
+  },
+  "epochs": 60,
+  "patience": 12,
+  "mechanism": {
+    "sdpa_max_abs_delta": 6.661338147750939e-16,
+    "mha_max_abs_delta": 1.1102230246251565e-16,
+    "contextual_move_attention": 0.259,
+    "contextual_move_contextfree": 0.0,
+    "validated": true
+  },
+  "bakeoff": {
+    "models": [
+      "tabtransformer",
+      "context_free",
+      "catboost"
+    ],
+    "per_dataset": {
+      "credit_g": {
+        "tabtransformer": {
+          "mean": 0.7866313932980601,
+          "std": 0.015900055354556367,
+          "seeds": [
+            0.793,
+            0.802,
+            0.765
+          ]
+        },
+        "context_free": {
+          "mean": 0.7921869488536156,
+          "std": 0.026791383190336922,
+          "seeds": [
+            0.808,
+            0.814,
+            0.754
+          ]
+        },
+        "catboost": {
+          "mean": 0.8043386243386244,
+          "std": 0.02442729801684274,
+          "seeds": [
+            0.81,
+            0.831,
+            0.772
+          ]
+        }
+      },
+      "adult": {
+        "tabtransformer": {
+          "mean": 0.8660362069119047,
+          "std": 0.008819523021761332,
+          "seeds": [
+            0.855,
+            0.876,
+            0.867
+          ]
+        },
+        "context_free": {
+          "mean": 0.8655400824075522,
+          "std": 0.009272326769188035,
+          "seeds": [
+            0.853,
+            0.876,
+            0.868
+          ]
+        },
+        "catboost": {
+          "mean": 0.9034630762517922,
+          "std": 0.00612631270632914,
+          "seeds": [
+            0.897,
+            0.912,
+            0.902
+          ]
+        }
+      },
+      "churn": {
+        "tabtransformer": {
+          "mean": 0.8862284659557013,
+          "std": 0.009506448780577747,
+          "seeds": [
+            0.893,
+            0.873,
+            0.893
+          ]
+        },
+        "context_free": {
+          "mean": 0.8822317278018672,
+          "std": 0.010349329831242494,
+          "seeds": [
+            0.892,
+            0.868,
+            0.887
+          ]
+        },
+        "catboost": {
+          "mean": 0.9224505840071878,
+          "std": 0.013535483619563533,
+          "seeds": [
+            0.926,
+            0.904,
+            0.937
+          ]
+        }
+      }
+    },
+    "mean_rank": {
+      "tabtransformer": 2.33,
+      "context_free": 2.67,
+      "catboost": 1.0
+    },
+    "friedman": {
+      "chi2": 4.667,
+      "p": 0.097,
+      "k": 3,
+      "n_datasets": 3
+    },
+    "contextual_beats_contextfree": "2/3",
+    "tabtransformer_beats_catboost": "0/3"
+  },
+  "semisupervised": {
+    "dataset": "adult",
+    "n_rows": 16000,
+    "fractions": [
+      0.03,
+      0.1
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "ft_lr": 0.0005,
+    "pretrain_epochs": 30,
+    "replace_p": 0.3,
+    "summary": {
+      "0.03": {
+        "scratch_mean": 0.825,
+        "scratch_std": 0.017,
+        "pretrain_mean": 0.833,
+        "pretrain_std": 0.015,
+        "lift": 0.008,
+        "lift_all_seeds_positive": true
+      },
+      "0.10": {
+        "scratch_mean": 0.861,
+        "scratch_std": 0.006,
+        "pretrain_mean": 0.862,
+        "pretrain_std": 0.011,
+        "lift": 0.001,
+        "lift_all_seeds_positive": false
+      }
+    },
+    "note": "unlabeled pool = every train row's features (no labels); labeled = a small fraction. Gentle fine-tune LR (5e-4) after pre-training avoids catastrophic forgetting."
+  },
+  "elapsed_s": 433.5,
+  "note": "TabTransformer (contextual categorical embeddings) vs the context-free static-embedding MLP (n_layers=0, the L031/L032 model) vs CatBoost. 3 categorical-rich tables (adult subsampled to 4000) is a demonstration, not the paper's 15-dataset benchmark. The mechanism is validated exactly; the contextual and semi-supervised directions are reproduced; the honest verdict vs trees is stated."
+}

@@ -951,6 +951,42 @@
       ],
       correct: "a",
       explain: "Verified (L044, labs/_verify_l044.py): on 4 small tables NODE ranks LAST (mean rank 3.50 vs CatBoost 2.50, MLP 2.00, ResNet 2.00) and trains ~70× slower than CatBoost (60 s vs 0.9 s). So on a single flat table differentiability buys nothing (c is false) and it is not simply a scale effect (b — CatBoost handles large data too, cheaply), nor a categorical trick (d — CatBoost is excellent on categoricals). Its value is COMPOSITION: a GBDT's greedy splits have no gradient, so it can never co-learn embeddings, stack DenseNet-style so later trees split on earlier decisions, or sit inside an end-to-end multi-modal model. That is exactly the relational setting the thesis cares about."
+    },
+    {
+      id: "l045-contextual-vs-free", lesson: 45, quarter: "Y2Q1", concept: "contextual-embedding",
+      question: "TabTransformer's headline over the L031/L032 static embedding is that its categorical embeddings are CONTEXTUAL. Concretely, what changes?",
+      options: [
+        { label: "A column's vector is re-mixed by self-attention over the OTHER columns in the same row, so the same category can mean different things in different rows", value: "a" },
+        { label: "Each category gets a wider embedding vector, so more capacity per column", value: "b" },
+        { label: "The numeric features are embedded and attended to alongside the categoricals", value: "c" },
+        { label: "The embedding is looked up from a table shared across all columns instead of one per column", value: "d" }
+      ],
+      correct: "a",
+      explain: "A context-free entity embedding (L031/L032) is the SAME vector wherever the category appears; the Transformer blocks make it CONTEXTUAL — self-attention lets a column's new vector absorb the other columns in that row. Verified from scratch (L045, labs/_verify_l045.py): flip one neighbour and a column's vector moves by L2 = 0.259 WITH attention but exactly 0 at n_layers=0 (the ablation that IS the static-embedding model). It is not extra width (b); numerics still BYPASS the attention — that is the paper's known limitation, fixed by FT-Transformer L046 (c); and each column keeps its own embedding table (d)."
+    },
+    {
+      id: "l045-rtd", lesson: 45, quarter: "Y2Q1", concept: "replaced-token-detection",
+      question: "TabTransformer pre-trains with Replaced Token Detection (RTD). Why can it learn from UNLABELED rows, and why does the pretext need the Transformer?",
+      options: [
+        { label: "The target is made from the row (which cells were swapped), so no labels are needed; and a swap only looks wrong in CONTEXT, so detecting it forces contextualisation", value: "a" },
+        { label: "It uses the real labels but corrupts the features, so it is a data-augmentation trick, not truly self-supervised", value: "b" },
+        { label: "It predicts the masked continuous features, which need no labels because they are numeric", value: "c" },
+        { label: "The detector reads each token in isolation, so it works even without any attention layers", value: "d" }
+      ],
+      correct: "a",
+      explain: "RTD (Huang §3.3, ELECTRA-style): with probability p replace each categorical token with a uniform random category, then a per-column detector predicts which cells changed. The label is manufactured from the row itself — no real labels — so any unlabeled row is signal (b false). It corrupts CATEGORICALS, not numerics (c false). And a swapped value looks perfectly normal on its own; it is only detectable by how it clashes with the rest of the row, so the detector can only succeed if the encoder MIXES columns — the pretext rewards contextualisation (d false). Verified detector ROC-AUC ≈ 0.82 on held-out corruptions (L045). Note the effective replaced fraction is p·(1−1/card) < p, because a redraw can land on the original."
+    },
+    {
+      id: "l045-numeric-bypass", lesson: 45, quarter: "Y2Q1", concept: "tabtransformer-limitation", misconception: true,
+      question: "TabTransformer contextualises categorical columns — so on categorical-rich tables it should beat CatBoost. What does the from-scratch run actually show, and why?",
+      options: [
+        { label: "CatBoost still wins — TabTransformer beats it on 0/3 tables (mean ranks 2.33 / 2.67 / 1.00), because NUMERIC features bypass the attention entirely", value: "a" },
+        { label: "TabTransformer wins decisively on every categorical-rich table once the attention is deep enough", value: "b" },
+        { label: "They tie exactly, because contextual and context-free embeddings are mathematically equivalent", value: "c" },
+        { label: "Context-free beats both, since attention is pure overhead on tabular data", value: "d" }
+      ],
+      correct: "a",
+      explain: "Verified (L045, labs/_verify_l045.py, 3 categorical-rich tables × 3 seeds): mean ranks TabTransformer 2.33, context-free 2.67, CatBoost 1.00 (Friedman p = 0.097). Contextual edges the context-free MLP on 2/3 (a small, within-noise gain — not equivalent, so c is false, and context-free does NOT win, so d is false), but TabTransformer beats CatBoost on 0/3 (b false). The reason is the paper's own limitation: only CATEGORICALS go through the Transformer; numeric features are just LayerNorm'd and concatenated — they never attend to anything. On numeric-bearing tables that is a real ceiling, and it is exactly what FT-Transformer (L046) removes by tokenising numerics too."
     }
   ];
 })(window);
