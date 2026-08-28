@@ -172,6 +172,7 @@ def main(argv=None):
         "OpenML 1590 random stratified 70/15/15 split — NOT the UCI official Adult test file",
         "early-stopping on ROC-AUC (paper reports accuracy; paper used a step LR decay over 7.7k iters)",
         f"batch_size={cfg['batch_size']} (paper B=4096, B_V=128 ghost BN); from-scratch encoder, binary logit",
+        "dense one-hot input — paper (and pytorch_tabnet) use learned categorical embeddings",
     ]
 
     adult_run = None

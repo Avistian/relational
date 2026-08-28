@@ -41,6 +41,9 @@ def load_tier_a(name: str = "credit_g", *, use_cache: bool = True) -> tuple[pd.D
         target = bundle.target
         tcol = target.name if getattr(target, "name", None) else spec["target"]
         df[tcol] = target
+        if use_cache:
+            CACHE.mkdir(parents=True, exist_ok=True)
+            df.to_parquet(cache_path)
     tcol = SPECS[name]["target"]
     if tcol not in df.columns:
         tcol = df.columns[-1]

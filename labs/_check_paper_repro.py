@@ -146,6 +146,46 @@ from relkit import load_tier_a
     check("scale-up cell still has the training loop (main)", "def main(" in cell)
     check("scale-up cell is gated off by default", "RUN_PAPER_REPRO = False" in cell)
 
+    # Regression guard: #25 retrofit must land in BOTH the student notebook and
+    # the teacher solution. The 2026-08-28 miss shipped inlined encoders only in
+    # the student .ipynb; solutions/ still imported the model from relkit.
+    import json
+    specs = [
+        ("0043-tabnet", {
+            "class TabNetEncoder", "class GhostBatchNorm", "def train_tabnet",
+            "RUN_PAPER_REPRO", "modal/l043_paper_repro.py",
+        }, "from relkit.tabnet import TabNetEncoder"),
+        ("0044-node", {
+            "class ODST", "class DenseNODE", "def train_node", "def entmoid15",
+            "RUN_PAPER_REPRO", "modal/l044_paper_repro.py",
+        }, "from relkit.node import DenseNODE"),
+        ("0045-tabtransformer", {
+            "class TabTransformer", "class TransformerBlock", "class RTDHead",
+            "def pretrain_rtd", "RUN_PAPER_REPRO", "modal/l045_paper_repro.py",
+        }, "from relkit.tabtransformer import TabTransformer"),
+    ]
+    for slug, needles, hidden_import in specs:
+        for kind, rel in (("student", f"{slug}.ipynb"),
+                          ("solution", os.path.join("solutions", f"{slug}.ipynb"))):
+            path = os.path.join(HERE, rel)
+            if not os.path.exists(path):
+                if kind == "solution":
+                    print(f"SKIP  {kind} {slug} missing (gitignored; rebuild locally)")
+                    continue
+                check(f"{kind} {slug} exists", False, path)
+                continue
+            nb = json.load(open(path))
+            src = "\n".join(
+                "".join(c.get("source") or "") if isinstance(c.get("source"), list)
+                else (c.get("source") or "")
+                for c in nb["cells"]
+            )
+            missing = sorted(n for n in needles if n not in src)
+            check(f"{kind} {slug} inlines the paper encoder + paper-repro",
+                  not missing, f"missing {missing}" if missing else "")
+            check(f"{kind} {slug} does not hide the encoder behind {hidden_import}",
+                  hidden_import not in src)
+
     print()
     print(f"{len(PASS)} PASS / {len(FAIL)} FAIL")
     if FAIL:
