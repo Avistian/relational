@@ -7796,7 +7796,7 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=edfe9d6c">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4cde83a6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7809,17 +7809,17 @@ a.anchor-link {
 <p><strong>Exit criteria:</strong> EXIT TICKET prints your entmax15 validation, the ODST forward match + leaf-routing check, the NODE-vs-CatBoost rank table, the cost ratio, and one sentence — <em>when is a differentiable tree actually worth it?</em></p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells — boilerplate (data, frame, search spaces, CatBoost/net searches); just run.</li>
+<li><strong>PROVIDED</strong> cells — boilerplate (data, frame, search spaces, CatBoost/net searches) <strong>and</strong> NODE (ODST, DenseNODE, train loop) copied into the notebook (not hidden behind <code>import relkit.node</code>); just run.</li>
 <li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
-<li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
+<li>Run top to bottom. After EXIT, a <strong>NEXT STEP</strong> cell trains closer to the paper (Colab GPU or Modal). When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
 <h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>torch</strong> + scikit-learn + <strong>catboost</strong> (CPU is fine); the <strong><code>entmax</code></strong> package is used only to validate your entmax15. Real datasets fetch from OpenML on first run then cache. Budget: <strong>~4–8 minutes on CPU</strong> — set <code>OMP_NUM_THREADS=1</code> if a search feels slow (that has been the real cause of every slow lab so far). This lab uses a deliberately small budget/seed/dataset count to stay interactive; the lesson's headline numbers come from the fuller <code>labs/_verify_l044.py</code> run plus the paper's benchmark.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ba76a4b0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e821ab2f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7833,21 +7833,21 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=0655b66e">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3db49350">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># @colab-bootstrap — PROVIDED. Makes the lab self-sufficient on Google Colab; a no-op elsewhere.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># @colab-bootstrap — PROVIDED. Makes the lab self-sufficient on Google Colab; a no-op elsewhere.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
 
 <span class="k">if</span> <span class="s2">"google.colab"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="s2">"/content/relational"</span><span class="p">):</span>
-        <span class="o">!</span>git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>https://github.com/Avistian/relational.git<span class="w"> </span>/content/relational
-    <span class="o">%</span><span class="k">pip</span> install -q -r /content/relational/requirements-labs.txt
+        <span class="err">!</span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Avistian</span><span class="o">/</span><span class="n">relational</span><span class="o">.</span><span class="n">git</span> <span class="o">/</span><span class="n">content</span><span class="o">/</span><span class="n">relational</span>
+    <span class="o">%</span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">q</span> <span class="o">-</span><span class="n">r</span> <span class="o">/</span><span class="n">content</span><span class="o">/</span><span class="n">relational</span><span class="o">/</span><span class="n">requirements</span><span class="o">-</span><span class="n">labs</span><span class="o">.</span><span class="n">txt</span>
     <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s2">"/content/relational/labs"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"Colab ready — working dir:"</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
 <span class="k">else</span><span class="p">:</span>
@@ -7857,21 +7857,8 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Not on Colab — using the local environment as-is.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a958d6a8">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7783332d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7891,7 +7878,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b0ff3211">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a7847f9b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7901,17 +7888,17 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=0627640b">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d523c23a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># PROVIDED — imports, the small real tables, the shared frame, and the search spaces.</span>
-<span class="c1"># `relkit.node` holds the from-scratch NODE (built from the paper); the reference `entmax` package is</span>
-<span class="c1"># imported ONLY to validate your entmax15 in Task 1 (NOTES #22). Just run this cell.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — imports, the small real tables, the shared frame, and the search spaces.</span>
+<span class="c1"># The NODE *architecture* is inlined in a later cell so you can read it; `relkit.node` here is only</span>
+<span class="c1"># the Task-1/Task-2 *checker* (NOTES #22 / #25). Just run this cell.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 
@@ -7931,8 +7918,9 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>   <span class="c1"># labs/ when run from labs/solutions/</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit.nets</span><span class="w"> </span><span class="kn">import</span> <span class="n">TabResNet</span><span class="p">,</span> <span class="n">TabMLP</span><span class="p">,</span> <span class="n">train_net</span><span class="p">,</span> <span class="n">net_auc</span>          <span class="c1"># L042 baselines (from scratch)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.node</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">entmax15</span> <span class="k">as</span> <span class="n">relkit_entmax15</span><span class="p">,</span> <span class="n">entmoid15</span><span class="p">,</span>       <span class="c1"># L044, from the paper</span>
-                         <span class="n">ODST</span><span class="p">,</span> <span class="n">DenseNODE</span><span class="p">,</span> <span class="n">train_node</span><span class="p">,</span> <span class="n">node_auc</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.node</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">entmax15</span> <span class="k">as</span> <span class="n">relkit_entmax15</span><span class="p">,</span>                  <span class="c1"># checker only (NOTES #22)</span>
+                         <span class="n">entmoid15</span><span class="p">,</span>                                    <span class="c1"># Task 2 uses this operator</span>
+                         <span class="n">ODST</span> <span class="k">as</span> <span class="n">relkit_ODST</span><span class="p">)</span>                          <span class="c1"># checker for your forward</span>
 
 <span class="n">DEVICE</span> <span class="o">=</span> <span class="s2">"cpu"</span>
 <span class="n">DATASETS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"credit_g"</span><span class="p">,</span> <span class="s2">"diabetes"</span><span class="p">,</span> <span class="s2">"kc1"</span><span class="p">]</span>   <span class="c1"># small: NOT representative (see the #23 note below)</span>
@@ -8007,21 +7995,8 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>setup ok — torch 2.13.0+cpu
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e39f0e1b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1c02d4ba">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8042,15 +8017,15 @@ smoother gradient. That is what NODE found trains best for feature selection.</p
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=422984c5">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a60683bc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># SOLUTION — entmax15 by bisection (Peters, Niculae &amp; Martins 2019)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — implement entmax15 by bisection along the last dimension. Fill every ____.</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">entmax15</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""z: (..., K) -&gt; (..., K) alpha=1.5 entmax (a sparse distribution: sums to 1, exact zeros allowed)."""</span>
     <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.5</span>
@@ -8061,7 +8036,7 @@ smoother gradient. That is what NODE found trains best for feature selection.</p
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_iter</span><span class="p">):</span>
         <span class="n">tau</span> <span class="o">=</span> <span class="p">(</span><span class="n">tau_lo</span> <span class="o">+</span> <span class="n">tau_hi</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
         <span class="c1"># p from the current tau (clip negatives, then raise to 1/(alpha-1) = power 2)</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="n">tau</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">____</span>
         <span class="c1"># if the mass is too small, tau is too high -&gt; move the ceiling down; else move the floor up</span>
         <span class="n">below</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
         <span class="n">tau_hi</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">below</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">tau_hi</span><span class="p">)</span>
@@ -8069,7 +8044,7 @@ smoother gradient. That is what NODE found trains best for feature selection.</p
     <span class="n">tau</span> <span class="o">=</span> <span class="p">(</span><span class="n">tau_lo</span> <span class="o">+</span> <span class="n">tau_hi</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
     <span class="n">p</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="n">tau</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
     <span class="c1"># normalise to kill tiny residual (bisection is approximate)</span>
-    <span class="k">return</span> <span class="n">p</span> <span class="o">/</span> <span class="n">p</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">____</span>
 
 <span class="n">zz</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">]])</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"entmax15 :"</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">entmax15</span><span class="p">(</span><span class="n">zz</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
@@ -8079,29 +8054,15 @@ smoother gradient. That is what NODE found trains best for feature selection.</p
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>entmax15 : [[0.671 0.324 0.005 0.    0.   ]]
-softmax  : [[0.496 0.301 0.111 0.067 0.025]]
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=368aa5be">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e007ef1b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — the properties that make entmax15 a differentiable feature SELECTOR (do not edit)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — the properties that make entmax15 a differentiable feature SELECTOR (do not edit)</span>
 <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 <span class="n">P</span> <span class="o">=</span> <span class="n">entmax15</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
@@ -8138,35 +8099,8 @@ softmax  : [[0.496 0.301 0.111 0.067 0.025]]
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>PASS  sums to 1 along the feature axis   [max dev 2.22e-16]
-PASS  non-negative
-PASS  contains EXACT zeros (softmax never does)   [81% of entries are 0]
-PASS  sits BETWEEN softmax and sparsemax in sparsity
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>PASS  VALIDATED against entmax.entmax15   [max |Δ| 8.88e-16]
-PASS  agrees with relkit.node.entmax15
-PASS  entmax15 keeps MORE features alive than sparsemax   [entmax zeros 1943 &lt; sparsemax zeros 2094]
-
-Task 1 OK
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1d09ed95">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=31c86d1f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8186,19 +8120,19 @@ out   = sum over leaves of  w * response           # weighted average of the lea
 (entmax choice, entmoid split, product routing), the 2^depth-leaf tree is differentiable and trains by
 backprop. The <code>entmoid</code> is just the two-class entmax15 — it saturates to an exact 0/1 for a decisive gap
 (a real decision) but stays smooth, so a gradient flows. You will confirm your forward matches the
-from-scratch <code>relkit.node.ODST</code> exactly when they share parameters.</p>
+from-scratch reference <code>relkit_ODST</code> exactly when they share parameters.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=3bc53074">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3d7a8cf2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># SOLUTION  (entmax15 from Task 1; entmoid15 provided by relkit.)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — fill every ____.  (entmax15 from Task 1; entmoid15 provided by relkit.)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">odst_forward</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">feature_logits</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">,</span> <span class="n">log_temperatures</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">bin_codes_1hot</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""One ensemble of oblivious trees. Shapes:</span>
 <span class="sd">       x:(B,in)  feature_logits:(in,T,d)  thresholds:(T,d)  log_temperatures:(T,d)</span>
@@ -8209,12 +8143,12 @@ from-scratch <code>relkit.node.ODST</code> exactly when they share parameters.</
     <span class="n">f_hat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"bi,itl-&gt;btl"</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">feature_selectors</span><span class="p">)</span>                    <span class="c1"># (B,T,d) chosen values</span>
 
     <span class="c1"># the soft split: scale the gap by 1/temperature, then entmoid -&gt; P(go right) in [0,1]</span>
-    <span class="n">c</span> <span class="o">=</span> <span class="n">entmoid15</span><span class="p">((</span><span class="n">f_hat</span> <span class="o">-</span> <span class="n">thresholds</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">log_temperatures</span><span class="p">))</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">____</span>
     <span class="n">bins</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">c</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">c</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>                                       <span class="c1"># (B,T,d,2)</span>
 
     <span class="c1"># route to leaves: match each leaf's per-level bit, then take the PRODUCT over levels</span>
     <span class="n">bin_matches</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"btds,dls-&gt;btdl"</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">bin_codes_1hot</span><span class="p">)</span>           <span class="c1"># (B,T,d,2^d)</span>
-    <span class="n">weights</span> <span class="o">=</span> <span class="n">bin_matches</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>                                           <span class="c1"># (B,T,2^d), sums to 1</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">____</span>                                                               <span class="c1"># (B,T,2^d), sums to 1</span>
 
     <span class="c1"># weighted average of leaf responses</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"btl,tcl-&gt;btc"</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>                        <span class="c1"># (B,T,tree_dim)</span>
@@ -8222,40 +8156,27 @@ from-scratch <code>relkit.node.ODST</code> exactly when they share parameters.</
 
 <span class="c1"># Build a reference ODST, then run YOUR forward on ITS parameters and compare (NOTES #22).</span>
 <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">ref</span> <span class="o">=</span> <span class="n">ODST</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">num_trees</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">tree_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="n">ref</span> <span class="o">=</span> <span class="n">relkit_ODST</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">num_trees</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">tree_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 <span class="n">mine</span> <span class="o">=</span> <span class="n">odst_forward</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">feature_logits</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">thresholds</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">log_temperatures</span><span class="p">,</span>
                     <span class="n">ref</span><span class="o">.</span><span class="n">response</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">bin_codes_1hot</span><span class="p">)</span>
 <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
     <span class="n">theirs</span> <span class="o">=</span> <span class="n">ref</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"max |Δ| vs relkit.node.ODST:"</span><span class="p">,</span> <span class="p">(</span><span class="n">mine</span> <span class="o">-</span> <span class="n">theirs</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"max |Δ| vs reference ODST:"</span><span class="p">,</span> <span class="p">(</span><span class="n">mine</span> <span class="o">-</span> <span class="n">theirs</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>max |Δ| vs relkit.node.ODST: 0.0
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=76e28e10">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=342a825e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — the invariants of the differentiable oblivious tree (do not edit)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — the invariants of the differentiable oblivious tree (do not edit)</span>
 <span class="n">ok</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">chk</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">""</span><span class="p">):</span>
     <span class="k">global</span> <span class="n">ok</span>
@@ -8269,7 +8190,7 @@ from-scratch <code>relkit.node.ODST</code> exactly when they share parameters.</
 <span class="n">bins</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">c</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">c</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"btds,dls-&gt;btdl"</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">bin_codes_1hot</span><span class="p">)</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
 
-<span class="n">chk</span><span class="p">(</span><span class="s2">"forward MATCHES relkit.node.ODST on shared parameters"</span><span class="p">,</span>
+<span class="n">chk</span><span class="p">(</span><span class="s2">"forward MATCHES the reference ODST on shared parameters"</span><span class="p">,</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">mine</span><span class="p">,</span> <span class="n">ref</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"max |Δ| </span><span class="si">{</span><span class="p">(</span><span class="n">mine</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">ref</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="n">chk</span><span class="p">(</span><span class="s2">"leaf-routing weights sum to 1 per (row, tree)"</span><span class="p">,</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">),</span>
@@ -8290,27 +8211,268 @@ from-scratch <code>relkit.node.ODST</code> exactly when they share parameters.</
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=48010503">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>PASS  forward MATCHES relkit.node.ODST on shared parameters   [max |Δ| 0.00e+00]
-PASS  leaf-routing weights sum to 1 per (row, tree)   [max dev 1.19e-07]
-PASS  there are 2^depth = 16 leaves
-PASS  entmoid gives a genuine hard decision for a decisive gap (exact 0/1)
-PASS  tau -&gt; 0 makes routing ~one-hot (max leaf weight &gt; 0.98)   [mean max-leaf weight 0.989]
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — adapter: your Task-1 entmax15 is last-axis only; the inlined ODST calls dim=0.</span>
+<span class="n">_student_entmax15</span> <span class="o">=</span> <span class="n">entmax15</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">entmax15</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Keep YOUR Task-1 implementation; accept the encoder's dim= keyword."""</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_student_entmax15</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">)</span>
+    <span class="n">z_t</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_student_entmax15</span><span class="p">(</span><span class="n">z_t</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b7272311">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="The-rest-of-the-paper's-architecture-%E2%80%94-inlined,-not-imported">The rest of the paper's architecture — inlined, not imported<a class="anchor-link" href="#The-rest-of-the-paper's-architecture-%E2%80%94-inlined,-not-imported">¶</a></h2><p>The next cell is <code>labs/relkit/node.py</code> copied into this notebook so you can <strong>read every line</strong> of ODST, DenseNODE, and the training loop. It is not <code>from relkit import ...</code> hiding a model behind a package. <code>entmax15</code> defined in your TODO cells above are <strong>kept</strong> — this copy skips those names, so the encoder you train next calls <em>your</em> functions.</p>
+<p><code>relkit/</code> still holds the canonical file for Modal / <code>_verify</code> so the two cannot drift in opposite directions; the notebook is a readable copy, not a black box.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=0979c377">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — inlined from `labs/relkit/node.py` so you can read every line.</span>
+<span class="c1"># This is the paper implementation, not `import relkit...` hiding it.</span>
+<span class="c1"># Canonical file stays at labs/relkit/node.py for Modal / _verify; this cell is a copy.</span>
 
-Task 2 OK
-</pre>
+<span class="sd">"""From-scratch NODE (Popov, Morozov &amp; Babenko 2019, arXiv:1909.06312) — Lesson 044.</span>
+
+<span class="sd">Neural Oblivious Decision Ensembles. Built from the paper, not from a library (NOTES standards</span>
+<span class="sd">#18/#22/#24). The `entmax` package (Peters et al. 2019) is used ONLY as a VALIDATION point in</span>
+<span class="sd">`labs/_verify_l044.py` and `labs/_check_l044.py` — never imported here.</span>
+
+<span class="sd">Paper map — every piece below cites the element it realises (paper §2 "Neural Oblivious Decision</span>
+<span class="sd">Ensembles", Eq. 1–4, Fig. 1):</span>
+
+<span class="sd">| Paper                                                        | Here                        |</span>
+<span class="sd">|-------------------------------------------------------------|-----------------------------|</span>
+<span class="sd">| alpha-entmax feature choice  F_hat_i = &lt;x, entmax_a(F_i)&gt;    | `entmax15` + `ODST.forward` |</span>
+<span class="sd">| two-class entmax split (the "entmoid")  c_i in [0,1]         | `entmoid15`                 |</span>
+<span class="sd">| choice tensor  C(x) = outer_i [c_i, 1-c_i]  (2^d leaves)     | `ODST.forward` (`weights`)  |</span>
+<span class="sd">| tree output  h(x) = &lt;C(x), R&gt;                                | `ODST.forward` (`response`) |</span>
+<span class="sd">| oblivious tree: ONE (feature, threshold) shared per level    | `ODST` parameter shapes     |</span>
+<span class="sd">| DenseNet-style multi-layer stacking (Fig. 1)                | `DenseNODE`                 |</span>
+
+<span class="sd">Binary classification only (tree_dim = 1, averaged over trees to one logit) — all Lesson 044 needs.</span>
+<span class="sd">CPU is fine for the small Tier-A tables.</span>
+
+<span class="sd">Why a differentiable oblivious tree at all? An oblivious decision tree (CatBoost's symmetric tree,</span>
+<span class="sd">L016) uses the SAME split feature + threshold at every node of a level, so a depth-`d` tree is fully</span>
+<span class="sd">described by `d` features, `d` thresholds, and 2^d leaf responses. That regularity is what lets us make</span>
+<span class="sd">it differentiable: replace "pick feature j" with a sparse `entmax` choice over features, and replace the</span>
+<span class="sd">hard comparison `f &gt; b` with a soft, temperature-controlled `entmoid`. Every leaf then receives a</span>
+<span class="sd">*fraction* of the row (they sum to 1), so the whole tree is a smooth function of its parameters and</span>
+<span class="sd">trains by gradient descent end-to-end — unlike a GBDT, whose splits are chosen greedily and are not</span>
+<span class="sd">differentiable.</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">roc_auc_score</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------- sparse transforms</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">entmoid15</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Two-class alpha=1.5 entmax — the "entmoid", NODE's differentiable, sparse replacement for sigmoid.</span>
+
+<span class="sd">    entmoid15(x) is exactly `entmax15([x, 0])[..., 0]`: the probability the soft split sends a row to</span>
+<span class="sd">    the "greater-than-threshold" side. Because it is entmax, once `|x|` is large enough the row is routed</span>
+<span class="sd">    fully (probability an exact 0 or 1) — a genuinely discrete decision, reached smoothly. We use the</span>
+<span class="sd">    closed form (NODE repo `lib/nn_utils.py`), which _check_l044 asserts equals the two-class entmax.</span>
+
+<span class="sd">        tau = (|x| + sqrt(relu(8 - x^2))) / 2 ;  y = 0.25 * relu(tau - |x|)^2  (the smaller-class mass)</span>
+<span class="sd">    """</span>
+    <span class="n">is_pos</span> <span class="o">=</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="p">(</span><span class="n">ax</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="mi">8</span> <span class="o">-</span> <span class="n">ax</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)))</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tau</span> <span class="o">&lt;=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">),</span> <span class="n">tau</span><span class="p">)</span>
+    <span class="n">y_neg</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">tau</span> <span class="o">-</span> <span class="n">ax</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">is_pos</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y_neg</span><span class="p">,</span> <span class="n">y_neg</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------- one NODE layer (ODST)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ODST</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""An ensemble of `num_trees` differentiable Oblivious Decision Trees of depth `depth` (paper §2).</span>
+
+<span class="sd">    "Oblivious" = the tree uses ONE (feature, threshold) pair per LEVEL, shared by every node in that</span>
+<span class="sd">    level (CatBoost's symmetric tree, L016). So the parameters are just:</span>
+
+<span class="sd">      feature_logits  F : [in_features, num_trees, depth]   -&gt; a sparse feature choice per (tree, level)</span>
+<span class="sd">      thresholds      b : [num_trees, depth]                 -&gt; one split point per (tree, level)</span>
+<span class="sd">      log_temp    log_t : [num_trees, depth]                 -&gt; soft-split temperature per (tree, level)</span>
+<span class="sd">      response        R : [num_trees, tree_dim, 2^depth]     -&gt; a learnable answer per leaf</span>
+
+<span class="sd">    Forward (Eq. 2–4):</span>
+<span class="sd">      1. feature choice   f_hat[b,t,l] = &lt;x[b], entmax15(F[:,t,l])&gt;            (differentiable "pick")</span>
+<span class="sd">      2. soft split       c[b,t,l]     = entmoid15( (f_hat - b) * exp(-log_t) )</span>
+<span class="sd">      3. routing tensor   w[b,t,leaf]  = prod_l  ( c or 1-c, per the leaf's bit at level l )</span>
+<span class="sd">      4. tree output      out[b,t,:]   = sum_leaf w * R                        (weighted leaf average)</span>
+
+<span class="sd">    Returns [batch, num_trees * tree_dim].</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_features</span><span class="p">,</span> <span class="n">num_trees</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">tree_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_features</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_trees</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree_dim</span> <span class="o">=</span> <span class="n">in_features</span><span class="p">,</span> <span class="n">num_trees</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">tree_dim</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_logits</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">in_features</span><span class="p">,</span> <span class="n">num_trees</span><span class="p">,</span> <span class="n">depth</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">depth</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_temperatures</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">depth</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">tree_dim</span><span class="p">,</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">depth</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="c1"># bin_codes_1hot[l, leaf, s]: at level l, which side (s=0 "right"/c, s=1 "left"/1-c) leaf uses.</span>
+        <span class="n">leaves</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="n">depth</span><span class="p">)</span>
+        <span class="n">offsets</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+        <span class="n">bit</span> <span class="o">=</span> <span class="p">(</span><span class="n">leaves</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">offsets</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">%</span> <span class="mi">2</span>          <span class="c1"># [depth, 2^depth], 1 =&gt; "right"</span>
+        <span class="n">bin_codes</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">bit</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">bit</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>        <span class="c1"># [depth, 2^depth, 2]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">"bin_codes_1hot"</span><span class="p">,</span> <span class="n">bin_codes</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Data-aware init (paper App.): set thresholds to sampled feature quantiles so early splits are</span>
+<span class="sd">        informative, and scale temperatures to the spread of the chosen feature values."""</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">fs</span> <span class="o">=</span> <span class="n">entmax15</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>                  <span class="c1"># [in, trees, depth]</span>
+            <span class="n">f_hat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"bi,itl-&gt;btl"</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">fs</span><span class="p">)</span>                 <span class="c1"># [batch, trees, depth]</span>
+            <span class="c1"># thresholds &lt;- a random row's feature value per (tree, level); temperature &lt;- its std.</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_trees</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">f_hat</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_trees</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                                         <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_temperatures</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">f_hat</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mf">1e-2</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="n">feature_selectors</span> <span class="o">=</span> <span class="n">entmax15</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>       <span class="c1"># sparse choice over features</span>
+        <span class="n">f_hat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"bi,itl-&gt;btl"</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">feature_selectors</span><span class="p">)</span>      <span class="c1"># [batch, trees, depth]</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="p">(</span><span class="n">f_hat</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">log_temperatures</span><span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">entmoid15</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>                                          <span class="c1"># [batch, trees, depth] soft split</span>
+        <span class="n">bins</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">c</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">c</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>                         <span class="c1"># [batch, trees, depth, 2]</span>
+        <span class="c1"># match each leaf's per-level bit -&gt; [batch, trees, depth, 2^depth], then product over levels</span>
+        <span class="n">bin_matches</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"btds,dls-&gt;btdl"</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_codes_1hot</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">bin_matches</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>                             <span class="c1"># [batch, trees, 2^depth]</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"btl,tcl-&gt;btc"</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">)</span>     <span class="c1"># [batch, trees, tree_dim]</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_trees</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree_dim</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DenseNODE</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""NODE = one or more ODST layers, DenseNet-style: each layer sees the input PLUS every earlier</span>
+<span class="sd">    layer's tree outputs (Fig. 1). The prediction averages the first output unit of every tree across</span>
+<span class="sd">    all layers (paper: average of all trees' responses), giving one logit for binary classification.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_features</span><span class="p">,</span> <span class="n">num_trees</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tree_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_trees</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree_dim</span> <span class="o">=</span> <span class="n">n_layers</span><span class="p">,</span> <span class="n">num_trees</span><span class="p">,</span> <span class="n">tree_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">in_features</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layers</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ODST</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">num_trees</span><span class="o">=</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span> <span class="n">tree_dim</span><span class="o">=</span><span class="n">tree_dim</span><span class="p">))</span>
+            <span class="n">d</span> <span class="o">+=</span> <span class="n">num_trees</span> <span class="o">*</span> <span class="n">tree_dim</span>                                  <span class="c1"># dense concat of this layer's out</span>
+
+    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="n">layer</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">h</span><span class="p">,</span> <span class="n">layer</span><span class="p">(</span><span class="n">h</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>                                             <span class="c1"># [batch, trees*tree_dim]</span>
+            <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_trees</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree_dim</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">h</span><span class="p">,</span> <span class="n">out</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># average the first response unit over all trees in all layers -&gt; one logit</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">train_node</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">wd</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+               <span class="n">batch_size</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Mini-batch Adam with early stopping on validation ROC-AUC — the same fair, shared-protocol</span>
+<span class="sd">    contract as `relkit.nets.train_net` (L042) and `relkit.tabnet.train_tabnet` (L043): every model</span>
+<span class="sd">    picks its own training length by validation, so no arm is accidentally under- or over-trained.</span>
+
+<span class="sd">    NODE-specific: a data-aware `initialize` pass on the first training batch (paper appendix) so the</span>
+<span class="sd">    thresholds start at real feature quantiles rather than random N(0,1) draws.</span>
+
+<span class="sd">    Returns (model_with_best_val_weights, best_val_auc).</span>
+<span class="sd">    """</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">Xt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Xtr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">yt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ytr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">Xv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Xva</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">Xt</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">bs</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">Xt</span><span class="p">[:</span><span class="nb">min</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)])</span>                                <span class="c1"># data-aware threshold init</span>
+    <span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="n">wd</span><span class="p">)</span>
+    <span class="n">lossf</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BCEWithLogitsLoss</span><span class="p">()</span>
+    <span class="n">generator</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span><span class="p">()</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="n">best_auc</span><span class="p">,</span> <span class="n">best_state</span><span class="p">,</span> <span class="n">since</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_epochs</span><span class="p">):</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="n">generator</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">bs</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">perm</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">bs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">idx</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">lossf</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">Xt</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">yt</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">pv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">Xv</span><span class="p">))</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="n">val_auc</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yva</span><span class="p">,</span> <span class="n">pv</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val_auc</span> <span class="o">&gt;</span> <span class="n">best_auc</span><span class="p">:</span>
+            <span class="n">best_auc</span><span class="p">,</span> <span class="n">since</span> <span class="o">=</span> <span class="n">val_auc</span><span class="p">,</span> <span class="mi">0</span>
+            <span class="n">best_state</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">since</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">since</span> <span class="o">&gt;=</span> <span class="n">patience</span><span class="p">:</span>
+                <span class="k">break</span>
+    <span class="k">if</span> <span class="n">best_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">best_state</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">best_auc</span>
+
+
+<span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">node_auc</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+</pre></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c1e1d880">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3e6fe921">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8329,15 +8491,15 @@ study (which used far more trees and tuning than this budget).</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=ab759311">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f02818f8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># SOLUTION</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — fill every ____.</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">search_node</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">budget</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Validation-selected random search over NODE's space — SAME budget as every other model."""</span>
     <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
@@ -8348,8 +8510,8 @@ study (which used far more trees and tuning than this budget).</p>
         <span class="n">model</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">train_node</span><span class="p">(</span><span class="n">DenseNODE</span><span class="p">(</span><span class="o">**</span><span class="n">cfg</span><span class="p">),</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="n">opt</span><span class="p">[</span><span class="s2">"lr"</span><span class="p">],</span>
                                 <span class="n">max_epochs</span><span class="o">=</span><span class="n">EPOCHS</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="n">PATIENCE</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span> <span class="o">+</span> <span class="n">t</span><span class="p">)</span>
         <span class="c1"># keep the trial with the best VALIDATION score, and score IT on test (never select on test)</span>
-        <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="n">best</span><span class="p">[</span><span class="s2">"val"</span><span class="p">]:</span>
-            <span class="n">best</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"val"</span><span class="p">:</span> <span class="n">val</span><span class="p">,</span> <span class="s2">"test"</span><span class="p">:</span> <span class="n">node_auc</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="n">____</span><span class="p">:</span>
+            <span class="n">best</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"val"</span><span class="p">:</span> <span class="n">val</span><span class="p">,</span> <span class="s2">"test"</span><span class="p">:</span> <span class="n">____</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">best</span><span class="p">[</span><span class="s2">"test"</span><span class="p">]</span>
 
 <span class="n">MODELS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"node"</span><span class="p">,</span> <span class="s2">"catboost"</span><span class="p">,</span> <span class="s2">"mlp"</span><span class="p">,</span> <span class="s2">"resnet"</span><span class="p">]</span>
@@ -8383,52 +8545,15 @@ study (which used far more trees and tuning than this budget).</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>  credit_g: node 0.769±0.019 | catboost 0.807±0.011 | mlp 0.812±0.022 | resnet 0.805±0.029
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>  diabetes: node 0.821±0.020 | catboost 0.819±0.029 | mlp 0.832±0.035 | resnet 0.816±0.020
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>       kc1: node 0.791±0.006 | catboost 0.821±0.015 | mlp 0.795±0.006 | resnet 0.795±0.013
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>
-mean ranks: {'node': 3.33, 'catboost': 2.0, 'mlp': 1.33, 'resnet': 3.33}
-Friedman chi2=5.400, p=0.145 (k=4, N=3)
-NODE beats CatBoost on 1/3 tables
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a509426c">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7ccb60c1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — the verdict, read the disciplined way (do not edit)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — the verdict, read the disciplined way (do not edit)</span>
 <span class="n">ok</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">chk</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">""</span><span class="p">):</span>
     <span class="k">global</span> <span class="n">ok</span>
@@ -8459,35 +8584,8 @@ NODE beats CatBoost on 1/3 tables
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>PASS  ranks are a valid per-dataset ranking of the 4 models
-PASS  best score on each dataset got rank 1
-PASS  every model was given the SAME budget   [budget=3 per model, seeds=[0, 1]]
-
-VERDICT — NODE mean rank 3.33 vs CatBoost 2.00 (its own tree shape, grown greedily)
-  baseline-first outcome : did NOT clear the bar
-  Friedman p             : 0.145 -&gt; CANNOT distinguish these models on this sample
-
-Keep the two statements separate. p &gt; 0.05 means you may NOT claim NODE is *significantly worse* — this
-sample is far too small. But the burden of proof sits with the NEW, more expensive model, so ranking
-behind the CatBoost it generalises means it did not clear the bar HERE. With a small budget and 2
-seeds your exact numbers will differ from the lesson's fuller run (labs/_verify_l044.py: NODE 3.50,
-CatBoost 2.50, MLP 2.00, ResNet 2.00, p = 0.308) — what should reproduce is the DIRECTION. And this is a
-down-scaled experiment: NODE's paper win is at benchmark scale with thousands of trees, not this budget.
-Task 3 OK
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9689f98d">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=87526190">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8502,15 +8600,15 @@ which is the point of the lesson.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=78124292">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=53d963b4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># SOLUTION</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># TODO — fill every ____.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">catboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">CatBoostClassifier</span>
 <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_dense</span><span class="p">(</span><span class="s2">"credit_g"</span><span class="p">)</span>
 <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">frame</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
@@ -8531,7 +8629,7 @@ which is the point of the lesson.</p>
 <span class="n">cat_test</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">cat</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">])</span>
 
 <span class="c1"># the slowdown factor</span>
-<span class="n">slowdown</span> <span class="o">=</span> <span class="n">node_s</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">cat_s</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)</span>
+<span class="n">slowdown</span> <span class="o">=</span> <span class="n">____</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"NODE     : </span><span class="si">{</span><span class="n">node_s</span><span class="si">:</span><span class="s2">6.1f</span><span class="si">}</span><span class="s2">s   test AUC </span><span class="si">{</span><span class="n">node_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CatBoost : </span><span class="si">{</span><span class="n">cat_s</span><span class="si">:</span><span class="s2">6.1f</span><span class="si">}</span><span class="s2">s   test AUC </span><span class="si">{</span><span class="n">cat_test</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -8541,30 +8639,15 @@ which is the point of the lesson.</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>NODE     :   77.1s   test AUC 0.793
-CatBoost :    0.5s   test AUC 0.813
-NODE is 146x slower to train on this table
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=bfb6f672">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=26c19b3a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># CHECK — cost is real and belongs in the verdict (do not edit)</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># CHECK — cost is real and belongs in the verdict (do not edit)</span>
 <span class="n">ok</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">chk</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">""</span><span class="p">):</span>
     <span class="k">global</span> <span class="n">ok</span>
@@ -8585,29 +8668,8 @@ NODE is 146x slower to train on this table
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>PASS  NODE is materially slower than CatBoost (&gt;= 5x)   [146x]
-PASS  both produce a valid AUC
-
-The lesson's measured run: NODE 60.2 s vs CatBoost 0.9 s (~70x), NODE 0.793 vs CatBoost 0.813 AUC. Your
-absolute times depend on your CPU, but the SHAPE holds: the differentiable tree costs far more and, on one
-flat table, buys nothing on the metric. That is the whole trade — differentiability is worth paying for
-only when the tree must COMPOSE with other learned modules (joint embeddings, DenseNet stacking,
-end-to-end multi-modal), which is exactly the relational setting the thesis cares about.
-Task 4 OK
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c8aacc71">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fca2c183">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8617,15 +8679,15 @@ Task 4 OK
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=ddc921d2">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1485af44">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># EXIT TICKET</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># EXIT TICKET</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"=== LAB 044 — NODE (differentiable oblivious trees) ==="</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"entmax15         : validated (exact zeros, between softmax &amp; sparsemax, matches reference)"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"oblivious tree   : forward matches relkit.node.ODST; leaf routing sums to 1; tau-&gt;0 =&gt; one leaf"</span><span class="p">)</span>
@@ -8635,42 +8697,292 @@ Task 4 OK
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cost             : NODE </span><span class="si">{</span><span class="n">node_s</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s vs CatBoost </span><span class="si">{</span><span class="n">cat_s</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s (</span><span class="si">{</span><span class="n">slowdown</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">x slower)"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cleared the bar? : </span><span class="si">{</span><span class="s1">'YES'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">mean_rank</span><span class="p">[</span><span class="s1">'node'</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">mean_rank</span><span class="p">[</span><span class="s1">'catboost'</span><span class="p">],</span><span class="w"> </span><span class="n">mean_rank</span><span class="p">[</span><span class="s1">'mlp'</span><span class="p">],</span><span class="w"> </span><span class="n">mean_rank</span><span class="p">[</span><span class="s1">'resnet'</span><span class="p">])</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'NO'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"when would you reach for a differentiable tree over CatBoost?:"</span><span class="p">,</span> <span class="s2">"When the tree must COMPOSE with other differentiable modules — not for accuracy on one flat table, where CatBoost's greedy oblivious trees rank ABOVE NODE and train ~70x faster. NODE makes the three discrete steps differentiable (entmax15 feature choice with real zeros, the entmoid soft split, and the outer-product routing that sends a row to all 2^d leaves as a distribution), so hundreds of trees train by backprop and stack DenseNet-style. That end-to-end trainability is worthless on a single table but essential when the tree co-learns with embeddings/encoders, stacks into a hierarchy, or sits in a multi-modal pipeline — i.e. exactly the relational setting where the signal spans joined tables and a greedy GBDT cannot see the structure. My run reproduces the DIRECTION (NODE behind CatBoost, far slower), not the paper's benchmark-scale win, which needs thousands of trees and heavy tuning."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"when would you reach for a differentiable tree over CatBoost?:"</span><span class="p">,</span> <span class="s2">"____"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>=== LAB 044 — NODE (differentiable oblivious trees) ===
-entmax15         : validated (exact zeros, between softmax &amp; sparsemax, matches reference)
-oblivious tree   : forward matches relkit.node.ODST; leaf routing sums to 1; tau-&gt;0 =&gt; one leaf
-bake-off ranks   : node 3.33, catboost 2.00, mlp 1.33, resnet 3.33
-Friedman         : chi2=5.400, p=0.145 (N=3 datasets)
-NODE vs CatBoost : NODE wins 1/3 tables
-cost             : NODE 77.1s vs CatBoost 0.5s (146x slower)
-cleared the bar? : NO
-
-when would you reach for a differentiable tree over CatBoost?: When the tree must COMPOSE with other differentiable modules — not for accuracy on one flat table, where CatBoost's greedy oblivious trees rank ABOVE NODE and train ~70x faster. NODE makes the three discrete steps differentiable (entmax15 feature choice with real zeros, the entmoid soft split, and the outer-product routing that sends a row to all 2^d leaves as a distribution), so hundreds of trees train by backprop and stack DenseNet-style. That end-to-end trainability is worthless on a single table but essential when the tree co-learns with embeddings/encoders, stacks into a hierarchy, or sits in a multi-modal pipeline — i.e. exactly the relational setting where the signal spans joined tables and a greedy GBDT cannot see the structure. My run reproduces the DIRECTION (NODE behind CatBoost, far slower), not the paper's benchmark-scale win, which needs thousands of trees and heavy tuning.
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5eda788f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f011df59">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-push-it-further">Stretch (optional, ungraded) — push it further<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-push-it-further">¶</a></h2><ol>
+<h2 id="NEXT-STEP-%E2%80%94-reproduce-the-paper's-results-(required,-not-stretch)">NEXT STEP — reproduce the paper's results (required, not stretch)<a class="anchor-link" href="#NEXT-STEP-%E2%80%94-reproduce-the-paper's-results-(required,-not-stretch)">¶</a></h2><p>The EXIT ticket above is the <strong>learning lab</strong>: you implemented the architecture and ran a
+downscaled bake-off that fits in minutes on CPU. That is a <em>different experiment</em> from the
+paper's table. <strong>Do not treat the EXIT ranking as the paper's result.</strong> Mixing those two
+buckets is how you learn the wrong conclusion (standard #25 / M60).</p>
+<p><strong>Paper:</strong> Popov, Morozov &amp; Babenko 2020, Neural Oblivious Decision Ensembles (<a href="https://arxiv.org/abs/1909.06312">arXiv:1909.06312</a>)</p>
+<p><strong>Bucket 1 — verified here (this notebook's budget)</strong></p>
+<ul>
+<li><strong>mean ranks:</strong> NODE 3.50 vs CatBoost 2.50 / MLP 2.00 / ResNet 2.00, Friedman p=0.308</li>
+<li><strong>cost:</strong> ~70× slower than CatBoost on credit_g at this budget</li>
+</ul>
+<p><strong>Bucket 2 — the paper's claim (cited, not yet reproduced by this notebook)</strong></p>
+<ul>
+<li><strong>Higgs default-HP error:</strong> NODE 0.2412 vs CatBoost 0.2434 (Table 1). We use OpenML 23512 (~98k of 10.5M) → expect INCOMPARABLE on the absolute number; read DIRECTION.</li>
+</ul>
+<p><strong>Bucket 3 — scale-up run (you train this).</strong> Same from-scratch code, closer to the paper's
+dataset / budget / metric. Two operators:</p>
+<ol>
+<li><p><strong>Google Colab (you, GPU).</strong> <code>Runtime → Change runtime type → T4 GPU</code>, set
+<code>RUN_PAPER_REPRO = True</code> in the next cell, run it. Stay in the tab — free Colab
+disconnects after ~90 min of no <em>tab</em> interaction, even if training is still going.</p>
+</li>
+<li><p><strong>Modal (unattended).</strong> From the repo root:</p>
+<pre><code>~/.local/bin/modal run --detach modal/l044_paper_repro.py --preset closer
+</code></pre>
+<p>Use <code>--preset paper</code> only when you can spend hours and want paper hyperparameters.
+<code>smoke</code> is a seconds-long import check, not a result.</p>
+</li>
+</ol>
+<p>When it finishes, the cell prints a <strong>ledger</strong> with MATCH / CLOSE / FAIL / INCOMPARABLE /
+DIRECTION_*. Paste that ledger to your teacher. Until you run it, the paper claim stays
+<em>cited, not reproduced</em> — and that is an honest state, not a failure.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=09b36c1e">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — paper-results scale-up, inlined from `labs/_paper_repro_l044.py`.</span>
+<span class="c1"># Read this cell: it is the training / comparison loop, not a hidden package.</span>
+<span class="c1"># Default OFF so the learning lab stays minutes. On Colab: Runtime → T4 GPU,</span>
+<span class="c1"># set RUN_PAPER_REPRO = True, re-run. Unattended: modal run --detach modal/l044_paper_repro.py</span>
+
+<span class="sd">"""L044 paper-results scale-up (NOTES standard #25).</span>
+
+<span class="sd">The learning lab races NODE vs CatBoost on four *small* tables with ~64–128 trees.</span>
+<span class="sd">Popov, Morozov &amp; Babenko 2020 (NODE) claim a *default-HP* win over CatBoost/XGBoost on</span>
+<span class="sd">six large datasets with **2048 trees of depth 6**. That is a different experiment.</span>
+
+<span class="sd">This harness trains the from-scratch NODE against CatBoost on a documented subsample of</span>
+<span class="sd">the paper's Higgs table (OpenML 23512, ~98k of the paper's 10.5M) — or falls back to</span>
+<span class="sd">Adult with an honest gap. The paper's Higgs default-HP gap is ~0.002 error (NODE 0.2412</span>
+<span class="sd">vs CatBoost 0.2434). A 98k subsample will often be a DIRECTION_TIE; that is a lesson</span>
+<span class="sd">about *statistical power*, not a refutation of Table 1.</span>
+
+<span class="sd">Presets: smoke · closer · paper.</span>
+
+<span class="sd">Run:</span>
+<span class="sd">    OMP_NUM_THREADS=1 python labs/_paper_repro_l044.py --preset smoke</span>
+<span class="sd">    ~/.local/bin/modal run --detach modal/l044_paper_repro.py --preset closer</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"OMP_NUM_THREADS"</span><span class="p">,</span> <span class="s2">"1"</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">roc_auc_score</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneHotEncoder</span><span class="p">,</span> <span class="n">StandardScaler</span>
+
+<span class="n">HERE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span> <span class="k">if</span> <span class="s2">"__file__"</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">HERE</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.paper_repro</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E402</span>
+    <span class="n">LabFinding</span><span class="p">,</span> <span class="n">PaperTarget</span><span class="p">,</span> <span class="n">ScaleUpRun</span><span class="p">,</span>
+    <span class="n">classify_direction</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">format_ledger</span><span class="p">,</span> <span class="n">hardware_tag</span><span class="p">,</span>
+    <span class="n">print_howto</span><span class="p">,</span> <span class="n">to_jsonable</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">HIGGS_TARGET</span> <span class="o">=</span> <span class="n">PaperTarget</span><span class="p">(</span>
+    <span class="n">paper</span><span class="o">=</span><span class="s2">"NODE (Popov, Morozov &amp; Babenko 2020)"</span><span class="p">,</span> <span class="n">arxiv</span><span class="o">=</span><span class="s2">"1909.06312"</span><span class="p">,</span>
+    <span class="n">table</span><span class="o">=</span><span class="s2">"Table 1 — Higgs, default HPs (classification error)"</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="s2">"Higgs"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"error"</span><span class="p">,</span> <span class="n">paper_value</span><span class="o">=</span><span class="mf">0.2412</span><span class="p">,</span> <span class="n">paper_std</span><span class="o">=</span><span class="mf">0.0005</span><span class="p">,</span> <span class="n">abs_tol</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
+    <span class="n">paper_split</span><span class="o">=</span><span class="s2">"paper: 10.5M train / 500k test; we use OpenML 23512 (~98k) or Adult fallback"</span><span class="p">,</span>
+    <span class="n">higher_is_better</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">notes</span><span class="o">=</span><span class="s2">"Default NODE = 1 layer × 2048 trees × depth 6. CatBoost Table 1 Higgs error = 0.2434."</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">LAB_FINDINGS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">LabFinding</span><span class="p">(</span><span class="s2">"NODE vs CatBoost/MLP/ResNet mean ranks"</span><span class="p">,</span>
+               <span class="s2">"NODE 3.50 · CatBoost 2.50 · MLP 2.00 · ResNet 2.00 (Friedman p=0.308); "</span>
+               <span class="s2">"NODE beats CatBoost 1/4; ~70× slower on credit_g"</span><span class="p">,</span>
+               <span class="s2">"4 small OpenML tables, 64–128 trees, 3 seeds, CPU — NOT the paper's 40+/6-dataset study"</span><span class="p">),</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dense_from_xy</span><span class="p">(</span><span class="n">Xdf</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">num</span> <span class="o">=</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"number"</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num</span><span class="p">]</span>
+    <span class="n">ct</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">([</span>
+        <span class="p">(</span><span class="s2">"num"</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">num</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"cat"</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">sparse_output</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">cat</span><span class="p">),</span>
+    <span class="p">])</span>
+    <span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">Xdf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">load_table</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Prefer the paper's Higgs (subsampled); fall back to Adult with a gap note."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">Xdf</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"higgs_small"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_dense_from_xy</span><span class="p">(</span><span class="n">Xdf</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="s2">"higgs_small"</span><span class="p">,</span> <span class="p">[</span>
+            <span class="s2">"OpenML 23512 (~98k rows) is a SUBSAMPLE of UCI Higgs; paper used 10.5M / 500k test"</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">Xdf</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"adult"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_dense_from_xy</span><span class="p">(</span><span class="n">Xdf</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="s2">"adult"</span><span class="p">,</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">"higgs_small failed (</span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">); Adult is NOT a NODE paper dataset — Table 1 number is INCOMPARABLE"</span><span class="p">,</span>
+        <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+    <span class="n">Xtr_f</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr_f</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.30</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yva</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">Xtr_f</span><span class="p">,</span> <span class="n">ytr_f</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">ytr_f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_error_auc</span><span class="p">(</span><span class="n">predict_proba_pos</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="p">(</span><span class="n">predict_proba_pos</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">err</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">pred</span><span class="p">))</span>
+    <span class="n">auc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">predict_proba_pos</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">err</span><span class="p">,</span> <span class="n">auc</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_node</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">trees</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">dev</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">DenseNODE</span><span class="p">(</span><span class="n">Xtr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">num_trees</span><span class="o">=</span><span class="n">trees</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_node</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span>
+                          <span class="n">patience</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">//</span> <span class="mi">4</span><span class="p">),</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Xte</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">))</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">logits</span><span class="p">))</span>
+    <span class="n">err</span><span class="p">,</span> <span class="n">auc</span> <span class="o">=</span> <span class="n">_error_auc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">yte</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">err</span><span class="p">,</span> <span class="n">auc</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_catboost</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">trees</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">catboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">CatBoostClassifier</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">CatBoostClassifier</span><span class="p">(</span><span class="n">iterations</span><span class="o">=</span><span class="n">trees</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                           <span class="n">random_seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">od_type</span><span class="o">=</span><span class="s2">"Iter"</span><span class="p">,</span> <span class="n">od_wait</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">eval_set</span><span class="o">=</span><span class="p">(</span><span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">),</span> <span class="n">use_best_model</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">err</span><span class="p">,</span> <span class="n">auc</span> <span class="o">=</span> <span class="n">_error_auc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">yte</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">err</span><span class="p">,</span> <span class="n">auc</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">preset_cfg</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"smoke"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">trees</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="mi">800</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"closer"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">trees</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"paper"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">trees</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown preset </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--preset"</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">(</span><span class="s2">"smoke"</span><span class="p">,</span> <span class="s2">"closer"</span><span class="p">,</span> <span class="s2">"paper"</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="s2">"closer"</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">preset_cfg</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="p">)</span>
+    <span class="n">dev</span> <span class="o">=</span> <span class="n">device</span><span class="p">()</span>
+    <span class="n">hw</span> <span class="o">=</span> <span class="n">hardware_tag</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"L044 paper-repro  preset=</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="si">}</span><span class="s2">  device=</span><span class="si">{</span><span class="n">hw</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">dname</span><span class="p">,</span> <span class="n">gaps</span> <span class="o">=</span> <span class="n">load_table</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">"subsample"</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">"subsample"</span><span class="p">]:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"subsample"</span><span class="p">],</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">gaps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">gaps</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"smoke subsampled to </span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s1">'subsample'</span><span class="p">]</span><span class="si">}</span><span class="s2"> rows"</span><span class="p">]</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  table=</span><span class="si">{</span><span class="n">dname</span><span class="si">}</span><span class="s2">  n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">  d=</span><span class="si">{</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">node_run</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">cb_err</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">n_err</span><span class="p">,</span> <span class="n">n_auc</span><span class="p">,</span> <span class="n">n_wall</span> <span class="o">=</span> <span class="n">run_node</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">,</span>
+                                        <span class="n">trees</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"trees"</span><span class="p">],</span> <span class="n">depth</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">],</span>
+                                        <span class="n">epochs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"epochs"</span><span class="p">],</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dev</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+        <span class="n">node_run</span> <span class="o">=</span> <span class="n">ScaleUpRun</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">"node-scratch"</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dname</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"error"</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">n_err</span><span class="p">,</span> <span class="n">n_seeds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hardware</span><span class="o">=</span><span class="n">hw</span><span class="p">,</span> <span class="n">wall_s</span><span class="o">=</span><span class="n">n_wall</span><span class="p">,</span>
+            <span class="n">protocol_match</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">protocol_deviations</span><span class="o">=</span><span class="n">gaps</span> <span class="o">+</span> <span class="p">[</span>
+                <span class="sa">f</span><span class="s2">"trees=</span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s1">'trees'</span><span class="p">]</span><span class="si">}</span><span class="s2"> depth=</span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s1">'depth'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (paper default 2048 × depth 6)"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"test AUC=</span><span class="si">{</span><span class="n">n_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  NODE     error=</span><span class="si">{</span><span class="n">n_err</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  auc=</span><span class="si">{</span><span class="n">n_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  wall=</span><span class="si">{</span><span class="n">n_wall</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+        <span class="n">cb_err</span><span class="p">,</span> <span class="n">cb_auc</span><span class="p">,</span> <span class="n">cb_wall</span> <span class="o">=</span> <span class="n">run_catboost</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">,</span>
+                                               <span class="n">trees</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"trees"</span><span class="p">],</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  CatBoost error=</span><span class="si">{</span><span class="n">cb_err</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  auc=</span><span class="si">{</span><span class="n">cb_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  wall=</span><span class="si">{</span><span class="n">cb_wall</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  bake-off failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">extra</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">node_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">cb_err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">classify_direction</span><span class="p">(</span><span class="n">node_run</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">cb_err</span><span class="p">,</span> <span class="n">paper_a_beats_b</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                               <span class="n">higher_is_better</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tie_tol</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
+        <span class="n">extra</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"DIRECTION NODE vs CatBoost error on </span><span class="si">{</span><span class="n">dname</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">d</span><span class="si">}</span><span class="s2">. "</span>
+            <span class="sa">f</span><span class="s2">"Paper Table 1 (default HPs, full Higgs) NODE 0.2412 vs CatBoost 0.2434 — a 0.002 edge. "</span>
+            <span class="sa">f</span><span class="s2">"A DIRECTION_TIE (or a FAIL on a toy smoke budget) means this experiment cannot see "</span>
+            <span class="sa">f</span><span class="s2">"that gap — not that Table 1 is false. Only a closer/paper-preset FAIL with a matched "</span>
+            <span class="sa">f</span><span class="s2">"protocol would be real tension with the paper's claim."</span>
+        <span class="p">)</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[(</span><span class="n">HIGGS_TARGET</span><span class="p">,</span> <span class="n">node_run</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">(</span><span class="n">HIGGS_TARGET</span><span class="p">,</span> <span class="n">node_run</span><span class="p">))]</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">format_ledger</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"L044 NODE"</span><span class="p">,</span> <span class="n">lab</span><span class="o">=</span><span class="n">LAB_FINDINGS</span><span class="p">,</span> <span class="n">paper</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span> <span class="n">extra_lines</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"lesson"</span><span class="p">:</span> <span class="mi">44</span><span class="p">,</span> <span class="s2">"preset"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="p">,</span> <span class="s2">"hardware"</span><span class="p">:</span> <span class="n">hw</span><span class="p">,</span> <span class="s2">"table"</span><span class="p">:</span> <span class="n">dname</span><span class="p">,</span>
+        <span class="s2">"node"</span><span class="p">:</span> <span class="n">to_jsonable</span><span class="p">(</span><span class="n">node_run</span><span class="p">),</span> <span class="s2">"catboost_error"</span><span class="p">:</span> <span class="n">cb_err</span><span class="p">,</span> <span class="s2">"ledger"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">dest</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PAPER_REPRO_OUT"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">HERE</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"_paper_repro_l044_</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="si">}</span><span class="s2">_results.json"</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">fh</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">wrote </span><span class="si">{</span><span class="n">dest</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.paper_repro</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_howto</span>
+
+<span class="n">RUN_PAPER_REPRO</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">PRESET</span> <span class="o">=</span> <span class="s2">"closer"</span>          <span class="c1"># smoke | closer | paper</span>
+
+<span class="k">if</span> <span class="n">RUN_PAPER_REPRO</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">([</span><span class="s2">"--preset"</span><span class="p">,</span> <span class="n">PRESET</span><span class="p">])</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">print_howto</span><span class="p">(</span><span class="n">lesson</span><span class="o">=</span><span class="mi">44</span><span class="p">,</span> <span class="n">modal</span><span class="o">=</span><span class="s2">"modal/l044_paper_repro.py"</span><span class="p">,</span> <span class="n">harness</span><span class="o">=</span><span class="s2">"labs/_paper_repro_l044.py"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a7b2eed0">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-after-the-scale-up">Stretch (optional, ungraded) — after the scale-up<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-after-the-scale-up">¶</a></h2><ol>
 <li><strong>The DenseNet depth claim.</strong> Compare <code>n_layers = 1</code> vs <code>2</code> vs <code>3</code> on one table at fixed total trees.
 NODE's pitch is that stacking lets later trees split on earlier trees' decisions — does depth help here,
 or is one layer enough at this scale?</li>
@@ -8686,15 +8998,15 @@ Year 4 relational setting — the case where end-to-end training is the point.</
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=39a94574">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=34fe476b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
+<div class="highlight hl-python"><pre><span></span><span class="c1"># STRETCH — ungraded.</span>
 <span class="c1"># X, y = load_dense("kc1")</span>
 <span class="c1"># for L in (1, 2, 3):</span>
 <span class="c1">#     f = frame(X, y, 0); torch.manual_seed(0)</span>

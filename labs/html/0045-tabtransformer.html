@@ -7796,7 +7796,7 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=616d2aa6">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=518c0c3d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7809,17 +7809,17 @@ a.anchor-link {
 <p><strong>Exit criteria:</strong> EXIT TICKET prints your RTD validation, the pretext-step detector AUC, the contextual-vs-context-free probe, the bake-off ranks, the label-efficiency lift, and one sentence — <em>what does context buy, and where does it stop?</em></p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells — boilerplate (data, frame, budgets, CatBoost/pretrain harnesses); just run.</li>
+<li><strong>PROVIDED</strong> cells — boilerplate (data, frame, budgets, CatBoost/pretrain harnesses) <strong>and</strong> the paper's encoder / train / RTD loops copied into the notebook (not hidden behind <code>import relkit.tabtransformer</code>); just run.</li>
 <li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
-<li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
+<li>Run top to bottom. After EXIT, a <strong>NEXT STEP</strong> cell trains closer to the paper (Colab GPU or Modal). When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
 <h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>torch</strong> + scikit-learn + <strong>catboost</strong> (CPU is fine). Real datasets fetch from OpenML on first run then cache. Budget: <strong>~8–12 minutes on CPU</strong> — set <code>OMP_NUM_THREADS=1</code> if a search feels slow (that has been the real cause of every slow lab so far). This lab uses a deliberately small budget/seed/dataset count to stay interactive; the lesson's headline numbers come from the fuller <code>labs/_verify_l045.py</code> run plus the paper's 15-dataset benchmark.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=646c0042">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=77dad6fe">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7833,7 +7833,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=404008ee">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=78c93d1d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7858,7 +7858,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7b3d0d76">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=759458f9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7891,7 +7891,7 @@ numerics bypass the attention. That gap is exactly what <strong>FT-Transformer (
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a4d95e4f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=21962b53">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7901,7 +7901,7 @@ numerics bypass the attention. That gap is exactly what <strong>FT-Transformer (
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4fcfda5b">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a9b838b0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7910,10 +7910,9 @@ numerics bypass the attention. That gap is exactly what <strong>FT-Transformer (
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — imports, the categorical-rich tables, the shared frame, and the budgets. Just run.</span>
-<span class="c1"># `relkit.tabtransformer` holds the from-scratch TabTransformer (built from Huang 2020, Fig. 1 + §3):</span>
-<span class="c1"># column embeddings -&gt; N Transformer blocks (contextual) -&gt; concat LayerNorm(numeric) -&gt; MLP head.</span>
-<span class="c1"># You will USE its encoder in Tasks 1-2 and race it in Tasks 3-4; the attention itself you already built</span>
-<span class="c1"># forward-only in Lab 032, and it is re-validated to machine precision in labs/_check_l045.py (NOTES #22).</span>
+<span class="c1"># The TabTransformer *architecture* is inlined in a later cell so you can read it (Huang 2020, Fig. 1 + §3).</span>
+<span class="c1"># `relkit.tabtransformer` here is only a data helper + a Task-1 checker (NOTES #22 / #25).</span>
+<span class="c1"># The attention itself you already built forward-only in Lab 032; it is re-validated in labs/_check_l045.py.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 
@@ -7930,9 +7929,8 @@ numerics bypass the attention. That gap is exactly what <strong>FT-Transformer (
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>   <span class="c1"># labs/ when run from labs/solutions/</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit.tabtransformer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">frame_categorical</span><span class="p">,</span> <span class="n">TabTransformer</span><span class="p">,</span> <span class="n">RTDHead</span><span class="p">,</span>
-    <span class="n">corrupt_categorical</span> <span class="k">as</span> <span class="n">relkit_corrupt</span><span class="p">,</span>            <span class="c1"># reference for Task 1 (NOTES #22)</span>
-    <span class="n">train_tabtransformer</span><span class="p">,</span> <span class="n">tabtransformer_auc</span><span class="p">,</span> <span class="n">pretrain_rtd</span><span class="p">,</span>
+    <span class="n">frame_categorical</span><span class="p">,</span>                                         <span class="c1"># data helper (not the model)</span>
+    <span class="n">corrupt_categorical</span> <span class="k">as</span> <span class="n">relkit_corrupt</span><span class="p">,</span>                     <span class="c1"># checker only (NOTES #22)</span>
 <span class="p">)</span>
 
 <span class="n">DEVICE</span> <span class="o">=</span> <span class="s2">"cpu"</span>
@@ -7993,7 +7991,7 @@ numerics bypass the attention. That gap is exactly what <strong>FT-Transformer (
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7d4148d4">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=edc4e02a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8012,7 +8010,7 @@ flip. That is why the <em>effective</em> replaced fraction is <code>p·(1 − 1/
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1b75bf7e">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4dfdd650">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8049,7 +8047,7 @@ flip. That is why the <em>effective</em> replaced fraction is <code>p·(1 − 1/
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c95f1721">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a5019eb1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8105,7 +8103,335 @@ flip. That is why the <em>effective</em> replaced fraction is <code>p·(1 − 1/
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=61211bd1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=efecef85">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="The-rest-of-the-paper's-architecture-%E2%80%94-inlined,-not-imported">The rest of the paper's architecture — inlined, not imported<a class="anchor-link" href="#The-rest-of-the-paper's-architecture-%E2%80%94-inlined,-not-imported">¶</a></h2><p>The next cell is <code>labs/relkit/tabtransformer.py</code> copied into this notebook so you can <strong>read every line</strong> of column embeddings, the Transformer stack, RTDHead, and the train / pre-train loops. It is not <code>from relkit import ...</code> hiding a model behind a package. <code>corrupt_categorical</code> defined in your TODO cells above are <strong>kept</strong> — this copy skips those names, so the encoder you train next calls <em>your</em> functions.</p>
+<p><code>relkit/</code> still holds the canonical file for Modal / <code>_verify</code> so the two cannot drift in opposite directions; the notebook is a readable copy, not a black box.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a08f12f8">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — inlined from `labs/relkit/tabtransformer.py` so you can read every line.</span>
+<span class="c1"># This is the paper implementation, not `import relkit...` hiding it.</span>
+<span class="c1"># Canonical file stays at labs/relkit/tabtransformer.py for Modal / _verify; this cell is a copy.</span>
+
+<span class="sd">"""From-scratch TabTransformer (Huang, Khetan, Cvitkovic &amp; Karnin 2020, arXiv:2012.06678) — Lesson 045.</span>
+
+<span class="sd">Built from the paper (Fig. 1 + §3), not from a library (NOTES standards #18/#22/#24). This module</span>
+<span class="sd">*promotes* the architecture the student wrote forward-only in Lab 032 and adds the two things L045 is</span>
+<span class="sd">about: **supervised training** and **semi-supervised RTD pre-training**. torch's own</span>
+<span class="sd">`nn.functional.scaled_dot_product_attention` and `nn.MultiheadAttention` are used ONLY as VALIDATION</span>
+<span class="sd">points in `labs/_verify_l045.py` / `labs/_check_l045.py` — never imported here.</span>
+
+<span class="sd">Paper map — every piece cites the element it realises (§3.1 "Column Embedding", §3.2 the Transformer</span>
+<span class="sd">stack, Fig. 1 the whole model, §3.3 "Pre-training"):</span>
+
+<span class="sd">| Paper                                                                | Here                          |</span>
+<span class="sd">|----------------------------------------------------------------------|-------------------------------|</span>
+<span class="sd">| column (entity) embedding for each categorical feature               | `TabTransformer.embs`         |</span>
+<span class="sd">| N Transformer layers over the categorical tokens -&gt; contextual embs  | `TabTransformer.contextual`   |</span>
+<span class="sd">| continuous features bypass the Transformer, are LayerNorm'd          | `TabTransformer.num_norm`     |</span>
+<span class="sd">| concat[flatten(contextual), norm(continuous)] -&gt; MLP head -&gt; logit   | `TabTransformer.forward`      |</span>
+<span class="sd">| multi-head self-attention  softmax(QKᵀ/√d)V per head, concat, project | `MultiHeadSelfAttention`      |</span>
+<span class="sd">| Transformer layer = residual(attn) + residual(FFN), each + LayerNorm  | `TransformerBlock`            |</span>
+<span class="sd">| RTD pre-training: replace tokens, a per-column detector predicts them | `pretrain_rtd` + `RTDHead`    |</span>
+
+<span class="sd">The n_layers=0 case is the **context-free ablation**: entity embeddings with NO attention — exactly the</span>
+<span class="sd">static-embedding MLP of L031/L032. Running the same class at n_layers=0 vs n_layers&gt;0 isolates *what the</span>
+<span class="sd">attention (contextualisation) buys*, which is the lesson's headline comparison.</span>
+
+<span class="sd">Binary classification only (one logit). CPU is fine for the small / subsampled Tier-A tables L045 uses.</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">roc_auc_score</span>
+
+
+<span class="c1"># ---------------------------------------------------------------- data prep (shared by verify/check/lab)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">frame_categorical</span><span class="p">(</span><span class="n">Xdf</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Encode a mixed table into TabTransformer's inputs.</span>
+
+<span class="sd">    Returns (Xcat: LongTensor [N, m], Xnum: FloatTensor [N, n_num], cards: list[int],</span>
+<span class="sd">             cat_names: list[str], num_names: list[str]).</span>
+
+<span class="sd">    Categoricals are integer-coded per column (the stage-1 token indices); continuous features are</span>
+<span class="sd">    standardised. Unlike the one-hot frame the tree/MLP baselines use, TabTransformer wants the raw</span>
+<span class="sd">    integer code so each category owns a learnable embedding vector.</span>
+<span class="sd">    """</span>
+    <span class="n">num_names</span> <span class="o">=</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"number"</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">cat_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num_names</span><span class="p">]</span>
+    <span class="n">codes</span><span class="p">,</span> <span class="n">cards</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cat_names</span><span class="p">:</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">Xdf</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>             <span class="c1"># plain str objects (dodges category-dtype quirks)</span>
+        <span class="n">levels</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+        <span class="n">lut</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">levels</span><span class="p">)}</span>
+        <span class="n">codes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">lut</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+        <span class="n">cards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">levels</span><span class="p">))</span>
+    <span class="n">Xcat</span> <span class="o">=</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">codes</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cat_names</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">Xdf</span><span class="p">),</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">num_names</span><span class="p">:</span>
+        <span class="n">Xn</span> <span class="o">=</span> <span class="n">Xdf</span><span class="p">[</span><span class="n">num_names</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">mu</span><span class="p">,</span> <span class="n">sd</span> <span class="o">=</span> <span class="n">Xn</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">Xn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-9</span>
+        <span class="n">Xnum</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">((</span><span class="n">Xn</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">/</span> <span class="n">sd</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Xnum</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">Xdf</span><span class="p">),</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Xcat</span><span class="p">,</span> <span class="n">Xnum</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">cat_names</span><span class="p">,</span> <span class="n">num_names</span>
+
+
+<span class="c1"># ---------------------------------------------------------------- attention (Vaswani §3.2, Huang §3.2)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">scaled_dot_product_attention</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Attention(Q, K, V) = softmax(Q·Kᵀ / √d) · V. Works on the last two dims (so multi-head just adds</span>
+<span class="sd">    a head axis). Matches `torch.nn.functional.scaled_dot_product_attention` to ~1e-6 (see _check_l045)."""</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">Q</span> <span class="o">@</span> <span class="n">K</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">weights</span> <span class="o">@</span> <span class="n">V</span><span class="p">,</span> <span class="n">weights</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiHeadSelfAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Multi-head self-attention (Vaswani §3.2): project x into `n_heads` independent Q/K/V subspaces,</span>
+<span class="sd">    attend within each, concat, and project back. TabTransformer uses this over the categorical tokens</span>
+<span class="sd">    so a column's new vector can blend in the columns it attends to."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">n_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">d</span> <span class="o">%</span> <span class="n">n_heads</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"d must be divisible by n_heads"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dh</span> <span class="o">=</span> <span class="n">d</span><span class="p">,</span> <span class="n">n_heads</span><span class="p">,</span> <span class="n">d</span> <span class="o">//</span> <span class="n">n_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Wq</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Wk</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Wv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Wo</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dh</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>   <span class="c1"># [B, h, m, dh]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Wq</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Wk</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Wv</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">scaled_dot_product_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>               <span class="c1"># [B, h, m, dh], [B, h, m, m]</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">)</span>              <span class="c1"># concat heads</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Wo</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">w</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>                          <span class="c1"># avg heads for a legible (m,m) map</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TransformerBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""One Transformer layer (Huang Fig. 1): two residual sub-layers — multi-head self-attention, then a</span>
+<span class="sd">    position-wise FFN — each wrapped in `LayerNorm(x + sublayer(x))`. The residual is the L028 skip idea:</span>
+<span class="sd">    a sub-layer only learns a correction, so depth stays trainable."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">n_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">ff_hidden</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">ff_hidden</span> <span class="o">=</span> <span class="n">ff_hidden</span> <span class="ow">or</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">d</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">MultiHeadSelfAttention</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">n_heads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">ff_hidden</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">GELU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">),</span>
+                                 <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">ff_hidden</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>          <span class="c1"># residual around attention</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>          <span class="c1"># residual around the FFN</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">w</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TabTransformer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""TabTransformer (Huang 2020, Fig. 1). categorical -&gt; embed -&gt; N Transformer blocks (contextual) -&gt;</span>
+<span class="sd">    flatten ⊕ LayerNorm(continuous) -&gt; MLP head -&gt; 1 logit.</span>
+
+<span class="sd">    n_layers = 0 is the **context-free ablation** (entity embeddings, no attention — the L031/L032 static</span>
+<span class="sd">    embedding MLP). Only categoricals are contextualised; numerics bypass the Transformer entirely — the</span>
+<span class="sd">    paper's known limitation that FT-Transformer (L046) removes by tokenising numerics too.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">n_num</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">ff_hidden</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">head_hidden</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cards</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_num</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cards</span><span class="p">),</span> <span class="n">n_num</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">n_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cards</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embs</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cards</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">TransformerBlock</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">n_heads</span><span class="p">,</span> <span class="n">ff_hidden</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span>
+                                     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layers</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_norm</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">n_num</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_num</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">feat_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">*</span> <span class="n">d</span> <span class="o">+</span> <span class="n">n_num</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">feat_dim</span><span class="p">,</span> <span class="n">head_hidden</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">),</span>
+                                  <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">head_hidden</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">embed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_cat</span><span class="p">):</span>                                          <span class="c1"># [B, m, d] context-free embeddings</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x_cat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x_cat</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">emb</span><span class="p">(</span><span class="n">x_cat</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">emb</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embs</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">contextual</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_cat</span><span class="p">):</span>                                    <span class="c1"># [B, m, d] after N Transformer blocks</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">x_cat</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">blk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+            <span class="n">h</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">h</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_cat</span><span class="p">,</span> <span class="n">x_num</span><span class="p">):</span>                               <span class="c1"># the vector fed to the head/probe</span>
+        <span class="n">ctx_flat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contextual</span><span class="p">(</span><span class="n">x_cat</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>                <span class="c1"># [B, m*d]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">x_num</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">ctx_flat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_norm</span><span class="p">(</span><span class="n">x_num</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ctx_flat</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_cat</span><span class="p">,</span> <span class="n">x_num</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">(</span><span class="n">x_cat</span><span class="p">,</span> <span class="n">x_num</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------- supervised training (fair protocol)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_to_tensors</span><span class="p">(</span><span class="n">Xcat</span><span class="p">,</span> <span class="n">Xnum</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">):</span>
+    <span class="n">xc</span> <span class="o">=</span> <span class="n">Xcat</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">Xcat</span><span class="p">)</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Xcat</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">xn</span> <span class="o">=</span> <span class="n">Xnum</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">Xnum</span><span class="p">)</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Xnum</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">xc</span><span class="p">,</span> <span class="n">xn</span>
+    <span class="n">yt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">xc</span><span class="p">,</span> <span class="n">xn</span><span class="p">,</span> <span class="n">yt</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">train_tabtransformer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xcat_tr</span><span class="p">,</span> <span class="n">Xnum_tr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xcat_va</span><span class="p">,</span> <span class="n">Xnum_va</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+                         <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">wd</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+                         <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Mini-batch AdamW with early stopping on validation ROC-AUC — the same fair, shared-protocol</span>
+<span class="sd">    contract as `relkit.nets.train_net` (L042) and `relkit.node.train_node` (L044): every arm picks its</span>
+<span class="sd">    own training length by validation, so none is accidentally under- or over-trained.</span>
+
+<span class="sd">    Returns (model_with_best_val_weights, best_val_auc).</span>
+<span class="sd">    """</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">xc</span><span class="p">,</span> <span class="n">xn</span><span class="p">,</span> <span class="n">yt</span> <span class="o">=</span> <span class="n">_to_tensors</span><span class="p">(</span><span class="n">Xcat_tr</span><span class="p">,</span> <span class="n">Xnum_tr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+    <span class="n">xcv</span><span class="p">,</span> <span class="n">xnv</span> <span class="o">=</span> <span class="n">_to_tensors</span><span class="p">(</span><span class="n">Xcat_va</span><span class="p">,</span> <span class="n">Xnum_va</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">xc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">bs</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="n">wd</span><span class="p">)</span>
+    <span class="n">lossf</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BCEWithLogitsLoss</span><span class="p">()</span>
+    <span class="n">gen</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span><span class="p">()</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">best_auc</span><span class="p">,</span> <span class="n">best_state</span><span class="p">,</span> <span class="n">since</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_epochs</span><span class="p">):</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="n">gen</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">bs</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">perm</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">bs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">idx</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">lossf</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">xc</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">xn</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">yt</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">pv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">xcv</span><span class="p">,</span> <span class="n">xnv</span><span class="p">))</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="n">val_auc</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yva</span><span class="p">,</span> <span class="n">pv</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val_auc</span> <span class="o">&gt;</span> <span class="n">best_auc</span><span class="p">:</span>
+            <span class="n">best_auc</span><span class="p">,</span> <span class="n">since</span> <span class="o">=</span> <span class="n">val_auc</span><span class="p">,</span> <span class="mi">0</span>
+            <span class="n">best_state</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">since</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">since</span> <span class="o">&gt;=</span> <span class="n">patience</span><span class="p">:</span>
+                <span class="k">break</span>
+    <span class="k">if</span> <span class="n">best_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">best_state</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">best_auc</span>
+
+
+<span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">tabtransformer_auc</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xcat</span><span class="p">,</span> <span class="n">Xnum</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">xc</span><span class="p">,</span> <span class="n">xn</span> <span class="o">=</span> <span class="n">_to_tensors</span><span class="p">(</span><span class="n">Xcat</span><span class="p">,</span> <span class="n">Xnum</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">xc</span><span class="p">,</span> <span class="n">xn</span><span class="p">))</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+
+
+<span class="c1"># ---------------------------------------------------------------- RTD self-supervised pre-training (§3.3)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTDHead</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A per-column binary detector (Huang §3.3): from each token's CONTEXTUAL embedding, predict whether</span>
+<span class="sd">    that token was replaced. One small linear per column (a column's own detector), applied to the</span>
+<span class="sd">    contextual vector the Transformer produced for it."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">det</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">)])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>                                          <span class="c1"># ctx: [B, m, d]</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">det</span><span class="p">[</span><span class="n">j</span><span class="p">](</span><span class="n">ctx</span><span class="p">[:,</span> <span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">det</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>                             <span class="c1"># [B, m]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">pretrain_rtd</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xcat_unlab</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">replace_p</span><span class="o">=</span><span class="mf">0.30</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">wd</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
+                 <span class="n">max_epochs</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Self-supervised RTD pre-training of the TabTransformer ENCODER on UNLABELED rows (Huang §3.3).</span>
+
+<span class="sd">    Each step: corrupt a batch's categorical tokens, run them through embeddings + Transformer blocks,</span>
+<span class="sd">    and train a per-column detector (`RTDHead`) to flag the replaced tokens (BCE). Only the encoder</span>
+<span class="sd">    (`embs` + `blocks`) and the throwaway RTD head are updated; the supervised head is untouched and is</span>
+<span class="sd">    (re)trained later in `train_tabtransformer`.</span>
+
+<span class="sd">    Returns (model, final_detector_accuracy). The model's embeddings + blocks now carry a representation</span>
+<span class="sd">    learned from unlabeled data — the label-efficiency lever trees lack.</span>
+<span class="sd">    """</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">xc</span> <span class="o">=</span> <span class="n">Xcat_unlab</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_tensor</span><span class="p">(</span><span class="n">Xcat_unlab</span><span class="p">)</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Xcat_unlab</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">xc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">RTDHead</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">d</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">embs</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">blocks</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">head</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+    <span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="n">wd</span><span class="p">)</span>
+    <span class="n">lossf</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BCEWithLogitsLoss</span><span class="p">()</span>
+    <span class="n">gen</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span><span class="p">()</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">xc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">bs</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">acc</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_epochs</span><span class="p">):</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">();</span> <span class="n">head</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="n">gen</span><span class="p">)</span>
+        <span class="n">correct</span> <span class="o">=</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">bs</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">perm</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">bs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">idx</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">xcorr</span><span class="p">,</span> <span class="n">replaced</span> <span class="o">=</span> <span class="n">corrupt_categorical</span><span class="p">(</span><span class="n">xc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">(),</span> <span class="n">cards</span><span class="p">,</span> <span class="n">replace_p</span><span class="p">,</span> <span class="n">gen</span><span class="p">)</span>
+            <span class="n">xcorr</span><span class="p">,</span> <span class="n">replaced</span> <span class="o">=</span> <span class="n">xcorr</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">replaced</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">ctx</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">contextual</span><span class="p">(</span><span class="n">xcorr</span><span class="p">)</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="n">head</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">lossf</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">replaced</span><span class="p">)</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                <span class="n">pred</span> <span class="o">=</span> <span class="p">(</span><span class="n">logits</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+                <span class="n">correct</span> <span class="o">+=</span> <span class="p">(</span><span class="n">pred</span> <span class="o">==</span> <span class="n">replaced</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                <span class="n">total</span> <span class="o">+=</span> <span class="n">replaced</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">correct</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span> <span class="ow">and</span> <span class="p">(</span><span class="n">ep</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">ep</span> <span class="o">==</span> <span class="n">max_epochs</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  [pretrain] epoch </span><span class="si">{</span><span class="n">ep</span><span class="si">:</span><span class="s2">2d</span><span class="si">}</span><span class="s2">  detector acc </span><span class="si">{</span><span class="n">acc</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">acc</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=edc04390">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8124,7 +8450,7 @@ self-attention does (<a href="../lessons/0032-tabtransformer.html">L032</a>). Th
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3b28bc63">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4a1666ef">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8182,7 +8508,7 @@ self-attention does (<a href="../lessons/0032-tabtransformer.html">L032</a>). Th
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7e617679">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7c44ca8b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8220,7 +8546,7 @@ self-attention does (<a href="../lessons/0032-tabtransformer.html">L032</a>). Th
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8542f580">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ebef9e9a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8241,7 +8567,7 @@ not proof — the strong claim stays cited to the paper's 15-dataset study.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a4aa281b">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ee114c96">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8286,7 +8612,7 @@ not proof — the strong claim stays cited to the paper's 15-dataset study.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=166382aa">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a461e8ce">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8330,7 +8656,7 @@ not proof — the strong claim stays cited to the paper's 15-dataset study.</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=33a66ea8">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7d352941">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8349,7 +8675,7 @@ self-supervision matters for the relational setting, where labels are scarce but
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=47e33bc3">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2ddaba6b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8400,7 +8726,7 @@ self-supervision matters for the relational setting, where labels are scarce but
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1951eb17">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2d1557e5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8435,7 +8761,7 @@ self-supervision matters for the relational setting, where labels are scarce but
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a0d17f24">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d409bd2e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8445,7 +8771,7 @@ self-supervision matters for the relational setting, where labels are scarce but
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=195545de">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a24eba91">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8470,13 +8796,343 @@ self-supervision matters for the relational setting, where labels are scarce but
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4f10be07">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5aa3b15a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-push-it-further">Stretch (optional, ungraded) — push it further<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-push-it-further">¶</a></h2><ol>
+<h2 id="NEXT-STEP-%E2%80%94-reproduce-the-paper's-results-(required,-not-stretch)">NEXT STEP — reproduce the paper's results (required, not stretch)<a class="anchor-link" href="#NEXT-STEP-%E2%80%94-reproduce-the-paper's-results-(required,-not-stretch)">¶</a></h2><p>The EXIT ticket above is the <strong>learning lab</strong>: you implemented the architecture and ran a
+downscaled bake-off that fits in minutes on CPU. That is a <em>different experiment</em> from the
+paper's table. <strong>Do not treat the EXIT ranking as the paper's result.</strong> Mixing those two
+buckets is how you learn the wrong conclusion (standard #25 / M60).</p>
+<p><strong>Paper:</strong> Huang, Khetan, Cvitkovic &amp; Karnin 2020, TabTransformer (<a href="https://arxiv.org/abs/2012.06678">arXiv:2012.06678</a>)</p>
+<p><strong>Bucket 1 — verified here (this notebook's budget)</strong></p>
+<ul>
+<li><strong>mean ranks:</strong> TT 2.33 vs context-free 2.67 vs CatBoost 1.00, Friedman p=0.097</li>
+<li><strong>RTD lift:</strong> +0.008 AUC at 3% labels on adult-16k (paper ~+2.1% at benchmark scale)</li>
+</ul>
+<p><strong>Bucket 2 — the paper's claim (cited, not yet reproduced by this notebook)</strong></p>
+<ul>
+<li><strong>+1.0% AUC over deep baselines:</strong> 15-dataset mean. We measure contextual − context-free on full Adult → INCOMPARABLE to the 15-dataset figure; read DIRECTION.</li>
+<li><strong>matches GBDTs:</strong> Paper does not claim a win over trees. CatBoost winning here is compatible.</li>
+<li><strong>semi-supervised ~+2.1%:</strong> Needs a large unlabeled pool. Scale-up uses full Adult at 3% labels.</li>
+</ul>
+<p><strong>Bucket 3 — scale-up run (you train this).</strong> Same from-scratch code, closer to the paper's
+dataset / budget / metric. Two operators:</p>
+<ol>
+<li><p><strong>Google Colab (you, GPU).</strong> <code>Runtime → Change runtime type → T4 GPU</code>, set
+<code>RUN_PAPER_REPRO = True</code> in the next cell, run it. Stay in the tab — free Colab
+disconnects after ~90 min of no <em>tab</em> interaction, even if training is still going.</p>
+</li>
+<li><p><strong>Modal (unattended).</strong> From the repo root:</p>
+<pre><code>~/.local/bin/modal run --detach modal/l045_paper_repro.py --preset closer
+</code></pre>
+<p>Use <code>--preset paper</code> only when you can spend hours and want paper hyperparameters.
+<code>smoke</code> is a seconds-long import check, not a result.</p>
+</li>
+</ol>
+<p>When it finishes, the cell prints a <strong>ledger</strong> with MATCH / CLOSE / FAIL / INCOMPARABLE /
+DIRECTION_*. Paste that ledger to your teacher. Until you run it, the paper claim stays
+<em>cited, not reproduced</em> — and that is an honest state, not a failure.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c97e2465">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — paper-results scale-up, inlined from `labs/_paper_repro_l045.py`.</span>
+<span class="c1"># Read this cell: it is the training / comparison loop, not a hidden package.</span>
+<span class="c1"># Default OFF so the learning lab stays minutes. On Colab: Runtime → T4 GPU,</span>
+<span class="c1"># set RUN_PAPER_REPRO = True, re-run. Unattended: modal run --detach modal/l045_paper_repro.py</span>
+
+<span class="sd">"""L045 paper-results scale-up (NOTES standard #25).</span>
+
+<span class="sd">The learning lab trains TabTransformer on credit_g + *subsampled* Adult (4k) + churn.</span>
+<span class="sd">Huang et al. 2020 report ~+1.0% AUC over deep baselines across 15 datasets, *matching*</span>
+<span class="sd">(not beating) GBDTs, and a larger semi-supervised lift (~+2.1%) with more unlabeled data.</span>
+
+<span class="sd">This harness re-runs the same from-scratch model on **full Adult** (a paper dataset;</span>
+<span class="sd">OpenML 1590 ≈ Census Income) against the n_layers=0 ablation and CatBoost, plus an RTD</span>
+<span class="sd">pre-train at 3% labels with the full unlabeled pool. Absolute Table numbers stay</span>
+<span class="sd">INCOMPARABLE (we are not the 15-dataset suite). The DIRECTION tests are the ones that</span>
+<span class="sd">can actually update what you believe:</span>
+
+<span class="sd">* contextual vs context-free (paper: contextual helps)</span>
+<span class="sd">* TabTransformer vs CatBoost (paper: matches GBDTs, does not dominate)</span>
+<span class="sd">* RTD 3%-label lift (paper: positive, larger than our lab's +0.008)</span>
+
+<span class="sd">Presets: smoke · closer · paper.</span>
+
+<span class="sd">Run:</span>
+<span class="sd">    OMP_NUM_THREADS=1 python labs/_paper_repro_l045.py --preset smoke</span>
+<span class="sd">    ~/.local/bin/modal run --detach modal/l045_paper_repro.py --preset closer</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"OMP_NUM_THREADS"</span><span class="p">,</span> <span class="s2">"1"</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+
+<span class="n">HERE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span> <span class="k">if</span> <span class="s2">"__file__"</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">HERE</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.paper_repro</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E402</span>
+    <span class="n">LabFinding</span><span class="p">,</span> <span class="n">PaperTarget</span><span class="p">,</span> <span class="n">ScaleUpRun</span><span class="p">,</span>
+    <span class="n">classify_direction</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">format_ledger</span><span class="p">,</span> <span class="n">hardware_tag</span><span class="p">,</span>
+    <span class="n">print_howto</span><span class="p">,</span> <span class="n">to_jsonable</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">CONTEXT_TARGET</span> <span class="o">=</span> <span class="n">PaperTarget</span><span class="p">(</span>
+    <span class="n">paper</span><span class="o">=</span><span class="s2">"TabTransformer (Huang et al. 2020)"</span><span class="p">,</span> <span class="n">arxiv</span><span class="o">=</span><span class="s2">"2012.06678"</span><span class="p">,</span>
+    <span class="n">table</span><span class="o">=</span><span class="s2">"§4 — +1.0% AUC over deep baselines (15 datasets)"</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult (full)"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"auc_minus_context_free"</span><span class="p">,</span> <span class="n">paper_value</span><span class="o">=</span><span class="mf">0.010</span><span class="p">,</span> <span class="n">abs_tol</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
+    <span class="n">notes</span><span class="o">=</span><span class="s2">"Paper average over 15 datasets vs *deep* methods, not vs GBDT. We measure "</span>
+          <span class="s2">"contextual − context-free on full Adult only."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">GBDT_TARGET</span> <span class="o">=</span> <span class="n">PaperTarget</span><span class="p">(</span>
+    <span class="n">paper</span><span class="o">=</span><span class="s2">"TabTransformer (Huang et al. 2020)"</span><span class="p">,</span> <span class="n">arxiv</span><span class="o">=</span><span class="s2">"2012.06678"</span><span class="p">,</span>
+    <span class="n">table</span><span class="o">=</span><span class="s2">"§4 — matches GBDTs (does not dominate)"</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult (full)"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"auc_minus_catboost"</span><span class="p">,</span> <span class="n">paper_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">abs_tol</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">notes</span><span class="o">=</span><span class="s2">"Paper: TabTransformer matches GBDT. A large *loss* to CatBoost here agrees with "</span>
+          <span class="s2">"that framing; a win would be a new result, not a reproduction."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">RTD_TARGET</span> <span class="o">=</span> <span class="n">PaperTarget</span><span class="p">(</span>
+    <span class="n">paper</span><span class="o">=</span><span class="s2">"TabTransformer (Huang et al. 2020)"</span><span class="p">,</span> <span class="n">arxiv</span><span class="o">=</span><span class="s2">"2012.06678"</span><span class="p">,</span>
+    <span class="n">table</span><span class="o">=</span><span class="s2">"§4.3 semi-supervised — ~+2.1</span><span class="si">% a</span><span class="s2">t low label fractions"</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult (full, 3</span><span class="si">% la</span><span class="s2">bels)"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"auc_lift"</span><span class="p">,</span> <span class="n">paper_value</span><span class="o">=</span><span class="mf">0.021</span><span class="p">,</span> <span class="n">abs_tol</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">notes</span><span class="o">=</span><span class="s2">"Paper uses a larger unlabeled pool and longer pre-training than the lab."</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">LAB_FINDINGS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">LabFinding</span><span class="p">(</span><span class="s2">"contextual vs context-free vs CatBoost mean ranks"</span><span class="p">,</span>
+               <span class="s2">"TT 2.33 · context-free 2.67 · CatBoost 1.00 (Friedman p=0.097); "</span>
+               <span class="s2">"contextual beats context-free 2/3; TT beats CatBoost 0/3"</span><span class="p">,</span>
+               <span class="s2">"credit_g + Adult subsampled to 4000 + churn, 3 seeds, CPU"</span><span class="p">),</span>
+    <span class="n">LabFinding</span><span class="p">(</span><span class="s2">"RTD label-efficiency lift"</span><span class="p">,</span>
+               <span class="s2">"+0.008 AUC at 3</span><span class="si">% la</span><span class="s2">bels (adult 16k); +0.001 at 10%"</span><span class="p">,</span>
+               <span class="s2">"downscaled unlabeled pool; paper ~+2.1</span><span class="si">% a</span><span class="s2">t benchmark scale"</span><span class="p">),</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">load_adult_frame</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">cap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">Xdf</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="s2">"adult"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cap</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">Xdf</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">cap</span><span class="p">:</span>
+        <span class="n">idx</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Xdf</span><span class="p">)),</span> <span class="n">train_size</span><span class="o">=</span><span class="n">cap</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">Xdf</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">Xcat</span><span class="p">,</span> <span class="n">Xnum</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">cat_names</span><span class="p">,</span> <span class="n">num_names</span> <span class="o">=</span> <span class="n">frame_categorical</span><span class="p">(</span><span class="n">Xdf</span><span class="p">)</span>
+    <span class="n">yv</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Xcat</span><span class="o">=</span><span class="n">Xcat</span><span class="p">,</span> <span class="n">Xnum</span><span class="o">=</span><span class="n">Xnum</span><span class="p">,</span> <span class="n">cards</span><span class="o">=</span><span class="n">cards</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">yv</span><span class="p">,</span>
+                <span class="n">cat_names</span><span class="o">=</span><span class="n">cat_names</span><span class="p">,</span> <span class="n">num_names</span><span class="o">=</span><span class="n">num_names</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">split_idx</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+    <span class="n">tr</span><span class="p">,</span> <span class="n">te</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.30</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">tr</span><span class="p">,</span> <span class="n">va</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">[</span><span class="n">tr</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">tr</span><span class="p">,</span> <span class="n">va</span><span class="p">,</span> <span class="n">te</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_tt</span><span class="p">(</span><span class="n">fr</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">va</span><span class="p">,</span> <span class="n">te</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">lr</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">dev</span><span class="p">):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">TabTransformer</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s2">"cards"</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">m</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_tabtransformer</span><span class="p">(</span>
+        <span class="n">m</span><span class="p">,</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xcat"</span><span class="p">][</span><span class="n">tr</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">][</span><span class="n">tr</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][</span><span class="n">tr</span><span class="p">],</span>
+        <span class="n">fr</span><span class="p">[</span><span class="s2">"Xcat"</span><span class="p">][</span><span class="n">va</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">][</span><span class="n">va</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][</span><span class="n">va</span><span class="p">],</span>
+        <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">//</span> <span class="mi">4</span><span class="p">),</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">auc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tabtransformer_auc</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xcat"</span><span class="p">][</span><span class="n">te</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">][</span><span class="n">te</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][</span><span class="n">te</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="n">auc</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_catboost_frame</span><span class="p">(</span><span class="n">fr</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">va</span><span class="p">,</span> <span class="n">te</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">catboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">CatBoostClassifier</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">roc_auc_score</span>
+    <span class="c1"># CatBoost wants a dense numpy table; concatenate scaled numerics + integer cats.</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+         <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s2">"Xcat"</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)],</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">])</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">CatBoostClassifier</span><span class="p">(</span><span class="n">iterations</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">random_seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">tr</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">tr</span><span class="p">],</span> <span class="n">eval_set</span><span class="o">=</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">va</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">va</span><span class="p">]),</span> <span class="n">use_best_model</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">te</span><span class="p">])[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">te</span><span class="p">],</span> <span class="n">p</span><span class="p">)),</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_rtd</span><span class="p">(</span><span class="n">fr</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">label_frac</span><span class="p">,</span> <span class="n">pretrain_epochs</span><span class="p">,</span> <span class="n">ft_epochs</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">dev</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">])</span>
+    <span class="n">labeled</span><span class="p">,</span> <span class="n">unlabeled</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">train_size</span><span class="o">=</span><span class="n">label_frac</span><span class="p">,</span>
+                                          <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">])</span>
+    <span class="n">tr</span><span class="p">,</span> <span class="n">va</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">labeled</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][</span><span class="n">labeled</span><span class="p">])</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">te</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.30</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">])</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">head_hidden</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="c1"># from scratch on the small labeled set</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">scratch</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">run_tt</span><span class="p">(</span><span class="n">fr</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">va</span><span class="p">,</span> <span class="n">te</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="n">ft_epochs</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">dev</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+    <span class="c1"># pretrain on unlabeled cats, then gentle fine-tune</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">TabTransformer</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s2">"cards"</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="n">pretrain_rtd</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xcat"</span><span class="p">][</span><span class="n">unlabeled</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"cards"</span><span class="p">],</span>
+                 <span class="n">replace_p</span><span class="o">=</span><span class="mf">0.30</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="n">pretrain_epochs</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+                 <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">m</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_tabtransformer</span><span class="p">(</span>
+        <span class="n">m</span><span class="p">,</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xcat"</span><span class="p">][</span><span class="n">tr</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">][</span><span class="n">tr</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][</span><span class="n">tr</span><span class="p">],</span>
+        <span class="n">fr</span><span class="p">[</span><span class="s2">"Xcat"</span><span class="p">][</span><span class="n">va</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">][</span><span class="n">va</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][</span><span class="n">va</span><span class="p">],</span>
+        <span class="n">lr</span><span class="o">=</span><span class="mf">5e-4</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="n">ft_epochs</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">ft_epochs</span> <span class="o">//</span> <span class="mi">4</span><span class="p">),</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">ft</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tabtransformer_auc</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xcat"</span><span class="p">][</span><span class="n">te</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"Xnum"</span><span class="p">][</span><span class="n">te</span><span class="p">],</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][</span><span class="n">te</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">scratch</span><span class="p">,</span> <span class="n">ft</span><span class="p">,</span> <span class="n">ft</span> <span class="o">-</span> <span class="n">scratch</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">preset_cfg</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"smoke"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">cap</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">rtd</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pretrain_epochs</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ft_epochs</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"closer"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">cap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">rtd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pretrain_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">ft_epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"paper"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">cap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">rtd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pretrain_epochs</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">ft_epochs</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown preset </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--preset"</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">(</span><span class="s2">"smoke"</span><span class="p">,</span> <span class="s2">"closer"</span><span class="p">,</span> <span class="s2">"paper"</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="s2">"closer"</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">preset_cfg</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="p">)</span>
+    <span class="n">dev</span> <span class="o">=</span> <span class="n">device</span><span class="p">()</span>
+    <span class="n">hw</span> <span class="o">=</span> <span class="n">hardware_tag</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"L045 paper-repro  preset=</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="si">}</span><span class="s2">  device=</span><span class="si">{</span><span class="n">hw</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">fr</span> <span class="o">=</span> <span class="n">load_adult_frame</span><span class="p">(</span><span class="n">cap</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"cap"</span><span class="p">])</span>
+    <span class="n">tr</span><span class="p">,</span> <span class="n">va</span><span class="p">,</span> <span class="n">te</span> <span class="o">=</span> <span class="n">split_idx</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">]),</span> <span class="n">fr</span><span class="p">[</span><span class="s2">"y"</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  adult n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s1">'y'</span><span class="p">])</span><span class="si">}</span><span class="s2">  cats=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">fr</span><span class="p">[</span><span class="s1">'cards'</span><span class="p">])</span><span class="si">}</span><span class="s2">  nums=</span><span class="si">{</span><span class="n">fr</span><span class="p">[</span><span class="s1">'Xnum'</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">ctx_cfg</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">head_hidden</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">cf_cfg</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">head_hidden</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">ctx_run</span> <span class="o">=</span> <span class="n">cf_auc</span> <span class="o">=</span> <span class="n">cb_auc</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">ctx_auc</span><span class="p">,</span> <span class="n">ctx_wall</span> <span class="o">=</span> <span class="n">run_tt</span><span class="p">(</span><span class="n">fr</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">va</span><span class="p">,</span> <span class="n">te</span><span class="p">,</span> <span class="n">ctx_cfg</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"epochs"</span><span class="p">],</span>
+                                      <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dev</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">cf_auc</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">run_tt</span><span class="p">(</span><span class="n">fr</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">va</span><span class="p">,</span> <span class="n">te</span><span class="p">,</span> <span class="n">cf_cfg</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"epochs"</span><span class="p">],</span>
+                              <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dev</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+        <span class="n">cb_auc</span><span class="p">,</span> <span class="n">cb_wall</span> <span class="o">=</span> <span class="n">run_catboost_frame</span><span class="p">(</span><span class="n">fr</span><span class="p">,</span> <span class="n">tr</span><span class="p">,</span> <span class="n">va</span><span class="p">,</span> <span class="n">te</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ctx_run</span> <span class="o">=</span> <span class="n">ScaleUpRun</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">"tabtransformer-scratch"</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"auc"</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">ctx_auc</span><span class="p">,</span> <span class="n">n_seeds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hardware</span><span class="o">=</span><span class="n">hw</span><span class="p">,</span> <span class="n">wall_s</span><span class="o">=</span><span class="n">ctx_wall</span><span class="p">,</span> <span class="n">protocol_match</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">protocol_deviations</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">"single dataset (Adult full), not the paper's 15-dataset mean"</span><span class="p">,</span>
+                <span class="s2">"OpenML 1590 random split, not a published TabTransformer split"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"context-free AUC=</span><span class="si">{</span><span class="n">cf_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  CatBoost AUC=</span><span class="si">{</span><span class="n">cb_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  contextual </span><span class="si">{</span><span class="n">ctx_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  context-free </span><span class="si">{</span><span class="n">cf_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  CatBoost </span><span class="si">{</span><span class="n">cb_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  "</span>
+              <span class="sa">f</span><span class="s2">"wall=</span><span class="si">{</span><span class="n">ctx_wall</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s+</span><span class="si">{</span><span class="n">cb_wall</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  bake-off failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">rtd_run</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">"rtd"</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">scratch</span><span class="p">,</span> <span class="n">ft</span><span class="p">,</span> <span class="n">lift</span> <span class="o">=</span> <span class="n">run_rtd</span><span class="p">(</span><span class="n">fr</span><span class="p">,</span> <span class="n">label_frac</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">pretrain_epochs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"pretrain_epochs"</span><span class="p">],</span>
+                                        <span class="n">ft_epochs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"ft_epochs"</span><span class="p">],</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dev</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+            <span class="n">rtd_run</span> <span class="o">=</span> <span class="n">ScaleUpRun</span><span class="p">(</span>
+                <span class="n">method</span><span class="o">=</span><span class="s2">"tabtransformer-rtd"</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult-3pct"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"auc_lift"</span><span class="p">,</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">lift</span><span class="p">,</span> <span class="n">n_seeds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hardware</span><span class="o">=</span><span class="n">hw</span><span class="p">,</span> <span class="n">wall_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">protocol_match</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">protocol_deviations</span><span class="o">=</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">"scratch=</span><span class="si">{</span><span class="n">scratch</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  pretrain+ft=</span><span class="si">{</span><span class="n">ft</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="s2">"3</span><span class="si">% la</span><span class="s2">bels on OpenML Adult; paper's ~+2.1</span><span class="si">% u</span><span class="s2">sed a larger unlabeled regime"</span><span class="p">,</span>
+                <span class="p">],</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  RTD 3%  scratch=</span><span class="si">{</span><span class="n">scratch</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  ft=</span><span class="si">{</span><span class="n">ft</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  lift=</span><span class="si">{</span><span class="n">lift</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  RTD run failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">extra</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">ctx_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">cf_auc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">extra</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"DIRECTION contextual vs context-free: "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">classify_direction</span><span class="p">(</span><span class="n">ctx_run</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">cf_auc</span><span class="p">,</span><span class="w"> </span><span class="n">paper_a_beats_b</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="w"> </span><span class="n">tie_tol</span><span class="o">=</span><span class="mf">0.003</span><span class="p">)</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"(paper: contextual helps over deep / static embeddings)."</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">ctx_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">cb_auc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">extra</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"DIRECTION TabTransformer vs CatBoost: "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">classify_direction</span><span class="p">(</span><span class="n">ctx_run</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">cb_auc</span><span class="p">,</span><span class="w"> </span><span class="n">paper_a_beats_b</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w"> </span><span class="n">tie_tol</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"(paper: matches GBDTs, does not dominate — so CatBoost winning is compatible)."</span>
+        <span class="p">)</span>
+
+    <span class="n">delta_cf</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="p">(</span><span class="n">ctx_run</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">cf_auc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="n">ScaleUpRun</span><span class="p">(</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">"delta"</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"auc_minus_context_free"</span><span class="p">,</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">ctx_run</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="n">cf_auc</span><span class="p">,</span> <span class="n">n_seeds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hardware</span><span class="o">=</span><span class="n">hw</span><span class="p">,</span>
+        <span class="n">protocol_match</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">protocol_deviations</span><span class="o">=</span><span class="n">ctx_run</span><span class="o">.</span><span class="n">protocol_deviations</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">delta_cb</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="p">(</span><span class="n">ctx_run</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">cb_auc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="n">ScaleUpRun</span><span class="p">(</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">"delta"</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"auc_minus_catboost"</span><span class="p">,</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">ctx_run</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="n">cb_auc</span><span class="p">,</span> <span class="n">n_seeds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hardware</span><span class="o">=</span><span class="n">hw</span><span class="p">,</span>
+        <span class="n">protocol_match</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">protocol_deviations</span><span class="o">=</span><span class="n">ctx_run</span><span class="o">.</span><span class="n">protocol_deviations</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">CONTEXT_TARGET</span><span class="p">,</span> <span class="n">delta_cf</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">(</span><span class="n">CONTEXT_TARGET</span><span class="p">,</span> <span class="n">delta_cf</span><span class="p">)),</span>
+        <span class="p">(</span><span class="n">GBDT_TARGET</span><span class="p">,</span> <span class="n">delta_cb</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">(</span><span class="n">GBDT_TARGET</span><span class="p">,</span> <span class="n">delta_cb</span><span class="p">)),</span>
+        <span class="p">(</span><span class="n">RTD_TARGET</span><span class="p">,</span> <span class="n">rtd_run</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">(</span><span class="n">RTD_TARGET</span><span class="p">,</span> <span class="n">rtd_run</span><span class="p">)),</span>
+    <span class="p">]</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">format_ledger</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"L045 TabTransformer"</span><span class="p">,</span> <span class="n">lab</span><span class="o">=</span><span class="n">LAB_FINDINGS</span><span class="p">,</span> <span class="n">paper</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span> <span class="n">extra_lines</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"lesson"</span><span class="p">:</span> <span class="mi">45</span><span class="p">,</span> <span class="s2">"preset"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="p">,</span> <span class="s2">"hardware"</span><span class="p">:</span> <span class="n">hw</span><span class="p">,</span>
+        <span class="s2">"contextual"</span><span class="p">:</span> <span class="n">to_jsonable</span><span class="p">(</span><span class="n">ctx_run</span><span class="p">),</span> <span class="s2">"rtd"</span><span class="p">:</span> <span class="n">to_jsonable</span><span class="p">(</span><span class="n">rtd_run</span><span class="p">),</span>
+        <span class="s2">"context_free_auc"</span><span class="p">:</span> <span class="n">cf_auc</span><span class="p">,</span> <span class="s2">"catboost_auc"</span><span class="p">:</span> <span class="n">cb_auc</span><span class="p">,</span> <span class="s2">"ledger"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">dest</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PAPER_REPRO_OUT"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">HERE</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"_paper_repro_l045_</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="si">}</span><span class="s2">_results.json"</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">fh</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">wrote </span><span class="si">{</span><span class="n">dest</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.paper_repro</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_howto</span>
+
+<span class="n">RUN_PAPER_REPRO</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">PRESET</span> <span class="o">=</span> <span class="s2">"closer"</span>          <span class="c1"># smoke | closer | paper</span>
+
+<span class="k">if</span> <span class="n">RUN_PAPER_REPRO</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">([</span><span class="s2">"--preset"</span><span class="p">,</span> <span class="n">PRESET</span><span class="p">])</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">print_howto</span><span class="p">(</span><span class="n">lesson</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">modal</span><span class="o">=</span><span class="s2">"modal/l045_paper_repro.py"</span><span class="p">,</span> <span class="n">harness</span><span class="o">=</span><span class="s2">"labs/_paper_repro_l045.py"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9d4ca69f">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-after-the-scale-up">Stretch (optional, ungraded) — after the scale-up<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-after-the-scale-up">¶</a></h2><ol>
 <li><strong>Depth of context.</strong> Sweep <code>n_layers</code> ∈ {0, 1, 2, 3} on <code>credit_g</code> at fixed <code>d</code>. Does more attention
 keep helping, or does one block capture most of the contextual signal on a 13-column table?</li>
 <li><strong>How much corruption?</strong> Vary <code>replace_p</code> ∈ {0.1, 0.3, 0.5} in pre-training and watch the detector AUC
@@ -8490,7 +9146,7 @@ fine-tuning everything gently. Which transfers the pre-trained representation be
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c0ddf8e9">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=685bcd69">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

@@ -181,8 +181,9 @@ def main(argv=None):
         extra.append(
             f"DIRECTION NODE vs CatBoost error on {dname}: {d}. "
             f"Paper Table 1 (default HPs, full Higgs) NODE 0.2412 vs CatBoost 0.2434 — a 0.002 edge. "
-            f"A DIRECTION_TIE on this subsample means the gap is smaller than this experiment can see, "
-            f"not that Table 1 is false. DIRECTION_FAIL would be a real tension with the paper's claim."
+            f"A DIRECTION_TIE (or a FAIL on a toy smoke budget) means this experiment cannot see "
+            f"that gap — not that Table 1 is false. Only a closer/paper-preset FAIL with a matched "
+            f"protocol would be real tension with the paper's claim."
         )
 
     rows = [(HIGGS_TARGET, node_run, classify_number(HIGGS_TARGET, node_run))]

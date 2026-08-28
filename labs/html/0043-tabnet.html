@@ -7796,7 +7796,7 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ec8e2462">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f82693f3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7809,17 +7809,17 @@ a.anchor-link {
 <p><strong>Exit criteria:</strong> EXIT TICKET prints your sparsemax validation, the gamma = 1 ban property, the Syn2/Syn4 mask readings (one clean success, one partial), and the rank table with an honest verdict separating <em>"did not clear the bar"</em> from <em>"significantly worse"</em>.</p>
 <hr/>
 <h3 id="How-this-notebook-works">How this notebook works<a class="anchor-link" href="#How-this-notebook-works">¶</a></h3><ul>
-<li><strong>PROVIDED</strong> cells — boilerplate (data, frame, search spaces, GBDT/net searches); just run.</li>
+<li><strong>PROVIDED</strong> cells — boilerplate (data, frame, search spaces, GBDT/net searches) <strong>and</strong> the paper's encoder copied into the notebook (not hidden behind <code>import relkit.tabnet</code>); just run.</li>
 <li><strong>TODO</strong> cells — blanks (<code>____</code>); you implement the skill.</li>
 <li><strong>CHECK</strong> cells — immediate feedback; do not edit.</li>
-<li>Run top to bottom. When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
+<li>Run top to bottom. After EXIT, a <strong>NEXT STEP</strong> cell trains closer to the paper (Colab GPU or Modal). When <strong>EXIT TICKET</strong> prints cleanly, paste it to your teacher or say <em>"lab done"</em>.</li>
 </ul>
-<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>torch</strong> + scikit-learn (CPU is fine); <code>pytorch-tabnet</code> is optional and used only to validate your sparsemax. Real datasets fetch from OpenML on first run then cache. Budget: <strong>~10 minutes on CPU</strong> — set <code>OMP_NUM_THREADS=1</code> if a search feels slow (that has been the real cause of every slow lab so far). This lab uses a deliberately small budget/seed/dataset count to stay interactive; the lesson's headline numbers come from the fuller <code>labs/_verify_l043.py</code> run plus the published benchmarks.</p>
+<h3 id="Environment">Environment<a class="anchor-link" href="#Environment">¶</a></h3><p>One-time: <code>bash labs/setup-env.sh</code> → kernel <strong>Relational Labs (.venv)</strong>. Needs <strong>torch</strong> + scikit-learn (CPU is fine); <code>pytorch-tabnet</code> is optional and used only to validate your sparsemax. Real datasets fetch from OpenML on first run then cache. Budget: <strong>~2–4 minutes on CPU</strong> (measured: 126 s) — set <code>OMP_NUM_THREADS=1</code> if a search feels slow (that has been the real cause of every slow lab so far). This lab uses a deliberately small budget/seed/dataset count to stay interactive; the lesson's headline numbers come from the fuller <code>labs/_verify_l043.py</code> run plus the published benchmarks.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8a425a0e">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=433995a9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7833,7 +7833,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b65f1d81">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3d2d0f45">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7858,7 +7858,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6d28ff13">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d932c3cf">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7870,7 +7870,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 <li><strong>sparsemax</strong> (Task 1) — the projection onto the probability simplex. Subtract one threshold <code>tau</code>, clip negatives to zero, and whatever survives sums to 1. Unlike softmax it yields <strong>exact zeros</strong>, so a feature can be genuinely switched off (and gets no gradient at that step).</li>
 <li><strong>Attentive transformer</strong> (Task 2) — <code>M[i] = sparsemax(P[i-1] * h_i(a[i-1]))</code>, where <code>h_i</code> is <code>Linear -&gt; BatchNorm</code>.</li>
 <li><strong>Prior scale</strong> (Task 2) — <code>P[i] = prod_j (gamma - M[j])</code>, starting at 1. This is the memory that makes the attention <strong>sequential</strong>: features already spent are discounted, so steps pick <em>different</em> ones. At <code>gamma = 1</code> a fully-used feature is banned outright; larger <code>gamma</code> permits reuse.</li>
-<li><strong>Feature transformer</strong> — <code>Linear -&gt; GhostBatchNorm -&gt; GLU</code> blocks (2 shared across steps + 2 step-dependent), wired with <code>sqrt(0.5)</code>-scaled residuals. Its output splits into <code>d[i]</code> (goes to the prediction, aggregated as <code>d_out = sum_i ReLU(d[i])</code>) and <code>a[i]</code> (feeds the next step's attention). Provided in <code>relkit.tabnet</code>; you build pieces 1–3, which are the load-bearing ones.</li>
+<li><strong>Feature transformer</strong> — <code>Linear -&gt; GhostBatchNorm -&gt; GLU</code> blocks (2 shared across steps + 2 step-dependent), wired with <code>sqrt(0.5)</code>-scaled residuals. Its output splits into <code>d[i]</code> (goes to the prediction, aggregated as <code>d_out = sum_i ReLU(d[i])</code>) and <code>a[i]</code> (feeds the next step's attention). After Task 2 the rest of the encoder is <strong>inlined into this notebook</strong> so you can read every line; you build pieces 1–3, which are the load-bearing ones.</li>
 </ol>
 <p>Plus a <strong>sparsity penalty</strong> <code>L_sparse</code> (the masks' entropy, weight <code>lambda_sparse</code>) that pushes each step to commit to fewer features.</p>
 <p><strong>Interpretability, and its limits.</strong> <code>M_agg</code> aggregates the per-step masks weighted by each step's decision contribution <code>eta[i]</code>, giving a per-row feature attribution straight out of the forward pass — no separate SHAP/LIME run. Task 3 tests that claim where the answer is known, and finds it holds for <strong>global</strong> relevance and only <strong>partially</strong> for <strong>instance-wise</strong> relevance.</p>
@@ -7880,7 +7880,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=97c7c483">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8731e7aa">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7890,7 +7890,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d0da049a">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=925ad164">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7899,8 +7899,8 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — imports, the paper's synthetic generators, the small real tables, the shared frame,</span>
-<span class="c1"># and the search spaces. `relkit.tabnet` holds the from-scratch TabNet (built from the paper); the</span>
-<span class="c1"># reference `pytorch_tabnet` is imported ONLY to validate your sparsemax in Task 1 (NOTES #22).</span>
+<span class="c1"># and the search spaces. The TabNet *architecture* is inlined in a later cell so you can read it;</span>
+<span class="c1"># `relkit` here is only data + L042 baselines + a sparsemax checker (NOTES #22 / #25).</span>
 <span class="c1"># Just run this cell.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
@@ -7921,8 +7921,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>   <span class="c1"># labs/ when run from labs/solutions/</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit.nets</span><span class="w"> </span><span class="kn">import</span> <span class="n">TabResNet</span><span class="p">,</span> <span class="n">TabMLP</span><span class="p">,</span> <span class="n">train_net</span><span class="p">,</span> <span class="n">net_auc</span>     <span class="c1"># L042 baselines (from scratch)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.tabnet</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">TabNetEncoder</span><span class="p">,</span> <span class="n">train_tabnet</span><span class="p">,</span> <span class="n">tabnet_auc</span><span class="p">,</span> <span class="n">explain</span><span class="p">,</span>
-                           <span class="n">sparsemax</span> <span class="k">as</span> <span class="n">relkit_sparsemax</span><span class="p">)</span>          <span class="c1"># L043, from the paper</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.tabnet</span><span class="w"> </span><span class="kn">import</span> <span class="n">sparsemax</span> <span class="k">as</span> <span class="n">relkit_sparsemax</span>           <span class="c1"># checker only (NOTES #22)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">relkit.synth</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_syn2</span><span class="p">,</span> <span class="n">make_syn4</span>                      <span class="c1"># the paper's Table 1 / Fig. 5 data</span>
 
 <span class="n">DEVICE</span> <span class="o">=</span> <span class="s2">"cpu"</span>
@@ -8000,7 +7999,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1edec378">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=dba8f17f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8023,7 +8022,7 @@ rather than <em>weightings</em>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5a5422e1">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=920bb061">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8061,7 +8060,7 @@ rather than <em>weightings</em>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f2e43773">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9e8fb402">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8111,7 +8110,7 @@ rather than <em>weightings</em>.</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0de219d0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e759f358">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8130,7 +8129,7 @@ budget is exactly <code>1 - M</code>, so a feature used <em>in full</em> is bann
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f0d0fe17">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=690d7a9c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8179,7 +8178,7 @@ budget is exactly <code>1 - M</code>, so a feature used <em>in full</em> is bann
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ab88b935">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=57828735">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8221,7 +8220,322 @@ budget is exactly <code>1 - M</code>, so a feature used <em>in full</em> is bann
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ba298567">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4d2abffc">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="The-rest-of-the-paper's-architecture-%E2%80%94-inlined,-not-imported">The rest of the paper's architecture — inlined, not imported<a class="anchor-link" href="#The-rest-of-the-paper's-architecture-%E2%80%94-inlined,-not-imported">¶</a></h2><p>The next cell is <code>labs/relkit/tabnet.py</code> copied into this notebook so you can <strong>read every line</strong> of Ghost BN, the GLU feature transformer, the encoder, and the training loop. It is not <code>from relkit import ...</code> hiding a model behind a package. <code>sparsemax</code> defined in your TODO cells above are <strong>kept</strong> — this copy skips those names, so the encoder you train next calls <em>your</em> functions.</p>
+<p><code>relkit/</code> still holds the canonical file for Modal / <code>_verify</code> so the two cannot drift in opposite directions; the notebook is a readable copy, not a black box.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f589f291">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — adapter: your Task-1 sparsemax is last-axis only; the inlined encoder calls dim=-1.</span>
+<span class="n">_student_sparsemax</span> <span class="o">=</span> <span class="n">sparsemax</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sparsemax</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Keep YOUR Task-1 implementation; accept the encoder's dim= keyword."""</span>
+    <span class="k">if</span> <span class="n">dim</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_student_sparsemax</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">z_t</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_student_sparsemax</span><span class="p">(</span><span class="n">z_t</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2826aadd">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — inlined from `labs/relkit/tabnet.py` so you can read every line.</span>
+<span class="c1"># This is the paper implementation, not `import relkit...` hiding it.</span>
+<span class="c1"># Canonical file stays at labs/relkit/tabnet.py for Modal / _verify; this cell is a copy.</span>
+
+<span class="sd">"""From-scratch TabNet (Arik &amp; Pfister 2019, arXiv:1908.07442) — Lesson 043.</span>
+
+<span class="sd">Built from the paper, not from a library (NOTES standards #18/#22/#24). `pytorch_tabnet` is used only</span>
+<span class="sd">as a VALIDATION point in `labs/_verify_l043.py`.</span>
+
+<span class="sd">Paper map — every piece below cites the element it realises:</span>
+
+<span class="sd">| Paper                        | Here                                        |</span>
+<span class="sd">|------------------------------|---------------------------------------------|</span>
+<span class="sd">| sparsemax (Martins 2016 Alg. 1) | `sparsemax`                              |</span>
+<span class="sd">| Ghost BN (Fig. 4c, Hoffer 2017) | `GhostBatchNorm`                         |</span>
+<span class="sd">| FC -&gt; BN -&gt; GLU (Fig. 4c)       | `GLUBlock`                               |</span>
+<span class="sd">| Feature transformer (Fig. 4c)   | `FeatureTransformer`                     |</span>
+<span class="sd">| M[i] = sparsemax(P[i-1] * h_i(a[i-1])) (Fig. 4d) | `AttentiveTransformer`  |</span>
+<span class="sd">| P[i] = prod_j (gamma - M[j])    | `TabNetEncoder.forward` (`prior`)        |</span>
+<span class="sd">| L_sparse = sum -M log(M+eps) / (N_steps*B) | `TabNetEncoder.forward` (`m_loss`) |</span>
+<span class="sd">| d_out = sum_i ReLU(d[i])        | `TabNetEncoder.forward` (`d_out`)        |</span>
+<span class="sd">| M_agg (eta-weighted masks)      | `TabNetEncoder.forward` (`M_agg`)        |</span>
+
+<span class="sd">Binary classification only (one logit) — that is all the Lesson 043 lab needs. CPU is fine for the</span>
+<span class="sd">small Tier-A tables.</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">roc_auc_score</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GhostBatchNorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""BatchNorm over virtual sub-batches of size `virtual_batch_size` (Hoffer et al. 2017).</span>
+
+<span class="sd">    TabNet trains with very large batches (Appendix F: 1-10% of the training set). Normalising the</span>
+<span class="sd">    whole batch at once would average away too much noise, so the batch is split into virtual batches</span>
+<span class="sd">    and each is normalised on its own statistics. The paper keeps ordinary BN on the input features and</span>
+<span class="sd">    uses ghost BN everywhere inside the blocks.</span>
+
+<span class="sd">    NOTE on momentum: the paper's m_B (0.6-0.98) is TensorFlow-style *decay*. PyTorch's `momentum` is</span>
+<span class="sd">    the complement, so pass `1 - m_B`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="n">momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.02</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">virtual_batch_size</span> <span class="o">=</span> <span class="n">virtual_batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm1d</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="n">momentum</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">and</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">virtual_batch_size</span><span class="p">:</span>
+            <span class="n">n_chunks</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">virtual_batch_size</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">bn</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GLUBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""FC -&gt; (ghost) BN -&gt; GLU, the unit the feature transformer is stacked from (Fig. 4c).</span>
+
+<span class="sd">    The FC layer emits `2 * d_out` values; GLU (Dauphin et al. 2016) splits them and computes</span>
+<span class="sd">    `a * sigmoid(b)`, so half the activations act as a learned gate on the other half. The paper's</span>
+<span class="sd">    ablation (Table 11) shows GLU beating ReLU here.</span>
+
+<span class="sd">    `shared_linear` lets a layer be shared across all decision steps (parameter efficiency, Fig. 4c).</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">shared_linear</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.02</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">shared_linear</span> <span class="k">if</span> <span class="n">shared_linear</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bn</span> <span class="o">=</span> <span class="n">GhostBatchNorm</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="p">,</span> <span class="n">momentum</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fc</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FeatureTransformer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Shared + step-dependent GLU blocks with sqrt(0.5)-normalised residuals (Fig. 4c).</span>
+
+<span class="sd">    The paper's default is 2 shared layers (same weights at every decision step, since every step sees</span>
+<span class="sd">    the same features) followed by 2 step-dependent layers. Residual connections are scaled by</span>
+<span class="sd">    sqrt(0.5) so the variance does not grow as blocks are stacked (Gehring et al. 2017).</span>
+
+<span class="sd">    The first block changes width (D -&gt; n_d + n_a) so it has no residual.</span>
+<span class="sd">    """</span>
+
+    <span class="n">SCALE</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">shared_linears</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">n_independent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                 <span class="n">virtual_batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.02</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">blocks</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">d_in</span>
+        <span class="k">for</span> <span class="n">lin</span> <span class="ow">in</span> <span class="n">shared_linears</span><span class="p">:</span>
+            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">GLUBlock</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">shared_linear</span><span class="o">=</span><span class="n">lin</span><span class="p">,</span>
+                                   <span class="n">virtual_batch_size</span><span class="o">=</span><span class="n">virtual_batch_size</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="n">momentum</span><span class="p">))</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">d_out</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_independent</span><span class="p">):</span>
+            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">GLUBlock</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="o">=</span><span class="n">virtual_batch_size</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="n">momentum</span><span class="p">))</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">d_out</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">block</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">out</span> <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">out</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCALE</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AttentiveTransformer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""M[i] = sparsemax(P[i-1] * h_i(a[i-1]))  (Fig. 4d).</span>
+
+<span class="sd">    `h_i` is one FC layer + ghost BN. The prior scale `P[i-1]` multiplies the logits, so a feature that</span>
+<span class="sd">    has already been spent at earlier steps is pushed down and sparsemax is likely to zero it out.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d_a</span><span class="p">,</span> <span class="n">d_features</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.02</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_a</span><span class="p">,</span> <span class="n">d_features</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bn</span> <span class="o">=</span> <span class="n">GhostBatchNorm</span><span class="p">(</span><span class="n">d_features</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="p">,</span> <span class="n">momentum</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">prior</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">sparsemax</span><span class="p">(</span><span class="n">prior</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">bn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fc</span><span class="p">(</span><span class="n">a</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TabNetEncoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""TabNet encoder for binary classification (Fig. 4a).</span>
+
+<span class="sd">    Args mirror the paper's names: `n_d` (N_d, decision width), `n_a` (N_a, attention width),</span>
+<span class="sd">    `n_steps` (N_steps), `gamma` (relaxation), `lambda_sparse`.</span>
+
+<span class="sd">    forward returns `(logits, info)` where `info` carries the per-step masks, the aggregate importance</span>
+<span class="sd">    mask `M_agg`, and the sparsity loss `m_loss` — the interpretability outputs Lesson 043 reads.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">n_d</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_a</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">1.3</span><span class="p">,</span> <span class="n">lambda_sparse</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+                 <span class="n">n_shared</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_independent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-15</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_in</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_steps</span> <span class="o">=</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">n_d</span><span class="p">,</span> <span class="n">n_a</span><span class="p">,</span> <span class="n">n_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_sparse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">lambda_sparse</span><span class="p">,</span> <span class="n">epsilon</span>
+
+        <span class="c1"># Ordinary BN on the raw input features (the paper deliberately does NOT ghost-BN these).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_bn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm1d</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+
+        <span class="n">d_split</span> <span class="o">=</span> <span class="n">n_d</span> <span class="o">+</span> <span class="n">n_a</span>
+        <span class="c1"># Shared FC layers: reused by the initial transformer AND every step's transformer (Fig. 4c).</span>
+        <span class="n">shared</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_shared</span><span class="p">):</span>
+            <span class="n">shared</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_in</span> <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">d_split</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">d_split</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shared_linears</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="n">shared</span><span class="p">)</span>
+
+        <span class="n">ft_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">n_independent</span><span class="o">=</span><span class="n">n_independent</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="o">=</span><span class="n">virtual_batch_size</span><span class="p">,</span>
+                         <span class="n">momentum</span><span class="o">=</span><span class="n">momentum</span><span class="p">)</span>
+        <span class="c1"># Step 0 has no mask yet: an initial transformer produces a[0] to seed the first attention.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_transformer</span> <span class="o">=</span> <span class="n">FeatureTransformer</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_split</span><span class="p">,</span> <span class="n">shared</span><span class="p">,</span> <span class="o">**</span><span class="n">ft_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_transformers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">FeatureTransformer</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_split</span><span class="p">,</span> <span class="n">shared</span><span class="p">,</span> <span class="o">**</span><span class="n">ft_kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attentive</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">AttentiveTransformer</span><span class="p">(</span><span class="n">n_a</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="o">=</span><span class="n">virtual_batch_size</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="n">momentum</span><span class="p">)</span>
+             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_d</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">return_masks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_bn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">prior</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                       <span class="c1"># P[0] = 1 (no prior on any feature)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_transformer</span><span class="p">(</span><span class="n">x</span><span class="p">)[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_d</span><span class="p">:]</span>    <span class="c1"># a[0]</span>
+        <span class="n">d_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_d</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">m_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((),</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">masks</span><span class="p">,</span> <span class="n">etas</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_steps</span><span class="p">):</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attentive</span><span class="p">[</span><span class="n">step</span><span class="p">](</span><span class="n">a</span><span class="p">,</span> <span class="n">prior</span><span class="p">)</span>           <span class="c1"># M[i]</span>
+            <span class="c1"># L_sparse: entropy of the mask, summed over features, averaged over batch and steps.</span>
+            <span class="n">m_loss</span> <span class="o">=</span> <span class="n">m_loss</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="n">M</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">M</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_steps</span>
+            <span class="n">prior</span> <span class="o">=</span> <span class="n">prior</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">-</span> <span class="n">M</span><span class="p">)</span>             <span class="c1"># P[i] = prod_j (gamma - M[j])</span>
+
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_transformers</span><span class="p">[</span><span class="n">step</span><span class="p">](</span><span class="n">M</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>    <span class="c1"># f_i(M[i] . f)</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">n_d</span><span class="p">])</span>                <span class="c1"># d[i], ReLU per the decision aggregation</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_d</span><span class="p">:]</span>                        <span class="c1"># a[i] feeds the next step's attention</span>
+            <span class="n">d_out</span> <span class="o">=</span> <span class="n">d_out</span> <span class="o">+</span> <span class="n">d</span>
+            <span class="k">if</span> <span class="n">return_masks</span><span class="p">:</span>
+                <span class="n">masks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+                <span class="n">etas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>  <span class="c1"># eta_b[i] = sum_c ReLU(d_b,c[i])</span>
+
+        <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">final</span><span class="p">(</span><span class="n">d_out</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"m_loss"</span><span class="p">:</span> <span class="n">m_loss</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">return_masks</span><span class="p">:</span>
+            <span class="n">stacked_eta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">etas</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>               <span class="c1"># steps x B x 1</span>
+            <span class="n">stacked_M</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">masks</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>                <span class="c1"># steps x B x D</span>
+            <span class="n">agg</span> <span class="o">=</span> <span class="p">(</span><span class="n">stacked_eta</span> <span class="o">*</span> <span class="n">stacked_M</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>           <span class="c1"># B x D</span>
+            <span class="n">info</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">masks</span><span class="o">=</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">masks</span><span class="p">],</span>
+                        <span class="n">etas</span><span class="o">=</span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">etas</span><span class="p">],</span>
+                        <span class="n">M_agg</span><span class="o">=</span><span class="p">(</span><span class="n">agg</span> <span class="o">/</span> <span class="n">agg</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">))</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">logits</span><span class="p">,</span> <span class="n">info</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">train_tabnet</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">2e-2</span><span class="p">,</span> <span class="n">wd</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+                 <span class="n">batch_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">decay_rate</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">decay_every</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Mini-batch Adam training with early stopping on validation ROC-AUC.</span>
+
+<span class="sd">    Same fair-protocol contract as `relkit.nets.train_net` (L042): the model picks its own training</span>
+<span class="sd">    length by validation, so no arm is accidentally under- or over-trained. Two TabNet-specific pieces</span>
+<span class="sd">    from the paper: the sparsity penalty `lambda_sparse * m_loss` is added to the loss, and the learning</span>
+<span class="sd">    rate decays geometrically (Appendix F: "initially large learning rate ... gradually decayed").</span>
+
+<span class="sd">    Returns (model_with_best_val_weights, best_val_auc).</span>
+<span class="sd">    """</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="n">wd</span><span class="p">)</span>
+    <span class="n">sched</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">StepLR</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">decay_every</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="n">decay_rate</span><span class="p">)</span>
+    <span class="n">lossf</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BCEWithLogitsLoss</span><span class="p">()</span>
+
+    <span class="n">Xt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Xtr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">yt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ytr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">Xv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Xva</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">Xt</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">bs</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">generator</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span><span class="p">()</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="n">best_auc</span><span class="p">,</span> <span class="n">best_state</span><span class="p">,</span> <span class="n">since</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_epochs</span><span class="p">):</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="n">generator</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">bs</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">perm</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">bs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">idx</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>      <span class="c1"># BatchNorm needs &gt;1 row</span>
+                <span class="k">continue</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">logits</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">Xt</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">lossf</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">yt</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">lambda_sparse</span> <span class="o">*</span> <span class="n">info</span><span class="p">[</span><span class="s2">"m_loss"</span><span class="p">]</span>
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">sched</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">pv</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">Xv</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="n">val_auc</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yva</span><span class="p">,</span> <span class="n">pv</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val_auc</span> <span class="o">&gt;</span> <span class="n">best_auc</span><span class="p">:</span>
+            <span class="n">best_auc</span><span class="p">,</span> <span class="n">since</span> <span class="o">=</span> <span class="n">val_auc</span><span class="p">,</span> <span class="mi">0</span>
+            <span class="n">best_state</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">since</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">since</span> <span class="o">&gt;=</span> <span class="n">patience</span><span class="p">:</span>
+                <span class="k">break</span>
+    <span class="k">if</span> <span class="n">best_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">best_state</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">best_auc</span>
+
+
+<span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">tabnet_auc</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+
+
+<span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">explain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return (M_agg, per-step masks) for rows `X` — the paper's local/global interpretability outputs."""</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span> <span class="n">return_masks</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">info</span><span class="p">[</span><span class="s2">"M_agg"</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">info</span><span class="p">[</span><span class="s2">"masks"</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=095c06bd">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8240,11 +8554,11 @@ relevance is <strong>global</strong>.</li>
 </ul>
 <p><code>M_agg</code> is the paper's global attribution: the per-step masks summed with weights
 <code>eta[i] = sum_c ReLU(d_c[i])</code> (each step's decision contribution) and normalised to sum to 1.
-<code>relkit.tabnet.explain</code> returns it.</p>
+<code>explain</code> (in the inlined architecture cell above) returns it.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6ed9e706">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2aa14254">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8301,7 +8615,7 @@ relevance is <strong>global</strong>.</li>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=26dfa0b8">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=605d0227">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8345,7 +8659,7 @@ relevance is <strong>global</strong>.</li>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bad23ad1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6227b5b5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8363,7 +8677,7 @@ strong claim stays cited to the large benchmarks (Gorishniy 2021, Grinsztajn 202
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a5e8f4ea">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f7f31f2a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8416,7 +8730,7 @@ strong claim stays cited to the large benchmarks (Gorishniy 2021, Grinsztajn 202
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e31d5cc9">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=29de6af2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8456,7 +8770,7 @@ strong claim stays cited to the large benchmarks (Gorishniy 2021, Grinsztajn 202
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e06108e0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1e195238">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8466,7 +8780,7 @@ strong claim stays cited to the large benchmarks (Gorishniy 2021, Grinsztajn 202
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=8b3ed8ed">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=47136b55">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8493,13 +8807,327 @@ strong claim stays cited to the large benchmarks (Gorishniy 2021, Grinsztajn 202
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=50d42692">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bf1203d9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-push-it-further">Stretch (optional, ungraded) — push it further<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-push-it-further">¶</a></h2><ol>
+<h2 id="NEXT-STEP-%E2%80%94-reproduce-the-paper's-results-(required,-not-stretch)">NEXT STEP — reproduce the paper's results (required, not stretch)<a class="anchor-link" href="#NEXT-STEP-%E2%80%94-reproduce-the-paper's-results-(required,-not-stretch)">¶</a></h2><p>The EXIT ticket above is the <strong>learning lab</strong>: you implemented the architecture and ran a
+downscaled bake-off that fits in minutes on CPU. That is a <em>different experiment</em> from the
+paper's table. <strong>Do not treat the EXIT ranking as the paper's result.</strong> Mixing those two
+buckets is how you learn the wrong conclusion (standard #25 / M60).</p>
+<p><strong>Paper:</strong> Arik &amp; Pfister 2019, TabNet: Attentive Interpretable Tabular Learning (<a href="https://arxiv.org/abs/1908.07442">arXiv:1908.07442</a>)</p>
+<p><strong>Bucket 1 — verified here (this notebook's budget)</strong></p>
+<ul>
+<li><strong>mean ranks:</strong> TabNet 2.50 vs MLP 1.75 / ResNet 2.00 / GBDT 3.75, Friedman p=0.127</li>
+<li><strong>Syn4 masks:</strong> PARTIAL — 15.6% left-group recovery at n=10k (paper Fig. 5 used 10M)</li>
+</ul>
+<p><strong>Bucket 2 — the paper's claim (cited, not yet reproduced by this notebook)</strong></p>
+<ul>
+<li><strong>Adult accuracy:</strong> 85.7% (appendix HPs). OpenML 1590 is not the UCI official split → expect INCOMPARABLE, then read DIRECTION vs XGB.</li>
+<li><strong>Syn4 masks:</strong> Fig. 5 is qualitative at 10M samples. Watch whether left_correct climbs vs 15.6%.</li>
+</ul>
+<p><strong>Bucket 3 — scale-up run (you train this).</strong> Same from-scratch code, closer to the paper's
+dataset / budget / metric. Two operators:</p>
+<ol>
+<li><p><strong>Google Colab (you, GPU).</strong> <code>Runtime → Change runtime type → T4 GPU</code>, set
+<code>RUN_PAPER_REPRO = True</code> in the next cell, run it. Stay in the tab — free Colab
+disconnects after ~90 min of no <em>tab</em> interaction, even if training is still going.</p>
+</li>
+<li><p><strong>Modal (unattended).</strong> From the repo root:</p>
+<pre><code>~/.local/bin/modal run --detach modal/l043_paper_repro.py --preset closer
+</code></pre>
+<p>Use <code>--preset paper</code> only when you can spend hours and want paper hyperparameters.
+<code>smoke</code> is a seconds-long import check, not a result.</p>
+</li>
+</ol>
+<p>When it finishes, the cell prints a <strong>ledger</strong> with MATCH / CLOSE / FAIL / INCOMPARABLE /
+DIRECTION_*. Paste that ledger to your teacher. Until you run it, the paper claim stays
+<em>cited, not reproduced</em> — and that is an honest state, not a failure.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f364f6da">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — paper-results scale-up, inlined from `labs/_paper_repro_l043.py`.</span>
+<span class="c1"># Read this cell: it is the training / comparison loop, not a hidden package.</span>
+<span class="c1"># Default OFF so the learning lab stays minutes. On Colab: Runtime → T4 GPU,</span>
+<span class="c1"># set RUN_PAPER_REPRO = True, re-run. Unattended: modal run --detach modal/l043_paper_repro.py</span>
+
+<span class="sd">"""L043 paper-results scale-up (NOTES standard #25).</span>
+
+<span class="sd">The learning lab (`0043-tabnet.ipynb`) implements sequential attention and races TabNet on four</span>
+<span class="sd">*small* OpenML tables. That bake-off is a different experiment from Arik &amp; Pfister 2019. This</span>
+<span class="sd">harness tries to get closer to the paper so the student can learn the *right* conclusion.</span>
+
+<span class="sd">Targets</span>
+<span class="sd">-------</span>
+<span class="sd">* Adult Census (paper appendix): TabNet reports **85.7% test accuracy** with</span>
+<span class="sd">  N_d=N_a=16, N_steps=5, γ=1.5, λ_sparse=1e-4, B=4096. We train the *from-scratch*</span>
+<span class="sd">  encoder under those HPs. The UCI official test split is **not** what OpenML 1590</span>
+<span class="sd">  gives us, so the absolute number is INCOMPARABLE even if we land near 0.857 —</span>
+<span class="sd">  that is the honest verdict, not a cop-out.</span>
+<span class="sd">* Syn4 mask sharpness (paper Fig. 5): the paper used **10M** samples for the figure.</span>
+<span class="sd">  The lab used 10k and recovered the instance-wise switch only partially (15.6%).</span>
+<span class="sd">  Scaling n tests whether sharpness is a data-volume effect (the paper's own caveat).</span>
+
+<span class="sd">Presets: smoke (seconds) · closer (T4, ~15–30 min) · paper (hours).</span>
+
+<span class="sd">Run:</span>
+<span class="sd">    OMP_NUM_THREADS=1 python labs/_paper_repro_l043.py --preset smoke</span>
+<span class="sd">    ~/.local/bin/modal run --detach modal/l043_paper_repro.py --preset closer</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"OMP_NUM_THREADS"</span><span class="p">,</span> <span class="s2">"1"</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.compose</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">roc_auc_score</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneHotEncoder</span><span class="p">,</span> <span class="n">StandardScaler</span>
+
+<span class="n">HERE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span> <span class="k">if</span> <span class="s2">"__file__"</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">HERE</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_tier_a</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.paper_repro</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E402</span>
+    <span class="n">LabFinding</span><span class="p">,</span> <span class="n">PaperTarget</span><span class="p">,</span> <span class="n">ScaleUpRun</span><span class="p">,</span>
+    <span class="n">classify_direction</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">format_ledger</span><span class="p">,</span> <span class="n">hardware_tag</span><span class="p">,</span>
+    <span class="n">print_howto</span><span class="p">,</span> <span class="n">to_jsonable</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.synth</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_syn4</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">ADULT_TARGET</span> <span class="o">=</span> <span class="n">PaperTarget</span><span class="p">(</span>
+    <span class="n">paper</span><span class="o">=</span><span class="s2">"TabNet (Arik &amp; Pfister 2019)"</span><span class="p">,</span> <span class="n">arxiv</span><span class="o">=</span><span class="s2">"1908.07442"</span><span class="p">,</span>
+    <span class="n">table</span><span class="o">=</span><span class="s2">"Appendix — Adult Census Income"</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"accuracy"</span><span class="p">,</span> <span class="n">paper_value</span><span class="o">=</span><span class="mf">0.857</span><span class="p">,</span> <span class="n">abs_tol</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">paper_split</span><span class="o">=</span><span class="s2">"UCI Adult official test file (16,281 rows) — we do NOT have this split on OpenML 1590"</span><span class="p">,</span>
+    <span class="n">notes</span><span class="o">=</span><span class="s2">"Paper HPs: N_d=N_a=16, N_steps=5, γ=1.5, λ_sparse=1e-4, B=4096, Adam lr=0.02."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">SYN4_TARGET</span> <span class="o">=</span> <span class="n">PaperTarget</span><span class="p">(</span>
+    <span class="n">paper</span><span class="o">=</span><span class="s2">"TabNet (Arik &amp; Pfister 2019)"</span><span class="p">,</span> <span class="n">arxiv</span><span class="o">=</span><span class="s2">"1908.07442"</span><span class="p">,</span>
+    <span class="n">table</span><span class="o">=</span><span class="s2">"Fig. 5 (masks; trained at 10M samples)"</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="s2">"Syn4"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"left_group_recovery"</span><span class="p">,</span> <span class="n">paper_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">abs_tol</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">notes</span><span class="o">=</span><span class="s2">"No numeric target in the paper — Fig. 5 is qualitative. We track whether "</span>
+          <span class="s2">"left_correct climbs vs the lab's 0.156 at n=10k."</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">LAB_FINDINGS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">LabFinding</span><span class="p">(</span><span class="s2">"TabNet vs MLP/ResNet/GBDT mean ranks"</span><span class="p">,</span>
+               <span class="s2">"TabNet 2.50 · MLP 1.75 · ResNet 2.00 · GBDT 3.75 (Friedman p=0.127)"</span><span class="p">,</span>
+               <span class="s2">"4 small OpenML tables (credit_g/diabetes/blood_transfusion/kc1), budget 6, 3 seeds, CPU"</span><span class="p">),</span>
+    <span class="n">LabFinding</span><span class="p">(</span><span class="s2">"Syn4 instance-wise mask recovery (X11&lt;0 rows favouring X1–X2)"</span><span class="p">,</span>
+               <span class="s2">"15.6% (PARTIAL) at n=10k"</span><span class="p">,</span>
+               <span class="s2">"Chen et al. 2018 generator, n=10k, 5 steps — paper Fig. 5 used 10M"</span><span class="p">),</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dense</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="n">Xdf</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_tier_a</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">num</span> <span class="o">=</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"number"</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">Xdf</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">num</span><span class="p">]</span>
+    <span class="n">ct</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">([</span>
+        <span class="p">(</span><span class="s2">"num"</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">num</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"cat"</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">sparse_output</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">cat</span><span class="p">),</span>
+    <span class="p">])</span>
+    <span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">Xdf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.30</span><span class="p">):</span>
+    <span class="n">Xtr_f</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">ytr_f</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="n">test_size</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">yva</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">Xtr_f</span><span class="p">,</span> <span class="n">ytr_f</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">ytr_f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_tabnet_acc_auc</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dev</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">logits</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">))</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">logits</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))),</span> <span class="nb">float</span><span class="p">(</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_adult</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">dev</span><span class="p">,</span> <span class="n">n_d</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">):</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_dense</span><span class="p">(</span><span class="s2">"adult"</span><span class="p">)</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">TabNetEncoder</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">n_d</span><span class="o">=</span><span class="n">n_d</span><span class="p">,</span> <span class="n">n_a</span><span class="o">=</span><span class="n">n_d</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="n">n_steps</span><span class="p">,</span>
+                          <span class="n">gamma</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">lambda_sparse</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">virtual_batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_tabnet</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span>
+                            <span class="n">patience</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">//</span> <span class="mi">5</span><span class="p">),</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                            <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">acc</span><span class="p">,</span> <span class="n">auc</span> <span class="o">=</span> <span class="n">_tabnet_acc_auc</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">,</span> <span class="n">dev</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">acc</span><span class="p">,</span> <span class="n">auc</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_xgb_adult</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_dense</span><span class="p">(</span><span class="s2">"adult"</span><span class="p">)</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">XGBClassifier</span><span class="p">(</span>
+        <span class="n">n_estimators</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.08</span><span class="p">,</span> <span class="n">subsample</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+        <span class="n">colsample_bytree</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">eval_metric</span><span class="o">=</span><span class="s2">"logloss"</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">)</span>
+    <span class="n">acc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xte</span><span class="p">)))</span>
+    <span class="n">auc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">yte</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">Xte</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">acc</span><span class="p">,</span> <span class="n">auc</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_syn4</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">dev</span><span class="p">):</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">make_syn4</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span> <span class="o">=</span> <span class="n">_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">TabNetEncoder</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">n_d</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_a</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">lambda_sparse</span><span class="o">=</span><span class="mf">5e-3</span><span class="p">)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_tabnet</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xtr</span><span class="p">,</span> <span class="n">ytr</span><span class="p">,</span> <span class="n">Xva</span><span class="p">,</span> <span class="n">yva</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span>
+                            <span class="n">patience</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">//</span> <span class="mi">4</span><span class="p">),</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+                            <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">auc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tabnet_auc</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">yte</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">))</span>
+    <span class="n">M</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">explain</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Xte</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+    <span class="n">left</span> <span class="o">=</span> <span class="n">Xte</span><span class="p">[:,</span> <span class="mi">10</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span>
+    <span class="n">left_correct</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">M</span><span class="p">[</span><span class="n">left</span><span class="p">][:,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">M</span><span class="p">[</span><span class="n">left</span><span class="p">][:,</span> <span class="mi">2</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="k">else</span> <span class="mf">0.0</span>
+    <span class="k">return</span> <span class="n">auc</span><span class="p">,</span> <span class="n">left_correct</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">preset_cfg</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"smoke"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">adult_epochs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">syn4_n</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">syn4_epochs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_d</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                    <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">run_xgb</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"closer"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">adult_epochs</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">syn4_n</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span> <span class="n">syn4_epochs</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">n_d</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                    <span class="n">batch_size</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span> <span class="n">run_xgb</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"paper"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">adult_epochs</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">syn4_n</span><span class="o">=</span><span class="mi">200_000</span><span class="p">,</span> <span class="n">syn4_epochs</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">n_d</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                    <span class="n">batch_size</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span> <span class="n">run_xgb</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown preset </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">; use smoke|closer|paper"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--preset"</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">(</span><span class="s2">"smoke"</span><span class="p">,</span> <span class="s2">"closer"</span><span class="p">,</span> <span class="s2">"paper"</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="s2">"closer"</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">preset_cfg</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="p">)</span>
+    <span class="n">dev</span> <span class="o">=</span> <span class="n">device</span><span class="p">()</span>
+    <span class="n">hw</span> <span class="o">=</span> <span class="n">hardware_tag</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"L043 paper-repro  preset=</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="si">}</span><span class="s2">  device=</span><span class="si">{</span><span class="n">hw</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">deviations</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">"OpenML 1590 random stratified 70/15/15 split — NOT the UCI official Adult test file"</span><span class="p">,</span>
+        <span class="s2">"early-stopping on ROC-AUC (paper reports accuracy; paper used a step LR decay over 7.7k iters)"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"batch_size=</span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s1">'batch_size'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (paper B=4096, B_V=128 ghost BN); from-scratch encoder, binary logit"</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">adult_run</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">xgb_acc</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">acc</span><span class="p">,</span> <span class="n">auc</span><span class="p">,</span> <span class="n">wall</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">run_adult</span><span class="p">(</span><span class="n">epochs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"adult_epochs"</span><span class="p">],</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dev</span><span class="o">=</span><span class="n">dev</span><span class="p">,</span>
+                                      <span class="n">n_d</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"n_d"</span><span class="p">],</span> <span class="n">n_steps</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"n_steps"</span><span class="p">],</span>
+                                      <span class="n">batch_size</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"batch_size"</span><span class="p">])</span>
+        <span class="n">adult_run</span> <span class="o">=</span> <span class="n">ScaleUpRun</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">"tabnet-scratch"</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">"adult"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"accuracy"</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">acc</span><span class="p">,</span> <span class="n">n_seeds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hardware</span><span class="o">=</span><span class="n">hw</span><span class="p">,</span> <span class="n">wall_s</span><span class="o">=</span><span class="n">wall</span><span class="p">,</span>
+            <span class="n">protocol_match</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">protocol_deviations</span><span class="o">=</span><span class="n">deviations</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"n=</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2"> rows, test AUC=</span><span class="si">{</span><span class="n">auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  TabNet Adult  acc=</span><span class="si">{</span><span class="n">acc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  auc=</span><span class="si">{</span><span class="n">auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  wall=</span><span class="si">{</span><span class="n">wall</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">"run_xgb"</span><span class="p">]:</span>
+            <span class="n">xgb_acc</span><span class="p">,</span> <span class="n">xgb_auc</span><span class="p">,</span> <span class="n">xgb_wall</span> <span class="o">=</span> <span class="n">run_xgb_adult</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  XGB    Adult  acc=</span><span class="si">{</span><span class="n">xgb_acc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  auc=</span><span class="si">{</span><span class="n">xgb_auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  wall=</span><span class="si">{</span><span class="n">xgb_wall</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Adult run failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">syn_run</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">syn_left</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">auc</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">wall</span> <span class="o">=</span> <span class="n">run_syn4</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"syn4_n"</span><span class="p">],</span> <span class="n">epochs</span><span class="o">=</span><span class="n">cfg</span><span class="p">[</span><span class="s2">"syn4_epochs"</span><span class="p">],</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dev</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+        <span class="n">syn_left</span> <span class="o">=</span> <span class="n">left</span>
+        <span class="n">syn_run</span> <span class="o">=</span> <span class="n">ScaleUpRun</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">"tabnet-scratch"</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">"Syn4"</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">"left_group_recovery"</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">left</span><span class="p">,</span> <span class="n">n_seeds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hardware</span><span class="o">=</span><span class="n">hw</span><span class="p">,</span> <span class="n">wall_s</span><span class="o">=</span><span class="n">wall</span><span class="p">,</span> <span class="n">protocol_match</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">protocol_deviations</span><span class="o">=</span><span class="p">[</span>
+                <span class="sa">f</span><span class="s2">"n=</span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s1">'syn4_n'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (paper Fig. 5 used 10M)"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"test AUC=</span><span class="si">{</span><span class="n">auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">; lab left_correct at n=10k was 0.156"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Syn4 n=</span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s1">'syn4_n'</span><span class="p">]</span><span class="si">}</span><span class="s2">  left_correct=</span><span class="si">{</span><span class="n">left</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  auc=</span><span class="si">{</span><span class="n">auc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  wall=</span><span class="si">{</span><span class="n">wall</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Syn4 run failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">extra</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">adult_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">xgb_acc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">classify_direction</span><span class="p">(</span><span class="n">adult_run</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">xgb_acc</span><span class="p">,</span> <span class="n">paper_a_beats_b</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                               <span class="n">higher_is_better</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tie_tol</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
+        <span class="n">extra</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"DIRECTION TabNet vs XGB accuracy on this Adult split: </span><span class="si">{</span><span class="n">d</span><span class="si">}</span><span class="s2"> "</span>
+                     <span class="sa">f</span><span class="s2">"(paper appendix reports TabNet 85.7% but no XGB number on Adult; "</span>
+                     <span class="sa">f</span><span class="s2">"this tests 'does TabNet at least match a strong tree on the paper's table')."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">syn_left</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">extra</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Syn4 left_correct </span><span class="si">{</span><span class="n">syn_left</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> vs lab 0.156. If it climbed, Fig. 5's 'needs 10M' "</span>
+            <span class="sa">f</span><span class="s2">"caveat is the right reading of the lab's PARTIAL recovery — not 'masks don't work'."</span>
+        <span class="p">)</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">ADULT_TARGET</span><span class="p">,</span> <span class="n">adult_run</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">(</span><span class="n">ADULT_TARGET</span><span class="p">,</span> <span class="n">adult_run</span><span class="p">)),</span>
+        <span class="p">(</span><span class="n">SYN4_TARGET</span><span class="p">,</span> <span class="n">syn_run</span><span class="p">,</span> <span class="n">classify_number</span><span class="p">(</span><span class="n">SYN4_TARGET</span><span class="p">,</span> <span class="n">syn_run</span><span class="p">)),</span>
+    <span class="p">]</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">format_ledger</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"L043 TabNet"</span><span class="p">,</span> <span class="n">lab</span><span class="o">=</span><span class="n">LAB_FINDINGS</span><span class="p">,</span> <span class="n">paper</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span> <span class="n">extra_lines</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"lesson"</span><span class="p">:</span> <span class="mi">43</span><span class="p">,</span> <span class="s2">"preset"</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="p">,</span> <span class="s2">"hardware"</span><span class="p">:</span> <span class="n">hw</span><span class="p">,</span>
+        <span class="s2">"adult"</span><span class="p">:</span> <span class="n">to_jsonable</span><span class="p">(</span><span class="n">adult_run</span><span class="p">),</span> <span class="s2">"syn4"</span><span class="p">:</span> <span class="n">to_jsonable</span><span class="p">(</span><span class="n">syn_run</span><span class="p">),</span>
+        <span class="s2">"xgb_adult_acc"</span><span class="p">:</span> <span class="n">xgb_acc</span><span class="p">,</span> <span class="s2">"ledger"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">dest</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">HERE</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"_paper_repro_l043_</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">preset</span><span class="si">}</span><span class="s2">_results.json"</span><span class="p">)</span>
+    <span class="n">artifacts</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PAPER_REPRO_OUT"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">artifacts</span><span class="p">:</span>
+        <span class="n">dest</span> <span class="o">=</span> <span class="n">artifacts</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">fh</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">wrote </span><span class="si">{</span><span class="n">dest</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">relkit.paper_repro</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_howto</span>
+
+<span class="n">RUN_PAPER_REPRO</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">PRESET</span> <span class="o">=</span> <span class="s2">"closer"</span>          <span class="c1"># smoke | closer | paper</span>
+
+<span class="k">if</span> <span class="n">RUN_PAPER_REPRO</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">([</span><span class="s2">"--preset"</span><span class="p">,</span> <span class="n">PRESET</span><span class="p">])</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">print_howto</span><span class="p">(</span><span class="n">lesson</span><span class="o">=</span><span class="mi">43</span><span class="p">,</span> <span class="n">modal</span><span class="o">=</span><span class="s2">"modal/l043_paper_repro.py"</span><span class="p">,</span> <span class="n">harness</span><span class="o">=</span><span class="s2">"labs/_paper_repro_l043.py"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d16a7db1">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Stretch-(optional,-ungraded)-%E2%80%94-after-the-scale-up">Stretch (optional, ungraded) — after the scale-up<a class="anchor-link" href="#Stretch-(optional,-ungraded)-%E2%80%94-after-the-scale-up">¶</a></h2><ol>
 <li><strong>Reproduce the paper's sharp masks.</strong> Rerun Syn4 with <code>n=200_000</code> (the paper used 10M) and more
 epochs. Does <code>left_correct</code> climb? That is the paper's own Fig. 5 caveat, measured.</li>
 <li><strong>The sparsity knob.</strong> Sweep <code>lambda_sparse</code> over <code>{0, 1e-4, 1e-2, 1e-1}</code> on Syn2 and plot mask
@@ -8519,7 +9147,7 @@ small-labelled-data regime (paper Table 7).</li>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7f03196d">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7885e19c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

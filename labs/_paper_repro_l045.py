@@ -113,15 +113,19 @@ def run_tt(fr, tr, va, te, cfg, *, epochs, lr, seed, dev):
 
 def run_catboost_frame(fr, tr, va, te, *, seed):
     from catboost import CatBoostClassifier
-    import pandas as pd
-    # CatBoost wants a dense table; concatenate scaled numerics + integer cats.
-    X = np.concatenate([fr["Xnum"], fr["Xcat"].astype(np.float32)], axis=1)
+    from sklearn.metrics import roc_auc_score
+    # CatBoost wants a dense numpy table; concatenate scaled numerics + integer cats.
+    X = np.concatenate(
+        [np.asarray(fr["Xnum"], dtype=np.float32),
+         np.asarray(fr["Xcat"], dtype=np.float32)],
+        axis=1,
+    )
+    y = np.asarray(fr["y"])
     t0 = time.time()
     m = CatBoostClassifier(iterations=400, depth=6, learning_rate=0.1, verbose=0, random_seed=seed)
-    m.fit(X[tr], fr["y"][tr], eval_set=(X[va], fr["y"][va]), use_best_model=True)
+    m.fit(X[tr], y[tr], eval_set=(X[va], y[va]), use_best_model=True)
     p = m.predict_proba(X[te])[:, 1]
-    from sklearn.metrics import roc_auc_score
-    return float(roc_auc_score(fr["y"][te], p)), time.time() - t0
+    return float(roc_auc_score(y[te], p)), time.time() - t0
 
 
 def run_rtd(fr, *, label_frac, pretrain_epochs, ft_epochs, seed, dev):
