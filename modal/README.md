@@ -1,12 +1,34 @@
-# Modal — cloud compute for lesson authoring
+# Modal — cloud compute for lesson authoring *and* paper-results scale-up
 
 The escalation path for **rung 5** of the compute ladder (NOTES standard #20): when a lesson needs a
 *verified* number the laptop cannot produce, the job runs here instead of being quietly downscaled.
 
-This is the **agent's** runtime, not the student's. Colab is the student's runtime (every lab's first
-cell is the `@colab-bootstrap`). The difference that matters: **Modal runs unattended from a CLI
-token**, so the agent can launch a job, wait, and come back with numbers; Colab needs a human in a
-browser tab and disconnects after ~90 min of no interaction.
+**Two operators, two jobs:**
+
+| Who | When | File |
+|-----|------|------|
+| the **agent** | authoring a verified number (rung 5) | `modal/l0NN_<thing>.py` |
+| **you (the student)** | after a paper-mirror lab's EXIT (standard **#25**, rung 7) | `modal/l0NN_paper_repro.py` |
+
+Colab is still the student's interactive runtime (every lab's first cell is the `@colab-bootstrap`).
+The difference that matters: **Modal runs unattended from a CLI token**, so a long scale-up survives
+closing the laptop; Colab needs a human in a browser tab and disconnects after ~90 min of no
+interaction. Paper-mirror labs ship **both**.
+
+Template for the next paper-mirror lesson: [`_template_paper_repro.py`](./_template_paper_repro.py).
+
+```
+~/.local/bin/modal run --detach modal/l043_paper_repro.py --preset closer
+~/.local/bin/modal run --detach modal/l044_paper_repro.py --preset closer
+~/.local/bin/modal run --detach modal/l045_paper_repro.py --preset closer
+```
+
+Presets: `smoke` (seconds) · `closer` (T4, tens of minutes) · `paper` (hours, paper HPs).
+Pull the ledger JSON when it finishes:
+
+```
+~/.local/bin/modal volume get relational-artifacts l043/paper_repro.json labs/_paper_repro_l043_results.json
+```
 
 Pattern copied from `~/Projects/curie-llm/modal/` — one shared `common.py`, thin per-job files.
 

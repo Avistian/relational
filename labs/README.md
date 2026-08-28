@@ -26,6 +26,10 @@ for core definitions. See `.agents/skills/lab-authoring/SKILL.md` § Introductor
 **No prefilled answers:** TODO code cells use `____` only — never the completed solution.
 Teacher copies with filled answers live in [`solutions/`](./solutions/) (gitignored).
 
+**Visible paper implementations (standard #25):** paper-mirror labs (L043 TabNet, L044 NODE, L045 TabTransformer, and later) **inline** the from-scratch encoder as a PROVIDED cell. You can scroll the notebook and read Ghost BN, ODST, the Transformer stack, and the train loop. `labs/relkit/*.py` remains the canonical file for Modal / `_verify`; the notebook is a readable copy that keeps the functions you wrote in TODOs. Data loaders, CV, and metrics still `import` from `relkit`.
+
+**Paper-results after EXIT (standard #25):** a downscaled bake-off is a *different experiment* from the paper's table. After the EXIT ticket, those labs ship a **NEXT STEP** cell (`RUN_PAPER_REPRO = False` until you attach a GPU) plus `modal/l0NN_paper_repro.py`. Paste the printed ledger (MATCH / CLOSE / FAIL / INCOMPARABLE / DIRECTION_*), not the EXIT ranks, as the paper claim.
+
 **Agent scoring:** when you say *lab done*, your teacher scores the lab with the rubric in
 `.agents/skills/lab-authoring/SKILL.md`.
 
@@ -54,16 +58,19 @@ Re-run `bash labs/setup-env.sh` after pulling new dependencies.
 
 ## Running
 
-## Paper-mirror doctrine (standard #24 — applies now)
+## Paper-mirror doctrine (standard #24) and visible implementations (#25)
 
 When a lesson's core source is a paper, the lab **mirrors that paper from scratch** — not a loosely
-inspired toy. Three axes (full rule in `NOTES.md` Preferences #24 and
+inspired toy. Three axes (full rule in `NOTES.md` Preferences #24/#25 and
 `.agents/skills/lab-authoring/SKILL.md`):
 
-1. **Implementation** — write the paper's load-bearing mechanism; libraries only validate.
+1. **Implementation** — write the paper's load-bearing mechanism; libraries only validate. The rest of
+   the encoder is **inlined into the notebook** (#25) — not only `from relkit.X import TheModel`.
 2. **Datasets** — prefer the paper's own data/splits; document substitutes and honest gaps.
 3. **Reproducibility** — fixed seeds, versions, verify harness + results JSON; EXIT ties to the
    paper metric or records an honest fail.
+4. **Paper-results scale-up** — after EXIT, a closer-to-paper run (Modal + Colab-gated cell) and a
+   conclusion ledger. Until that run finishes, the paper claim stays *cited, not reproduced*.
 
 ## Reproduction labs build incrementally (harness reuse)
 
@@ -71,10 +78,11 @@ Concept labs (like `0006`) are self-contained. **Paper-reproduction / experiment
 (RelBench baselines, GBDT/RealMLP/TabM, RDL) must build on what earlier labs already wrote —
 a cumulative, reusable *harness*, not isolated one-offs:
 
-- Promote shared code out of notebooks into `labs/relkit/`: data loaders, CV/eval, leakage-safe
-  pipelines, metrics. Reuse the harness; still implement the model from scratch (#22 / #24).
-- Reproduction notebooks `import` that package and extend it; each lab leaves the harness
-  stronger and better-tested for the next.
+- Promote shared **data loaders, CV/eval, leakage-safe pipelines, metrics** into `labs/relkit/`.
+  Reuse that harness; still implement the *model* from scratch and **show it in the notebook**
+  (#22 / #24 / #25). Importing the paper's encoder from `relkit` is for checkers / Modal / `_verify`,
+  not the only copy the student can read.
+- Each lab leaves the harness stronger and better-tested for the next.
 
 This keeps the thesis baselines trustworthy by the time results matter.
 

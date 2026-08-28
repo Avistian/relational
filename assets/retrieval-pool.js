@@ -987,6 +987,18 @@
       ],
       correct: "a",
       explain: "Verified (L045, labs/_verify_l045.py, 3 categorical-rich tables × 3 seeds): mean ranks TabTransformer 2.33, context-free 2.67, CatBoost 1.00 (Friedman p = 0.097). Contextual edges the context-free MLP on 2/3 (a small, within-noise gain — not equivalent, so c is false, and context-free does NOT win, so d is false), but TabTransformer beats CatBoost on 0/3 (b false). The reason is the paper's own limitation: only CATEGORICALS go through the Transformer; numeric features are just LayerNorm'd and concatenated — they never attend to anything. On numeric-bearing tables that is a real ceiling, and it is exactly what FT-Transformer (L046) removes by tokenising numerics too."
+    },
+    {
+      id: "l045-lab-vs-paper", lesson: 45, quarter: "Y2Q1", concept: "lab-vs-paper-scale", misconception: true,
+      question: "Your from-scratch TabNet / NODE / TabTransformer lab ranks the paper's model last on a few small tables. What does that ranking tell you about the paper's published table?",
+      options: [
+        { label: "Nothing about the paper's table — different N, splits, and budget. Keep lab ranks, paper claims, and scale-up in separate buckets", value: "a" },
+        { label: "The paper was wrong: a from-scratch reimplementation on small tables is the real result, so ignore the published numbers", value: "b" },
+        { label: "The paper's table is still the result: ignore the lab ranks, because papers always win once you train at full scale", value: "c" },
+        { label: "Average the lab ranks with the paper's numbers to get one fair overall score that splits the difference", value: "d" }
+      ],
+      correct: "a",
+      explain: "A downscaled bake-off is a DIFFERENT experiment from the paper's table (standard #25 / M60). Mixing those buckets is how you learn the wrong conclusion — 'TabNet lost on four tiny tables, so the paper was wrong' (b) or the opposite, 'papers win at scale, so ignore the lab' (c). Averaging them (d) hides both. Keep three buckets: verified here, paper claim (cited until reproduced), and a scale-up run with MATCH / CLOSE / FAIL / INCOMPARABLE / DIRECTION_*. An INCOMPARABLE 85.7% on a different Adult split is not a MATCH; a DIRECTION_TIE on NODE's 0.002 Higgs edge is about power, not a refutation."
     }
   ];
 })(window);

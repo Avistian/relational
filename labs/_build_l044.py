@@ -20,6 +20,9 @@ import sys
 HERE = os.path.dirname(__file__)
 sys.path.insert(0, HERE)
 from _colab import bootstrap_cells  # noqa: E402
+from relkit.paper_repro import (  # noqa: E402
+    architecture_md, inline_source, notebook_scaleup_code, notebook_scaleup_md,
+)
 
 
 def md(src):
@@ -31,8 +34,8 @@ def code(src):
 
 
 SETUP = r'''# PROVIDED — imports, the small real tables, the shared frame, and the search spaces.
-# `relkit.node` holds the from-scratch NODE (built from the paper); the reference `entmax` package is
-# imported ONLY to validate your entmax15 in Task 1 (NOTES #22). Just run this cell.
+# The NODE *architecture* is inlined in a later cell so you can read it; `relkit.node` here is only
+# the Task-1/Task-2 *checker* (NOTES #22 / #25). Just run this cell.
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -52,8 +55,9 @@ sys.path.insert(0, str(Path(".").resolve()))          # labs/ when run from ther
 sys.path.insert(0, str(Path(".").resolve().parent))   # labs/ when run from labs/solutions/
 from relkit import load_tier_a
 from relkit.nets import TabResNet, TabMLP, train_net, net_auc          # L042 baselines (from scratch)
-from relkit.node import (entmax15 as relkit_entmax15, entmoid15,       # L044, from the paper
-                         ODST, DenseNODE, train_node, node_auc)
+from relkit.node import (entmax15 as relkit_entmax15,                  # checker only (NOTES #22)
+                         entmoid15,                                    # Task 2 uses this operator
+                         ODST as relkit_ODST)                          # checker for your forward
 
 DEVICE = "cpu"
 DATASETS = ["credit_g", "diabetes", "kc1"]   # small: NOT representative (see the #23 note below)
@@ -238,7 +242,7 @@ out   = sum over leaves of  w * response           # weighted average of the lea
 (entmax choice, entmoid split, product routing), the 2^depth-leaf tree is differentiable and trains by
 backprop. The `entmoid` is just the two-class entmax15 — it saturates to an exact 0/1 for a decisive gap
 (a real decision) but stays smooth, so a gradient flows. You will confirm your forward matches the
-from-scratch `relkit.node.ODST` exactly when they share parameters.'''
+from-scratch reference `relkit_ODST` exactly when they share parameters.'''
 
 T2_CODE = r'''# TODO — fill every ____.  (entmax15 from Task 1; entmoid15 provided by relkit.)
 def odst_forward(x, feature_logits, thresholds, log_temperatures, response, bin_codes_1hot):
@@ -264,13 +268,13 @@ def odst_forward(x, feature_logits, thresholds, log_temperatures, response, bin_
 
 # Build a reference ODST, then run YOUR forward on ITS parameters and compare (NOTES #22).
 torch.manual_seed(0)
-ref = ODST(in_features=10, num_trees=8, depth=4, tree_dim=1).eval()
+ref = relkit_ODST(in_features=10, num_trees=8, depth=4, tree_dim=1).eval()
 x = torch.randn(32, 10)
 mine = odst_forward(x, ref.feature_logits, ref.thresholds, ref.log_temperatures,
                     ref.response, ref.bin_codes_1hot)
 with torch.no_grad():
     theirs = ref(x)
-print("max |Δ| vs relkit.node.ODST:", (mine - theirs).abs().max().item())'''
+print("max |Δ| vs reference ODST:", (mine - theirs).abs().max().item())'''
 
 T2_SOL = (T2_CODE
           .replace("""    # the soft split: scale the gap by 1/temperature, then entmoid -> P(go right) in [0,1]
@@ -296,7 +300,7 @@ c = entmoid15((f_hat - ref.thresholds) * torch.exp(-ref.log_temperatures))
 bins = torch.stack([c, 1 - c], dim=-1)
 weights = torch.einsum("btds,dls->btdl", bins, ref.bin_codes_1hot).prod(dim=-2)
 
-chk("forward MATCHES relkit.node.ODST on shared parameters",
+chk("forward MATCHES the reference ODST on shared parameters",
     torch.allclose(mine, ref(x), atol=1e-5), f"max |Δ| {(mine - ref(x)).abs().max():.2e}")
 chk("leaf-routing weights sum to 1 per (row, tree)",
     torch.allclose(weights.sum(-1), torch.ones(32, 8), atol=1e-4),
@@ -515,10 +519,10 @@ def build(solution: bool):
 ---
 
 ### How this notebook works
-- **PROVIDED** cells — boilerplate (data, frame, search spaces, CatBoost/net searches); just run.
+- **PROVIDED** cells — boilerplate (data, frame, search spaces, CatBoost/net searches) **and** NODE (ODST, DenseNODE, train loop) copied into the notebook (not hidden behind `import relkit.node`); just run.
 - **TODO** cells — blanks (`____`); you implement the skill.
 - **CHECK** cells — immediate feedback; do not edit.
-- Run top to bottom. When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
+- Run top to bottom. After EXIT, a **NEXT STEP** cell trains closer to the paper (Colab GPU or Modal). When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
 
 ### Environment
 One-time: `bash labs/setup-env.sh` → kernel **Relational Labs (.venv)**. Needs **torch** + scikit-learn + **catboost** (CPU is fine); the **`entmax`** package is used only to validate your entmax15. Real datasets fetch from OpenML on first run then cache. Budget: **~4–8 minutes on CPU** — set `OMP_NUM_THREADS=1` if a search feels slow (that has been the real cause of every slow lab so far). This lab uses a deliberately small budget/seed/dataset count to stay interactive; the lesson's headline numbers come from the fuller `labs/_verify_l044.py` run plus the paper's benchmark.'''),
@@ -541,10 +545,47 @@ Full write-up + the interactive routing widget: [Lesson 044](../lessons/0044-nod
         code(SETUP),
         md(T1_MD), code(T1_SOL if solution else T1_CODE), code(T1_CHECK),
         md(T2_MD), code(T2_SOL if solution else T2_CODE), code(T2_CHECK),
+        code(r'''# PROVIDED — adapter: your Task-1 entmax15 is last-axis only; the inlined ODST calls dim=0.
+_student_entmax15 = entmax15
+def entmax15(z, dim=-1, n_iter=30):
+    """Keep YOUR Task-1 implementation; accept the encoder's dim= keyword."""
+    if dim in (-1, z.ndim - 1):
+        return _student_entmax15(z, n_iter=n_iter)
+    z_t = z.transpose(dim, -1)
+    return _student_entmax15(z_t, n_iter=n_iter).transpose(dim, -1)
+'''),
+        md(architecture_md(
+            "ODST, DenseNODE, and the training loop",
+            "labs/relkit/node.py",
+            "`entmax15`",
+        )),
+        code(inline_source(
+            os.path.join(HERE, "relkit/node.py"),
+            skip_defs={"entmax15"},
+        )),
         md(T3_MD), code(T3_SOL if solution else T3_CODE), code(T3_CHECK),
         md(T4_MD), code(T4_SOL if solution else T4_CODE), code(T4_CHECK),
         md(EXIT_MD), code(EXIT_SOL if solution else EXIT_CODE),
-        md(r'''## Stretch (optional, ungraded) — push it further
+        md(notebook_scaleup_md(
+            lesson=44,
+            paper="Popov, Morozov & Babenko 2020, Neural Oblivious Decision Ensembles",
+            arxiv="1909.06312",
+            lab_rows=[
+                ("mean ranks", "NODE 3.50 vs CatBoost 2.50 / MLP 2.00 / ResNet 2.00, Friedman p=0.308"),
+                ("cost", "~70× slower than CatBoost on credit_g at this budget"),
+            ],
+            paper_rows=[
+                ("Higgs default-HP error", "NODE 0.2412 vs CatBoost 0.2434 (Table 1). We use OpenML 23512 (~98k of 10.5M) → expect INCOMPARABLE on the absolute number; read DIRECTION."),
+            ],
+            modal="modal/l044_paper_repro.py",
+        )),
+        code(notebook_scaleup_code(
+            lesson=44,
+            harness_path=os.path.join(HERE, "_paper_repro_l044.py"),
+            modal="modal/l044_paper_repro.py",
+            skip_imports={"relkit.node"},
+        )),
+        md(r'''## Stretch (optional, ungraded) — after the scale-up
 
 1. **The DenseNet depth claim.** Compare `n_layers = 1` vs `2` vs `3` on one table at fixed total trees.
    NODE's pitch is that stacking lets later trees split on earlier trees' decisions — does depth help here,

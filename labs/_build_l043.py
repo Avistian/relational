@@ -20,6 +20,10 @@ import sys
 HERE = os.path.dirname(__file__)
 sys.path.insert(0, HERE)
 from _colab import bootstrap_cells  # noqa: E402
+from relkit.paper_repro import (  # noqa: E402
+    architecture_md, inline_source, notebook_scaleup_code, notebook_scaleup_md,
+)
+
 
 
 def md(src):
@@ -31,8 +35,8 @@ def code(src):
 
 
 SETUP = r'''# PROVIDED — imports, the paper's synthetic generators, the small real tables, the shared frame,
-# and the search spaces. `relkit.tabnet` holds the from-scratch TabNet (built from the paper); the
-# reference `pytorch_tabnet` is imported ONLY to validate your sparsemax in Task 1 (NOTES #22).
+# and the search spaces. The TabNet *architecture* is inlined in a later cell so you can read it;
+# `relkit` here is only data + L042 baselines + a sparsemax checker (NOTES #22 / #25).
 # Just run this cell.
 import warnings
 warnings.filterwarnings("ignore")
@@ -53,8 +57,7 @@ sys.path.insert(0, str(Path(".").resolve()))          # labs/ when run from ther
 sys.path.insert(0, str(Path(".").resolve().parent))   # labs/ when run from labs/solutions/
 from relkit import load_tier_a
 from relkit.nets import TabResNet, TabMLP, train_net, net_auc     # L042 baselines (from scratch)
-from relkit.tabnet import (TabNetEncoder, train_tabnet, tabnet_auc, explain,
-                           sparsemax as relkit_sparsemax)          # L043, from the paper
+from relkit.tabnet import sparsemax as relkit_sparsemax           # checker only (NOTES #22)
 from relkit.synth import make_syn2, make_syn4                      # the paper's Table 1 / Fig. 5 data
 
 DEVICE = "cpu"
@@ -348,7 +351,7 @@ use the L2X generators (Chen et al. 2018), and so do we:
 
 `M_agg` is the paper's global attribution: the per-step masks summed with weights
 `eta[i] = sum_c ReLU(d_c[i])` (each step's decision contribution) and normalised to sum to 1.
-`relkit.tabnet.explain` returns it.'''
+`explain` (in the inlined architecture cell above) returns it.'''
 
 T3_CODE = r'''# TODO — fill every ____.
 def fit_and_read(X, y, *, n_steps, gamma, lambda_sparse, seed=0, epochs=200, patience=25):
@@ -590,10 +593,10 @@ def build(solution: bool):
 ---
 
 ### How this notebook works
-- **PROVIDED** cells — boilerplate (data, frame, search spaces, GBDT/net searches); just run.
+- **PROVIDED** cells — boilerplate (data, frame, search spaces, GBDT/net searches) **and** the paper's encoder copied into the notebook (not hidden behind `import relkit.tabnet`); just run.
 - **TODO** cells — blanks (`____`); you implement the skill.
 - **CHECK** cells — immediate feedback; do not edit.
-- Run top to bottom. When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
+- Run top to bottom. After EXIT, a **NEXT STEP** cell trains closer to the paper (Colab GPU or Modal). When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
 
 ### Environment
 One-time: `bash labs/setup-env.sh` → kernel **Relational Labs (.venv)**. Needs **torch** + scikit-learn (CPU is fine); `pytorch-tabnet` is optional and used only to validate your sparsemax. Real datasets fetch from OpenML on first run then cache. Budget: **~2–4 minutes on CPU** (measured: 126 s) — set `OMP_NUM_THREADS=1` if a search feels slow (that has been the real cause of every slow lab so far). This lab uses a deliberately small budget/seed/dataset count to stay interactive; the lesson's headline numbers come from the fuller `labs/_verify_l043.py` run plus the published benchmarks.'''),
@@ -606,7 +609,7 @@ One-time: `bash labs/setup-env.sh` → kernel **Relational Labs (.venv)**. Needs
 1. **sparsemax** (Task 1) — the projection onto the probability simplex. Subtract one threshold `tau`, clip negatives to zero, and whatever survives sums to 1. Unlike softmax it yields **exact zeros**, so a feature can be genuinely switched off (and gets no gradient at that step).
 2. **Attentive transformer** (Task 2) — `M[i] = sparsemax(P[i-1] * h_i(a[i-1]))`, where `h_i` is `Linear -> BatchNorm`.
 3. **Prior scale** (Task 2) — `P[i] = prod_j (gamma - M[j])`, starting at 1. This is the memory that makes the attention **sequential**: features already spent are discounted, so steps pick *different* ones. At `gamma = 1` a fully-used feature is banned outright; larger `gamma` permits reuse.
-4. **Feature transformer** — `Linear -> GhostBatchNorm -> GLU` blocks (2 shared across steps + 2 step-dependent), wired with `sqrt(0.5)`-scaled residuals. Its output splits into `d[i]` (goes to the prediction, aggregated as `d_out = sum_i ReLU(d[i])`) and `a[i]` (feeds the next step's attention). Provided in `relkit.tabnet`; you build pieces 1–3, which are the load-bearing ones.
+4. **Feature transformer** — `Linear -> GhostBatchNorm -> GLU` blocks (2 shared across steps + 2 step-dependent), wired with `sqrt(0.5)`-scaled residuals. Its output splits into `d[i]` (goes to the prediction, aggregated as `d_out = sum_i ReLU(d[i])`) and `a[i]` (feeds the next step's attention). After Task 2 the rest of the encoder is **inlined into this notebook** so you can read every line; you build pieces 1–3, which are the load-bearing ones.
 
 Plus a **sparsity penalty** `L_sparse` (the masks' entropy, weight `lambda_sparse`) that pushes each step to commit to fewer features.
 
@@ -619,10 +622,48 @@ Full write-up + the interactive mask/prior widget: [Lesson 043](../lessons/0043-
         code(SETUP),
         md(T1_MD), code(T1_SOL if solution else T1_CODE), code(T1_CHECK),
         md(T2_MD), code(T2_SOL if solution else T2_CODE), code(T2_CHECK),
+        md(architecture_md(
+            "Ghost BN, the GLU feature transformer, the encoder, and the training loop",
+            "labs/relkit/tabnet.py",
+            "`sparsemax`",
+        )),
+        code(r'''# PROVIDED — adapter: your Task-1 sparsemax is last-axis only; the inlined encoder calls dim=-1.
+_student_sparsemax = sparsemax
+def sparsemax(z, dim=-1):
+    """Keep YOUR Task-1 implementation; accept the encoder's dim= keyword."""
+    if dim in (-1, z.ndim - 1):
+        return _student_sparsemax(z)
+    z_t = z.transpose(dim, -1)
+    return _student_sparsemax(z_t).transpose(dim, -1)
+'''),
+        code(inline_source(
+            os.path.join(HERE, "relkit/tabnet.py"),
+            skip_defs={"sparsemax"},
+        )),
         md(T3_MD), code(T3_SOL if solution else T3_CODE), code(T3_CHECK),
         md(T4_MD), code(T4_SOL if solution else T4_CODE), code(T4_CHECK),
         md(EXIT_MD), code(EXIT_SOL if solution else EXIT_CODE),
-        md(r'''## Stretch (optional, ungraded) — push it further
+        md(notebook_scaleup_md(
+            lesson=43,
+            paper="Arik & Pfister 2019, TabNet: Attentive Interpretable Tabular Learning",
+            arxiv="1908.07442",
+            lab_rows=[
+                ("mean ranks", "TabNet 2.50 vs MLP 1.75 / ResNet 2.00 / GBDT 3.75, Friedman p=0.127"),
+                ("Syn4 masks", "PARTIAL — 15.6% left-group recovery at n=10k (paper Fig. 5 used 10M)"),
+            ],
+            paper_rows=[
+                ("Adult accuracy", "85.7% (appendix HPs). OpenML 1590 is not the UCI official split → expect INCOMPARABLE, then read DIRECTION vs XGB."),
+                ("Syn4 masks", "Fig. 5 is qualitative at 10M samples. Watch whether left_correct climbs vs 15.6%."),
+            ],
+            modal="modal/l043_paper_repro.py",
+        )),
+        code(notebook_scaleup_code(
+            lesson=43,
+            harness_path=os.path.join(HERE, "_paper_repro_l043.py"),
+            modal="modal/l043_paper_repro.py",
+            skip_imports={"relkit.tabnet"},
+        )),
+        md(r'''## Stretch (optional, ungraded) — after the scale-up
 
 1. **Reproduce the paper's sharp masks.** Rerun Syn4 with `n=200_000` (the paper used 10M) and more
    epochs. Does `left_correct` climb? That is the paper's own Fig. 5 caveat, measured.

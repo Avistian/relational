@@ -1,5 +1,23 @@
 # Teaching Notes
 
+## Session 45 — 2026-08-28
+
+- **NEW standard #25 — paper-results scale-up + visible implementation** (user `/teach`): next
+  paper-mirror lessons must try *harder* to reproduce the paper's **results**, not only the
+  architecture. If local scale cannot train it, ship a **Modal** script *and* a **Colab**-gated
+  cell so the student can train and compare. This is the **required next step after the lab**,
+  not optional stretch. Record: [[learning-records/0105-paper-results-visible-scale-up.md]].
+- **Why:** L043–L045 already mirrored the architecture and were honest about downscaling, but
+  the paper's table was left as "out of scope / stretch". A downscaled ranking (TabNet last on
+  four tiny tables; NODE last vs CatBoost; TabTransformer 0/3 vs CatBoost) is a *different
+  experiment*. Mixing it with the paper's claim is how you learn the **wrong conclusion**.
+- **Visible implementation:** the paper's model must appear as **inlined PROVIDED cells** in the
+  notebook (`relkit.paper_repro.inline_source`), not only `from relkit.X import TheModel`. relkit
+  stays the canonical file for Modal / `_verify`; the notebook is a readable copy that **keeps
+  the student's TODO functions** (those names are skipped on inline).
+- Applied now to **L043 / L044 / L045** (the paper-mirror units already shipped). Future paper
+  lessons inherit the checklist item in `lab-authoring`.
+
 ## Session 44 — 2026-08-22
 
 - **L043 retrofitted with architecture diagrams** on user request ("pure equations make it hard to read
@@ -1028,3 +1046,24 @@ Recorded after the Q2 checkpoint (L020). Full rationale: [[learning-records/0052
     - **Exception (narrow):** pure writing lessons (`labPath: null`), or a lesson whose skill is explicitly *using* a tool/API (e.g. L041). Still cite the paper; do not pretend the notebook is a reproduction.
     - **Compatibility:** the "reproduction labs build incrementally" preference still holds for *harness* code (`relkit/`) — reuse loaders/CV/metrics; do **not** reuse that as an excuse to import the model from a library instead of writing it.
     - Reference stack: **L032** (paper architecture mirror), **L037** (reproducibility ledger), **L042** (from-scratch + multi-dataset + rtdl validate). Full authoring checklist in the `lab-authoring` skill.
+
+### Paper-results scale-up + visible implementation (2026-08-28, user directive) — applies to all future paper-mirror lessons/labs
+
+25. **After the lab, reproduce the paper's results — and keep the implementation visible in the notebook (from 2026-08-28, user `/teach`: "next lessons will be trying even harder to reproduce results of the implemented architectures, if scale will not allow you to train it, add either modal script so I can train and compare or Google colab, next steps after lab implemented … I want to be sure that I will learn right conclusions." Follow-up: "code is not hidden behind package, so I can see direct implementation in notebook").** Two failure modes this closes: (1) a downscaled bake-off silently becoming "what the paper found"; (2) a from-scratch model that the student never actually *sees* because the bake-off `import`s `relkit`.
+
+    **(A) Visible implementation.** The paper's architecture (forward pass, train loop, the rest of the encoder beyond the TODO fragment) appears as a **PROVIDED cell whose source is inlined** from the canonical `labs/relkit/*.py` file (`relkit.paper_repro.inline_source`, skipping the names the student writes). `from relkit.tabnet import TabNetEncoder` is allowed in `_verify` / Modal / as a *checker*; it is **not** an acceptable way to present the model in the student notebook. Data loaders, CV, and metrics may still be imported from `relkit`.
+
+    **(B) Paper-results track, required after EXIT.** The learning lab may downscale (minutes on CPU). That is a different experiment from the paper's table. Every paper-mirror lab then ships a **NEXT STEP** (not stretch) that trains closer to the paper:
+    - same from-scratch code the student just read;
+    - paper dataset / HPs / metric when open, else a documented substitute with named gaps;
+    - a printed **conclusion ledger** with three buckets — *verified here* / *paper claim* / *scale-up* — and verdicts MATCH / CLOSE / FAIL / INCOMPARABLE / NOT_RUN / DIRECTION_* (`relkit.paper_repro.format_ledger`).
+    Until the scale-up has been run, the paper claim stays **cited, not reproduced**.
+
+    **(C) When local scale cannot train it.** Ship **both** operators, don't pick silently:
+    - **Modal** (unattended): `modal/l0NN_paper_repro.py`, `modal run --detach … --preset closer`. Template: `modal/_template_paper_repro.py`.
+    - **Colab** (student, GPU): the same loop inlined in the notebook, gated by `RUN_PAPER_REPRO = False` until they attach a T4. Never an unattended long run on free Colab (idle timeout is tab interaction).
+    Presets: `smoke` (seconds) · `closer` (T4, tens of minutes) · `paper` (hours, paper HPs).
+
+    **(D) Right conclusions.** A DIRECTION_TIE on a subsample of a 0.002 paper edge is a lesson about *power*, not a refutation. An INCOMPARABLE 85.7% on a different split is not a MATCH. Do not average buckets; do not invert a lab ranking "because papers win at scale."
+
+    Extends #18 / #20 / #22 / #24. Reference: L043–L045 retrofits this session. Full checklist in `lab-authoring`.

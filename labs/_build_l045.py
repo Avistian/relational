@@ -27,6 +27,9 @@ import sys
 HERE = os.path.dirname(__file__)
 sys.path.insert(0, HERE)
 from _colab import bootstrap_cells  # noqa: E402
+from relkit.paper_repro import (  # noqa: E402
+    architecture_md, inline_source, notebook_scaleup_code, notebook_scaleup_md,
+)
 
 
 def md(src):
@@ -38,10 +41,9 @@ def code(src):
 
 
 SETUP = r'''# PROVIDED — imports, the categorical-rich tables, the shared frame, and the budgets. Just run.
-# `relkit.tabtransformer` holds the from-scratch TabTransformer (built from Huang 2020, Fig. 1 + §3):
-# column embeddings -> N Transformer blocks (contextual) -> concat LayerNorm(numeric) -> MLP head.
-# You will USE its encoder in Tasks 1-2 and race it in Tasks 3-4; the attention itself you already built
-# forward-only in Lab 032, and it is re-validated to machine precision in labs/_check_l045.py (NOTES #22).
+# The TabTransformer *architecture* is inlined in a later cell so you can read it (Huang 2020, Fig. 1 + §3).
+# `relkit.tabtransformer` here is only a data helper + a Task-1 checker (NOTES #22 / #25).
+# The attention itself you already built forward-only in Lab 032; it is re-validated in labs/_check_l045.py.
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -58,9 +60,8 @@ sys.path.insert(0, str(Path(".").resolve()))          # labs/ when run from ther
 sys.path.insert(0, str(Path(".").resolve().parent))   # labs/ when run from labs/solutions/
 from relkit import load_tier_a
 from relkit.tabtransformer import (
-    frame_categorical, TabTransformer, RTDHead,
-    corrupt_categorical as relkit_corrupt,            # reference for Task 1 (NOTES #22)
-    train_tabtransformer, tabtransformer_auc, pretrain_rtd,
+    frame_categorical,                                         # data helper (not the model)
+    corrupt_categorical as relkit_corrupt,                     # checker only (NOTES #22)
 )
 
 DEVICE = "cpu"
@@ -529,10 +530,10 @@ def build(solution: bool):
 ---
 
 ### How this notebook works
-- **PROVIDED** cells — boilerplate (data, frame, budgets, CatBoost/pretrain harnesses); just run.
+- **PROVIDED** cells — boilerplate (data, frame, budgets, CatBoost/pretrain harnesses) **and** the paper's encoder / train / RTD loops copied into the notebook (not hidden behind `import relkit.tabtransformer`); just run.
 - **TODO** cells — blanks (`____`); you implement the skill.
 - **CHECK** cells — immediate feedback; do not edit.
-- Run top to bottom. When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
+- Run top to bottom. After EXIT, a **NEXT STEP** cell trains closer to the paper (Colab GPU or Modal). When **EXIT TICKET** prints cleanly, paste it to your teacher or say *"lab done"*.
 
 ### Environment
 One-time: `bash labs/setup-env.sh` → kernel **Relational Labs (.venv)**. Needs **torch** + scikit-learn + **catboost** (CPU is fine). Real datasets fetch from OpenML on first run then cache. Budget: **~8–12 minutes on CPU** — set `OMP_NUM_THREADS=1` if a search feels slow (that has been the real cause of every slow lab so far). This lab uses a deliberately small budget/seed/dataset count to stay interactive; the lesson's headline numbers come from the fuller `labs/_verify_l045.py` run plus the paper's 15-dataset benchmark.'''),
@@ -567,11 +568,41 @@ Full write-up + the static-vs-contextual and RTD widgets: [Lesson 045](../lesson
         md("## Setup — PROVIDED (categorical-rich tables + shared frame + budgets)"),
         code(SETUP),
         md(T1_MD), code(T1_SOL if solution else T1_CODE), code(T1_CHECK),
+        md(architecture_md(
+            "column embeddings, the Transformer stack, RTDHead, and the train / pre-train loops",
+            "labs/relkit/tabtransformer.py",
+            "`corrupt_categorical`",
+        )),
+        code(inline_source(
+            os.path.join(HERE, "relkit/tabtransformer.py"),
+            skip_defs={"corrupt_categorical"},
+        )),
         md(T2_MD), code(T2_SOL if solution else T2_CODE), code(T2_CHECK),
         md(T3_MD), code(T3_SOL if solution else T3_CODE), code(T3_CHECK),
         md(T4_MD), code(T4_SOL if solution else T4_CODE), code(T4_CHECK),
         md(EXIT_MD), code(EXIT_SOL if solution else EXIT_CODE),
-        md(r'''## Stretch (optional, ungraded) — push it further
+        md(notebook_scaleup_md(
+            lesson=45,
+            paper="Huang, Khetan, Cvitkovic & Karnin 2020, TabTransformer",
+            arxiv="2012.06678",
+            lab_rows=[
+                ("mean ranks", "TT 2.33 vs context-free 2.67 vs CatBoost 1.00, Friedman p=0.097"),
+                ("RTD lift", "+0.008 AUC at 3% labels on adult-16k (paper ~+2.1% at benchmark scale)"),
+            ],
+            paper_rows=[
+                ("+1.0% AUC over deep baselines", "15-dataset mean. We measure contextual − context-free on full Adult → INCOMPARABLE to the 15-dataset figure; read DIRECTION."),
+                ("matches GBDTs", "Paper does not claim a win over trees. CatBoost winning here is compatible."),
+                ("semi-supervised ~+2.1%", "Needs a large unlabeled pool. Scale-up uses full Adult at 3% labels."),
+            ],
+            modal="modal/l045_paper_repro.py",
+        )),
+        code(notebook_scaleup_code(
+            lesson=45,
+            harness_path=os.path.join(HERE, "_paper_repro_l045.py"),
+            modal="modal/l045_paper_repro.py",
+            skip_imports={"relkit.tabtransformer"},
+        )),
+        md(r'''## Stretch (optional, ungraded) — after the scale-up
 
 1. **Depth of context.** Sweep `n_layers` ∈ {0, 1, 2, 3} on `credit_g` at fixed `d`. Does more attention
    keep helping, or does one block capture most of the contextual signal on a 13-column table?

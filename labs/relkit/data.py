@@ -19,6 +19,11 @@ SPECS = {
     "kc1": {"openml_id": 1067, "target": "defects"},             # 2109 rows, 21 numeric
     "phoneme": {"openml_id": 1489, "target": "Class"},           # 5404 rows, 5 numeric
     "churn": {"openml_id": 40701, "target": "class"},            # 5000 rows, 20 (4 categorical)
+    # Paper-results scale-up (standard #25). Higgs-small is a documented subsample of
+    # the UCI Higgs used by NODE (Popov 2020, Table 1/5) and TabNet (Arik 2019, Table 5).
+    # Full Higgs is 10.5M rows — name that gap in the ledger; do not quote Table 1/5
+    # numbers from a 98k run as a MATCH.
+    "higgs_small": {"openml_id": 23512, "target": "class"},       # ~98k rows, 28 numeric
 }
 
 
