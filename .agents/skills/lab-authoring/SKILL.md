@@ -23,6 +23,12 @@ lesson N", the `Lab` column in `CURRICULUM.md` is a deliverable, not a suggestio
   4. `lessons/manifest.json` `labPath` set; `notebooks.html` renders it (auto from manifest).
   5. Any new lab dependency added to `requirements-labs.txt`.
   6. The lesson HTML's inline "Lab" section points at the notebook.
+  7. **If the core source is a paper (standard #25):** the notebook *inlines* the from-scratch
+     architecture as a PROVIDED cell (not `from relkit.X import TheModel` as the only copy the
+     student can read); a post-EXIT **paper-results** cell + `modal/l0NN_paper_repro.py` exist
+     whenever the lab downscaled. Completion criterion: a hostile reader can scroll the notebook
+     and see the forward pass / train loop, and has a Modal or Colab command that trains closer
+     to the paper's table.
 - **Reconcile numbers:** if `_verify` contradicts numbers already written into the lesson/viz/dossier,
   fix the lesson to the verified numbers (honesty rule, standard #20) — never ship the borrowed story.
 - **Miss of record (do not repeat):** L042 ("Train ResNet baseline") was first published `labPath: null`
@@ -44,7 +50,12 @@ other topics) is a **validation point, not the teacher**:
 - Preferred: same architecture + copied weights → assert `torch.allclose` on outputs.
 - Practical: train both under the same protocol → assert `|Δ metric| < tol` (e.g. 0.03) over seeds.
 - Only peripheral boilerplate is imported. Promote reusable from-scratch models into `labs/relkit/`
-  (e.g. `relkit/nets.py`) so later labs build on them.
+  (e.g. `relkit/nets.py`) so Modal / `_verify` / later labs share one canonical file.
+- **Visible in the notebook (standard #25):** the student notebook must **inline** that canonical
+  file as a PROVIDED cell (`relkit.paper_repro.inline_source`, skipping the names the student
+  writes in TODOs). `from relkit.tabnet import TabNetEncoder` is a *checker / harness* import, not
+  an acceptable way to present the paper's architecture. If the bake-off only trains a packaged
+  model, the implementation is hidden — that is a miss.
 - **Exception:** a lesson whose *skill is the tool itself* (e.g. L041 "set up rtdl") may use it directly —
   say so in the intro.
 
@@ -77,8 +88,33 @@ Every paper-mirror lab's intro + EXIT must make the run regenerable:
 | Verify harness | `_verify_lNNN.py` (+ Modal if needed) → committed `_*_results.json` |
 | EXIT target | Paper metric within stated tolerance **or** honest fail / protocol-deviation note |
 
-Harness reuse (`relkit/` loaders/CV/metrics) is encouraged; importing the *model* from a library instead
-of writing it is not (#22).
+Harness reuse (`relkit/` loaders/CV/metrics) is encouraged; importing the *model* from a library **or
+from relkit** instead of showing it in the notebook is not (#22 / #25).
+
+### (D) Paper-results scale-up — required after every paper-mirror lab (#25)
+
+The learning lab may downscale so it fits in minutes. That lab is a *different experiment* from the
+paper's table. **Do not stop there.** After EXIT, every paper-mirror lab ships a **NEXT STEP** that
+tries harder to reproduce the paper's *results*:
+
+1. **Same from-scratch code** the student just read (inlined), not a different library model.
+2. **Paper dataset / HPs / metric** when open and affordable; otherwise a documented closer-to-paper
+   run with protocol deviations listed.
+3. **If local CPU cannot train it:** ship **both** of
+   - `modal/l0NN_paper_repro.py` (unattended; `modal run --detach ... --preset closer`)
+   - a Colab-gated cell in the same notebook (`RUN_PAPER_REPRO = True` on a T4).
+   Optional stretch does **not** satisfy this. A comment that says "the paper used more trees" does
+   **not** satisfy this.
+4. **Conclusion ledger** (`relkit.paper_repro.format_ledger`): three buckets —
+   *verified here* / *paper claim* / *scale-up run* — with MATCH · CLOSE · FAIL · INCOMPARABLE ·
+   NOT_RUN · DIRECTION_*. Mixing bucket 1 with bucket 2 is how the student learns the wrong
+   conclusion (TabNet "lost" on four tiny tables ≠ the paper was wrong).
+
+Until the scale-up has been run, the paper claim stays **cited, not reproduced**. That is an honest
+state.
+
+Presets on every harness: `smoke` (seconds, CI) · `closer` (T4, tens of minutes) · `paper` (hours,
+paper HPs). Default the notebook cell to `closer` gated OFF.
 
 ## Cell convention
 
@@ -134,10 +170,15 @@ Colab** — the idle timeout keys on browser-tab interaction, not on whether cod
 5. **Modal** for an agent-side verified number; commit the launch script and quote the hardware in the record.
 6. **Colab-GPU for the lab** — label it "GPU recommended — open in Colab", keep it under ~20 min on a T4,
    checkpoint to Drive, and ship a smaller CPU config that still passes the CHECK cells.
+7. **Paper-results scale-up (standard #25)** — after EXIT, a closer-to-paper run of the *same from-scratch
+   code* via Modal *and* a Colab-gated cell, with a conclusion ledger. Rung 2 (shrink the learning lab)
+   is a sequel, not a skip: the student still gets a command that trains nearer the paper's table.
 
 **Honesty rule:** a downscaled run is a *different experiment*. State the config in the lab intro and the
 learning record; never quote a shrunken result as the paper's; if the affordable version cannot support the
-claim, say the claim is unsupported rather than shipping a toy that looks like evidence.
+claim, say the claim is unsupported rather than shipping a toy that looks like evidence. After shrinking,
+still ship the paper-results track (#25) — shrinking is how the *learning lab* fits, not permission to
+treat EXIT ranks as the paper.
 
 ## Paper-reproduction labs (Q2 onward)
 
@@ -145,8 +186,11 @@ Four blocks per reproduction lab:
 
 1. **Paper step** — numbered algorithm step from the paper (with section ref)
 2. **Crucial fragment** — student implements one non-obvious function (split gain, ICL batch layout, etc.)
-3. **Harness** — `import relkit` from `labs/relkit/` (CV, metrics, leakage-safe pipelines)
+3. **Harness** — `import relkit` for data loaders, CV, metrics, leakage-safe pipelines. **Not** for
+   the paper's model: that source is inlined into the notebook (#25).
 4. **Reproduction target** — metric within tolerance of paper, or documented honest fail
+5. **Scale-up next step** — Modal script + Colab-gated cell + conclusion ledger (#25), whenever the
+   lab downscaled
 
 ## Labs implement the paper (from L032 — standard #18; elevated by #24)
 
