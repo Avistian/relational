@@ -631,13 +631,16 @@ Full write-up + the interactive mask/prior widget: [Lesson 043](../lessons/0043-
             "`sparsemax`",
         )),
         code(r'''# PROVIDED — adapter: your Task-1 sparsemax is last-axis only; the inlined encoder calls dim=-1.
-_student_sparsemax = sparsemax
-def sparsemax(z, dim=-1):
+# Bind `_impl` at def-time (and stash it) so re-running this cell cannot wrap the wrapper —
+# that RecursionError's on the next train, not here.
+_impl = getattr(sparsemax, "_impl", sparsemax)
+def sparsemax(z, dim=-1, *, _impl=_impl):
     """Keep YOUR Task-1 implementation; accept the encoder's dim= keyword."""
     if dim in (-1, z.ndim - 1):
-        return _student_sparsemax(z)
+        return _impl(z)
     z_t = z.transpose(dim, -1)
-    return _student_sparsemax(z_t).transpose(dim, -1)
+    return _impl(z_t).transpose(dim, -1)
+sparsemax._impl = _impl
 '''),
         code(inline_source(
             os.path.join(HERE, "relkit/tabnet.py"),

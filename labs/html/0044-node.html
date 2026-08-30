@@ -8220,13 +8220,16 @@ from-scratch reference <code>relkit_ODST</code> exactly when they share paramete
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-python"><pre><span></span><span class="c1"># PROVIDED — adapter: your Task-1 entmax15 is last-axis only; the inlined ODST calls dim=0.</span>
-<span class="n">_student_entmax15</span> <span class="o">=</span> <span class="n">entmax15</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">entmax15</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+<span class="c1"># Bind `_impl` at def-time (and stash it) so re-running this cell cannot wrap the wrapper —</span>
+<span class="c1"># that RecursionError's on the next train, not here.</span>
+<span class="n">_impl</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">entmax15</span><span class="p">,</span> <span class="s2">"_impl"</span><span class="p">,</span> <span class="n">entmax15</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">entmax15</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_impl</span><span class="o">=</span><span class="n">_impl</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Keep YOUR Task-1 implementation; accept the encoder's dim= keyword."""</span>
     <span class="k">if</span> <span class="n">dim</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">_student_entmax15</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_impl</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">)</span>
     <span class="n">z_t</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_student_entmax15</span><span class="p">(</span><span class="n">z_t</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_impl</span><span class="p">(</span><span class="n">z_t</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">n_iter</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">entmax15</span><span class="o">.</span><span class="n">_impl</span> <span class="o">=</span> <span class="n">_impl</span>
 </pre></div>
 </div>
 </div>

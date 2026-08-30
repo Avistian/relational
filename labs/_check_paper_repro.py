@@ -186,10 +186,59 @@ from relkit import load_tier_a
             check(f"{kind} {slug} does not hide the encoder behind {hidden_import}",
                   hidden_import not in src)
 
+    # Re-running the dim-adapter cell must not wrap the wrapper. That RecursionError
+    # surfaces later, on the first train (L043 Syn2/Syn4, L044 NODE), not at wrap time.
+    adapters = [
+        ("0043-tabnet", "sparsemax"),
+        ("0044-node", "entmax15"),
+    ]
+    for slug, fn_name in adapters:
+        for kind, rel in (("student", f"{slug}.ipynb"),
+                          ("solution", os.path.join("solutions", f"{slug}.ipynb"))):
+            path = os.path.join(HERE, rel)
+            if not os.path.exists(path):
+                if kind == "solution":
+                    print(f"SKIP  {kind} {slug} adapter check (gitignored)")
+                continue
+            nb = json.load(open(path))
+            cell = ""
+            for c in nb["cells"]:
+                src = "".join(c.get("source") or []) if isinstance(c.get("source"), list) else (c.get("source") or "")
+                if f"def {fn_name}" in src and "adapter" in src and "dim=" in src:
+                    cell = src
+                    break
+            check(f"{kind} {slug} has a {fn_name} dim-adapter cell", bool(cell))
+            if not cell:
+                continue
+            ok, detail = _adapter_survives_rerun(cell, fn_name)
+            check(f"{kind} {slug} {fn_name} adapter survives re-run (no RecursionError)", ok, detail)
+
     print()
     print(f"{len(PASS)} PASS / {len(FAIL)} FAIL")
     if FAIL:
         sys.exit(1)
+
+
+def _adapter_survives_rerun(cell_src: str, fn_name: str) -> tuple[bool, str]:
+    """Exec the notebook adapter twice; RecursionError means the wrap aliased itself."""
+    import torch
+
+    def last_axis_softmax(z, n_iter=30):  # n_iter unused; matches L044 student signature
+        return torch.softmax(z, dim=-1)
+
+    ns = {"torch": torch, fn_name: last_axis_softmax}
+    try:
+        exec(cell_src, ns)
+        exec(cell_src, ns)
+        z = torch.tensor([[3.0, 1.0, 0.0, -2.0]])
+        out = ns[fn_name](z, dim=-1)
+        if out.shape != z.shape or not bool(torch.isfinite(out).all()):
+            return False, f"bad output after re-run: {out}"
+        return True, ""
+    except RecursionError:
+        return False, "RecursionError: adapter wrapped itself"
+    except Exception as e:  # noqa: BLE001
+        return False, f"{type(e).__name__}: {e}"
 
 
 if __name__ == "__main__":

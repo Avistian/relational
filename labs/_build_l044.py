@@ -546,13 +546,16 @@ Full write-up + the interactive routing widget: [Lesson 044](../lessons/0044-nod
         md(T1_MD), code(T1_SOL if solution else T1_CODE), code(T1_CHECK),
         md(T2_MD), code(T2_SOL if solution else T2_CODE), code(T2_CHECK),
         code(r'''# PROVIDED — adapter: your Task-1 entmax15 is last-axis only; the inlined ODST calls dim=0.
-_student_entmax15 = entmax15
-def entmax15(z, dim=-1, n_iter=30):
+# Bind `_impl` at def-time (and stash it) so re-running this cell cannot wrap the wrapper —
+# that RecursionError's on the next train, not here.
+_impl = getattr(entmax15, "_impl", entmax15)
+def entmax15(z, dim=-1, n_iter=30, *, _impl=_impl):
     """Keep YOUR Task-1 implementation; accept the encoder's dim= keyword."""
     if dim in (-1, z.ndim - 1):
-        return _student_entmax15(z, n_iter=n_iter)
+        return _impl(z, n_iter=n_iter)
     z_t = z.transpose(dim, -1)
-    return _student_entmax15(z_t, n_iter=n_iter).transpose(dim, -1)
+    return _impl(z_t, n_iter=n_iter).transpose(dim, -1)
+entmax15._impl = _impl
 '''),
         md(architecture_md(
             "ODST, DenseNODE, and the training loop",
