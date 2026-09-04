@@ -343,6 +343,26 @@ self-supervision on abundant unlabeled rows foreshadows the relational foundatio
 same lesson recurs: adding attention inside one table adds no new **structural** information, so the
 untapped value stays across the join.
 
+L046 (FT-Transformer — the Feature Tokenizer + [CLS] readout) closes the Q1 classic-neural cascade by
+removing the exact ceiling L045 named. The edit is surgical: make **every** feature a token, numerics
+included. A numeric feature *j* becomes the **affine** token `T_j = b_j + x_j·W_j` — the scalar placed on a
+learned per-column direction `W_j` (validated from scratch, `labs/_check_l046.py`: bump `x_j` by Δ and token
+*j* moves by exactly `Δ·W_j`, no other token moves), and a learned **[CLS]** token is prepended so the
+Transformer pools the whole row into the vector the head reads. The probe makes the fix measurable: a numeric
+change moves FT-T's [CLS] readout by **L2 ≈ 0.438** on adult but moves TabTransformer's representation
+**exactly 0.0** — numerics now attend. Held to the shared frame on four tables × three seeds
+(`labs/_verify_l046.py`, attention reused from the L045 kernel matched to torch at \|Δ\| ≈ 1e-16): mean ranks
+FT-T **2.50** / MLP **2.75** / TabTransformer **3.75** / CatBoost **1.00** (Friedman p = 0.026). FT-T beats
+TabTransformer on **3/4** (all but the most-categorical credit_g, where numerics matter least) and is the
+**best single neural model** — but a tuned CatBoost still wins **all four**. For the thesis this is again
+**BAR** (the strongest classic single-table neural architecture, built honestly, is still a notch below a
+tree on flat data — the paper's own "no universal winner", cited: under a shared protocol FT-T ~ties tuned
+GBDTs) with a clean **FOR**: FT-Transformer perfects attention *within a flattened row over columns* and it
+buys the best neural rank yet *without* overtaking the tree — because adding attention inside one table adds
+no new **structural** information. The untapped signal is still across the join, and Q1 has now exhausted the
+single-table neural repertoire (MLP/ResNet → TabNet → NODE → TabTransformer → FT-Transformer) that a
+relational model must eventually beat *fairly*.
+
 The genuinely *supporting* evidence (C1, C2) is still conceptual — flattening is demonstrably lossy and
 leakage-prone, and manual feature synthesis hints structure is recoverable, but no result yet shows a
 relational model *beating the fair bar by keeping structure*. That demonstration is now the **Year 2–4**

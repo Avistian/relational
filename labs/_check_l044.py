@@ -83,6 +83,10 @@ def main():
         f"max dev {(weights.sum(-1) - 1).abs().max():.2e}")
     chk(f"ODST has 2^depth = {2**depth} leaves", weights.shape[-1] == 2 ** depth)
     chk("ODST forward returns [batch, trees*tree_dim]", tuple(layer(x).shape) == (64, trees))
+    ref = torch.einsum("btl,tcl->btc", weights, layer.response).reshape(x.shape[0], trees)
+    chk("ODST forward matches paper outer-product einsum",
+        torch.allclose(layer(x), ref, atol=1e-5),
+        f"max |Δ| {(layer(x) - ref).abs().max().item():.2e}")
 
     # ---- oblivious property: the feature choice is shared across a level (one feature per level) ---
     # entmax over features is per (tree, level): a level's choice vector is a single distribution.
@@ -103,6 +107,38 @@ def main():
     model, val = train_node(model, Xtr, ytr, Xva, yva, lr=1e-2, max_epochs=60, patience=8, seed=0)
     auc = node_auc(model, Xte, yte)
     chk("NODE learns a 2-feature interaction (test AUC > 0.90)", auc > 0.90, f"AUC {auc:.3f}")
+
+    # ---- paper-repro: OpenML Higgs has 1 incomplete row; scaler leaves NaNs that
+    # explode NODE logits and make sklearn raise "Input contains NaN."
+    import pandas as pd
+    from _paper_repro_l044 import _dense_from_xy
+    Xnan = pd.DataFrame({"a": [0.0, 1.0, np.nan], "b": [1.0, 2.0, 3.0]})
+    ynan = pd.Series([0, 1, 0])
+    X_clean, y_clean = _dense_from_xy(Xnan, ynan)
+    chk("paper-repro drops incomplete rows before scaling",
+        np.isfinite(X_clean).all() and len(y_clean) == 2,
+        f"shape={X_clean.shape} nans={int(np.isnan(X_clean).sum())}")
+
+    # ---- paper-repro: val/test used to run ODST on the full Higgs split at once.
+    # Routing tensor is [N, trees, depth, 2^depth] — 29k × 256 × 6 × 64 × 4B ≈ 11 GB,
+    # which OOMs a Colab T4. Eval must chunk.
+    torch.manual_seed(0)
+    big = DenseNODE(5, num_trees=4, depth=3, n_layers=1)
+    Xbig = rng.normal(size=(2000, 5)).astype(np.float32)
+    ybig = (Xbig[:, 0] > 0).astype(np.float32)
+    seen = []
+    _orig = ODST.forward
+    def _counted(self, x):
+        seen.append(int(x.shape[0]))
+        return _orig(self, x)
+    ODST.forward = _counted
+    try:
+        node_auc(big, Xbig, ybig)
+    finally:
+        ODST.forward = _orig
+    chk("node_auc evaluates in batches (max <= 512)",
+        bool(seen) and max(seen) <= 512,
+        f"forward sizes {seen[:8]}{'...' if len(seen) > 8 else ''}")
 
     print(f"\n_check_l044: {N_PASS} passed, {N_FAIL} failed")
     sys.exit(1 if N_FAIL else 0)

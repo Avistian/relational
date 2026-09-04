@@ -3,22 +3,42 @@
 Unattended GPU training of from-scratch NODE vs CatBoost on a Higgs subsample
 (or Adult fallback), compared to Popov et al. 2020 Table 1.
 
-    ~/.local/bin/modal run --detach modal/l044_paper_repro.py --preset closer
+    ~/.local/bin/modal run --detach modal/l044_paper_repro.py --preset paper
+
+Self-contained App (does not import `common`) so a detached run can import this
+file inside the container without a sibling `common.py`.
 """
 from __future__ import annotations
 
-import os
-import sys
-
 import modal
 
-sys.path.insert(0, os.path.dirname(__file__))
-from common import ARTIFACTS_PATH, app, artifacts, image_gpu, volumes  # noqa: E402
+app = modal.App("relational-l044-paper-repro")
+artifacts = modal.Volume.from_name("relational-artifacts", create_if_missing=True)
+ARTIFACTS_PATH = "/artifacts"
+volumes = {ARTIFACTS_PATH: artifacts}
 
-image = image_gpu.add_local_dir("labs", remote_path="/root/labs", copy=True)
+# Kept in sync with modal/common.py + requirements-labs.txt (no jupyter).
+_LAB_DEPS = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+    "scikit-learn>=1.5",
+    "imbalanced-learn>=0.12",
+    "xgboost>=2.0",
+    "lightgbm>=4.0",
+    "catboost>=1.2",
+    "pyarrow>=15.0",
+    "torch>=2.2",
+]
+
+image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .pip_install(*_LAB_DEPS)
+    .add_local_dir("labs", remote_path="/root/labs", copy=True)
+)
 
 
-@app.function(image=image, gpu="T4", volumes=volumes, timeout=4 * 3600, memory=32768)
+@app.function(image=image, gpu="T4", volumes=volumes, timeout=12 * 3600, memory=32768)
 def run(preset: str = "closer") -> dict:
     import os
     import sys

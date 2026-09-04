@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 046 — FT-Transformer (feature tokenizer + [CLS])</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td.n { font-family: var(--font-mono); font-size: 0.82rem; }
+    .win { font-weight: 600; color: #1e6b3c; }
+    .bad { font-weight: 600; color: #b03a2e; }
+    .mid { font-weight: 600; color: #b9770e; }
+    .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
+    .defbox strong.term { color: var(--fg, #222); }
+    .fig-caption { font-size: 0.86rem; color: var(--muted); margin: 0.5rem 0 1rem; line-height: 1.6; }
+    .rank { color: var(--muted); font-size: 0.78rem; }
+    tr.summary-row td { border-top: 2px solid var(--border); background: var(--bg-soft); }
+    .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; line-height: 1.7; }
+
+    /* new: tokenizer-viz (.tok-) — the FT-Transformer feature tokenizer data-flow */
+    .tok-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tok-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+    .tok-ctl button { font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .tok-ctl button.tok-on { background: #2e6fb0; color: #fff; border-color: #2e6fb0; }
+    .tok-svg { display: block; max-width: 100%; margin: 0.25rem auto; }
+    .tok-box { }
+    .tok-boxhead { font-family: var(--font-sans); font-size: 9.5px; font-weight: 600; }
+    .tok-boxsub { font-family: var(--font-mono); font-size: 8.5px; }
+    .tok-lane { font-family: var(--font-sans); font-size: 8.5px; letter-spacing: 0.05em; fill: var(--muted); }
+    .tok-readout { font-size: 0.86rem; margin: 0.7rem 0.2rem 0; line-height: 1.55; min-height: 4rem; }
+
+    /* reused from L032/L045: TabTransformer architecture viz (.tta-) — shown for contrast */
+    .tta-viz { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+    .tta-ctl { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+    .tta-ctl button { font-family: var(--font-sans); font-size: 0.8rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg, #222); cursor: pointer; }
+    .tta-ctl button.tta-on { background: #1e6b3c; color: #fff; border-color: #1e6b3c; }
+    .tta-svg { display: block; max-width: 100%; margin: 0.25rem auto; }
+    .tta-boxhead { font-family: var(--font-sans); font-size: 9.5px; font-weight: 600; }
+    .tta-boxsub { font-family: var(--font-sans); font-size: 8.5px; }
+    .tta-lane { font-family: var(--font-sans); font-size: 8.5px; letter-spacing: 0.05em; fill: var(--muted); }
+    .tta-readout { font-size: 0.86rem; margin: 0.7rem 0.2rem 0; line-height: 1.55; }
+  </style>
+</head>
+<body>
+<article>
+  <p class="mission-tag">Mission · RDL thesis · Year 2 · Q1 · Neural tabular architectures</p>
+  <h1>FT-Transformer <span style="color:var(--muted);font-weight:400">(feature tokenizer + [CLS] readout)</span></h1>
+  <p class="subtitle">Lesson 046 · Phase 2 · Q1 · <em>primary reading: Gorishniy, Rubachev, Khrulkov &amp; Babenko 2021, <a href="https://arxiv.org/abs/2106.11959">Revisiting Deep Learning Models for Tabular Data</a></em></p>
+
+  <p>
+    <a href="0045-tabtransformer.html">L045</a> ended on a specific complaint. TabTransformer contextualises
+    the categorical columns beautifully — but the <strong>numeric</strong> features never enter the attention:
+    they are LayerNorm'd and glued on <em>after</em> the Transformer. On a numeric-heavy table most of the
+    signal lives in features the attention never touches, which is why its contextual edge was so thin and why
+    it lost to a cheap tree. This lesson is the fix. <strong>FT-Transformer</strong> (Gorishniy et&nbsp;al.
+    2021 — the same paper that gave us the strong <a href="0042-mlp-resnet-baselines.html">MLP/ResNet</a>
+    baselines) makes <em>every</em> feature a token, numerics included, and reads the whole row out through a
+    single <strong>[CLS]</strong> token.
+  </p>
+  <p>
+    Two claims to keep separate, exactly as in <a href="0043-tabnet.html">L043</a>–<a href="0045-tabtransformer.html">L045</a>.
+    First, the <em>within-family</em> claim: does tokenising the numerics make FT-Transformer beat
+    TabTransformer, and is the gap biggest where numerics carry the signal? Second, the paper's headline: is
+    FT-Transformer the <strong>strongest single neural baseline</strong> — better than a tuned MLP — while
+    still only <em>tying</em> gradient-boosted trees under a fair protocol?
+  </p>
+  <p>
+    Its single skill: <strong>build the FT-Transformer feature tokenizer (a per-feature linear embedding for
+    every numeric feature, an embedding table for every categorical feature) plus a [CLS] readout, train it,
+    and show it is the best neural model of the four we have built — beating TabTransformer most where
+    numerics dominate — yet still losing the flat-table metric to CatBoost.</strong>
+  </p>
+
+  <div class="callout">
+    <strong>One sentence.</strong> Trained from scratch, FT-Transformer takes mean rank <strong>2.50</strong>
+    across four tables — ahead of the MLP (2.75) and well ahead of TabTransformer (3.75), so it <em>is</em> the
+    strongest single neural baseline — and it beats TabTransformer on <strong>3 of 4</strong> tables, losing
+    only on the most categorical one; but CatBoost still wins <strong>all four</strong> (rank 1.00), so the
+    honest verdict is unchanged: the best neural tabular model of Year&nbsp;2 so far, still a notch below a
+    tree on flat data.
+  </div>
+
+  <h2>Warm up — recall before you read</h2>
+  <p>
+    Three questions from memory before today's material. The numeric-bypass limitation you are about to fix
+    was named in <a href="0045-tabtransformer.html">L045</a>; effortful retrieval now is what makes the
+    contrast stick.
+  </p>
+  <div id="warmup"></div>
+
+  <h2>Recap: where TabTransformer stops</h2>
+  <p>
+    Here is the L045 architecture again, because FT-Transformer is a targeted edit to it. Walk to stage 3 —
+    the <em>continuous bypass</em> — and notice what it means: the Transformer runs over the categorical
+    tokens only, and the numerics are merely normalised and concatenated before the head.
+  </p>
+  <div id="tabt-arch"></div>
+  <p class="fig-caption">
+    TabTransformer (Huang 2020), the model you trained in L045. Stage 3 is the ceiling: numeric features skip
+    the attention entirely. FT-Transformer removes stages "embed categoricals only" and "bypass" and replaces
+    them with a single <em>tokenizer</em> that treats every feature the same way.
+  </p>
+
+  <h2>The one idea: tokenize every feature</h2>
+  <p>
+    A Transformer operates on a sequence of tokens — vectors of a common width <em>d</em>. TabTransformer only
+    knew how to make tokens out of <em>categories</em> (an embedding lookup). FT-Transformer's <strong>Feature
+    Tokenizer</strong> (Gorishniy 2021, §3.3, Fig.&nbsp;2) adds the missing half: a way to turn a <em>number</em>
+    into a token too.
+  </p>
+  <div class="defbox">
+    <strong class="term">Feature Tokenizer.</strong> Every feature becomes one <em>d</em>-dimensional token.
+    <ul style="margin:0.4rem 0 0; padding-left:1.2rem;">
+      <li><strong>Numeric feature <em>j</em>:</strong> <code>T_j = b_j + x_j · W_j</code>, where
+        <code>W_j</code> and <code>b_j</code> are learned <em>d</em>-vectors. The token is an <em>affine</em>
+        map of the scalar <code>x_j</code> — the same feature at value 39 and value 40 lands at nearby points
+        along the learned direction <code>W_j</code>.</li>
+      <li><strong>Categorical feature <em>j</em>:</strong> <code>T_j = b_j + e_j[x_j]</code> — the entity
+        embedding of <a href="0031-embeddings-for-categoricals.html">L031</a> plus a per-feature bias.</li>
+    </ul>
+    Stack the <em>k</em> feature tokens into a <code>[k, d]</code> sequence and you have turned a heterogeneous
+    row of numbers-and-strings into the homogeneous token sequence a Transformer expects.
+  </div>
+  <span class="formula">numeric   T_j = b_j + x_j · W_j        (W_j, b_j ∈ ℝ^d — one learned vector per feature)
+categorical T_j = b_j + e_j[x_j]        (embedding lookup + per-feature bias)</span>
+  <p>
+    The other borrowed idea is the <strong>[CLS] token</strong> from BERT. Prepend one extra learned vector at
+    position 0 that represents no feature. Its only job is to <em>collect</em>, through attention, whatever the
+    row's feature tokens contain — and after the Transformer stack, that single [CLS] vector is the row's
+    summary that the head reads. Walk the flow:
+  </p>
+  <div id="tokenizer"></div>
+  <p class="fig-caption">
+    FT-Transformer's data-flow (Gorishniy 2021, Fig.&nbsp;2). <strong>(1)</strong> every feature — numeric and
+    categorical — becomes a token; <strong>(2)</strong> a learned <code>[CLS]</code> token is prepended;
+    <strong>(3)</strong> <em>N</em> Transformer layers let all <em>k+1</em> tokens attend to one another;
+    <strong>(4)</strong> the final <code>[CLS]</code> vector is read out by a small head
+    (<code>LayerNorm → ReLU → Linear</code>). The one change from TabTransformer is Stage&nbsp;1 — numerics are
+    now first-class tokens, so a change in <code>age</code> can reshape the whole row's summary.
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Why "numerics attend" is the whole point.</strong> In TabTransformer, changing a
+    numeric feature could <em>never</em> change the contextual embeddings — those come only from categorical
+    tokens (we verified the move is exactly <code>0.0</code>). In FT-Transformer, a numeric feature is a token
+    in the same sequence as everything else, so it both attends and is attended to: bumping one numeric input
+    moves the [CLS] readout by L2 <strong>0.438</strong> in our check. That single structural change is the
+    difference between the two models — and, as the bake-off shows, it matters most exactly where numerics
+    carry the signal.
+  </div>
+
+  <h2>Training it: the same fair protocol</h2>
+  <p>
+    Nothing about training is FT-Transformer-specific — the point of Gorishniy 2021 is that architectures
+    should be compared under <em>one</em> protocol. We reuse the shared recipe of every neural arm since
+    <a href="0042-mlp-resnet-baselines.html">L042</a>: mini-batch AdamW, early stopping on validation ROC-AUC,
+    identical split / metric / selection rule for every model. Our from-scratch
+    <code>relkit.ft_transformer</code> implements the tokenizer, the [CLS] token, PreNorm Transformer blocks
+    (reusing the multi-head attention validated to machine precision in L045), and the [CLS] readout head. The
+    attention kernel is checked against torch's own, not imported.
+  </p>
+
+  <h2>Does tokenising numerics help? FT-Transformer vs the field</h2>
+  <p>
+    The cleanest experiment races the four neural-and-tree models we have built — FT-Transformer,
+    TabTransformer (the numeric-bypass predecessor), a tuned MLP (the strong deep baseline), and CatBoost (the
+    honest tree bar) — on four tables spanning the numeric/categorical spectrum, from <code>credit_g</code>
+    (mostly categorical) to <code>phoneme</code> (all numeric). Predict before you look.
+  </p>
+  <div id="predict-bakeoff"></div>
+
+  <p>
+    Four tables, one shared frame, three seeds. <code>adult</code> is subsampled to 4000 rows to keep it
+    CPU-cheap — a down-scaled demonstration, not the paper's 11-dataset tuned benchmark. The
+    <strong>num-frac</strong> column is the fraction of features that are numeric — the axis along which the
+    numeric-tokenizer should matter.
+  </p>
+  <table>
+    <thead><tr>
+      <th>Dataset <span class="rank">(num-frac)</span></th>
+      <th>FT-Transformer</th><th>TabTransformer</th><th>MLP</th><th>CatBoost</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><code>credit_g</code> <span class="rank">(0.35)</span></td>
+        <td class="n">0.785 ± 0.025 <span class="rank">(4)</span></td>
+        <td class="n">0.787 ± 0.016 <span class="rank">(3)</span></td>
+        <td class="n">0.804 ± 0.023 <span class="rank">(2)</span></td>
+        <td class="n win">0.804 ± 0.024 <span class="rank">(1)</span></td>
+      </tr>
+      <tr>
+        <td><code>adult</code> <span class="rank">(0.43, n=4000)</span></td>
+        <td class="n mid">0.900 ± 0.004 <span class="rank">(2)</span></td>
+        <td class="n">0.866 ± 0.009 <span class="rank">(4)</span></td>
+        <td class="n">0.898 ± 0.006 <span class="rank">(3)</span></td>
+        <td class="n win">0.903 ± 0.006 <span class="rank">(1)</span></td>
+      </tr>
+      <tr>
+        <td><code>churn</code> <span class="rank">(0.80)</span></td>
+        <td class="n mid">0.919 ± 0.011 <span class="rank">(2)</span></td>
+        <td class="n">0.886 ± 0.010 <span class="rank">(4)</span></td>
+        <td class="n">0.901 ± 0.012 <span class="rank">(3)</span></td>
+        <td class="n win">0.922 ± 0.014 <span class="rank">(1)</span></td>
+      </tr>
+      <tr>
+        <td><code>phoneme</code> <span class="rank">(1.00)</span></td>
+        <td class="n mid">0.927 ± 0.008 <span class="rank">(2)</span></td>
+        <td class="n">0.881 ± 0.005 <span class="rank">(4)</span></td>
+        <td class="n">0.927 ± 0.006 <span class="rank">(3)</span></td>
+        <td class="n win">0.946 ± 0.005 <span class="rank">(1)</span></td>
+      </tr>
+      <tr class="summary-row">
+        <td><strong>Mean rank (1 = best)</strong></td>
+        <td class="n mid"><strong>2.50</strong></td>
+        <td class="n bad"><strong>3.75</strong></td>
+        <td class="n"><strong>2.75</strong></td>
+        <td class="n win"><strong>1.00</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_verify_l046.py</code> — from-scratch FT-Transformer (<code>relkit.ft_transformer</code>)
+    vs from-scratch TabTransformer (L045) vs a from-scratch MLP (L042) vs CatBoost (native categoricals), test
+    ROC-AUC, mean&nbsp;±&nbsp;std over 3 seeds. FT-Transformer is the <strong>best neural model</strong> (mean
+    rank 2.50 vs MLP 2.75 vs TabTransformer 3.75) and beats TabTransformer on <strong>3 of 4</strong> tables;
+    <strong>CatBoost wins all 4</strong> (rank 1.00), and FT-T beats it on <strong>0 of 4</strong>.
+    <strong>Friedman χ² = 9.30, <em>p</em> = 0.026</strong> (k = 4, N = 4).
+  </p>
+
+  <div class="defbox">
+    <strong class="term">Read this the disciplined way.</strong> Three readings, kept apart. <strong>(1) The
+    numeric-bypass fix works:</strong> FT-Transformer beats TabTransformer on every table <em>except</em>
+    <code>credit_g</code> — the most categorical one (num-frac 0.35), where the numeric tokenizer has least to
+    add and the two tie (0.785 vs 0.787, within noise). On <code>adult</code>, <code>churn</code>, and
+    <code>phoneme</code> — where numerics carry more of the signal — the gap is large (up to +0.046 on
+    phoneme). That is the mechanism, made visible. <strong>(2) FT-T is the strongest single neural baseline:</strong>
+    it out-ranks the tuned MLP, matching the paper's central finding. <strong>(3) It still loses to trees:</strong>
+    CatBoost wins all four, cheaper and faster. Gorishniy 2021's honest headline is exactly this — FT-Transformer
+    is the best <em>deep</em> model and only <em>ties</em> GBDTs on average; on some tables (Adult included) the
+    tree still edges it. Our small run reproduces that shape precisely.
+  </div>
+
+  <h2>The from-scratch mechanism, validated</h2>
+  <p>
+    Per the paper-mirror standard, the load-bearing pieces are built from the paper, not imported.
+    <code>relkit.ft_transformer</code> implements the feature tokenizer, the [CLS] token, and the PreNorm
+    block; torch's own attention kernels are used only to <em>check</em> the reused attention, and the
+    "numerics attend" property is verified on real rows.
+  </p>
+  <table>
+    <thead><tr><th>Check</th><th>Result</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>from-scratch <code>scaled_dot_product_attention</code> vs <code>F.scaled_dot_product_attention</code></td><td class="n">max |Δ| ≈ 8 × 10⁻¹⁶</td><td class="win">exact</td></tr>
+      <tr><td>numeric token is affine in its feature: <code>Δx</code> moves token <em>j</em> by <code>Δx·W_j</code></td><td class="n">max |Δ| ≈ 1 × 10⁻⁷</td><td class="win">as derived</td></tr>
+      <tr><td>changing a <em>numeric</em> feature moves the <code>[CLS]</code> readout (numbers attend)</td><td class="n">L2 move 0.438</td><td class="win">the fix</td></tr>
+      <tr><td>TabTransformer's contextual vector for the same numeric change</td><td class="n">L2 move 0.0</td><td class="bad">bypassed</td></tr>
+      <tr><td>FT-T learns a numeric-only 2-feature XOR interaction</td><td class="n">test AUC 1.000</td><td class="win">numerics carry signal</td></tr>
+    </tbody>
+  </table>
+  <p class="fig-caption">
+    Verified: <code>labs/_check_l046.py</code> (13 / 13 pass) and <code>labs/_verify_l046.py</code> (mechanism
+    section). The attention is reproduced to machine precision; the numeric-tokenizer is affine exactly as the
+    formula predicts; and the one property that separates FT-Transformer from TabTransformer — a numeric
+    feature reaching the readout through attention — is confirmed (0.438 vs 0.0).
+  </p>
+
+  <div id="teachback-tokenizer"></div>
+
+  <h2>Reproduce the paper's result</h2>
+  <p>
+    The bake-off above is a <em>down-scaled demonstration</em>, not Gorishniy 2021's Table&nbsp;2 (11 datasets,
+    tuned with Optuna, fixed splits). To actually train FT-Transformer <em>like in the paper</em>, the lab
+    ships a paper-results harness (<code>labs/_paper_repro_l046.py</code>) with three budgets — <code>smoke</code>
+    (seconds), <code>closer</code> (a T4, tens of minutes, <code>d=64</code>), and <code>paper</code> (hours,
+    the paper's <code>d≈192</code>) — runnable on a Colab GPU or unattended via
+    <code>modal run --detach modal/l046_paper_repro.py --preset closer</code>. It re-runs the <em>same
+    from-scratch model</em> on a paper dataset (Adult, or Higgs-small) against TabTransformer, an MLP, and
+    CatBoost, and prints a conclusion ledger. Because we use a random OpenML split and no Optuna tuning, the
+    absolute Table&nbsp;2 accuracy stays <strong>INCOMPARABLE</strong>; what you read are the
+    <strong>DIRECTION</strong> tests — FT-T&nbsp;&gt;&nbsp;TabTransformer, FT-T&nbsp;≥&nbsp;MLP, and
+    FT-T&nbsp;≈&nbsp;CatBoost — which is what actually updates belief. Until you run it, the paper's tuned
+    number stays cited, not reproduced.
+  </p>
+
+  <h2>Thesis bridge</h2>
+  <div class="callout">
+    <strong>What today buys the thesis.</strong> Two things. <em>Methodologically</em>, FT-Transformer is the
+    honest ceiling of single-table deep learning: the strongest of the four neural models we built, and it
+    <em>still</em> only ties trees on flat data — so any claim that "deep learning wins on tabular" has to
+    clear this bar, not a weak MLP strawman. That is the baseline the whole relational thesis must eventually
+    beat. <em>Architecturally</em>, the feature tokenizer + [CLS] is the row-encoder blueprint the rest of the
+    curriculum reuses: turn a heterogeneous entity into a set of tokens, let them attend, and pool a summary.
+    In a relational database an entity's tokens are not just its own columns but the columns of <em>related</em>
+    rows reached across foreign keys — and the [CLS] readout becomes the node representation a graph model
+    passes along an edge. FT-Transformer is the within-row rehearsal of the across-table encoder the thesis is
+    built on; you will meet it again as an RDL row-encoder ancestor.
+  </div>
+
+  <h2>Check yourself</h2>
+  <div id="quiz1"></div>
+  <div id="quiz2"></div>
+  <div id="quiz3"></div>
+  <div id="quiz4"></div>
+  <div id="quiz5"></div>
+
+  <h2>Primary reading</h2>
+  <p>
+    <a href="https://arxiv.org/abs/2106.11959">Gorishniy, Rubachev, Khrulkov &amp; Babenko — <em>Revisiting
+    Deep Learning Models for Tabular Data</em>, 2021</a>. Read <strong>§3.3</strong> for the model you trained
+    (the Feature Tokenizer, the [CLS] token, the PreNorm Transformer, the readout) and <strong>§5</strong> for
+    the fair-comparison result — FT-Transformer is the top deep model and roughly ties tuned GBDTs. Read the
+    experiments the <a href="0038-peer-review-your-evaluation.html">L038</a> way: note the unified tuning
+    budget, the per-dataset variance, and that "ties GBDTs" is a benchmark <em>average</em> — on any single
+    table (Adult here) a tree can still win. Companions: <a href="0045-tabtransformer.html">L045</a>
+    (TabTransformer, the numeric-bypass model this fixes); <a href="https://arxiv.org/abs/1706.03762">Vaswani
+    et&nbsp;al. 2017</a> §3.2 (attention); <a href="0031-embeddings-for-categoricals.html">L031</a>
+    (entity embeddings, the categorical half of the tokenizer). Next: <strong>Lesson 047 (SAINT)</strong> —
+    attention across <em>rows</em>, not just features, the first taste of retrieval.
+  </p>
+
+  <h2>Lab — build the feature tokenizer, then train FT-Transformer</h2>
+  <div class="callout">
+    <strong>Notebook:</strong>
+    <a href="../labs/html/0046-ft-transformer.html">view</a> ·
+    <a href="../labs/0046-ft-transformer.ipynb">source .ipynb</a> ·
+    <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0046-ft-transformer.ipynb">open in Colab</a>
+    — or browse all labs on the <a href="../notebooks.html">notebooks page</a>. You implement the
+    <strong>numeric tokenizer</strong> and the <strong>[CLS] readout</strong> from the paper's §3.3, then run
+    the four-way bake-off and confirm the numeric-bypass fix. CPU, ~8–12&nbsp;min.
+  </div>
+  <ol>
+    <li><strong>Implement the numeric tokenizer</strong>: turn each numeric feature into a token
+      <code>T_j = b_j + x_j · W_j</code>, and verify it is affine (a bump <code>Δx</code> moves token
+      <em>j</em> by exactly <code>Δx·W_j</code>, and leaves every other token untouched).</li>
+    <li><strong>Assemble the token sequence</strong>: concatenate numeric + categorical tokens and prepend the
+      learned <code>[CLS]</code> token, then read the model out from the final <code>[CLS]</code> vector.</li>
+    <li><strong>Confirm numerics attend</strong>: show that changing a numeric input moves the <code>[CLS]</code>
+      readout for FT-Transformer but leaves TabTransformer's contextual embeddings unchanged.</li>
+    <li><strong>Bake-off</strong>: run FT-Transformer vs TabTransformer vs MLP vs CatBoost on ≥4 tables, one
+      shared frame, mean ranks + Friedman — and write where the numeric tokenizer helped and where trees still win.</li>
+    <li><strong>Reproduce the paper's results (required next step, not stretch).</strong> After EXIT, scroll the
+      <em>inlined</em> tokenizer / [CLS] / train loop (not hidden behind <code>import relkit.ft_transformer</code>),
+      then run the scale-up: Colab T4 with <code>RUN_PAPER_REPRO = True</code>, or
+      <code>~/.local/bin/modal run --detach modal/l046_paper_repro.py --preset closer</code>. Paste the ledger.
+      A random OpenML split + no Optuna tuning → expect <em>INCOMPARABLE</em> on the Table&nbsp;2 accuracy; read
+      DIRECTION (FT-T vs TabTransformer, vs MLP, vs CatBoost). Until you run it, the paper claim stays cited,
+      not reproduced.</li>
+  </ol>
+  <p>
+    <strong>Compute note.</strong> The learning lab is small / subsampled tables, CPU only; set
+    <code>OMP_NUM_THREADS=1</code> to avoid thread oversubscription. If you shrink the budget or seeds, shrink
+    it <em>identically</em> for every arm and say so — a downscaled run is a different experiment, never a
+    smaller version of the paper's. The scale-up cell is how you get closer to the paper without mixing those
+    two buckets.
+  </p>
+  <p>
+    Deliverable: your bake-off rank table, the affine-tokenizer check, the numerics-attend probe, and one
+    sentence — <em>what does tokenising the numeric features buy over TabTransformer, and does it beat a
+    tree?</em> — plus, when you run the scale-up, the printed ledger. Paste it to your teacher or say
+    <em>"lab done."</em>
+  </p>
+
+  <div class="teacher-note">
+    <strong>Ask your teacher.</strong> Bring your rank table, your affine-tokenizer check, and your
+    numerics-attend probe. We will check that you can explain why a numeric token is <code>b_j + x_j·W_j</code>
+    (not a lookup), what the <code>[CLS]</code> token is for, and why FT-Transformer's edge over TabTransformer
+    tracks the numeric fraction.
+  </div>
+
+  <div class="ask-teacher">
+    Unclear why a number becomes a token, what the <code>[CLS]</code> token collects, or why "best neural
+    baseline" and "still loses to trees" are both true at once? Ask your teacher in Cursor chat.
+  </div>
+
+  <nav class="nav-links">
+    <ul>
+      <li><a href="0045-tabtransformer.html">← Lesson 045</a></li>
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../notebooks.html">Notebooks (view / run in browser)</a></li>
+      <li><a href="../reference/glossary.html">Glossary</a></li>
+      <li><a href="../flashcards.html">Paper flashcards</a></li>
+    </ul>
+  </nav>
+</article>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/tokenizer-viz.js"></script>
+<script src="../assets/tabtransformer-arch-viz.js"></script>
+<script src="../assets/retrieval-pool.js"></script>
+<script src="../assets/retrieval-bank.js"></script>
+<script src="../assets/predict.js"></script>
+<script src="../assets/teachback.js"></script>
+<script>
+  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 46, count: 3 });
+
+  TokenizerViz.mount(document.getElementById("tokenizer"), {});
+  TabTransformerArchViz.mount(document.getElementById("tabt-arch"), {});
+
+  Predict.mount(document.getElementById("predict-bakeoff"), {
+    prompt: "FT-Transformer (tokenises numerics too) vs TabTransformer (numeric-bypass) vs a tuned MLP vs CatBoost, on 4 tables from mostly-categorical to all-numeric. Who wins, and where does FT-T beat TabTransformer?",
+    options: [
+      { label: "CatBoost wins all 4; FT-T is the best neural model and beats TabTransformer most where numerics dominate", value: "cat" },
+      { label: "FT-Transformer wins clearly — attention beats trees once numerics are tokenised", value: "ft" },
+      { label: "TabTransformer wins — contextual categoricals matter more than numeric tokens", value: "tt" },
+      { label: "The MLP wins — the transformers overfit small tables", value: "mlp" }
+    ],
+    correct: "cat",
+    reveal: "CatBoost wins all 4 (mean rank 1.00); FT-T beats it 0/4. But FT-T is the best NEURAL model (rank 2.50 vs MLP 2.75 vs TabTransformer 3.75) and beats TabTransformer on 3/4 — losing only on credit_g, the most categorical table, where the numeric tokenizer has least to add. Verified (labs/_verify_l046.py, 3 seeds): Friedman chi2=9.30, p=0.026. This is Gorishniy 2021's honest verdict: FT-T is the strongest single deep model and only ties GBDTs — on Adult and friends the tree still edges it."
+  });
+
+  Teachback.mount(document.getElementById("teachback-tokenizer"), {
+    prompt: "In your own words: what does the feature tokenizer do, how does it differ from TabTransformer, what is the [CLS] token for, and what is the honest verdict vs trees?",
+    points: [
+      "Feature Tokenizer: EVERY feature becomes one d-dim token. Numeric feature j -> T_j = b_j + x_j·W_j (an affine map of the scalar into d dims); categorical feature j -> T_j = b_j + e_j[x_j] (embedding lookup + bias). The heterogeneous row becomes a homogeneous token sequence.",
+      "Difference from TabTransformer: TabTransformer only tokenises CATEGORICALS; numerics bypass the attention (LayerNorm + concat before the head). FT-Transformer tokenises numerics too, so a numeric feature both attends and is attended to — the [CLS] readout moves when a number changes (0.438 vs TabTransformer's 0.0).",
+      "[CLS] token: a learned extra token at position 0 representing no feature; its job is to collect information from all feature tokens through attention. After the Transformer, the final [CLS] vector is the row summary the head (LayerNorm->ReLU->Linear) reads.",
+      "Where it helps: FT-T beats TabTransformer most where numerics carry the signal — 3/4 tables, losing only on the most categorical (credit_g). The edge tracks the numeric fraction.",
+      "Honest verdict: FT-T is the STRONGEST single neural baseline (mean rank 2.50, ahead of MLP 2.75 and TabTransformer 3.75) but CatBoost still wins all 4 (rank 1.00). Best deep model, still a notch below a tree on flat data — exactly the paper's framing."
+    ],
+    model: "FT-Transformer = Feature Tokenizer + Transformer. The tokenizer turns every feature into a d-dimensional token: a numeric feature j becomes T_j = b_j + x_j·W_j (an affine embedding of the scalar along a learned direction W_j, NOT a lookup), and a categorical feature becomes T_j = b_j + e_j[x_j] (the L031 entity embedding plus a bias). This is the one thing TabTransformer lacked: it only tokenised categoricals, so its numerics bypassed the attention entirely (LayerNorm + concat before the head) and could never influence the contextual embeddings. In FT-Transformer the numerics are tokens in the same sequence, so they attend and are attended to. A learned [CLS] token is prepended at position 0; it represents no feature but, through the N Transformer layers, pools information from every feature token, and its final vector is the row summary the head reads out. Because numerics now attend, changing a numeric input moves the [CLS] readout (L2 0.438) where in TabTransformer it moved 0.0 — and that fix pays off most where numerics carry the signal: FT-T beats TabTransformer on 3 of 4 tables, losing only on the most categorical one. It is the strongest single neural baseline we have built (mean rank 2.50, ahead of the MLP at 2.75 and TabTransformer at 3.75), yet CatBoost still wins all four tables — the honest baseline-first verdict, and exactly Gorishniy 2021's finding that FT-Transformer is the best deep model and only ties gradient-boosted trees."
+  });
+
+  Quiz.mount(document.getElementById("quiz1"), {
+    question: "How does FT-Transformer's feature tokenizer turn a NUMERIC feature into a token?",
+    options: [
+      { label: "T_j = b_j + x_j·W_j — an affine map of the scalar x_j onto a learned d-vector W_j (plus bias)", value: "a" },
+      { label: "It bins the number into buckets and looks up an embedding per bucket", value: "b" },
+      { label: "It one-hot encodes the number and passes it through a linear layer", value: "c" },
+      { label: "It leaves numerics as scalars and only tokenises categoricals", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Each numeric feature gets its own learned vectors W_j, b_j, and the token is b_j + x_j·W_j — an affine (linear) embedding of the raw scalar, so value 39 and 40 land at nearby points along W_j. It is not binning (b) or one-hot (c) — that would throw away the ordering. Leaving numerics as scalars (d) is TabTransformer, the thing FT-Transformer fixes."
+  });
+
+  Quiz.mount(document.getElementById("quiz2"), {
+    question: "What is the single structural difference between FT-Transformer and TabTransformer, and what does it change?",
+    options: [
+      { label: "FT-T tokenises numeric features too, so numerics enter the attention; a numeric change now moves the readout (0.438 vs 0.0)", value: "a" },
+      { label: "FT-T uses more Transformer layers; nothing else changes", value: "b" },
+      { label: "FT-T drops the categorical embeddings and uses only numerics", value: "c" },
+      { label: "FT-T replaces attention with a cross network", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Both use the same self-attention; the difference is the tokenizer. TabTransformer only makes tokens from categoricals (numerics bypass, contextual move 0.0); FT-Transformer makes a token from every feature, so numerics attend and the [CLS] readout moves (0.438) when a number changes. It is not about depth (b), it keeps categoricals (c), and it keeps attention (d) — a cross network is DCNv2 (L048)."
+  });
+
+  Quiz.mount(document.getElementById("quiz3"), {
+    question: "What is the [CLS] token, and how is FT-Transformer's prediction produced?",
+    options: [
+      { label: "A learned extra token (representing no feature) prepended at position 0; after the Transformer, its final vector is pooled by a small head into the prediction", value: "a" },
+      { label: "The first categorical column, used as the class label during pre-training", value: "b" },
+      { label: "The average of all feature tokens, fed to a linear layer", value: "c" },
+      { label: "A fixed all-ones vector that marks the start of the sequence", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Borrowed from BERT: a learned vector at position 0 that carries no feature of its own but collects information from all feature tokens through attention; the head reads out only the final [CLS] vector (LayerNorm->ReLU->Linear). It is not a data column (b), not a plain average (c) — attention does the pooling — and it is learned, not fixed (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz4"), {
+    question: "In the bake-off, where did FT-Transformer beat TabTransformer, and what explains the pattern?",
+    options: [
+      { label: "On 3/4 tables — every one except credit_g (the most categorical); the edge is biggest where numerics carry more signal", value: "a" },
+      { label: "On all 4 tables equally — the tokenizer helps the same everywhere", value: "b" },
+      { label: "Only on credit_g, the most categorical table", value: "c" },
+      { label: "On none — TabTransformer was better throughout", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Verified: FT-T beats TabTransformer on adult (0.900 vs 0.866), churn (0.919 vs 0.886), and phoneme (0.927 vs 0.881) — the more numeric tables — and ties/loses only on credit_g (0.785 vs 0.787), the most categorical (num-frac 0.35), where the numeric tokenizer has least to add. The gain tracks the numeric fraction, which is exactly what the mechanism predicts. Not uniform (b), not just credit_g (c), and not zero (d)."
+  });
+
+  Quiz.mount(document.getElementById("quiz5"), {
+    question: "What is the honest overall verdict from the bake-off?",
+    options: [
+      { label: "FT-T is the strongest single neural baseline (rank 2.50 > MLP 2.75 > TabTransformer 3.75) but CatBoost wins all 4 (rank 1.00)", value: "a" },
+      { label: "FT-Transformer finally beats the trees, proving deep learning wins on tabular data", value: "b" },
+      { label: "The MLP is the best model overall, so architecture doesn't matter", value: "c" },
+      { label: "All four models tied; p = 0.026 proves they are equivalent", value: "d" }
+    ],
+    correct: "a",
+    explain: "(a). Verified: FT-T mean rank 2.50, MLP 2.75, TabTransformer 3.75, CatBoost 1.00; FT-T beats CatBoost 0/4. So FT-T is the best DEEP model but still loses to the tree — Gorishniy 2021's exact finding. It did not beat the trees (b); FT-T out-ranks the MLP so architecture does matter (c); and p=0.026 REJECTS the null (a difference is detectable), it does not prove equivalence (d)."
+  });
+</script>
+</body>
+</html>

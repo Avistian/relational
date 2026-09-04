@@ -22,7 +22,7 @@ Later labs also register `diabetes`, `blood_transfusion`, `kc1`, `phoneme`, `chu
 
 | Key | OpenML id | Use | License |
 |-----|-----------|-----|---------|
-| `higgs_small` | 23512 | ~98k of UCI Higgs (NODE/TabNet paper tables). **Not** the paper's 10.5M — ledger must say INCOMPARABLE on the absolute number | OpenML |
+| `higgs_small` | 23512 | ~98k of UCI Higgs (NODE/TabNet paper tables). **Not** the paper's 10.5M — ledger must say INCOMPARABLE on the absolute number. OpenML leaves **1 incomplete row** (NaN jet/mass features); L044's paper-repro drops it before scaling or sklearn raises `Input contains NaN.` | OpenML |
 
 `higgs_small` is for the **paper-results scale-up** (standard #25), not the CPU learning lab. Fetch on
 demand via `relkit.data.load_tier_a("higgs_small")`; do not add it to the default `fetch_datasets.py`

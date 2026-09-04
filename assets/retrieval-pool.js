@@ -999,6 +999,42 @@
       ],
       correct: "a",
       explain: "A downscaled bake-off is a DIFFERENT experiment from the paper's table (standard #25 / M60). Mixing those buckets is how you learn the wrong conclusion — 'TabNet lost on four tiny tables, so the paper was wrong' (b) or the opposite, 'papers win at scale, so ignore the lab' (c). Averaging them (d) hides both. Keep three buckets: verified here, paper claim (cited until reproduced), and a scale-up run with MATCH / CLOSE / FAIL / INCOMPARABLE / DIRECTION_*. An INCOMPARABLE 85.7% on a different Adult split is not a MATCH; a DIRECTION_TIE on NODE's 0.002 Higgs edge is about power, not a refutation."
+    },
+    {
+      id: "l046-feature-tokenizer", lesson: 46, quarter: "Y2Q1", concept: "feature-tokenizer",
+      question: "FT-Transformer's Feature Tokenizer turns a NUMERIC feature x_j into a token. What exactly is the token, and why that form?",
+      options: [
+        { label: "An affine embedding T_j = b_j + x_j·W_j onto a learned per-feature direction W_j — so the scalar becomes a d-vector that preserves order and can attend", value: "a" },
+        { label: "A one-hot bucket of x_j after binning, looked up in an embedding table like a category", value: "b" },
+        { label: "The raw scalar x_j broadcast to width d (copied d times), with no learned parameters", value: "c" },
+        { label: "The LayerNorm of x_j concatenated after the Transformer, exactly as TabTransformer does", value: "d" }
+      ],
+      correct: "a",
+      explain: "Gorishniy 2021 §3.3: each numeric feature j gets its own learned W_j, b_j ∈ ℝ^d and the token is the AFFINE map T_j = b_j + x_j·W_j. Verified from scratch (L046, labs/_check_l046.py): bumping x_j by Δ moves token j by exactly Δ·W_j and moves no other token — order is preserved (39 and 40 land near each other), which is why a number can now attend. Binning (b) throws away order and is a different design; a parameter-free broadcast (c) can't be learned; and (d) is precisely the TabTransformer numeric BYPASS that FT-Transformer removes."
+    },
+    {
+      id: "l046-cls-readout", lesson: 46, quarter: "Y2Q1", concept: "cls-readout",
+      question: "FT-Transformer prepends a learned [CLS] token at position 0. What is its job?",
+      options: [
+        { label: "It carries no feature; through attention it collects information from every feature token, and its final vector is the row summary the head reads out", value: "a" },
+        { label: "It stores the numeric features so they skip the Transformer and are concatenated at the end", value: "b" },
+        { label: "It is a fixed positional encoding that tells the Transformer the column order", value: "c" },
+        { label: "It is the label token; at training time it holds the target so the model can copy it", value: "d" }
+      ],
+      correct: "a",
+      explain: "The BERT readout trick (Gorishniy 2021 §3.3): [CLS] is a single learned vector representing NO feature, prepended so the Transformer pools the whole row into it; the head reads that final [CLS] vector. Verified (L046): before attention it is identical across rows; after attention it is a learned pool — strictly more flexible than averaging the feature tokens. It is not a bypass buffer (b), not a positional code (c), and never holds the label (d, which would be leakage)."
+    },
+    {
+      id: "l046-numeric-bypass-fixed", lesson: 46, quarter: "Y2Q1", concept: "numeric-bypass-fix", misconception: true,
+      question: "You tokenise numerics (FT-Transformer) instead of bypassing them (TabTransformer). What does the from-scratch run actually show?",
+      options: [
+        { label: "FT-T beats TabTransformer on 3/4 tables and is the best NEURAL model (mean ranks FT-T 2.50 / MLP 2.75 / TabT 3.75), but CatBoost still wins all 4 (rank 1.00, Friedman p=0.026)", value: "a" },
+        { label: "FT-T now beats CatBoost on every table, because tokenising numerics finally lets a neural net win on flat data", value: "b" },
+        { label: "FT-T and TabTransformer tie everywhere — tokenising numerics changes nothing measurable", value: "c" },
+        { label: "FT-T beats TabTransformer only on the most CATEGORICAL table, where numerics matter least", value: "d" }
+      ],
+      correct: "a",
+      explain: "Verified (L046, labs/_verify_l046.py, 4 tables × 3 seeds): mean ranks FT-T 2.50, MLP 2.75, TabTransformer 3.75, CatBoost 1.00 (Friedman p=0.026). FT-T beats TabTransformer on 3/4 — all but the most-categorical credit_g — and the probe shows why: a numeric change moves FT-T's [CLS] readout by L2≈0.438 on adult but moves TabTransformer's representation exactly 0. So FT-T is the strongest single DEEP model, but CatBoost still wins every table (b false). It is not a no-op (c false), and the gap is BIGGEST where numerics dominate, not smallest (d false). Gorishniy 2021's exact honest finding."
     }
   ];
 })(window);

@@ -23,6 +23,7 @@ import json
 import os
 import sys
 import time
+import traceback
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -42,7 +43,7 @@ from relkit.paper_repro import (  # noqa: E402
     classify_direction, classify_number, device, format_ledger, hardware_tag,
     print_howto, to_jsonable,
 )
-from relkit.node import DenseNODE, node_auc, train_node  # noqa: E402
+from relkit.node import DenseNODE, node_predict_logits, train_node  # noqa: E402
 
 HIGGS_TARGET = PaperTarget(
     paper="NODE (Popov, Morozov & Babenko 2020)", arxiv="1909.06312",
@@ -62,13 +63,19 @@ LAB_FINDINGS = [
 
 
 def _dense_from_xy(Xdf, y):
+    # OpenML 23512 (higgs_small) has one incomplete row. StandardScaler leaves those
+    # NaNs in place; NODE then emits NaN logits and sklearn raises "Input contains NaN."
+    keep = Xdf.notna().all(axis=1)
+    if not bool(keep.all()):
+        Xdf = Xdf.loc[keep]
+        y = y.loc[keep] if hasattr(y, "loc") else np.asarray(y)[np.asarray(keep)]
     num = Xdf.select_dtypes(include="number").columns.tolist()
     cat = [c for c in Xdf.columns if c not in num]
     ct = ColumnTransformer([
         ("num", StandardScaler(), num),
         ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat),
     ])
-    return ct.fit_transform(Xdf).astype(np.float32), y.to_numpy().astype(np.float32)
+    return ct.fit_transform(Xdf).astype(np.float32), np.asarray(y).astype(np.float32)
 
 
 def load_table():
@@ -76,14 +83,22 @@ def load_table():
     from relkit import load_tier_a
     try:
         Xdf, y = load_tier_a("higgs_small")
-        return _dense_from_xy(Xdf, y), "higgs_small", [
+        gaps = [
             "OpenML 23512 (~98k rows) is a SUBSAMPLE of UCI Higgs; paper used 10.5M / 500k test",
         ]
+        name = "higgs_small"
     except Exception as exc:
         Xdf, y = load_tier_a("adult")
-        return _dense_from_xy(Xdf, y), "adult", [
+        gaps = [
             f"higgs_small failed ({exc}); Adult is NOT a NODE paper dataset — Table 1 number is INCOMPARABLE",
         ]
+        name = "adult"
+    n_incomplete = int(Xdf.isna().any(axis=1).sum())
+    if n_incomplete:
+        gaps = list(gaps) + [
+            f"dropped {n_incomplete} incomplete OpenML row(s) with NaN features",
+        ]
+    return _dense_from_xy(Xdf, y), name, gaps
 
 
 def _split(X, y, seed):
@@ -99,16 +114,13 @@ def _error_auc(predict_proba_pos, y):
     return err, auc
 
 
-def run_node(Xtr, ytr, Xva, yva, Xte, yte, *, trees, depth, epochs, seed, dev):
-    import torch
+def run_node(Xtr, ytr, Xva, yva, Xte, yte, *, trees, depth, epochs, seed, dev, batch_size=512):
     model = DenseNODE(Xtr.shape[1], num_trees=trees, depth=depth, n_layers=1)
     t0 = time.time()
     model, _ = train_node(model, Xtr, ytr, Xva, yva, lr=1e-2, max_epochs=epochs,
-                          patience=max(6, epochs // 4), batch_size=512, device=dev, seed=seed)
-    model.eval()
-    with torch.no_grad():
-        logits = model(torch.tensor(np.asarray(Xte), dtype=torch.float32, device=dev)).cpu().numpy()
-    p = 1.0 / (1.0 + np.exp(-logits))
+                          patience=max(6, epochs // 4), batch_size=batch_size, device=dev, seed=seed)
+    logits = node_predict_logits(model, Xte, device=dev, batch_size=batch_size).cpu().numpy()
+    p = 1.0 / (1.0 + np.exp(-np.clip(logits, -80.0, 80.0)))
     err, auc = _error_auc(p, yte)
     return err, auc, time.time() - t0
 
@@ -126,11 +138,14 @@ def run_catboost(Xtr, ytr, Xva, yva, Xte, yte, *, trees, seed):
 
 def preset_cfg(name):
     if name == "smoke":
-        return dict(trees=8, depth=3, epochs=2, subsample=800)
+        return dict(trees=8, depth=3, epochs=2, subsample=800, batch_size=512)
     if name == "closer":
-        return dict(trees=256, depth=6, epochs=25, subsample=None)
+        return dict(trees=256, depth=6, epochs=25, subsample=None, batch_size=512)
     if name == "paper":
-        return dict(trees=2048, depth=6, epochs=40, subsample=None)
+        # 2048 trees × depth 6 is the paper default. Batch 128 so the backward
+        # activations fit a 16 GB T4 (Colab/Modal); Colab Pro does not add GPU RAM
+        # on a T4. The dataset is still OpenML 23512 (~98k), not the paper's 10.5M.
+        return dict(trees=2048, depth=6, epochs=40, subsample=None, batch_size=128)
     raise ValueError(f"unknown preset {name!r}")
 
 
@@ -157,13 +172,15 @@ def main(argv=None):
     try:
         n_err, n_auc, n_wall = run_node(Xtr, ytr, Xva, yva, Xte, yte,
                                         trees=cfg["trees"], depth=cfg["depth"],
-                                        epochs=cfg["epochs"], seed=0, dev=dev)
+                                        epochs=cfg["epochs"], seed=0, dev=dev,
+                                        batch_size=cfg["batch_size"])
         node_run = ScaleUpRun(
             method="node-scratch", dataset=dname, metric="error",
             value=n_err, n_seeds=1, hardware=hw, wall_s=n_wall,
             protocol_match=False,
             protocol_deviations=gaps + [
                 f"trees={cfg['trees']} depth={cfg['depth']} (paper default 2048 × depth 6)",
+                f"batch_size={cfg['batch_size']}",
                 f"test AUC={n_auc:.4f}",
             ],
         )
@@ -173,6 +190,7 @@ def main(argv=None):
         print(f"  CatBoost error={cb_err:.4f}  auc={cb_auc:.4f}  wall={cb_wall:.0f}s")
     except Exception as exc:
         print(f"  bake-off failed: {exc}")
+        traceback.print_exc()
 
     extra = []
     if node_run is not None and cb_err is not None:

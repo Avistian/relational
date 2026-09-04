@@ -142,10 +142,14 @@ class ODST(nn.Module):
         f_hat = torch.einsum("bi,itl->btl", x, feature_selectors)      # [batch, trees, depth]
         logits = (f_hat - self.thresholds) * torch.exp(-self.log_temperatures)
         c = entmoid15(logits)                                          # [batch, trees, depth] soft split
-        bins = torch.stack([c, 1 - c], dim=-1)                         # [batch, trees, depth, 2]
-        # match each leaf's per-level bit -> [batch, trees, depth, 2^depth], then product over levels
-        bin_matches = torch.einsum("btds,dls->btdl", bins, self.bin_codes_1hot)
-        weights = bin_matches.prod(dim=-2)                             # [batch, trees, 2^depth]
+        # Paper: C(x) = outer_l [c_l, 1-c_l] over depth (Eq. 3). Built iteratively so the
+        # peak tensor is [batch, trees, 2^depth], not [batch, trees, depth, 2^depth] —
+        # the latter is ~11 GB on a Higgs test split and OOMs a T4 at paper HPs (2048 trees).
+        # Bit order matches `bin_codes_1hot`: level ℓ is the 2^ℓ place (leaf += 2^ℓ if "right"/c).
+        weights = x.new_ones(x.shape[0], self.num_trees, 1)
+        for level in range(self.depth):
+            cl = c[:, :, level].unsqueeze(-1)
+            weights = torch.cat([weights * (1.0 - cl), weights * cl], dim=-1)
         out = torch.einsum("btl,tcl->btc", weights, self.response)     # [batch, trees, tree_dim]
         return out.reshape(x.shape[0], self.num_trees * self.tree_dim)
 
@@ -183,6 +187,19 @@ class DenseNODE(nn.Module):
         return torch.cat(outputs, dim=1).mean(dim=1)
 
 
+def _forward_in_batches(model, x: torch.Tensor, batch_size: int) -> torch.Tensor:
+    """Chunked forward so ODST's `[N, trees, depth, 2^depth]` routing tensor fits in memory.
+
+    A single Higgs test forward at the closer preset (N≈29k, 256 trees, depth 6) is ~11 GB
+    for that tensor alone and OOMs a Colab T4; training batches of 512 are fine.
+    """
+    n = x.size(0)
+    bs = max(1, min(int(batch_size), n))
+    if n <= bs:
+        return model(x)
+    return torch.cat([model(x[s:s + bs]) for s in range(0, n, bs)], dim=0)
+
+
 def train_node(model, Xtr, ytr, Xva, yva, *, lr=1e-3, wd=0.0, max_epochs=100, patience=10,
                batch_size=512, device="cpu", seed=0):
     """Mini-batch Adam with early stopping on validation ROC-AUC — the same fair, shared-protocol
@@ -202,7 +219,9 @@ def train_node(model, Xtr, ytr, Xva, yva, *, lr=1e-3, wd=0.0, max_epochs=100, pa
     n = Xt.size(0)
     bs = min(batch_size, n)
 
-    model.initialize(Xt[:min(n, 2048)])                                # data-aware threshold init
+    model.initialize(Xt[:min(n, bs)])                                  # data-aware threshold init
+    if device == "cuda":
+        torch.cuda.empty_cache()
     opt = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     lossf = nn.BCEWithLogitsLoss()
     generator = torch.Generator().manual_seed(seed)
@@ -221,7 +240,7 @@ def train_node(model, Xtr, ytr, Xva, yva, *, lr=1e-3, wd=0.0, max_epochs=100, pa
             opt.step()
         model.eval()
         with torch.no_grad():
-            pv = torch.sigmoid(model(Xv)).cpu().numpy()
+            pv = torch.sigmoid(_forward_in_batches(model, Xv, bs)).cpu().numpy()
         val_auc = roc_auc_score(yva, pv)
         if val_auc > best_auc:
             best_auc, since = val_auc, 0
@@ -236,7 +255,14 @@ def train_node(model, Xtr, ytr, Xva, yva, *, lr=1e-3, wd=0.0, max_epochs=100, pa
 
 
 @torch.no_grad()
-def node_auc(model, X, y, *, device="cpu"):
+def node_predict_logits(model, X, *, device="cpu", batch_size=512):
+    """Logits for `X`, evaluated in batches of `batch_size` (see `_forward_in_batches`)."""
     model.eval()
-    logits = model(torch.tensor(np.asarray(X), dtype=torch.float32, device=device))
+    xt = torch.as_tensor(np.asarray(X), dtype=torch.float32, device=device)
+    return _forward_in_batches(model, xt, batch_size)
+
+
+@torch.no_grad()
+def node_auc(model, X, y, *, device="cpu", batch_size=512):
+    logits = node_predict_logits(model, X, device=device, batch_size=batch_size)
     return roc_auc_score(y, torch.sigmoid(logits).cpu().numpy())
