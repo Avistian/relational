@@ -25,9 +25,7 @@
 <p><strong>Worked shape check:</strong> B = 32 customers, 10 features plus CLS, d = 8. Feature attention receives [32, 11, 8]. Row attention receives [1, 32, 88]; each row-attention head has 32 × 32 weights. The outer 1 means “one sequence of customers.” It is not a transpose to [11, 32, 8], which would make each feature column a separate sequence and implement a different mechanism.</p>
 <p>The score projections can be narrower than 88. The released row-attention head width is 64; feature-attention head width is 16. Scale by the actual head width, then use an output projection to restore the required 88 or 8 coordinates. <a href="https://arxiv.org/pdf/2106.01342#page=5">Algorithm 1</a> gives the reshape; <a href="https://github.com/somepago/saint/blob/e288e84c77a54cfd2ffb55a53678fb7cbbb16630/models/model.py">RowColTransformer</a> gives the executable dimensions.</p>
 <h3>Trace a complete stage</h3>
-<div class="flow-step">① Feature tokens → feature attention → feature feed-forward</div>
-<div class="flow-step">② Flatten each entire row → row attention → row feed-forward</div>
-<div class="flow-step">③ Restore tokens → repeat stages if configured → CLS → prediction MLP</div>
+<div id="architecture"></div>
 <p>A <strong>feed-forward</strong> network transforms each sequence element independently; it does not create new attention edges. In the row block its element is the entire flattened row, so it can mix coordinates belonging to different features. The released network uses <strong>GEGLU</strong>: split a projection into value and gate vectors and multiply the value by GELU(gate). GELU is a smooth activation. This gate differs from simply applying GELU to the whole projection.</p>
 <p>Each sublayer also has normalization and a residual path. <strong>Layer normalization</strong> subtracts the mean and divides by the standard deviation of the element’s coordinates, then applies learned scaling and shifting. A <strong>residual</strong> adds an input representation back to the transformed representation. The exact placement determines the function being computed; we audit it in §6.</p>
 <p>Memory matters here. Row attention needs B² weights per head, but that is not the only expense. The released row feed-forward has input width Td and hidden width 4Td, so its dense weight matrices grow quadratically in Td. A wide table can be expensive even with a modest batch. “Only one stage” does not necessarily mean “few parameters.”</p>
@@ -54,6 +52,7 @@
 <div class="equation">sᵢₖ = zᵢ · z′ₖ / τ<br>ℓᵢ = −log[exp(sᵢᵢ) / Σₖ exp(sᵢₖ)]</div>
 <p>The <strong>temperature</strong> τ controls how sharply a fixed similarity gap changes the probabilities. The denominator includes the matching view and the other candidate views. With four equally plausible views the matching probability is 1/4, so loss is log(4) ≈ 1.386. Better identification reduces loss. The notebook uses the mean of these row losses; Eq.5 sums them. Neither operation requires target labels. Actual training must still address accidental false negatives, such as two rows that genuinely describe very similar entities.</p>
 <p>The <strong>denoising</strong> task reconstructs original feature values from the corrupted representation. For a category, a decoder predicts a distribution and cross-entropy penalizes the wrong category. For a numeric feature, squared error penalizes distance from the original value. There is a decoder per feature, excluding CLS. This objective encourages retention of feature information; contrastive loss encourages discrimination between row identities. The total objective combines them with a weight λ. After pretraining, a supervised head on CLS is trained with the available labels. <a href="https://arxiv.org/pdf/2106.01342#page=6">Eq.5 and finetuning</a>.</p>
+<div id="contrastive"></div>
 <p><strong>Scope boundary:</strong> the lab implements the contrastive equation and tests its pairing, but the trained local models and Bank scale-up use supervised training only. They do not reproduce Table 3’s label-efficiency results. A full follow-up would add CutMix, embedding mixup, both projection heads, all denoising decoders, and the paper’s labeled/unlabeled split. A loss-function check cannot stand in for that experiment.</p>
 <div id="quiz-pretrain"></div>
 <h2>5. What the paper’s results actually compare</h2>
@@ -98,7 +97,7 @@
 <p>The useful bridge is more precise: <strong>a row representation can depend on other rows, and evaluating that representation requires defining which rows are available.</strong> That lesson survives whether SAINT wins today’s local benchmark. Later, the “companion policy” becomes a relational neighborhood and a temporal sampling policy. The baseline discipline from <a href="0042-mlp-resnet-baselines.html">L042</a> still applies: stronger interactions need a fair comparison, not a predetermined winning story.</p>
 <div id="teachback"></div>
 <h2>Lab and exit</h2>
-<p><a href="../labs/html/0047-saint.html">Read the lab</a> · <a href="../labs/0047-saint.ipynb">Notebook</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0047-saint.ipynb">Open in Colab after publication</a>. Implement packing, attention weights, and contrastive pairing; inspect the full supervised model; train the three-dataset ablation; then attempt Bank with the required scale-up.</p>
+<p><a href="../labs/html/0047-saint.html">Read the lab</a> · <a href="../labs/0047-saint.ipynb">Notebook</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0047-saint.ipynb">Open in Colab after publication</a>. Follow the embedded diagrams; implement packing, attention weights, stage wiring, and contrastive pairing; inspect real tensors; then train the three-dataset ablation and interpret its score, rank, and context plots. Finish with the required Bank scale-up.</p>
 <p>Bring your rank table, a companion-change measurement, and a paragraph explaining why batch membership belongs in the reproducibility record. State which paper claims remain untested. Completing the lesson is progress; mastering the claim requires your explanation and evidence.</p>
 <div class="ask-teacher"><strong>Ask your teacher.</strong> If the reshape, residual nesting, loss pairing, or distinction between a local ablation and a reproduction is unclear, ask a follow-up. Paste your EXIT ticket when ready; we will review the reasoning without requiring SAINT to win.</div>
 <nav class="nav-links"><ul><li><a href="0046-ft-transformer.html">← Lesson 046</a></li><li><a href="../index.html">Course home</a></li><li><a href="../notebooks.html">Labs</a></li><li><a href="../reference/saint-reproduction.html">SAINT reproduction card</a></li><li><a href="../reference/glossary.html">Glossary</a></li></ul></nav>
@@ -109,8 +108,10 @@
 RetrievalBank.mount(document.getElementById('warmup'),{upTo:47,count:3});
 CdDiagramViz.mount(document.getElementById('cd'),{models:[{name:'Feature-only',rank:1.6666667},{name:'Feature + row',rank:1.6666667},{name:'CatBoost',rank:2.6666667}],cd:1.9136235155,N:3,friedmanP:'0.368'});
 SaintAxesViz.mount(document.getElementById('axes'));
+SaintArchitectureViz.mount(document.getElementById('architecture'));
 SaintContextViz.mount(document.getElementById('context'));
 SaintViewsViz.mount(document.getElementById('views'));
+SaintContrastViz.mount(document.getElementById('contrastive'));
 Predict.mount(document.getElementById('predict-context'),{
  prompt:'Keep the query and trained weights fixed in evaluation mode. Replace one companion row. What can happen?',
  options:[{label:'The query output can change',value:'change'},{label:'The query output stays fixed',value:'fixed'}],correct:'change',

@@ -1,5 +1,19 @@
 # Teaching Notes
 
+## Notebook quality standard — 2026-09-05
+
+- User explicitly said L047 notebooks were lower quality than L046 and that lessons **NEED to be HIGH quality**. This is a standing requirement for every future lesson and its notebook, not a one-off visual request. Compare the complete learning experience with the strongest recent lessons before delivery.
+- A notebook must teach independently: clear paper-to-code explanations, worked examples, diagrams beside the mechanism they explain, short readable implementation chunks, substantive live TODOs, diagnostic CHECKs, and interpretation prompts. File existence and cell count are not evidence of teaching quality.
+- Embed portable diagrams so they are visible before execution. Display measured results as labeled tables/plots with uncertainty and interpretation; separate author-reference snapshots from the student's current outputs. Keep the supervised, pretraining, local-ablation, and paper-results scopes explicit.
+- Execute the solution, verify the student implementation remains on the trained path, inspect generated figures, regenerate the prepared HTML, and check attachment/link integrity. Record browser limitations honestly. Persist this checklist in the lab-authoring skill.
+- L047 revision verified: 31/31 solution checks; the three-dataset comparison and context probes exactly match the recorded reference (109.4 s comparison). Nine attached figures and four runtime plots inspected; prepared HTML image/link checks pass. The notebook Bank smoke reproduces the recorded 0.742204 pipeline result, remains INCOMPARABLE, and reuses the completed seed when the gate is repeated. Full presets and full pretraining remain NOT_RUN.
+
+## Lesson 047 visual revision — 2026-09-05
+
+- User found the original L047 visuals weaker than preceding lessons. Text cards and a single bar did not sufficiently expose the mechanisms. Match the earlier diagram quality: visible tensor structure, connections, matrices, stage highlighting, and controls coupled to calculations.
+- Rebuilt L047 with five responsive SVG figures: attention axes, full architecture, companion-weight intervention, CutMix/mixup, and contrastive/denoising objectives. Keep synthetic illustrations explicitly separate from measured results.
+- Rendered 40 desktop/mobile SVG states with installed librsvg and visually inspected representative outputs; glyph bounds, label overlaps, card containment, and numerical checks pass. Browser-level verification remains unavailable; this is a vector-renderer check, not a browser pass.
+
 ## Session 46 — 2026-09-05
 
 - User reports lesson 46 done; no EXIT evidence pasted, so completion is self-reported and unscored (LR-0108).

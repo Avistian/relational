@@ -5,6 +5,28 @@ description: Author mid-difficulty lab notebooks with PROVIDED/TODO/CHECK/EXIT c
 
 Use when creating, retrofitting, or reviewing lab notebooks in `labs/`.
 
+## Notebook quality is a delivery requirement (user, 2026-09-05)
+
+Compare each new notebook with the strongest recent lessons. Existence, length, and a passing
+training run do not establish teaching quality. Before delivery:
+
+- Make the notebook understandable without reopening the lesson: define terms, give a worked
+  example, and connect each paper element to the code that implements it.
+- Embed portable mechanism diagrams beside the relevant explanation (markdown image attachments
+  work without execution or adjacent files). Captions must match the exact pictured state and
+  distinguish synthetic illustrations from measured results.
+- Split the visible canonical implementation into coherent, annotated chunks. Preserve the
+  student's live functions; verify the trained model actually calls them. Avoid a single wall
+  containing the entire architecture and trainer.
+- Give substantive mid-difficulty tasks, immediate checks with diagnostic messages, predictions
+  before interventions, and written interpretation/retrieval prompts. Do not leak completed TODOs.
+- Present experiments with readable tables, per-seed points, uncertainty, ranks/CD, and an
+  explanation of what each result permits. Raw JSON is an artifact, not the main lesson display.
+- For an unexecuted student notebook, include clearly labeled author-reference evidence when it
+  helps teach result interpretation. Never represent it as the student's current kernel output.
+- Execute the solution, inspect the figures, regenerate prepared HTML, and check embedded images,
+  links, student blanks, and source/result provenance. Record any unperformed browser check honestly.
+
 ## The lab ships WITH the lesson (NOTES standard #21 — read first)
 
 **A lesson is not "created" or "published" until its lab notebook exists.** When the task is "create
