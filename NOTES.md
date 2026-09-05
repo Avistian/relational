@@ -1,5 +1,16 @@
 # Teaching Notes
 
+## Standing authoring requirement — user reaffirmed 2026-09-05
+
+The user approved the revised L047 work after the Colab image fix and explicitly asked to retain
+this high standard for future lessons. Use that complete lesson/notebook package as a minimum
+quality benchmark: clear, source-grounded paper explanations; informative visuals beside the
+mechanisms; self-contained notebooks with readable implementations and meaningful exercises;
+measured results with uncertainty and honest reproduction limits; and the full student notebook,
+executed solution, prepared HTML, and reproduction artifacts delivered together. Verify Colab
+image packaging as well as local rendering, and state which frontend checks actually ran.
+Apply the detailed notebook and visual checklists below and in the project authoring skills.
+
 ## L047 Colab image packaging fix — 2026-09-05
 
 - User reported the notebook images did not render in Colab. The prior claim of portable markdown attachments was incorrect for that frontend: `attachment:` is a Jupyter representation, while Colab embeds markdown images as inline PNG data URLs (googlecolab/colabtools #3836).
