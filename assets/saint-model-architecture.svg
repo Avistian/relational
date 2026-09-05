@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 1040" role="img" aria-labelledby="title desc">
+<title id="title">SAINT: inputs to prediction</title>
+<desc id="desc">Supervised colrow variant. Feature tokens attend within rows, then flattened rows attend across the batch; the final CLS token feeds a classifier.</desc>
+<defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7" fill="#31566d"/></marker></defs>
+<rect width="360" height="1040" fill="#fff"/>
+<g font-family="DejaVu Sans, sans-serif" font-size="14" fill="#173548">
+<text x="180" y="27" text-anchor="middle" font-size="19" font-weight="700">SAINT · supervised colrow</text>
+<text x="180" y="51" text-anchor="middle" font-size="14" font-weight="400">Follow the batch from top to bottom</text>
+<g data-box="true"><rect x="20" y="70" width="320" height="70" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="93" text-anchor="middle" font-size="15" font-weight="700">1 · Input batch</text>
+<text x="180.0" y="116" text-anchor="middle" font-size="14" font-weight="400">B rows; categories + numeric values</text>
+</g>
+<path d="M180 140 V165" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="20" y="170" width="320" height="112" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="193" text-anchor="middle" font-size="15" font-weight="700">2 · Embed each feature; add CLS</text>
+<text x="180.0" y="216" text-anchor="middle" font-size="14" font-weight="400">Category → lookup vector</text>
+<text x="180.0" y="237" text-anchor="middle" font-size="14" font-weight="400">Numeric → 1 → 100 → d network</text>
+<text x="180.0" y="258" text-anchor="middle" font-size="14" font-weight="400">B × T × d; T = features + 1</text>
+</g>
+<path d="M180 282 V307" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="10" y="310" width="340" height="446" rx="12" fill="#faf9f3" stroke="#8e895f" stroke-dasharray="5 4"/>
+<text x="180" y="335" text-anchor="middle" font-size="15" font-weight="700">3 · Repeat this stage L times</text>
+<g data-box="true"><rect x="25" y="350" width="310" height="92" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="373" text-anchor="middle" font-size="15" font-weight="700">Feature attention + feed-forward</text>
+<text x="180.0" y="396" text-anchor="middle" font-size="14" font-weight="400">Each row reads its own T tokens</text>
+<text x="180.0" y="417" text-anchor="middle" font-size="14" font-weight="400">Per-head scores: B × T × T</text>
+</g>
+<path d="M180 442 V467" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="25" y="472" width="310" height="70" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="495" text-anchor="middle" font-size="15" font-weight="700">Pack complete rows</text>
+<text x="180.0" y="518" text-anchor="middle" font-size="14" font-weight="400">B × T × d → 1 × B × (T·d)</text>
+</g>
+<path d="M180 542 V567" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="25" y="572" width="310" height="92" rx="8" fill="#eef5e9" stroke="#9ab2c1"/>
+<text x="180.0" y="595" text-anchor="middle" font-size="15" font-weight="700">Row attention + feed-forward</text>
+<text x="180.0" y="618" text-anchor="middle" font-size="14" font-weight="400">Rows read other rows in this batch</text>
+<text x="180.0" y="639" text-anchor="middle" font-size="14" font-weight="400">Per-head scores: 1 × B × B</text>
+</g>
+<path d="M180 664 V689" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="25" y="694" width="310" height="50" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="717" text-anchor="middle" font-size="15" font-weight="700">Restore B × T × d</text>
+</g>
+<path d="M180 756 V781" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="20" y="786" width="320" height="91" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="809" text-anchor="middle" font-size="15" font-weight="700">4 · Read the final CLS per row</text>
+<text x="180.0" y="832" text-anchor="middle" font-size="14" font-weight="400">B × d → classifier d → 1000 → 2</text>
+<text x="180.0" y="853" text-anchor="middle" font-size="14" font-weight="400">Two class logits per row</text>
+</g>
+<path d="M180 877 V902" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="20" y="907" width="320" height="70" rx="8" fill="#eef5e9" stroke="#9ab2c1"/>
+<text x="180.0" y="930" text-anchor="middle" font-size="15" font-weight="700">5 · Convert scores to probabilities</text>
+<text x="180.0" y="953" text-anchor="middle" font-size="14" font-weight="400">Softmax → P(class 1) for each row</text>
+</g>
+<text x="180" y="1005" text-anchor="middle" font-size="14" font-weight="700">Local lab: L = 1, d = 8; B ≤ 64</text>
+<text x="180" y="1027" text-anchor="middle" font-size="14" font-weight="400">Labels enter the loss, not the encoder.</text>
+</g></svg>

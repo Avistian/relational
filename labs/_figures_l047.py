@@ -59,19 +59,20 @@ def render(source, dest):
 
 def main():
     DEST.mkdir(parents=True, exist_ok=True)
+    render(HERE.parent / 'assets/saint-model-architecture.svg', DEST / 'model-architecture.png')
     with tempfile.TemporaryDirectory(prefix='l047-figures-') as directory:
         subprocess.run(['node', str(HERE / '_viz_check_l047.js'), directory], check=True)
         for name, state in STATES.items():
             render(Path(directory) / f'{state}.svg', DEST / f'{name}.png')
     save_reference_figures(json.loads((HERE / '_verify_l047_results.json').read_text()), DEST)
-    sources = ['../assets/saint-viz.js', '_viz_check_l047.js', '_verify_l047_results.json',
+    sources = ['../assets/saint-model-architecture.svg', '../assets/saint-viz.js', '_viz_check_l047.js', '_verify_l047_results.json',
                'relkit/saint_report.py', '_figures_l047.py']
     manifest = {'command': '.venv/bin/python labs/_figures_l047.py', 'diagram_states': STATES,
                 'note': 'Synthetic diagrams and separately labeled measured author reference plots.',
                 'source_sha256': {p: hashlib.sha256((HERE / p).read_bytes()).hexdigest() for p in sources},
                 'png_sha256': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(DEST.glob('*.png'))}}
     (DEST / 'provenance.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    print(f'Wrote {len(STATES) + 3} portable figures to {DEST}')
+    print(f'Wrote {len(list(DEST.glob("*.png")))} portable figures to {DEST}')
 
 
 if __name__ == '__main__':

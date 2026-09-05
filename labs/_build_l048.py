@@ -33,7 +33,7 @@ def build(solution=False):
 
 PROVIDED = read and run. TODO = implement the blanks. CHECK = run immediately; failures explain what to inspect. EXIT = supply your actual evidence and reasoning. The author comparison ran in about 11 seconds on CPU; reading and implementing take much longer. The full MovieLens closer track took about 204 training seconds here; hardware changes runtime.
 
-All nine figures are embedded PNGs in Colab's inline-data format, so they require no code execution or image downloads. Student outputs are intentionally empty. Panels marked **author reference** show a recorded run, not your kernel's results. Local PNG/HTML integrity is checked; live Colab and browser rendering were not checked.''')
+All ten figures are embedded PNGs in Colab's inline-data format, so they require no code execution or image downloads. Student outputs are intentionally empty. Panels marked **author reference** show a recorded run, not your kernel's results. Local PNG/HTML integrity is checked; live Colab and browser rendering were not checked.''')
     md('''### Reproduction contract
 
 | Track | What you build / run | Boundary |
@@ -54,6 +54,8 @@ Model and split seeds are separate. Preprocessing fits training rows only. Valid
 3. Predict: can greater representational freedom make held-out performance worse under a fixed training budget?
 
 **Your answers:** _write here._''')
+    md("### Model architecture — from one row to a probability\n\nThe picture shows the **parallel local dense/factored models**. B = batch size; d = numeric feature count + 4 × categorical feature count. Category embeddings and scaled numeric values form x₀ of shape [B,d].\n\n**Trace both branches:** two cross layers retain width d and reuse the same original x₀ at each layer. Independently, the deep MLP reads x₀ through d → 32 → 32, with ReLU after each linear map. Concatenation produces [B,d+32]; a linear head produces one logit per row and sigmoid turns it into a probability. Training uses binary cross-entropy on logits. The inset shows the affine mixture, elementwise multiplication by x₀, and residual addition.\n\nFactoring W = UVᵀ changes the cross operation, not the branch routing. In the **stacked** alternative, the MLP reads the final crossed vector and its output alone feeds the head. The MLP-only control removes the cross branch. The nonlinear mixture is a separate extension, not one of these trained arms. See [DCN V2 Fig.1 / §3.4](https://arxiv.org/html/2008.13535v2#S3.SS4).\n\n**Trace before coding:** can changing another row alter this row's output through any connection shown here? Contrast your answer with SAINT.")
+    figure('model-architecture', 'End-to-end dcnv2 model architecture', 'Full supervised DCNv2 architecture; the variant and dimensions are explained above. This is a structural diagram, not measured output.')
     md(r'''## 1 · Concept recap: multiply by the original input
 
 A **feature cross** is an interaction such as $x_1x_2$: the influence of one feature depends on another. A linear score can add effects; it needs a product feature to express this multiplicative dependence directly.

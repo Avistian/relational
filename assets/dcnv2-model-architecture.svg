@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 1015" role="img" aria-labelledby="title desc">
+<title id="title">DCNv2: inputs to prediction</title>
+<desc id="desc">Parallel local model: one embedded row feeds a two-layer anchored cross stack and an MLP; concatenate both outputs and predict with a linear head and sigmoid.</desc>
+<defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7" fill="#31566d"/></marker></defs>
+<rect width="360" height="1015" fill="#fff"/>
+<g font-family="DejaVu Sans, sans-serif" font-size="14" fill="#173548">
+<text x="180" y="27" text-anchor="middle" font-size="19" font-weight="700">DCNv2 · parallel local model</text>
+<text x="180" y="51" text-anchor="middle" font-size="14" font-weight="400">Follow one row; B rows run independently</text>
+<g data-box="true"><rect x="20" y="70" width="320" height="70" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="93" text-anchor="middle" font-size="15" font-weight="700">1 · Encode a row</text>
+<text x="180.0" y="116" text-anchor="middle" font-size="14" font-weight="400">Category embeddings + scaled numerics</text>
+</g>
+<path d="M180 140 V165" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="20" y="170" width="320" height="91" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="193" text-anchor="middle" font-size="15" font-weight="700">2 · Concatenate into x₀</text>
+<text x="180.0" y="216" text-anchor="middle" font-size="14" font-weight="400">d = #numeric fields + 4 × #cat. fields</text>
+<text x="180.0" y="237" text-anchor="middle" font-size="14" font-weight="400">One flat vector per row: B × d</text>
+</g>
+<path d="M180 261 V285 H91 V320" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<path d="M180 285 H269 V320" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="16" y="325" width="150" height="165" rx="8" fill="#eef5e9" stroke="#9ab2c1"/>
+<text x="91.0" y="348" text-anchor="middle" font-size="15" font-weight="700">3a · Cross stack</text>
+<text x="91.0" y="371" text-anchor="middle" font-size="14" font-weight="400">Start at x = x₀</text>
+<text x="91.0" y="392" text-anchor="middle" font-size="14" font-weight="400">2 cross layers</text>
+<text x="91.0" y="413" text-anchor="middle" font-size="14" font-weight="400">Each returns B × d</text>
+<text x="91.0" y="434" text-anchor="middle" font-size="14" font-weight="400">Keep x₀ fixed</text>
+</g>
+<g data-box="true"><rect x="194" y="325" width="150" height="165" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="269.0" y="348" text-anchor="middle" font-size="15" font-weight="700">3b · Deep MLP</text>
+<text x="269.0" y="371" text-anchor="middle" font-size="14" font-weight="400">Read x₀ directly</text>
+<text x="269.0" y="392" text-anchor="middle" font-size="14" font-weight="400">d → 32 → 32</text>
+<text x="269.0" y="413" text-anchor="middle" font-size="14" font-weight="400">ReLU after each</text>
+<text x="269.0" y="434" text-anchor="middle" font-size="14" font-weight="400">Output: B × 32</text>
+</g>
+<path d="M91 490 V515 H180 V542" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<path d="M269 490 V515 H180" fill="none" stroke="#31566d" stroke-width="1.8"/>
+<g data-box="true"><rect x="20" y="547" width="320" height="70" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="570" text-anchor="middle" font-size="15" font-weight="700">4 · Concatenate both branch outputs</text>
+<text x="180.0" y="593" text-anchor="middle" font-size="14" font-weight="400">[crossed, deep] has shape B × (d + 32)</text>
+</g>
+<path d="M180 617 V642" fill="none" stroke="#31566d" stroke-width="1.8" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="20" y="647" width="320" height="91" rx="8" fill="#edf4f8" stroke="#9ab2c1"/>
+<text x="180.0" y="670" text-anchor="middle" font-size="15" font-weight="700">5 · Linear head; then sigmoid</text>
+<text x="180.0" y="693" text-anchor="middle" font-size="14" font-weight="400">d + 32 → 1 logit per row</text>
+<text x="180.0" y="714" text-anchor="middle" font-size="14" font-weight="400">Sigmoid → P(class 1)</text>
+</g>
+<text x="180" y="778" text-anchor="middle" font-size="17" font-weight="700">Inside each cross layer</text>
+<g data-box="true"><rect x="20" y="797" width="320" height="114" rx="8" fill="#eef5e9" stroke="#9ab2c1"/>
+<text x="180.0" y="820" text-anchor="middle" font-size="15" font-weight="700">Mix → multiply → add</text>
+<text x="180.0" y="843" text-anchor="middle" font-size="14" font-weight="400">m = Wₗxₗ + bₗ  (or UₗVₗᵀxₗ + bₗ)</text>
+<text x="180.0" y="864" text-anchor="middle" font-size="14" font-weight="400">update = x₀ ⊙ m</text>
+<text x="180.0" y="885" text-anchor="middle" font-size="14" font-weight="400">xₗ₊₁ = xₗ + update</text>
+</g>
+<text x="180" y="940" text-anchor="middle" font-size="14" font-weight="700">x₀ is reused at both cross layers.</text>
+<text x="180" y="963" text-anchor="middle" font-size="14" font-weight="400">⊙ multiplies corresponding coordinates.</text>
+<text x="180" y="990" text-anchor="middle" font-size="14" font-weight="400">Labels enter the logit loss during training.</text>
+</g></svg>

@@ -5,6 +5,20 @@ description: Decide when a lesson needs a visualization, build or reuse assets/,
 
 Use when creating or editing lesson HTML or notebook figures in this workspace.
 
+## Model architecture requirement (user, 2026-09-05)
+
+Whenever a lesson introduces a new model, include a dedicated **Model architecture**
+section with an end-to-end diagram, even when individual blocks already have visuals.
+Show inputs and preprocessing/embeddings, the main blocks and their connections, repeated
+stages, and the prediction head/output. Label important tensor dimensions and explain the
+forward pass beside the diagram. Identify the pictured variant and any differences between
+the paper and the lab; distinguish pretraining-only paths from prediction-time paths.
+Keep it readable on mobile and provide an accessible text explanation. Carry the overview
+into the companion notebook as a portable embedded figure, and keep notebook builders in
+sync. Check that external image assets are included in the published site build.
+This requirement is conditional on introducing a model; it does not add architecture
+sections to lessons that only teach evaluation, tools, or writing. L047 and L048 are retrofits.
+
 ## Visual teaching standard — raised after L048 (user, 2026-09-05)
 
 The user asked for better visuals in future lessons. Treat L048 as a baseline to improve,

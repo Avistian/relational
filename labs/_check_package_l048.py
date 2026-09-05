@@ -28,7 +28,7 @@ def image_hash(uri):
 
 def main():
     expected=sorted(hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/l048').glob('*.png'))
-    assert len(expected)==9
+    assert len(expected)==10
     student=nbformat.read(HERE/'0048-dcnv2.ipynb',as_version=4)
     teacher=nbformat.read(HERE/'solutions/0048-dcnv2.ipynb',as_version=4)
     for nb in (student,teacher):
@@ -85,8 +85,8 @@ def main():
         else:
             assert manifest['model_sha256']==hashlib.sha256((HERE/'relkit/dcnv2.py').read_bytes()).hexdigest()
             assert manifest['runner_sha256']==hashlib.sha256((HERE/'_paper_repro_l048.py').read_bytes()).hexdigest()
-    print(f'PASS: 9 images in both notebooks and HTML; 4 live blank tasks; {len(checks)} executed notebook checks; canonical source parity; {links} local links; provenance.')
-    report={'notebook_checks_passed':len(checks),'images':9,'student_tasks':4,'local_links':links,
+    print(f'PASS: {len(expected)} images in both notebooks and HTML; 4 live blank tasks; {len(checks)} executed notebook checks; canonical source parity; {links} local links; provenance.')
+    report={'notebook_checks_passed':len(checks),'images':len(expected),'student_tasks':4,'local_links':links,
             'teacher_all_code_executed':True,'canonical_notebook_source_matches':True,
             'browser':'NOT_CHECKED: temporary browser download declined',
             'colab':'Inline data-URI packaging checked; live Colab UI not checked'}

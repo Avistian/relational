@@ -17,6 +17,7 @@ STATES={'cross':'cross-640-1','degree':'degree-640-2','rank':'rank-640-1',
 
 def main():
     DEST.mkdir(parents=True,exist_ok=True)
+    render(HERE.parent/'assets/dcnv2-model-architecture.svg',DEST/'model-architecture.png')
     with tempfile.TemporaryDirectory(prefix='l048-svg-') as temp:
         subprocess.run(['node',str(HERE/'_viz_check_l048.js'),temp],check=True)
         for name,state in STATES.items():
@@ -28,7 +29,7 @@ def main():
     scale=json.loads((HERE/'_scaleup_l048_results.json').read_text())
     fig=plot_scaleup(scale,title='Author reference · 739,012 MovieLens rows, three seeds')
     fig.savefig(DEST/'paper-results.png',dpi=150);plt.close(fig)
-    manifest={'states':STATES,'renderer':'librsvg, not a browser','results_sha256':hashlib.sha256((HERE/'_verify_l048_results.json').read_bytes()).hexdigest(),
+    manifest={'architecture_svg_sha256':hashlib.sha256((HERE.parent/'assets/dcnv2-model-architecture.svg').read_bytes()).hexdigest(),'states':STATES,'renderer':'librsvg, not a browser','results_sha256':hashlib.sha256((HERE/'_verify_l048_results.json').read_bytes()).hexdigest(),
               'widget_sha256':hashlib.sha256((HERE.parent/'assets/dcn-viz.js').read_bytes()).hexdigest(),
               'png_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(DEST.glob('*.png'))}}
     (DEST/'provenance.json').write_text(json.dumps(manifest,indent=2)+'\n')

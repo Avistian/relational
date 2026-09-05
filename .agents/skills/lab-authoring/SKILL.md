@@ -16,6 +16,10 @@ training run do not establish teaching quality. Before delivery:
   to improve beyond L048; more images or passing geometry checks alone do not satisfy that.
 - Make the notebook understandable without reopening the lesson: define terms, give a worked
   example, and connect each paper element to the code that implements it.
+- When introducing a new model, include a dedicated **Model architecture** section with an
+  embedded end-to-end diagram and explanation, following the
+  [architecture requirement](../lesson-visuals/SKILL.md#model-architecture-requirement-user-2026-09-05).
+  A diagram of one internal block alone does not satisfy the requirement.
 - Embed portable mechanism diagrams beside the relevant explanation. For Colab, use inline
   markdown `data:image/png;base64,...` images; Jupyter `attachment:` links do not render there
   (L047 regression, colabtools #3836). Check payloads and the target frontend explicitly;

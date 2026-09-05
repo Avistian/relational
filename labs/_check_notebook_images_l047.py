@@ -30,7 +30,7 @@ def image_hash(uri):
 def main():
     expected = sorted(hashlib.sha256(p.read_bytes()).hexdigest()
                       for p in (HERE / 'figures/l047').glob('*.png'))
-    assert len(expected) == 9
+    assert len(expected) == 10
     paths = [HERE / '0047-saint.ipynb']
     solution = HERE / 'solutions/0047-saint.ipynb'
     if solution.exists():
@@ -43,11 +43,11 @@ def main():
         assert not any(c.get('attachments') for c in notebook.cells), 'Do not depend on attachment metadata'
         actual = sorted(image_hash(uri) for uri in IMAGE.findall(sources))
         assert actual == expected, f'{path}: missing, corrupted, or changed inline PNGs'
-        print(f'PASS: {path.name}: all nine Colab-format inline PNGs match source figures')
+        print(f'PASS: {path.name}: all {len(expected)} Colab-format inline PNGs match source figures')
     html = BeautifulSoup((HERE / 'html/0047-saint.html').read_text(), 'html.parser')
     actual = sorted(image_hash(img['src']) for img in html.select('img[src^="data:image/png;base64,"]'))
-    assert actual == expected, 'Prepared HTML must carry the same nine PNGs'
-    print('PASS: prepared HTML has the same nine images; live Colab UI not checked')
+    assert actual == expected, 'Prepared HTML must carry the same PNGs'
+    print('PASS: prepared HTML has the same images; live Colab UI not checked')
 
 
 if __name__ == '__main__':

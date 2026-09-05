@@ -105,6 +105,10 @@ the chunking + worked-example + check-block structure so the extra length stays 
 
 ## Cross-cutting artifacts to keep current
 
+- **New model lessons:** include a dedicated Model architecture section with an end-to-end
+  diagram and forward-pass explanation; apply the
+  [architecture requirement](../lesson-visuals/SKILL.md#model-architecture-requirement-user-2026-09-05)
+  in both the lesson and its companion notebook.
 - **`reference/glossary.html`** — the authoritative ubiquitous language. Every lesson must use terms
   consistently with it; add a row when a lesson introduces a term. (`GLOSSARY.md` is the learner's separate
   *personal mastery log* — do not conflate.)

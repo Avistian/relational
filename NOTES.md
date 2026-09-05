@@ -1110,6 +1110,17 @@ Recorded after the Q2 checkpoint (L020). Full rationale: [[learning-records/0052
     - **Compatibility:** the "reproduction labs build incrementally" preference still holds for *harness* code (`relkit/`) — reuse loaders/CV/metrics; do **not** reuse that as an excuse to import the model from a library instead of writing it.
     - Reference stack: **L032** (paper architecture mirror), **L037** (reproducibility ledger), **L042** (from-scratch + multi-dataset + rtdl validate). Full authoring checklist in the `lab-authoring` skill.
 
+### Model architecture overview (2026-09-05, user directive)
+
+Whenever a lesson introduces a new model, include a dedicated **Model architecture** section
+with an end-to-end diagram and a forward-pass explanation. Show inputs, embeddings or
+preprocessing, the main blocks and connections, repeated stages, important tensor shapes,
+and the prediction head/output. Name the pictured paper/lab variant and distinguish
+pretraining from inference. Individual mechanism diagrams do not replace this overview.
+Include a portable embedded version in the companion notebook and preserve it in the
+notebook builder. Apply this to future new-model lessons; retrofit L047 (SAINT) and L048
+(DCNv2). Full requirement: `.agents/skills/lesson-visuals/SKILL.md`.
+
 ### Paper-results scale-up + visible implementation (2026-08-28, user directive) — applies to all future paper-mirror lessons/labs
 
 25. **After the lab, reproduce the paper's results — and keep the implementation visible in the notebook (from 2026-08-28, user `/teach`: "next lessons will be trying even harder to reproduce results of the implemented architectures, if scale will not allow you to train it, add either modal script so I can train and compare or Google colab, next steps after lab implemented … I want to be sure that I will learn right conclusions." Follow-up: "code is not hidden behind package, so I can see direct implementation in notebook").** Two failure modes this closes: (1) a downscaled bake-off silently becoming "what the paper found"; (2) a from-scratch model that the student never actually *sees* because the bake-off `import`s `relkit`.
