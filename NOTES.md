@@ -1,5 +1,15 @@
 # Teaching Notes
 
+## Session 47 → Lesson 048 — 2026-09-05
+
+- User reports lesson 47 done and requests lesson 48 in `relational/`; completion is self-reported and unscored because no EXIT evidence was supplied (LR-0110). No glossary mastery is inferred.
+- User again asks for high quality. Continue the standing L047 standard: independently teachable notebook, clear diagrams beside computations, visible implementation, live student TODOs, executed solution, uncertainty, and complete reproduction package. L048 includes nine inline PNGs, including measured full-data MovieLens evidence.
+- L048 topic: DCNv2 explicit feature crosses. Separate dense/linear-factor polynomial guarantees from nonlinear expert mixtures, and keep the original input anchored. Source check executes the literal pinned TFRS Cross.call through torch-backed Dense adapters; no TensorFlow runtime parity claim.
+- Local three-table/three-seed comparison: mean ranks MLP 2.333, dense cross 3.667, factored cross 1.667, CatBoost 2.333; Friedman p=.284; CD=2.708. No detected overall difference, not equivalence.
+- Full MovieLens closer run: 739,012 filtered binary-task rows × three seeds × five epochs. Log loss .355545 ± .000692; AUROC .864981 ± .000413 (sample SD). About 204 training seconds on the current aarch64 CPU. Table 6 target .3170 log loss remains INCOMPARABLE because splits/settings differ. Larger paper preset remains NOT_RUN; GPU operators are supplied, not executed.
+- Delivery verification: 35 model/source checks and 23 executed teacher-notebook checks pass; notebook seed scores match the canonical comparison exactly. The notebook smoke gate trains the live implementation, resumes completed seeds, and rejects changed implementation identity. Nine embedded PNG payloads, 37 local links, gallery navigation and source hashes pass.
+- Browser download was declined. Checked 34 desktop/mobile SVG states and 731 glyph bounds/overlaps with librsvg, fixing a narrow-screen rank label. These checks are separate from browser verification; inline image integrity does not establish a live Colab UI pass.
+
 ## Standing authoring requirement — user reaffirmed 2026-09-05
 
 The user approved the revised L047 work after the Colab image fix and explicitly asked to retain

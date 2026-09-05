@@ -58,3 +58,10 @@ labs try a closer run (same from-scratch code) and print a ledger with three buc
 paper claim / scale-up. Until that job has been run, the paper number stays **cited, not reproduced**.
 
 Comparative claims still need ≥3 datasets + seeds + rank/Friedman/CD (standard #23).
+
+
+## L048 — DCNv2
+
+Local Tier-A substitutes: `credit_g`, `diabetes`, `blood_transfusion`, fixed stratified split seed 5 (65/15/20), model seeds 0/1/2. All vocabularies and numeric scaling fit training rows. These tables do not reproduce the paper's recommendation benchmark.
+
+Paper-dataset track: GroupLens MovieLens 1M, `relkit/dcnv2_data.py`; archive MD5 `c4d9eecfca2ab87c1945afe126590906`. Remove 3-star ratings, map 1/2→0 and 4/5→1 (739,012 rows). Six single-valued categorical fields: user, movie, gender, age, occupation, ZIP. Random 80/10/10 split seed 48; original rating row IDs retained. Genres omitted; targets/timestamps excluded from inputs. Field mapping is our explicit interpretation of the paper's six fields. Actual closer run saved under `cache/l048-closer`; raw archive/checkpoints/predictions stay gitignored. The raw-rating TFRS tutorial is a different task. Criteo/private production data remain outside the run.

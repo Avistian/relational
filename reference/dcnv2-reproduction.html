@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DCNv2 — cross-network and reproduction card</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/dcn-viz.css"></head><body><article>
+<h1>DCNv2: cross-network reference</h1><p class="subtitle">A quick calculation card and a regenerable experiment contract · Lesson 048</p>
+<h2>The three computations</h2><div class="equation">Dense: x′ = x + x₀ ⊙ (Wx + b)<br>Linear factors: x′ = x + x₀ ⊙ [U(Vᵀx) + b]<br>Experts: x′ = x + Σₖ gₖ(x) Eₖ(x)</div>
+<p>x₀ is the original embedded row; x is the current layer state. W is [d,d], U and V are [d,r], b is [d]. The bias lies inside x₀ multiplication. With row batches [B,d] and PyTorch [out,in] weights, use XWᵀ. No other rows enter the forward path. <a href="https://arxiv.org/html/2008.13535v2#S3">Paper §3, Eqs.1–4</a>.</p>
+<div class="table-scroll"><table class="paper-table"><thead><tr><th>Claim</th><th>Exact boundary</th></tr></thead><tbody>
+<tr><td>Degree ≤ L+1</td><td>L basic dense or linear factored crosses in x₀ coordinates; does not describe nonlinear experts/gates or the whole MLP/sigmoid model.</td></tr>
+<tr><td>Factorization saves weights</td><td>2dr &lt; d², hence r &lt; d/2. Both forms add d biases. Factorization alone does not ensure savings.</td></tr>
+<tr><td>Equivalent forward map</td><td>Exact W=UVᵀ, same x₀, x and b, identity intermediate activation. Approximation or tanh changes the map.</td></tr>
+<tr><td>Parallel</td><td>Head reads [Cross(x₀); MLP(x₀)].</td></tr>
+<tr><td>Stacked</td><td>Head reads MLP(Cross(x₀)).</td></tr>
+<tr><td>Our nonlinear mixture</td><td>Eₖ=x₀⊙{Uₖ tanh[Cₖ tanh(Vₖᵀx)]+b}; softmax gates from x; residual added once. Other paper gates/settings are possible.</td></tr>
+</tbody></table></div>
+<h2>Fast hand check</h2><p>Take x₀=x=[2,3], W=[[1,1],[0,1]], b=[1,−1]. Affine mixture [6,2] → crossed update [12,6] → residual result [14,9]. Two scalar layers with x=2, every w=1 and every b=0 give 18. The wrong current-input anchor gives 42. A non-symmetric W catches a missing transpose.</p>
+<h2>What is verified?</h2><p><a href="../labs/_check_l048_results.json">Mathematics / implementation</a>: independent coordinate sums, finite-difference gradient checks, exact factorization, the actual pinned TFRS Cross.call method executed with torch-backed Dense adapters, anchored degree examples, nonlinear expert checks, both layouts and cross-weight gradient flow. This is not a TensorFlow-runtime or optimizer-parity test. <a href="../labs/_sources_l048.json">Source choices and hashes</a>.</p>
+<p><a href="../labs/_verify_l048_results.json">Local training</a>: credit_g, diabetes, blood_transfusion × seeds 0/1/2, fixed stratified 65/15/20 split seed 5. Train-only vocabularies and scaling. Neural arms: 20 epochs, Adam .001, batch 64, embedding 4, hidden [32,32], two crosses, rank min(4,max(1,d//4)). CatBoost: 300 iterations, depth 6, LR .05. Select validation log loss; summarize test AUROC ranks. Unequal capacities and initializations; no tuning search.</p>
+<p><a href="../labs/_scaleup_l048_results.json">Full MovieLens closer run</a>: 739,012 filtered rows, three seeds, five epochs. Log loss 0.355545 ± 0.000692; AUROC 0.864981 ± 0.000413; sample SD across seeds. About 204 seconds CPU training. Table 6 DCN-V2 target: log loss 0.3170 ± 0.00036; AUROC 0.8950 ± 0.00027, five runs. Protocol differs: <strong>INCOMPARABLE</strong>. <a href="https://arxiv.org/html/2008.13535v2#S7.SS3">Table 6</a>.</p>
+<h2>MovieLens task and provenance</h2><p><a href="https://grouplens.org/datasets/movielens/1m/">GroupLens MovieLens 1M</a>: remove rating 3; map 1/2→0 and 4/5→1. Random 80/10/10 split, seed 48. Inputs: user, movie, gender, age, occupation, ZIP; vocabularies fitted on training rows; missing/unseen code 0. The precise six-field mapping and original split indices are not provided by the inspected paper. No genres, labels or timestamps enter forward.</p>
+<p>Do not compare the <a href="https://www.tensorflow.org/recommenders/examples/dcn">TFRS tutorial’s raw-rating RMSE</a> with this binary log-loss task. Randomly held-out interactions are not cold-start or temporal evaluation. Archive MD5 from GroupLens: <code>c4d9eecfca2ab87c1945afe126590906</code>. The loader verifies this and records SHA-256. The author's host certificate had expired; the public archive was downloaded with an explicit temporary TLS bypass and checked against the publisher's checksum. The reusable loader retains TLS verification; an existing verified archive can be supplied if needed. MD5 here checks archive identity, not resistance to an adversarial forgery.</p>
+<h2>Run and retain the evidence</h2><pre>cd relational
+OMP_NUM_THREADS=1 .venv/bin/python labs/_check_l048.py
+OMP_NUM_THREADS=1 .venv/bin/python labs/_verify_l048.py
+.venv/bin/python labs/_paper_repro_l048.py \
+  --preset closer --output-dir labs/data/cache/l048-closer
+# If supplying an already downloaded archive:
+# add --archive-path labs/data/cache/ml-1m.zip
+
+modal run --detach modal/l048_paper_repro.py --preset closer
+modal volume get relational-artifacts l048/closer ./l048-modal-artifacts</pre>
+<p>The student notebook offers the same runner behind <code>RUN_PAPER_REPRO=False</code>, with a persistent Drive path for Colab. GPU operators are supplied but not executed in the author package. Local teacher solution and CPU runner are executed.</p>
+<div class="table-scroll"><table class="paper-table"><thead><tr><th>Preset</th><th>Rows · seeds · epochs</th><th>Settings</th><th>Status</th></tr></thead><tbody>
+<tr><td>smoke</td><td>2,000 · 1 · 1</td><td>Embedding 4; MLP [16,16]; no EMA</td><td>Pipeline tested; not accuracy evidence</td></tr>
+<tr><td>closer</td><td>739,012 · 3 · 5</td><td>Embedding 16; MLP [128,128]; no EMA</td><td>Executed; INCOMPARABLE</td></tr>
+<tr><td>paper</td><td>739,012 · 5 · 20</td><td>Embedding 30; MLP [128,128]; EMA .9999</td><td>NOT_RUN; chosen settings remain</td></tr>
+</tbody></table></div>
+<p>All use two dense cross layers, parallel layout, batch 128 and chosen Adam LR .001. The paper preset adopts several reported settings, but its MovieLens training budget, exact winning architecture and learning rate are not recovered from the inspected sources. It does not reproduce the paper’s search. Criteo, private production data, and DCN-Mix score claims remain untested.</p>
+<p>Each run directory contains <code>run_manifest.json</code>, <code>protocol.json</code>, one selected <code>seed-N.pt</code> weight file, <code>seed-N-predictions.npz</code> with test IDs/labels/probabilities, one <code>seed-N.json</code> history/metrics file, <code>summary.json</code> and <code>ledger.txt</code>. Completed seeds resume; an interrupted seed restarts. Different code/configuration/data/device/implementation identity requires a new directory. Local full artifacts are under <code>labs/data/cache/l048-closer/</code>; the committed summaries preserve the measured claim without adding raw data or large weights to the course.</p>
+<h2>Read the ledger literally</h2><p><strong>NOT_RUN:</strong> no corresponding run. <strong>INCOMPARABLE:</strong> protocol differs; even a coincidentally close score cannot validate the original result. <strong>MATCH / CLOSE / FAIL:</strong> permitted only after protocol agreement, using a declared tolerance. This runner always records the outstanding deviations and returns INCOMPARABLE. It cannot automatically certify them away.</p>
+<p><a href="../lessons/0048-dcnv2.html">Lesson 048</a> · <a href="../labs/html/0048-dcnv2.html">Prepared lab</a> · <a href="../labs/0048-dcnv2.ipynb">Notebook</a> · <a href="glossary.html">Glossary</a></p>
+</article></body></html>

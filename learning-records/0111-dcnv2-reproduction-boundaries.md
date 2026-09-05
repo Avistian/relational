@@ -1,0 +1,5 @@
+# DCNv2 separates an exact operation check from an exact results reproduction
+
+Lesson 048 establishes an authoring standard: matching a paper's cross-layer operation is distinct from matching its evaluation task and training protocol. The full-data MovieLens attempt uses 739,012 filtered binary-task rows and three seeds, but its .355545 ± .000692 log loss remains INCOMPARABLE to Table 6's .3170 because the original split and MovieLens winning configuration are not recovered; the TFRS raw-rating RMSE tutorial is a different task. This is evidence about the authored experiment, not a claim of learner mastery.
+
+The basic dense/linear-factor cross stack has degree at most L+1 in embedded coordinates; nonlinear expert gates/activations do not inherit that statement. Future lessons should state the precise scope of algebraic claims and keep measured substitute experiments, cited paper results, and scale-up attempts separate. Evidence: `labs/_check_l048_results.json`, `labs/_verify_l048_results.json`, `labs/_scaleup_l048_results.json`, `labs/_sources_l048.json`.

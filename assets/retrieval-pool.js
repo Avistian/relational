@@ -1081,6 +1081,75 @@
     ],
     "correct": "a",
     "explain": "Other rows supply keys and values at inference. Membership/order and batch size matter; labels never enter forward."
+},
+{
+  "id": "l048-cross-anchor",
+  "lesson": 48,
+  "quarter": "Y2Q1",
+  "concept": "explicit-feature-cross",
+  "question": "Which input multiplies the affine mixture in every basic DCNv2 cross layer?",
+  "options": [
+    {
+      "label": "The original embedded input row",
+      "value": "a"
+    },
+    {
+      "label": "The current transformed input row",
+      "value": "b"
+    },
+    {
+      "label": "The neighboring embedded input row",
+      "value": "c"
+    }
+  ],
+  "correct": "a",
+  "explain": "x0 stays anchored while xl evolves: xl+1 = xl + x0 ⊙ (Wl xl + bl). Bias is inside the multiplication."
+},
+{
+  "id": "l048-rank-cost",
+  "lesson": 48,
+  "quarter": "Y2Q1",
+  "concept": "low-rank-budget",
+  "question": "When do two d-by-r factors use strictly fewer matrix weights than a d-by-d matrix?",
+  "options": [
+    {
+      "label": "Rank below half the width",
+      "value": "a"
+    },
+    {
+      "label": "Rank above half the width",
+      "value": "b"
+    },
+    {
+      "label": "Rank equal half the width",
+      "value": "c"
+    }
+  ],
+  "correct": "a",
+  "explain": "Two factors cost 2dr; the dense matrix costs d². Equal d-element biases cancel, leaving r < d/2."
+},
+{
+  "id": "l048-degree-bound",
+  "lesson": 48,
+  "quarter": "Y2Q1",
+  "concept": "polynomial-scope",
+  "question": "Where does the DCNv2 degree-at-most-L+1 argument directly apply?",
+  "options": [
+    {
+      "label": "The basic linear cross stack",
+      "value": "a"
+    },
+    {
+      "label": "The nonlinear expert cross stack",
+      "value": "b"
+    },
+    {
+      "label": "The complete sigmoid prediction model",
+      "value": "c"
+    }
+  ],
+  "correct": "a",
+  "explain": "Anchored multiplication raises polynomial degree by at most one. Nonlinear gates, activations and readouts need a different description."
 }
   ];
 })(window);

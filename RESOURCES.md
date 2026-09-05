@@ -83,6 +83,13 @@ _Your own work (Tier-A artifact, not a published resource):_
 
 ## Knowledge — Year 2 (Advanced tabular)
 
+- [DCN V2 — Wang et al., WWW 2021 / arXiv v2](https://arxiv.org/html/2008.13535v2)
+  Lesson 048 primary reading: §3.2 Eq.1 (anchored matrix cross), Fig.1 (parallel/stacked), §3.5 Eqs.2–4 (linear factors versus nonlinear mixtures), §7.1 and Table 6 (protocol and results). The L+1 degree bound describes the basic cross stack in embedding coordinates, not nonlinear mixtures or the complete classifier. MovieLens is a filtered binary-target task despite the prose calling it regression; the exact six-field mapping and winning MovieLens hyperparameters remain gaps in our reproduction.
+- [TensorFlow Recommenders Cross layer, release 0.7.3](https://github.com/tensorflow/recommenders/blob/v0.7.3/tensorflow_recommenders/layers/feature_interaction/dcn.py)
+  L048 implementation validation source. Audit identity preactivation, zero diagonal scale, bias placement and factor orientation. The literal call method is checked through torch-backed Dense adapters; that does not validate TensorFlow kernels or training. Companion [official tutorial](https://www.tensorflow.org/recommenders/examples/dcn) uses raw MovieLens ratings and RMSE, so its scores cannot reproduce the paper's binary log-loss table.
+- [MovieLens 1M — GroupLens](https://grouplens.org/datasets/movielens/1m/)
+  L048 actual paper-dataset track: archive checksum, raw ratings/users schema, filtered 1/2 versus 4/5 task, six single-valued fields, random 80/10/10 split. Full-data closer attempt is measured and INCOMPARABLE; retain the exact protocol and fitted vocabularies.
+
 **Architectures**
 - [TabNet — Arik & Pfister, 2019](https://arxiv.org/abs/1908.07442)
   Sequential attention on features. Use for: interpretable neural tabular.
