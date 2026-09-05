@@ -1,5 +1,17 @@
 # Teaching Notes
 
+## Future visual quality — user directive, 2026-09-05
+
+After L048, the user asked: “Make those visuals even better for the future.” Treat the
+current figures as a baseline to improve. The concrete authoring criteria live in
+[lesson-visuals](.agents/skills/lesson-visuals/SKILL.md): expose the computation inside the
+architecture; carry coherent values and tensor shapes through each worked example;
+make controls reveal cause and effect with a baseline for comparison; improve reading
+order, typography and mobile reflow; and choose independently explanatory notebook
+snapshots. Review teaching value separately from geometry and test counts. The
+[lab-authoring skill](.agents/skills/lab-authoring/SKILL.md) also routes to this standard.
+This is a standing preference for future lessons and notebooks, not evidence of learner mastery.
+
 ## Session 47 → Lesson 048 — 2026-09-05
 
 - User reports lesson 47 done and requests lesson 48 in `relational/`; completion is self-reported and unscored because no EXIT evidence was supplied (LR-0110). No glossary mastery is inferred.

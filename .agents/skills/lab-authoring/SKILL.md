@@ -10,6 +10,10 @@ Use when creating, retrofitting, or reviewing lab notebooks in `labs/`.
 Compare each new notebook with the strongest recent lessons. Existence, length, and a passing
 training run do not establish teaching quality. Before delivery:
 
+- Apply the [visual teaching standard](../lesson-visuals/SKILL.md#visual-teaching-standard--raised-after-l048-user-2026-09-05)
+  to notebook figures: show the operation and its intermediate values, select explanatory
+  snapshots, and inspect readability at notebook display width. The user asked for visuals
+  to improve beyond L048; more images or passing geometry checks alone do not satisfy that.
 - Make the notebook understandable without reopening the lesson: define terms, give a worked
   example, and connect each paper element to the code that implements it.
 - Embed portable mechanism diagrams beside the relevant explanation. For Colab, use inline
