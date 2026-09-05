@@ -219,6 +219,22 @@
     "lesson": 47,
     "front": "How does SAINT make other rows available, and what must evaluation record?",
     "back": "Flatten every row\u2019s feature tokens including CLS: [B,T,d] \u2192 [1,B,T\u00b7d]. Attention now uses B\u00d7B weights per head. Predictions may depend on companions; record their availability and batch membership. Row permutation equivariance does not imply membership independence. Paper-scale and pretraining claims require their own protocols."
+},
+{
+  "id": "chen2024-excelformer",
+  "paper": "Chen et al. \u2014 ExcelFormer (v5)",
+  "year": 2024,
+  "lesson": 49,
+  "front": "Which route does semi-permeable attention block, and what remains accessible?",
+  "back": "Attention rows receive and columns send. With strongest-first ordering, the positional mask blocks weaker senders from stronger receivers. The final head still pools all tokens. A masked feature can therefore still affect the prediction."
+},
+{
+  "id": "chen2023-trompt",
+  "paper": "Chen et al. \u2014 Trompt",
+  "year": 2023,
+  "lesson": 49,
+  "front": "Where does Trompt obtain sample-specific feature weights without a language model?",
+  "back": "Learned prompts are fused with the previous cell output before scoring learned column embeddings. Softmax over columns makes per-prompt feature distributions. Row dependence enters through the previous state; the prompts and column embeddings themselves are shared learned parameters."
 }
   ];
 })(window);

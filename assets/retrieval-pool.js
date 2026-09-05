@@ -1150,6 +1150,29 @@
   ],
   "correct": "a",
   "explain": "Anchored multiplication raises polynomial degree by at most one. Nonlinear gates, activations and readouts need a different description."
+},
+{
+  "id": "l049-claim-protocol",
+  "lesson": 49,
+  "quarter": "Y2Q1",
+  "concept": "claim-scope",
+  "question": "A forward pass matches released code. What does that establish?",
+  "options": [
+    {
+      "label": "Agreement on the checked implementation",
+      "value": "path"
+    },
+    {
+      "label": "Replication of the published benchmark",
+      "value": "benchmark"
+    },
+    {
+      "label": "Superiority on all future datasets",
+      "value": "future"
+    }
+  ],
+  "correct": "path",
+  "explain": "Forward fidelity checks a specified variant and inputs. Training, data, tuning and uncertainty require separate evidence."
 }
   ];
 })(window);

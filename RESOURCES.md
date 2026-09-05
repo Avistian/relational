@@ -276,3 +276,11 @@ _Optional / extension (◆):_
 - **Executable companion:** [official repository at e288e84](https://github.com/somepago/saint/tree/e288e84c77a54cfd2ffb55a53678fb7cbbb16630). Inspect models/model.py, models/pretrainmodel.py, train.py, data_openml.py. SHA-256 audit in labs/_sources_l047.json.
 - **Why both:** normalization placement, numeric embedding, split proportions, heads, attention dropout, and binary checkpoint selection differ across descriptions. The lesson makes each fidelity choice explicit; reference-stage parity does not establish full training parity.
 - **Course use:** [L047](lessons/0047-saint.html), [reproduction card](reference/saint-reproduction.html). Supervised model + contrastive key-parts exercise; full semi-supervised benchmark remains outside the executed claim.
+
+## L049 — pinned primary sources and released data (2026-09-05)
+
+- [ExcelFormer arXiv v5 / KDD 2024](https://arxiv.org/html/2301.02819v5): §3.1 Eq.1–4 for mask and initialization; §4 Eq.7–8 for Feat-Mix; §6.1 and Appendix G for protocol and exact dataset rows. The older curriculum's 2023 date refers to initial submission.
+- [Released ExcelFormer code, revision 17f7052](https://github.com/WhatAShot/ExcelFormer/blob/17f70526390e70390bb8c8ec3850697eb730f9cd/bin/excel_former.py): numeric/pre-normalization path validated on copied weights. Record positional tie handling, initialization differences and unvalidated training augmentation separately.
+- [Authors' prepared dataset release](https://huggingface.co/datasets/jyansir/excelformer): L049 uses original split files for one Pima variant, Breast Cancer Dataset and Swiss banknote. File hashes and exact names are in `labs/relkit/claim_data.py`; upstream fit-scope provenance is not independently reconstructed.
+- [Trompt v2 / ICML 2023](https://arxiv.org/html/2305.18446v2): §3 Eq.1–9, §4.2 subgroup limits, Appendix A.4 / F search accounting. Full benchmark unreplicated; key parts only in the lab.
+- [MovieLens 1M](https://grouplens.org/datasets/movielens/1m/): real timestamps for a separate transfer probe using the existing checked archive. This is neither paper's reported protocol; snapshot feature availability remains a limitation.

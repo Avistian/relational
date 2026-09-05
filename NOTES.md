@@ -1,5 +1,17 @@
 # Teaching Notes
 
+## Session 48 → Lesson 049 — 2026-09-05
+
+- User reports L048 done, unscored without EXIT evidence (LR-0112). L049 follows the planned claim-audit topic and ships the lesson, student notebook, executed teacher solution, prepared HTML, reference, measured experiments and reproduction operators.
+- Source correction: Trompt v2 claims comparability with trees, not universal GBDT superiority. ExcelFormer v5 uses stronger wording. Read protocol and subgroup results before repeating a headline.
+- Scope: complete numeric released-order ExcelFormer plus Trompt Eq.4/5 key parts. Full Trompt training is not performed. Three author-released numeric splits are used with checked file hashes; upstream preprocessing fit scope is not independently reconstructed.
+- Exact copied-weight forward and input-gradient parity for the specified ExcelFormer variant. Paper/code caveats: positional MI ties and initialized output projection. Feat-Mix's Bernoulli sampler is an explicit local choice, not source-validated augmentation parity.
+- Short local run: three tasks × three seeds × three arms; Friedman p=.607, CD=1.914. Banknote saturates. MovieLens 12,000 real timestamped events has a local rank reversal under random/time partitions; different test populations prevent a paired causal interpretation.
+- Larger Pima run executed at d=256, 32 heads, 3 blocks, 100-epoch cap: Feat-Mix .8261 ± .0057, no-DA .8383 ± .0099, CatBoost .8175 ± .0012 AUROC (sample SD). Exact paper target stays INCOMPARABLE; full suites and tuning remain NOT_RUN. Both Modal and gated Colab operators are provided; no cloud job launched.
+- Delivery checks: all 25 teacher code cells executed; notebook seed scores exactly match the reference across three tasks and both transfer regimes. Four student exercise cells remain blank. Seven inline PNGs, local links, diagram label bounds, pedagogy widgets, and 152 arithmetic/interaction checks pass. Reproduction smoke resumes identical runs and rejects changed source. Prose/figure refresh preserved verified training outputs; only citation metadata and the updated cache-definition cells were re-executed.
+- Visual improvement: permission matrices coupled to numerical outputs and a baseline intervention; prompt-weight contributions shown before/after; architecture diagrams expose distinct value/weight routes. Notebook PNGs use Colab inline-data format. Browser/live-Colab verification remains unperformed because no browser is installed.
+
+
 ## Future visual quality — user directive, 2026-09-05
 
 After L048, the user asked: “Make those visuals even better for the future.” Treat the

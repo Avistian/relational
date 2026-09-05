@@ -97,15 +97,14 @@ Trompt `2305.18446`.
 - **Viz** — new `cross-viz.js`: feature-cross lattice (degree-2, degree-3) — reusable for recsys in Y4.
 - **Bridge** — recsys lineage → Y4 L138 (e-commerce), L144 (ContextGNN recsys).
 
-### 049 · ExcelFormer & Trompt (GBDT-surpassing claims) — *Chen 2023 ◆ `2301.02819` · Chen 2023 ◆ `2305.18446`*
-- **Skill** — read two "we beat GBDTs" papers *critically*: separate the architectural idea from the
-  evaluation protocol that produced the claim.
-- **Teach** — ExcelFormer (semi-permeable attention, data-specific), Trompt (prompt-style per-sample
-  weights); then the protocol audit — dataset selection, tuning budget, split type (callback L038, L055).
-- **Lab** — Tier A · crucial fragment: reproduce one claim on the paper's dataset *and* on a temporal-split
-  dataset; document where the claim holds/breaks. Deliverable: claim-audit note.
-- **Viz** — reuse `arch-family-viz.js` + `checklist.js` (claim-audit variant).
-- **Bridge** — trains the skepticism the thesis needs; sets up Q2's honest-baseline reckoning.
+### 049 · ExcelFormer & Trompt — claim audit
+- **Skill** — distinguish the source's exact claim, architecture fidelity, score reproduction and temporal transfer.
+- **Sources** — ExcelFormer arXiv v5 / KDD 2024 (`2301.02819`); Trompt v2 / ICML 2023 (`2305.18446`). Trompt's headline is comparability with trees, not universal superiority.
+- **Teach** — semi-permeable attention, information-weighted mixing, prompt/column axes, and protocol/search accounting.
+- **Lab** — full numeric ExcelFormer; Trompt Eq.4/5 key parts. Three author-split tasks × three seeds; separate MovieLens random/time transfer probe; executed larger Pima attempt and Modal/Colab operators. Claim-audit note is the EXIT.
+- **Boundary** — copied-weight path validation is exact; full Trompt training and published suites/tuning remain NOT_RUN. Larger Pima scores are INCOMPARABLE to exact paper replication because material gaps remain.
+- **Viz** — separate computed attention, prompt-weight and Feat-Mix examples; complete architecture routes; measured seed variability.
+- **Bridge** — prepares L050's fair-comparison checkpoint without asserting a predetermined winner.
 
 ### 050 · **Q1 checkpoint** — *Gorishniy 2021 · Deliverable-based*
 - **Deliverable** — FT-Transformer vs tuned XGB on **3 datasets, identical protocol** (splits, tuning

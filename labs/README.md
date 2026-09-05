@@ -106,3 +106,7 @@ This keeps the thesis baselines trustworthy by the time results matter.
   run-anywhere path — the `@colab-bootstrap` first cell clones the repo and installs
   `requirements-labs.txt` (full lab stack incl. torch), and a free T4 is available under
   *Runtime → Change runtime type*. Heavy authoring jobs go to Modal instead (`modal/README.md`).
+
+## Lesson 049: claim audit
+
+See [the reproduction guide](l049-reproduction.md) for exact data/source scope, local commands, resumable larger runs, and the distinction between forward fidelity and paper-score replication.
