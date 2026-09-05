@@ -12,8 +12,11 @@ training run do not establish teaching quality. Before delivery:
 
 - Make the notebook understandable without reopening the lesson: define terms, give a worked
   example, and connect each paper element to the code that implements it.
-- Embed portable mechanism diagrams beside the relevant explanation (markdown image attachments
-  work without execution or adjacent files). Captions must match the exact pictured state and
+- Embed portable mechanism diagrams beside the relevant explanation. For Colab, use inline
+  markdown `data:image/png;base64,...` images; Jupyter `attachment:` links do not render there
+  (L047 regression, colabtools #3836). Check payloads and the target frontend explicitly;
+  successful nbconvert rendering alone does not establish Colab compatibility.
+  Captions must match the exact pictured state and
   distinguish synthetic illustrations from measured results.
 - Split the visible canonical implementation into coherent, annotated chunks. Preserve the
   student's live functions; verify the trained model actually calls them. Avoid a single wall

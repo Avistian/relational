@@ -2,7 +2,7 @@
 
 Run from repo root: .venv/bin/python labs/_figures_l047.py
 Authoring dependencies: Node, system librsvg/cairo, matplotlib (no browser).
-Students need none of the render tooling: PNGs are embedded as notebook attachments.
+Students need none of the render tooling: PNGs are embedded as inline markdown images.
 """
 import ctypes as c
 import hashlib

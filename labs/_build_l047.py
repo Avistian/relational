@@ -43,8 +43,8 @@ def build(solution=False):
         cells.append(nbf.v4.new_code_cell(s.strip()))
     def figure(name, alt, caption):
         data = base64.b64encode((FIGURES / f'{name}.png').read_bytes()).decode()
-        cell = nbf.v4.new_markdown_cell(f'![{alt}](attachment:{name}.png)\n\n{caption}')
-        cell['attachments'] = {f'{name}.png': {'image/png': data}}
+        # Colab uses inline data URIs; Jupyter's attachment: scheme does not render there.
+        cell = nbf.v4.new_markdown_cell(f'![{alt}](data:image/png;base64,{data})\n\n{caption}')
         cells.append(cell)
     def provided(names, description, omit_methods=()):
         code('# PROVIDED — ' + description + '\n' + extract(MODEL, names, omit_methods))
@@ -564,7 +564,7 @@ else:
 
 Tomorrow, without reading this notebook, sketch the two attention axes and state whether shuffling a fixed batch and replacing a batch member are the same intervention. Then name the minimum artifacts needed to regenerate one Bank number. Reopen only the section needed to correct your answer.
 
-**Figure provenance:** `_figures_l047.py` regenerates mechanism diagrams from the lesson's SVG components and author-reference plots from measured JSON; `figures/l047/provenance.json` records hashes. The PNG attachments travel inside this notebook, so understanding it does not depend on running JavaScript or finding an adjacent image folder.''')
+**Figure provenance:** `_figures_l047.py` regenerates mechanism diagrams from the lesson's SVG components and author-reference plots from measured JSON; `figures/l047/provenance.json` records hashes. The PNGs are embedded directly in the markdown as data URLs, the format used by Colab, so viewing them does not depend on running JavaScript or finding an adjacent image folder.''')
     for index, cell in enumerate(cells):
         cell['id'] = f'l047-{index:03d}'
     nb = nbf.v4.new_notebook(cells=cells, metadata={
@@ -576,7 +576,7 @@ Tomorrow, without reading this notebook, sketch the two attention axes and state
     out.parent.mkdir(exist_ok=True)
     nbf.validate(nb)
     nbf.write(nb, out)
-    print(f'{out}: {len(cells)} cells, {sum(bool(c.get("attachments")) for c in cells)} embedded figures')
+    print(f'{out}: {len(cells)} cells, {sum("data:image/png;base64," in c.source for c in cells)} embedded figures')
     if not solution:
         from nbconvert import HTMLExporter
         rendered = copy.deepcopy(nb)

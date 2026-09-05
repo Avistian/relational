@@ -1,5 +1,11 @@
 # Teaching Notes
 
+## L047 Colab image packaging fix — 2026-09-05
+
+- User reported the notebook images did not render in Colab. The prior claim of portable markdown attachments was incorrect for that frontend: `attachment:` is a Jupyter representation, while Colab embeds markdown images as inline PNG data URLs (googlecolab/colabtools #3836).
+- Converted all nine figures to inline `data:image/png;base64,...` markdown images, preserving their original bytes, captions, and positions. They require neither executing code nor retrieving external image files.
+- Added `_check_notebook_images_l047.py` to check notebook and prepared-HTML image payloads against source PNGs. This prevents the format regression; it is not a live Colab browser check. Preserve already-executed solution outputs because this fix changes only markdown packaging.
+
 ## Notebook quality standard — 2026-09-05
 
 - User explicitly said L047 notebooks were lower quality than L046 and that lessons **NEED to be HIGH quality**. This is a standing requirement for every future lesson and its notebook, not a one-off visual request. Compare the complete learning experience with the strongest recent lessons before delivery.
