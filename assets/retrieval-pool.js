@@ -1035,6 +1035,52 @@
       ],
       correct: "a",
       explain: "Verified (L046, labs/_verify_l046.py, 4 tables × 3 seeds): mean ranks FT-T 2.50, MLP 2.75, TabTransformer 3.75, CatBoost 1.00 (Friedman p=0.026). FT-T beats TabTransformer on 3/4 — all but the most-categorical credit_g — and the probe shows why: a numeric change moves FT-T's [CLS] readout by L2≈0.438 on adult but moves TabTransformer's representation exactly 0. So FT-T is the strongest single DEEP model, but CatBoost still wins every table (b false). It is not a no-op (c false), and the gap is BIGGEST where numerics dominate, not smallest (d false). Gorishniy 2021's exact honest finding."
-    }
+    },
+{
+    "id": "l047-row-pack",
+    "lesson": 47,
+    "quarter": "Y2Q1",
+    "concept": "intersample-attention",
+    "question": "What is one sequence element in SAINT intersample attention?",
+    "options": [
+        {
+            "label": "The entire flattened sample row",
+            "value": "a"
+        },
+        {
+            "label": "One feature across all rows",
+            "value": "b"
+        },
+        {
+            "label": "The target alongside each feature",
+            "value": "c"
+        }
+    ],
+    "correct": "a",
+    "explain": "Pack [B,T,d] into [1,B,T\u00b7d]. T includes CLS. Each head attends over B rows."
+},
+{
+    "id": "l047-context-contract",
+    "lesson": 47,
+    "quarter": "Y2Q1",
+    "concept": "evaluation-context",
+    "question": "Which additional input belongs in a SAINT reproducibility ledger?",
+    "options": [
+        {
+            "label": "The evaluation batch membership policy",
+            "value": "a"
+        },
+        {
+            "label": "The evaluation target value ordering",
+            "value": "b"
+        },
+        {
+            "label": "The evaluation metric display precision",
+            "value": "c"
+        }
+    ],
+    "correct": "a",
+    "explain": "Other rows supply keys and values at inference. Membership/order and batch size matter; labels never enter forward."
+}
   ];
 })(window);

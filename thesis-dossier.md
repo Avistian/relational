@@ -368,3 +368,7 @@ leakage-prone, and manual feature synthesis hints structure is recoverable, but 
 relational model *beating the fair bar by keeping structure*. That demonstration is now the **Year 2–4**
 burden (neural tabular honesty → GNNs → RelBench). Standing honestly on a high, fully-instrumented baseline
 is the point: it is what will make an eventual win credible.
+
+
+### L047 — BAR: define which other rows a prediction may read (2026-09-05)
+From-scratch supervised SAINT stage matches the pinned official forward and input gradients on transplanted weights (both maximum differences 0 in the checked tensors). A three-substitute/three-seed ablation yields mean ranks feature-only 1.667, feature+row 1.667, budgeted CatBoost 2.667; Friedman p=0.368, Nemenyi CD=1.914. No overall difference is established; neither equivalence nor superiority over tuned trees is supported. At fixed diabetes seed-0 weights, evaluation batches 64→1 change a prediction by up to 0.2673 and AUC 0.7920→0.7648. Companion availability is part of the inference contract. This provides a methodological bridge to relational neighborhood sampling, not evidence that random mini-batch links recover foreign-key semantics. Paper Bank/Table 2 full budgets and Table 3 pretraining are not reproduced. Evidence: labs/_verify_l047_results.json and labs/_check_l047_results.json.

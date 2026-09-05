@@ -1,0 +1,5 @@
+# SAINT establishes evaluation context as part of the reproduction contract
+
+Lesson 47’s authoring checks establish that the released feature/row stage matches our from-scratch forward and input gradients on transplanted weights, while a trained query’s prediction can change with its companion batch. Future lessons using cross-row or graph context must save companion availability, membership/order, and batching alongside splits and seeds; permutation equivariance does not remove this requirement. This is an authoring/evidence standard, not a claim that the learner has mastered lesson 47.
+
+Evidence: `labs/_check_l047_results.json`, `labs/_verify_l047_results.json`, and the code/prose audit in `labs/_sources_l047.json`. The local three-dataset experiment detects no overall rank difference (Friedman p=0.368); the supervised Bank smoke is INCOMPARABLE, and full paper-budget / semi-supervised results remain unrun. Lesson HTML, student/solution notebook, rendered lab, reproduction card, and Modal/Colab operators are supplied; headless visual checks pass, but browser rendering remains unverified because its temporary download was not approved.

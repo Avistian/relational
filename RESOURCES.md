@@ -262,3 +262,10 @@ _Optional / extension (◆):_
 - Fast-moving frontier: re-run an arXiv search each quarter (sort by `submitted`) and add only papers that set SOTA, expose a failure mode, or are a baseline to beat. Full verified ID index + exhaustive registry in [CURRICULUM.md](./CURRICULUM.md#exhaustive-paper-registry-july-2026).
 - Resources are tagged **core** (the default entries) vs **◆ optional / extension** (read only after the year's core papers and lab are done). Optional papers are ~2 h skims, never a reason to skip reproduction or exit exams. Full optional index: [CURRICULUM.md → Optional / extension reading](./CURRICULUM.md).
 - **July 2026 merge:** PyTorch Frame ID corrected to `2404.00776`; TALENT to `2407.00956`. See [Research merge status](./CURRICULUM.md#research-merge-status-july-2026-deep-research-pass) for what's already solved vs newly added.
+
+
+### Lesson 047 — SAINT source audit (2026-09-05)
+- **Primary:** Somepalli, Goldblum, Schwarzschild, Bruss & Goldstein (2021), [SAINT, arXiv:2106.01342v1](https://arxiv.org/abs/2106.01342v1). §3/Algorithm 1 for row packing, §4/Eqs.3–5 for contrastive and denoising pretraining; Tables 1–2 and Appendix C for supervised protocol. Bank target: 0.9330 AUROC, five-trial mean; Table 6 SE 0.0009.
+- **Executable companion:** [official repository at e288e84](https://github.com/somepago/saint/tree/e288e84c77a54cfd2ffb55a53678fb7cbbb16630). Inspect models/model.py, models/pretrainmodel.py, train.py, data_openml.py. SHA-256 audit in labs/_sources_l047.json.
+- **Why both:** normalization placement, numeric embedding, split proportions, heads, attention dropout, and binary checkpoint selection differ across descriptions. The lesson makes each fidelity choice explicit; reference-stage parity does not establish full training parity.
+- **Course use:** [L047](lessons/0047-saint.html), [reproduction card](reference/saint-reproduction.html). Supervised model + contrastive key-parts exercise; full semi-supervised benchmark remains outside the executed claim.

@@ -45,7 +45,7 @@
     container.className = "cd-diagram-viz";
 
     var svgNS = "http://www.w3.org/2000/svg";
-    var W = 560, H = 230;
+    var W = 640, H = 230;
     var svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.setAttribute("width", "100%");
@@ -57,7 +57,8 @@
     container.appendChild(readout);
 
     // rank axis: 1 (best) on the LEFT ... k (worst) on the RIGHT
-    var PL = 60, PR = W - 60, axisY = 60;
+    var labelWidth = Math.max.apply(null, models.map(function (m) { return (m.name.length + 8) * 6.7; }));
+    var PL = Math.max(160, Math.min(300, labelWidth + 24)), PR = W - 45, axisY = 60;
     var lo = 1, hi = k;
     function rx(r) { return PL + (r - lo) / (hi - lo) * (PR - PL); }
 
@@ -94,7 +95,7 @@
         svg.appendChild(el("text", { x: rx(r), y: axisY - 10, "text-anchor": "middle", class: "cdv-tick" }))
           .textContent = String(r);
       }
-      svg.appendChild(el("text", { x: rx(lo), y: axisY - 26, "text-anchor": "middle", class: "cdv-lab" }))
+      svg.appendChild(el("text", { x: (PL + PR) / 2, y: axisY - 22, "text-anchor": "middle", class: "cdv-lab" }))
         .textContent = "better ← average rank → worse";
 
       // CD ruler (top-left)
@@ -144,7 +145,7 @@
       var msg = selected
         ? "<span class='cdv-pill'>" + selected.name + "</span> is <strong>not</strong> significantly different from the models in green " +
           "(average rank within CD = " + cd.toFixed(3) + "); the rest differ significantly. Click again to clear."
-        : "Friedman p ≈ " + friedmanP + " over N = " + N + " datasets → the ranks differ. " +
+        : "Friedman p ≈ " + friedmanP + " over N = " + N + " datasets → " + (Number(friedmanP) < 0.05 ? "an overall rank difference is detected. " : "no overall rank difference is detected; this does not establish equivalence. ") +
           "Two models are joined by a bar (and so <em>not</em> significantly different) only if their average ranks are within " +
           "CD = " + cd.toFixed(3) + ". <strong>Click a model</strong> to see its non-different group.";
       readout.innerHTML = msg;

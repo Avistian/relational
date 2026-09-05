@@ -1,5 +1,15 @@
 # Teaching Notes
 
+## Session 46 — 2026-09-05
+
+- User reports lesson 46 done; no EXIT evidence pasted, so completion is self-reported and unscored (LR-0108).
+- Lesson 47 follows curriculum SAINT / intersample attention, with supervised from-scratch code, a visible notebook, and Bank paper-results operators.
+- User re-emphasized paper reproducibility and high-quality explanation. Apply standards #17/#24/#25 with explicit paper-vs-code audits; no predetermined winning model.
+- Verified released stage forward and input gradients exactly on transplanted weights. PDF equations and numeric embeddings differ from released code; record source choices rather than treating them as identical.
+- Evaluation context belongs in the ledger: companion membership changes predictions even in eval mode. Local three-table/three-seed ablation is not the paper benchmark; Table 3 pretraining remains untested.
+- The reused CD widget incorrectly assumed significance and left long labels outside its SVG; fixed conditional wording and label margins, verified in the L047 headless checks.
+- Browser download was not approved, so rendered visual verification remains outstanding. Headless checks must not be described as a browser pass.
+
 ## Session 45 — 2026-08-28
 
 - **NEW standard #25 — paper-results scale-up + visible implementation** (user `/teach`): next

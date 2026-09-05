@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SAINT — reproduction card</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/saint-viz.css"></head><body><article>
+<p class="mission-tag">Reference · Lesson 047</p><h1>SAINT: mechanism and reproduction card</h1>
+<p><strong>Row attention:</strong> pack [B,T,d] → [1,B,Td], attend over B rows, restore [B,T,d]. T includes CLS. Each head has B×B weights; a whole row is one sequence element. Do not substitute attention down each individual column.</p>
+<p><strong>Prediction contract:</strong> weights + fitted preprocessing + query + permitted companion rows + batch order/membership. Permuting the same batch reorders outputs; replacing companions can change outputs. No target labels enter the encoder. Availability of held-out features must match the evaluation setting.</p>
+<p><strong>Pretraining:</strong> CutMix raw features, then mixup embedded vectors. Contrastive positives pair a clean row with its own augmented view. Denoising reconstructs original features using categorical cross-entropy or numeric squared error. The supervised lab and Bank runner do not reproduce that full pretraining experiment.</p>
+<h2>Source identity and explicit choices</h2>
+<p><a href="https://arxiv.org/abs/2106.01342v1">Paper v1, 2 June 2021</a> · <a href="https://github.com/somepago/saint/tree/e288e84c77a54cfd2ffb55a53678fb7cbbb16630">released code, pinned commit</a> · <a href="../labs/_sources_l047.json">source hashes and audit</a>.</p>
+<p>Executable stage: LN(x)+F(LN(x)); numeric 1→100→d MLPs; GEGLU; no applied attention dropout. This differs from the PDF’s x+LN(F(x)) and numeric one-layer description. Bank split follows released .65/.15/.20 random assignment; the PDF’s .65/.15/.25 sums to 1.05. Bank checkpoint selection follows the released binary branch: validation accuracy every fifth epoch. Our category vocabulary uses training rows only.</p>
+<h2>Regenerate the local evidence</h2>
+<pre class="equation"># From the relational repository root
+OMP_NUM_THREADS=1 .venv/bin/python labs/_verify_l047.py
+.venv/bin/python labs/_check_l047.py
+.venv/bin/python labs/_build_l047.py
+node labs/_viz_check_l047.js
+node labs/_check_pedagogy.js
+# Read the exact observed environment:
+# labs/requirements-l047.lock.txt</pre>
+<p>These checks do not choose a winning model. The default mechanism command skips the external reference unless its path is passed explicitly. To repeat the weight transplant, download the pinned source and install its small validation dependency in your chosen environment:</p>
+<pre class="equation">curl -L --fail \
+ https://raw.githubusercontent.com/somepago/saint/e288e84c77a54cfd2ffb55a53678fb7cbbb16630/models/model.py \
+ -o /tmp/saint-reference-model.py
+.venv/bin/python -m pip install einops==0.8.2
+.venv/bin/python labs/_check_l047.py \
+ --reference /tmp/saint-reference-model.py</pre>
+<p>Reference stage source SHA-256: <code>c13c8c2c031984f676ccf45bbc78d1f3ffe40c5a0d563acd8cc19f485127de8b</code>. The check validates both forward values and input gradients on transplanted weights. Whole-model reference training parity is not claimed.</p>
+<h2>Required paper-results attempt</h2>
+<pre class="equation">OMP_NUM_THREADS=1 .venv/bin/python labs/_paper_repro_l047.py \
+ --preset smoke --output-dir /tmp/l047-bank-smoke
+modal run --detach modal/l047_paper_repro.py --preset closer
+modal volume get relational-artifacts l047/closer ./l047-bank-results</pre>
+<p>Colab uses the visible gated cell in <a href="../labs/0047-saint.ipynb">the notebook</a>. Set a persistent output directory after mounting Drive. Full-preset runtime is unmeasured; long unattended work belongs on Modal. Completed seeds resume; interrupted seeds restart. Saved best weights are for inference, not exact optimizer resume. Use a new output directory after changing notebook code.</p>
+<div class="table-scroll"><table class="paper-table"><thead><tr><th>Preset</th><th>Rows / epochs / seeds</th><th>Meaning</th></tr></thead><tbody><tr><td>smoke</td><td>600 / 1 / 1</td><td>Pipeline tested; paper score INCOMPARABLE.</td></tr><tr><td>closer</td><td>45,211 / 20 / 3</td><td>Full Bank, d=16; unrun at authoring.</td></tr><tr><td>paper</td><td>45,211 / 100 / 5</td><td>Paper-scale supervised budget, d=32; unresolved gaps still apply.</td></tr></tbody></table></div>
+<p>Target: <strong>Bank Table 2 AUROC 0.9330</strong>, five-trial mean, reported SE 0.0009 in Table 6. Do not confuse it with overall mean 0.9313, accuracy, or local Credit-G results. A proposed ±0.01 absolute tolerance applies only after the protocol is agreed. Current full-preset status: <strong>NOT_RUN</strong>. Executed smoke status: <strong>INCOMPARABLE</strong>. A nearby score alone does not justify MATCH.</p>
+<h2>Minimum saved artifacts</h2>
+<p>Dataset ID/content hash; source versions; selected row IDs; split indices and split seed; train-only means, scales and vocabulary; model and training seeds; architecture and optimizer configuration; evaluation batch membership/order; checkpoint rule; predictions and labels for post-hoc audit; versions/hardware; best weights; explicit protocol gaps. Save failures as well as successes.</p>
+<p><a href="../lessons/0047-saint.html">Full explanation and interactive diagrams</a> · <a href="../labs/_verify_l047_results.json">local experiment ledger</a> · <a href="../labs/_check_l047_results.json">mechanism checks</a>. Ask the teacher about any unresolved source choice before interpreting a reproduction score.</p>
+</article></body></html>
