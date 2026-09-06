@@ -1353,6 +1353,29 @@
   ],
   "correct": "transport",
   "explain": "This is an exact representation argument. Independently optimized models need not find transported weights."
+},
+{
+  "id": "l052-tabr-self-exclusion",
+  "lesson": 52,
+  "quarter": "Q2",
+  "concept": "retrieval-legality",
+  "question": "For a training query, which memory rule blocks direct self-label leakage?",
+  "options": [
+    {
+      "label": "Exclude its own row identity",
+      "value": "id"
+    },
+    {
+      "label": "Exclude all matching feature vectors",
+      "value": "features"
+    },
+    {
+      "label": "Include its own target label",
+      "value": "leak"
+    }
+  ],
+  "correct": "id",
+  "explain": "The query must not retrieve its own label. Feature duplicates and deployment availability need separate audits."
 }
   ];
 })(window);

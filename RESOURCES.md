@@ -301,3 +301,9 @@ _Optional / extension (◆):_
 - [OpenML suite 337](https://www.openml.org/search?type=benchmark&study_type=task&id=337): authors' January 2023 numeric classification release; L051 uses three exact dataset IDs. This release is newer than the paper v1.
 - [Rahaman et al. (2019)](https://proceedings.mlr.press/v97/rahaman19a.html): distinguishes expressivity from frequency-dependent learning behavior.
 - [Demšar (2006)](https://www.jmlr.org/papers/v7/demsar06a.html): dataset-level comparison; only three tasks limits inference here.
+
+## Lesson 052 — TabR source audit
+
+- [TabR v2 — Gorishniy et al. (2023)](https://arxiv.org/abs/2307.14338v2). Read §3.2 Eq. 5, §4 TabR-S and Appendix B for learned distances, corrected label values and deployment eligibility. Distinguish single-model, ensemble and 43-task claims.
+- [Pinned released implementation](https://github.com/yandex-research/tabular-dl-tabr/tree/17baa9082506f8e7a0f8d11bb1e08212926a1507). Validation source and California selected hyperparameters; local audit records neural parity but not full-training parity.
+- [Authors’ data archive](https://huggingface.co/datasets/puhsu/tabular-benchmarks). Source of original train/val/test arrays; L052 records byte ranges and hashes for three numeric tasks.

@@ -1,5 +1,18 @@
 # Teaching Notes
 
+## Session 51 → Lesson 052 — 2026-09-06
+
+- User reports L051 done; LR-0117 records self-reported/unscored completion without EXIT evidence. L052 follows the planned TabR topic; no personal glossary mastery is inferred.
+- Complete numeric TabR-S implemented visibly: linear encoder, learned key-only squared-distance search, label embeddings plus directed correction, residual predictor and head. Four live student functions implement eligibility, neighbors, values and aggregation. Binary classification and regression supported; full TabR embeddings, categories, multiclass and context freeze are outside scope.
+- Pinned upstream revision 17baa9082506f8e7a0f8d11bb1e08212926a1507. Executed official Model AST with copied weights and a torch exact-search adapter: four regression/classification × training/inference cases, max output error 1.20e-7, input-gradient error 5.97e-8. Dropout disabled; no Faiss/runtime/full-training parity claim. Original source and MIT notice preserved.
+- Authors' California, House 16H and Higgs Small arrays extracted via verified byte ranges of their 3 GB archive; offsets and SHA256 hashes recorded. Original splits retained; label-blind row caps 1200/600/600, seeds 52/53/54; model seeds 0/1/2. Train-only median/normal quantiles and regression scaling; quantile jitter omitted.
+- Local 27 fits completed in 40.8 CPU seconds, fixed recipes. Mean ranks MLP 2.667 / TabR-S 2.333 / XGBoost 1.000, Friedman p=.09697, CD=1.91362. Tree recipe leads on all three; TabR-S improves over the matched retrieval-free network on both regression tasks. Conditional seed intervals and inference-only memory-label permutation are shown. INCOMPARABLE to the tuned paper benchmark.
+- Source/model checks, 20 executed solution cells, 27 prediction reconstructions and teacher/reference means pass. Four student TODOs remain blank; six inline PNGs and prepared student HTML included. Live-code smoke fits, resumes completed seeds, and rejects changed helper code. 114 synthetic widget arithmetic/DOM cases and shared pedagogy checks pass.
+- Visuals expose selected scores/weights, label-plus-correction contributions (including cancellation), and event versus label availability. Full architecture and six notebook figures inspected; corrected title spacing and replaced repeated time labels with a shape-coded legend. Browser and live Colab UI NOT_CHECKED (no available browser); copied Pages staging checks pass. Deployment NOT_CHECKED; no cloud job launched.
+- Larger California run completed: 6000 training rows, full released validation/test, d64, m96, 60-epoch cap, three seeds; RMSE 0.45651 ± 0.00400 (sample SD), conditional 95% seed interval [0.44656, 0.46645], 1345.3 CPU seconds. Paper TabR-S .403 remains INCOMPARABLE. Full selected-configuration preset stays NOT_RUN.
+- Both Modal and gated Colab operators supplied with smoke/closer/paper presets. The paper preset uses the pinned selected California d303 configuration and 15 seeds but retains explicit preprocessing/RNG/library/finite-cap deviations. Resume contract includes live code, data, settings and environment; all paper comparisons remain INCOMPARABLE.
+
+
 ## Session 50 → Lesson 051 — 2026-09-06
 
 - User reports L050 done; recorded as self-reported/unscored without EXIT evidence in LR-0116. L051 begins planned Y2 Q2 with Grinsztajn §5: re-derive smoothness, orientation and irrelevant-feature sensitivity. No new model is introduced.

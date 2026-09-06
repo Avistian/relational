@@ -255,6 +255,14 @@
   "lesson": 51,
   "front": "Which matched control does each \u00a75 intervention require?",
   "back": "Smooth only training labels and compare with the same selected features; rotate all splits with one invertible matrix; append independent noise without altering original values. Report effects conditional on the split, intervention and training recipe. Transported MLP weights do not establish independent Adam training invariance."
+},
+{
+  "id": "gorishniy2023-tabr-equation5",
+  "paper": "Gorishniy et al. \u2014 TabR",
+  "year": 2023,
+  "lesson": 52,
+  "front": "What are TabR\u2019s final similarity and value functions, and what must be excluded?",
+  "back": "Use shared keys and negative squared L2 distance, without dimension scaling. Value = label embedding + T(query key minus neighbor key). Exclude the query\u2019s own training row; enforce deployment-time label availability. The retrieved vector is added to the query representation before the prediction head."
 }
   ];
 })(window);

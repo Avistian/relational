@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TabR retrieval reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<nav><a href="../index.html">Course</a> · <a href="../lessons/0052-tabr-retrieval.html">Lesson 052</a> · <a href="glossary.html">Glossary</a></nav><h1>TabR: retrieval contract</h1>
+<p><strong>TabR-S:</strong> shared linear encoder → one learned retrieval module → residual addition → one residual predictor block → prediction head. No numerical embeddings or pretraining. Both training and inference retain access to a labeled training memory.</p>
+<table><thead><tr><th>Operation</th><th>Equation / shape</th><th>Audit question</th></tr></thead><tbody>
+<tr><td>Encode</td><td>h=E(x), k=K(h), [B,d]</td><td>Do query and candidate paths share parameters and train-fitted preprocessing?</td></tr>
+<tr><td>Eligibility</td><td>query_id ≠ candidate_id, [B,N]</td><td>Could this candidate label legally be known for this query?</td></tr>
+<tr><td>Search</td><td>top-m of −‖k−kᵢ‖²</td><td>Are masked rows excluded before selection? Are there enough legal rows?</td></tr>
+<tr><td>Weight</td><td>softmax over m, [B,m]</td><td>No 1/√d in final TabR. Dropout follows softmax without renormalization.</td></tr>
+<tr><td>Value</td><td>Wᵧ(yᵢ)+T(k−kᵢ), [B,m,d]</td><td>Is the difference directed correctly? No query label enters here.</td></tr>
+<tr><td>Aggregate</td><td>r=Σᵢ dropout(pᵢ)vᵢ, [B,d]</td><td>Are selected distances and values differentiated?</td></tr>
+<tr><td>Predict</td><td>P(h+r), [B,1]</td><td>A weighted label average is not the final model output.</td></tr></tbody></table>
+<p><strong>Symbols:</strong> B queries, N candidate rows, d hidden coordinates, m context rows. Wᵧ is a class embedding or a scalar-to-vector regression map. T is Linear→ReLU→Dropout→LinearWithoutBias. Its first bias means T(0) need not be zero.</p>
+<h2>Three distinct boundaries</h2><p>Keep validation/test labels out of memory. Exclude the exact training query ID. Match deployment availability, including delayed labels and entity/group restrictions. Feature equality alone does not identify the query. Context freeze fixes neighbor IDs; it does not freeze the model’s gradients.</p>
+<h2>Evidence language</h2><p>Source parity checks a specified computation with copied weights. A fixed-budget local comparison estimates a different experiment from a tuned benchmark. Seed intervals condition on the split; rank tests use datasets as blocks. Permuting stored labels after training measures reliance on aligned labels, not performance after retraining without them.</p>
+<p>Paper target: TabR-S California RMSE 0.403, Table 3, 15 single-model seeds. Full TabR .400 and ensemble results are different targets. L052’s replay remains INCOMPARABLE due to named protocol differences. <a href="https://arxiv.org/abs/2307.14338v2">Primary source: §3.2, Equation 5, §4, Appendix B</a> · <a href="../labs/l052-reproduction.md">Reproduction record</a>.</p>
+</article></body></html>
