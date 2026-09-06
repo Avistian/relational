@@ -1,0 +1,18 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fair model comparison · checkpoint reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<h1>Fair model comparison</h1><p class="subtitle">A compact audit before claiming a neural model beats trees.</p><p><a href="../lessons/0050-q1-checkpoint.html">Lesson 050</a> · <a href="claim-audit.html">Claim scope</a> · <a href="glossary.html">Glossary</a></p>
+<table><thead><tr><th>Decision</th><th>Rule to freeze</th></tr></thead><tbody>
+<tr><td>Population</td><td>Dataset IDs, task definitions, positive class, source hashes and exclusions.</td></tr>
+<tr><td>Information</td><td>Split first. Fit every imputer, scale and encoding using training rows only.</td></tr>
+<tr><td>Search</td><td>Declare family-specific candidates, count or time budget, stopping criterion and tie rule.</td></tr>
+<tr><td>Selection</td><td>Validation chooses the candidate and checkpoint. Test evaluates the frozen choice.</td></tr>
+<tr><td>Repeats</td><td>Record split seeds separately from training seeds. Save actual row IDs.</td></tr>
+<tr><td>Uncertainty</td><td>Pair differences within each task; state what changes across repeats.</td></tr>
+<tr><td>Across tasks</td><td>Average seeds first, then rank each task. N is datasets, not seed fits.</td></tr>
+<tr><td>Paper boundary</td><td>Match table, metric, model variant, preprocessing, split, tuning and aggregation.</td></tr>
+</tbody></table>
+<h2>Minimal arithmetic</h2><p>Per-seed difference: δₛ=AUROC(FT-T)ₛ−AUROC(XGB)ₛ. Report δ̄, sample SD and, if useful, the conditional interval δ̄ ± t₀.₉₇₅,S−1 sδ/√S. At S=3, t≈4.303. This interval excludes uncertainty over other splits and populations.</p>
+<p>Rank task means, with shared ranks for ties. Friedman applies to three or more arms; Nemenyi CD=qα√[k(k+1)/(6N)]. With k=N=3, CD≈1.914. For two families, an exact sign test across independent non-tied datasets is a useful small-N check: even 3–0 has two-sided p=0.25.</p>
+<h2>Claim template</h2><p>“On [named tasks], under [split/preprocessing/search policy], A exceeded B on [count] tasks with [per-task differences]. Uncertainty covers [unit]. This does not establish [broader claim]. The paper comparison is [verdict] because [named protocol differences]. Next we will predeclare [experiment].”</p>
+<p>Overlapping error bars do not prove a tie. A nonsignificant test does not prove equivalence. Equal trials do not guarantee equal compute. An ensemble metric is computed after combining predictions; it differs from averaging seed metrics. A close number with a mismatched protocol remains INCOMPARABLE.</p>
+<p>Sources: <a href="https://arxiv.org/html/2106.11959v5">Gorishniy et al. (2021), §4 and Appendix D.2</a>; <a href="https://www.jmlr.org/papers/v7/demsar06a.html">Demšar (2006)</a>.</p>
+</article></body></html>

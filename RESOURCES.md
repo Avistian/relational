@@ -284,3 +284,11 @@ _Optional / extension (◆):_
 - [Authors' prepared dataset release](https://huggingface.co/datasets/jyansir/excelformer): L049 uses original split files for one Pima variant, Breast Cancer Dataset and Swiss banknote. File hashes and exact names are in `labs/relkit/claim_data.py`; upstream fit-scope provenance is not independently reconstructed.
 - [Trompt v2 / ICML 2023](https://arxiv.org/html/2305.18446v2): §3 Eq.1–9, §4.2 subgroup limits, Appendix A.4 / F search accounting. Full benchmark unreplicated; key parts only in the lab.
 - [MovieLens 1M](https://grouplens.org/datasets/movielens/1m/): real timestamps for a separate transfer probe using the existing checked archive. This is neither paper's reported protocol; snapshot feature availability remains a limitation.
+
+
+## Lesson 050 — fair comparison checkpoint (2026-09-06)
+
+- Gorishniy et al., *Revisiting Deep Learning Models for Tabular Data*, arXiv 2106.11959v5: https://arxiv.org/html/2106.11959v5 — §4.5 separates ensemble comparison from Table 2 individual models; Appendix D.2 examines time budgets; Appendix E defines FT-T. Checked against the primary text for L050.
+- Authors' reference: https://github.com/yandex-research/rtdl-revisiting-models — installed `rtdl_revisiting_models==0.0.2` used only for copied-weight numeric evaluation parity; source SHA saved in L050 results.
+- Demšar, *Statistical Comparisons of Classifiers over Multiple Data Sets* (JMLR 2006): https://www.jmlr.org/papers/v7/demsar06a.html — dataset-level ranks and Friedman/Nemenyi. With three tasks the lesson treats inference as low-power and adds the exact sign test for the primary pair.
+- XGBoost Python documentation: https://xgboost.readthedocs.io/en/stable/python/python_intro.html#early-stopping — validation monitoring and best-iteration behavior; local measured version 3.3.0.

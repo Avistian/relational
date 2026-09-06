@@ -1,0 +1,1 @@
+window.CHECKPOINT_RESULTS = {"mean_ranks": {"FT-Transformer": 1.3333333333333333, "XGBoost": 2.3333333333333335, "MLP": 2.3333333333333335}, "statistics": {"friedman_chi2": 2.0, "friedman_p": 0.36787944117144245, "nemenyi_cd": 1.9136235154962777, "exact_sign_p": 1.0, "ft_wins": 2, "ft_losses": 1, "independent_units": 3}};

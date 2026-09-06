@@ -1,5 +1,18 @@
 # Teaching Notes
 
+## Session 49 → Lesson 050 — 2026-09-06
+
+- User reports L049 complete; self-reported and unscored without EXIT evidence (LR-0114). L050 implements the planned Q1 checkpoint: FT-Transformer versus XGBoost on three tasks, with an MLP baseline.
+- New numeric FT-T uses ReGLU and skips the first attention LayerNorm. Copied-weight logits and input gradients match installed rtdl_revisiting_models 0.0.2 exactly in the checked eval path. L046 remains a separate GELU teaching variant; its full-frame preprocessing is not reused.
+- Local protocol: OpenML diabetes, blood transfusion, phoneme; training-only median/standard scaling; fixed stratified 60/20/20 split seed 50; model seeds 0/1/2; two validation-selected candidates per arm. All model/trainer/experiment code is visible in the notebook, with four live student functions.
+- Actual AUROC means: FT-T .79241/.81278/.93483, XGBoost .79086/.78107/.94358, MLP .79123/.80945/.90473. FT-T leads 2/3; Friedman p=.367879, Nemenyi CD=1.913624, exact sign p=1.0. Seed intervals condition on one split; nonsignificance is not equivalence. Local training ~91 s CPU.
+- Paper audit: Table 2 individual-model metrics and Table 4 ensemble tree/neural comparison are distinct. Higgs Small in this paper is already the ~98k task; requiring full multi-million-row Higgs would be the wrong target.
+- Larger run completed: 6000 Higgs Small rows, d64/3 blocks, 50 epochs/400 trees, 3 seeds, ~1814 s CPU. Accuracy FT-T .68306 ± .00394, XGBoost .68472 ± .00210, MLP .64833 ± .00546 (sample SD). INCOMPARABLE to Table 2 .729 because splits/preprocessing/search/repetitions differ. Full resource preset and ensemble suite NOT_RUN. Both Modal and gated live-code Colab operators supplied; no Modal job launched.
+- Teacher solution: all 23 code cells executed through nbconvert after approval for local kernel sockets; local scores reproduced exactly. Subsequent markdown/image refresh preserved code and outputs. Five portable inline PNGs, prepared HTML, lesson/reference/navigation and publication asset packaging included.
+- Verification: held-out intervention, ReGLU gradients, reference parity, validation selection, paired uncertainty, live student-code path, saved prediction/selection arithmetic, notebook/link/image integrity, pedagogy and synthetic widget state checks. Larger evidence includes an exact archived operator; the current operator adds notebook-identity and environment guards. Completed-seed resume is checked; changed identities are rejected.
+- Browser and live Colab UI NOT_CHECKED: no installed browser found. Original PNGs inspected; a ReGLU title collision was fixed. New protocol visuals compare unchanged training rows against a held-out intervention and validation selection against test peeking; the paired plot makes the uncertainty unit explicit. This is an improvement in explanation over score-only widgets, not a browser verification claim.
+
+
 ## Session 48 → Lesson 049 — 2026-09-05
 
 - User reports L048 done, unscored without EXIT evidence (LR-0112). L049 follows the planned claim-audit topic and ships the lesson, student notebook, executed teacher solution, prepared HTML, reference, measured experiments and reproduction operators.

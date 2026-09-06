@@ -22,6 +22,16 @@
   "use strict";
 
   global.RETRIEVAL_POOL = [
+    {
+      id: "l050-dataset-unit", lesson: 50, quarter: "Q1", concept: "experimental-unit",
+      question: "Three tasks with three training seeds each: what enters the across-task rank analysis?",
+      options: [
+        {label: "Three task-level model rankings", value: "a"},
+        {label: "Nine seed-level model rankings", value: "b"},
+        {label: "Twenty-seven fit-level model rankings", value: "c"}
+      ], correct: "a",
+      explain: "Average seed scores within each task, then rank. Repeated training on the same test rows does not create independent datasets."
+    },
     // ---- Q1: leakage & evaluation spine ----
     {
       id: "l001-forcing", lesson: 1, quarter: "Q1", concept: "design-matrix",
