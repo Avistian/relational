@@ -292,3 +292,12 @@ _Optional / extension (◆):_
 - Authors' reference: https://github.com/yandex-research/rtdl-revisiting-models — installed `rtdl_revisiting_models==0.0.2` used only for copied-weight numeric evaluation parity; source SHA saved in L050 results.
 - Demšar, *Statistical Comparisons of Classifiers over Multiple Data Sets* (JMLR 2006): https://www.jmlr.org/papers/v7/demsar06a.html — dataset-level ranks and Friedman/Nemenyi. With three tasks the lesson treats inference as low-power and adds the exact sign test for the primary pair.
 - XGBoost Python documentation: https://xgboost.readthedocs.io/en/stable/python/python_intro.html#early-stopping — validation monitoring and best-iteration behavior; local measured version 3.3.0.
+
+
+## Lesson 051 — intervention audit (2026-09-06)
+
+- [Grinsztajn et al., v1 §5 and A.4](https://arxiv.org/html/2207.08815v1): source of the three-bias investigation. Use alongside code, not as an unrestricted model ranking.
+- [Pinned released transformations](https://github.com/LeoGrin/tabular-benchmark/blob/9d54cf53d9fd3159e367e70a00005f4fcbf2c79d/src/data_transforms.py): verify strict hard-label threshold, common rotation and training-moment-matched noise; our noise variant follows the paper caption instead.
+- [OpenML suite 337](https://www.openml.org/search?type=benchmark&study_type=task&id=337): authors' January 2023 numeric classification release; L051 uses three exact dataset IDs. This release is newer than the paper v1.
+- [Rahaman et al. (2019)](https://proceedings.mlr.press/v97/rahaman19a.html): distinguishes expressivity from frequency-dependent learning behavior.
+- [Demšar (2006)](https://www.jmlr.org/papers/v7/demsar06a.html): dataset-level comparison; only three tasks limits inference here.

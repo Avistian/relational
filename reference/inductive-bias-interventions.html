@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inductive bias — intervention reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<nav><a href="../index.html">Course</a> · <a href="../lessons/0051-why-trees-still-win.html">Lesson 051</a> · <a href="glossary.html">Glossary</a></nav>
+<p class="mission-tag">Reference · experimental diagnosis</p><h1>Three interventions, three contracts</h1>
+<p>An inductive bias is a learning preference under limited evidence. A response to an intervention is evidence about the specified training procedure. It is not proof that a model family cannot represent the target.</p>
+<table><thead><tr><th>Question</th><th>Change</th><th>Keep fixed</th><th>Effect baseline</th></tr></thead><tbody>
+<tr><td>Does fitting depend on short-range target variation?</td><td>Gaussian-average training labels; threshold at &gt;0.5</td><td>Top-five columns, raw evaluation labels</td><td>Unsmoothed top-five training</td></tr>
+<tr><td>Does fitting exploit individual coordinates?</td><td>X′=XR on every split</td><td>Rows, labels, recoverable information</td><td>Original full-feature training</td></tr>
+<tr><td>Does fitting suffer from irrelevant inputs?</td><td>Append independent noise columns</td><td>Original feature block and evaluation labels</td><td>Original full-feature training</td></tr></tbody></table>
+<h2>Calculations to reconstruct from memory</h2>
+<p><strong>Smoothing:</strong> d²=(xᵢ−xⱼ)ᵀC⁻¹(xᵢ−xⱼ); w=exp(−d²/(2h²)); pᵢ=Σwᵢⱼyⱼ/Σwᵢⱼ. Include self-weight. At h=0 return original y. The released classification function maps p&gt;0.5 to 1, otherwise 0. C, feature selection and quantile transforms must be trained without held-out labels.</p>
+<p><strong>Rotation:</strong> RᵀR=I, so (XR)Rᵀ=X. For first-layer weights W, W′=WR gives (XR)(WR)ᵀ=XWᵀ. This is transported-weight equivalence. Independently initialized AdamW runs need not match.</p>
+<p><strong>Noise search:</strong> Gini impurity = 2p(1−p). Gain = parent impurity − weighted child impurity. The maximum training gain over more candidate splits cannot decrease. Trees can overfit noise. A width-H dense first layer adds H weights per additional input; count alone does not determine test error.</p>
+<h2>Readout and interpretation</h2>
+<p>Use paired effects: Δₛ=accuracy(changed, seed s)−accuracy(baseline, seed s). Report the mean, sample SD and a clearly labeled conditional seed interval. Repeat rotations, noise realizations, splits or tasks to study those sources of uncertainty; repeating only model seeds does not cover them.</p>
+<p>Rank models within each dataset. The unit for cross-dataset inference is the dataset. A small Friedman p across a selectively chosen condition is not a universal winner certificate; account for exploratory multiplicity. A large p is not equivalence.</p>
+<h2>Source and reproduction boundaries</h2>
+<p><a href="https://arxiv.org/html/2207.08815v1#S5">Grinsztajn et al. (2022), §5 / A.4</a> supplies the investigation. Read the <a href="https://github.com/LeoGrin/tabular-benchmark/blob/9d54cf53d9fd3159e367e70a00005f4fcbf2c79d/src/data_transforms.py">pinned code</a> to audit thresholding and the added-noise distribution. L051 uses the later OpenML suite 337, three tasks, smaller samples and fixed local training recipes: <strong>INCOMPARABLE</strong> to original benchmark curves. Numerical transformation parity checks one specified operation, not the full experiment.</p>
+<p><a href="../labs/l051-reproduction.md">Reproduction contract</a> · <a href="fair-comparison-checkpoint.html">Fair comparison reference</a></p>
+</article></body></html>

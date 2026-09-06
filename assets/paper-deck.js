@@ -93,10 +93,13 @@
       back: "Train a meta-learner on the predictions of base learners. The rule: base predictions must be out-of-fold (a row predicted by models that didn't train on it), else the meta-learner crowns the memorizer. Diversity among bases is the fuel."
     },
     {
-      id: "grinsztajn2022", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win", year: 2022, lesson: 19,
-      front: "Grinsztajn et al. 2022 — the three inductive biases behind tree dominance on tabular data?",
-      back: "(1) Trees fit irregular / non-smooth targets (MLPs are smoothness-biased); (2) trees are robust to uninformative features (implicit feature selection); (3) trees respect orientation / are not rotationally invariant (columns are individually meaningful). Edge is a medium-data, single-table phenomenon."
-    },
+  "id": "grinsztajn2022",
+  "paper": "Grinsztajn, Oyallon & Varoquaux — Why trees win",
+  "year": 2022,
+  "lesson": 19,
+  "front": "What three properties does the tabular-bias investigation test?",
+  "back": "Irregular target variation, irrelevant inputs and meaningful feature coordinates. Their effects depend on the dataset and training protocol; the paper’s interventions support conditional explanations, not eternal rankings."
+},
     {
       id: "rubachev2024", paper: "Rubachev et al. — TabReD", year: 2024, lesson: 21,
       front: "Rubachev et al. 2024 (TabReD) — what do random splits do to tabular evaluation, and what is the fix?",
@@ -113,20 +116,29 @@
       back: "Two pillars. (§3) Explicit dataset-selection criteria applied to a large OpenML pool: real, tabular, medium-sized, heterogeneous columns (not pixels), not too high-dimensional, not too easy. (§4) Report a random-search BUDGET CURVE, not one tuned number: for each model plot the expected test score of the best-VALIDATION config after k iterations, averaged over draw orderings — showing both the default (k=1) and the tuned ceiling. Aggregate across datasets via affine per-dataset normalization (worst→0, best→1), since raw accuracies are incommensurable. Result: GBTs beat NN families at every budget and are stronger defaults."
     },
     {
-      id: "grinsztajn2022-smoothness", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win (§5.2, smoothness)", year: 2022, lesson: 25,
-      front: "Grinsztajn et al. 2022 (§5.2, Finding 1) — what is the first inductive bias behind tree dominance, and the experiment that proves it?",
-      back: "Neural nets are biased toward overly SMOOTH (low-frequency) solutions (the spectral bias, Rahaman 2019), while tabular targets are typically irregular — so an MLP over-smooths them and a piecewise-constant tree follows the jags. Proof: Gaussian-smooth the TARGET at a growing length-scale and refit; the tree-vs-MLP gap collapses toward zero exactly as the high-frequency variance is erased (repro: gap +0.33 R² → ~0). The tree's edge WAS the irregularity, not raw model strength."
-    },
+  "id": "grinsztajn2022-smoothness",
+  "paper": "Grinsztajn, Oyallon & Varoquaux — Why trees win (§5.2, smoothness)",
+  "year": 2022,
+  "lesson": 25,
+  "front": "How should you isolate the response to smoothing training targets?",
+  "back": "Keep selected features and original evaluation targets fixed. Gaussian-average training targets; the released classifier thresholds them strictly above .5. A changed performance gap supports a smoothness-bias explanation under that recipe, not a unique causal proof."
+},
     {
-      id: "grinsztajn2022-rotation", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win (§5.4, rotation)", year: 2022, lesson: 26,
-      front: "Grinsztajn et al. 2022 (§5.4, Finding 3) — what is the rotation bias, and the experiment that proves it?",
-      back: "A learner is rotationally invariant (Ng 2004) if applying the same orthogonal Q to train+test features leaves its score unchanged. MLPs/ResNets are invariant (W·(Qx)=(WQ)·x); trees are NOT (axis-aligned splits are tied to the original basis), nor are FT-Transformers (pointwise tokenizer). Tabular columns carry individual meaning, so the original basis is privileged — invariance is a liability. Proof: a random rotation leaves the MLP unmoved but collapses trees, REVERSING the ranking (repro: tree 0.987→0.747, MLP 0.862→0.869). Ng's theorem links it to junk features: an invariant learner's sample complexity grows ≥ linearly in the number of uninformative features. Per-feature embeddings (SAINT, FT-Transformer) break the invariance and recover much of the gap."
-    },
+  "id": "grinsztajn2022-rotation",
+  "paper": "Grinsztajn, Oyallon & Varoquaux — Why trees win (§5.4, rotation)",
+  "year": 2022,
+  "lesson": 26,
+  "front": "Why can an invertible rotation change a model’s measured accuracy?",
+  "back": "Information survives because the same inverse recovers all rows, but convenient coordinate-aligned boundaries change. Transporting an MLP first-layer weight matrix preserves activations. Independent Adam training need not follow that exact transported solution."
+},
     {
-      id: "grinsztajn2022-uninformative", paper: "Grinsztajn, Oyallon & Varoquaux — Why trees win (§5.3, uninformative features)", year: 2022, lesson: 27,
-      front: "Grinsztajn et al. 2022 (§5.3, Finding 2) — what is the uninformative-features bias, and the experiment that proves it?",
-      back: "MLP-like architectures are NOT robust to uninformative (junk) features; trees are. Mechanism: a tree grows greedily and only splits on the highest-GAIN feature, so a pure-noise column (≈0 gain) is never chosen — implicit feature selection. An MLP wires every feature into its first layer and (being rotationally invariant, Ng 2004) needs ≥ linearly more samples per junk feature, leaking capacity onto noise. Proof (two ablations): ADD junk → the tree–MLP gap widens (repro: on a smooth target the MLP wins clean 0.986 vs GBT 0.945, but 100 junk cols cost the MLP 0.084 vs the GBT 0.032, reversing the ranking); REMOVE junk → the gap shrinks (helps the MLP more). The gate is visible as root-split gain ~118× higher on informative than junk features."
-    },
+  "id": "grinsztajn2022-uninformative",
+  "paper": "Grinsztajn, Oyallon & Varoquaux — Why trees win (§5.3, uninformative features)",
+  "year": 2022,
+  "lesson": 27,
+  "front": "Why can population-independent features change test performance?",
+  "back": "Finite samples can contain accidental patterns. Trees select high training gain and can overfit noise; dense networks add parameters and can also learn to ignore inputs. The paper reports relative sensitivity under its protocol. A local positive or null effect is not a contradiction of independence."
+},
     {
       id: "demsar2006", paper: "Demšar — Statistical Comparisons of Classifiers", year: 2006, lesson: 23,
       front: "Demšar 2006 — how should you compare classifiers over multiple datasets, and why not the obvious tests?",
@@ -235,6 +247,14 @@
   "lesson": 49,
   "front": "Where does Trompt obtain sample-specific feature weights without a language model?",
   "back": "Learned prompts are fused with the previous cell output before scoring learned column embeddings. Softmax over columns makes per-prompt feature distributions. Row dependence enters through the previous state; the prompts and column embeddings themselves are shared learned parameters."
+},
+{
+  "id": "grinsztajn2022-l051-controls",
+  "paper": "Grinsztajn et al. \u2014 three intervention contracts",
+  "year": 2022,
+  "lesson": 51,
+  "front": "Which matched control does each \u00a75 intervention require?",
+  "back": "Smooth only training labels and compare with the same selected features; rotate all splits with one invertible matrix; append independent noise without altering original values. Report effects conditional on the split, intervention and training recipe. Transported MLP weights do not establish independent Adam training invariance."
 }
   ];
 })(window);

@@ -147,3 +147,8 @@ Status legend: **active** = still re-testing · **retired** = answered correctly
 
 *Seeded 2026-07-08 from learning records 0001–0051. Add new rows as misconceptions surface; keep the
 matching entry in `assets/retrieval-pool.js` in sync.*
+
+
+## L051 course wording correction (author audit; not a learner diagnosis)
+
+The shared glossary and existing retrieval/card IDs for L019/L025–L027 now distinguish transported neural weights from independently trained Adam predictions, and empirical noise robustness from immunity. A smoothing response supports a conditional explanation; it does not prove a unique mechanism. These corrections came from reviewing course materials, not from a new learner answer. Preserve existing scheduling IDs and do not mark mastery or retire misconceptions from this authoring work.
