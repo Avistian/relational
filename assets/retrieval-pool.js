@@ -1376,6 +1376,29 @@
   ],
   "correct": "id",
   "explain": "The query must not retrieve its own label. Feature duplicates and deployment availability need separate audits."
+},
+{
+  "id": "l053-default-meta-test",
+  "lesson": 53,
+  "quarter": "Q2",
+  "concept": "meta-test-defaults",
+  "question": "Which change compromises an untouched meta-test benchmark?",
+  "options": [
+    {
+      "label": "Redesign defaults using its results",
+      "value": "bad"
+    },
+    {
+      "label": "Select checkpoints using validation rows",
+      "value": "val"
+    },
+    {
+      "label": "Train parameters using training rows",
+      "value": "train"
+    }
+  ],
+  "correct": "bad",
+  "explain": "Meta-test datasets evaluate the already frozen procedure. Recipe redesign makes them development data; validation checkpoint selection may already be part of the fixed procedure."
 }
   ];
 })(window);

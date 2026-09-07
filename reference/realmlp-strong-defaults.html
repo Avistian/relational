@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RealMLP · strong-defaults reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<nav><a href="../lessons/0053-realmlp-strong-defaults.html">Lesson 053</a> · <a href="glossary.html#strong-defaults">Glossary</a></nav><h1>RealMLP: recipe and evaluation boundaries</h1>
+<p><strong>Default on a new task ≠ never tuned.</strong> Develop the recipe on meta-train datasets, freeze it, then evaluate on separate meta-test datasets. Within each task, fit weights on training rows, choose an epoch on validation, and score once on test.</p>
+<h2>Numeric TD-S forward pass</h2><p>Train-fitted robust scale → smooth clip → learned coordinate scales → three NTP linear/activation stages → zero-initialized NTP head. Hidden width 256 in the published recipe; two logits for binary classification, one standardized target for regression. No retrieval or pretraining.</p>
+<table><thead><tr><th>Component</th><th>Exact rule</th></tr></thead><tbody>
+<tr><td>Robust scale</td><td>Subtract training median. Multiply by 1/IQR; if IQR=0 use 2/range; if constant use 0.</td></tr>
+<tr><td>Smooth clip</td><td>z/√(1+z²/9), strictly within (−3,3) for finite z in exact arithmetic.</td></tr>
+<tr><td>Feature scales</td><td>h=u⊙s; initialize s=1; scale learning rate ×6.</td></tr>
+<tr><td>NTP linear</td><td>hW/√dᵢₙ+b. Bias is outside the width scaling.</td></tr>
+<tr><td>Initialization</td><td>Standard normal hidden weights/biases; zero output weights/bias.</td></tr>
+<tr><td>Activation</td><td>SELU for classification; Mish for regression, both non-parametric.</td></tr>
+<tr><td>Loss</td><td>Cross-entropy, label smoothing 0.1; regression MSE.</td></tr>
+<tr><td>Optimization</td><td>Adam, β=(0.9,0.95), ε=1e−8, zero weight decay; no dropout.</td></tr>
+<tr><td>Rates</td><td>Base 0.04 classification / 0.07 regression; factors scale 6, weight 1, bias 0.1.</td></tr>
+<tr><td>Schedule</td><td>½[1−cos(2πlog₂(1+15t))], where t is optimizer-step progress.</td></tr>
+<tr><td>Selection</td><td>Train 256 epochs, batch 256; restore last best validation epoch. No patience stop.</td></tr>
+</tbody></table>
+<p>TD-S omits full TD’s embeddings, parametric activations, data-dependent initialization, scheduled dropout/weight decay and regression output clipping. The lab additionally excludes categorical encoding.</p>
+<h2>Interpretation checks</h2><p>State the search budget before saying “tuned.” Test error need not improve when validation error improves. A small feature scale is not a causal importance measure. A fresh row split does not undo dataset-level recipe development. A nonsignificant Friedman result is not proof of equivalence.</p>
+<p>Local evidence: three TabR-release splits, row caps 1200/600/600, three seeds, numeric TD-S width64/64epochs, six XGB candidates. Mean ranks: TD-S 3.000, XGB-fixed 1.667, XGB-tuned 1.333; Friedman p=.09697, CD=1.91362. <strong>INCOMPARABLE</strong> to the paper benchmark. Larger California TD-S evidence is a single-task demonstration; see the <a href="../labs/l053-reproduction.md">contract</a> for its measured numbers and limitations.</p>
+<p>Primary sources: <a href="https://arxiv.org/html/2407.04491v3">paper §2–3, Table A.1 and Appendix A.2</a>; <a href="https://github.com/dholzmueller/realmlp-td-s_standalone/tree/a8c73f75dbeae4ab1ba5bc92372c444ffa0f766e">pinned standalone implementation</a>. Our target scaling follows its training-only statistics, while the paper text describes train-plus-validation scaling.</p>
+</article></body></html>

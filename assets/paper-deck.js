@@ -263,6 +263,14 @@
   "lesson": 52,
   "front": "What are TabR\u2019s final similarity and value functions, and what must be excluded?",
   "back": "Use shared keys and negative squared L2 distance, without dimension scaling. Value = label embedding + T(query key minus neighbor key). Exclude the query\u2019s own training row; enforce deployment-time label availability. The retrieved vector is added to the query representation before the prediction head."
+},
+{
+  "id": "holzmuller2024-realmlp-defaults",
+  "paper": "Holzm\u00fcller et al. \u2014 Better by Default",
+  "year": 2024,
+  "lesson": 53,
+  "front": "How can RealMLP be default and still involve tuning?",
+  "back": "Its recipe was developed across meta-train datasets. On a new task it fits new weights with fixed hyperparameters and may select a validation checkpoint. Recipe changes informed by meta-test results contaminate dataset-level evaluation. TD-S is the simplified variant, not full TD."
 }
   ];
 })(window);

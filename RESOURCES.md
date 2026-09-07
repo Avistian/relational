@@ -307,3 +307,10 @@ _Optional / extension (◆):_
 - [TabR v2 — Gorishniy et al. (2023)](https://arxiv.org/abs/2307.14338v2). Read §3.2 Eq. 5, §4 TabR-S and Appendix B for learned distances, corrected label values and deployment eligibility. Distinguish single-model, ensemble and 43-task claims.
 - [Pinned released implementation](https://github.com/yandex-research/tabular-dl-tabr/tree/17baa9082506f8e7a0f8d11bb1e08212926a1507). Validation source and California selected hyperparameters; local audit records neural parity but not full-training parity.
 - [Authors’ data archive](https://huggingface.co/datasets/puhsu/tabular-benchmarks). Source of original train/val/test arrays; L052 records byte ranges and hashes for three numeric tasks.
+
+
+## Lesson 053 — RealMLP and strong defaults (2026-09-07)
+
+- **Core paper:** Holzmüller, Grinsztajn & Steinwart, [Better by Default](https://arxiv.org/html/2407.04491v3). Read §2 for dataset-level meta-train/meta-test, §3 for the recipe, Table A.1 and Appendix A.2 for TD-S. Verified live during authoring.
+- **Primary code:** [Standalone TD-S](https://github.com/dholzmueller/realmlp-td-s_standalone/tree/a8c73f75dbeae4ab1ba5bc92372c444ffa0f766e), pinned source and MIT license under labs/sources/l053. Independent numeric forward and gradient parity checked.
+- **Full benchmark and toolkit:** [pytabkit](https://github.com/dholzmueller/pytabkit), inspected revision c126ea51187c5080b91f28d352481dbd3b2194b0. Its README links the [benchmark archive](https://doi.org/10.18419/darus-4555); exact benchmark reconstruction remains unrun.

@@ -1,5 +1,13 @@
 # Teaching Notes
 
+## Session 52 → Lesson 053 — 2026-09-07
+
+- User reports L052 done; LR-0118 records self-reported, unscored completion. L053 follows the planned RealMLP and strong-defaults topic; no personal mastery inferred.
+- Numeric TD-S forward/training recipe is visible; four live TODOs implement robust statistics, smooth clipping, NTP and coslog4. Full TD and categorical paths are excluded. Source parity checks pinned standalone preprocessing, full copied-weight forward/input gradients and schedule.
+- Three cached TabR-release tasks, capped 1200/600/600, label-blind seeds 53/54/55, model seeds 0/1/2; width64/64epochs, six-candidate XGB search with validation selection. Mean ranks TD-S 3 / fixed XGB 1.667 / tuned XGB 1.333; Friedman p=.09697, CD=1.91362. Search harms House mean test error despite selecting on validation.
+- Larger California run: 6000 rows, full released validation/test, width256/256epochs, 3 seeds; RMSE .53024 ± .00493 (sample SD), conditional 95% interval [.51798,.54249], 372 CPU seconds. Exact measured operator archived; current operator corrects only a ledger label. Both local and larger results remain INCOMPARABLE to the paper benchmark. Full benchmark and paper preset NOT_RUN.
+- Student/solution notebooks, prepared HTML, source/data provenance, reference card, portable figures, live Colab gate and Modal runner ship together. Verification status is recorded in labs/_delivery_l053_results.json.
+
 ## Session 51 → Lesson 052 — 2026-09-06
 
 - User reports L051 done; LR-0117 records self-reported/unscored completion without EXIT evidence. L052 follows the planned TabR topic; no personal glossary mastery is inferred.
