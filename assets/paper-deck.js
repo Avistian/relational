@@ -279,6 +279,14 @@
   "lesson": 54,
   "front": "What is TabM, and why do its k predictions beat any one of them?",
   "back": "TabM is a parameter-efficient ensemble of MLPs: one shared backbone W with per-member ±1 adapters (BatchEnsemble, Wᵢ = W ⊙ (sᵢ rᵢᵀ)), producing k predictions averaged at inference (default k=32). The submodels are trained jointly and share weights, so they are weak and overfit individually but diverse; their mean generalises. Weight sharing acts as regularisation; joint training enables ensemble-aware early stopping."
+},
+{
+  "id": "rubachev2025-tabred-split",
+  "paper": "Rubachev et al. \u2014 TabReD",
+  "year": 2025,
+  "lesson": 55,
+  "front": "What does Figure 2 vary, and why is its result not a universal tree-versus-neural law?",
+  "back": "Three paired random/temporal split configurations with matching counts, 15 initialization seeds. Scores, margins and rankings can change; the reported XGBoost margin shrinks. Both training and test populations change, and no winner or reversal is guaranteed on every task."
 }
-  ];
+];
 })(window);

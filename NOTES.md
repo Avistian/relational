@@ -1,5 +1,16 @@
 # Teaching Notes
 
+## Session 54 → Lesson 055 — 2026-09-09
+
+- User reports L054 done; LR-0120 records self-reported/unscored completion. L055 follows the planned TabReD temporal-split topic; personal mastery glossary unchanged.
+- Three July 2026 public release archives match pinned registry b5ef15b3749f30da7a1eb8fba21a5b54d706bf32. Random/sliding pair 0 shares a row universe and partition counts. All three released temporal splits share boundary timestamps; a separate stricter splitter exercise preserves timestamp groups.
+- Local 54 selected evaluations (108 candidate fits): MLP, TabM-mini k8, XGBoost; caps1500/600/600; three seeds; two candidates each; 32epochs/120trees; numeric and binary columns. Author run 207.3 CPU wall seconds. Official release differs from paper version; INCOMPARABLE.
+- Ecom/Homesite errors rise under temporal test while XGBoost stays first. Sberbank errors fall; winner changes from TabM-mini to MLP at point estimates. Mean ranks random 2.667/1.667/1.667, temporal 2.333/2.333/1.333; Friedman p=.3679 both, CD=1.9136. No significant family superiority or equivalence conclusion.
+- Teaching emphasis: evaluation target, same-pool split audit, separate event/feature/label clocks, train-only preprocessing, validation-only selection, conditional seed uncertainty. No new model. Five portable figures, live label-delay widget, four protocol TODOs, executed solution/prepared HTML and reference accompany the lesson. See labs/_delivery_l055_results.json for final checks.
+- Final verification: all 24 solution code cells executed; 54 selected predictions/selection traces reconcile and notebook predictions match the reference; four blank student TODOs, five valid inline PNGs and 51 copied-Pages local links checked. Notebook training took 564.2 s amid CPU contention; fourteen verified read-only Git status scans were stopped with sandbox approval. Browser/live Colab remain untested.
+- Three-window closer operators supplied for local/Colab/Modal; larger run, cloud run, full Figure 2, browser UI, live Colab and deployment remain NOT_RUN/NOT_CHECKED. Full paper protocol is not mislabeled as a resource preset. Next scheduled unit: L055b, temporal shift and validation protocols, then L056 TabArena.
+
+
 ## Session 52 → Lesson 053 — 2026-09-07
 
 - User reports L052 done; LR-0118 records self-reported, unscored completion. L053 follows the planned RealMLP and strong-defaults topic; no personal mastery inferred.

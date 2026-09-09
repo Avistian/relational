@@ -22,6 +22,52 @@
   "use strict";
 
   global.RETRIEVAL_POOL = [
+{
+  "id": "l055-protocol-gap",
+  "lesson": 55,
+  "quarter": "Q2",
+  "concept": "temporal-protocol",
+  "question": "Random and temporal test errors differ. What does that directly establish?",
+  "options": [
+    {
+      "label": "Sensitivity to the evaluation protocol",
+      "value": "a"
+    },
+    {
+      "label": "Causal impact of temporal drift",
+      "value": "b"
+    },
+    {
+      "label": "Universal superiority of neural models",
+      "value": "c"
+    }
+  ],
+  "correct": "a",
+  "explain": "Training and test populations both change. Matched sizes and budgets do not isolate a causal drift effect."
+},
+{
+  "id": "l055-three-clocks",
+  "lesson": 55,
+  "quarter": "Q2",
+  "concept": "label-availability",
+  "question": "A past training event has a label that arrives after fitting. Is it eligible?",
+  "options": [
+    {
+      "label": "No, its label was unavailable",
+      "value": "a"
+    },
+    {
+      "label": "Yes, its event was historical",
+      "value": "b"
+    },
+    {
+      "label": "Yes, its features were numerical",
+      "value": "c"
+    }
+  ],
+  "correct": "a",
+  "explain": "Event ordering does not establish label availability at the fitting deadline. Also audit when each feature was known."
+},
     {
       id: "l050-dataset-unit", lesson: 50, quarter: "Q1", concept: "experimental-unit",
       question: "Three tasks with three training seeds each: what enters the across-task rank analysis?",

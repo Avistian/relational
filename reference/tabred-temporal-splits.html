@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Temporal evaluation · reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<nav><a href="../lessons/0055-tabred-temporal-splits.html">Lesson 055</a> · <a href="glossary.html#protocol-gap">Glossary</a></nav><h1>The split is part of the claim</h1>
+<p><strong>Skill:</strong> choose a test that estimates the deployment quantity, then audit every information boundary used to fit and select the model.</p>
+<table><thead><tr><th>Question</th><th>Operational rule</th></tr></thead><tbody>
+<tr><td>Same-period interpolation?</td><td>Random holdout may match this target if rows are suitably exchangeable. Check groups and repeated entities.</td></tr>
+<tr><td>Train now, predict later?</td><td>Historical train → later validation → later test. Respect retraining and selection dates.</td></tr>
+<tr><td>Strict timestamp boundary?</td><td>train: t&lt;a; val: a≤t&lt;b; test: t≥b. Keep tied timestamps together, accepting changed counts.</td></tr>
+<tr><td>Past event, available label?</td><td>Label arrival must be no later than fitting/selection deadline; features must be available at prediction.</td></tr>
+<tr><td>Preprocessing scope?</td><td>Fit imputation/scaling on training only; apply the frozen state later.</td></tr>
+<tr><td>Model-selection scope?</td><td>Choose checkpoint and hyperparameters with validation. Compute selected-model test predictions afterward.</td></tr>
+<tr><td>Random vs temporal gap?</td><td>Report protocol sensitivity; both training and test populations change. It is not isolated causal drift evidence.</td></tr>
+<tr><td>Uncertainty?</td><td>Training seeds condition on fixed rows. Rolling origins probe other periods. Windows may overlap and are not automatically independent.</td></tr>
+<tr><td>Cross-task ranks?</td><td>Average seeds and windows within each dataset before ranking models. Do not count seeds as datasets.</td></tr>
+</tbody></table>
+<h2>Worked selection</h2><p>Validation errors A=.21, B=.18 select B. If later test errors are A=.20, B=.25, report .25 for the selected procedure. Choosing A afterward leaks test information.</p>
+<h2>Local evidence boundary</h2><p>Three July 2026 TabReD tasks; released split pair 0, capped 1500/600/600; three seeds; two compact candidates per MLP, TabM-mini and XGBoost. Numeric/binary features only. Shared boundary timestamps are disclosed. Sberbank target = log(price / floor area).</p>
+<p>Ecom/Homesite errors rise with time splits and keep XGBoost first. Sberbank errors fall and the point-estimate winner changes from TabM-mini to MLP. Mean ranks: random 2.667/1.667/1.667; time 2.333/2.333/1.333. Both Friedman p=.3679; CD=1.9136. Low power, no equivalence conclusion. <strong>INCOMPARABLE</strong> to the paper.</p>
+<p><a href="https://arxiv.org/html/2406.19380v4#S5.SS4">Primary: TabReD §5.4, Figure 2</a> · <a href="../labs/l055-reproduction.md">Exact contract and deviations</a> · <a href="../labs/0055-tabred-temporal-splits.ipynb">Runnable lab</a>.</p>
+</article></body></html>

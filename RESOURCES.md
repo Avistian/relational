@@ -314,3 +314,8 @@ _Optional / extension (◆):_
 - **Core paper:** Holzmüller, Grinsztajn & Steinwart, [Better by Default](https://arxiv.org/html/2407.04491v3). Read §2 for dataset-level meta-train/meta-test, §3 for the recipe, Table A.1 and Appendix A.2 for TD-S. Verified live during authoring.
 - **Primary code:** [Standalone TD-S](https://github.com/dholzmueller/realmlp-td-s_standalone/tree/a8c73f75dbeae4ab1ba5bc92372c444ffa0f766e), pinned source and MIT license under labs/sources/l053. Independent numeric forward and gradient parity checked.
 - **Full benchmark and toolkit:** [pytabkit](https://github.com/dholzmueller/pytabkit), inspected revision c126ea51187c5080b91f28d352481dbd3b2194b0. Its README links the [benchmark archive](https://doi.org/10.18419/darus-4555); exact benchmark reconstruction remains unrun.
+
+## Lesson 055 source audit — 2026-09-09
+
+- [TabReD v4, §5.4 / Figure 2](https://arxiv.org/html/2406.19380v4#S5.SS4): primary reading for temporal/random split comparison. Match row counts and distinguish protocol sensitivity from isolated drift causality.
+- [Official source at b5ef15b](https://github.com/yandex-research/tabred/tree/b5ef15b3749f30da7a1eb8fba21a5b54d706bf32): registry checksums, released paired split indices and Sberbank target transformation. Public July 2026 release counts differ from paper Table 2; full paper identity is not established.

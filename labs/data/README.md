@@ -70,3 +70,7 @@ Paper-dataset track: GroupLens MovieLens 1M, `relkit/dcnv2_data.py`; archive MD5
 ## Lesson 051 — authors' processed numerical suite
 
 Tier A: OpenML 44120 electricity (38474 × 7), 44125 MagicTelescope (13376 × 10), 44126 bank-marketing (10578 × 7), excluding target columns from feature counts. The January 2023 release belongs to suite 337; it is later than the cited 2022 paper v1. `_fetch_l051.py` caches exact IDs under `cache/l051/`; `_data_l051.json` records file hashes. Label-blind subsampling and stratified 60/20/20 seed-51 partitions are local choices. The complete original suite, upstream split IDs and tuning protocol are not reconstructed. These datasets replace generic small-table substitutes for the L051 intervention study; they do not make its fixed-budget results paper-comparable.
+
+### L055 — TabReD released temporal tasks (Tier A)
+
+`_fetch_l055.py` downloads and verifies Ecom Offers, Homesite Insurance and Sberbank Housing against the official pinned registry. About 60 MB compressed; cache is gitignored. Local row caps1500/600/600 retain released random-0/sliding-window-0 membership, with numeric/binary features only. Shared boundary timestamps and omitted categories are disclosed. Five other benchmark tasks are skipped; this cannot reproduce the full benchmark. See `../l055-reproduction.md` and `../_data_l055.json`.
