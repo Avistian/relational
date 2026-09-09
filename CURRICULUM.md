@@ -205,7 +205,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 057 | Ensembling across model families | TabArena §results | Build cross-model ensemble |
 | 058 | Surveys & meta-benchmarks | Borisov 2021 · TALENT (2407.00956) · survey 2410.12034 | Map families; 300-dataset meta-analysis |
 | 059 | Validation-set overfitting | TabArena critique | Diagnose overfit ensemble |
-| 060 | **Q2 checkpoint** | TabM + RealMLP | Beat your Y1 XGB with a tuned DL model — or document why you can't |
+| 060 | **Q2 checkpoint: broad model comparison** | TabM + RealMLP + TabArena + TabReD | Compare XGBoost, CatBoost, MLP, RealMLP and TabM on 8–12 datasets (budget permitting), including random and temporal evaluation; report uncertainty, ranks, costs and reproduction gaps |
 
 ### Q3 · Tabular foundation models & in-context learning (061–070)
 **Papers (chronological):** Müller 2022 (PFN) · Hollmann 2022 (TabPFN v1) · LoCalPFN (Thomas 2024) · Drift-Resilient TabPFN (Helli 2024) · Hollmann 2025 (TabPFN v2, Nature) · TabICL (Qu 2025) · "Closer Look at TabPFN v2" (Ye 2025) · open-environment eval (Cheng 2025)

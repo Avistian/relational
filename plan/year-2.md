@@ -230,9 +230,38 @@ BeyondArena `2606.30410` ★ · TALENT `2407.00956` · survey `2410.12034`.
 - **Viz** — reuse `checklist.js` + `group-viz.js` (nested CV).
 - **Bridge** — callback L004/L038; the discipline that keeps Y4–Y6 reproductions honest.
 
-### 060 · **Q2 checkpoint** — *TabM + RealMLP · Deliverable-based*
-- **Deliverable** — beat the Y1 tuned XGB with a tuned DL model (TabM/RealMLP) under **both random and
-  temporal splits**, or document with evidence why you can't. Report variance.
+### 060 · **Q2 checkpoint: broad model comparison** — *TabM + RealMLP + TabArena + TabReD · Deliverable-based*
+- **Skill** — design, run and defend a comparison of strong tree and neural baselines, with conclusions
+  bounded by the datasets, evaluation protocol and compute budget. This capstone may span several sessions.
+- **Models** — required: XGBoost, CatBoost, plain MLP, RealMLP and TabM. Optional extensions: TabR and
+  FT-Transformer after the core suite is complete. Reuse the visible from-scratch neural implementations;
+  validate the exact variants against their reference implementations before scaling up.
+- **Datasets** — target **8–12 real datasets**, subject to a measured runtime/cost pilot; cover classification
+  and regression, numeric and mixed features, and varied table sizes. Freeze the suite before inspecting
+  test results. If compute requires a smaller suite, retain at least three datasets and explicitly narrow
+  the conclusion. State all row caps and data-version differences.
+- **Protocol** — common raw rows, split indices and metrics across models within each task; train-only,
+  model-appropriate preprocessing and validation-only selection. Include **both random and temporal
+  evaluation** on a timestamped subset with audited feature/label availability; report the two settings
+  separately. Declare default and tuned tracks, model variants, search spaces, stopping rules and a compute
+  budget per model/task before running. Equal trial counts alone do not establish equal compute budgets.
+  Keep the test set out of tuning and ensemble selection.
+- **Evidence** — at least three model seeds per dataset; per-dataset mean, sample SD and clearly scoped
+  uncertainty intervals. Average seeds within each dataset before computing ranks; seeds and windows from
+  one dataset are not independent datasets. Report effect sizes, mean ranks, Friedman/Nemenyi summaries
+  with power caveats, and tuning/training/inference costs with hardware. Do not average raw metrics across
+  incompatible units or interpret a nonsignificant difference as equivalence.
+- **Reproduction boundary** — keep this common-protocol comparison distinct from recovery of a paper's
+  published result. For any paper-score comparison, identify the exact variant, data version, splits,
+  preprocessing, training/selection procedure, repetitions and metric aggregation. Validate against the
+  authors' paper-specific code and released configurations; record unresolved differences as
+  **INCOMPARABLE** and unexecuted work as **NOT_RUN**. Reusing released hyperparameters reproduces the
+  evaluation stage only, not the original tuning search.
+- **Deliverable / EXIT** — runnable comparison notebook and resumable experiment runner, frozen protocol,
+  per-run results and selection traces, comparison figures, and a short report explaining wins, losses,
+  costs and remaining reproduction gaps. Provide Modal and gated Colab operators when scale requires
+  them. A well-supported tree win passes as fully as a neural win; success is a defensible comparison,
+  not beating the Y1 XGBoost score under a changed protocol.
 - **Bridge** — the honest-baseline milestone; the "2026 fair stack" is now the standing baseline for Q3/Q4
   and the thesis.
 
