@@ -60,18 +60,19 @@
     return byYear;
   }
 
-  function renderYearBlock(year, quarters, container) {
+  function renderYearBlock(year, quarters, container, open) {
     var block = document.createElement("details");
     block.className = "year-block";
-    block.open = year === 1;
+    block.open = !!open;
 
     var summary = document.createElement("summary");
     summary.className = "year-summary";
     summary.textContent = "Year " + year;
     block.appendChild(summary);
 
+    // Newest first: quarters in descending order.
     var qKeys = Object.keys(quarters).sort(function (a, b) {
-      return Number(a) - Number(b);
+      return Number(b) - Number(a);
     });
 
     qKeys.forEach(function (q) {
@@ -88,7 +89,8 @@
       var ul = document.createElement("ul");
       ul.className = "lesson-list";
 
-      qLessons.forEach(function (l) {
+      // Newest first: lessons within a quarter in descending id order.
+      qLessons.slice().sort(function (a, b) { return b.id - a.id; }).forEach(function (l) {
         var li = document.createElement("li");
         var a = document.createElement("a");
         a.href = "lessons/" + l.slug + ".html";
@@ -142,11 +144,12 @@
         });
         if (continueEl) renderContinue(continueEl, lessons);
         var grouped = groupLessons(lessons);
+        // Newest first: years in descending order, most recent year open.
         var years = Object.keys(grouped).sort(function (a, b) {
-          return Number(a) - Number(b);
+          return Number(b) - Number(a);
         });
-        years.forEach(function (y) {
-          renderYearBlock(Number(y), grouped[y], navEl);
+        years.forEach(function (y, idx) {
+          renderYearBlock(Number(y), grouped[y], navEl, idx === 0);
         });
       })
       .catch(function () {
