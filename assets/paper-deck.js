@@ -295,6 +295,14 @@
   "lesson": 56,
   "front": "Why is a TabArena leaderboard position not a context-free claim about a model family?",
   "back": "It depends on the dataset population, snapshot, method pool, tuning and ensembling recipe, metric, coverage and evaluator. The initial v0.1 targets IID small-to-medium data. Recomputing released scores is not retraining the original models."
+},
+{
+  "id": "caruana2004-replacement",
+  "paper": "Caruana et al. \u2014 Ensemble selection",
+  "year": 2004,
+  "lesson": 57,
+  "front": "Why allow replacement, and why retain the best validation prefix?",
+  "back": "Repeated selections turn counts into weights. A fixed-length last mixture can be worse than an earlier one, so retain the best validation prefix. That guarantee concerns validation loss; test gain is not assured."
 }
 ];
 })(window);

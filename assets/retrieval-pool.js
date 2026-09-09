@@ -1514,6 +1514,29 @@
   ],
   "correct": "macro",
   "explain": "Each dataset contributes one mean-rank vector. Repeated splits refine its estimate without giving its population more weight."
+},
+{
+  "id": "l057-oof-meta-boundary",
+  "lesson": 57,
+  "quarter": "Q2",
+  "concept": "oof-ensemble-selection",
+  "question": "What may fit the ensemble weights in an OOF stack?",
+  "options": [
+    {
+      "label": "OOF predictions and development labels",
+      "value": "oof"
+    },
+    {
+      "label": "Test predictions and testing labels",
+      "value": "test"
+    },
+    {
+      "label": "In-sample predictions and fitting labels",
+      "value": "fit"
+    }
+  ],
+  "correct": "oof",
+  "explain": "Base models exclude each OOF row from fitting. OOF labels train the combiner; untouched outer-test labels evaluate that second-level choice."
 }
 ];
 })(window);

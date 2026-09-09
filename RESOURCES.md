@@ -328,3 +328,11 @@ _Optional / extension (◆):_
 - [Pinned evaluator](https://github.com/autogluon/tabarena/blob/e7cc6b049f9be11a6df29eb2560d9ccb2399d95c/packages/bencheval/src/bencheval/elo_utils.py): equal-dataset rank-to-win primitive validates the student implementation; current solver details are not silently attributed to v1.
 - [Demšar 2006](https://www.jmlr.org/papers/v7/demsar06a.html): independent-dataset blocks, Friedman and Nemenyi; L056 supplementary statistics retain this dataset unit.
 - Artifact URLs, exact hashes and scope: `labs/_sources_l056.json`; four public score files include all 51 datasets. This is released-score reanalysis, not fresh model training.
+
+
+## Lesson 057 — Cross-family OOF ensembles
+
+- [TabArena v1 §3.2, Figure6](https://arxiv.org/html/2506.16791v1#S3.SS2): cross-model ensemble evidence, member weights, and limits of individual rankings. Distinguish the paper result from our small OOF stack.
+- [Caruana et al. 2004](https://www.cs.cornell.edu/~alexn/papers/shotgun.icml04.revised.rev2.pdf): forward selection with replacement and validation-based ensemble construction; local scope omits library bagging/sorted initialization.
+- [Pinned AutoGluon selector](https://github.com/autogluon/autogluon/blob/946b65c683e975df34456bbe1f68366c8f4570be/core/src/autogluon/core/models/greedy_ensemble/ensemble_selection.py): executable source validation with a local metric adapter; rounding and tie policies differ.
+- [TabICL0.1.4](https://pypi.org/project/tabicl/0.1.4/): provided foundation-model inference baseline. Original v1.1 checkpoint, wheel and revision identities in labs/_sources_l057.json; one-view local reduction is not its full default.

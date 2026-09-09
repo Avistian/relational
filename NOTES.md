@@ -1,5 +1,17 @@
 # Teaching Notes
 
+## Session 56 → Lesson 057 — 2026-09-09
+
+- User reports L056 done; LR-0122 records self-reported/unscored completion. L056b remains separate; mission and personal mastery log unchanged.
+- L057 builds OOF cross-family ensembles: live fit-row, scatter, convex-mixture and greedy-selection TODOs. TabM from L054 is visible; TabICL v1.1 is an explicit provided pretrained API baseline, not a newly reproduced architecture.
+- Main author run: 3 numeric OpenML datasets (37/1464/1489), cap750, 3 fixed OOF folds, 3 seeds, XGB/TabM/TabICL; 81 fold-family fits/context constructions, 446.3 CPU seconds. No early stopping or HPO. Pinned code/checkpoint, row IDs, folds, predictions and hashes recorded.
+- Stack-minus-OOF-single loss gaps: diabetes −.003609 (paired t95% interval crosses0); blood0 (TabM only); phoneme−.023101. Stack never beats the best individually measured test score, whose identity is an oracle choice. Friedman p=.0907/CD4.353 on only3 datasets; exploratory. INCOMPARABLE to full TabArena Figure6.
+- Source primitive matches pinned AutoGluon selector on five non-tied fixtures using local log-loss adapter. Float-tie handling differs; postrun tolerance correction leaves all nine measured traces/weights/errors exactly unchanged.
+- Notebook trains a two-family smoke using student functions, then reanalyzes all9 three-family runs. Fresh three-family/closer Colab gate and Modal operator supplied; larger/cloud runs remain NOT_RUN. Final checks in labs/_delivery_l057_results.json.
+- Final delivery: 26 solution code cells executed; all9 archived runs matched using live notebook functions; 5 portable PNGs inspected; 50 links passed in copied Pages staging; source/OOF/widget/pedagogy checks passed. Browser/live Colab/deployment not checked; lesson created locally, no commit or deployment performed.
+- Next integer unit L058: surveys/meta-benchmarks.
+
+
 ## Session 55 → Lesson 056 — 2026-09-09
 
 - User reports L055 done; LR-0121 records self-reported/unscored completion. User explicitly requests L056, the planned TabArena methodology unit; L055b is not marked complete. Mission and personal mastery glossary unchanged.
