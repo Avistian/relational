@@ -1491,6 +1491,29 @@
   ],
   "correct": "correlated",
   "explain": "Averaging cuts variance to σ²(ρ + (1−ρ)/k); the floor is √ρ. If members are correlated (ρ→1) the mean equals one member, so diversity, not larger k, is what pays."
+},
+{
+  "id": "l056-equal-dataset-weight",
+  "lesson": 56,
+  "quarter": "Q2",
+  "concept": "benchmark-weighting",
+  "question": "One dataset has 30 outer splits and another has 9. How should an equal-dataset benchmark aggregate split ranks?",
+  "options": [
+    {
+      "label": "Average within datasets before averaging across datasets",
+      "value": "macro"
+    },
+    {
+      "label": "Average across splits before counting distinct datasets",
+      "value": "pooled"
+    },
+    {
+      "label": "Average only winners before comparing remaining datasets",
+      "value": "winners"
+    }
+  ],
+  "correct": "macro",
+  "explain": "Each dataset contributes one mean-rank vector. Repeated splits refine its estimate without giving its population more weight."
 }
-  ];
+];
 })(window);

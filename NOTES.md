@@ -1,5 +1,17 @@
 # Teaching Notes
 
+## Session 55 → Lesson 056 — 2026-09-09
+
+- User reports L055 done; LR-0121 records self-reported/unscored completion. User explicitly requests L056, the planned TabArena methodology unit; L055b is not marked complete. Mission and personal mastery glossary unchanged.
+- Scope: evaluator implementation and frozen-result reanalysis, no new model. Four live TODOs implement coverage validation, average tied ranks, equal-dataset aggregation and paired dataset bootstrap; full evaluator is visible.
+- Four checksum-pinned public tabarena-2025-06-12 artifacts: CatBoost, LightGBM, RealMLP CPU, TabM_GPU; all 51 datasets, 816 outer splits, three regimes, 9,792 rows; no missing/imputed entries. Reanalysis avoids training and raw prediction downloads.
+- Both one-split and full-split analyses run. Mean-rank leaders in the four-method pool are CatBoost/default, TabM/tuned, RealMLP/ensembled. This differs from paper v1 full-pool Elo and is explicitly INCOMPARABLE as Figure 1 reproduction. No original training or full official Elo regeneration claimed.
+- Pinned current upstream evaluator revision e7cc6b049f9be11a6df29eb2560d9ccb2399d95c: per-dataset rank-to-win totals agree across all regimes within 1.78e-15. Original source and Apache license retained. Source parity is not historical training or rating-table parity.
+- Paired ensemble TabM−CatBoost mean split-rank gap −.37288, dataset-bootstrap percentile 95% interval [−.79663,.03651], 2,000 draws/seed56. Supplementary Friedman/Nemenyi ranks mean errors (different order); three-regime tests exploratory.
+- Student/teacher notebooks, prepared HTML, reference card, five portable figures, two live arithmetic widgets, provenance and reproduction contract ship together. All 18 solution code cells executed in-process with IPython. Final delivery evidence: labs/_delivery_l056_results.json. Browser, live Colab and deployment remain NOT_CHECKED; no browser executable available.
+- Next planned extension: L056b Beyond IID; next integer-numbered unit: L057 cross-family ensembling.
+
+
 ## Session 54 → Lesson 055 — 2026-09-09
 
 - User reports L054 done; LR-0120 records self-reported/unscored completion. L055 follows the planned TabReD temporal-split topic; personal mastery glossary unchanged.

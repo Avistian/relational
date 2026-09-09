@@ -319,3 +319,12 @@ _Optional / extension (◆):_
 
 - [TabReD v4, §5.4 / Figure 2](https://arxiv.org/html/2406.19380v4#S5.SS4): primary reading for temporal/random split comparison. Match row counts and distinguish protocol sensitivity from isolated drift causality.
 - [Official source at b5ef15b](https://github.com/yandex-research/tabred/tree/b5ef15b3749f30da7a1eb8fba21a5b54d706bf32): registry checksums, released paired split indices and Sberbank target transformation. Public July 2026 release counts differ from paper Table 2; full paper identity is not established.
+
+
+## Lesson 056 — TabArena methodology and result audit
+
+- [TabArena v1, Erickson et al.](https://arxiv.org/html/2506.16791v1): §§2.1–2.3 define method, data and evaluation protocols; §3.1 interprets default/tuned/ensembled rankings. Initial IID scope is crucial after L055.
+- [Pinned official frozen-paper example](https://github.com/autogluon/tabarena/blob/e7cc6b049f9be11a6df29eb2560d9ccb2399d95c/examples/reproducibility/run_generate_main_leaderboard_neurips2025.py): full-pool reconstruction route, not run locally. Its collection includes camera-ready replacements; reconcile the exact paper version.
+- [Pinned evaluator](https://github.com/autogluon/tabarena/blob/e7cc6b049f9be11a6df29eb2560d9ccb2399d95c/packages/bencheval/src/bencheval/elo_utils.py): equal-dataset rank-to-win primitive validates the student implementation; current solver details are not silently attributed to v1.
+- [Demšar 2006](https://www.jmlr.org/papers/v7/demsar06a.html): independent-dataset blocks, Friedman and Nemenyi; L056 supplementary statistics retain this dataset unit.
+- Artifact URLs, exact hashes and scope: `labs/_sources_l056.json`; four public score files include all 51 datasets. This is released-score reanalysis, not fresh model training.

@@ -40,6 +40,7 @@ Legend: **[FOR]** supports a sub-claim · **[BAR]** raises the honest baseline t
 | Lesson | Contribution | Type | Bears on |
 |--------|--------------|------|----------|
 | L055 | TabReD split audit: three checksum-verified release tasks, same-size random/time comparison. Classification errors rise without winner changes; Sberbank point-estimate winner changes while errors fall. Availability, validation and dataset-unit uncertainty remain requirements for a future RDL claim. Local INCOMPARABLE to Figure 2; no relational model tested. | BAR | C3 |
+| L056 | TabArena audit: four frozen methods on 51 IID datasets and 816 outer splits; tuning/ensembling regime, competitor pool and equal-dataset weighting are part of any ranking claim. Cached-score reanalysis and evaluator parity pass; full paper Elo and fresh training are not reproduced. This raises the baseline comparison standard without testing relational advantage or future-period deployment. | BAR | C3 |
 | L001 | RDL learns over the relational entity graph; flattening is the lossy step it replaces (Fey 2024). | FOR | C1, C2 |
 | L002 | Point-in-time flattening is not just lossy but leakage-prone — the manual pipeline is fragile. | FOR | C1 |
 | L004 | Honest evaluation needs nested CV / grouped splits — the discipline any thesis claim must meet. | BAR | C3 |

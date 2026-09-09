@@ -287,6 +287,14 @@
   "lesson": 55,
   "front": "What does Figure 2 vary, and why is its result not a universal tree-versus-neural law?",
   "back": "Three paired random/temporal split configurations with matching counts, 15 initialization seeds. Scores, margins and rankings can change; the reported XGBoost margin shrinks. Both training and test populations change, and no winner or reversal is guaranteed on every task."
+},
+{
+  "id": "erickson2025-tabarena-procedure",
+  "paper": "Erickson et al. \u2014 TabArena",
+  "year": 2025,
+  "lesson": 56,
+  "front": "Why is a TabArena leaderboard position not a context-free claim about a model family?",
+  "back": "It depends on the dataset population, snapshot, method pool, tuning and ensembling recipe, metric, coverage and evaluator. The initial v0.1 targets IID small-to-medium data. Recomputing released scores is not retraining the original models."
 }
 ];
 })(window);

@@ -110,3 +110,7 @@ This keeps the thesis baselines trustworthy by the time results matter.
 ## Lesson 049: claim audit
 
 See [the reproduction guide](l049-reproduction.md) for exact data/source scope, local commands, resumable larger runs, and the distinction between forward fidelity and paper-score replication.
+
+
+### L056 · TabArena benchmark literacy
+`0056-tabarena-benchmark-literacy.ipynb` reconstructs a four-method leaderboard audit from checksum-verified published scores. Four live evaluator TODOs, five inline figures, 51 real datasets; seconds of CPU computation, no training. Begin with split 0 then analyze every released outer split. See `l056-reproduction.md` for exact scope and unrun full-table/training tracks.

@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reference · TabArena benchmark audit</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<nav><a href="../lessons/0056-tabarena-benchmark-literacy.html">Lesson 056</a> · <a href="glossary.html">Glossary</a></nav><h1>Before quoting a leaderboard</h1>
+<p>A leaderboard compares fitted procedures on a defined task population. Pin those choices before interpreting the order.</p>
+<table><thead><tr><th>Audit field</th><th>Question to answer</th></tr></thead><tbody>
+<tr><td>Identity</td><td>Which paper version, result hashes, evaluator revision and method pool?</td></tr>
+<tr><td>Population</td><td>IID, grouped or temporal? Which datasets were excluded, and why?</td></tr>
+<tr><td>Procedure</td><td>Default or tuned? Inner-fold bagging, internal ensemble, post-hoc configuration ensemble or cross-family system?</td></tr>
+<tr><td>Selection</td><td>Which labels fit weights, choose settings and score the final result?</td></tr>
+<tr><td>Budget</td><td>Equal configurations, seconds, hardware or inference latency?</td></tr>
+<tr><td>Coverage</td><td>Same dataset/split keys? Failed and imputed runs visible?</td></tr>
+<tr><td>Aggregation</td><td>Same metrics within tasks? Equal dataset weight? Rank before or after averaging errors?</td></tr>
+<tr><td>Uncertainty</td><td>Seeds, folds or whole datasets resampled? What population is represented?</td></tr>
+<tr><td>Verdict</td><td>Recomputed scores, source parity, table recovery or retrained models?</td></tr>
+</tbody></table>
+<h2>Computation card</h2><p>Errors are lower-is-better: 1−AUC, log loss and RMSE. Released <code>metric_error</code> is already converted. Never mix their raw units across tasks.</p>
+<pre>rank(e) = 1 + count(errors &lt; e) + (count(errors = e) − 1)/2
+dataset rank = mean(split ranks)
+benchmark rank = mean(dataset ranks)
+pairwise win = 1 for lower error, ½ for tie, 0 for higher
+Elo odds(A/B) = 10^((E_A − E_B)/400)
+Elo p(A/B) = odds/(1 + odds)</pre>
+<p>Trace: errors [.4,.2,.2,.9] → ranks [3,1.5,1.5,4]. Four methods imply win totals 4−rank. A 400-point Elo gap → odds 10 → probability 10/11; this is not accuracy.</p>
+<p><strong>Paired dataset bootstrap:</strong> compute each dataset’s method-rank gap; sample whole datasets with replacement, retaining method pairing; average; repeat; use 2.5th/97.5th percentiles. Repeated outer folds are not independent datasets. Crossing zero does not establish equivalence.</p>
+<p><strong>Two different statistics:</strong> mean(split ranks) differs from rank(mean errors). L056’s main audit uses the former. Its supplementary Friedman/Nemenyi analysis uses one mean-error rank vector per dataset.</p>
+<h2>Useful claim template</h2><p>“On snapshot ___, using ___ datasets, ___ method variants and ___ selection/budget rules, ___ has mean rank ___ under ___ weighting. The interval ___ describes ___. This supports ___; it does not establish ___.”</p>
+<p>Sources: <a href="https://arxiv.org/html/2506.16791v1">TabArena v1 §§2–3</a> · <a href="https://www.jmlr.org/papers/v7/demsar06a.html">Demšar, statistical comparisons over multiple datasets</a> · <a href="../labs/l056-reproduction.md">Local contract and evidence boundaries</a>.</p>
+<p>Ask the tutor to review the completed audit and the deployment claim it supports.</p></article></body></html>
