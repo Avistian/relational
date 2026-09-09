@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 064 · Trace TabPFN v2 across both table axes</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/foundation-course.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0063-synthetic-scm-prior.html">← Lesson 063</a> · <a href="0065-tabpfn-query-embeddings.html">Lesson 065 →</a> · <a href="../reference/0064-tabpfn-v2.html">Reference</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 064</p><h1>Trace TabPFN v2 across both table axes</h1><p class="subtitle">Understand the computation. Challenge the evidence. Produce a defensible result.</p><p>Core reading: 35–50 minutes. Lab: 45–75 minutes plus declared experiment time. This sequence builds the strong single-table baseline and information discipline required to test the relational thesis.</p><section id="retrieval"><h2>Retrieve before reading</h2><p>Without notes: Does passing an attention-mask check establish Nature-v2 accuracy reproduction? Explain why, then recall a related failure mode from an older lesson.</p><div id="warmup"></div></section><div id="prediction"></div><h2 id="A-table-aware-architecture-changes-what-can-be-shared">A table-aware architecture changes what can be shared<a class="anchor-link" href="#A-table-aware-architecture-changes-what-can-be-shared">&#182;</a></h2><p>Your goal is to explain the Nature-v2 computation and audit its accuracy/cost claim on a declared protocol. The primary source is <a href="https://www.nature.com/articles/s41586-024-08328-6">Hollmann et al., Accurate predictions on small data with a tabular foundation model</a>, especially Figure 1 and Methods. The paper reports strong downstream performance in the studied small-data regime, including comparisons with substantially tuned baselines. It does not establish that every released TabPFN version beats every tree recipe on every table.</p>
+<p>Version identity is part of the experiment. A present-day default constructor can load a newer model than Nature v2. This lesson uses <code>tabpfn==2.0.9</code> and a pinned v2 classifier checkpoint, not a moving default. Later checkpoints are separate arms with separate access, preprocessing, capacity and cost contracts.</p>
+<h2 id="Model-architecture:-alternate-the-two-table-axes">Model architecture: alternate the two table axes<a class="anchor-link" href="#Model-architecture:-alternate-the-two-table-axes">&#182;</a></h2><p>Instead of reducing each whole row immediately to one token as in v1, v2 constructs representations for feature cells or feature groups, plus a target representation. Think of a hidden tensor with axes <code>[batch, rows, feature_groups_plus_target, hidden_width]</code>. A feature-attention operation mixes feature representations within each row. A sample-attention operation mixes the corresponding feature-group representations across eligible context rows. Feed-forward transformations, normalization and residual paths accompany these operations in repeated blocks. The query's final target representation feeds the prediction head.</p>
+<p>The released model also contains feature grouping, specialized preprocessing/encoders and identity features. Those details matter for duplicate rows, heterogeneous values and the precise symmetry of the system. “Table-aware” does not imply that every preprocessing-plus-ensemble configuration has exact arbitrary permutation invariance. Our reduced <strong>AxialPFN</strong> shows one scalar per feature, a separate unknown-target token and explicit feature/sample attention. It omits those released implementation details and does not load the official weights.</p>
+<ol class="foundation-route"><li><strong>INPUT ENCODERS</strong>feature cells/groups + target token<small>local hidden array [B,C+Q,F+1,D]</small></li><li><strong>FEATURE ATTENTION</strong>reshape [B*N,F+1,D]<small>each row mixes its own feature/target tokens</small></li><li><strong>SAMPLE ATTENTION</strong>reshape [B*(F+1),N,D]<small>each feature reads context rows only</small></li><li><strong>REPEAT + RESIDUALS</strong>feature → sample → feed-forward<small>official IDs/grouping/encoders omitted locally</small></li><li><strong>OUTPUT</strong>query target states [B,Q,D]<small>classification head → probabilities</small></li></ol>
+
+<h2 id="Trace-a-query-feature-through-both-axes">Trace a query feature through both axes<a class="anchor-link" href="#Trace-a-query-feature-through-both-axes">&#182;</a></h2><p>Suppose a query row has two feature tokens and one target token. During feature attention, the unknown-target representation can read both feature tokens in its own row. During sample attention, its target-position token can read the target-position representations of labeled context rows. After another feature step, information that traveled through different feature positions can interact again. This alternating route builds relationships that a single isolated scalar encoder cannot express.</p>
+<p>The context/query mask applies on the sample axis, not indiscriminately on both axes. Context rows may read context rows; queries may read context, but query labels are absent and query rows must not become context keys in the reduced inductive path. A transpose bug can accidentally apply the row mask to features while still producing a tensor of plausible size. The lab tests query isolation and permutation behavior, and exposes the reshapes between <code>[B*N,F,D]</code> and <code>[B*F,N,D]</code>.</p>
+<div data-foundation-viz="cost"></div><figure class="foundation-figure"><div class="foundation-image-scroll"><img src="../labs/figures/l064/mechanism.png" alt="Synthetic numerical trace. Values are generated by the displayed operator; this is not a measured benchmark." loading="lazy"></div><figcaption>Synthetic numerical trace. Values are generated by the displayed operator; this is not a measured benchmark.</figcaption></figure>
+
+<h2 id="Why-caching-and-attention-shape-matter">Why caching and attention shape matter<a class="anchor-link" href="#Why-caching-and-attention-shape-matter">&#182;</a></h2><p>Let C be context rows, Q query rows, N=C+Q and F the number of feature/target tokens. Ignoring constants, the reduced layer forms about <code>N*F²</code> feature-attention scores and <code>F*N*C</code> sample-attention scores per head. These are score-element counts, not measured peak memory. Fused attention, chunking, cached context states, hidden projections, feed-forward activations, layer count and precision all change actual resource use.</p>
+<p>Because context states do not depend on new query rows, an implementation can cache reusable context computation. This can make repeated queries much cheaper than the first prediction. Measure cold model loading, context preparation and warm inference separately before translating a paper's timing into a deployment budget. A small query batch can reduce peak memory but add repeated work when caching is absent.</p>
+<h2 id="A-matched-local-comparison,-with-unmatched-paper-scope">A matched local comparison, with unmatched paper scope<a class="anchor-link" href="#A-matched-local-comparison,-with-unmatched-paper-scope">&#182;</a></h2><p>The author evidence comes from the common lesson-70 run: five real binary tasks, fixed splits, three inference/training seeds, one pretrained view, and reduced XGBoost and TabM recipes. Nature-v2 probabilities and the fitted competitors are scored on identical test rows. No four-hour tuning budget was run. The table therefore supports a local comparison and a recipe for a more expensive follow-up, not the original paper's seconds-versus-hours result.</p>
+<figure class="foundation-figure"><div class="foundation-image-scroll"><img src="../labs/figures/l064/results.png" alt="Author-reference measurements. See the protocol, seed points and interpretation; these are not your notebook kernel outputs." loading="lazy"></div><figcaption>Author-reference measurements. See the protocol, seed points and interpretation; these are not your notebook kernel outputs.</figcaption></figure><div class="foundation-evidence"><p><strong>Measured interpretation.</strong> These are the exact v2 and XGBoost predictions from the five-task checkpoint, reused for a focused historical-version comparison. They are not additional independent fits. No four-hour baseline tuning was performed.</p><details><summary>Inspect the numerical evidence table</summary><div class="foundation-scroll"><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+    </tr>
+    <tr>
+      <th>dataset</th>
+      <th>arm</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="2" valign="top">blood_transfusion/random</th>
+      <th>TabPFN-v2</th>
+      <td>0.4405</td>
+      <td>0.0013</td>
+    </tr>
+    <tr>
+      <th>XGBoost</th>
+      <td>0.4494</td>
+      <td>0.0029</td>
+    </tr>
+    <tr>
+      <th rowspan="2" valign="top">breast_cancer/random</th>
+      <th>TabPFN-v2</th>
+      <td>0.1159</td>
+      <td>0.0123</td>
+    </tr>
+    <tr>
+      <th>XGBoost</th>
+      <td>0.1315</td>
+      <td>0.0012</td>
+    </tr>
+    <tr>
+      <th rowspan="2" valign="top">diabetes/random</th>
+      <th>TabPFN-v2</th>
+      <td>0.5256</td>
+      <td>0.0028</td>
+    </tr>
+    <tr>
+      <th>XGBoost</th>
+      <td>0.5336</td>
+      <td>0.0044</td>
+    </tr>
+    <tr>
+      <th rowspan="2" valign="top">kc1/random</th>
+      <th>TabPFN-v2</th>
+      <td>0.3157</td>
+      <td>0.0018</td>
+    </tr>
+    <tr>
+      <th>XGBoost</th>
+      <td>0.3424</td>
+      <td>0.0055</td>
+    </tr>
+    <tr>
+      <th rowspan="2" valign="top">phoneme/random</th>
+      <th>TabPFN-v2</th>
+      <td>0.2416</td>
+      <td>0.0060</td>
+    </tr>
+    <tr>
+      <th>XGBoost</th>
+      <td>0.2667</td>
+      <td>0.0069</td>
+    </tr>
+  </tbody>
+</table></div></details></div>
+
+<p>Distinguish “same datasets and splits” from “equal compute” and from “strongest practical baseline.” One pretrained view, two tree candidates and offline foundation-model pretraining represent different resource choices. Report the measured budget transparently; do not impose a predetermined winner or relabel the faster run as the paper result.</p>
+<h2 id="Exit:-reproduce-a-computation-and-audit-a-claim">Exit: reproduce a computation and audit a claim<a class="anchor-link" href="#Exit:-reproduce-a-computation-and-audit-a-claim">&#182;</a></h2><p>Implement the sample-axis reshape and mask, demonstrate that adding an unrelated query leaves existing reduced-model predictions unchanged, and trace the target token to its head. Audit the official checkpoint predictions separately, reconstructing scores from saved probabilities and class order. Submit a cost ledger and a paragraph naming the paper datasets, tuning/search and hardware you have not reproduced.</p>
+<p>The next-step runner increases local resources using the same visible baselines and pinned pretrained version. To reproduce the published tuning comparison, freeze the actual search spaces, time-budget accounting, validation protocol and complete dataset roster first. A <code>closer</code> preset is an experiment size, never proof of paper fidelity.</p>
+<section id="lab"><h2>Run the companion lab</h2><p><a href="../labs/0064-tabpfn-v2.ipynb">Student notebook</a> · <a href="../labs/html/0064-tabpfn-v2.html">Prepared lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0064-tabpfn-v2.ipynb">Open in Colab</a></p><p>2 substantive code tasks feed the live experiment, followed by behavioral CHECKs and a written EXIT artifact. The notebook contains the explanation and portable figures so it is teachable independently.</p><div class="foundation-contract"><strong>Keep the evidence boundaries visible.</strong> <a href="../labs/l064-reproduction.md">Reproduction contract</a> · <a href="../labs/_verify_l064_results.json">Measured evidence</a> · <a href="../labs/_sources_foundation.json">Source/checkpoint identities</a> · <a href="../labs/relkit/foundation_core.py">Visible model mechanisms</a>. These artifacts do not certify full paper reproduction or personal mastery.</div><div id="teachback"></div><p>Ask me follow-up questions about any operation, CHECK or conclusion you cannot defend. Paste the EXIT artifact and your explanation for review. Revisit the retrieval question tomorrow and again in a week, before reopening the reference.</p></section><nav><a href="../reference/0064-tabpfn-v2.html">Printable reference</a> · <a href="../notebooks.html">Notebook gallery</a></nav></article><script id="foundation-config" type="application/json">{"lesson": 64, "mode": "cost", "prompt": "Does passing an attention-mask check establish Nature-v2 accuracy reproduction?", "answer": "No, it checks an operator boundary, not pretrained weights, data, tuning or scores.", "quiz": ["Ignore target tokens and hold N fixed. Doubling F changes N F\u00b2 feature-attention score elements by which factor?", ["A factor of two", "A factor of four", "A factor of eight"], 1, "Within-row feature attention pairs every feature with every feature. Doubling both feature axes gives four times as many scores."]}</script><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/foundation-viz.js"></script><script src="../assets/foundation-lesson.js"></script></body></html>

@@ -114,3 +114,18 @@ See [the reproduction guide](l049-reproduction.md) for exact data/source scope, 
 
 ### L056 · TabArena benchmark literacy
 `0056-tabarena-benchmark-literacy.ipynb` reconstructs a four-method leaderboard audit from checksum-verified published scores. Four live evaluator TODOs, five inline figures, 51 real datasets; seconds of CPU computation, no training. Begin with split 0 then analyze every released outer split. See `l056-reproduction.md` for exact scope and unrun full-table/training tracks.
+
+<!-- FOUNDATION-058-070:begin -->
+## Lessons 058–070 · benchmark evidence and tabular foundation models
+
+Each integer unit has a standalone student notebook and prepared HTML. Start at L058 and
+follow retrieval → input → live implementation → CHECK → evidence audit → EXIT. The tutor
+reviews the submitted artifact and explanation; completed author runs do not establish learner mastery.
+
+`_run_foundation.py --lesson N --preset smoke|lab|closer --output PATH` regenerates the
+declared experiment. `--lesson 70 --current` runs explicitly pinned current-version arms.
+Historical packages use isolated subprocess imports. Full original paper protocols are not
+implemented; `--preset paper` fails honestly. See `lNNN-reproduction.md`, `_sources_foundation.json`
+and `_delivery_foundation_results.json`. Student TODOs remain blank; local solutions follow the
+workspace's ignored `labs/solutions/` convention.
+<!-- FOUNDATION-058-070:end -->

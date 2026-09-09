@@ -770,3 +770,25 @@ Read these **only after** the relevant quarter's ★ core papers and lab are com
 - KumoRFM v1 — PDF only (proprietary; use KumoRFM-2 `2604.12596` for reproducible SOTA numbers)
 - Molnar's *Tabular Foundation Models* book supports lecture 167 (tabular → relational FM transfer)
 - Prefer the **currency rule** over a fixed optional list beyond this; the relational-FM frontier turns over monthly
+
+<!-- FOUNDATION-058-070:begin -->
+## Prepared lessons 058–070
+
+These are available learning packages; only L057 completion was reported by the learner. Lettered extension units remain separate.
+
+| Unit | Lesson | Lab | Protocol |
+|---|---|---|---|
+| 058 | [Lesson](lessons/0058-surveys-meta-benchmarks.html) | [Lab](labs/0058-surveys-meta-benchmarks.ipynb) | [Evidence contract](labs/l058-reproduction.md) |
+| 059 | [Lesson](lessons/0059-validation-set-overfitting.html) | [Lab](labs/0059-validation-set-overfitting.ipynb) | [Evidence contract](labs/l059-reproduction.md) |
+| 060 | [Lesson](lessons/0060-broad-model-comparison.html) | [Lab](labs/0060-broad-model-comparison.ipynb) | [Evidence contract](labs/l060-reproduction.md) |
+| 061 | [Lesson](lessons/0061-prior-data-fitted-networks.html) | [Lab](labs/0061-prior-data-fitted-networks.ipynb) | [Evidence contract](labs/l061-reproduction.md) |
+| 062 | [Lesson](lessons/0062-tabpfn-v1.html) | [Lab](labs/0062-tabpfn-v1.ipynb) | [Evidence contract](labs/l062-reproduction.md) |
+| 063 | [Lesson](lessons/0063-synthetic-scm-prior.html) | [Lab](labs/0063-synthetic-scm-prior.ipynb) | [Evidence contract](labs/l063-reproduction.md) |
+| 064 | [Lesson](lessons/0064-tabpfn-v2.html) | [Lab](labs/0064-tabpfn-v2.ipynb) | [Evidence contract](labs/l064-reproduction.md) |
+| 065 | [Lesson](lessons/0065-tabpfn-query-embeddings.html) | [Lab](labs/0065-tabpfn-query-embeddings.ipynb) | [Evidence contract](labs/l065-reproduction.md) |
+| 066 | [Lesson](lessons/0066-tabicl-column-row-attention.html) | [Lab](labs/0066-tabicl-column-row-attention.ipynb) | [Evidence contract](labs/l066-reproduction.md) |
+| 067 | [Lesson](lessons/0067-local-pfn-retrieval-finetuning.html) | [Lab](labs/0067-local-pfn-retrieval-finetuning.ipynb) | [Evidence contract](labs/l067-reproduction.md) |
+| 068 | [Lesson](lessons/0068-pfns-under-temporal-shift.html) | [Lab](labs/0068-pfns-under-temporal-shift.ipynb) | [Evidence contract](labs/l068-reproduction.md) |
+| 069 | [Lesson](lessons/0069-tabpfn-open-environment-failures.html) | [Lab](labs/0069-tabpfn-open-environment-failures.ipynb) | [Evidence contract](labs/l069-reproduction.md) |
+| 070 | [Lesson](lessons/0070-foundation-model-checkpoint.html) | [Lab](labs/0070-foundation-model-checkpoint.ipynb) | [Evidence contract](labs/l070-reproduction.md) |
+<!-- FOUNDATION-058-070:end -->

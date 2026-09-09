@@ -336,3 +336,20 @@ _Optional / extension (◆):_
 - [Caruana et al. 2004](https://www.cs.cornell.edu/~alexn/papers/shotgun.icml04.revised.rev2.pdf): forward selection with replacement and validation-based ensemble construction; local scope omits library bagging/sorted initialization.
 - [Pinned AutoGluon selector](https://github.com/autogluon/autogluon/blob/946b65c683e975df34456bbe1f68366c8f4570be/core/src/autogluon/core/models/greedy_ensemble/ensemble_selection.py): executable source validation with a local metric adapter; rounding and tie policies differ.
 - [TabICL0.1.4](https://pypi.org/project/tabicl/0.1.4/): provided foundation-model inference baseline. Original v1.1 checkpoint, wheel and revision identities in labs/_sources_l057.json; one-view local reduction is not its full default.
+
+<!-- FOUNDATION-058-070:begin -->
+## Lessons 058–070 · primary reading and exact evidence contracts
+- **L058:** [TALENT Sections 4–5 and 8](https://arxiv.org/html/2407.00956v3). [Local scope and regeneration](labs/l058-reproduction.md).
+- **L059:** [Cawley and Talbot 2010](https://jmlr.org/papers/v11/cawley10a.html). [Local scope and regeneration](labs/l059-reproduction.md).
+- **L060:** [TabArena and TabReD protocols](https://arxiv.org/html/2506.16791v1). [Local scope and regeneration](labs/l060-reproduction.md).
+- **L061:** [Transformers Can Do Bayesian Inference](https://arxiv.org/html/2112.10510v7). [Local scope and regeneration](labs/l061-reproduction.md).
+- **L062:** [TabPFN v1](https://arxiv.org/html/2207.01848v6). [Local scope and regeneration](labs/l062-reproduction.md).
+- **L063:** [TabPFN v1 prior](https://arxiv.org/html/2207.01848v6). [Local scope and regeneration](labs/l063-reproduction.md).
+- **L064:** [Nature TabPFN v2](https://www.nature.com/articles/s41586-024-08328-6). [Local scope and regeneration](labs/l064-reproduction.md).
+- **L065:** [A Closer Look at TabPFN v2, Section 6](https://arxiv.org/html/2502.17361v1). [Local scope and regeneration](labs/l065-reproduction.md).
+- **L066:** [TabICL, Sections 3–4](https://arxiv.org/html/2502.05564v1). [Local scope and regeneration](labs/l066-reproduction.md).
+- **L067:** [Retrieval & Fine-Tuning for In-Context Tabular Models](https://arxiv.org/html/2406.05207v1). [Local scope and regeneration](labs/l067-reproduction.md).
+- **L068:** [Drift-Resilient TabPFN](https://arxiv.org/html/2411.10634v1). [Local scope and regeneration](labs/l068-reproduction.md).
+- **L069:** [Realistic Evaluation of TabPFN v2 in Open Environments](https://arxiv.org/html/2505.16226v1). [Local scope and regeneration](labs/l069-reproduction.md).
+- **L070:** [TabPFN-3 technical report and historical controls](https://arxiv.org/abs/2605.13986). [Local scope and regeneration](labs/l070-reproduction.md).
+<!-- FOUNDATION-058-070:end -->

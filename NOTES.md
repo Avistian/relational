@@ -1236,3 +1236,15 @@ notebook builder. Apply this to future new-model lessons; retrofit L047 (SAINT) 
     **(D) Right conclusions.** A DIRECTION_TIE on a subsample of a 0.002 paper edge is a lesson about *power*, not a refutation. An INCOMPARABLE 85.7% on a different split is not a MATCH. Do not average buckets; do not invert a lab ranking "because papers win at scale."
 
     Extends #18 / #20 / #22 / #24. Reference: L043–L045 retrofits this session. Full checklist in `lab-authoring`.
+
+<!-- FOUNDATION-058-070:begin -->
+## Lesson 057 complete; lessons 058–070 prepared — 2026-09-09
+
+- User reports L057 done; LR-0123 records self-reported, unscored completion. Mission and personal mastery glossary unchanged.
+- User requested the full integer sequence and repeatedly raised the quality bar. All units ship source-grounded manuscripts, printable references, portable computation figures, live TODO/CHECK/EXIT notebooks, executed local solutions, prepared HTML, provenance, reproduction contracts and runnable follow-up operators.
+- L058 reanalyzes 300 frozen TALENT tasks; L059 runs a 200-trial adaptive-selection negative control; L060 compares five families on eleven underlying datasets, separating random and temporal regimes.
+- L061 trains three CountPFNs against an analytic posterior; L062 runs the historical v1 checkpoint; L063 samples/intervenes on SCMs; L064 audits historical v2; L065 measures honest query-role embedding heads; L066 measures TabICL context scaling; L067 actually fine-tunes copied v1 weights; L068 trains a matched synthetic prior ablation; L069 measures fixed-model corruptions; L070 compares explicit checkpoint versions.
+- Reduced model/algorithm code is distinct from pretrained reference inference. Full original paper pretraining and benchmark reproduction remain NOT_ESTABLISHED. See per-lesson evidence/contract files for exact omissions and local measurements.
+- Delivery status is machine-recorded in labs/_execution_foundation_results.json, labs/_source_check_foundation_results.json and labs/_delivery_foundation_results.json. Local rendering, live Colab and remote publication are separate checks.
+- Next learning unit is L058, not L071: these thirteen authored lessons are available ahead of study, not completed by the learner.
+<!-- FOUNDATION-058-070:end -->

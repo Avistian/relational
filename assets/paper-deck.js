@@ -303,6 +303,39 @@
   "lesson": 57,
   "front": "Why allow replacement, and why retain the best validation prefix?",
   "back": "Repeated selections turn counts into weights. A fixed-length last mixture can be worse than an earlier one, so retain the best validation prefix. That guarantee concerns validation loss; test gain is not assured."
+},
+// FOUNDATION-SEQUENCE-058-070
+{
+  "id": "foundation-paper-61",
+  "paper": "Transformers Can Do Bayesian Inference",
+  "year": 2022,
+  "lesson": 61,
+  "front": "Must a learned posterior approximation extrapolate beyond its training context sizes?",
+  "back": "No, a learned finite-range approximation need not preserve the analytic rule outside that range."
+},
+{
+  "id": "foundation-paper-62",
+  "paper": "TabPFN v1",
+  "year": 2022,
+  "lesson": 62,
+  "front": "May an unrelated query become a context key for another query in this mask?",
+  "back": "No, only labeled context rows supply keys in this inductive path."
+},
+{
+  "id": "foundation-paper-64",
+  "paper": "Nature TabPFN v2",
+  "year": 2025,
+  "lesson": 64,
+  "front": "Does passing an attention-mask check establish Nature-v2 accuracy reproduction?",
+  "back": "No, it checks an operator boundary, not pretrained weights, data, tuning or scores."
+},
+{
+  "id": "foundation-paper-66",
+  "paper": "TabICL, Sections 3\u20134",
+  "year": 2025,
+  "lesson": 66,
+  "front": "Does inducing-point column attention make every stage of TabICL linear in rows?",
+  "back": "No, the final dataset-level context attention retains a quadratic component."
 }
 ];
 })(window);

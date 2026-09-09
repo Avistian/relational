@@ -19,7 +19,7 @@ def slug_meta(slug: str) -> dict:
     year = (n - 1) // 40 + 1
     pos_in_year = (n - 1) % 40
     quarter = pos_in_year // 10 + 1
-    checkpoint = "checkpoint" in slug
+    checkpoint = n % 10 == 0 or "checkpoint" in slug
     lab = ROOT / "labs" / f"{slug}.ipynb"
     if not lab.exists():
         # e.g. 0006-missingness-taxonomy → 0006-missingness.ipynb

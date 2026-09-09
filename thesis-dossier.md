@@ -399,3 +399,57 @@ TabM (Gorishniy 2024) is, per the paper, the best-performing tabular DL model ov
 
 ### L057 — BAR: compare against a selected ensemble, accept failed gains (2026-09-09)
 TabArena Figure6 motivates cross-family single-table baselines. Our three-task, three-seed XGB/TabM/TabICL OOF stack improves versus the OOF-selected single on diabetes/phoneme and selects one model on blood transfusion, but never beats the lowest individual test score. Those individual test winners are oracle choices, not deployable selectors. Mean ranks and Friedman p=.0907 on three tasks cannot establish universal gains. Different data/metric/recipes/TFM handling make this INCOMPARABLE to Figure6. No relational-versus-flat claim follows; the lesson raises the baseline selection and leakage standard. [Lesson](lessons/0057-cross-family-ensembling.html) · [evidence](labs/_verify_l057_results.json).
+
+<!-- FOUNDATION-058-070:begin -->
+### L058 — BAR: Read a benchmark without inheriting its bias
+
+No, selection biases the evaluation population. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0058-surveys-meta-benchmarks.html) · [measured evidence](labs/_verify_l058_results.json) · [scope](labs/l058-reproduction.md).
+
+### L059 — BAR: When validation becomes training
+
+No, validation selects lucky noise; test performance remains chance in expectation. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0059-validation-set-overfitting.html) · [measured evidence](labs/_verify_l059_results.json) · [scope](labs/l059-reproduction.md).
+
+### L060 — BAR: A baseline comparison you can defend
+
+No, the underlying task is shared; keep regimes separate. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0060-broad-model-comparison.html) · [measured evidence](labs/_verify_l060_results.json) · [scope](labs/l060-reproduction.md).
+
+### L061 — BAR: Learn Bayesian prediction across tasks
+
+No, a learned finite-range approximation need not preserve the analytic rule outside that range. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0061-prior-data-fitted-networks.html) · [measured evidence](labs/_verify_l061_results.json) · [scope](labs/l061-reproduction.md).
+
+### L062 — BAR: Trace the original TabPFN
+
+No, only labeled context rows supply keys in this inductive path. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0062-tabpfn-v1.html) · [measured evidence](labs/_verify_l062_results.json) · [scope](labs/l062-reproduction.md).
+
+### L063 — BAR: What a synthetic causal prior encodes
+
+No, the synthetic prior is an assumption over tasks, not an identification result. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0063-synthetic-scm-prior.html) · [measured evidence](labs/_verify_l063_results.json) · [scope](labs/l063-reproduction.md).
+
+### L064 — BAR: Trace TabPFN v2 across both table axes
+
+No, it checks an operator boundary, not pretrained weights, data, tuning or scores. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0064-tabpfn-v2.html) · [measured evidence](labs/_verify_l064_results.json) · [scope](labs/l064-reproduction.md).
+
+### L065 — BAR: Extract embeddings without their own labels
+
+No, their information roles differ because one can contain its own target. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0065-tabpfn-query-embeddings.html) · [measured evidence](labs/_verify_l065_results.json) · [scope](labs/l065-reproduction.md).
+
+### L066 — BAR: How TabICL builds and uses context
+
+No, the final dataset-level context attention retains a quadratic component. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0066-tabicl-column-row-attention.html) · [measured evidence](labs/_verify_l066_results.json) · [scope](labs/l066-reproduction.md).
+
+### L067 — BAR: Retrieve locally, then test adaptation
+
+No, retrieval changes inputs; fine-tuning requires measured parameter updates. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0067-local-pfn-retrieval-finetuning.html) · [measured evidence](labs/_verify_l067_results.json) · [scope](labs/l067-reproduction.md).
+
+### L068 — BAR: Teach a PFN about changing mechanisms
+
+No, its label must also be available by prediction time. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0068-pfns-under-temporal-shift.html) · [measured evidence](labs/_verify_l068_results.json) · [scope](labs/l068-reproduction.md).
+
+### L069 — BAR: Find the broken prediction contract
+
+No, dropping them changes the evaluated population and hides coverage failures. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0069-tabpfn-open-environment-failures.html) · [measured evidence](labs/_verify_l069_results.json) · [scope](labs/l069-reproduction.md).
+
+### L070 — BAR: Defend your foundation-model baseline
+
+No, version identity is part of the model and the missing arm must stay visible. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0070-foundation-model-checkpoint.html) · [measured evidence](labs/_verify_l070_results.json) · [scope](labs/l070-reproduction.md).
+<!-- FOUNDATION-058-070:end -->

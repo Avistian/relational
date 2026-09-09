@@ -1537,6 +1537,306 @@
   ],
   "correct": "oof",
   "explain": "Base models exclude each OOF row from fitting. OOF labels train the combiner; untouched outer-test labels evaluate that second-level choice."
+},
+// FOUNDATION-SEQUENCE-058-070
+{
+  "id": "l058-foundation-contract",
+  "lesson": 58,
+  "quarter": "Q2",
+  "concept": "foundation-surveys-meta-benchmarks",
+  "question": "What is the independent aggregation unit in the benchmark bootstrap?",
+  "options": [
+    {
+      "label": "Dataset rows",
+      "value": "0"
+    },
+    {
+      "label": "Model repeats",
+      "value": "1"
+    },
+    {
+      "label": "Epoch checkpoints",
+      "value": "2"
+    }
+  ],
+  "correct": "0",
+  "explain": "No, selection biases the evaluation population."
+},
+{
+  "id": "l059-foundation-contract",
+  "lesson": 59,
+  "quarter": "Q2",
+  "concept": "foundation-validation-set-overfitting",
+  "question": "What fits when repeated choices use validation labels?",
+  "options": [
+    {
+      "label": "Selection procedure",
+      "value": "0"
+    },
+    {
+      "label": "Untouched evaluation",
+      "value": "1"
+    },
+    {
+      "label": "Fixed population",
+      "value": "2"
+    }
+  ],
+  "correct": "0",
+  "explain": "No, validation selects lucky noise; test performance remains chance in expectation."
+},
+{
+  "id": "l060-foundation-contract",
+  "lesson": 60,
+  "quarter": "Q2",
+  "concept": "foundation-broad-model-comparison",
+  "question": "What should be averaged before cross-dataset model ranking?",
+  "options": [
+    {
+      "label": "Training durations",
+      "value": "0"
+    },
+    {
+      "label": "Model seeds",
+      "value": "1"
+    },
+    {
+      "label": "Feature values",
+      "value": "2"
+    }
+  ],
+  "correct": "1",
+  "explain": "No, the underlying task is shared; keep regimes separate."
+},
+{
+  "id": "l061-foundation-contract",
+  "lesson": 61,
+  "quarter": "Q3",
+  "concept": "foundation-prior-data-fitted-networks",
+  "question": "What must context and query share in the coin-task generator?",
+  "options": [
+    {
+      "label": "Observed labels",
+      "value": "0"
+    },
+    {
+      "label": "Random draws",
+      "value": "1"
+    },
+    {
+      "label": "Latent probability",
+      "value": "2"
+    }
+  ],
+  "correct": "2",
+  "explain": "No, a learned finite-range approximation need not preserve the analytic rule outside that range."
+},
+{
+  "id": "l062-foundation-contract",
+  "lesson": 62,
+  "quarter": "Q3",
+  "concept": "foundation-tabpfn-v1",
+  "question": "What may supply row-attention keys in the reduced inductive PFN?",
+  "options": [
+    {
+      "label": "Context rows",
+      "value": "0"
+    },
+    {
+      "label": "Query targets",
+      "value": "1"
+    },
+    {
+      "label": "Future labels",
+      "value": "2"
+    }
+  ],
+  "correct": "0",
+  "explain": "No, only labeled context rows supply keys in this inductive path."
+},
+{
+  "id": "l063-foundation-contract",
+  "lesson": 63,
+  "quarter": "Q3",
+  "concept": "foundation-synthetic-scm-prior",
+  "question": "What stays fixed in a paired edge-mechanism intervention?",
+  "options": [
+    {
+      "label": "Descendant values",
+      "value": "0"
+    },
+    {
+      "label": "Exogenous noise",
+      "value": "1"
+    },
+    {
+      "label": "Edge weights",
+      "value": "2"
+    }
+  ],
+  "correct": "1",
+  "explain": "No, the synthetic prior is an assumption over tasks, not an identification result."
+},
+{
+  "id": "l064-foundation-contract",
+  "lesson": 64,
+  "quarter": "Q3",
+  "concept": "foundation-tabpfn-v2",
+  "question": "Which representation feeds the reduced v2 classification head?",
+  "options": [
+    {
+      "label": "Context features",
+      "value": "0"
+    },
+    {
+      "label": "All features",
+      "value": "1"
+    },
+    {
+      "label": "Query target",
+      "value": "2"
+    }
+  ],
+  "correct": "2",
+  "explain": "No, it checks an operator boundary, not pretrained weights, data, tuning or scores."
+},
+{
+  "id": "l065-foundation-contract",
+  "lesson": 65,
+  "quarter": "Q3",
+  "concept": "foundation-tabpfn-query-embeddings",
+  "question": "Which role should a training row have during cross-fitted representation extraction?",
+  "options": [
+    {
+      "label": "Unlabeled query",
+      "value": "0"
+    },
+    {
+      "label": "Labeled context",
+      "value": "1"
+    },
+    {
+      "label": "Scored prediction",
+      "value": "2"
+    }
+  ],
+  "correct": "0",
+  "explain": "No, their information roles differ because one can contain its own target."
+},
+{
+  "id": "l066-foundation-contract",
+  "lesson": 66,
+  "quarter": "Q3",
+  "concept": "foundation-tabicl-column-row-attention",
+  "question": "Which stage still has quadratic context dependence in TabICL?",
+  "options": [
+    {
+      "label": "Column compression",
+      "value": "0"
+    },
+    {
+      "label": "Dataset attention",
+      "value": "1"
+    },
+    {
+      "label": "Scalar encoding",
+      "value": "2"
+    }
+  ],
+  "correct": "1",
+  "explain": "No, the final dataset-level context attention retains a quadratic component."
+},
+{
+  "id": "l067-foundation-contract",
+  "lesson": 67,
+  "quarter": "Q3",
+  "concept": "foundation-local-pfn-retrieval-finetuning",
+  "question": "What distinguishes fine-tuning from context retrieval?",
+  "options": [
+    {
+      "label": "Changed neighbors",
+      "value": "0"
+    },
+    {
+      "label": "Changed distances",
+      "value": "1"
+    },
+    {
+      "label": "Updated weights",
+      "value": "2"
+    }
+  ],
+  "correct": "2",
+  "explain": "No, retrieval changes inputs; fine-tuning requires measured parameter updates."
+},
+{
+  "id": "l068-foundation-contract",
+  "lesson": 68,
+  "quarter": "Q3",
+  "concept": "foundation-pfns-under-temporal-shift",
+  "question": "Besides event time, what controls labeled-context eligibility?",
+  "options": [
+    {
+      "label": "Label availability",
+      "value": "0"
+    },
+    {
+      "label": "Future performance",
+      "value": "1"
+    },
+    {
+      "label": "Dataset size",
+      "value": "2"
+    }
+  ],
+  "correct": "0",
+  "explain": "No, its label must also be available by prediction time."
+},
+{
+  "id": "l069-foundation-contract",
+  "lesson": 69,
+  "quarter": "Q3",
+  "concept": "foundation-tabpfn-open-environment-failures",
+  "question": "What must remain visible when classes are unsupported?",
+  "options": [
+    {
+      "label": "Selected accuracy",
+      "value": "0"
+    },
+    {
+      "label": "Population coverage",
+      "value": "1"
+    },
+    {
+      "label": "Training speed",
+      "value": "2"
+    }
+  ],
+  "correct": "1",
+  "explain": "No, dropping them changes the evaluated population and hides coverage failures."
+},
+{
+  "id": "l070-foundation-contract",
+  "lesson": 70,
+  "quarter": "Q3",
+  "concept": "foundation-foundation-model-checkpoint",
+  "question": "What identifies a version-specific pretrained model?",
+  "options": [
+    {
+      "label": "Package default",
+      "value": "0"
+    },
+    {
+      "label": "Display title",
+      "value": "1"
+    },
+    {
+      "label": "Checkpoint identity",
+      "value": "2"
+    }
+  ],
+  "correct": "2",
+  "explain": "No, version identity is part of the model and the missing arm must stay visible."
 }
 ];
 })(window);
