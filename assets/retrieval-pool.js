@@ -1399,6 +1399,52 @@
   ],
   "correct": "bad",
   "explain": "Meta-test datasets evaluate the already frozen procedure. Recipe redesign makes them development data; validation checkpoint selection may already be part of the fixed procedure."
+},
+{
+  "id": "l054-batchensemble",
+  "lesson": 54,
+  "quarter": "Q2",
+  "concept": "batchensemble",
+  "question": "In TabM, how does implicit submodel i differ from the shared backbone weight W?",
+  "options": [
+    {
+      "label": "Per-member ±1 adapters give Wᵢ = W ⊙ (sᵢ rᵢᵀ)",
+      "value": "adapter"
+    },
+    {
+      "label": "Per-member full weight copies replace the shared W",
+      "value": "copy"
+    },
+    {
+      "label": "Per-member dropout masks disable parts of W",
+      "value": "dropout"
+    }
+  ],
+  "correct": "adapter",
+  "explain": "Each member keeps the shared W and adds only rank-one multiplicative adapters r,s (plus a bias b), so Wᵢ = W ⊙ (sᵢ rᵢᵀ): 3d extra numbers per layer, not a new matrix."
+},
+{
+  "id": "l054-diversity",
+  "lesson": 54,
+  "quarter": "Q2",
+  "concept": "ensemble-diversity",
+  "question": "TabM averages k submodels. When does adding more submodels stop helping?",
+  "options": [
+    {
+      "label": "When the submodel errors are highly correlated",
+      "value": "correlated"
+    },
+    {
+      "label": "When the submodel errors are mostly independent",
+      "value": "independent"
+    },
+    {
+      "label": "When the submodels each reach zero training loss",
+      "value": "zeroloss"
+    }
+  ],
+  "correct": "correlated",
+  "explain": "Averaging cuts variance to σ²(ρ + (1−ρ)/k); the floor is √ρ. If members are correlated (ρ→1) the mean equals one member, so diversity, not larger k, is what pays."
 }
   ];
 })(window);

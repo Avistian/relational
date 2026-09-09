@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TabM · parameter-efficient ensembling reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<nav><a href="../lessons/0054-tabm-parameter-efficient-ensembling.html">Lesson 054</a> · <a href="glossary.html#tabm">Glossary</a></nav><h1>TabM: parameter-efficient ensembling</h1>
+<p><strong>One MLP, k predictions.</strong> TabM is a deep ensemble of <em>k</em> MLPs that share almost all weights and are trained jointly; the prediction is the mean of the <em>k</em> submodels. Default <em>k</em> = 32, the only new hyperparameter over a plain MLP.</p>
+<h2>BatchEnsemble linear layer (§3.2)</h2>
+<p>Shared <em>W</em>; per-member multiplicative adapters <em>rᵢ</em> (input), <em>sᵢ</em> (output) and additive <em>bᵢ</em>:</p>
+<table><thead><tr><th>Object</th><th>Rule</th></tr></thead><tbody>
+<tr><td>Member layer</td><td><code>lᵢ(x) = sᵢ ⊙ (W (rᵢ ⊙ x)) + bᵢ</code></td></tr>
+<tr><td>Equivalent matrix</td><td><code>Wᵢ = W ⊙ (sᵢ rᵢᵀ)</code> (rank-one sign mask on shared W)</td></tr>
+<tr><td>Batched over k</td><td><code>l_BE(X) = ((X ⊙ R) W) ⊙ S + B</code>, X ∈ ℝ[k,d]</td></tr>
+<tr><td>Overhead</td><td>3d numbers per member per layer (vs d² for W)</td></tr>
+</tbody></table>
+<h2>Variants (§3.3)</h2>
+<table><thead><tr><th>Variant</th><th>Per-member difference</th><th>Note</th></tr></thead><tbody>
+<tr><td>MLP<sup>×k</sup> / TabM_packed</td><td>all weights (k full MLPs)</td><td>the reference deep ensemble</td></tr>
+<tr><td>TabM_naive</td><td>all 3N adapters, random ±1 init</td><td>weight sharing = regularisation</td></tr>
+<tr><td>TabM_mini</td><td>only the first adapter R₁</td><td>the minimal effective ensemble (what we build)</td></tr>
+<tr><td>TabM (default)</td><td>all 3N adapters, R=S=1 init except first R</td><td>best; extra adapters are no-ops at init, free to grow</td></tr>
+</tbody></table>
+<h2>Forward pass and training</h2>
+<p>Numeric input → z-score → broadcast to k copies [B,k,p] → first ±1 adapter R₁ diversifies copies → N shared blocks Linear(W)/ReLU/Dropout → k packed heads → mean over k (softmax probabilities for classification, raw for regression). Objective = mean over members of each member's loss; inference = mean of member predictions; stop on the ensemble's validation score. Init: non-first R,S = 1 (no-op), first R = random ±1, B = 0.</p>
+<h2>Why it works (§3.5, §5)</h2>
+<p>Weight sharing regularises (fewer dead neurons: 0.14 at k=32 vs 0.29 at k=1). Joint training enables ensemble-aware early stopping and single-model tuning. Submodels are weak and overfit individually but strong collectively — direct evidence of diversity; even the best submodel ≈ a plain MLP. Averaging variance: <code>σ²(ρ + (1−ρ)/k)</code>, floor √ρ·σ — diversity (low ρ) matters more than large k. Too-high k can hurt; narrow/shallow TabM is suboptimal. Submodels are prunable (≈8.8/32 kept greedily).</p>
+<h2>Interpretation checks</h2>
+<p>A member is not a new matrix — it is the shared W with a rank-one ±1 mask. "Default k=32" is not tuned. Collective &gt; individual is the transferable claim; a win over trees is regime-dependent. A capped, width-64, numeric run is INCOMPARABLE to the 46-dataset benchmark (no feature embeddings, no domain-aware splits, no per-model tuning). p&gt;0.05 on three datasets is low power, not equivalence.</p>
+<h2>Local evidence (this lab)</h2>
+<p>Three reused TabR-release splits, caps 1200/600/600, three seeds, TabM-mini width 64 / depth 3 / 64 epochs / k=32, deep ensemble MLP×32, six-candidate XGB. Diversity effect (collective &lt; mean individual) reproduces on all three, and MLP×32 beats a single MLP on all three. Head-to-head is mixed: TabM-mini beats the single MLP on House and Higgs (loses on California) and beats MLP×32 only on Higgs; XGB wins California and Higgs but is last on House. Mean ranks tie MLP×32 and XGB (2.0), then TabM-mini (2.67), then MLP (3.33); Friedman p=0.53. Verdict <strong>INCOMPARABLE</strong>. See the <a href="../labs/l054-reproduction.md">reproducibility contract</a> and <a href="../labs/_verify_l054_results.json">local evidence</a>.</p>
+<p>Primary source: <a href="https://arxiv.org/abs/2410.24210">Gorishniy, Kotelnikov &amp; Babenko, TabM (2410.24210, ICLR 2025)</a>, §3 and §5; BatchEnsemble: Wen, Tran &amp; Ba (2020). Reference implementation: <a href="https://github.com/yandex-research/tabm">yandex-research/tabm</a>.</p>
+</article></body></html>

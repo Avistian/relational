@@ -271,6 +271,14 @@
   "lesson": 53,
   "front": "How can RealMLP be default and still involve tuning?",
   "back": "Its recipe was developed across meta-train datasets. On a new task it fits new weights with fixed hyperparameters and may select a validation checkpoint. Recipe changes informed by meta-test results contaminate dataset-level evaluation. TD-S is the simplified variant, not full TD."
+},
+{
+  "id": "gorishniy2024-tabm-batchensemble",
+  "paper": "Gorishniy et al. \u2014 TabM",
+  "year": 2024,
+  "lesson": 54,
+  "front": "What is TabM, and why do its k predictions beat any one of them?",
+  "back": "TabM is a parameter-efficient ensemble of MLPs: one shared backbone W with per-member ±1 adapters (BatchEnsemble, Wᵢ = W ⊙ (sᵢ rᵢᵀ)), producing k predictions averaged at inference (default k=32). The submodels are trained jointly and share weights, so they are weak and overfit individually but diverse; their mean generalises. Weight sharing acts as regularisation; joint training enables ensemble-aware early stopping."
 }
   ];
 })(window);
