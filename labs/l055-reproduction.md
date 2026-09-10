@@ -1,60 +1,99 @@
-# L055 reproduction contract
+# L055 reproduction contract · repaired v2
 
-**Verdict: INCOMPARABLE to TabReD Figure 2.** This is a measured evaluation-protocol lab, not a reproduction of the original model ranking.
+Three evidence tracks are deliberately distinct:
 
-## Sources and version boundary
+1. **AUTHOR_REPORT_REANALYSIS:** 2879 original temporal-study reports from the pinned authors' repository, aggregated locally across all eight tasks and the actual Figure 2 arms. This does not retrain a model.
+2. **LOCAL_PROTOCOL_MEASURED / INCOMPARABLE:** 54 newly selected evaluations (108 candidate fits) using corrected TabM-mini, MLP and XGBoost on three current-release tasks and one same-pool capped split pair. Authoring time 379.7 seconds of elapsed wall time on CPU; teacher notebook independently reruns it.
+3. **Fresh paper training: NOT_RUN.** No full Figure 2 retraining or paid/cloud job was launched. Larger current-implementation local/Colab/Modal operators are provided and remain INCOMPARABLE to the paper.
 
-- Paper: https://arxiv.org/html/2406.19380v4, especially §5.4 / Figure 2 and Appendix C.2.
-- Official repository pinned at `b5ef15b3749f30da7a1eb8fba21a5b54d706bf32`.
-- Public Kaggle `irubachev/tabred`, July 10, 2026 preprocessed release. Three archive hashes match the pinned registry. The fetcher rejects unexpected bytes; it never silently moves to a changed release.
-- Ecom Offers: 160057 rows, 113 numeric + 6 binary columns, no categorical columns.
-- Homesite Insurance: 260753 rows, 253 numeric + 23 binary; 23 categorical columns omitted.
-- Sberbank Housing: 28321 rows, 365 numeric + 17 binary; 10 categorical columns omitted. Target = `log(price_doc / full_sq)`, confirmed in pinned `preprocessing/sberbank_housing.py`. RMSE is on that released log target, not raw prices.
-- Metadata is excluded from predictors. The first metadata column gives event ordering; Ecom's second metadata column is also excluded.
-- Release counts differ from paper Table 2. Official provenance does not certify identity to the paper experiment. See `_sources_l055.json` for source URLs and `_data_l055.json` for array hashes.
+## Primary sources and exact versions
 
-## Local experiment
+Paper v4: https://arxiv.org/html/2406.19380v4. Read §3–4 (benchmark construction), §5.1–5.3 (technique transfer), §5.4/Figure 2 (split intervention), Appendices A (diagnostics), B (feature construction), C (preprocessing, tuning and comparisons). Paper scope is industrially engineered, temporally evolving tasks; it is complementary to other benchmarks.
 
-Same released underlying row pool and partition sizes for `random-0` and `sliding-window-0`. Within each partition use label-blind sampling without replacement, caps 1500/600/600 and fixed sampling seeds 550/551/552. All model arms see identical rows within a protocol. The capped row unions across protocols need not coincide, an additional sampling difference.
+Official code: https://github.com/yandex-research/tabred/tree/b5ef15b3749f30da7a1eb8fba21a5b54d706bf32.
+`_sources_l055.json` pins substantive source file hashes. The current downloader/preprocessing and the archived paper operators have different file layouts; downloading today's archives does not prove paper-era data identity.
 
-Released temporal splits are ordered nondecreasingly but share boundary timestamps on all three tasks. We preserve official indices for this comparison. A separate live exercise keeps whole timestamp groups in half-open intervals; it is not silently substituted into the benchmark experiment. Per-feature availability and label arrival metadata are not supplied here; the timing diagram is synthetic, not a verified property of these arrays.
+The paper's temporal study uses MLP, MLP-PLR, XGBoost and TabR-S (shortened to TabR in the figure legend), three corresponding sliding/random windows and 15 initialization seeds. Archived temporal XGBoost tuning configs specify **200** trials and up to 4000 trees; neural MLP configs specify **100**, while the main paper mentions 100 for most methods and 25 for FT-Transformer. Inspect per-experiment configs rather than assigning all models a generic equal-budget label.
 
-Preprocess train-only: replace nonfinite entries by training column medians (zero if entirely missing), then standardize by filled-training mean/std (unit scale if constant). Numeric and binary features share this policy across arms. Neural regression training uses training-target standardization, with predictions restored before metrics. Classification objective is cross entropy; regression objective is squared error. Score 1−AUROC or RMSE, lower is better.
+For the three local datasets, `paper/lib/data.py:transform_num` uses training-only noisy normal quantiles with 1e-5 fit noise and NaN-to-zero afterward. Other datasets use identity normalization because their numerical inputs are already normalized. Categorical features have a training-fitted vocabulary and unknown handling. The local median/standard transform and omitted categories are deviations.
 
-Three model seeds (0/1/2); two candidates per arm. All candidates are trained using only train/validation. First minimum validation error selects the candidate, then only its test predictions are computed. The neural checkpoint is the first minimum validation metric over 32 epochs. No test-selected changes or refit on train+validation.
+Table 3's source ranking groups sorted models within the current group's leader SD (`get_ranks_ours`); Appendix C.2 also reports Tamhane's T2 comparisons. The notebook's ordinary average ranks and exploratory Friedman/Nemenyi summaries are different procedures.
 
-- MLP: two width64 Linear–ReLU–Dropout(.1) blocks, head; AdamW weight decay 1e−4, batch256, learning-rate candidates .001/.003.
-- TabM-mini: same blocks, k=8, first member adapters, shared weights and separate heads; mean member training loss, mean prediction; same neural candidate recipe.
-- XGBoost: histogram trees, 120 estimators, learning rate .05, depth candidates 3/6, row/column sampling .8, one thread.
+## Author-report reconstruction
 
-These are teaching configurations, not a full search over each model. Candidate count is equal; compute and search-space coverage are not. All code is visible in the notebook, including the reused L054 neural models and the trainer. TODO preprocessing/selection functions feed the actual training experiment; call-counter smoke checks establish the connection.
+`_paper_reports_l055.py` reads only `paper/exp/temporal-shift-analysis/{model}/{dataset}-{split}/evaluation/{seed}/report.json` from the pinned commit. It validates dataset, split and seed against report configuration, verifies score orientation, verifies each file's committed Git blob and saves SHA256 of the original report bytes and normalized configuration. An edited tracked report or injected report is rejected. Main/default splits, tuning metrics and ensemble reports are excluded.
 
-## Evidence and uncertainty
+The manifest has 8 × 4 × 2 × 3 × 15 = 2880 expected positions; **XGBoost / Cooking Time / random-0 / seed 1 is missing**, leaving 2879. Do not impute it. Compute available-seed means per window, then average three windows equally. The artifact also computes a common-seed sensitivity: remove seed 1 from every Cooking window-0 arm and protocol. Other windows retain all 15 seeds.
 
-`_verify_l055_results.json` stores environment versions, source hashes, capped index hashes, selected candidates, all validation candidate metrics, selected test predictions/targets, seed errors, per-task ranks and summaries. The executed teacher notebook reruns the protocol. The delivery checker reconciles stored predictions and notebook results.
+`_paper_l055_results.json` contains the per-report metrics/provenance, 64 dataset/model/protocol aggregates and a second matched-seed analysis. Each includes window counts, means and conditional sample SD. Window minima/maxima are descriptive ranges, not confidence intervals. Overlapping windows and repeated initialization seeds are not independent future deployments.
 
-Report sample SD over three training seeds. The plotted 95% Student-t intervals use mean ± 4.30265 × SD / sqrt(3). They condition on one split pair, row caps and settings. They omit new periods, new tasks, new splits and data-preparation uncertainty. Seed labels do not create matched random/time test observations.
+Oriented XGBoost advantage over MLP-PLR is AUROC_XGB − AUROC_MLP-PLR or RMSE_MLP-PLR − RMSE_XGB. Positive always favors XGBoost. Its advantage narrows on seven tasks in the reanalysis; Homecredit increases .005617→.006265. Ecom changes +.001537→−.003569. Units differ across tasks, so retain separate task panels.
 
-Average seeds within each dataset, then rank the three arms. Friedman and Nemenyi are separate exploratory summaries for each protocol over three task units. This is not the paper's uncertainty-aware ranking/Tamhane procedure. The low dataset count limits inference; nonsignificance is not equivalence.
+`_check_paper_reports_l055.py` independently reconciles every record against committed Git objects and every numerical summary using a separate aggregation implementation. This establishes extraction/aggregation correctness; the reports remain the authors' measurements. Source Figure 2 was visually compared, not pixel-identically regenerated. Original error-bar construction is not assumed to equal our explicitly defined window/seed summaries.
 
-Local result: Ecom and Homesite deteriorate for all arms and retain XGBoost as winner. Sberbank improves for all arms; point-estimate winner changes from TabM-mini to MLP. Ecom's TabM-minus-XGBoost error gap widens .01267 → .03922, unlike the paper's headline shrinking XGBoost lead. Different arms, omitted categories, caps, preprocessing, search, sampling and data version preclude a contradiction claim.
+## Current released data
 
-## Run and scale up
+Public Kaggle `irubachev/tabred`, July 2026 release. `_fetch_l055.py` checks three archives against the pinned official registry. `_check_release_l055.py` additionally compares **80 extracted arrays/metadata files** against archive member bytes and existing `_data_l055.json` hashes; this closes the stale extracted-cache gap. The saved release check binds the measured v2 result hash and explicitly records that it was a post-run audit. The current notebook setup and v2 command operator verify extracted bytes before new runs.
 
-From the repository root:
+| Task | Current rows | Predictor columns used | Omitted categorical columns | Paper Table 2 rows/features |
+|---|---:|---:|---:|---:|
+| Ecom Offers | 160057 | 113 numeric + 6 binary | 0 | 106K / 119 |
+| Homesite Insurance | 260753 | 253 numeric + 23 binary | 23 | 224K / 296 |
+| Sberbank Housing | 28321 | 365 numeric + 17 binary | 10 | 20K / 387 |
+
+Timestamp metadata is excluded from predictors. Sberbank target is `log(price_doc / full_sq)`, confirmed in pinned preprocessing code. Its RMSE is not currency RMSE or original-unit MAE. Table 2 summary totals are not proof that data content changed. `_check_release_report_alignment_l055.py` compares current class counts to original pinned MLP report supports for two classification tasks across default plus all six random/temporal splits. **24 of 42 partition class-count comparisons match**: all 21 Homesite partitions and Ecom's three default partitions. All 18 Ecom random/temporal partitions have matching total sizes but different class counts; Ecom temporal-0 test is [13802, 6198] currently versus [13796, 6204] reported, and random-0 test is [15087, 4913] versus [15129, 4871]. This establishes partial alignment and a concrete unresolved Ecom membership/label discrepancy. It does not identify its cause or prove row/feature-byte identity for matching partitions. Full observations are in `_release_report_alignment_l055_results.json`.
+
+## Current local experiment
+
+The historical `temporal_experiment.py` / `tabm.py` / `_verify_l055_results.json` remain unchanged. Historical mini had an extra first output adapter, member backbone biases and incorrect fan-in initialization. Current teaching uses **`temporal_experiment_v2.py` and the corrected, frozen `tabm_v2.py`**, with newly measured `_verify_l055_v2_results.json`. No old score or source hash was relabeled.
+
+For each released temporal window, sample train/validation/test once using label-blind seeds 550/551/552 and caps 1500/600/600. Concatenate those IDs; `paired_random_split` uses seed 5550+window to randomly assign the same pool back into equal-sized partitions. Thus **exact pool identity and partition counts match at the actual fitted scale**. The random assignment is a derived capped analogue of §5.4, not the downloaded `random-0` indices. In the old experiment the two independently capped pool unions could differ.
+
+The released temporal groups are ordered nondecreasingly and share boundary timestamps on all three tasks. Preserve those indices and disclose ties. The separate live whole-timestamp splitter demonstrates a stricter half-open policy, at the cost of changed counts. Available metadata does not establish feature-arrival times or label delays; the multi-clock example is synthetic. This benchmark experiment assumes released feature/label suitability and cannot certify point-in-time deployment legality.
+
+Train-only median imputation (zero if entirely missing), followed by filled-training mean/std scaling (unit scale if constant); apply frozen state to held-out rows. Neural regression labels are standardized using training targets and predictions restored before scoring. Score 1−AUROC or released-target RMSE, lower is better.
+
+Three model seeds 0/1/2; two candidates per arm. MLP and corrected TabM-mini: two width64 blocks, ReLU, dropout .1; AdamW weight decay1e-4, batch256, 32 epochs; learning rates .001/.003. Mini has k8, one first input adapter, shared backbone biases/weights and independent small heads, mean member loss and mean probabilities/values. XGBoost: 120 histogram trees, learning rate .05, depths3/6, row/column sampling .8, one thread. Candidate counts match; compute/search coverage do not.
+
+First minimum validation error selects a candidate, with neural checkpoints selected by validation during training. Only the selected candidate predicts test. No refit on train+validation. The notebook displays complete visible model/trainer code and proves the live random assignment, preprocessor and selector are called by an actual real-data smoke run.
+
+## Local results and uncertainty
+
+Current Ecom winner changes from TabM-mini to XGBoost; Homesite retains XGBoost; Sberbank changes from XGBoost to MLP. All Ecom errors increase and all Sberbank errors decrease under temporal evaluation. These are small conditional point-estimate comparisons, not stable architecture rankings.
+
+Within each fixed local split, display mean ± sample SD over three model seeds. The plotted 95% Student-t interval is mean ±4.30265×SD/√3, conditional on rows, recipe and split. It omits new tasks, periods, feature reconstruction and protocol-selection uncertainty. Random/time seed labels do not create paired per-example test observations.
+
+Average seeds within each dataset, then rank three arms. Mean ranks MLP/TabM-mini/XGBoost: random 2.667/1.667/1.667; temporal 2.333/2.000/1.667. Friedman p = .3679 / .7165; Nemenyi CD 1.9136. Three datasets have little power; nonsignificance is not equivalence. Raw predictions/targets, validation candidate errors, selected recipes, index/pool hashes and measured source identities are saved.
+
+## Run, rebuild and extend
+
+From repository root:
 
 ```bash
 .venv/bin/python labs/_check_l055.py
-.venv/bin/python labs/_verify_l055.py --preset smoke
-.venv/bin/python labs/_verify_l055.py --preset local
-.venv/bin/python labs/_verify_l055.py --preset closer
+.venv/bin/python labs/_check_l055_v2.py
+.venv/bin/python labs/_check_release_l055.py
+.venv/bin/python labs/_paper_reports_l055.py
+.venv/bin/python labs/_verify_l055_v2.py --preset smoke
+.venv/bin/python labs/_verify_l055_v2.py --preset windows-smoke
+.venv/bin/python labs/_verify_l055_v2.py --preset local
+```
+
+Read-only author source checks use the extractor's ignored pinned checkout; the independent checker accepts `--checkout /path/to/pinned/tabred` (inspect its CLI). No authentication or paid compute is needed to reanalyze public logs.
+
+Canonical current presentation: `_figures_l055_v2.py`, `_build_l055.py`, `_refresh_l055_v2.py`, `lessons/depth/0055.md`. Execute the teacher solution after code changes; refresh preserves outputs only when executable cells are exactly identical. Teacher notebooks stay gitignored.
+
+After the EXIT, a larger current implementation can be run with:
+
+```bash
+.venv/bin/python labs/_verify_l055_v2.py --preset closer
 modal run --detach modal/l055_paper_repro.py --preset closer
 ```
 
-`closer`: three released split pairs, 3 seeds, caps6000/2000/2000, 64 neural epochs and 300 trees, otherwise the same code/candidates. It is supplied but NOT_RUN during authoring. No resume cache: rerunning retrains; download archives are cached and checksummed. Modal writes `closer-results.json` into volume `relational-l055`; retrieve it with `modal volume get relational-l055 closer-results.json`. The cloud image pins a separate environment, which is recorded in its results; exact local score parity is not promised.
+The gated Colab cell calls the student's live functions, with three temporal windows and their paired capped random assignments, 6000/2000/2000 caps, three seeds, 64 epochs and 300 trees. This studies window sensitivity but still omits original arms, categorical features, searches and data-version reconciliation. **Larger local/Colab/Modal runs NOT_RUN**. Modal source updated to v2; no job launched. Colab payload packaging is checked, live Colab UI is not.
 
-The notebook's gated scale-up calls the current live student functions. Modal bundles the repository’s canonical files. To scale modified student functions on Modal, first port and verify them in the canonical files. Cloud training was not launched.
+Fresh paper training requires first reconciling the old `paper/lib` data format, exact samples, feature preprocessing and temporal split construction with archived configs; then running all four original arms, selected recipes and 15 seeds across all windows. `paper/README.md` documents the original environment and `bin/go.py` route. The current scale-up flag is not a fidelity certificate or a claim that this separate reconstruction was completed.
 
-**Full paper procedure: NOT_RUN and not implemented as a misleading `paper` resource preset.** Restore the original Figure 2 arms (MLP, MLP-PLR, XGBoost, TabR-S), all eight tasks, full feature policy, dataset-version alignment, preprocessing and original tuning configurations, three matched temporal/random windows and 15 initialization seeds. Resolve the paper/release identity before choosing a numerical tolerance. More epochs alone cannot close these gaps.
+## Final local delivery
 
-Prepared HTML and inline PNG payloads can be checked locally. Browser, live Colab and deployed Pages behavior are separate verification targets; all remain NOT_CHECKED unless recorded otherwise in `_delivery_l055_results.json`.
+The final teacher executed all 29 code cells; 54 selected predictions matched the separate v2 reference. Eight image payloads, five blank student TODOs, live identities, the completed teacher EXIT, canonical regeneration and prepared HTML passed `labs/_delivery_l055_v2_results.json`. Its training-suite elapsed wall time was 1120.751 seconds in this notebook environment, versus 379.678 seconds for the separate reference operator; these are diagnostics, not a controlled efficiency result. The bounded three-window smoke also passed (18 selected evaluations, 12.8 seconds elapsed); the larger closer preset remains unrun.

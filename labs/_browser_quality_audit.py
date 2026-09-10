@@ -63,8 +63,9 @@ with sync_playwright() as p:
             inspect('default')
             for i in range(root.locator('button').count()):
                 root.locator('button').nth(i).click();inspect('button-'+str(i))
-            for i in range(root.locator('details').count()):
-                details=root.locator('details').nth(i)
+            detail_nodes=root.locator('xpath=self::details | .//details')
+            for i in range(detail_nodes.count()):
+                details=detail_nodes.nth(i)
                 original=details.evaluate('(e)=>e.open')
                 summary=details.locator(':scope > summary')
                 summary.click()

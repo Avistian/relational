@@ -13,7 +13,7 @@ function compute(delay){
 }
 function mount(el){
   el.className='temporal-audit';
-  el.innerHTML='<label>Label delay: <span class="delay">3</span> time units <input type="range" min="0" max="4" value="3" aria-label="Label delay"></label><button type="button">Reset</button><p>Fixed: train events 1–7; validation 8–10; test 11–12. Fit at 8, select at 11. Delay-zero baseline: 7 training labels and 3 validation labels available.</p><div class="scroll"><table><thead><tr><th>Event time</th><th>Partition</th><th>Label arrives</th><th>Usable by deadline?</th></tr></thead><tbody></tbody></table></div><output aria-live="polite"></output>';
+  el.innerHTML='<label>Label delay: <span class="delay">3</span> time units <input type="range" min="0" max="4" value="3" aria-label="Label delay"></label><button type="button">Reset</button><p>Fixed: train events 1–7; validation 8–10; test 11–12. Fit at 8, select at 11. Labels arriving exactly at a deadline are processed before that decision in this fixture. Delay-zero baseline: 7 training labels and 3 validation labels available.</p><p>Scroll horizontally to inspect every column.</p><div class="scroll" role="region" tabindex="0" aria-label="Label availability table, scroll horizontally"><table><thead><tr><th>Event time</th><th>Partition</th><th>Label arrives</th><th>Usable by deadline?</th></tr></thead><tbody></tbody></table></div><output aria-live="polite"></output>';
   const input=el.querySelector('input'),body=el.querySelector('tbody'),out=el.querySelector('output');
   function render(){
     const rows=compute(input.value);el.querySelector('.delay').textContent=input.value;

@@ -42,6 +42,8 @@ See [the assignment rubric](BRIEF.md) for the full checklist.
 
 | [053 RealMLP](053.md) | Complete repair: corrected architecture/meta-development diagram, TD versus TD-S and benchmark derivations, matched Adam state checks, new measured clipping intervention and live EXIT; fresh 26-cell teacher, browser and 96 Pages links pass. Pushed as `08bc5ce`; Pages succeeded and 29 live files matched the commit | Historical results unchanged; full benchmark NOT_REPRODUCED; local paired clipping effects remain INCOMPARABLE to Table B.2 |
 
-| [054 TabM](054.md) | Complete repair: corrected mini adapters, shared biases and fan-in in separately measured v2; eight full-path source comparisons, fresh 21-cell teacher, live independent-batch reproduction lane and stable resume; browser and 99 copied-Pages links pass. Separate commit/publication pending | Historical operators remain immutable; corrected local suite and closer smoke remain INCOMPARABLE; tuned paper benchmark NOT_RUN |
+| [054 TabM](054.md) | Complete repair: corrected mini adapters, shared biases and fan-in in separately measured v2; eight full-path source comparisons, fresh 21-cell teacher, live independent-batch reproduction lane and stable resume; browser and 99 copied-Pages links pass. Pushed as `2cf8abe`; Pages succeeded and 26 live files matched the commit | Historical operators remain immutable; corrected local suite and closer smoke remain INCOMPARABLE; tuned paper benchmark NOT_RUN |
 
-055–070 are pending individual review.
+| [055 TabReD](055.md) | Complete repair: extensive paper/appendix analysis, 2,879 original-report reanalysis with independent committed-blob checks, same-pool protocol and corrected TabM, measured 54-evaluation suite, five live tasks and fresh 29-cell teacher; browser and 108 copied-Pages links pass. Publication verification pending | Author-report reanalysis is separate from training reproduction; precise Ecom split-alignment gap remains; full paper training and larger local lane NOT_RUN |
+
+056 is in progress. 057–070 are pending individual review.
