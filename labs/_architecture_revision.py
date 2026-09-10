@@ -146,15 +146,15 @@ panel(53,'realmlp','RealMLP-TD-S · the recipe is in the path','Model architectu
 
 panel(54,'tabm','TabM · separate members, shared matrices','Model architecture',
       'How do identical input rows take different paths through the same W?',
-      [('Broadcast the row','Make k member views; the first learned sign adapter differentiates them.','B × F → B × k × F'),
-       ('Share expensive weights','Adapt input/output directions around W; ReLU and dropout follow.','B × k × hidden width'),
-       ('Use member heads','Each member has an independent output projection.','B × k × classes'),
-       ('Aggregate probabilities','Softmax each member, then mean over k. Training averages member losses.','B × classes')],
-      'Two adapters, one shared matrix',
+      [('Broadcast the row','Train-only imputation/z-score, then k views; R starts ±1 and learns real values.','B × F → B × k × F'),
+       ('Share expensive weights','Mini: first R only; N shared W and shared biases, ReLU, training-only dropout.','B × k × hidden width'),
+       ('Use member heads','Each member has an independent output projection.','B × k × output width'),
+       ('Aggregate probabilities','Classification: mean probabilities. Regression: mean scalars. Train: mean member losses.','B × output width')],
+      'Two members, one shared matrix',
       '<p class="aa-small">x=(2,3), W=[[1,2],[3,4]], S=1, bias=0.</p>'+matrix(['member A','member B'],[('R',['(1,1)','(1,−1)']),('x ⊙ R',['(2,3)','(2,−3)']),('× shared W',['(11,16)','(−7,−8)'])])+pair('p₁=0.9, p₂=0.6','mean p = 0.750','Mean logits first','p ≈ 0.786'),
       'Pre-activation adapter fixture. The probability example is a separate head-output fixture showing why operation order matters.',
       'Adapters create different effective functions while retaining one W. Softmax and member averaging do not commute.',
-      'The local mini variant omits later multiplicative adapters; full local TabM retains them. Both preserve member biases and heads. Neither is k independently trained dense backbones.')
+      'Corrected v2 numeric mini: only first R; shared backbone weights/biases; separate heads. Full TabM adds R,S and member biases in each block. Input labels appear only in the training loss. Shared batches pictured; the closer trainer also supports distinct rows per member.')
 
 panel(57,'stack','OOF stack · predictions become features','Model architecture',
       'Which fitted base model is allowed to produce the training feature for row i?',

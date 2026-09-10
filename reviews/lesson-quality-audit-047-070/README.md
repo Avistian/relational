@@ -40,6 +40,8 @@ See [the assignment rubric](BRIEF.md) for the full checklist.
 
 | [052 TabR](052.md) | Complete repair: deeper paper design/projection/scaling analysis, annotated lab and live real-row trace, all-parameter source gradients, corrected tie check and precise official-evaluation route; fresh 24-cell teacher, browser and 89 Pages links pass. Pushed as `ce2c0fe`; Pages succeeded and 25 live files, including linked downloads, matched the commit | Numeric TabR-S mechanism validated; historical California result remains INCOMPARABLE; official 15-seed evaluation NOT_RUN |
 
-| [053 RealMLP](053.md) | Complete repair: corrected architecture/meta-development diagram, TD versus TD-S and benchmark derivations, matched Adam state checks, new measured clipping intervention and live EXIT; fresh 26-cell teacher, browser and 96 Pages links pass. Separate commit/publication pending | Historical results unchanged; full benchmark NOT_REPRODUCED; local paired clipping effects remain INCOMPARABLE to Table B.2 |
+| [053 RealMLP](053.md) | Complete repair: corrected architecture/meta-development diagram, TD versus TD-S and benchmark derivations, matched Adam state checks, new measured clipping intervention and live EXIT; fresh 26-cell teacher, browser and 96 Pages links pass. Pushed as `08bc5ce`; Pages succeeded and 29 live files matched the commit | Historical results unchanged; full benchmark NOT_REPRODUCED; local paired clipping effects remain INCOMPARABLE to Table B.2 |
 
-054 is next. 055–070 are pending individual review.
+| [054 TabM](054.md) | Complete repair: corrected mini adapters, shared biases and fan-in in separately measured v2; eight full-path source comparisons, fresh 21-cell teacher, live independent-batch reproduction lane and stable resume; browser and 99 copied-Pages links pass. Separate commit/publication pending | Historical operators remain immutable; corrected local suite and closer smoke remain INCOMPARABLE; tuned paper benchmark NOT_RUN |
+
+055–070 are pending individual review.

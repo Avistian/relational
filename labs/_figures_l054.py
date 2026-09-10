@@ -1,5 +1,5 @@
 """Portable L054 figures. Static computation figures plus measured-evidence figures.
-Measured figures read _verify_l054_results.json and are skipped if it is absent."""
+Measured figures read _verify_l054_v2_results.json and are skipped if it is absent."""
 import os, json
 os.environ.setdefault('MPLCONFIGDIR', '/tmp/relational-matplotlib')
 from pathlib import Path
@@ -36,7 +36,7 @@ def architecture():
     arrow(.5, .855, .5, .83)
     box(.02, .735, .96, .09, '#f3ece0')
     txt(.04, .805, 'FIRST ADAPTER R₁  (the one critical adapter)  [k, p]', 11, weight='bold')
-    txt(.04, .77, 'X ⊙ R₁ with R₁ ∈ {−1,+1}: the k copies now differ before W ever mixes features', 10, ORANGE)
+    txt(.04, .77, 'X ⊙ R₁ with R₁ starts at ±1; then learns real scalars: the k copies now differ before W ever mixes features', 10, ORANGE)
     arrow(.5, .73, .5, .705)
     txt(.04, .688, 'N SHARED BLOCKS: Linear (shared W) → ReLU → Dropout   [B, k, d]', 11, weight='bold')
     for i in range(3):
@@ -57,7 +57,7 @@ def architecture():
     box(.02, .12, .96, .13, '#f3ece0')
     txt(.04, .225, 'WHAT IS SHARED vs NOT', 11, weight='bold')
     txt(.04, .19, 'Shared (≈ one MLP): the backbone weights W of every block', 10)
-    txt(.04, .162, 'Not shared (3d per layer + heads): adapters R, S, B and the k heads', 10)
+    txt(.04, .162, 'Mini not shared: only R₁ [k,p] and the k heads; no S or member bias', 10)
     txt(.04, .134, 'Only new hyperparameter vs MLP: k. Paper default k = 32, not tuned.', 10, BLUE)
     txt(.02, .085, 'Trained jointly: one optimiser step = k parallel steps; stop on the ensemble’s validation score.', 9)
     txt(.02, .055, 'This lab: numeric only; no feature embeddings (paper’s † variants) or categorical inputs.', 9, GREY)
@@ -66,10 +66,10 @@ def architecture():
 
 
 def batchensemble():
-    W = np.array([[0.8, -0.4], [0.5, 0.9]]); r = np.array([1, -1]); s = np.array([1, 1])
+    W = np.array([[1., 3.], [2., 4.]]); r = np.array([1, -1]); s = np.array([1, 1])
     Wi = (s[:, None] * r[None, :]) * W
     fig, axes = plt.subplots(1, 3, figsize=(9.5, 3.4))
-    for ax, M, title, hl in [(axes[0], W, 'Shared W', None),
+    for ax, M, title, hl in [(axes[0], W, 'Column-vector W (transpose of code W)', None),
                              (axes[1], np.outer(s, r), 'sᵢ rᵢᵀ  (outer product of ±1)', None),
                              (axes[2], Wi, 'Wᵢ = W ⊙ (sᵢ rᵢᵀ)', (r * s[0] < 0))]:
         ax.imshow(np.zeros_like(M), cmap='Greys', vmin=0, vmax=1); ax.set_title(title, fontsize=11)
@@ -87,11 +87,12 @@ def batchensemble():
 
 
 def variants():
-    fig, ax = plt.subplots(figsize=(8.4, 3.7)); ax.axis('off')
-    rows = [['MLP^{×k} / TabM_packed', 'all weights (k full MLPs)', '≈ k × MLP', 'the reference deep ensemble'],
-            ['TabM_naive', 'all 3N adapters, random ±1', '≈ MLP + 3Nkd', 'weight sharing = regularisation'],
-            ['TabM_mini', 'one first adapter R₁ only', '≈ MLP + kd', 'the minimal effective ensemble'],
-            ['TabM (default)', 'all 3N adapters, R=S=1 init', '≈ MLP + 3Nkd', 'best; extra adapters free to grow']]
+    fig, ax = plt.subplots(figsize=(12, 4.8)); ax.axis('off')
+    rows = [['MLP×k', 'k full MLPs; own checkpoints', 'k × P(MLP)', 'member-wise validation selection'],
+            ['TabM_packed', 'k full MLPs; collective selection', '≈ k × MLP', 'unlike member-wise MLP×k stopping'],
+            ['TabM_naive', 'R,S random ±1; member bias', 'W + R,S,bias + heads', 'sharing constrains member functions'],
+            ['TabM_mini', 'one first adapter R₁ only', 'backbone + R₁ + heads', 'the minimal effective ensemble'],
+            ['TabM (default)', 'all R,S=1 except random first R', 'W + R,S,bias + heads', 'reported strongest base variant']]
     table = ax.table(cellText=rows, colLabels=['Variant', 'What differs per member', 'Size', 'Takeaway'],
                      loc='center', cellLoc='left', colWidths=[.24, .30, .18, .28])
     table.auto_set_font_size(False); table.set_fontsize(9); table.scale(1, 2.9)
@@ -104,11 +105,11 @@ def variants():
 
 
 def measured():
-    path = ROOT / '_verify_l054_results.json'
+    path = ROOT / '_verify_l054_v2_results.json'
     if not path.exists():
         print('no results yet; skipping measured figures'); return
     res = json.loads(path.read_text()); arms = res['ranks']['arms']
-    colors = {'MLP': GREY, 'MLP-x32': BLUE, 'TabM-mini': GREEN, 'XGB-tuned': ORANGE}
+    colors = {'MLP': GREY, 'MLP-xk': BLUE, 'TabM-mini': GREEN, 'XGB-tuned': ORANGE}
 
     # results across datasets
     fig, axes = plt.subplots(1, 3, figsize=(11.5, 4.6))
@@ -119,23 +120,23 @@ def measured():
             yerr = [[stat['mean'] - ci[0]], [ci[1] - stat['mean']]] if ci else None
             ax.errorbar(i, stat['mean'], yerr=yerr, fmt='o', color=colors[a], capsize=4)
             ax.scatter(i + np.linspace(-.09, .09, len(v)), v, color=colors[a], s=16, alpha=.7)
-        ax.set_title(name); ax.set_xticks(range(len(arms)), [a.replace('-', '\n') for a in arms])
+        ax.set_title(name); ax.set_xticks(range(len(arms)), [('MLP\n×32' if a=='MLP-xk' else a.replace('-', '\n')) for a in arms])
         ax.set_ylabel(d['metric'] + ' ↓'); ax.grid(axis='y', alpha=.15)
-    fig.suptitle('Measured local errors · dots = seeds; bars = conditional 95% t intervals', fontsize=13)
+    fig.suptitle('Corrected v2 local errors · dots = seeds; bars = conditional 95% t intervals', fontsize=13)
     fig.tight_layout(); save(fig, 'results')
 
     # diversity: individual mean vs collective vs single MLP
     fig, axes = plt.subplots(1, 3, figsize=(11.5, 4.2))
     for ax, (name, d) in zip(axes, res['results'].items()):
         coll = d['summary']['TabM-mini']['mean']; ind = d['diversity']['mean']
-        mlp = d['summary']['MLP']['mean']; de = d['summary']['MLP-x32']['mean']
-        bars = ['TabM\nsubmodel\n(mean)', 'TabM\ncollective', 'single\nMLP', 'MLP×32']
+        mlp = d['summary']['MLP']['mean']; de = d['summary']['MLP-xk']['mean']
+        bars = ['member\nerror', 'mean\npredictor', 'MLP', 'MLP×32']
         vals = [ind, coll, mlp, de]; cols = [GREY, GREEN, '#c0392b', BLUE]
         ax.bar(bars, vals, color=cols)
-        for i, v in enumerate(vals): ax.text(i, v, f'{v:.3f}', ha='center', va='bottom', fontsize=8)
+        for i, v in enumerate(vals): ax.text(i, v, f'{v:.0f}' if name=='house' else f'{v:.3f}', ha='center', va='bottom', fontsize=8)
         ax.set_title(name); ax.set_ylabel(d['metric'] + ' ↓'); ax.grid(axis='y', alpha=.15)
         ax.set_ylim(0, max(vals) * 1.18)
-    fig.suptitle('Weak individually, stronger collectively — measured on the capped numeric archive', fontsize=13)
+    fig.suptitle('Corrected v2: first two bars are TabM member-average and collective error', fontsize=13)
     fig.tight_layout(); save(fig, 'diversity')
 
     # k-sweep
@@ -154,7 +155,7 @@ def measured():
     fig, ax = plt.subplots(figsize=(8, 3.8)); ranks = res['ranks']; cd = ranks['nemenyi_cd']
     order = sorted(arms, key=lambda a: ranks['means'][a])
     for i, a in enumerate(order):
-        r = ranks['means'][a]; ax.scatter(r, i, color=colors[a]); ax.text(r + .04, i, f'{a}: {r:.3f}', va='center')
+        r = ranks['means'][a]; ax.scatter(r, i, color=colors[a]); ax.text(r + .04, i, f"{'MLP×32' if a=='MLP-xk' else a}: {r:.3f}", va='center')
     ax.plot([1, 1 + cd], [len(arms) - .3, len(arms) - .3], color='#333')
     ax.text(1 + cd / 2, len(arms) - .12, f'CD = {cd:.3f}', ha='center')
     ax.set(xlim=(.7, len(arms) + .9), ylim=(-.5, len(arms) - .0), yticks=[],

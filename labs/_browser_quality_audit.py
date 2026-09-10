@@ -36,6 +36,18 @@ with sync_playwright() as p:
           return lines.size>1?[{value,table:c.closest('table').textContent.trim().slice(0,100)}]:[];
         })''')
         if split_numbers:problems.append([width,'numeric table values wrap across lines',split_numbers])
+        split_headers=page.locator('th').evaluate_all('''cells=>cells.flatMap(c=>{
+          const issues=[], walker=document.createTreeWalker(c,NodeFilter.SHOW_TEXT);
+          while(walker.nextNode()){
+            const node=walker.currentNode;
+            for(const match of node.textContent.matchAll(/[A-Za-z0-9]{3,}/g)){
+              const range=document.createRange();range.setStart(node,match.index);range.setEnd(node,match.index+match[0].length);
+              const lines=new Set([...range.getClientRects()].filter(r=>r.width&&r.height).map(r=>Math.round(r.top)));
+              if(lines.size>1)issues.push({word:match[0],header:c.textContent.trim()});
+            }
+          }return issues;
+        })''')
+        if split_headers:problems.append([width,'table header words split across lines',split_headers])
         for name in args.widgets:
             root=page.locator('#'+name)
             def inspect(state):

@@ -7,8 +7,8 @@
    - The two routes (adapter route vs explicit W_i x) always match (equivalence).
    compute() is pure and exported for arithmetic verification. */
 (function(g){'use strict';
-  var W=[[0.8,-0.4],[0.5,0.9]];          // shared W[out][in], fixed
-  var X=[2,1];                            // fixed input row
+  var W=[[1,3],[2,4]];                    // W[out][in]: transpose of the atlas row-vector W
+  var X=[2,3];                            // same fixed input as the portable diagram
 
   function compute(state){
     var r=state.r, s=state.s;            // length-2 arrays of +1/-1
@@ -27,7 +27,7 @@
     var nflip=flips[0][0]+flips[0][1]+flips[1][0]+flips[1][1];
     var match=Math.abs(outA[0]-outB[0])<1e-9 && Math.abs(outA[1]-outB[1])<1e-9;
     return {W:W,Wi:Wi,flips:flips,r:r,s:s,x:X,outA:outA,outB:outB,nflip:nflip,match:match,
-            atInit:nflip===0};
+            atInit:r.concat(s).every(function(v){return v===1;})};
   }
 
   function mat(title,M,flips){
@@ -82,8 +82,9 @@
         (r.atInit
           ? '<p>At initialisation the non-first adapters use r = s = 1, so W_i = W exactly: '+
             'the adapter adds no effect yet. Training is free to move it. This is TabM’s init trick.</p>'
-          : '<p>'+r.nflip+' entr'+(r.nflip===1?'y is':'ies are')+' sign-flipped, so this member now computes a '+
-            'different function from the same shared W — diversity for the price of 3d numbers per layer.</p>');
+          : r.nflip===0
+          ? '<p>The input and output signs cancel, so W_i = W even though the adapters are not all one. Different parameter values can represent the same function.</p>'
+          : '<p>'+r.nflip+' entr'+(r.nflip===1?'y is':'ies are')+' sign-flipped. This member has a different effective matrix while sharing W. A full BatchEnsemble layer adds 3d parameters per member, including its bias. The bias is zero in this fixture.</p>');
     }
     render();
     return {compute:compute, setState:function(st){state=st; render();}, get state(){return state;}};
@@ -99,7 +100,7 @@
   function mountEnsemble(el){
     el.className='tabm-viz';
     var state={k:32, rho:0.3};
-    el.innerHTML='<h4>Why weak, diverse submodels average into a strong one</h4>';
+    el.innerHTML='<h4>How correlated errors limit averaging</h4><p>Synthetic equal-variance, zero-mean errors. Individual RMSE is 1; correlation and variance are held fixed while k changes. This is an illustrative calculation, not a fitted TabM result.</p>';
     function slider(name,label,min,max,step){
       var wrap=document.createElement('label'); wrap.style.display='block'; wrap.style.margin='.5rem 0';
       wrap.textContent=label+' ';
@@ -109,7 +110,7 @@
       wrap.appendChild(inp); el.appendChild(wrap); return inp;
     }
     var ki=slider('k','Number of submodels k',1,32,1);
-    var ri=slider('rho','Average pairwise correlation ρ (0 = fully diverse, 1 = identical)',0,1,0.01);
+    var ri=slider('rho','Pairwise error correlation ρ (0 = uncorrelated, 1 = perfectly correlated)',0,1,0.01);
     var out=document.createElement('output'); out.setAttribute('aria-live','polite'); el.appendChild(out);
     function render(){
       var vm=varMean(state.k, state.rho);
@@ -118,11 +119,11 @@
       out.innerHTML='<div class="tv-eq">Individual relative RMSE = 1.00 &nbsp;·&nbsp; '+
         'collective relative RMSE = √('+state.rho.toFixed(2)+' + (1−'+state.rho.toFixed(2)+')/'+state.k+') = '+
         rmseCol.toFixed(3)+'</div>'+
-        '<p>Averaging cuts error by <strong>'+reduction.toFixed(0)+'%</strong>. '+
-        (state.rho>=0.98? 'Identical submodels (ρ≈1) give no benefit — the mean equals one member.'
-         : state.k===1? 'One submodel is just a plain MLP; there is nothing to average.'
+        '<p>In this calculation, averaging reduces RMSE by <strong>'+reduction.toFixed(1)+'%</strong>. '+
+        (state.rho===1? 'Perfectly correlated equal-variance errors give no variance reduction.'
+         : state.k===1? 'With one member, there is nothing to average. Its training parameterization can still differ from a plain MLP.'
          : 'The floor as k→∞ is √ρ = '+Math.sqrt(state.rho).toFixed(2)+', set by correlation, not by k. '+
-           'This is why TabM invests in diversity (weight sharing + the first ±1 adapter), not only in large k.')+'</p>';
+           'Real submodels can also have shared bias, unequal variances and correlations that change with k. Measure their errors before applying this explanation.')+'</p>';
     }
     render();
     return {varMean:varMean, setState:function(st){state=st; render();}, get state(){return state;}};
