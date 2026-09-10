@@ -6,7 +6,7 @@ from _foundation_config import SLUGS,TITLES,TASKS
 
 ROOT=Path(__file__).resolve().parents[1]
 PRACTICE={
-58:'Parse the released benchmark tables, bootstrap whole datasets, and compare full versus outcome-selected rankings.',
+58:'Parse means and SDs, rank the declared panel, bootstrap paired datasets, and select a tiny benchmark without seeing held-out method scores; compare 1,000 and 10,000 proposals.',
 59:'Run a pure-noise search with separate validation and test randomness; measure selection optimism.',
 60:'Train five model families on a small real-data task, select recipes on validation, and audit the broader saved comparison.',
 61:'Train a count-based PFN on sampled coin tasks and compare its predictions with the exact Bayesian posterior.',
@@ -20,7 +20,7 @@ PRACTICE={
 69:'Score unsupported classes and apply training-derived feature corruptions. The default exercise uses a fitted logistic model; the v2/XGBoost panel is separate.',
 70:'Reconstruct the saved predictions and validation selections for all seven model arms, then calculate paired summaries and ranks. The full rerun is explicitly gated.'}
 EVIDENCE={
-58:'Frozen-result reanalysis of 300 TALENT tasks; not 300 fresh fits.',
+58:'Frozen-result reanalysis: six methods on 300 tasks; a separate 276-task complete panel for tiny-benchmark selection. No new predictive-model fits.',
 59:'200-trial noise-selection experiment across five search budgets.',
 60:'Five families, eleven underlying datasets, three seeds; random and temporal regimes kept separate.',
 61:'Three trained count-based PFNs, including checks outside their training context lengths.',
@@ -56,7 +56,8 @@ def launcher(n,prepared=False):
 
 def lab_plan(n):
     tasks=''.join(f'<li><code>{name}</code>: {html.escape(goal)}</li>' for name,_,_,goal in TASKS[n])
-    return f'<p><strong>What you will do:</strong> {PRACTICE[n]}</p><ol>{tasks}</ol><p><strong>Author-reference evidence:</strong> {EVIDENCE[n]}</p><p><strong>Submit:</strong> your completed notebook and <code>student-l{n:03}-exit.json</code>, plus your written interpretation. CHECK cells give immediate code feedback; paste the EXIT output here for a reasoning review.</p>'
+    exit_path = 'data/cache/l058-student/exit.json' if n == 58 else f'student-l{n:03}-exit.json'
+    return f'<p><strong>What you will do:</strong> {PRACTICE[n]}</p><ol>{tasks}</ol><p><strong>Author-reference evidence:</strong> {EVIDENCE[n]}</p><p><strong>Submit:</strong> your completed notebook and <code>{exit_path}</code>, plus your written interpretation. CHECK cells give immediate code feedback; paste the EXIT output here for a reasoning review.</p>'
 
 
 def build_directory():
@@ -67,6 +68,9 @@ def build_directory():
                link(f'https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{slug}.ipynb','Run in Colab'),
                link(f'../{slug}.ipynb','Download notebook',download=True),link(f'../../reference/{slug}.html','Reference'),
                link(f'../l{n:03}-reproduction.md','Reproduction instructions'),link(f'../_verify_l{n:03}_results.json','Measured results')]
+        if n == 58:
+            links.append(link('../_verify_l058_v2_results.json','Updated audit and subset results'))
+            links.append(link('../_verify_l058_closer_results.json','10,000-candidate results'))
         cards.append(f'<section class="lab-package" id="lesson-{n}"><h2>{n:03} · {TITLES[n]}</h2><nav class="lab-access-links" aria-label="Lesson {n:03} materials">'+''.join(links)+lab_plan(n)+'</section>')
     page='''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lessons 58–70 · labs and study materials</title><link rel="stylesheet" href="../../assets/lesson.css"><link rel="stylesheet" href="../../assets/lab-access.css"></head><body><article>
 <nav><a href="../../index.html">Course</a> · <a href="../../notebooks.html">All notebooks</a></nav>

@@ -13,11 +13,13 @@ ROOT = Path(__file__).resolve().parents[1]
 BASE = 'https://avistian.github.io/relational/'
 
 
-def verify(n, commit):
+def verify(n, commit, deployment_commit=None):
     commit = subprocess.check_output(['git', 'rev-parse', commit], cwd=ROOT, text=True).strip()
+    deployment_commit = subprocess.check_output(
+        ['git', 'rev-parse', deployment_commit or commit], cwd=ROOT, text=True).strip()
     runs = json.loads(subprocess.check_output(['gh', 'run', 'list', '--workflow', 'pages.yml', '--limit', '30',
                                               '--json', 'databaseId,headSha,status,conclusion,url'], cwd=ROOT, text=True))
-    run = next(r for r in runs if r['headSha'] == commit)
+    run = next(r for r in runs if r['headSha'] == deployment_commit)
     assert run['conclusion'] == 'success', run
     def blob(path):
         return subprocess.check_output(['git', 'show', f'{commit}:{path}'], cwd=ROOT)
@@ -44,7 +46,8 @@ def verify(n, commit):
         assert actual == expected, (path, 'live bytes differ from committed artifact')
         return dict(path=path, http_status=status, sha256=hashlib.sha256(actual).hexdigest())
     records = list(ThreadPoolExecutor(max_workers=4).map(check, sorted(paths)))
-    report = dict(status='PASS', lesson=n, commit=commit, pages_run=run, records=records,
+    report = dict(status='PASS', lesson=n, commit=commit, deployment_commit=deployment_commit,
+                  pages_run=run, records=records,
                   scope='Successful Pages deployment and exact live HTTP bytes for lesson, prepared lab, reference and their directly linked assets/evidence/downloads; no live Colab check')
     output = Path(f'/tmp/quality-audit-{n:03}-publication.json')
     output.write_text(json.dumps(report, indent=2) + '\n')
@@ -56,5 +59,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('lesson', type=int)
     parser.add_argument('--commit', required=True)
+    parser.add_argument('--deployment-commit', help='Successful later deployment carrying the unchanged lesson; expected bytes still come from --commit')
     args = parser.parse_args()
-    verify(args.lesson, args.commit)
+    verify(args.lesson, args.commit, args.deployment_commit)

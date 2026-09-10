@@ -146,6 +146,9 @@ unassessed until a completed EXIT and explanation are reviewed.
 
 
 def build(n,notebooks=True,render=True):
+    if n == 58:
+        from _build_l058 import build_package
+        return build_package(notebooks=notebooks, render=render)
     slug=f'{n:04}-{SLUGS[n]}';manuscript=(ROOT/'lessons/content'/f'{slug}.md').read_text();text,table=evidence(n)
     cfg=dict(lesson=n,mode=WIDGET[n],prompt=PREDICT[n][0],answer=PREDICT[n][1],quiz=QUIZ[n])
     if n==59:cfg['selection']=json.loads((LABS/'_verify_l059_results.json').read_text())['summary']
