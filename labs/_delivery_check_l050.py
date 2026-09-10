@@ -45,7 +45,7 @@ html=(HERE/'html'/f'{SLUG}.html').read_text()
 for raw in embedded:assert base64.b64encode(raw).decode() in html
 code=[c for c in student.cells if c.cell_type=='code']
 assert '@colab-bootstrap' in code[0].source
-assert sum(c.source.startswith('# TODO') and '____' in c.source for c in code)==4
+assert sum(c.source.startswith('# TODO') and '____' in c.source for c in code)==5
 assert all(c.execution_count is None and not c.outputs for c in code)
 for cell in teacher.cells:
     if cell.cell_type=='code':
@@ -72,7 +72,7 @@ for seed in measured['seed_results']:
         assert run['selected_trial']==select_trial([x['validation_auc'] for x in run['trials']])
 entry=next(e for e in json.loads((ROOT/'lessons/manifest.json').read_text())['lessons'] if e['id']==50)
 assert entry['checkpoint'] and entry['labPath']==f'labs/{SLUG}.ipynb'
-output={'status':'PASS','local_links':links,'inline_pngs_per_notebook':5,'student_tasks':4,
+output={'status':'PASS','local_links':links,'inline_pngs_per_notebook':5,'student_tasks':5,
     'executed_teacher_cells':sum(c.cell_type=='code' for c in teacher.cells),
     'local_selected_runs':27,'larger_selected_runs':9,'browser':'NOT_CHECKED','live_colab':'NOT_CHECKED'}
 (HERE/'_delivery_l050_results.json').write_text(json.dumps(output,indent=2))

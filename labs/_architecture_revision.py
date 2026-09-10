@@ -101,17 +101,23 @@ panel(49,'trompt','Trompt · values refine prompt routing','Model architecture �
       'Cell 1 sees zero previous state and shared identities, so its M¹ cannot depend on x. Its value aggregation O¹ does depend on x; cell 2 can use O¹ to change M².',
       'Complete local numeric mirror: d=16, P=8, L=2, T=2. Zero initial state follows paper §5.1; expansion/group count follow pinned independent PyTorch Frame components. Original benchmark defaults d=P=128, L=6 are not the local training recipe.')
 
-panel(50,'ftt','FT-Transformer · a row becomes tokens','Model architecture',
-      'What does a scalar become before attention, and which token reaches the head?',
-      [('Tokenize features','Numeric scalar × learned feature vector + bias; categorical lookup; add CLS.','B × F → B × (F+1) × d'),
-       ('Mix the row','Multihead feature attention with the declared residual/normalization variant.','scores B × heads × T × T'),
-       ('Transform and repeat','Feed-forward blocks, including the checked ReGLU variant, update tokens.','B × T × d'),
-       ('Read CLS','Normalization/activation and prediction head on the final CLS state.','B × d → B × output width')],
-      'The tokenizer already learns coordinates',
-      matrix(['scalar x','learned W','learned b'],[('inputs',['2','(.5,−1)','(.1,.3)'])])+eq('2 × (0.5, −1) + (0.1, 0.3)')+op('<span>feature token</span>',vec([1.1,-1.7]))+pair('Attention reads','tokens in this row','Prediction head reads','final CLS'),
-      'A two-coordinate tokenizer fixture; actual hidden width is larger. T includes the CLS token.',
-      'The feature scalar becomes a learned vector before attention. Ordinary FT-T feature attention does not read other data rows.',
-      'Reused FT-Transformer baseline, not a newly proposed model. Exact normalization, CLS placement and ReGLU settings follow the checked local variant; recipe parity is audited separately.')
+panel(50,'ftt','FT-Transformer · numeric checkpoint','Model architecture',
+      'Where do row values enter, and how does a residual carry information around each update?',
+      [('Fit and transform','Fit median, mean and SD on train; apply to every partition. Numeric features only.','B × C → B × C'),
+       ('Tokenize and prepend CLS','Each scalar xⱼ becomes xⱼwⱼ+bⱼ. A learned CLS is prepended.','B × C → B × T × 32; T=C+1'),
+       ('Attention residual','Four heads, eight coordinates per head. Skip attention LayerNorm in block 1; normalize in block 2.','u = x + Attention(N(x))'),
+       ('Gated residual; repeat twice','LayerNorm → Linear 32→84 → ReGLU → dropout → Linear 42→32. Two separate learned blocks.','v = u + FFN(LayerNorm(u))'),
+       ('Read final CLS','LayerNorm → ReLU → Linear 32→1; sigmoid for probability. Train with binary cross-entropy on logits.','B × T × 32 → B × 32 → B')],
+      'One residual branch, then a numerical token',
+      topology('ftt-residual','The input goes through the update and directly to the addition',
+          [(75,8,165,'input x','query'),(75,77,165,'Attention(N(x))','memory'),
+           (75,155,165,'ADD → u','output')],
+          [('157,46 157,77',False),('157,115 157,155',False),('75,27 30,27 30,174 75,174',True)],207)
+      +matrix(['xⱼ','wⱼ','bⱼ'],[('fixture',['2','(.5,−1)','(.1,.3)'])])
+      +eq('2 × (.5, −1) + (.1, .3) = (1.1, −1.7)'),
+      'Dashed path is the identity skip, not dropout. The FFN has its own identical residual pattern. The tokenizer fixture uses d=2 for arithmetic only.',
+      'Both residuals preserve a direct path. Attention mixes tokens in one row; no other row is a sender. Only the final CLS reaches the head.',
+      'Local numeric variant: d=32, L=2, H=4, ReGLU h=42; attention/FFN dropout 0.1 during training and off in eval, residual dropout 0. The paper fixes H=8. No categorical lookup, compression or pretraining. Copied-weight parity is scoped to evaluation; the benchmark recipe differs.')
 
 weights=[1/(1+math.exp(-1)),1/(1+math.exp(1))]
 panel(52,'tabr','TabR-S · search, correct, combine','Model architecture',

@@ -14,9 +14,10 @@ body+=f'<p>FT-T leads on {s["ft_wins"]}/3 tasks. Mean ranks: '+', '.join(f'{m} {
 body+='<p>FT-T minus XGBoost mean AUROC and conditional 95% t intervals: '+ '; '.join(f'{n}: {v["ft_minus_xgb"]["mean"]:+.4f} [{v["ft_minus_xgb"]["ci95"][0]:+.4f}, {v["ft_minus_xgb"]["ci95"][1]:+.4f}]' for n,v in r['datasets'].items())+'. On phoneme the seed interval lies below zero; this remains conditional on the chosen split and search. Other intervals include zero.</p>'
 body+=f'<p>The author run took {r["elapsed_s"]:.1f} seconds on CPU with numerical thread limits. Training time excludes lesson work. The copied-weight logit and input-gradient maximum errors were both {r["reference_parity"]["max_logit_error"]:.1e} in the specified reference check.</p>'
 a,b=html.split('<!-- RESULTS_START -->');_,c=b.split('<!-- RESULTS_END -->');html=a+'<!-- RESULTS_START -->\n'+body+'\n<!-- RESULTS_END -->'+c
-scale=HERE/'data/cache/l050-closer/summary.json'
+# Publish committed historical evidence; a developer cache is not a delivery dependency.
+scale=HERE/'_paper_repro_l050_closer_summary.json'
 if scale.exists():
-    closer=json.loads(scale.read_text());(HERE/'_paper_repro_l050_closer_summary.json').write_text(json.dumps(closer,indent=2))
+    closer=json.loads(scale.read_text())
     body='<p><strong>Measured closer attempt:</strong> Higgs Small accuracy (mean ± sample SD): '+ '; '.join(f'{m} {s["mean"]:.4f} ± {s["sd"]:.4f}' for m,s in closer['accuracy'].items())+f'. CPU fitting took {closer["elapsed_s"]:.0f} seconds. <strong>INCOMPARABLE</strong> to Table 2 because the split, preprocessing, budget and selection differ. The full resource preset and Table 4 ensemble suite remain NOT_RUN. <a href="../labs/_paper_repro_l050_closer_summary.json">Scale-up ledger</a>.</p>'
 else:
     body='<p><strong>Scale-up status: NOT_RUN.</strong> Use the supplied operators to produce the required ledger; no paper result is claimed.</p>'

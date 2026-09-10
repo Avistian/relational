@@ -26,3 +26,16 @@ Source: https://arxiv.org/html/2106.11959v5 ; https://github.com/yandex-research
 ## Measured larger attempt
 
 The author completed `closer` on CPU: 3 seeds, about 1814 seconds of fitting. Accuracy: FT-T .68306 ± .00394, XGBoost .68472 ± .00210, MLP .64833 ± .00546 (sample SD). This is INCOMPARABLE to the .729 paper target. Full per-seed predictions, validation histories and split/source identities are in `_scaleup_l050_evidence.json`. `_paper_repro_l050_measured.py` preserves the exact hash-verified operator used for these measurements; the current operator additionally requires an identity for a custom notebook implementation. The measured cache intentionally fails identity validation under the newer operator; use a new output directory. This guard addition does not change model training.
+
+
+## Audit repair, 2026-09-10
+
+The original `relkit/checkpoint.py`, `_verify_l050_results.json`, `_paper_repro_l050_measured.py` and `_scaleup_l050_evidence.json` are preserved. The teacher solution is freshly executed after the notebook repairs; the original selected AUROCs are required to match exactly in this environment. Added code is diagnostic and artifact bookkeeping, not a replacement for those historical measurements.
+
+The notebook now has five live tasks. `mean_predictions` combines the three already selected models' test probabilities before computing AUROC. This is a **post-hoc diagnostic**, not a new independent evaluation or Table 4 reproduction. No confidence interval is borrowed from single-model seed scores for the one resulting ensemble. The synthetic CHECK shows mean seed AUROC 0.50 versus ensemble AUROC 0.75.
+
+`_audit_l050.implementation_identity` covers live preprocessing, ReGLU, selection, paired summary, trainer, predictor, experiment, and constructors/forward methods for FT-T, its blocks/attention and MLP. It includes callable defaults semantically and the data harness source. It is recomputed when the scale-up gate opens, so edits after EXIT change the cache identity. Package versions, data, device and configuration remain recorded by the operator. Arbitrary external library monkeypatches are outside this identity contract. `_audit_check_l050.py` checks fresh-process stability, execution stability, actual smoke execution, unchanged resume and rejection after a changed live predictor.
+
+Explicit remaining recipe differences: the paper fixes eight attention heads; all current presets use four. The paper evaluates a tuned configuration over 15 seeds and creates three ensembles with five models each; this lab reselects two candidates separately for each of three seeds. The scale-up selects on AUROC and then reports accuracy. It does not reconstruct accuracy-based selection. Merely increasing the resource preset cannot establish protocol fidelity.
+
+Pinned source provenance is in `../reviews/lesson-quality-audit-047-070/050-sources.json`. The modern package source hash equals the installed 0.0.2 reference hash used in the copied-weight check. The original `bin/ft_transformer.py` was inspected separately for residual wiring, final-query optimization and training/optimizer distinctions.

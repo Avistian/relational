@@ -25,7 +25,8 @@ TARGET = PaperTarget(paper='Gorishniy et al. 2021',arxiv='2106.11959v5',
 GAPS = ['Fresh 60/20/20 partition; author split IDs not reconstructed',
         'Median/standard scaling rather than paper neural quantile transform',
         'Two fixed candidates, AUROC selection; no paper hyperparameter search',
-        'Three seeds rather than full paper repetition protocol',
+        'One or three seeds with per-seed candidate reselection; paper evaluates one tuned configuration over 15 seeds',
+        'Four attention heads; paper fixes eight (Appendix E.1)',
         'Local width/dropout/epochs/batch size and modern software differ',
         'Table 4 ensemble comparison is not run']
 

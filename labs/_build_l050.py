@@ -10,6 +10,7 @@ from _build_l049 import mdtext
 from _colab import bootstrap_cells
 HERE=Path(__file__).resolve().parent;SLUG='0050-q1-checkpoint'
 SOURCE=(HERE/'relkit/checkpoint.py').read_text()
+AUDIT_SOURCE=(HERE/'_audit_l050.py').read_text()
 LESSON=BeautifulSoup((HERE.parent/'lessons'/f'{SLUG}.html').read_text(),'html.parser')
 
 def build(solution=False):
@@ -29,7 +30,7 @@ def build(solution=False):
 
 **Your skill:** construct a defensible comparison and keep your conclusion within its evidence. PROVIDED means readable implementation; TODO is your work; CHECK gives immediate diagnostics; EXIT combines output with your written claim audit.
 
-**Scope:** full numeric FT-Transformer, XGBoost and MLP on three real OpenML tasks. This reviews an existing model, strengthens its implementation fidelity, and tests your protocol discipline. No categorical, regression, multiclass or ensemble branch. Local results are INCOMPARABLE to the paper benchmark. Required next step: a larger Higgs Small attempt with a printed ledger.
+**Scope:** full numeric FT-Transformer, XGBoost and MLP on three real OpenML tasks. This reviews an existing model, strengthens its implementation fidelity, and tests your protocol discipline. No categorical, regression or multiclass branch. A post-comparison three-model probability ensemble is a diagnostic exercise, not the paper Table 4 recipe. Local results are INCOMPARABLE to the paper benchmark. Required next step: a larger Higgs Small attempt with a printed ledger.
 
 **Environment:** CPU sufficient for the learning lab (author run ~91 seconds; implementation and reading take longer). Colab bootstrap is the first code cell. PNG figures are embedded and need no execution. Author-reference snapshots are labeled; they are not your kernel output.
 
@@ -38,7 +39,7 @@ def build(solution=False):
         cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']))
     section('question')
     code('''# PROVIDED — environment and data harness; no imported model is trained.
-import os, sys, copy, hashlib, inspect, json, time, marshal
+import os, sys, copy, hashlib, inspect, json, time
 from pathlib import Path
 import importlib.metadata
 os.environ['OMP_NUM_THREADS']='1'
@@ -121,6 +122,19 @@ probe(torch.randn(3,4)).sum().backward()
 reglu=original_reglu
 assert len(calls)==2,'The visible model bypassed your ReGLU.'
 print('CHECK: the student activation lies on the forward/backward path.')''')
+    md('''### Trace the visible blocks
+`CheckpointAttention` reshapes [B,T,d] into [B,H,T,d/H], normalizes each receiver over sender tokens, merges heads, then projects. `CheckpointBlock` adds two residual branches; its first attention normalization is identity. `CheckpointFT` tokenizes each scalar and reads only CLS after two blocks. `CheckpointMLP` has no token axis: it maps the whole row through two hidden layers.
+
+**Predict and test:** in evaluation mode, replacing other rows in a batch must not change the first row's prediction. A batch-dependence failure would contradict this FT-T variant's information boundary. This invariant does not apply automatically to SAINT intersample attention.''')
+    code('''# CHECK — no cross-row information access in FT-T evaluation.
+probe.eval()
+rows=torch.randn(5,4)
+with torch.no_grad():
+    first=probe(rows)[0]
+    intervened=rows.clone();intervened[1:]*=100
+    assert torch.allclose(first,probe(intervened)[0],atol=1e-6)
+    assert torch.allclose(first,probe(rows[:1])[0],atol=1e-6)
+print('CHECK: other batch rows cannot affect the held-fixed row in eval.')''')
     section('selection');figure('selection','Synthetic candidates: validation picks B; choosing A from its test score invalidates the evaluation.')
     md('''### Task 3 · Select without access to test
 **Goal:** choose the first candidate attaining maximum finite validation AUROC.
@@ -192,15 +206,42 @@ max_gap=max(abs(run['auc']-reference['datasets'][d]['runs'][m][i]['auc'])
     for d,row in result['datasets'].items() for m,runs in row['runs'].items() for i,run in enumerate(runs))
 print('CHECK: splits, choices and metrics audit clean. Largest author-reference gap:',max_gap)
 print('Different software/hardware may change training; investigate rather than overwrite scores.')''')
+    md('''### Task 5 · Score the combined predictor
+**Goal:** average a [models, test rows] matrix along the model axis, then evaluate the resulting probabilities.
+**Why:** averaging three AUROCs answers a different question from deploying an ensemble. The paper's Table 4 combines predictions.
+**Hint boundary:** preserve the test-row axis; reject empty, nonfinite or out-of-range probabilities. Do not threshold or average the metric. Use all already-selected seeds with equal weights fixed in advance. The historical author results below informed this added exercise, so its result is a descriptive diagnostic, not new independent evaluation evidence.''')
+    code('# TODO 5 — teacher answer\n'+extract(AUDIT_SOURCE,{'mean_predictions'}) if solution else '''# TODO 5 — combine predictions, not metrics.
+def mean_predictions(probabilities):
+    p=np.asarray(probabilities,dtype=float)
+    if p.ndim!=2 or not all(p.shape) or not np.isfinite(p).all() or np.any((p<0)|(p>1)):
+        raise ValueError('Need a nonempty finite [models, rows] probability matrix in [0,1].')
+    return ____''')
+    code('''# CHECK 5 — ensemble ranking is not mean single-model ranking.
+y_demo=np.array([0,0,1,1])
+p_demo=np.array([[.9,.8,.7,.1],[.1,.2,.8,.9]])
+combined=mean_predictions(p_demo)
+assert combined.shape==(4,) and np.allclose(combined,[.5,.5,.75,.5])
+assert roc_auc_score(y_demo,combined)==.75
+assert np.mean([roc_auc_score(y_demo,p) for p in p_demo])==.5
+print('CHECK 5: mean AUROC .50, ensemble AUROC .75. Explain the changed pair ordering.')
+ensemble_rows=[]
+for dataset,row in result['datasets'].items():
+    for model,runs in row['runs'].items():
+        probabilities=mean_predictions([run['probability'] for run in runs])
+        ensemble_rows.append(dict(dataset=dataset,model=model,
+            mean_seed_auc=row['summary'][model]['mean'],
+            ensemble_auc=float(roc_auc_score(row['y_test'],probabilities)),
+            status='POST_HOC_DIAGNOSTIC; INCOMPARABLE to Table 4'))
+result['diagnostic_ensembles']=ensemble_rows
+display(pd.DataFrame(ensemble_rows))''')
     if solution:code("# Teacher-only verification: this execution uses the recorded local environment.\nassert max_gap < 1e-10, 'Teacher rerun differs from recorded evidence.'")
     md('''## EXIT · defend the result
-Export the score table, paired intervals, rank summary and run ledger. Write 120–180 words naming the population, metric, candidate budget, uncertainty unit, one measured finding, and at least two paper-protocol mismatches. Propose one new experiment whose settings you would freeze before viewing results. Do not equate nonsignificance with equivalence or “won two tasks” with universal superiority.
+Export the score table, paired intervals, rank summary, diagnostic ensemble table and run ledger. Explain why the ensemble metric differs from the mean seed metric and why this added diagnostic does not reproduce Table 4. Write 120–180 words naming the population, metric, candidate budget, uncertainty unit, one measured finding, and at least two paper-protocol mismatches. Propose one new experiment whose settings you would freeze before viewing results. Do not equate nonsignificance with equivalence or “won two tasks” with universal superiority.
 
 Paste these outputs and your explanation to the teacher for a 0–10 review: correctness, leakage discipline, conceptual explanation, independent implementation effort, reproduction audit. A defensible INCOMPARABLE result can earn full audit credit; an unrun next step must remain NOT_RUN.''')
     code('''# EXIT — save evidence and identify the code objects that actually ran.
-live_objects=[prepare_numeric,reglu,select_trial,paired_summary,train_neural,run_comparison,
-              CheckpointFT.forward,CheckpointBlock.forward,CheckpointAttention.forward]
-implementation_id=hashlib.sha256(b''.join(marshal.dumps(f.__code__) for f in live_objects)).hexdigest()
+from _audit_l050 import implementation_identity
+implementation_id=implementation_identity(globals())
 result['visible_code_identity']=implementation_id
 Path('l050-student-results.json').write_text(json.dumps(result,indent=2))
 print('Saved l050-student-results.json; implementation identity',implementation_id)
@@ -217,6 +258,8 @@ from relkit.paper_repro import format_ledger, LabFinding
 RUN_PAPER_REPRO=False
 PAPER_PRESET='closer'
 if RUN_PAPER_REPRO:
+    # Recompute here: a cell may have been edited since EXIT.
+    implementation_id=implementation_identity(globals())
     def live_experiment(**kwargs):
         return run_comparison(model_factory=CheckpointFT,prepare=prepare_numeric,selector=select_trial,**kwargs)
     scaleup=scaleup_operator(PAPER_PRESET,out='data/cache/l050-student-'+implementation_id[:12],
