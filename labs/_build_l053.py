@@ -9,6 +9,7 @@ from _colab import bootstrap_cells
 from _build_l049 import mdtext
 ROOT=Path(__file__).resolve().parent;SLUG='0053-realmlp-strong-defaults'
 SOURCE=(ROOT/'relkit/realmlp.py').read_text();EXPERIMENT=(ROOT/'relkit/realmlp_experiment.py').read_text()
+ABLATION=(ROOT/'_ablation_l053.py').read_text()
 LESSON=BeautifulSoup((ROOT.parent/'lessons'/f'{SLUG}.html').read_text(),'html.parser')
 def extract(source,names):
     tree=ast.parse(source)
@@ -18,7 +19,7 @@ def build(solution=False,write=True):
     cells=[]
     def md(s):cells.append(nbf.v4.new_markdown_cell(s.strip()))
     def code(s):cells.append(nbf.v4.new_code_cell(s.strip()))
-    def figure(name,caption):md('!['+caption+'](data:image/png;base64,'+base64.b64encode((ROOT/'figures/l053'/f'{name}.png').read_bytes()).decode()+')\n\n'+caption)
+    def figure(name,caption):md('!['+caption+'](data:image/png;base64,'+base64.b64encode((ROOT/'figures/l053'/f'{name}.png').read_bytes()).decode()+')\n\n'+caption+' [Open full-size figure](figures/l053/'+name+'.png). On a small screen, open the full-size figure to inspect labels and seed points.')
     def section(name):
         node=BeautifulSoup(str(LESSON.find('section',id=name)),'html.parser').find('section')
         for el in node.find_all(['figure','script']):el.decompose()
@@ -39,7 +40,7 @@ def build(solution=False,write=True):
 
 **Reproducibility contract:** Tier A real California Housing, House 16H and Higgs Small data from the TabR release, not RealMLP benchmark splits. Preserve released boundaries; label-blind row caps 1200/600/600, selection seeds 53/54/55; model seeds 0/1/2. Train-only numeric statistics and target standardization. Learning recipe: width 64, three hidden layers, 64 epochs, batch 256, all four schedule cycles; six XGB candidates, 150 trees each, patience 20. **INCOMPARABLE** to the paper benchmark. See [contract](l053-reproduction.md).
 
-The author measured about 30 CPU seconds after setup. Downloading dependencies/data takes longer. Implementation and interpretation deserve a separate session. Static figures are labeled author-reference snapshots; your live results appear only when you run the experiment.
+The historical comparison took about 30 CPU seconds after setup; the added clipping intervention runs nine more neural fits and may take another minute. Downloading dependencies/data takes longer. Implementation and interpretation deserve a separate session. Static figures are labeled author-reference snapshots; your live results appear only when you run the experiment.
 
 **Recall first:** Explain why three random model seeds do not give three independent datasets. Then predict whether selecting a lower validation error guarantees a lower test error.''')
     for c in bootstrap_cells():cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']))
@@ -68,7 +69,15 @@ from relkit.tabr_experiment import seed_interval
 fetch()
 print({p:importlib.metadata.version(p) for p in ['torch','numpy','scipy','scikit-learn','xgboost']})
 print('Data manifest SHA256',hashlib.sha256((LABS/'_data_l052.json').read_bytes()).hexdigest())''')
-    section('defaults');figure('boundaries','Two evaluation levels: freeze the recipe across datasets; fit weights and select epochs within each new dataset.')
+    section('defaults');figure('boundaries','Two evaluation levels: meta-train split test errors can guide recipe development; on separate meta-test datasets, freeze the recipe, fit fresh weights and select epochs.')
+    code('''# CHECK — reconstruct the paper score on the synthetic example, not lab errors
+example_a=np.array([.01,.41]);example_b=np.array([.04,.36])
+score_a=np.exp(np.log(example_a+.01).mean())
+score_b=np.exp(np.log(example_b+.01).mean())
+assert example_a.mean()>example_b.mean() and score_a<score_b
+np.testing.assert_allclose([score_a,score_b],[np.sqrt(.02*.42),np.sqrt(.05*.37)])
+print('Synthetic arithmetic means:',example_a.mean(),example_b.mean())
+print('Synthetic paper scores (no shift subtraction):',score_a,score_b)''')
     md('''### Retrieval check
 You change a default after examining dataset E's test results, then make a fresh row split on E. Is E now a new meta-test dataset? Write an answer before opening the feedback.
 
@@ -115,6 +124,27 @@ groups=model.parameter_groups();assert [g['factor'] for g in groups]==[6.,1.,.1]
 params=[id(p) for g in groups for p in g['params']]
 assert len(params)==len(set(params))==len(list(model.parameters()))
 print('PASS: zero head and disjoint complete optimizer groups')''')
+    md('''### Trace the first three backward passes
+**Predict:** the head gradient is nonzero, but the schedule starts at zero. Do the hidden weights move on the next backward pass? Keep the distinction between computing a gradient, updating Adam's moments, and moving a parameter. The following CHECK uses the live model; two positive-rate updates are deliberately shown after the initial zero-rate step. This is a synthetic optimizer probe, not a trained dataset result.''')
+    code('''# CHECK — zero rate, then moving head, then an upstream gradient
+torch.manual_seed(530);probe=RealMLPS(4,width=16,regression=True)
+probe_x=torch.randn(9,4);probe_y=torch.ones(9,1)
+probe_opt=torch.optim.Adam(probe.parameter_groups(),betas=(.9,.95),eps=1e-8)
+trace=[]
+for label,base in [('first: zero rate',0.),('second: head moves',.01),('third: hidden route opens',.01)]:
+    probe_opt.zero_grad();((probe(probe_x)-probe_y)**2).mean().backward()
+    upstream=float(probe.scale.grad.abs().sum())
+    head_grad=float(probe.layers[-1].weight.grad.abs().sum())
+    before=[p.detach().clone() for p in probe.parameters()]
+    for group in probe_opt.param_groups:group['lr']=base*group['factor']
+    probe_opt.step()
+    moved=max(float((p-old).abs().max().detach()) for p,old in zip(probe.parameters(),before))
+    trace.append(dict(pass_name=label,head_gradient=head_grad,scale_gradient=upstream,max_parameter_change=moved))
+assert trace[0]['head_gradient']>0 and trace[0]['max_parameter_change']==0
+assert trace[1]['scale_gradient']==0 and trace[1]['max_parameter_change']>0
+assert trace[2]['scale_gradient']>0
+assert probe_opt.state[probe.layers[-1].weight]['step']==3
+display(pd.DataFrame(trace))''')
     section('training');figure('schedule','Four-cycle schedule; valleys at 0, 1/15, 3/15, 7/15 and 1. Parameter-group rates differ even at the same training step.')
     task('coslog4','def coslog4(t):','''### TODO 4 · Reconstruct the schedule
 **Goal:** return the schedule multiplier for normalized optimizer-step progress t. **Why:** an ordinary cosine or equally spaced restart schedule is a different experiment. Use the paper expression above, not a lookup table; the CHECK also probes mid-cycle peaks.''')
@@ -159,16 +189,49 @@ for ax,(name,data) in zip(axes,live_results['results'].items()):
     ax.set_title(name);ax.set_ylabel(data['metric']+' ↓');ax.set_xticks([0,1,2],['TD-S','XGB-fixed','XGB-tuned'],rotation=20)
 fig.suptitle('Your live runs: seeds and conditional 95% intervals');fig.tight_layout();plt.show()''')
     section('evidence');figure('results','Author-reference local measurement, separate from your current kernel output: errors with seed dots and conditional 95% t intervals.');figure('ranks','Author-reference ranks across three tasks. A nonsignificant low-power test is not evidence of equivalence.')
+    section('ablation');figure('ablation','Author-reference paired intervention: remove only smooth clipping. Positive differences mean worse error; every conditional interval includes zero.')
+    md('''### Live intervention · remove just smooth clipping
+**Goal:** test the same distinctive preprocessing choice using your live TODO functions. **Why:** a neural-versus-tree score cannot isolate clipping's contribution. **Held fixed:** fitted robust statistics, selected rows, model seeds, widths, losses, rates, schedule and validation rule. **Varied:** the transform after robust scaling. **Measured:** paired test-error changes, one per seed. **Hint:** pair by seed identity, not by list position or separate confidence-interval endpoints. Predict the signs before running. This is a local diagnostic and has no required winner.
+
+The subclass below inherits your live `RobustSmooth.fit`, so the ablated arm still uses your robust-statistics TODO. Both arms use your NTP and schedule TODOs. Only the baseline uses your smooth-clip TODO. We intentionally reuse your already completed baseline fits; retraining them again would add cost without changing this comparison.''')
+    code('# PROVIDED — one-component intervention and seed-paired uncertainty\n'+extract(ABLATION,{'RobustOnly','paired_effect'}))
+    code('''# PROVIDED — live intervention, same local recipe; nine extra neural fits
+ablation_results=run_suite(RealMLPS,prep_class=RobustOnly,neural_only=True)
+paired_results={}
+for name,baseline in live_results['results'].items():
+    changed=ablation_results['results'][name]
+    assert baseline['selection']==changed['selection'] and baseline['hashes']==changed['hashes']
+    paired_results[name]=dict(metric=baseline['metric'],**paired_effect(
+        baseline['runs']['RealMLP-S'],changed['runs']['RealMLP-S']))
+display(pd.DataFrame(paired_results).T[['metric','differences','mean','sd','ci95']])
+# CHECK — pairing survives an order change; stored predictions give the same errors
+for name,changed in ablation_results['results'].items():
+    data=load_task(name);baseline=live_results['results'][name]['runs']['RealMLP-S']
+    reverse=paired_effect(baseline,list(reversed(changed['runs']['RealMLP-S'])))
+    np.testing.assert_allclose(reverse['mean'],paired_results[name]['mean'])
+    for run in changed['runs']['RealMLP-S']:
+        np.testing.assert_allclose(error(np.array(run['prediction']),data['y']['test'],
+            data['regression'],data['target_std']),run['error'],rtol=1e-6)
+print('PASS: same rows, seed pairing and nine reconstructed intervention scores')''')
     md('''### EXIT TICKET · complete in your own words
-Report one selected neural epoch and one selected tree configuration. Explain why the test set did not choose either. Compare fixed and tuned XGB on one task, including units and seed uncertainty. State the number of independent datasets and interpret Friedman without equating non-rejection with equality. Give the paper verdict and two protocol deviations. Finally explain how a default can embody extensive tuning.
+Report one selected neural epoch and one selected tree configuration. Explain why the test set did not choose either. Compare fixed and tuned XGB on one task, including units and seed uncertainty. State the number of independent datasets and interpret Friedman without equating non-rejection with equality. Give the paper verdict and two protocol deviations. Explain how a default can embody extensive tuning. Interpret one paired clipping result and propose a next experiment that addresses its uncertainty. Explain why Table B.2's relative SGM changes are not percentage-point changes in our Higgs error.
 
 Paste your output and explanation to the teacher for feedback; passing numerical CHECKs alone does not grade the explanation.''')
+    explanation = ('Validation selected the epoch and tree configuration before test scoring. The three datasets, not the three model seeds, are the cross-task units. Non-rejection in Friedman does not show equal methods. Clipping removal has uncertain paired effects here; repeat predeclared splits before drawing a stable conclusion. The paper uses ten random splits and benchmark SGM, whereas this run uses one capped split and model-seed intervals. Default recipes can be developed on other datasets. Verdict: INCOMPARABLE.' if solution else '')
     code('''# EXIT — replace the blank explanation before submitting
-interpretation = ""  # TODO: write your own conclusion and protocol limits
+interpretation = '''+repr(explanation)+'''  # TODO: write your own conclusion and protocol limits
 print('Paper verdict:',live_results['verdict'])
 print('Dataset count:',len(live_results['results']))
 print('Mean ranks:',live_results['ranks']['means'])
-print('Your explanation:',interpretation or 'WRITE YOUR INTERPRETATION BEFORE SUBMITTING')''')
+assert interpretation.strip(), 'Complete the written EXIT explanation before saving your submission'
+from _paper_repro_l053 import identity
+exit_path=Path('data/cache/l053-student/exit.json');exit_path.parent.mkdir(parents=True,exist_ok=True)
+exit_artifact=dict(lesson=53,paper_verdict='INCOMPARABLE',interpretation=interpretation,
+    comparison=live_results,intervention=ablation_results,paired=paired_results,
+    live_code_identity=identity(RealMLPS,run_suite,RobustSmooth,RobustOnly,paired_effect))
+exit_path.write_text(json.dumps(exit_artifact,indent=2))
+print('Saved reproducible EXIT:',exit_path.resolve())
+print('Your explanation:',interpretation)''')
     section('scaleup')
     closer=ROOT/'figures/l053/closer.png'
     if closer.exists():figure('closer','Author-reference larger CPU run: full published width and epochs, 6000 training rows, three seeds. Still a different dataset protocol from the paper.')

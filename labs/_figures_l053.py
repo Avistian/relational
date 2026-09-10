@@ -71,9 +71,9 @@ def figures():
     fig.tight_layout();save(fig,'schedule')
 
     fig,ax=plt.subplots(figsize=(8,4));ax.axis('off')
-    rows=[['META-TRAIN DATASETS','Train rows fit weights','Validation rows choose recipe','Freeze the recipe across datasets'],
+    rows=[['META-TRAIN DATASETS','Train rows fit weights','Validation selects epoch','Split test errors guide recipe'],
           ['NEW META-TEST DATASET','Train rows fit new weights','Validation rows choose epoch','Test rows score the fixed procedure']]
-    table=ax.table(cellText=rows,colLabels=['Dataset level','Fit','Select','Report'],loc='center',cellLoc='left',colWidths=[.26,.23,.24,.27])
+    table=ax.table(cellText=rows,colLabels=['Dataset level','Fit weights','Select epoch','Outer-level use'],loc='center',cellLoc='left',colWidths=[.26,.23,.24,.27])
     table.auto_set_font_size(False);table.set_fontsize(9);table.scale(1,3.4)
     for (r,c),cell in table.get_celld().items():
         cell.set_edgecolor('#d4d1c8')
@@ -102,6 +102,19 @@ def figures():
     ax.plot([1,1+cd],[3,3],color='#333');ax.text(1+cd/2,3.16,f'CD = {cd:.3f}',ha='center')
     ax.set(xlim=(.9,3.9),ylim=(-.5,3.65),xlabel='Mean rank across 3 datasets (lower is better)',yticks=[],title=f"Friedman p = {ranks['friedman_p']:.5f} · exploratory, low power")
     ax.set_xticks([1,2,3]);fig.tight_layout();save(fig,'ranks')
+
+    ablation=ROOT/'_ablation_l053_results.json'
+    if ablation.exists():
+        data=json.loads(ablation.read_text());fig,axes=plt.subplots(1,3,figsize=(11,4.2))
+        for ax,(name,stat) in zip(axes,data['paired'].items()):
+            ax.axhline(0,color='#777',ls='--',lw=1)
+            ax.scatter([-.12,0,.12],stat['differences'],color=BLUE,s=35,zorder=3)
+            lo,hi=stat['ci95'];mean=stat['mean']
+            ax.errorbar(.42,mean,yerr=[[mean-lo],[hi-mean]],fmt='D',color=ORANGE,capsize=5)
+            ax.set(xlim=(-.4,.7),xticks=[0,.42],xticklabels=['Paired seeds','Mean + CI'],
+                   title=name,ylabel='Δ '+stat['metric']+' (robust-only − smooth)')
+        fig.suptitle('Remove only smooth clipping · positive = worse · conditional 95% intervals',fontsize=12)
+        fig.tight_layout();save(fig,'ablation')
 
     closer=ROOT/'_paper_repro_l053_closer_summary.json'
     if closer.exists():
