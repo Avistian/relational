@@ -37,16 +37,18 @@ def run(lesson,preset='lab',output=None,current=False):
         isolated('v1' if lesson in [62,67] else 'v2','_run_pretrained_foundation.py',
                  ['--lesson',str(lesson),'--output',str(out)])
         return out
-    if lesson in [60,64,70]:
+    if lesson == 60:
+        from _fetch_l055 import fetch
+        if preset != 'smoke':
+            fetch()
+        from relkit.checkpoint_l060_v2 import run_checkpoint
+        run_checkpoint(preset=preset, output=str(out))
+        return out
+    if lesson in [64,70]:
         if lesson in [64,70]:
             from _fetch_foundation import fetch
             fetch('v2');fetch('tabicl')
             isolated('v2','_run_foundation.py',['--lesson','70','--preset',preset,'--output',str(out),'--worker'])
-        else:
-            from _fetch_l055 import fetch
-            if preset!='smoke':fetch()
-            from relkit.foundation_benchmark import run_checkpoint
-            run_checkpoint(60,preset,str(out))
         if lesson==64:
             from relkit.benchmark_core import paired_summary
             result=json.loads(out.read_text());result['lesson']=64
