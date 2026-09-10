@@ -44,6 +44,13 @@ with sync_playwright() as p:
             inspect('default')
             for i in range(root.locator('button').count()):
                 root.locator('button').nth(i).click();inspect('button-'+str(i))
+            for i in range(root.locator('input[type=checkbox]').count()):
+                checkbox=root.locator('input[type=checkbox]').nth(i)
+                original=checkbox.is_checked()
+                checkbox.set_checked(not original);inspect('checkbox-'+str(i)+'-toggled')
+                checkbox.focus();page.keyboard.press('Space')
+                assert checkbox.is_checked()==original,(width,name,'keyboard checkbox')
+                inspect('checkbox-'+str(i)+'-keyboard-restored')
             for i in range(root.locator('svg rect[style*="cursor:pointer"]').count()):
                 root.locator('svg rect[style*="cursor:pointer"]').nth(i).click();inspect('svg-choice-'+str(i))
             for i in range(root.locator('select').count()):
@@ -66,6 +73,6 @@ with sync_playwright() as p:
         page.close()
     browser.close()
 server.shutdown()
-report=dict(status='PASS' if not errors and not missing and not problems else 'FAIL',errors=errors,missing=missing,problems=problems,records=records,screenshots=str(OUT),scope='Live local Chromium; specified visual widgets, native buttons/selects, clickable SVG choices, slider endpoints and keyboard at 900/375; not live Colab or deployed site')
+report=dict(status='PASS' if not errors and not missing and not problems else 'FAIL',errors=errors,missing=missing,problems=problems,records=records,screenshots=str(OUT),scope='Live local Chromium; specified visual widgets, native buttons/selects/checkboxes, clickable SVG choices, slider endpoints and keyboard at 900/375; not live Colab or deployed site')
 (ROOT/f'reviews/lesson-quality-audit-047-070/{args.lesson:03}-browser.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps({k:v for k,v in report.items() if k!='records'},indent=2))

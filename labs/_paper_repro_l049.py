@@ -21,18 +21,19 @@ def run(preset='closer',out='data/cache/l049-closer',device=None,model_cls=Excel
     """Resume only identical source/config/data/device runs. Keep the student's code live."""
     cfg=PRESETS[preset];folder=Path(out);folder.mkdir(parents=True,exist_ok=True)
     data=paper_data('pima');device=device or ('cuda' if torch.cuda.is_available() else 'cpu')
-    # In notebooks inspect.getsource can fail. Hash bytecode plus source where available.
+    # Notebook execution filenames/cell numbers change across kernel restarts.
+    # Reuse the course's semantic code hash rather than source availability or
+    # marshal metadata. The Colab bootstrap clones labs/, including this helper.
+    from _live_identity_l051 import code_fingerprint
     identities=[]
     dependencies=model_cls.__init__.__globals__
     for obj in (model_cls,dependencies['GatedTokenizer'],dependencies['SPABlock'],
                 train_fn,predict_fn,attention_fn,mix_fn):
-        try: identities.append(inspect.getsource(obj))
-        except (OSError,TypeError):
-            import marshal
-            funcs=[obj.__init__,obj.forward] if inspect.isclass(obj) else [obj]
-            identities.extend(marshal.dumps(f.__code__).hex() for f in funcs)
+        funcs=([(name,fn) for name,fn in vars(obj).items() if inspect.isfunction(fn)]
+               if inspect.isclass(obj) else [(obj.__name__,obj)])
+        identities.append({name:code_fingerprint(fn) for name,fn in funcs})
     contract={'preset':preset,'config':cfg,'data':data['meta'],'environment':environment(),
-              'device':device,'implementation':identities}
+              'device':device,'implementation_identity':'semantic-code-v1','implementation':identities}
     digest=hashlib.sha256(json.dumps(contract,sort_keys=True).encode()).hexdigest()
     contract_path=folder/'contract.json'
     if contract_path.exists():

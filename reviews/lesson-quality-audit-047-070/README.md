@@ -30,6 +30,8 @@ See [the assignment rubric](BRIEF.md) for the full checklist.
 | Lesson | Repair and verification | Reproduction boundary |
 |---|---|---|
 | [047 SAINT](047.md) | Complete and pushed as `fb7a691`; Pages deployment succeeded and seven live files matched checked local bytes. Default pinned full-path checks, deeper derivations/source-gap explanations, notebook execution, image checker and Pages evidence-link repairs, desktop/mobile review | Full pretraining and paper benchmark not reproduced; Bank smoke remains INCOMPARABLE |
-| [048 DCNv2](048.md) | Complete: original-DCN/V2 and readout derivations, paper experiment guide, live synthetic construction, fresh notebook execution, full saved prediction reconstruction, image-checker/CD display/Pages evidence-link repairs | Full-data local MovieLens attempt remains INCOMPARABLE; original search and training results not reproduced |
+| [048 DCNv2](048.md) | Complete and pushed as `fe70a03`; Pages succeeded and 23 live files matched the commit. Original-DCN/V2/readout derivations, paper experiment guide, live synthetic construction, fresh notebook execution, saved prediction reconstruction, image-checker/CD display/Pages link repairs | Full-data local MovieLens attempt remains INCOMPARABLE; original search and training results not reproduced |
 
-049 is in progress. 050–070 are pending individual review.
+| [049 ExcelFormer / Trompt](049.md) | Complete repair: full numeric Trompt model and live loss/routing tasks, measured probe, paper/implementation inventory, refreshed executed notebook, resume/provenance fixes; browser and 113 copied-Pages links pass. Separate commit/push in progress | Both paper benchmarks remain NOT_REPRODUCED; Trompt independent component parity and local probe have explicit scope |
+
+050 is in progress. 051–070 are pending individual review.

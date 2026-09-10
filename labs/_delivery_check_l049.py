@@ -31,7 +31,7 @@ def check():
     for nb in (student,teacher):nbformat.validate(nb)
     codes=[c for c in student.cells if c.cell_type=='code']
     assert '@colab-bootstrap' in codes[0].source
-    assert sum(c.source.startswith('# TODO') and '____' in c.source for c in codes)==4,'Three code exercises plus written EXIT'
+    assert sum(c.source.startswith('# TODO') and '____' in c.source for c in codes)==5,'Four code exercises plus written EXIT'
     assert all(c.execution_count is None and not c.outputs for c in codes),'Student must stay blank'
     source_images={hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/l049').glob('*.png') if 'architecture' not in p.name}
     source_images.update(hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/architecture-revision').glob('0049-*.png'))
@@ -57,7 +57,7 @@ def check():
     assert entry['labPath']==f'labs/{SLUG}.ipynb' and entry['published']
     for p in (HERE/'figures/l049').glob('*.png'):
         with Image.open(p) as im:im.verify()
-    stats.update(student_blanks=4,inline_pngs=len(embedded),teacher_code_cells=sum(c.cell_type=='code' for c in teacher.cells),
+    stats.update(student_blanks=5,inline_pngs=len(embedded),teacher_code_cells=sum(c.cell_type=='code' for c in teacher.cells),
                  browser='NOT_CHECKED',live_colab='NOT_CHECKED',status='PASS')
     print(json.dumps(stats,indent=2))
     return stats

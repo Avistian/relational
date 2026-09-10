@@ -10,6 +10,8 @@ from _colab import bootstrap_cells
 
 HERE=Path(__file__).resolve().parent
 MODEL=(HERE/'relkit/claim_models.py').read_text()
+TROMPT=(HERE/'relkit/trompt_l049.py').read_text()
+TROMPT_PROBE=(HERE/'_verify_trompt_l049.py').read_text()
 HARNESS=(HERE/'_verify_l049.py').read_text()
 REPRO=(HERE/'_paper_repro_l049.py').read_text()
 LESSON=BeautifulSoup((HERE.parent/'lessons/0049-excelformer-trompt.html').read_text(),'html.parser')
@@ -51,7 +53,7 @@ def build(solution=False):
 
 **Your skill:** trace information routes, implement the crucial operations, then write a source-faithful claim audit. PROVIDED is readable implementation; TODO is your work; CHECK gives immediate feedback; EXIT is your evidence and explanation.
 
-**Scope:** full numeric ExcelFormer prediction path and training loop, plus Trompt Eq.4–5 key parts. We do not train a full Trompt model or reproduce either large benchmark. Three author-released numeric tasks are Tier A. MovieLens is a separate real timestamp transfer demonstration. Synthetic matrices isolate mechanisms only.
+**Scope:** complete numeric ExcelFormer and Trompt prediction/training paths. Trompt includes learned expansion, recurrent cells and the shared head. The short Trompt probe is separate from the three-task ExcelFormer comparison; neither large benchmark is reproduced. Three author-released numeric tasks are Tier A. MovieLens is a separate real timestamp transfer demonstration. Synthetic matrices isolate mechanisms only.
 
 **Route:** recall → masked attention → visible model → Feat-Mix → Trompt routing → paper protocol → three-task experiment → time-transfer audit → EXIT → larger Pima reproduction attempt.
 
@@ -60,7 +62,7 @@ The recorded full local experiment took about nine minutes of CPU computation; r
 **Before reading:** explain why L048’s exact forward check could coexist with an INCOMPARABLE MovieLens score. Write a sentence now; revisit it at EXIT.''')
     cells.extend(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']) for c in bootstrap_cells())
     code('''# PROVIDED — imports and thread limits before numerical work.
-import os, sys, copy, math, json, hashlib, inspect
+import os, sys, copy, math, json, hashlib, inspect, time
 from pathlib import Path
 os.environ['OMP_NUM_THREADS']='1'
 os.environ['OPENBLAS_NUM_THREADS']='1'
@@ -79,7 +81,7 @@ for candidate in (Path.cwd(),Path.cwd()/'labs',Path.cwd().parent):
 from relkit.claim_data import paper_data, temporal_data
 from relkit.saint_experiment import summarize, environment
 from catboost import CatBoostClassifier
-from sklearn.metrics import roc_auc_score, log_loss
+from sklearn.metrics import roc_auc_score, log_loss, accuracy_score
 from IPython.display import display
 print(environment())''')
     section('claims');section('excel');figure('excel-architecture','Complete numeric ExcelFormer routing, including training-only mixing and the repeated block.')
@@ -147,7 +149,7 @@ print('CHECK 2 passed.')''')
 Validation log loss selects the checkpoint. Test labels are never used inside this loop. Feat-Mix runs only in training; prediction applies sigmoid to logits. Small initialized mixing weights are not frozen: optimizer updates can change them.''')
     provided(['train_excel'],'training, optional Feat-Mix, validation selection, checkpoint restore')
     provided(['predict_excel'],'batched, independent-row inference')
-    section('trompt');figure('trompt-architecture','Full Trompt paper routing. The notebook implements Eq.4/5; other modules remain unimplemented and untrained here.')
+    section('trompt');figure('trompt-architecture','Complete numeric Trompt route: zero state, learned expansion, recurrent cells, shared head and summed training losses.')
     figure('prompt','Synthetic one-prompt example: fixed column vectors and values, query changes [0,0]→[2,0]; output changes 5.000→2.959.')
     md('''### Task 3 — preserve the right axes
 **Why:** mixing up columns and prompts yields plausible shapes in symmetric examples. Use unequal P and C in the checks. Implement Eq.4 with unscaled dot products, then Eq.5 on already-expanded features. The expansion tensor below is PROVIDED test data, not a replacement for the full paper’s learned expansion.''')
@@ -172,7 +174,60 @@ assert z.shape==(2,2,2), 'Sum columns C; preserve prompts P and coordinates d.'
 assert abs(z[0,0,0].item()-5)<1e-6 and abs(z[1,0,0].item()-2.958563)<1e-5
 assert torch.equal(z[0],prompt_reduce(wc[:1],values[:1])[0]), 'No cross-row information route.'
 print('CHECK 3 passed. Changed query reweights columns without any other batch row.')''')
-    section('protocol');section('evidence');figure('scores','Author-reference test AUROC on three released tasks; seed points and ± sample SD. These are not current kernel outputs.')
+    md("""### Connect your routing operations to the full Trompt model
+Read Fig.3 as three connected paths: learned column/prompt identities, the row's numeric values, and prompt-specific expansion. The classes below call **your** Task 3 functions on every cell. `groups=2` and bias-free scalar expansion match the pinned independent PyTorch Frame component. The zero initial state follows paper §5.1. The categorical encoder is outside this numeric variant.""")
+    for name in ('TromptCell','TromptHead','Trompt'):
+        code('# PROVIDED — complete numeric Trompt: '+name+'\n'+extract(TROMPT,{name}))
+    md("""### Task 4 — supervise every cell
+**Goal:** implement Eq.9 for class logits [B,L,T] and integer labels [B]. **Why:** training only the last cell, or averaging the logits before the loss, changes the objective. **Hint:** each cell supplies one mean-over-rows classification loss; the cell axis is the second axis. Keep the downstream head shared.""")
+    code('# TODO — teacher answer\n'+extract(TROMPT,{'trompt_loss'}) if solution else """# TODO — Trompt Eq.9, deep supervision.
+def trompt_loss(cell_logits, y):
+    return ____""")
+    code("""# CHECK — distinguish sum of losses from loss of the averaged prediction.
+a=torch.tensor([[[0.,2.],[0.,-2.]],[[1.,0.],[-1.,0.]]],requires_grad=True)
+y=torch.tensor([1,0])
+expected=F.cross_entropy(a[:,0],y)+F.cross_entropy(a[:,1],y)
+assert torch.allclose(trompt_loss(a,y),expected), 'Sum the cell losses; do not average logits first.'
+trompt_loss(a,y).backward()
+assert a.grad[:,0].abs().sum()>0 and a.grad[:,1].abs().sum()>0
+torch.manual_seed(49)
+probe_model=Trompt(3,d=8,prompts=4,layers=2).double()
+xx=torch.tensor([[1.,-2.,3.],[3.,1.,-1.]],dtype=torch.double)
+logits,trace=probe_model(xx,return_trace=True)
+assert torch.equal(trace[0]['weights'][0],trace[0]['weights'][1]), 'Zero initial state implies shared first-cell routing.'
+assert not torch.allclose(trace[1]['weights'][0],trace[1]['weights'][1]), 'Previous row values should reach later routing.'
+assert torch.allclose(logits,torch.cat([probe_model(row[None]) for row in xx]),atol=1e-10), 'Trompt must not read another batch row.'
+assert not torch.allclose(trace[0]['expanded'][:,0],trace[0]['expanded'][:,1]), 'Learned expansion must permit different prompt values.'
+trompt_loss(logits,torch.tensor([0,1])).backward()
+assert all(p.grad is not None and torch.isfinite(p.grad).all() for p in probe_model.parameters())
+print('CHECK 4 passed: complete cell recurrence, expansion, and supervised gradients.')
+print('Separate pinned independent component check:',json.loads(Path('_reference_trompt_l049_results.json').read_text()))""")
+    md("""### Train and infer using the declared aggregation rule
+The training loop sums cell cross-entropies. Validation scores the mean logits, and restores the checkpoint with lowest validation cross-entropy. Inference averages logits then applies class softmax. The paper does not supply an author implementation here; this precise convention and the local optimizer recipe are disclosed rather than implied by the name Trompt.""")
+    for name in ('train_trompt','predict_trompt'):
+        code('# PROVIDED — '+name+'\n'+extract(TROMPT,{name}))
+    md("""### Run the separate Trompt execution probe
+**Predict first:** will the first routing matrix vary by row after training, or will only later matrices vary? Train three small models on the released Pima split. This is a working-model test on ExcelFormer's data release, not a Trompt benchmark reproduction or a fourth arm in the earlier comparison. The reported SD measures three training seeds on one fixed split.""")
+    code('# PROVIDED — the probe takes your visible model and functions\n'+extract(TROMPT_PROBE,{'probe'}))
+    code("""# CHECK / RUN — instrument the actual trained Trompt path.
+original_prompt_weights,original_prompt_reduce=prompt_weights,prompt_reduce
+prompt_calls={'weights':0,'reduce':0}
+def counted_prompt_weights(*args):
+    prompt_calls['weights']+=1
+    return original_prompt_weights(*args)
+def counted_prompt_reduce(*args):
+    prompt_calls['reduce']+=1
+    return original_prompt_reduce(*args)
+prompt_weights,prompt_reduce=counted_prompt_weights,counted_prompt_reduce
+try:
+    trompt_run=probe(model_cls=Trompt,train_fn=train_trompt,predict_fn=predict_trompt)
+finally:
+    prompt_weights,prompt_reduce=original_prompt_weights,original_prompt_reduce
+assert min(prompt_calls.values())>0, 'Training bypassed your routing functions.'
+print('Live calls:',prompt_calls)
+print(trompt_run['scope'],trompt_run['summary'])
+Path('data/cache/l049-trompt-student.json').write_text(json.dumps(trompt_run,indent=2))""")
+    section('protocol');section('evidence');figure('scores' ,'Author-reference test AUROC on three released tasks; seed points and ± sample SD. These are not current kernel outputs.')
     md('''### PROVIDED — inspect data provenance before training
 The authors’ already-prepared arrays are deliberately used unchanged. Their upstream preprocessing fit scope is not independently reconstructed. We fit only the new MI order on training rows. Checksums detect changed downloaded data; they do not prove absence of upstream leakage.''')
     code('''data=paper_data('pima')
@@ -221,7 +276,7 @@ print('Same recorded versions:',same_versions,'max mean AUROC change:',max_score
 if same_versions:
     assert max_score_change<1e-6,'Inspect student code / protocol before interpreting changed rankings.'
 # Different package versions may produce different scores; document them, do not overwrite the ledger.
-print('CHECK 4: evidence computed; compare full protocol, not one rounded score.')''')
+print('CHECK 5: evidence computed; compare full protocol, not one rounded score.')''')
     section('temporal');figure('transfer','Author-reference MovieLens transfer results; random and chronological test populations differ. These are not two independent benchmark datasets.')
     code('''# PROVIDED — replay time transfer with the same live implementation.
 transfer={}
@@ -241,12 +296,12 @@ Fill the four fields below using your evidence. The automatic check can verify t
     answers={'paper_claim':'ExcelFormer v5 Table 14 Pima-Indians-Diabetes reports Feat-Mix default AUROC 0.8356 across five runs; Trompt instead reports scoped comparability with trees.',
              'local_scope':'Three released numeric tasks, fixed small architecture and budgets, three model seeds; rank test has little power and banknote saturates.',
              'temporal_limit':'Same 12000 MovieLens events but different test populations and a frequency-encoded feature pipeline; this cannot refute an IID benchmark claim.',
-             'reproduction_verdict':'INCOMPARABLE to the paper table: forward fidelity is verified, but augmentation sampler, tuning, seed aggregation and upstream preprocessing remain gaps.'}
+             'reproduction_verdict':'INCOMPARABLE to the paper table: bounded numeric ExcelFormer parity and independent Trompt component parity are verified, but original training/search and benchmark protocols are not reconstructed.'}
     code('# EXIT TICKET — teacher example\naudit='+repr(answers) if solution else "# TODO — your written audit; retain the dictionary keys.\naudit = {\n    'paper_claim': '____',\n    'local_scope': '____',\n    'temporal_limit': '____',\n    'reproduction_verdict': '____',\n}")
     code('''# CHECK / EXIT — content is reviewed by the teacher, not automatically scored.
 assert all(isinstance(v,str) and '____' not in v and len(v.split())>=8 for v in audit.values()), 'Supply your own supported explanations.'
 ticket={'lesson':49,'audit':audit,'local_summary':summary,'transfer_summary':transfer_summary,
-        'environment':environment(),'full_trompt_benchmark':'NOT_RUN'}
+        'environment':environment(),'trompt_probe':trompt_run,'full_trompt_benchmark':'NOT_RUN'}
 Path('data/cache/l049-exit.json').write_text(json.dumps(ticket,indent=2))
 print(json.dumps(ticket,indent=2))''')
     section('scale')
@@ -270,6 +325,20 @@ if RUN_PAPER_REPRO:
     print(paper_result['verdict'],paper_result['gaps'])
 else:
     print('Current student scale-up: NOT_RUN. Author larger run is a separate snapshot.')''')
+    md("""### NEXT STEP — Trompt capacity check, with benchmark gaps kept visible
+The gate below increases the numeric Trompt model to the paper's d=P=128 and L=6. It still uses Pima from ExcelFormer's release, a chosen optimizer and validation-loss selection. This is a capacity/execution step, **INCOMPARABLE**, not Grinsztajn45 reproduction. Before making the paper's performance claim, use its Appendix A dataset IDs/splits, preprocessing, accuracy/R² metrics and 40-configuration search accounting; categorical encoding and original optimizer parity remain outstanding.
+
+Local CLI equivalent: `.venv/bin/python labs/_verify_trompt_l049.py --capacity --device cuda --out /tmp/l049-trompt-capacity.json`. This operator does not launch a cloud job.""")
+    code("""# NEXT STEP — off by default; runs YOUR complete numeric Trompt path.
+RUN_TROMPT_CAPACITY = False
+if RUN_TROMPT_CAPACITY:
+    capacity_run=probe(d=128,prompts=128,layers=6,epochs=100,
+        device='cuda' if torch.cuda.is_available() else 'cpu',
+        model_cls=Trompt,train_fn=train_trompt,predict_fn=predict_trompt)
+    Path('data/cache/l049-trompt-capacity.json').write_text(json.dumps(capacity_run,indent=2))
+    print(capacity_run['verdict'],capacity_run['summary'])
+else:
+    print('Trompt capacity run: NOT_RUN; Grinsztajn45 reproduction: NOT_RUN.')""")
     md('''**Ask a follow-up.** Explain any unclear arrow, tensor axis, source discrepancy, seed interval or claim boundary. Bring your EXIT ticket; completion alone does not establish mastery of every introduced term. Next lesson is the Q1 fair-comparison checkpoint.''')
     nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}}),49)
     return nb

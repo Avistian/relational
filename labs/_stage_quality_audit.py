@@ -44,9 +44,11 @@ def check(n):
             if url.fragment and target.suffix == '.html':
                 if target not in documents:
                     documents[target] = BeautifulSoup(target.read_text(), 'html.parser')
-                fragment = unquote(url.fragment)
-                if not documents[target].find(id=fragment) and not documents[target].find('a', attrs={'name': fragment}):
-                    broken.append([str(page.relative_to(stage)), url.path, fragment, 'missing anchor'])
+                # Browsers first match the literal fragment, then its decoded
+                # form. nbconvert emits percent signs in some heading IDs.
+                fragments = {url.fragment, unquote(url.fragment)}
+                if not any(documents[target].find(id=f) or documents[target].find('a', attrs={'name': f}) for f in fragments):
+                    broken.append([str(page.relative_to(stage)), url.path, unquote(url.fragment), 'missing anchor'])
     report = dict(status='FAIL' if broken else 'PASS', lesson=n, stage=str(stage),
                   local_links=links, broken=broken,
                   scope='Real Pages copy commands in fresh tree, no symlinks; lesson/lab/reference files and HTML fragment targets')
