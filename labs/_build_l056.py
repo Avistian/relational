@@ -20,7 +20,7 @@ def build(solution=False):
     def md(s):cells.append(nbf.v4.new_markdown_cell(s.strip()))
     def code(s):cells.append(nbf.v4.new_code_cell(s.strip()))
     def figure(name,caption):
-        md('!['+caption+'](data:image/png;base64,'+base64.b64encode((ROOT/'figures/l056'/f'{name}.png').read_bytes()).decode()+')\n\n'+caption)
+        md('!['+caption+'](data:image/png;base64,'+base64.b64encode((ROOT/'figures/l056'/f'{name}.png').read_bytes()).decode()+')\n\n'+caption+' [Open full-size figure](figures/l056/'+name+'.png).')
     soup=BeautifulSoup((ROOT.parent/'lessons'/f'{SLUG}.html').read_text(),'html.parser')
     def section(name):
         el=BeautifulSoup(str(soup.find('section',id=name)),'html.parser').find('section')
@@ -30,9 +30,9 @@ def build(solution=False):
             u=urlsplit(a['href'])
             if not u.scheme and u.path:a['href']=os.path.relpath((ROOT.parent/'lessons'/u.path).resolve(),ROOT)+('#'+u.fragment if u.fragment else '')
         md(mdtext(el))
-    def task(name,signature,text):
+    def task(name,signature,text,file="relkit/leaderboard.py"):
         md(text)
-        code('# TODO — '+name+'\n'+(piece('relkit/leaderboard.py',name) if solution else signature+'\n    raise NotImplementedError("Implement this audit operation")'))
+        code('# TODO — '+name+'\n'+(piece(file,name) if solution else signature+'\n    raise NotImplementedError("Implement this audit operation")'))
     md('''# Lab 056 · TabArena: living benchmark literacy
 
 **Skill:** audit a benchmark claim by reconstructing its aggregation from individual released measurements. **Implementation scope:** evaluator key parts, no new model or training. Published-result reanalysis is not training reproduction.
@@ -43,7 +43,7 @@ def build(solution=False):
 
 **Contract:** four frozen `tabarena-2025-06-12` method artifacts, 51 real datasets, three regimes, 816 outer splits; 9,792 rows. We analyze published measurements from real datasets (Tier A evidence), not raw data or model weights. The two-dataset weighting example is synthetic mechanism isolation only. Artifacts are committed (~254 KB), SHA256-verified, and runnable offline after setup. Python dependencies follow `requirements-labs.txt`; runtime versions print below. Bootstrap seed=56, 2,000 dataset draws. No new model/split seeds are introduced; published folds are retained. Exact paper Figure 1: **INCOMPARABLE**.
 
-PROVIDED = read/run; TODO = implement; CHECK = immediate feedback; EXIT = evidence plus your interpretation. Four TODO functions drive the actual all-dataset audit. Budget: 35–50 minutes learning, seconds of CPU computation; no GPU required.''')
+PROVIDED = read/run; TODO = implement; CHECK = immediate feedback; EXIT = evidence plus your interpretation. Five TODO functions drive the actual all-dataset audit. Budget: 35–50 minutes learning, seconds of CPU computation; no GPU required.''')
     for c in bootstrap_cells():cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']))
     md('''## Concept recap
 
@@ -66,7 +66,7 @@ for p in (Path.cwd(),Path.cwd()/'labs',Path.cwd().parent):
 else:raise RuntimeError('Run bootstrap or start in the relational workspace')
 ARMS=['CatBoost','LightGBM','RealMLP','TabM']
 print({p:importlib.metadata.version(p) for p in ['numpy','pandas','scipy','pyarrow']})''')
-    section('scope');section('procedure');figure('protocol','Illustrative inner/outer split boundary. Trace V rows into validation; outer-test labels remain withheld.')
+    section('scope');section('procedure');figure('protocol','Illustrative inner/outer split boundary. Trace V rows into validation; outer-test labels remain withheld.');figure('protocol-flow','One complete outer-split procedure for bagged non-foundation methods: OOF predictions select; bagged test predictions score after selection. C denotes output classes, or one output for regression.')
     code('# PROVIDED — exact artifact hash checks and loading\n'+piece('_verify_l056.py','load_snapshot')+'\nrows=load_snapshot()\nprint(rows.shape)\ndisplay(rows.groupby(["arm","method_subtype"]).size().unstack())')
     task('aligned_errors','def aligned_errors(rows, arms):','''## TODO 1 · Refuse an invalid comparison
 **Goal:** return an error matrix indexed by `(dataset,fold)` with columns in `arms` order. Select the requested arms, require unique nonempty arm names, reject duplicate keys, missing/nonfinite errors, any imputed row and conflicting metrics within a dataset. Require complete coverage across arms. Sort the index.
@@ -137,6 +137,32 @@ print('PASS: paired dataset bootstrap is reproducible and bounded')''')
     md('''## PROVIDED · Complete evaluator
 Read the remaining implementation. It calls **your four functions above** for every regime. Win rates are computed pairwise within the same split and then dataset-balanced. The supplementary Friedman/Nemenyi summary ranks mean errors per dataset, a different order of operations. The helper is inlined below; no packaged evaluator replaces your functions.''')
     code('# PROVIDED — complete live audit\n'+piece('relkit/leaderboard.py','summarize'))
+    figure('rating-trace','Synthetic analytical trace: three A wins and one B win give odds 3, rating gap 190.85 and fitted win probability .75. The ridge makes a negligible correction.')
+    task('paired_wins','def paired_wins(errors):','''## TODO 5 · Make the contests that the rating solver fits
+**Goal:** from the complete lower-is-better error matrix, build a NumPy tensor `[datasets,methods,opponents]`. For each split compare every method with every opponent; a win is 1, tie .5, loss 0. Average splits within each dataset, retaining sorted dataset order and the input method order. Reject empty/nonfinite inputs.
+
+**Why:** the rating solver cannot repair reversed winners or dataset weights. **Hint boundary:** compare a column-expanded error array with a row-expanded one; group by dataset before averaging. The diagonal should display .5, but the fitter excludes self-games. Predict the tensor for one A win and three repetitions of a B win on a different dataset.''',file='relkit/leaderboard_elo.py')
+    code('''# CHECK — orientation, pairing, ties and equal dataset influence
+ix=pd.MultiIndex.from_tuples([('a',0),('b',0),('b',1),('b',2)],names=['dataset','fold'])
+toy=pd.DataFrame([[0,1],[1,0],[1,0],[1,0]],index=ix,columns=['A','B'])
+w=paired_wins(toy)
+assert w.shape==(2,2,2)
+np.testing.assert_allclose(w.mean(0),.5)
+np.testing.assert_allclose(w+w.transpose(0,2,1),1)
+assert w[0,0,1]==1 and w[1,0,1]==0
+print('PASS: one vote per dataset; row method is the winning candidate')''')
+    md('''## PROVIDED · Fit the Bradley–Terry objective
+Read the pairwise negative log-likelihood and its gradient. `observed` counts dataset-balanced wins, while `d * expit(delta)` predicts them. Subtracting the two drives optimization. `logaddexp` avoids overflow; the disclosed ridge stabilizes undefeated methods. Mean-centering at 1000 sets a local coordinate origin. It does not calibrate against the absent RandomForest arm.
+
+This is a transparent reimplementation of the pinned **current** objective. The original Figure 1 method pool, solver history and random-forest anchor are not recovered.''')
+    code('# PROVIDED — visible fitting and dataset-refit bootstrap\n'+piece('relkit/leaderboard_elo.py','fit_elo')+'\n\n'+piece('relkit/leaderboard_elo.py','rating_audit'))
+    code('''# CHECK — analytical two-method answer and complete separation
+analytic=np.array([[[.5,.75],[.25,.5]]]*4)
+r=fit_elo(analytic)
+assert abs((r[0]-r[1])-400*np.log10(3))<.001
+np.testing.assert_allclose(fit_elo(analytic[:,::-1,::-1]),r[::-1],atol=1e-5)
+assert np.isfinite(fit_elo(np.array([[[.5,1],[0,.5]]]))).all()
+print('PASS: 3:1 odds gives a 190.85-point gap; ridge keeps an undefeated arm finite')''')
     md('''## First run · one split per dataset
 This is a Lite sensitivity view, not the full evidence. Predict whether a single split must preserve the all-split ordering. No rankings are forced to change. More repeated evaluations can stabilize estimates without adding new independent datasets.''')
     code('''# PROVIDED — Lite view uses the live functions
@@ -158,6 +184,32 @@ for regime,s in full.items():
     for arm in ARMS:assert abs(s['mean_ranks'][arm]-reference['summary'][regime]['mean_ranks'][arm])<1e-12
     np.testing.assert_allclose(s['tabm_minus_catboost_rank_gap'],reference['summary'][regime]['tabm_minus_catboost_rank_gap'],atol=1e-12)
 print('PASS: live implementation reproduces the recorded aggregate audit')''')
+    md('''## Required rating experiment · fit, perturb and diagnose
+**Predict first:** with the same four methods, must the fitted probability exactly match every observed matchup? Must ranking mean errors preserve split-based ratings? Must the CatBoost/TabM gap stay fixed after removing the other opponents?
+
+Run all three regimes with your live `paired_wins`, then fit 100 paired dataset resamples for each. Hold the artifact bytes and solver fixed. This takes seconds to a minute on CPU. The old mean-rank interval used 2,000 resamples; the new interval is in **Elo contrast units**, so do not place them on one axis.''')
+    code('''# PROVIDED — ratings, matched reference and two-opponent intervention
+rating_results={}
+for regime in ('default','tuned','tuned_ensemble'):
+    e=aligned_errors(rows.loc[rows.method_subtype==regime],ARMS)
+    rating_results[regime]=rating_audit(e)
+    reduced=fit_elo(paired_wins(e[['CatBoost','TabM']]))
+    rating_results[regime]['two_method_gap']=float(reduced[1]-reduced[0])
+rating_reference=json.loads((ROOT/'_verify_l056_elo_results.json').read_text())
+for regime,r in rating_results.items():
+    np.testing.assert_allclose(r['ratings'],rating_reference['results'][regime]['ratings'],atol=1e-7)
+    np.testing.assert_allclose(r['catboost_contrast_interval'],rating_reference['results'][regime]['catboost_contrast_interval'],atol=1e-7)
+display(pd.DataFrame({k:dict(zip(ARMS,v['ratings'])) for k,v in rating_results.items()}))
+r=rating_results['tuned_ensemble']
+display(pd.DataFrame(np.asarray(r['fitted_wins'])-np.asarray(r['observed_wins']),index=ARMS,columns=ARMS))
+print('Maximum fitted-minus-observed matchup difference:',r['max_matchup_residual'])
+print('TabM-CatBoost gaps: four methods',r['catboost_contrast'][3],'two methods',r['two_method_gap'])
+display(pd.DataFrame({'split_contests':r['ratings'],'mean_error_contests':r['mean_error_ratings']},index=ARMS))
+(OUT/'student-rating-audit.json').write_text(json.dumps(rating_results,indent=2))
+print('PASS: fresh live rating analysis matches current reference; initial paper table remains INCOMPARABLE')''')
+    figure('rating-evidence','New author measurement: four-method ratings and paired CatBoost contrasts. The source is the current solver and frozen score files; these are not the paper table.')
+    md('''### Interpretation CHECK · recover what ranks discard
+The next cell shows one real task's errors in its own metric, where subtraction has a meaningful unit. Inspect the task rather than choosing a pleasing test result. Then identify one regime change where a method's rank worsens: this does not establish that its own error worsened, because its competitors changed too. Explain the difference between an absolute loss intervention and a relative ranking intervention.''')
     section('evidence')
     for name,caption in [('ranks','Author-reference four-method ranks; same 51 datasets. Different from full-pool paper Elo.'),('uncertainty','Author-reference paired dataset bootstrap. Negative favors TabM; crossing zero does not establish equivalence.'),('critical-difference','Supplementary rank-of-mean-error analysis, separate from average split ranks; exploratory tests.')]:figure(name,caption)
     code('''# PROVIDED — one real dataset, uncertainty and all-split sensitivity
@@ -171,7 +223,7 @@ comparison=pd.DataFrame({'one_split':lite['tuned_ensemble']['mean_ranks'],'all_s
 display(comparison)
 print('TabM−CatBoost paired rank gap and interval:',full['tuned_ensemble']['tabm_minus_catboost_rank_gap'])''')
     md('''## EXIT TICKET · an audit you would sign
-Include snapshot/hash identity, method pool, regimes, metric orientation and coverage; the three-regime table; one dataset’s mean/SD; naive-versus-balanced ranks; the paired ensemble interval; and one-split versus all-split sensitivity.
+Include snapshot/hash identity, method pool, regimes, metric orientation and coverage; the three-regime table; one dataset’s mean/SD; naive-versus-balanced ranks; the paired ensemble interval; and one-split versus all-split sensitivity. Add fitted-versus-observed matchup residuals, split-first versus mean-error-first ratings, the two-method pool intervention and the 100-draw rating contrast interval.
 
 Write your own explanation: why does the full-pool paper ranking not have to equal these four-method mean ranks? What supports a stronger tabular baseline, and what temporal relational claim is still unanswered? Distinguish **released-score reanalysis / source primitive parity / exact table reproduction / fresh training**. State which are verified and which are not.
 
@@ -182,7 +234,7 @@ exit_ticket={'snapshot':'tabarena-2025-06-12','source_manifest':json.loads((ROOT
     'rank_table':{k:v['mean_ranks'] for k,v in full.items()},'dataset':dataset,'dataset_errors':task_table.to_dict(),
     'naive_vs_balanced':{'balanced':balanced.mean().to_dict(),'naive':split_ranks.mean().to_dict()},
     'ensemble_gap':full['tuned_ensemble']['tabm_minus_catboost_rank_gap'],
-    'lite_vs_full':comparison.to_dict(),'interpretation':interpretation,
+    'lite_vs_full':comparison.to_dict(),'ratings':rating_results,'interpretation':interpretation,
     'reanalysis':'PASS','training':'NOT_RUN','paper_table':'INCOMPARABLE'}
 (OUT/'exit.json').write_text(json.dumps(exit_ticket,indent=2))
 print('Saved',OUT/'exit.json')

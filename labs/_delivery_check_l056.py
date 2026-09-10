@@ -15,7 +15,7 @@ student=nbformat.read(ROOT/(SLUG+'.ipynb'),as_version=4)
 solution=nbformat.read(ROOT/'solutions'/(SLUG+'.ipynb'),as_version=4)
 for nb,sol in [(student,False),(solution,True)]:
     assert [(c.cell_type,c.source) for c in nb.cells]==[(c.cell_type,c.source) for c in build(sol).cells],('builder drift',sol)
-assert sum(c.cell_type=='code' and 'raise NotImplementedError' in c.source for c in student.cells)==4
+assert sum(c.cell_type=='code' and 'raise NotImplementedError' in c.source for c in student.cells)==5
 assert all(c.execution_count is None and not c.outputs for c in student.cells if c.cell_type=='code')
 assert all(c.execution_count is not None and not any(o.output_type=='error' for o in c.outputs) for c in solution.cells if c.cell_type=='code')
 assert '@colab-bootstrap' in next(c.source for c in student.cells if c.cell_type=='code')
@@ -25,10 +25,14 @@ for cell in student.cells:
     assert 'attachment:' not in cell.source
     for token in re.findall(r'data:image/png;base64,([A-Za-z0-9+/=]+)',cell.source):
         b=base64.b64decode(token);Image.open(BytesIO(b)).verify();payloads.append(hashlib.sha256(b).hexdigest())
-assert len(payloads)==5
+assert len(payloads)==8
 assert set(payloads)=={hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT/'figures/l056').glob('*.png')}
 teacher=json.loads((ROOT/'data/cache/l056/student-audit.json').read_text())
 assert teacher==result['summary'],'Live notebook differs from verified audit'
+new=json.loads((ROOT/'_verify_l056_elo_results.json').read_text())
+for p,sha in new['source_hashes'].items():assert hashlib.sha256((ROOT/p).read_bytes()).hexdigest()==sha,p
+live=json.loads((ROOT/'data/cache/l056/student-rating-audit.json').read_text())
+assert live==new['results'],'Live rating analysis differs from measured operator'
 manifest=json.loads((site/'lessons/manifest.json').read_text())
 entry=next(x for x in manifest['lessons'] if x['id']==56)
 assert entry['slug']==SLUG and entry['labPath']=='labs/'+SLUG+'.ipynb'
@@ -42,7 +46,7 @@ shutil.copytree(ROOT/'figures/l056',stage/'labs/figures/l056')
 shutil.copy2(ROOT/'html'/(SLUG+'.html'),stage/'labs/html'/(SLUG+'.html'))
 shutil.copy2(ROOT/(SLUG+'.ipynb'),stage/'labs'/(SLUG+'.ipynb'))
 for name in ['index.html','notebooks.html','flashcards.html']:shutil.copy2(site/name,stage/name)
-for name in ['l056-reproduction.md','_verify_l056_results.json','_sources_l056.json']:
+for name in ['l056-reproduction.md','_verify_l056_results.json','_verify_l056_elo_results.json','_sources_l056.json']:
     assert name in (site/'.github/workflows/pages.yml').read_text()
     shutil.copy2(ROOT/name,stage/'labs'/name)
 links=0
@@ -58,9 +62,9 @@ for rel in ['lessons/'+SLUG+'.html','reference/tabarena-benchmark-audit.html','l
         if u.fragment and target.suffix=='.html':
             assert BeautifulSoup(target.read_text(),'html.parser').find(id=unquote(u.fragment)),(rel,url,'anchor missing')
         links+=1
-checks=dict(solution_code_cells=sum(c.cell_type=='code' for c in solution.cells),student_todos=4,
-    portable_pngs=5,copied_pages_links=links,staging_path=str(stage),live_notebook_audit='MATCH',
-    source_primitive_parity=result['parity'],full_archived_score_analysis='RUN',
+checks=dict(solution_code_cells=sum(c.cell_type=='code' for c in solution.cells),student_todos=5,
+    portable_pngs=8,copied_pages_links=links,staging_path=str(stage),live_notebook_audit='MATCH',
+    fitted_rating_parity_max_elo_error=new['source_parity_max_elo_error'],source_primitive_parity=result['parity'],full_archived_score_analysis='RUN',
     browser='NOT_CHECKED',live_colab='NOT_CHECKED',deployment='NOT_CHECKED',original_training='NOT_RUN',official_elo_table='NOT_REPRODUCED')
 (ROOT/'_delivery_l056_results.json').write_text(json.dumps(checks,indent=2)+'\n')
 print(json.dumps(checks,indent=2))

@@ -86,3 +86,47 @@ Pinned upstream `elo_utils.py` and the official example retain the upstream Apac
 license in `sources/l056/LICENSE`. Benchmark result artifacts are attributed to TabArena;
 their source locations and exact downloaded bytes are recorded separately. No raw
 dataset records or model predictions are redistributed by this lesson.
+
+## September 10 evaluator extension: fit the rating model
+
+The original `relkit/leaderboard.py`, `_verify_l056.py` and `_verify_l056_results.json`
+remain the historical rank operator and measurement. New source
+`relkit/leaderboard_elo.py` and `_verify_l056_elo_results.json` add a measured
+Bradley–Terry reconstruction for the same four frozen artifacts. The notebook inlines
+these functions and adds a fifth live TODO, `paired_wins`; every rating and bootstrap
+uses the learner's tensor. Run:
+
+```bash
+.venv/bin/python labs/_check_l056_elo.py
+.venv/bin/python labs/_verify_l056_elo.py
+.venv/bin/python labs/_figures_l056.py
+.venv/bin/python labs/_build_l056.py
+.venv/bin/python labs/_execute_l056.py
+.venv/bin/python labs/_delivery_check_l056.py
+```
+
+The fit uses the pinned current source's complete dataset-balanced contests and tiny
+ridge `.5 / (1e6 * log(10)**2)`, a visible pairwise log-likelihood and analytic
+gradient, L-BFGS-B (`ftol=1e-15`, `gtol=1e-12`), and mean-centred ratings at 1000.
+It is checked against `EloHelper.compute_mle_elo_from_ranks` for all three regimes:
+maximum difference 1.8811e-7 Elo points. This extends source parity from rank totals
+to actual fitted ratings. Each regime is fitted separately; the paper's joint
+method/regime roster and default-RandomForest anchor are absent.
+
+The new experiment also compares split-first contests with contests based on
+mean outer-fold errors (Appendix A.1), checks fitted-versus-observed matchup
+probabilities, and refits the CatBoost/TabM subpool. It bootstraps 51 dataset blocks
+100 times (seed56), refits all methods jointly, then subtracts CatBoost within each
+draw. These are coarse percentile intervals for Elo contrasts; they are neither
+high-precision tail estimates nor the existing 2,000-draw mean-rank intervals.
+The two-method analytical 3:1 odds case, exact ties, axis permutation, unequal
+split counts, invalid inputs and complete separation are checked independently.
+
+**Still INCOMPARABLE to Figure1:** changed opponent pool, per-regime fitting,
+local mean anchor, documented current solver/ridge, explicit split-first contests,
+and unproven historical artifact identity. AppendixA.1 reports RealMLP(T+E)1569
+and TabM(T+E)1552 on its imputed full roster; do not call every paper ranking
+TabM-first or compare those absolute numbers to our local coordinate system.
+No new training, prediction reconstruction, or official full-roster reconstruction
+was performed. The paper's released metric errors cannot recreate OOF ensemble
+selection or Figure6 because individual prediction correlations are absent.

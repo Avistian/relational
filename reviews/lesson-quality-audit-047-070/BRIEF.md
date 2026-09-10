@@ -26,6 +26,8 @@ Use primary paper and official implementation sources, browse to verify sources.
 8. Retrieval, prediction before results, teach-back, meaningful failure diagnosis, clear next step.
 9. Delivery: canonical sources/builders survive regeneration; student/solution/prepared HTML/reference agree; links, image payloads, browser desktop/mobile and relevant behavioral/source checks. Distinguish live Colab/deployment untested.
 
+Current `NOTES.md` records the user's prior delivery correction for 058–070: put lab/run/download links before the lesson body, distinguish the read-only preview from a runnable notebook, provide an exercises shortcut, and expose references, measured evidence and reproduction instructions together. Verify the actual click path, including no-JavaScript/failed-fetch behavior where relevant; file existence alone does not establish a usable package.
+
 ## Deliverable for the assigned lesson
 
 Repair the full package in place. Keep changes scoped to the assigned lesson; shared helper changes only if needed, and report them. Use .venv/bin/python; inspect CLI before running broad generators. `labs/_revise_lesson_depth.py N` and `labs/_lesson_depth.py N` support targeted enrichment. Never overwrite another lesson or erase already repaired work. Preserve saved outputs only if code is unchanged; otherwise execute or honestly clear/relabel.
