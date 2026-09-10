@@ -15,7 +15,7 @@ def check():
     q = torch.tensor([[0., 0.], [2., 0.]], requires_grad=True)
     c = torch.tensor([[2., 0.], [0., 0.], [0., 0.]], requires_grad=True)
     idx = select_neighbors(q, c, 1, mask)
-    assert idx.tolist() == [[1], [1]]
+    assert idx[0].tolist() == [1] and idx[1].item() in (1, 2), 'Equal-distance legal ties may choose either row'
     try:
         select_neighbors(q, c, 3, mask)
     except ValueError:

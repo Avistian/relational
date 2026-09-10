@@ -38,8 +38,9 @@ def check():
               num_embeddings=None,d_main=8,d_multiplier=2,encoder_n_blocks=0,predictor_n_blocks=1,mixer_normalization='auto',
               context_dropout=0,dropout0=0,dropout1=0,normalization='LayerNorm',activation='ReLU')
         ours=TabRS(3,d=8,m=3,dropout=0,context_dropout=0,regression=regression)
-        for a,b in [(ours.linear,ref.linear),(ours.K,ref.K),(ours.T,ref.T),(ours.block,ref.blocks1[0]),(ours.head,ref.head),
-                     (ours.label_encoder,ref.label_encoder if regression else ref.label_encoder[0])]:a.load_state_dict(b.state_dict())
+        matched = [(ours.linear,ref.linear),(ours.K,ref.K),(ours.T,ref.T),(ours.block,ref.blocks1[0]),(ours.head,ref.head),
+                     (ours.label_encoder,ref.label_encoder if regression else ref.label_encoder[0])]
+        for a,b in matched:a.load_state_dict(b.state_dict())
         ref.eval();ours.eval()
         for train in [False,True]:
             x=torch.randn(9,3);y=torch.randn(9) if regression else torch.arange(9)%2
@@ -49,9 +50,16 @@ def check():
             cx=torch.cat([q2,x[2:]]) if train else x[2:]
             local=ours(q2,cx,y if train else y[2:],torch.arange(2) if train else None,torch.arange(9) if train else None)
             torch.testing.assert_close(local,official,atol=2e-6,rtol=2e-6)
-            g1=torch.autograd.grad(official.sum(),q)[0];g2=torch.autograd.grad(local.sum(),q2)[0]
+            g1=torch.autograd.grad(official.sum(),q,retain_graph=True)[0];g2=torch.autograd.grad(local.sum(),q2,retain_graph=True)[0]
             torch.testing.assert_close(g1,g2,atol=3e-6,rtol=3e-6)
-            errors.append({'regression':regression,'train':train,'logit_max_error':float((official-local).abs().max().detach()),'gradient_max_error':float((g1-g2).abs().max())})
-    result={'status':'PASS','scope':'Official numeric TabR-S class; torch exact-search adapter; dropout disabled; copied weights; eval and training candidate paths','cases':errors}
+            left=[p for a,b in matched for p in a.parameters()]
+            right=[p for a,b in matched for p in b.parameters()]
+            local_grads=torch.autograd.grad(local.square().sum(),left)
+            reference_grads=torch.autograd.grad(official.square().sum(),right)
+            for ours_grad,ref_grad in zip(local_grads,reference_grads):
+                torch.testing.assert_close(ours_grad,ref_grad,atol=4e-6,rtol=4e-6)
+            parameter_error=max(float((a-b).abs().max()) for a,b in zip(local_grads,reference_grads))
+            errors.append({'parameter_gradient_max_error':parameter_error,'parameter_tensors_checked':len(left),'regression':regression,'train':train,'logit_max_error':float((official-local).abs().max().detach()),'gradient_max_error':float((g1-g2).abs().max())})
+    result={'status':'PASS','scope':'Official numeric TabR-S class; torch exact-search adapter; dropout disabled; copied weights; eval and training candidate paths; query-input and all corresponding parameter gradients','cases':errors}
     (HERE/'_source_check_l052_results.json').write_text(json.dumps(result,indent=2));return result
 if __name__=='__main__':print(check())

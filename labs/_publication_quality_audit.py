@@ -34,7 +34,7 @@ def verify(n, commit):
             if url.scheme or url.netloc or not url.path:
                 continue
             target = posixpath.normpath(posixpath.join(str(PurePosixPath(page).parent), unquote(url.path)))
-            if target.endswith(('.json', '.css', '.js', '.png', '.svg')):
+            if target.endswith(('.json', '.css', '.js', '.png', '.svg', '.ipynb', '.md', '.py')):
                 paths.add(target)
     def check(path):
         expected = blob(path)
@@ -45,7 +45,7 @@ def verify(n, commit):
         return dict(path=path, http_status=status, sha256=hashlib.sha256(actual).hexdigest())
     records = list(ThreadPoolExecutor(max_workers=4).map(check, sorted(paths)))
     report = dict(status='PASS', lesson=n, commit=commit, pages_run=run, records=records,
-                  scope='Successful Pages deployment and exact live HTTP bytes for lesson, prepared lab, reference and their directly linked assets/evidence; no live Colab check')
+                  scope='Successful Pages deployment and exact live HTTP bytes for lesson, prepared lab, reference and their directly linked assets/evidence/downloads; no live Colab check')
     output = Path(f'/tmp/quality-audit-{n:03}-publication.json')
     output.write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(dict(status='PASS', lesson=n, commit=commit, files=len(records), report=str(output))))

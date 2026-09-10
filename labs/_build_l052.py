@@ -16,7 +16,7 @@ def build(solution=False,write=True):
  cells=[]
  def md(s):cells.append(nbf.v4.new_markdown_cell(s.strip()))
  def code(s):cells.append(nbf.v4.new_code_cell(s.strip()))
- def figure(name,caption):md('!['+caption+'](data:image/png;base64,'+base64.b64encode((HERE/'figures/l052'/f'{name}.png').read_bytes()).decode()+')\n\n'+caption)
+ def figure(name,caption):md('!['+caption+'](data:image/png;base64,'+base64.b64encode((HERE/'figures/l052'/f'{name}.png').read_bytes()).decode()+')\n\n'+caption+' [Open full-size figure](figures/l052/'+name+'.png).')
  def section(name):
   node=BeautifulSoup(str(LESSON.find('section',id=name)),'html.parser').find('section')
   for el in node.find_all(['figure','script']):el.decompose()
@@ -61,6 +61,8 @@ print('Dataset manifest SHA256:',hashlib.sha256((LABS/'_data_l052.json').read_by
  section('idea');section('architecture');figure('architecture','Complete numeric TabR-S. Read the shared encoder, corrected neighbor values, residual route and prediction head before implementing retrieval.')
  section('neighbors');figure('exclusion','Synthetic top-2 attention at query key 1. Excluding the identical row ID removes the direct target path; equal feature vectors with distinct IDs remain separate candidates.')
  md('''### TODO 1 · Legal identities
+**Goal:** build the legal candidate matrix. **Why:** self-retrieval can route the answer into the predictor before the loss is computed. **Hint:** broadcast identities over different axes, never compare feature values.
+
 Implement a boolean matrix of shape [queries,candidates]. Entry (i,j) is true exactly when the query and candidate IDs differ. Support arbitrary candidate ordering. Do not compare feature vectors.''')
  task('eligible_mask','def eligible_mask(query_ids, candidate_ids):\n    raise NotImplementedError("Build the legal identity matrix")')
  code('''# CHECK — reordered IDs, repeated feature values irrelevant
@@ -68,13 +70,16 @@ assert eligible_mask(torch.tensor([9,3]),torch.tensor([3,7,9])).tolist()==[[True
 assert eligible_mask(torch.tensor([8]),torch.tensor([1,2,3])).all()
 print('Identity boundary PASS')''')
  md('''### TODO 2 · Discrete legal neighbors
+**Goal:** choose m eligible IDs per query. **Why:** a mask applied after top-m can leave an illegal or undersized context. **Hint:** make forbidden distances impossible to win before ranking.
+
 Compute squared distances between every query and candidate key. Inside a no-gradient region, make illegal distances ineligible and return the m nearest indices per query. Raise ValueError if m is invalid or any query has too few legal candidates. Gradients will be reconstructed on selected keys in the model.''')
  task('select_neighbors','def select_neighbors(keys, candidate_keys, m, allowed):\n    raise NotImplementedError("Select m legal nearest indices")')
  code('''# CHECK — more than the illustrated example, and no silent illegal fallback
 q=torch.tensor([[0.,0.],[2.,0.]])
 c=torch.tensor([[2.,0.],[0.,0.],[0.,0.]])
 mask=eligible_mask(torch.tensor([9,3]),torch.tensor([3,7,9]))
-assert select_neighbors(q,c,1,mask).tolist()==[[1],[1]]
+tied=select_neighbors(q,c,1,mask).tolist()
+assert tied[0]==[1] and tied[1][0] in (1,2), 'Require a legal minimum; do not invent a cutoff-tie ordering guarantee'
 torch.manual_seed(520)
 q2=torch.randn(4,5);c2=torch.randn(13,5);legal=torch.ones(4,13,dtype=torch.bool);legal[:,2]=False
 got=select_neighbors(q2,c2,4,legal)
@@ -86,6 +91,8 @@ else:raise AssertionError('Illegal context must fail')
 print('Neighbor selection PASS')''')
  section('values');figure('values','Synthetic scalar illustration: changing β changes per-neighbor values; equal weights and opposite key differences make the corrections cancel in the sum.')
  md('''### TODO 3 · Corrected vector values
+**Goal:** build the values used by the trained model. **Why:** reversing the difference changes the correction even though it would not change squared distance. **Hint:** write down the B-by-m-by-d shapes before broadcasting.
+
 Return one d-dimensional value per selected neighbor. Add the supplied label embeddings to the supplied correction module evaluated on the correctly directed key difference. Broadcasting must work for B queries and m neighbors.''')
  task('context_value','def context_value(keys, neighbor_keys, label_embeddings, correction):\n    raise NotImplementedError("Construct Eq. 5 values")')
  code('''# CHECK — direction, shape, and gradient access
@@ -97,6 +104,8 @@ torch.testing.assert_close(v,torch.tensor([[[1.,3.],[0.,-1.]]]))
 v.sum().backward();assert q.grad.abs().sum()>0 and n.grad.abs().sum()>0
 print('Directed values and gradients PASS')''')
  md('''### TODO 4 · Weights and aggregation
+**Goal:** reduce m vector messages to one query context. **Why:** normalizing over coordinates or restoring unit mass after dropout implements a different operator. **Hint:** name the query, neighbor and hidden axes.
+
 Compute negative squared distance over the key dimension, normalize over the neighbor dimension, apply the supplied dropout module, then return the weighted sum of vector values. Do not insert dimension scaling or renormalize after dropout. The checks include an asymmetric neighborhood where using the wrong softmax axis is detectable.''')
  task('aggregate_context','def aggregate_context(keys, neighbor_keys, values, dropout):\n    raise NotImplementedError("Weight and sum the context")')
  code('''# CHECK — asymmetric weights, translation invariance, dropout semantics
@@ -126,13 +135,56 @@ torch.testing.assert_close(batch[:1],model(x[:1],x,changed,ids[:1],ids))
 print('Live model protocol PASS')''')
  section('legality');figure('availability','Synthetic availability check: at prediction day 4, only A has both an earlier event and an earlier known label.')
  md('''### PROVIDED · Source audit boundary
-The author executed the pinned released Model class with copied weights against this implementation. Four cases cover regression/classification and training/inference candidate paths. Maximum output error was 1.20e-7 and maximum input-gradient error 5.97e-8. Dropout was disabled, and a PyTorch exact-search adapter replaced Faiss. This establishes the checked neural path, not full training, preprocessing or Faiss runtime parity. See `_source_check_l052.py` and `_source_check_l052_results.json` for the reproducible audit.''')
+The author executed the pinned released Model class with copied weights against this implementation. Four cases cover regression/classification and training/inference candidate paths; the audit extension checks all corresponding parameter gradients too. Maximum output error was 1.20e-7 and maximum input-gradient error 5.97e-8. Dropout was disabled, and a PyTorch exact-search adapter replaced Faiss. This establishes the checked neural path, not full training, preprocessing or Faiss runtime parity. See `_source_check_l052.py` and `_source_check_l052_results.json` for the reproducible audit.''')
  section('evidence');figure('scores','Author-reference measurements. Dots are three model seeds; error bars are sample SD. These are fixed-split local results, not paper metrics.');figure('ranks','Author-reference mean ranks with Nemenyi CD over three datasets. Nonsignificance does not establish equivalence.')
  md('''### PROVIDED · Visible preprocessing, training and evaluation
 Read `load_task`: transforms fit only on the training subset. Read `fit_neural`: training supplies row IDs for self-exclusion; validation/test queries see only the training memory. Validation chooses the checkpoint. `run_suite` receives your live TabRS class and calls it in each fit.
 
 **Predict before running:** does the label-shuffling intervention estimate what a model trained without labels would achieve? Explain why not, then run.''')
- code(EXPERIMENT)
+ # Preserve the exact canonical source text while presenting coherent stages.
+ tree=ast.parse(EXPERIMENT);first=next(n.lineno for n in tree.body if isinstance(n,ast.FunctionDef))
+ code('\n'.join(EXPERIMENT.splitlines()[:first-1]))
+ for title,explanation,names in [
+  ('Data and units','`load_task` retains the released split boundaries, chooses label-blind row indices, fits the feature transform on training rows, and standardizes regression targets using only training labels. `score_predictions` restores RMSE units. A model seed is not a new sampled dataset.',{'load_task','score_predictions','seed_interval'}),
+  ('One fitted model','`fit_neural` alternates legal training-memory queries with validation evaluation. The loss is MSE or binary cross entropy; the selected checkpoint minimizes validation RMSE or maximizes validation accuracy. Training uses dropout, evaluation disables it. Trace where model.train() is restored after validation. Only after restoring the best checkpoint does test scoring run. The local stopping rule is stale >= patience; it is not the paper D.6 patience+1 rule.',{'fit_neural'}),
+  ('Dataset-level comparison','`run_suite` calls your live TabRS class for each arm and seed. Its MLP arm disables retrieval in the same predictor backbone. XGBoost uses a fixed recipe, with validation early stopping. Within each dataset, average seed metrics before ranking models; then treat datasets as the Friedman blocks. This is not matched compute or a renewed tuning study.',{'run_suite'})]:
+  md('### PROVIDED · '+title+'\n'+explanation)
+  code(extract(EXPERIMENT,names))
+ md('''### Investigation · reconstruct one real-row prediction
+**Goal:** recover an actual model output from its selected IDs, scores, weights, label embeddings, corrections and residual path. **Why:** an attention plot alone does not show what information reached the output. **Predict:** changing a nonselected label should leave this prediction unchanged, while changing a selected label can change it. No training is needed to audit this data path.
+
+The fixture below uses real California rows with a deliberately initialized, **untrained** small model. Its scalar is not an accuracy result. Complete your four TODOs first; this cell calls those live functions and compares the reconstructed result with the live model's forward pass. `value_0` and `contribution_0` show just coordinate zero; the head consumes the whole context vector.''')
+ code('''# PROVIDED — real-row trace of your live implementation; no benchmark claim
+trace_data=load_task('california',train_cap=80,eval_cap=8,data_root=LABS/'data/cache/l052')
+torch.manual_seed(520)
+trace_model=TabRS(8,d=8,m=4,dropout=0,context_dropout=0,regression=True).eval()
+trace_x=torch.tensor(trace_data['x']['test'][:1])
+trace_c=torch.tensor(trace_data['x']['train']);trace_y=torch.tensor(trace_data['y']['train'])
+with torch.no_grad():
+    h=trace_model.linear(trace_x);k=trace_model.K(h);ck=trace_model.K(trace_model.linear(trace_c))
+    selected=select_neighbors(k,ck,4,torch.ones(1,len(trace_c),dtype=torch.bool))
+    nk=ck[selected];scores=-(k[:,None]-nk).square().sum(-1);weights=scores.softmax(1)
+    embedded=trace_model.label_encoder(trace_y[selected][...,None]);correction=trace_model.T(k[:,None]-nk)
+    values=context_value(k,nk,embedded,trace_model.T)
+    context=aggregate_context(k,nk,values,trace_model.context_dropout)
+    z=h+context;reconstructed=trace_model.head(z+trace_model.block(z)).squeeze(-1)
+    direct=trace_model(trace_x,trace_c,trace_y)
+    torch.testing.assert_close(reconstructed,direct)
+    unused=next(i for i in range(len(trace_c)) if i not in selected[0].tolist())
+    altered=trace_y.clone();altered[unused]+=10
+    torch.testing.assert_close(direct,trace_model(trace_x,trace_c,altered))
+trace_table=pd.DataFrame(dict(train_archive_id=np.array(trace_data['selection']['train'])[selected[0]],
+    score=scores[0].numpy(),weight=weights[0].numpy(),label_embedding_0=embedded[0,:,0].numpy(),
+    correction_0=correction[0,:,0].numpy(),value_0=values[0,:,0].numpy(),
+    contribution_0=(weights[0]*values[0,:,0]).numpy()))
+display(trace_table)
+trace_record=dict(status='UNTRAINED_MECHANISM_FIXTURE',test_archive_id=trace_data['selection']['test'][0],
+    neighbors=trace_table.to_dict('records'),context=context[0].tolist(),
+    standardized_output=float(direct.item()),original_units_output=float(direct.item()*trace_data['target_std']+trace_data['target_mean']))
+assert abs(trace_table.contribution_0.sum()-context[0,0].item())<1e-6
+print('Reconstructed forward and nonselected-label intervention PASS')
+print('Initialized-model output:',trace_record['standardized_output'])''')
+ md('''**CHECK your explanation:** which selected neighbor has the largest weight, and which has the largest absolute coordinate-zero contribution? They need not be the same because values differ. Explain why a nonselected label can be changed without affecting this query, yet deleting a selected row may replace it with a different neighbor and alter both weights and values. This local sensitivity is not evidence that the initialized model predicts well.''')
  code('''# PROVIDED — measured live run, about one CPU minute in the author environment
 live_results=run_suite(TabRS,data_root=LABS/'data/cache/l052')
 rows=[]
@@ -162,7 +214,7 @@ fig.suptitle('Your run: mean ± sample SD over model seeds');fig.tight_layout();
  md('''### EXIT TICKET
 Paste the report below and write: (1) one query’s identity→score→weight→value→output trace; (2) why your own target never enters your context; (3) one historical label-availability failure; (4) what the label permutation measures; (5) why these scores do not reproduce the paper’s broad comparison. Ask the teacher about any surprising score or shape. No glossary mastery is inferred from running cells.''')
  code('''# EXIT — attach your written explanation to this measured evidence
-exit_report={'lesson':52,'metrics':rows,'ranks':live_results['stats'],'paper_verdict':'INCOMPARABLE','scope':live_results['protocol']}
+exit_report={'lesson':52,'metrics':rows,'ranks':live_results['stats'],'paper_verdict':'INCOMPARABLE','scope':live_results['protocol'],'prediction_trace':trace_record}
 print(json.dumps(exit_report,indent=2))
 (LABS/'data/cache/l052-exit.json').write_text(json.dumps(exit_report,indent=2));''')
  section('scale')

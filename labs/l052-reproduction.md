@@ -29,7 +29,7 @@ Run from repository root:
 modal run --detach modal/l052_paper_repro.py --preset closer
 ```
 
-Both Modal and the notebook's gated Colab cell use the same from-scratch implementation. The Colab loop receives live student functions, not an imported replacement. Smoke tests a small fit and resume; closer uses California 6000 training rows, full validation/test, width 64, m=96, 60 epochs, three seeds. Paper uses full California splits, 15 seeds, and the pinned selected configuration (d303, dropout .5508268685, context dropout .2325842283, lr .000280842117, m96, patience16, zero decay) with a finite 1000-epoch cap.
+Both Modal and the notebook's gated Colab cell use the same from-scratch implementation. The Colab loop receives live student functions, not an imported replacement. Smoke tests a small fit and resume; closer uses California 6000 training rows, full validation/test, width 64, m=96, 60 epochs, three seeds. Paper uses full California splits, 15 seeds, and the pinned selected configuration (d303, dropout .5508268685, context dropout .2325842283, lr .000280842117, m96, patience16, zero decay) with a finite 1000-epoch cap. This transfers selected model/optimizer settings, not the complete released evaluation procedure. The local loader permutes all splits with seeds 52/53/54 even without caps; its quantile seed is 52 rather than the released data seed 0. The runner stops after 16 stale epochs; paper D.6 specifies patience+1 (17). These are additional deviations, not harmless identity differences.
 
 Reference target: **Table 3, TabR-S, California RMSE .403**, absolute tolerance .01 only after protocol compatibility. Current verdict is **INCOMPARABLE**: no new search; no quantile jitter; modern library/initialization/batch-RNG differences; torch search; finite epoch cap. Closer additionally changes training size, width, optimization and seed count. No protocol-match flag is inferred from a similar numeric score.
 
@@ -40,3 +40,24 @@ Full selected-configuration run, original tuning, ensembles, 43-task comparison,
 ## Delivery
 
 Builder: `_build_l052.py`; student notebook, executed teacher solution, prepared HTML, six inline PNGs. Source/protocol checks, arithmetic, live-code gate, source identity, pedagogy and copied Pages staging are tracked by `_delivery_l052_results.json`. Browser, live Colab UI and deployed Pages checks remain separate from notebook payload or static rendering checks.
+
+## Audit extension, 2026-09-10
+
+The teaching package now explains Table 2's design sequence, Table 9's ingredient study, D.6's procedure and uncertainty convention, C.2's 43-dataset adaptation, and §5's distinct context-freeze and new-memory experiments. None of those experiments was reproduced by the local three-task suite. The standalone notebook shows a complete real-row numerical trace (initialized model, explicitly not a performance result), keeps a matched direct output check, and separates preprocessing, fitting and dataset-level aggregation into annotated visible cells.
+
+The historical model/experiment source files and stored score hashes are preserved. Source validation is extended separately to all corresponding parameter gradients in the four copied-weight fixtures; this is a stronger local derivative check, not optimizer, stochastic-dropout, Faiss or end-to-end training parity.
+
+### Official selected-configuration reference lane
+
+Use the pinned official checkout and its documented environment/data setup as a **validation baseline**, separate from the student's from-scratch implementation. The pinned [README](https://github.com/yandex-research/tabular-dl-tabr/blob/17baa9082506f8e7a0f8d11bb1e08212926a1507/README.md#reproducing-other-results) explicitly supports evaluation without new tuning. After its environment and full data are installed, from that checkout run:
+
+```bash
+git checkout 17baa9082506f8e7a0f8d11bb1e08212926a1507
+mkdir -p exp/tabr/california/l052-reference-evaluation
+cp exp/tabr/california/0-evaluation/0.toml exp/tabr/california/l052-reference-evaluation/0.toml
+CUDA_VISIBLE_DEVICES=0 python bin/evaluate.py exp/tabr/california/l052-reference-evaluation --function bin.tabr.main
+```
+
+The function and `-evaluation` directory suffix match pinned `bin/evaluate.py`; its default is 15 seeds. CPU environment setup needs the README's Faiss CPU substitution and `CUDA_VISIBLE_DEVICES=''`. This command is provided, **NOT_RUN** here. Read each completed seed's report and calculate the single-model mean and SD before comparing with Table 3; do not compare one seed or an ensemble with .403. Keep the official environment isolated and compare this lane to the independent implementation only after reconciling each procedure field. No renewed tuning is required to evaluate an already selected configuration, but it is required to reproduce the paper's selection process.
+
+A further concrete preprocessing difference found in pinned `lib/data.py::transform_num`: the release uses `max(min(n_train // 30, 1000), 10)` quantiles with no subsampling, whereas the local loader uses `min(1000, n_train)` and the installed library's subsampling default. At full California size (13,209 training rows), that is 440 versus 1,000 quantiles. This changes the feature map before any network computation. The legacy `paper` preset is therefore a scale/settings preset, not procedure fidelity.

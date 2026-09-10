@@ -36,6 +36,8 @@ See [the assignment rubric](BRIEF.md) for the full checklist.
 
 | [050 FT-Transformer / XGBoost](050.md) | Complete repair: corrected numeric architecture and AUROC traces, fifth live ensemble exercise, stable live-code identity, fresh 26-cell notebook with exact prior scores; browser and 90 copied-Pages links pass. Pushed as `c3d6951`; Pages succeeded and 23 live files matched the commit | Historical Higgs attempt remains INCOMPARABLE; new ensemble diagnostic is post-hoc, not Table 4 reproduction |
 
-| [051 Why trees still win](051.md) | Complete repair: corrected smoothing interpretation, detailed protocol/uncertainty map, duplicate-row and covariance derivations, new 36-fit bandwidth diagnosis, 28-cell fresh notebook, stronger source parity and mobile evidence display; final browser and 99 Pages links pass. Separate commit/push in progress | Full tuned benchmark remains NOT_REPRODUCED; one-task fixed-recipe curve is INCOMPARABLE and does not recreate the aggregate paper pattern |
+| [051 Why trees still win](051.md) | Complete repair: corrected smoothing interpretation, detailed protocol/uncertainty map, duplicate-row and covariance derivations, new 36-fit bandwidth diagnosis, 28-cell fresh notebook, stronger source parity and mobile evidence display; final browser and 99 Pages links pass. Pushed as `eeaac3c`; Pages succeeded and 21 live files matched the commit | Full tuned benchmark remains NOT_REPRODUCED; one-task fixed-recipe curve is INCOMPARABLE and does not recreate the aggregate paper pattern |
 
-052 is in progress. 053–070 are pending individual review.
+| [052 TabR](052.md) | Complete repair: deeper paper design/projection/scaling analysis, annotated lab and live real-row trace, all-parameter source gradients, corrected tie check and precise official-evaluation route; fresh 24-cell teacher, browser and 89 Pages links pass. Separate commit/publication pending | Numeric TabR-S mechanism validated; historical California result remains INCOMPARABLE; official 15-seed evaluation NOT_RUN |
+
+053 is in progress. 054–070 are pending individual review.
