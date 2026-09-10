@@ -29,6 +29,7 @@ See [the assignment rubric](BRIEF.md) for the full checklist.
 
 | Lesson | Repair and verification | Reproduction boundary |
 |---|---|---|
-| [047 SAINT](047.md) | Complete: default pinned full-path checks, deeper derivations and source-gap explanations, notebook execution, portable image checker repair, desktop/mobile visual review | Full pretraining and paper benchmark not reproduced; Bank smoke remains INCOMPARABLE |
+| [047 SAINT](047.md) | Complete and pushed as `fb7a691`; Pages deployment succeeded and seven live files matched checked local bytes. Default pinned full-path checks, deeper derivations/source-gap explanations, notebook execution, image checker and Pages evidence-link repairs, desktop/mobile review | Full pretraining and paper benchmark not reproduced; Bank smoke remains INCOMPARABLE |
+| [048 DCNv2](048.md) | Complete: original-DCN/V2 and readout derivations, paper experiment guide, live synthetic construction, fresh notebook execution, full saved prediction reconstruction, image-checker/CD display/Pages evidence-link repairs | Full-data local MovieLens attempt remains INCOMPARABLE; original search and training results not reproduced |
 
-048 is in progress. 049–070 are pending individual review.
+049 is in progress. 050–070 are pending individual review.

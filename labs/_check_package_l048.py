@@ -16,7 +16,7 @@ from PIL import Image
 
 HERE=Path(__file__).parent
 ROOT=HERE.parent
-IMAGE=re.compile(r'!\[[^\]]*\]\((data:image/png;base64,[A-Za-z0-9+/=]+)\)')
+IMAGE=re.compile(r'(data:image/png;base64,[A-Za-z0-9+/=]+)')
 
 
 def image_hash(uri):
@@ -27,7 +27,9 @@ def image_hash(uri):
 
 
 def main():
-    expected=sorted(hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/l048').glob('*.png'))
+    active=[p for p in (HERE/'figures/l048').glob('*.png') if p.stem!='model-architecture']
+    active.append(HERE/'figures/architecture-revision/0048-dcnv2.png')
+    expected=sorted(hashlib.sha256(p.read_bytes()).hexdigest() for p in active)
     assert len(expected)==10
     student=nbformat.read(HERE/'0048-dcnv2.ipynb',as_version=4)
     teacher=nbformat.read(HERE/'solutions/0048-dcnv2.ipynb',as_version=4)
@@ -88,7 +90,7 @@ def main():
     print(f'PASS: {len(expected)} images in both notebooks and HTML; 4 live blank tasks; {len(checks)} executed notebook checks; canonical source parity; {links} local links; provenance.')
     report={'notebook_checks_passed':len(checks),'images':len(expected),'student_tasks':4,'local_links':links,
             'teacher_all_code_executed':True,'canonical_notebook_source_matches':True,
-            'browser':'NOT_CHECKED: temporary browser download declined',
+            'browser':'See reviews/lesson-quality-audit-047-070/048-browser.json; this checker does not open a browser',
             'colab':'Inline data-URI packaging checked; live Colab UI not checked'}
     (HERE/'_package_l048_results.json').write_text(json.dumps(report,indent=2)+'\n')
 

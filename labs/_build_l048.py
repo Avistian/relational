@@ -34,7 +34,7 @@ def build(solution=False):
 
 PROVIDED = read and run. TODO = implement the blanks. CHECK = run immediately; failures explain what to inspect. EXIT = supply your actual evidence and reasoning. The author comparison ran in about 11 seconds on CPU; reading and implementing take much longer. The full MovieLens closer track took about 204 training seconds here; hardware changes runtime.
 
-All ten figures are embedded PNGs in Colab's inline-data format, so they require no code execution or image downloads. Student outputs are intentionally empty. Panels marked **author reference** show a recorded run, not your kernel's results. Local PNG/HTML integrity is checked; live Colab and browser rendering were not checked.''')
+All ten figures are embedded PNGs in Colab's inline-data format, so they require no code execution or image downloads. Student outputs are intentionally empty. Panels marked **author reference** show a recorded run, not your kernel's results. Portable PNG/HTML integrity is checked. The current local browser audit is recorded in `reviews/lesson-quality-audit-047-070/048-browser.json`; live Colab remains untested.''')
     md('''### Reproduction contract
 
 | Track | What you build / run | Boundary |
@@ -142,7 +142,26 @@ for _ in range(2):
 check('Two-layer anchor',torch.allclose(state,torch.tensor([[18.]])),
       'Keep the same original input at layer two; replacing it gives 42.')
 print('Two anchored layers:',state.item())''')
-    md('''**Explain before continuing:** why is degree counted in x₀ rather than in integer category IDs? Why does “at most three” not mean every cubic coefficient is independent?
+    md('''### Paper Eq.6: construct a target before fitting it
+
+**Goal:** check whether one dense cross can express the paper's synthetic target f₂. **Why:** this separates representation from optimization. **Hint boundary:** bias −1 cancels the residual's degree-one terms when x=x₀; summing coordinates collects the remaining quadratic terms. Predict the output at [2,3,4] before running. The entries below define a deliberately constructed solution, not trained parameters or a reproduction of Table 1.
+
+Then add a skew-symmetric matrix: predict whether the vector changes and whether its sum changes. Use the result to explain why a matrix heatmap is not automatically prediction-level feature importance.''')
+    code('''# CHECK — paper Eq.6 f2, using YOUR dense cross; no optimizer involved
+probe=torch.tensor([[2.,3.,4.],[-1.,.5,-.25],[0.,2.,1.]],dtype=torch.float64)
+quadratic=torch.tensor([[1.,.1,0.],[0.,0.,1.],[0.,0.,.1]],dtype=torch.float64)
+cancel_linear=-torch.ones(3,dtype=torch.float64)
+representation=cross_step(probe,probe,quadratic,cancel_linear)
+score=representation.sum(-1)
+target=probe[:,0]**2+.1*probe[:,0]*probe[:,1]+probe[:,1]*probe[:,2]+.1*probe[:,2]**2
+check('Paper f2 exact construction',torch.allclose(score,target) and torch.isclose(score[0],torch.tensor(18.2,dtype=torch.float64)),
+      'Inside bias -1 cancels x; an all-ones head sums the quadratic terms.')
+skew=torch.tensor([[0.,2.,0.],[-2.,0.,0.],[0.,0.,0.]],dtype=torch.float64)
+changed=cross_step(probe,probe,quadratic+skew,cancel_linear)
+check('Same score with different cross weights',not torch.allclose(changed,representation) and torch.allclose(changed.sum(-1),score),
+      'The added x1*x2 and negative x2*x1 terms cancel only after this linear readout.')
+display(pd.DataFrame({'constructed_score':score.numpy(),'paper_f2':target.numpy(),'changed_weights_score':changed.sum(-1).numpy()}))''')
+    md('''**Explain before continuing:** why is degree counted in x₀ rather than in integer category IDs? Why does “at most three” not mean every cubic coefficient is independent? Why does exact f₂ construction not establish that Adam will learn it from samples?
 
 **Your explanation:** _write here._''')
     md(r'''## 3 · Task 2 — a low-rank cross (Eq.2)
@@ -258,7 +277,7 @@ Read these short pieces in order. The cross module dispatches to **your** dense,
     provided(['CrossLayer'],'Eqs.1–4: parameter ownership; forward dispatches to your task functions')
     md('''### Embeddings: define what one coordinate means
 
-Vocabulary code zero is reserved for missing or unseen categories. Numeric features are standardized using training means and standard deviations; missing standardized values become zero. All vocabulary fitting lives in the provided data loader and is recorded in the split metadata. Category ID values only index embeddings.''')
+Vocabulary code zero is reserved for missing or unseen categories. Its embedding is an ordinary learned vector, not a guaranteed zero or population average: if code zero never occurs in training, its row receives no data gradient and retains initialization. The MovieLens reader has no training unknown IDs, so cold-start IDs have this limitation. Numeric features are standardized using training means and standard deviations; missing standardized values become zero. All vocabulary fitting lives in the provided data loader and is recorded in the split metadata. Category ID values only index embeddings.''')
     provided(['RowEmbedding'],'§3.1: one flat row representation, no CLS and no row attention')
     md('''### Full forward path: do not move the anchor
 

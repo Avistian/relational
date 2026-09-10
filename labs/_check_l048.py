@@ -43,6 +43,8 @@ def run():
     check('Full SVD reconstruction',torch.allclose(exact,w))
     # Check the literal released method, not a retyped approximation of it.
     source = Path(__file__).parent/'relkit/_references/tfrs_dcn_v073.py'
+    check('Pinned official source identity', hashlib.sha256(source.read_bytes()).hexdigest() ==
+          '65ff6da64c29257860b4d94daa7ec7845a7ac50b6798e2d765ec28e1ad518f3f')
     tree=ast.parse(source.read_text())
     cls=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='Cross')
     call=next(n for n in cls.body if isinstance(n,ast.FunctionDef) and n.name=='call')
