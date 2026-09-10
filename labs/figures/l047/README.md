@@ -25,7 +25,10 @@ Check image packaging after rebuilding:
 .venv/bin/python labs/_check_notebook_images_l047.py
 ```
 
-This validates all nine PNG payloads against the source files in the notebooks
+This validates the eight active mechanism/result PNGs here plus the current
+`../architecture-revision/0047-saint.png` overview (nine payloads) against the notebooks.
+The older `architecture.png` and `model-architecture.png` are superseded by that overview.
+It checks both Markdown images and the overview's HTML image with its horizontal-scroll container in the notebooks
 and prepared HTML. It is a format/payload check, not a live Colab browser test.
 
 Mechanism figures contain synthetic illustrations. `scores`, `ranks`, and
@@ -39,6 +42,5 @@ OMP_NUM_THREADS=1 .venv/bin/jupyter nbconvert --to notebook --execute --inplace 
   labs/solutions/0047-saint.ipynb --ExecutePreprocessor.timeout=300
 ```
 
-Browser rendering was not available for this revision. The figures were rendered
-and visually inspected using the installed SVG renderer and Matplotlib; this is
-not a browser verification claim.
+The original rendering used librsvg and Matplotlib. For current browser verification
+and remaining delivery limits see `reviews/lesson-quality-audit-047-070/047.md`.

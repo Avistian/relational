@@ -16,7 +16,9 @@ from bs4 import BeautifulSoup
 from PIL import Image
 
 HERE = Path(__file__).resolve().parent
-IMAGE = re.compile(r'!\[[^\]]*\]\((data:image/png;base64,[A-Za-z0-9+/=]+)\)')
+# Portable architecture uses an HTML img inside a horizontal-scroll container;
+# mechanism figures use Markdown. Validate both representations' actual bytes.
+IMAGE = re.compile(r'(data:image/png;base64,[A-Za-z0-9+/=]+)')
 
 
 def image_hash(uri):
@@ -28,9 +30,10 @@ def image_hash(uri):
 
 
 def main():
-    expected = sorted(hashlib.sha256(p.read_bytes()).hexdigest()
-                      for p in (HERE / 'figures/l047').glob('*.png'))
-    assert len(expected) == 10
+    sources = [p for p in (HERE / 'figures/l047').glob('*.png') if 'architecture' not in p.name]
+    sources.append(HERE / 'figures/architecture-revision/0047-saint.png')
+    expected = sorted(hashlib.sha256(p.read_bytes()).hexdigest() for p in sources)
+    assert len(expected) == 9
     paths = [HERE / '0047-saint.ipynb']
     solution = HERE / 'solutions/0047-saint.ipynb'
     if solution.exists():

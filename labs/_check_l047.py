@@ -1,4 +1,4 @@
-"""Meaningful mechanism checks; optional weight-transplant against pinned official source.
+"""Mechanism checks and default weight-transplant against vendored pinned source.
 Run: python labs/_check_l047.py [--reference /path/to/official/models/model.py]
 Reference check needs einops; it is only a validation dependency.
 """
@@ -13,9 +13,13 @@ from torch.nn import functional as F
 from relkit.saint import (pack_rows, unpack_rows, attention_weights, info_nce,
                          SAINT, SaintStage, predict_saint, train_saint)
 from relkit.saint_experiment import prepare
+from _source_check_l047 import SOURCE, verify_sources, check_supervised_path
 
 
 def check(reference=None):
+    manifest = verify_sources()
+    reference = Path(reference) if reference else SOURCE / 'models/model.py'
+    assert hashlib.sha256(reference.read_bytes()).hexdigest() == manifest['files']['models/model.py'], 'Reference must match the pinned release'
     torch.set_num_threads(1)
     torch.manual_seed(47)
     x = torch.randn(5, 4, 8, dtype=torch.float64)
@@ -69,6 +73,7 @@ def check(reference=None):
         out.update(reference_block='PASS', reference_forward_max_error=e,
                    reference_gradient_max_error=g,
                    reference_source_sha256=hashlib.sha256(Path(reference).read_bytes()).hexdigest())
+    out['supervised_path'] = check_supervised_path()
     return out
 
 

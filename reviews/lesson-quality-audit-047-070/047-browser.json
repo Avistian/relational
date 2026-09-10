@@ -1,0 +1,298 @@
+{
+  "status": "PASS",
+  "errors": [],
+  "missing": [],
+  "problems": [],
+  "records": [
+    {
+      "width": 900,
+      "widget": "axes",
+      "state": "default",
+      "text": "01\nWhich things can attend?\n\nFollow one query. The sequence changes from features of a row to entire rows in a batch.\n\nTokens\nFeature attention\nRow attention\nThree rows \u00b7 three tokens each\nA\nCLS\nage\njob\nB\nCLS\nage\njob\nC\nCLS\nage\njob\n[B, T, d] = [3, 3, d]\nA\u2019s T \u00d7 T matrix\nCLS\nCLS\nage\nage\njob\njob\nquery CLS \u2192 CLS, age, job\nThe blue matrix belongs to row A. Its highlighted query is A\u2019s CLS token; its keys are A\u2019s CLS, age, and job. Rows B and C have their own separate matrices. Shading is schematic connectivity, not measured weights."
+    },
+    {
+      "width": 900,
+      "widget": "axes",
+      "state": "button-0",
+      "text": "01\nWhich things can attend?\n\nFollow one query. The sequence changes from features of a row to entire rows in a batch.\n\nTokens\nFeature attention\nRow attention\nThree rows \u00b7 three tokens each\nA\nCLS\nage\njob\nB\nCLS\nage\njob\nC\nCLS\nage\njob\n[B, T, d] = [3, 3, d]\nA\u2019s T \u00d7 T matrix\nCLS\nCLS\nage\nage\njob\njob\nquery CLS \u2192 CLS, age, job\nConnectivity only; no learned weights.\nEach colored token contains d coordinates. Color identifies the feature; A, B, C identify samples. The matrix is a schematic of available connections, not trained attention weights."
+    },
+    {
+      "width": 900,
+      "widget": "axes",
+      "state": "button-1",
+      "text": "01\nWhich things can attend?\n\nFollow one query. The sequence changes from features of a row to entire rows in a batch.\n\nTokens\nFeature attention\nRow attention\nThree rows \u00b7 three tokens each\nA\nCLS\nage\njob\nB\nCLS\nage\njob\nC\nCLS\nage\njob\n[B, T, d] = [3, 3, d]\nA\u2019s T \u00d7 T matrix\nCLS\nCLS\nage\nage\njob\njob\nquery CLS \u2192 CLS, age, job\nThe blue matrix belongs to row A. Its highlighted query is A\u2019s CLS token; its keys are A\u2019s CLS, age, and job. Rows B and C have their own separate matrices. Shading is schematic connectivity, not measured weights."
+    },
+    {
+      "width": 900,
+      "widget": "axes",
+      "state": "button-2",
+      "text": "01\nWhich things can attend?\n\nFollow one query. The sequence changes from features of a row to entire rows in a batch.\n\nTokens\nFeature attention\nRow attention\nFlatten every complete row\nA\nCLS\nage\njob\nB\nCLS\nage\njob\nC\nCLS\nage\njob\n[1, B, T\u00b7d] = [1, 3, 3d]\nOne B \u00d7 B matrix\nA\nA\nB\nB\nC\nC\nquery A \u2192 rows A, B, C\nThe green matrix belongs to the whole batch. Query A is now the flattened vector [CLS | age | job]. Its keys are complete rows A, B, C. Restore the feature axes after the row block. Shading is schematic connectivity, not measured weights."
+    },
+    {
+      "width": 900,
+      "widget": "architecture",
+      "state": "default",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nBoth attention blocks and both feed-forward blocks are present. Each sublayer follows the released wrapper u = LN(x), output = u + F(u); see the paper/code audit below."
+    },
+    {
+      "width": 900,
+      "widget": "architecture",
+      "state": "button-0",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nEach feature gets its own embedding; CLS is a learned summary slot and never stores the target label. Numeric embeddings follow the released implementation."
+    },
+    {
+      "width": 900,
+      "widget": "architecture",
+      "state": "button-1",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nFeature attention exchanges information across the T tokens of each sample. The feature feed-forward then transforms each token independently."
+    },
+    {
+      "width": 900,
+      "widget": "architecture",
+      "state": "button-2",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nPacking changes the meaning of a sequence element. Row attention exchanges information across B samples; the following feed-forward operates on all T\u00b7d coordinates of a row."
+    },
+    {
+      "width": 900,
+      "widget": "architecture",
+      "state": "button-3",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nUnpack before selecting CLS. The head reads the final contextual CLS vector, then produces two class logits. Softmax converts those logits into class probabilities."
+    },
+    {
+      "width": 900,
+      "widget": "architecture",
+      "state": "button-4",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nBoth attention blocks and both feed-forward blocks are present. Each sublayer follows the released wrapper u = LN(x), output = u + F(u); see the paper/code audit below."
+    },
+    {
+      "width": 900,
+      "widget": "context",
+      "state": "default",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n0.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = 0.0\nvalue = 8\n73.1%\n26.9%\nFixed query q = 1\nupdated value = 3.614\nSoftmax probability mass (sum = 1)\nScores [1, 0.0] \u2192 softmax [0.731, 0.269]. Contributions: 1.462 from self + 2.152 from companion = 3.614. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 900,
+      "widget": "context",
+      "state": "button-0",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n-3.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = -3.0\nvalue = 8\n98.2%\n1.8%\nFixed query q = 1\nupdated value = 2.108\nSoftmax probability mass (sum = 1)\nScores [1, -3.0] \u2192 softmax [0.982, 0.018]. Contributions: 1.964 from self + 0.144 from companion = 2.108. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 900,
+      "widget": "context",
+      "state": "button-1",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n0.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = 0.0\nvalue = 8\n73.1%\n26.9%\nFixed query q = 1\nupdated value = 3.614\nSoftmax probability mass (sum = 1)\nScores [1, 0.0] \u2192 softmax [0.731, 0.269]. Contributions: 1.462 from self + 2.152 from companion = 3.614. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 900,
+      "widget": "context",
+      "state": "button-2",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n3.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = 3.0\nvalue = 8\n11.9%\n88.1%\nFixed query q = 1\nupdated value = 7.285\nSoftmax probability mass (sum = 1)\nScores [1, 3.0] \u2192 softmax [0.119, 0.881]. Contributions: 0.238 from self + 7.046 from companion = 7.285. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 900,
+      "widget": "context",
+      "state": "slider-0-min",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n-3.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = -3.0\nvalue = 8\n98.2%\n1.8%\nFixed query q = 1\nupdated value = 2.108\nSoftmax probability mass (sum = 1)\nScores [1, -3.0] \u2192 softmax [0.982, 0.018]. Contributions: 1.964 from self + 0.144 from companion = 2.108. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 900,
+      "widget": "context",
+      "state": "slider-0-max",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n3.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = 3.0\nvalue = 8\n11.9%\n88.1%\nFixed query q = 1\nupdated value = 7.285\nSoftmax probability mass (sum = 1)\nScores [1, 3.0] \u2192 softmax [0.119, 0.881]. Contributions: 0.238 from self + 7.046 from companion = 7.285. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 900,
+      "widget": "views",
+      "state": "default",
+      "text": "04\nFrom a raw row to an augmented view\n\nCutMix chooses actual feature values. Mixup interpolates vectors after embedding.\n\nCutMix: replace job\nWeight \u03b1 on A\u2019s augmented embedding\n0.2\nOriginal A\nage 40\njob teacher\nCutMix donor B\nage 60\njob nurse\nA\u2019s raw view\nage 40 \u00b7 job nurse\nEmbed, then mix with a NEW partner\n0\n0\n1\n1\n2\n2\n3\n3\nA view [1,3]\ndonor [3,1]\nMixture = [2.60, 1.40]\nThe plotted coordinates are illustrative embeddings, not raw age/job values. With \u03b1 = 0.2, the augmented vector is 0.2 \u00d7 [1,3] + 0.8 \u00d7 [3,1]. Its positive partner is still clean A; denoising reconstructs age 40 and job teacher."
+    },
+    {
+      "width": 900,
+      "widget": "views",
+      "state": "button-0",
+      "text": "04\nFrom a raw row to an augmented view\n\nCutMix chooses actual feature values. Mixup interpolates vectors after embedding.\n\nCutMix: replace job\nWeight \u03b1 on A\u2019s augmented embedding\n0.2\nOriginal A\nage 40\njob teacher\nCutMix donor B\nage 60\njob nurse\nA\u2019s raw view\nage 40 \u00b7 job teacher\nEmbed, then mix with a NEW partner\n0\n0\n1\n1\n2\n2\n3\n3\nA view [1,0]\ndonor [3,1]\nMixture = [2.60, 0.80]\nThe plotted coordinates are illustrative embeddings, not raw age/job values. With \u03b1 = 0.2, the augmented vector is 0.2 \u00d7 [1,0] + 0.8 \u00d7 [3,1]. Its positive partner is still clean A; denoising reconstructs age 40 and job teacher."
+    },
+    {
+      "width": 900,
+      "widget": "views",
+      "state": "slider-0-min",
+      "text": "04\nFrom a raw row to an augmented view\n\nCutMix chooses actual feature values. Mixup interpolates vectors after embedding.\n\nCutMix: replace job\nWeight \u03b1 on A\u2019s augmented embedding\n0.0\nOriginal A\nage 40\njob teacher\nCutMix donor B\nage 60\njob nurse\nA\u2019s raw view\nage 40 \u00b7 job teacher\nEmbed, then mix with a NEW partner\n0\n0\n1\n1\n2\n2\n3\n3\nA view [1,0]\ndonor [3,1]\nMixture = [3.00, 1.00]\nThe plotted coordinates are illustrative embeddings, not raw age/job values. With \u03b1 = 0.0, the augmented vector is 0.0 \u00d7 [1,0] + 1.0 \u00d7 [3,1]. Its positive partner is still clean A; denoising reconstructs age 40 and job teacher."
+    },
+    {
+      "width": 900,
+      "widget": "views",
+      "state": "slider-0-max",
+      "text": "04\nFrom a raw row to an augmented view\n\nCutMix chooses actual feature values. Mixup interpolates vectors after embedding.\n\nCutMix: replace job\nWeight \u03b1 on A\u2019s augmented embedding\n1.0\nOriginal A\nage 40\njob teacher\nCutMix donor B\nage 60\njob nurse\nA\u2019s raw view\nage 40 \u00b7 job teacher\nEmbed, then mix with a NEW partner\n0\n0\n1\n1\n2\n2\n3\n3\nA view [1,0]\ndonor [3,1]\nMixture = [1.00, 0.00]\nThe plotted coordinates are illustrative embeddings, not raw age/job values. With \u03b1 = 1.0, the augmented vector is 1.0 \u00d7 [1,0] + 0.0 \u00d7 [3,1]. Its positive partner is still clean A; denoising reconstructs age 40 and job teacher."
+    },
+    {
+      "width": 900,
+      "widget": "contrastive",
+      "state": "default",
+      "text": "05\nMatch identities; reconstruct features\n\nTwo pretraining objectives use the augmented row for different tasks. The matrix below is a synthetic example.\n\nContrastive temperature \u03c4\n0.7\nClean A \u2192 encoder \u2192 g\u2081\nprojection zA\nA view \u2192 encoder \u2192 g\u2082\nprojection z\u2032A\nContrastive: find the same row\nA\u2032\nA\nB\u2032\nB\nC\u2032\nC\n0.68\n0.16\n0.16\n0.16\n0.68\n0.16\n0.16\n0.16\n0.68\naugmented candidates\nPositive = matching diagonal\nmean loss = 0.392\nDenoising decoders\nreconstruct original A\nage \u2192 squared error\njob \u2192 cross-entropy\nOriginal features are the targets.\nFor this illustration, a matching pair has dot product 1 and other pairs have 0. At \u03c4 = 0.7, matching-view probability is 0.676 and mean contrastive loss is 0.392. Denoising predicts original features separately; class labels are not used by either pretraining objective."
+    },
+    {
+      "width": 900,
+      "widget": "contrastive",
+      "state": "slider-0-min",
+      "text": "05\nMatch identities; reconstruct features\n\nTwo pretraining objectives use the augmented row for different tasks. The matrix below is a synthetic example.\n\nContrastive temperature \u03c4\n0.2\nClean A \u2192 encoder \u2192 g\u2081\nprojection zA\nA view \u2192 encoder \u2192 g\u2082\nprojection z\u2032A\nContrastive: find the same row\nA\u2032\nA\nB\u2032\nB\nC\u2032\nC\n0.99\n0.01\n0.01\n0.01\n0.99\n0.01\n0.01\n0.01\n0.99\naugmented candidates\nPositive = matching diagonal\nmean loss = 0.013\nDenoising decoders\nreconstruct original A\nage \u2192 squared error\njob \u2192 cross-entropy\nOriginal features are the targets.\nFor this illustration, a matching pair has dot product 1 and other pairs have 0. At \u03c4 = 0.2, matching-view probability is 0.987 and mean contrastive loss is 0.013. Denoising predicts original features separately; class labels are not used by either pretraining objective."
+    },
+    {
+      "width": 900,
+      "widget": "contrastive",
+      "state": "slider-0-max",
+      "text": "05\nMatch identities; reconstruct features\n\nTwo pretraining objectives use the augmented row for different tasks. The matrix below is a synthetic example.\n\nContrastive temperature \u03c4\n2.0\nClean A \u2192 encoder \u2192 g\u2081\nprojection zA\nA view \u2192 encoder \u2192 g\u2082\nprojection z\u2032A\nContrastive: find the same row\nA\u2032\nA\nB\u2032\nB\nC\u2032\nC\n0.45\n0.27\n0.27\n0.27\n0.45\n0.27\n0.27\n0.27\n0.45\naugmented candidates\nPositive = matching diagonal\nmean loss = 0.794\nDenoising decoders\nreconstruct original A\nage \u2192 squared error\njob \u2192 cross-entropy\nOriginal features are the targets.\nFor this illustration, a matching pair has dot product 1 and other pairs have 0. At \u03c4 = 2.0, matching-view probability is 0.452 and mean contrastive loss is 0.794. Denoising predicts original features separately; class labels are not used by either pretraining objective."
+    },
+    {
+      "width": 900,
+      "widget": "cd",
+      "state": "default",
+      "text": "1\n2\n3\nbetter \u2190 average rank \u2192 worse\nCD = 1.914\nFeature-only (1.67)\nFeature + row (1.67)\nCatBoost (2.67)\nFriedman p \u2248 0.368 over N = 3 datasets \u2192 no overall rank difference is detected; this does not establish equivalence. Two models are joined by a bar (and so not significantly different) only if their average ranks are within CD = 1.914. Click a model to see its non-different group."
+    },
+    {
+      "width": 375,
+      "widget": "axes",
+      "state": "default",
+      "text": "01\nWhich things can attend?\n\nFollow one query. The sequence changes from features of a row to entire rows in a batch.\n\nTokens\nFeature attention\nRow attention\nThree rows \u00b7 three tokens each\nA\nCLS\nage\njob\nB\nCLS\nage\njob\nC\nCLS\nage\njob\n[B, T, d] = [3, 3, d]\nA\u2019s T \u00d7 T matrix\nCLS\nCLS\nage\nage\njob\njob\nquery CLS \u2192 CLS, age, job\nThe blue matrix belongs to row A. Its highlighted query is A\u2019s CLS token; its keys are A\u2019s CLS, age, and job. Rows B and C have their own separate matrices. Shading is schematic connectivity, not measured weights."
+    },
+    {
+      "width": 375,
+      "widget": "axes",
+      "state": "button-0",
+      "text": "01\nWhich things can attend?\n\nFollow one query. The sequence changes from features of a row to entire rows in a batch.\n\nTokens\nFeature attention\nRow attention\nThree rows \u00b7 three tokens each\nA\nCLS\nage\njob\nB\nCLS\nage\njob\nC\nCLS\nage\njob\n[B, T, d] = [3, 3, d]\nA\u2019s T \u00d7 T matrix\nCLS\nCLS\nage\nage\njob\njob\nquery CLS \u2192 CLS, age, job\nConnectivity only; no learned weights.\nEach colored token contains d coordinates. Color identifies the feature; A, B, C identify samples. The matrix is a schematic of available connections, not trained attention weights."
+    },
+    {
+      "width": 375,
+      "widget": "axes",
+      "state": "button-1",
+      "text": "01\nWhich things can attend?\n\nFollow one query. The sequence changes from features of a row to entire rows in a batch.\n\nTokens\nFeature attention\nRow attention\nThree rows \u00b7 three tokens each\nA\nCLS\nage\njob\nB\nCLS\nage\njob\nC\nCLS\nage\njob\n[B, T, d] = [3, 3, d]\nA\u2019s T \u00d7 T matrix\nCLS\nCLS\nage\nage\njob\njob\nquery CLS \u2192 CLS, age, job\nThe blue matrix belongs to row A. Its highlighted query is A\u2019s CLS token; its keys are A\u2019s CLS, age, and job. Rows B and C have their own separate matrices. Shading is schematic connectivity, not measured weights."
+    },
+    {
+      "width": 375,
+      "widget": "axes",
+      "state": "button-2",
+      "text": "01\nWhich things can attend?\n\nFollow one query. The sequence changes from features of a row to entire rows in a batch.\n\nTokens\nFeature attention\nRow attention\nFlatten every complete row\nA\nCLS\nage\njob\nB\nCLS\nage\njob\nC\nCLS\nage\njob\n[1, B, T\u00b7d] = [1, 3, 3d]\nOne B \u00d7 B matrix\nA\nA\nB\nB\nC\nC\nquery A \u2192 rows A, B, C\nThe green matrix belongs to the whole batch. Query A is now the flattened vector [CLS | age | job]. Its keys are complete rows A, B, C. Restore the feature axes after the row block. Shading is schematic connectivity, not measured weights."
+    },
+    {
+      "width": 375,
+      "widget": "architecture",
+      "state": "default",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nBoth attention blocks and both feed-forward blocks are present. Each sublayer follows the released wrapper u = LN(x), output = u + F(u); see the paper/code audit below."
+    },
+    {
+      "width": 375,
+      "widget": "architecture",
+      "state": "button-0",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nEach feature gets its own embedding; CLS is a learned summary slot and never stores the target label. Numeric embeddings follow the released implementation."
+    },
+    {
+      "width": 375,
+      "widget": "architecture",
+      "state": "button-1",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nFeature attention exchanges information across the T tokens of each sample. The feature feed-forward then transforms each token independently."
+    },
+    {
+      "width": 375,
+      "widget": "architecture",
+      "state": "button-2",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nPacking changes the meaning of a sequence element. Row attention exchanges information across B samples; the following feed-forward operates on all T\u00b7d coordinates of a row."
+    },
+    {
+      "width": 375,
+      "widget": "architecture",
+      "state": "button-3",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nUnpack before selecting CLS. The head reads the final contextual CLS vector, then produces two class logits. Softmax converts those logits into class probabilities."
+    },
+    {
+      "width": 375,
+      "widget": "architecture",
+      "state": "button-4",
+      "text": "02\nOne complete SAINT stage\n\nThe shape on each connection is the contract between the blocks. Click a stage to trace it.\n\nEmbed\nFeatures\nRows\nReadout\nWhole model\n[B, T, d]\ntake token 0\nEmbed + prepend CLS\ncategories: lookup\nnumbers: 1 \u2192 100 \u2192 d\nFeature attention \u2192 feature FF\nT tokens interact within each row\nRow attention \u2192 row FF\nB complete rows interact\nhead width 64 \u00b7 flattened width T\u00b7d\nRestore [B, T, d]\nRepeat the stage if depth > 1\nFinal CLS \u2192 prediction head\nd \u2192 1000 \u2192 2 class logits\nPACK: [B, T, d] \u2192 [1, B, T\u00b7d]\nUNPACK: [1, B, T\u00b7d] \u2192 [B, T, d]\nBoth attention blocks and both feed-forward blocks are present. Each sublayer follows the released wrapper u = LN(x), output = u + F(u); see the paper/code audit below."
+    },
+    {
+      "width": 375,
+      "widget": "context",
+      "state": "default",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n0.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = 0.0\nvalue = 8\n73.1%\n26.9%\nFixed query q = 1\nupdated value = 3.614\nSoftmax probability mass (sum = 1)\n0.731 \u00d7 2 + 0.269 \u00d7 8\n= 3.614\nScores [1, 0.0] \u2192 softmax [0.731, 0.269]. Contributions: 1.462 from self + 2.152 from companion = 3.614. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 375,
+      "widget": "context",
+      "state": "button-0",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n-3.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = -3.0\nvalue = 8\n98.2%\n1.8%\nFixed query q = 1\nupdated value = 2.108\nSoftmax probability mass (sum = 1)\n0.982 \u00d7 2 + 0.018 \u00d7 8\n= 2.108\nScores [1, -3.0] \u2192 softmax [0.982, 0.018]. Contributions: 1.964 from self + 0.144 from companion = 2.108. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 375,
+      "widget": "context",
+      "state": "button-1",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n0.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = 0.0\nvalue = 8\n73.1%\n26.9%\nFixed query q = 1\nupdated value = 3.614\nSoftmax probability mass (sum = 1)\n0.731 \u00d7 2 + 0.269 \u00d7 8\n= 3.614\nScores [1, 0.0] \u2192 softmax [0.731, 0.269]. Contributions: 1.462 from self + 2.152 from companion = 3.614. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 375,
+      "widget": "context",
+      "state": "button-2",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n3.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = 3.0\nvalue = 8\n11.9%\n88.1%\nFixed query q = 1\nupdated value = 7.285\nSoftmax probability mass (sum = 1)\n0.119 \u00d7 2 + 0.881 \u00d7 8\n= 7.285\nScores [1, 3.0] \u2192 softmax [0.119, 0.881]. Contributions: 0.238 from self + 7.046 from companion = 7.285. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 375,
+      "widget": "context",
+      "state": "slider-0-min",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n-3.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = -3.0\nvalue = 8\n98.2%\n1.8%\nFixed query q = 1\nupdated value = 2.108\nSoftmax probability mass (sum = 1)\n0.982 \u00d7 2 + 0.018 \u00d7 8\n= 2.108\nScores [1, -3.0] \u2192 softmax [0.982, 0.018]. Contributions: 1.964 from self + 0.144 from companion = 2.108. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 375,
+      "widget": "context",
+      "state": "slider-0-max",
+      "text": "03\nA fixed query, a changing companion\n\nLine thickness shows how much information each row contributes. All numbers are a one-head toy.\n\nWeak match\nInitial example\nStrong match\nCompanion key k\n3.0\nSelf row\nkey = 1\nvalue = 2\nCompanion\nkey = 3.0\nvalue = 8\n11.9%\n88.1%\nFixed query q = 1\nupdated value = 7.285\nSoftmax probability mass (sum = 1)\n0.119 \u00d7 2 + 0.881 \u00d7 8\n= 7.285\nScores [1, 3.0] \u2192 softmax [0.119, 0.881]. Contributions: 0.238 from self + 7.046 from companion = 7.285. The query, values, and model weights stay fixed; only the companion key changes."
+    },
+    {
+      "width": 375,
+      "widget": "views",
+      "state": "default",
+      "text": "04\nFrom a raw row to an augmented view\n\nCutMix chooses actual feature values. Mixup interpolates vectors after embedding.\n\nCutMix: replace job\nWeight \u03b1 on A\u2019s augmented embedding\n0.2\nOriginal A\nage 40\njob teacher\nCutMix donor B\nage 60\njob nurse\nA\u2019s raw view\nage 40 \u00b7 job nurse\nEmbed, then mix with a NEW partner\n0\n0\n1\n1\n2\n2\n3\n3\nA view [1,3]\ndonor [3,1]\nMixture = [2.60, 1.40]\ngreen point = \u03b1 \u00b7 blue + (1\u2212\u03b1) \u00b7 purple\nThe plotted coordinates are illustrative embeddings, not raw age/job values. With \u03b1 = 0.2, the augmented vector is 0.2 \u00d7 [1,3] + 0.8 \u00d7 [3,1]. Its positive partner is still clean A; denoising reconstructs age 40 and job teacher."
+    },
+    {
+      "width": 375,
+      "widget": "views",
+      "state": "button-0",
+      "text": "04\nFrom a raw row to an augmented view\n\nCutMix chooses actual feature values. Mixup interpolates vectors after embedding.\n\nCutMix: replace job\nWeight \u03b1 on A\u2019s augmented embedding\n0.2\nOriginal A\nage 40\njob teacher\nCutMix donor B\nage 60\njob nurse\nA\u2019s raw view\nage 40 \u00b7 job teacher\nEmbed, then mix with a NEW partner\n0\n0\n1\n1\n2\n2\n3\n3\nA view [1,0]\ndonor [3,1]\nMixture = [2.60, 0.80]\ngreen point = \u03b1 \u00b7 blue + (1\u2212\u03b1) \u00b7 purple\nThe plotted coordinates are illustrative embeddings, not raw age/job values. With \u03b1 = 0.2, the augmented vector is 0.2 \u00d7 [1,0] + 0.8 \u00d7 [3,1]. Its positive partner is still clean A; denoising reconstructs age 40 and job teacher."
+    },
+    {
+      "width": 375,
+      "widget": "views",
+      "state": "slider-0-min",
+      "text": "04\nFrom a raw row to an augmented view\n\nCutMix chooses actual feature values. Mixup interpolates vectors after embedding.\n\nCutMix: replace job\nWeight \u03b1 on A\u2019s augmented embedding\n0.0\nOriginal A\nage 40\njob teacher\nCutMix donor B\nage 60\njob nurse\nA\u2019s raw view\nage 40 \u00b7 job teacher\nEmbed, then mix with a NEW partner\n0\n0\n1\n1\n2\n2\n3\n3\nA view [1,0]\ndonor [3,1]\nMixture = [3.00, 1.00]\ngreen point = \u03b1 \u00b7 blue + (1\u2212\u03b1) \u00b7 purple\nThe plotted coordinates are illustrative embeddings, not raw age/job values. With \u03b1 = 0.0, the augmented vector is 0.0 \u00d7 [1,0] + 1.0 \u00d7 [3,1]. Its positive partner is still clean A; denoising reconstructs age 40 and job teacher."
+    },
+    {
+      "width": 375,
+      "widget": "views",
+      "state": "slider-0-max",
+      "text": "04\nFrom a raw row to an augmented view\n\nCutMix chooses actual feature values. Mixup interpolates vectors after embedding.\n\nCutMix: replace job\nWeight \u03b1 on A\u2019s augmented embedding\n1.0\nOriginal A\nage 40\njob teacher\nCutMix donor B\nage 60\njob nurse\nA\u2019s raw view\nage 40 \u00b7 job teacher\nEmbed, then mix with a NEW partner\n0\n0\n1\n1\n2\n2\n3\n3\nA view [1,0]\ndonor [3,1]\nMixture = [1.00, 0.00]\ngreen point = \u03b1 \u00b7 blue + (1\u2212\u03b1) \u00b7 purple\nThe plotted coordinates are illustrative embeddings, not raw age/job values. With \u03b1 = 1.0, the augmented vector is 1.0 \u00d7 [1,0] + 0.0 \u00d7 [3,1]. Its positive partner is still clean A; denoising reconstructs age 40 and job teacher."
+    },
+    {
+      "width": 375,
+      "widget": "contrastive",
+      "state": "default",
+      "text": "05\nMatch identities; reconstruct features\n\nTwo pretraining objectives use the augmented row for different tasks. The matrix below is a synthetic example.\n\nContrastive temperature \u03c4\n0.7\nClean A \u2192 encoder \u2192 g\u2081\nprojection zA\nA view \u2192 encoder \u2192 g\u2082\nprojection z\u2032A\nContrastive: find the same row\nA\u2032\nA\nB\u2032\nB\nC\u2032\nC\n0.68\n0.16\n0.16\n0.16\n0.68\n0.16\n0.16\n0.16\n0.68\naugmented candidates\nPositive = matching diagonal\nmean loss = 0.392\nDenoising decoders\nreconstruct original A\nage \u2192 squared error\njob \u2192 cross-entropy\nOriginal features are the targets.\nFor this illustration, a matching pair has dot product 1 and other pairs have 0. At \u03c4 = 0.7, matching-view probability is 0.676 and mean contrastive loss is 0.392. Denoising predicts original features separately; class labels are not used by either pretraining objective."
+    },
+    {
+      "width": 375,
+      "widget": "contrastive",
+      "state": "slider-0-min",
+      "text": "05\nMatch identities; reconstruct features\n\nTwo pretraining objectives use the augmented row for different tasks. The matrix below is a synthetic example.\n\nContrastive temperature \u03c4\n0.2\nClean A \u2192 encoder \u2192 g\u2081\nprojection zA\nA view \u2192 encoder \u2192 g\u2082\nprojection z\u2032A\nContrastive: find the same row\nA\u2032\nA\nB\u2032\nB\nC\u2032\nC\n0.99\n0.01\n0.01\n0.01\n0.99\n0.01\n0.01\n0.01\n0.99\naugmented candidates\nPositive = matching diagonal\nmean loss = 0.013\nDenoising decoders\nreconstruct original A\nage \u2192 squared error\njob \u2192 cross-entropy\nOriginal features are the targets.\nFor this illustration, a matching pair has dot product 1 and other pairs have 0. At \u03c4 = 0.2, matching-view probability is 0.987 and mean contrastive loss is 0.013. Denoising predicts original features separately; class labels are not used by either pretraining objective."
+    },
+    {
+      "width": 375,
+      "widget": "contrastive",
+      "state": "slider-0-max",
+      "text": "05\nMatch identities; reconstruct features\n\nTwo pretraining objectives use the augmented row for different tasks. The matrix below is a synthetic example.\n\nContrastive temperature \u03c4\n2.0\nClean A \u2192 encoder \u2192 g\u2081\nprojection zA\nA view \u2192 encoder \u2192 g\u2082\nprojection z\u2032A\nContrastive: find the same row\nA\u2032\nA\nB\u2032\nB\nC\u2032\nC\n0.45\n0.27\n0.27\n0.27\n0.45\n0.27\n0.27\n0.27\n0.45\naugmented candidates\nPositive = matching diagonal\nmean loss = 0.794\nDenoising decoders\nreconstruct original A\nage \u2192 squared error\njob \u2192 cross-entropy\nOriginal features are the targets.\nFor this illustration, a matching pair has dot product 1 and other pairs have 0. At \u03c4 = 2.0, matching-view probability is 0.452 and mean contrastive loss is 0.794. Denoising predicts original features separately; class labels are not used by either pretraining objective."
+    },
+    {
+      "width": 375,
+      "widget": "cd",
+      "state": "default",
+      "text": "1\n2\n3\nbetter \u2190 average rank \u2192 worse\nCD = 1.914\nFeature-only (1.67)\nFeature + row (1.67)\nCatBoost (2.67)\nFriedman p \u2248 0.368 over N = 3 datasets \u2192 no overall rank difference is detected; this does not establish equivalence. Two models are joined by a bar (and so not significantly different) only if their average ranks are within CD = 1.914. Click a model to see its non-different group."
+    }
+  ],
+  "screenshots": "/tmp/quality-l047-browser",
+  "scope": "Live local Chromium; six visual widgets, all native buttons, slider endpoints and keyboard at 900/375; not live Colab or deployed site"
+}

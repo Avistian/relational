@@ -76,7 +76,7 @@ All mechanism diagrams are embedded in this file and visible before execution. T
 
 | Evidence | Scope in this notebook | What it cannot establish |
 |---|---|---|
-| **Architecture** | Full supervised released-code path, implemented from scratch | That every PDF equation matches the release |
+| **Architecture** | Complete binary supervised path, implemented from scratch | That every PDF equation matches the release |
 | **Mechanism probes** | Synthetic tensors isolate axes, pairing, and companion effects | Accuracy on a population |
 | **Local training · Tier A** | Real `credit_g`, `diabetes`, `blood_transfusion`; 3 seeds; fixed split | Reproduction of the paper's Table 2 |
 | **Pretraining** | One-way contrastive loss from §4, Eq. 5, as a key-parts exercise | Full augmentation/denoising training or Table 3 results |
@@ -103,14 +103,14 @@ Feature attention treats each row as a separate sequence: $[B,T,d]$. Each token 
 
 The distinction is about **who can read whom**. Flattening preserves feature order. Transposing to attend down each column would leave each feature in a separate sequence and implement a different operator. After row attention, we restore $[B,T,d]$ so CLS and the feature tokens retain their slots.''')
     figure('feature-axis', 'Feature attention connects tokens within each separate row, keeping the batch axis independent.',
-           '**Read the blue highlight:** one sequence per row. The drawing has B = 3 and T = 3 (CLS, age, job), so the input is `[3,3,d]` and the per-head attention matrix has shape `[3,H,3,3]`. The shaded matrix row marks the keys available to the CLS query; it does not show learned weights. See §3.2 / Algorithm 1.')
+           '**Read the blue highlight:** one sequence per row. The drawing has B = 3 and T = 3 (CLS, age, job), so the input is `[3,3,d]` and the attention array across H heads has shape `[3,H,3,3]`. The shaded matrix row marks the keys available to the CLS query; it does not show learned weights. See §3.2 / Algorithm 1.')
     figure('row-axis', 'Intersample attention packs each full row, then connects the rows in a single sequence.',
-           '**Read the teal highlight:** each sequence element now contains every coordinate from one row. The same input becomes `[1,3,3*d]`, and the per-head attention matrix becomes `[1,H,3,3]`. Although both illustrated matrices happen to be 3×3, their axes mean different things: feature slots versus whole rows. No target labels are packed.')
+           '**Read the teal highlight:** each sequence element now contains every coordinate from one row. The same input becomes `[1,3,3*d]`, and the attention array across H heads becomes `[1,H,3,3]`. Although both illustrated matrices happen to be 3×3, their axes mean different things: feature slots versus whole rows. No target labels are packed.')
     md(r'''### A worked attention calculation
 
 A query $q$ asks what to retrieve; keys $k_j$ determine match scores; values $v_j$ carry the information. For one head,
 
-$$s_{ij} = q_i^	op k_j / sqrt{d_h},\qquad A_{ij}=\frac{e^{s_{ij}}}{\sum_\ell e^{s_{i\ell}}},\qquad o_i=\sum_j A_{ij}v_j.$$
+$$s_{ij} = q_i^	op k_j / \sqrt{d_h},\qquad A_{ij}=\frac{e^{s_{ij}}}{\sum_\ell e^{s_{i\ell}}},\qquad o_i=\sum_j A_{ij}v_j.$$
 
 Here $d_h$ is **head width**, not batch size. Each row of $A$ is a probability distribution over candidate keys. For scores `[1,0]` and scalar values `[2,8]`, weights are approximately `[0.731,0.269]` and the output is `0.731×2 + 0.269×8 = 3.614`. If only the first item remains, its weight becomes 1 and its output becomes 2. The query did not change; its available context did.
 
@@ -219,12 +219,12 @@ A reproduction must state which source defines the operator. The pinned release 
 |---|---|---|
 | Numeric embedding | Linear layer followed by ReLU | Per-feature `1 → 100 → d` MLP, with ReLU between layers |
 | Residual/normalization | $x+\mathrm{LN}(F(x))$ | $u=\mathrm{LN}(x)$, then $u+F(u)$ |
-| Feed-forward activation | Less explicit prose | GEGLU: split value and gate; multiply value by GELU(gate) |
+| Feed-forward activation | §3.1 specifies GELU between two linear maps | GEGLU: split value and gate; multiply value by GELU(gate) |
 | Attention dropout | Dropout is part of the configuration | Declared upstream but unused in attention forward; FF dropout is active |
 
 **LayerNorm** normalizes the last dimension for each sequence element, then applies learned scale and bias. For feature attention this dimension is `d`; for row attention it is `T*d`. **GEGLU** expands width `w` to `8w`, splits it into two `4w` halves, gates them, and projects back to `w`.
 
-The skip path below adds the **normalized** input. Replacing it with a familiar conventional residual block changes the model. `_check_l047.py` independently transplanted weights from the pinned official stage and recorded exact forward and input-gradient agreement; the notebook's later check compares your stage with that audited local implementation. Those are two distinct checks.''')
+The skip path below adds the **normalized** input. Replacing it with a familiar conventional residual block changes the model. `_check_l047.py` verifies the vendored pinned release by default: exact float64 stage agreement and nine float32 supervised-path cases (tokens, logits, input/head gradients); the notebook's later check compares your stage with that audited local implementation. Those are two distinct checks.''')
     provided({'GEGLU', 'ReleasedResidual', 'feedforward'}, 'Released gates and normalization; inspect the residual return value')
     md('''### Task 3 — wire the feature stage into the row stage
 
@@ -275,7 +275,7 @@ for variant in ('col', 'row', 'colrow'):
 print('Official-source parity is recorded separately in _check_l047_results.json.')''')
     md('''### PROVIDED · tokens, missing values, and the prediction head
 
-Each categorical feature owns an embedding table; each numeric feature owns an MLP. Numeric NaNs select a learned **feature-specific missing token**. Categorical code 0 is reserved for missing/unseen values by our training-only encoder. These choices preserve missingness while keeping a fixed token layout.
+Each categorical feature owns an embedding table; each numeric feature owns an MLP. Numeric NaNs select a learned **feature-specific missing token**. Categorical code 0 is reserved for missing/unseen values by our training-only encoder. The release instead uses a full-table vocabulary and separate missing-mask embeddings; its unseen-category contract differs. Our numeric scale uses observed training values and replaces degenerate scales by 1; the release mean-imputes before scaling and clamps at 10⁻⁶. These are declared preprocessing differences.
 
 Read `tokenize` first: **CLS → categorical tokens → numeric tokens**. `encode` applies your stages. `forward` takes position 0 and maps `d → 1000 → 2` logits. Softmax is applied later when probabilities are needed; training cross-entropy consumes logits directly.
 
@@ -579,7 +579,7 @@ Tomorrow, without reading this notebook, sketch the two attention axes and state
     out.parent.mkdir(exist_ok=True)
     nbf.validate(nb)
     nbf.write(nb, out)
-    print(f'{out}: {len(cells)} cells, {sum("data:image/png;base64," in c.source for c in cells)} embedded figures')
+    print(f'{out}: {len(nb.cells)} cells, {sum("data:image/png;base64," in c.source for c in nb.cells)} embedded figures')
     if not solution:
         from nbconvert import HTMLExporter
         rendered = copy.deepcopy(nb)

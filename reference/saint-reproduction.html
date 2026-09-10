@@ -10,20 +10,16 @@
 <h2>Regenerate the local evidence</h2>
 <pre class="equation"># From the relational repository root
 OMP_NUM_THREADS=1 .venv/bin/python labs/_verify_l047.py
+.venv/bin/python -m pip install einops==0.8.2  # source-validation dependency
 .venv/bin/python labs/_check_l047.py
 .venv/bin/python labs/_build_l047.py
 node labs/_viz_check_l047.js
 node labs/_check_pedagogy.js
 # Read the exact observed environment:
 # labs/requirements-l047.lock.txt</pre>
-<p>These checks do not choose a winning model. The default mechanism command skips the external reference unless its path is passed explicitly. To repeat the weight transplant, download the pinned source and install its small validation dependency in your chosen environment:</p>
-<pre class="equation">curl -L --fail \
- https://raw.githubusercontent.com/somepago/saint/e288e84c77a54cfd2ffb55a53678fb7cbbb16630/models/model.py \
- -o /tmp/saint-reference-model.py
-.venv/bin/python -m pip install einops==0.8.2
-.venv/bin/python labs/_check_l047.py \
- --reference /tmp/saint-reference-model.py</pre>
-<p>Reference stage source SHA-256: <code>c13c8c2c031984f676ccf45bbc78d1f3ffe40c5a0d563acd8cc19f485127de8b</code>. The check validates both forward values and input gradients on transplanted weights. Whole-model reference training parity is not claimed.</p>
+<p>The default mechanism check verifies the vendored, unmodified release files under <code>labs/sources/l047/</code>, including their hashes. Its source-only dependency is <code>einops==0.8.2</code>. An optional <code>--reference</code> path must match the pinned model.py SHA-256. It no longer silently skips source parity.</p>
+<p>One float64 combined stage has exact forward/input-gradient agreement. Nine float32 supervised-path cases cover three variants, two stages, mixed or single-family features, and missing inputs; tokens, logits, numeric-input and head gradients agree exactly on these fixtures. Missing category code 0 is deliberately remapped to the official missing mask. These checks do not establish vocabulary-fit, initialization, optimizer, or training-score parity.</p>
+<p>Additional protocol gaps: local missing/unseen category code 0 differs from the release's full-table vocabulary plus missing-mask tables; numeric scaling and degenerate-column handling differ; local NumPy permutations differ from PyTorch DataLoader shuffling. Equal seed labels cannot align differently constructed models or different RNG algorithms. The isolated contrastive exercise also differs from released bidirectional pretraining, which normalizes token vectors before flattening and projection, not the final projected vectors.</p>
 <h2>Required paper-results attempt</h2>
 <pre class="equation">OMP_NUM_THREADS=1 .venv/bin/python labs/_paper_repro_l047.py \
  --preset smoke --output-dir /tmp/l047-bank-smoke
@@ -78,4 +74,5 @@ modal volume get relational-artifacts l047/closer ./l047-bank-results</pre>
 </table>
 <p>Worked trace: scores <code>[0,log(3)]</code> give weights <code>[.25,.75]</code>; values <code>[2,6]</code> give output 5. Replacing the second value by 10 gives output 8 without changing the weights.</p>
 <p>When debugging, test coordinate order first, then attention normalization, then stage wiring, then companion interventions. When interpreting accuracy, keep source-operation parity, supervised local training, pretraining, and the paper benchmark as separate claims. Record companion membership and batch size alongside model weights.</p>
+<p>At B=1 the row-attention weights are 1, but its projections and feed-forward remain active. A row feed-forward of width w=Td has <code>12w²+9w</code> parameters. Pinned source verification now runs by default, including nine mapped-weight supervised-path cases; it does not establish training or paper-result reproduction.</p>
 </section></article></body></html>
