@@ -7,7 +7,7 @@ from _foundation_config import SLUGS,TITLES,TASKS
 ROOT=Path(__file__).resolve().parents[1]
 PRACTICE={
 58:'Parse means and SDs, rank the declared panel, bootstrap paired datasets, and select a tiny benchmark without seeing held-out method scores; compare 1,000 and 10,000 proposals.',
-59:'Run a pure-noise search with separate validation and test randomness; measure selection optimism.',
+59:'Replay the noise control, implement analytic leave-one-out KRR and nested selection, and compare 30 versus 1,000 independent synthetic repetitions.',
 60:'Train five model families on a small real-data task, select recipes on validation, and audit the broader saved comparison.',
 61:'Train a count-based PFN on sampled coin tasks and compare its predictions with the exact Bayesian posterior.',
 62:'Implement attention and its information mask; check a reduced row-token PFN on real rows. Historical pretrained v1 inference is a separate rerun.',
@@ -21,7 +21,7 @@ PRACTICE={
 70:'Reconstruct the saved predictions and validation selections for all seven model arms, then calculate paired summaries and ranks. The full rerun is explicitly gated.'}
 EVIDENCE={
 58:'Frozen-result reanalysis: six methods on 300 tasks; a separate 276-task complete panel for tiny-benchmark selection. No new predictive-model fits.',
-59:'200-trial noise-selection experiment across five search budgets.',
+59:'Historical 200-repeat noise control plus new paper-equation KRR experiments: 30 and 1,000 repeated datasets, with matched fresh evaluation of nested and contaminated procedures.',
 60:'Five families, eleven underlying datasets, three seeds; random and temporal regimes kept separate.',
 61:'Three trained count-based PFNs, including checks outside their training context lengths.',
 62:'Actual historical v1 checkpoint inference on three datasets and three seeds.',
@@ -56,7 +56,7 @@ def launcher(n,prepared=False):
 
 def lab_plan(n):
     tasks=''.join(f'<li><code>{name}</code>: {html.escape(goal)}</li>' for name,_,_,goal in TASKS[n])
-    exit_path = 'data/cache/l058-student/exit.json' if n == 58 else f'student-l{n:03}-exit.json'
+    exit_path = f'data/cache/l{n:03}-student/exit.json' if n in (58, 59) else f'student-l{n:03}-exit.json'
     return f'<p><strong>What you will do:</strong> {PRACTICE[n]}</p><ol>{tasks}</ol><p><strong>Author-reference evidence:</strong> {EVIDENCE[n]}</p><p><strong>Submit:</strong> your completed notebook and <code>{exit_path}</code>, plus your written interpretation. CHECK cells give immediate code feedback; paste the EXIT output here for a reasoning review.</p>'
 
 
@@ -68,6 +68,9 @@ def build_directory():
                link(f'https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{slug}.ipynb','Run in Colab'),
                link(f'../{slug}.ipynb','Download notebook',download=True),link(f'../../reference/{slug}.html','Reference'),
                link(f'../l{n:03}-reproduction.md','Reproduction instructions'),link(f'../_verify_l{n:03}_results.json','Measured results')]
+        if n == 59:
+            links.append(link('../_verify_l059_v2_results.json','Nested KRR results'))
+            links.append(link('../_verify_l059_closer_results.json','1,000-repeat results'))
         if n == 58:
             links.append(link('../_verify_l058_v2_results.json','Updated audit and subset results'))
             links.append(link('../_verify_l058_closer_results.json','10,000-candidate results'))
