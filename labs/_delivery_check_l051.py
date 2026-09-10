@@ -41,6 +41,18 @@ for name,row in larger['datasets'].items():
                 assert np.isclose(a['auc'],roc_auc_score(row['test_y'],a['probability']));larger_count+=1
 for c,s in larger['statistics'].items():assert s==rank_summary(larger['datasets'],c)
 expected_images={hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/l051').glob('*.png')}
+diagnostic=json.loads((HERE/'_diagnostic_l051_results.json').read_text())
+live_diagnostic=json.loads((HERE/'data/cache/l051-bandwidth-live.json').read_text())
+for file,digest in diagnostic['source_sha256'].items():assert hashlib.sha256((HERE/file).read_bytes()).hexdigest()==digest,file
+diagnostic_count=0
+assert diagnostic['split_rows']==reference['datasets']['electricity']['split_rows']
+for row,live in zip(diagnostic['rows'],live_diagnostic['rows']):
+    assert row['h']==live['h'] and row['changed_labels']==live['changed_labels']
+    for model,rr in row['runs'].items():
+        for run,live_run in zip(rr,live['runs'][model]):
+            assert np.allclose(run['probability'],live_run['probability'],atol=1e-7)
+            assert np.isclose(run['accuracy'],accuracy_score(diagnostic['test_y'],np.array(run['probability'])>=.5))
+            diagnostic_count+=1
 code_count=0
 for solution in [False,True]:
     p=HERE/('solutions' if solution else '')/f'{slug}.ipynb';nb=nbformat.read(p,as_version=4);nbformat.validate(nb)
@@ -58,10 +70,10 @@ for solution in [False,True]:
                 assert cell.execution_count is not None
                 assert not any(o.output_type=='error' for o in cell.outputs);code_count+=1
             else:assert not cell.outputs and cell.execution_count is None
-    assert todo==4 and len(seen)==6 and set(seen)==expected_images
+    assert todo==4 and len(seen)==7 and set(seen)==expected_images
 html=BeautifulSoup((HERE/'html'/f'{slug}.html').read_text(),'html.parser')
 embedded=[hashlib.sha256(base64.b64decode(n['src'].split(',',1)[1])).hexdigest() for n in html.find_all('img',src=True) if n['src'].startswith('data:image/png;base64,')]
-assert len(embedded)==6 and set(embedded)==expected_images
+assert len(embedded)==7 and set(embedded)==expected_images
 links=0
 for file in [ROOT/'lessons'/f'{slug}.html',ROOT/'reference/inductive-bias-interventions.html',HERE/'html'/f'{slug}.html']:
     soup=BeautifulSoup(file.read_text(),'html.parser');ids=[n['id'] for n in soup.find_all(id=True)];assert len(ids)==len(set(ids))
@@ -77,7 +89,7 @@ for file in [ROOT/'lessons'/f'{slug}.html',ROOT/'reference/inductive-bias-interv
         links+=1
 manifest=json.loads((ROOT/'lessons/manifest.json').read_text());row=next(x for x in manifest['lessons'] if x['id']==51)
 assert row['quarter']==2 and row['labPath']==f'labs/{slug}.ipynb'
-report=dict(prediction_runs_reconciled=count,larger_prediction_runs_checked=larger_count,executed_solution_code_cells=code_count,student_todos=4,inline_pngs_per_artifact=6,
-    local_links_checked=links,source_hashes_match=True,notebook_and_reference_scores_match=True,browser='Separate browser audit: _depth_browser_results.json',
+report=dict(prediction_runs_reconciled=count,larger_prediction_runs_checked=larger_count,diagnostic_runs_reconciled=diagnostic_count,executed_solution_code_cells=code_count,student_todos=4,inline_pngs_per_artifact=7,
+    local_links_checked=links,source_hashes_match=True,notebook_and_reference_scores_match=True,browser='Separate current browser audit: reviews/lesson-quality-audit-047-070/051-browser.json',
     live_colab='NOT_CHECKED: inline PNG packaging verified only',svg_panels=20,svg_glyph_bounds='81 labels; no violations with librsvg')
 (HERE/'_delivery_l051_results.json').write_text(json.dumps(report,indent=2));print(report)

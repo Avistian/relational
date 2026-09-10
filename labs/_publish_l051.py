@@ -27,6 +27,21 @@ if closer.exists():
   cr.append(n+': '+', '.join(m+' '+f'{np.mean([a["accuracy"] for a in row["runs"]["original"][m]]):.4f} ± {np.std([a["accuracy"] for a in row["runs"]["original"][m]],ddof=1):.4f}' for m in models))
  scale='<p><strong>Larger attempt completed:</strong> '+str(round(c['elapsed_s']))+' seconds for the CPU experiment over all three tasks and five conditions. Original-condition accuracy means ± sample SD over three seeds — '+'; '.join(cr)+'. <strong>INCOMPARABLE</strong> to the paper; the full resource preset and original search curves remain NOT_RUN. <a href="../labs/_paper_repro_l051_closer_summary.json">Full scale-up evidence, paired effects and ledger</a>. The timing includes heavy workspace CPU contention and is not a model-speed comparison.</p>'
  s=re.sub(r'<!-- SCALE_START -->.*?<!-- SCALE_END -->','<!-- SCALE_START -->'+scale+'<!-- SCALE_END -->',s,flags=re.S)
+# Additive diagnosis has its own evidence; it never rewrites the historical scores.
+diagnostic=ROOT/'_diagnostic_l051_results.json'
+if diagnostic.exists():
+ d=json.loads(diagnostic.read_text());dr=[]
+ for row in d['rows']:
+  effects=[f'{100*row["effects"][m]["mean"]:+.2f}' if row['status']=='TRAINED' else 'NOT_FIT: one class' for m in models]
+  dr.append('<tr><td>'+str(row['h'])+'</td><td>'+str(row['changed_labels'])+'</td><td>'+f'{100*row["positive_fraction"]:.1f}%</td>'+''.join('<td>'+v+'</td>' for v in effects)+'</tr>')
+ block=f'<p><strong>Fresh author diagnostic:</strong> {d["dataset"]}; {sum(map(len,d["split_rows"])):,} rows, {len(d["split_rows"][0]):,} training rows, {len(d["config"]["seeds"])} model seeds, fixed top-five columns and raw held-out labels. Cells report mean paired accuracy change in percentage points from h=0; the figure shows conditional seed intervals. This one-task result is <strong>INCOMPARABLE</strong> to the paper.</p>'
+ block+='<p>On a narrow screen, focus the table and scroll horizontally to read each complete row.</p><div class="lesson-table-scroll" tabindex="0" role="region" aria-label="Bandwidth diagnostic results"><table><thead><tr><th>h</th><th>Changed labels / '+str(len(d['split_rows'][0]))+'</th><th>Training positive fraction</th>'+''.join('<th>'+m+' Δ pp</th>' for m in models)+'</tr></thead><tbody>'+''.join(dr)+'</tbody></table></div>'
+ block+='<figure><a href="../labs/figures/l051/bandwidth.png"><img class="lesson-figure" src="../labs/figures/l051/bandwidth.png" alt="Training label changes and model accuracy changes across four smoothing bandwidths"></a><figcaption>Measured '+d['dataset']+' bandwidth diagnostic. Same split, covariance and recipes at every h. Dots are paired seed differences; whiskers are conditional 95% t intervals, not uncertainty across tasks. <a href="../labs/figures/l051/bandwidth.png">Open the full-size chart to inspect labels and intervals.</a></figcaption></figure>'
+ block+='<p><a href="../labs/_diagnostic_l051_results.json">Diagnostic predictions and provenance</a> · <a href="../labs/_diagnose_l051.py">Executable bandwidth operator</a>. Report every tried h, including any explicit NOT_FIT_ONE_CLASS point; never silently discard a collapsed training condition.</p>'
+ s=re.sub(r'<!-- DIAGNOSTIC_START -->.*?<!-- DIAGNOSTIC_END -->','<!-- DIAGNOSTIC_START -->'+block+'<!-- DIAGNOSTIC_END -->',s,flags=re.S)
+if '../assets/cd-diagram-viz.css' not in s:
+ s=s.replace('</head>','<link rel="stylesheet" href="../assets/cd-diagram-viz.css"/></head>')
+s=s.replace('<div id="cd-original"></div>','<p>On narrow screens, focus the rank diagram and scroll horizontally to read all model labels.</p><div id="cd-original" tabindex="0" role="region" aria-label="Scrollable original-condition rank diagram"></div>')
 lesson.write_text(s)
 (COURSE/'assets/intervention-results.js').write_text('window.InterventionResults = '+json.dumps({'statistics':r['statistics'],'effects':means},indent=2)+';\n')
 print('Published measured lesson evidence; closer included:',closer.exists())

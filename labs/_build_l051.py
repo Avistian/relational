@@ -36,9 +36,17 @@ def build(solution=False):
 
 **Data contract:** Tier A, electricity 44120, MagicTelescope 44125 and bank-marketing 44126 from the authors' January 2023 OpenML suite 337. The learning lab uses 1800 rows per task, 60/20/20 stratified split seed 51, model seeds 0/1/2, fixed intervention seed 51. The suite is a later release than the 2022 paper v1 read here. Numeric binary classification only. Three tasks and fixed recipes do not reproduce the benchmark search curves: **INCOMPARABLE**.
 
-Computation took about two CPU minutes in the author run; understanding and implementation take longer. Six portable inline PNGs require no execution. Local packaging checks do not certify the live Colab UI.
+The historical comparison took about two CPU minutes; the added one-task bandwidth diagnosis is a separate bounded run. Understanding and implementation take longer. Seven portable inline PNGs require no execution. Local packaging checks do not certify the live Colab UI.
 
 **Recall first:** why did three seeds in L050 not create three new datasets? Write your answer before proceeding.''')
+ md('''## Concept recap · a controlled change to the learning problem
+An inductive bias is a learning procedure's preference among possible explanations of limited data. Here you manipulate supervision, coordinates or input width and measure how a fixed training procedure responds. Expressivity means the functions a model can represent; it does not tell us which function finite training finds.
+
+Smoothing replaces each training label by a weighted neighborhood average, then thresholds above 0.5. For a middle row with positive label 1 and two negative neighbors weighted 0.607 each, the probability is 1/(1+0.607+0.607)≈0.452, so its new label is 0. Its original held-out prediction task remains fixed. More smoothing need not improve accuracy.
+
+Rotation uses one orthogonal matrix R for every split: X′=XR and X′Rᵀ=X. It preserves recoverable information but can turn an easy one-coordinate tree split into an oblique boundary. Added noise instead increases input dimension while retaining the original feature block; independent population noise can still have accidental sample patterns.
+
+An effect is changed-condition accuracy minus a matched baseline. Smoothing must use the unsmoothed **same top-five columns** as baseline. Rotation/noise use the full original columns. Subtract scores seed by seed before describing variability. The four TODOs implement these load-bearing operations, and a separate bandwidth diagnosis checks how strongly smoothing actually changed supervision.''')
  cells.extend(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']) for c in bootstrap_cells())
  code('''# PROVIDED — environment; local repository root, labs/, or labs/solutions/ supported.
 import os,sys,copy,hashlib,json,time,marshal,importlib.metadata,platform,types
@@ -71,7 +79,7 @@ __file__=str(LABS/'relkit/bias_interventions.py')
 print('Working directory:',LABS)''')
  section('question');section('smooth');figure('smoothing','Synthetic smoothing: self-weight, neighbor weights, probability and hard threshold; test targets stay fixed.')
  md('''### TODO 1 · Reconstruct the training-only smoother
-Implement `smooth_targets(x,y,h,covariance)`. The covariance is already fitted on training rows. Chunking only limits memory; all training neighbors remain eligible. For h=0 copy the labels. For h>0 calculate the inverse-covariance distance, normalized weighted average and strict binary threshold. The three-row example is one CHECK, not the only input your function must handle.
+**Goal:** implement `smooth_targets(x,y,h,covariance)` so a bandwidth controls training-label averaging. **Why:** this is the paper's intervention on available supervised detail; the whole benchmark must use your version. **Hint boundary:** the covariance is already fitted on training rows. Chunking only limits memory; all training neighbors remain eligible. For h=0 copy the labels. For h>0 calculate the inverse-covariance distance, normalized weighted average and strict binary threshold. The three-row example is one CHECK, not the only input your function must handle.
 
 **Predict before running:** multiplying all feature values by 3 and the covariance by 9 should do what to the smoothed output?''')
  task('smooth_targets','''# TODO 1 — Appendix A.4.1 mechanism and released classification threshold.
@@ -94,10 +102,12 @@ assert np.array_equal(labels,[0,0,0]), 'Threshold the probability, not the indiv
 assert np.array_equal(smooth_targets(x,y,0,cov)[1],y)
 assert np.allclose(smooth_targets(3*x,y,1,9*cov)[0],p), 'Covariance must compensate the units.'
 assert np.array_equal(smooth_targets(np.zeros((2,1)),np.array([0,1]),1,cov)[1],[0,0]), 'Exactly .5 must map to 0.'
+assert np.array_equal(smooth_targets(np.zeros((2,1)),np.array([0,1]),0,cov)[1],[0,1]), 'h=0 is the explicit unsmoothed baseline, including duplicates.'
+assert np.allclose(smooth_targets(np.zeros((2,1)),np.array([0,1]),1e-6,cov)[0],[.5,.5]), 'Duplicate rows remain neighbors even as positive h shrinks.'
 print('CHECK 1 passed')''')
  section('rotation');figure('rotation','Synthetic 45-degree rotation: same labels and invertible inputs, but the one-coordinate threshold becomes diagonal.')
  md('''### TODO 2 · Preserve a single coordinate system
-Implement `rotate_splits(splits,rotation)`. The input is a list of arrays; return one transformed array for each. Reject a nonorthogonal matrix. Do not sample any new matrix inside this function.
+**Goal:** implement `rotate_splits(splits,rotation)` with one shared coordinate system. **Why:** a separate rotation for test rows would test schema corruption. **Hint boundary:** the input is a list of arrays; return one transformed array for each. Reject a nonorthogonal matrix. Do not sample any new matrix inside this function.
 
 **Prediction:** can the same dense first-layer activations be recovered exactly, even if a newly trained model later gets a different test score?''')
  task('rotate_splits','''# TODO 2 — apply one shared orthogonal transformation.
@@ -118,7 +128,7 @@ else:raise AssertionError('Scaling by 2 is not an orthogonal transform.')
 print('CHECK 2 passed; this is weight transport, not Adam training parity.')''')
  section('noise');figure('noise','Synthetic finite-sample noise search and MLP parameter accounting. No test-score claim follows from either plot alone.')
  md('''### TODO 3 · Add independent noise while preserving the original block
-Implement `add_noise_features(splits,count,seed)`. Create one generator before processing the splits, append `count` N(0,1) columns to each array, and return the list. Labels are intentionally absent from the signature. Do not restart the generator inside the split loop.
+**Goal:** implement `add_noise_features(splits,count,seed)` without changing the original input block. **Why:** the effect must come from appended distractors. **Hint boundary:** create one generator before processing the splits, append `count` N(0,1) columns to each array, and return the list. Labels are intentionally absent from the signature. Do not restart the generator inside the split loop.
 
 **Written check:** why should you not assert exact zero sample correlation between generated columns and labels?''')
  task('add_noise_features','''# TODO 3 — independent draws, reproducible intervention.
@@ -135,7 +145,9 @@ assert np.array_equal(add_noise_features([x],0,51)[0],x)
 print('CHECK 3 passed')''')
  section('protocol');figure('protocol','Every condition preserves evaluation targets. Compare smoothing against top-five raw targets, not full-feature original.')
  md('''### TODO 4 · Pair the effect before estimating uncertainty
-Implement `paired_effect(changed,baseline)`. Return mean, sample SD (`ddof=1`) and 95% t interval for seed-wise differences. With one seed return `None` for SD and interval. Positive means the intervention improved accuracy. These intervals condition on one split and one fixed intervention realization.
+**Goal:** implement `paired_effect(changed,baseline)` to quantify the change and its seed uncertainty. **Why:** a model's absolute score variability is not the variability of its paired change. **Hint boundary:** return mean, sample SD (`ddof=1`) and 95% t interval for seed-wise differences. With one seed return `None` for SD and interval. Positive means the intervention improved accuracy. These intervals condition on one split and one fixed intervention realization.
+
+For S seeds, first form Δₛ=changedₛ−baselineₛ, then compute Δ̄ and SD(Δ). The standard error is SD(Δ)/√S; multiply by the 97.5th percentile of a t distribution with S−1 degrees of freedom for a two-sided 95% interval. With S=3 this multiplier is about 4.303, so three seeds can give broad intervals. This approximation describes training-seed variability conditional on this split, not a 95% guarantee for future datasets.
 
 **Predict:** if all three paired differences are exactly +0.01, should the interval be wide just because the underlying model scores differ?''')
  task('paired_effect','''# TODO 4 — differences first; S model seeds means S−1 degrees of freedom.
@@ -210,6 +222,28 @@ plt.show()''')
 The following is the author's measured snapshot, not your kernel state. Compare protocol and arithmetic before interpreting numerical differences. Do not treat three paired seed intervals as uncertainty about future datasets.''')
  section('results');figure('effects','Author-reference local effects: per-seed differences and conditional 95% t intervals on a shared test set.')
  figure('ranks','Author-reference original-condition ranks: three tasks; no Nemenyi pair exceeds CD. Nonsignificance does not establish equivalence.')
+ md('''## Live diagnosis · a bandwidth curve from your smoother
+**Goal:** distinguish weak manipulation from model sensitivity. **Why:** a single h=0.5 result cannot show how sensitivity changes with bandwidth. **Hint boundary:** predict the changed-label count and score direction at h=0.25 and h=1 before executing. Keep the top-five columns, covariance, split and recipes fixed. This is an additive electricity diagnosis, not another independent benchmark dataset.
+
+The provided operator directly calls your live `smooth_targets` and `paired_effect`, then refits the same visible models. It records label changes, positive fraction, validation selection and raw-test probabilities. A collapsed one-class training target is explicitly `NOT_FIT_ONE_CLASS`, with no invented score. Do not select a favorite bandwidth by looking at test scores.''')
+ provided(['smoothing_sweep'],'Fig.3-style local bandwidth diagnosis with your live functions',(HERE/'_diagnose_l051.py').read_text())
+ code('''# PROVIDED — run the one-task diagnosis; all four bandwidths stay in the report.
+bandwidth=smoothing_sweep('electricity',LABS/'data/cache/l051')
+bandwidth_table=[]
+for row in bandwidth['rows']:
+    record=dict(h=row['h'],changed_labels=row['changed_labels'],positive_fraction=row['positive_fraction'],status=row['status'])
+    record.update({m+' change pp':100*e['mean'] for m,e in row['effects'].items()})
+    bandwidth_table.append(record)
+display(pd.DataFrame(bandwidth_table).round(4))
+(LABS/'data/cache/l051-bandwidth-live.json').write_text(json.dumps(bandwidth,indent=2))
+# CHECK — existing h=0 and h=.5 conditions are recovered, with original raw targets.
+assert bandwidth['test_y']==result['datasets']['electricity']['test_y']
+for row,condition in [(bandwidth['rows'][0],'top5'),(bandwidth['rows'][2],'smoothed')]:
+    for model in MODELS:
+        for actual,previous in zip(row['runs'][model],result['datasets']['electricity']['runs'][condition][model]):
+            assert np.allclose(actual['probability'],previous['probability'],atol=1e-7), 'A bandwidth control changed some other part of the experiment.'
+print('CHECK: live bandwidth diagnosis recovers both existing reference conditions.')''')
+ section('bandwidth');figure('bandwidth','Author-reference electricity diagnostic: label changes precede paired accuracy changes. Four tested bandwidths; three model seeds; no cross-dataset claim.')
  code('''# CHECK — recompute accuracy from predictions; verify the paired baseline.
 for dataset,row in result['datasets'].items():
     for condition,runs in row['runs'].items():
@@ -228,6 +262,7 @@ Complete in your own words, then paste this text and the printed report to the t
 3. **Noise:** report one exception or uncertainty; explain population independence versus accidental sample patterns.
 4. **Claim limit:** identify the experimental unit, the correct smoothing baseline, and two missing paper-protocol components.
 5. **Mission:** one control you will require before treating a future relational-model gain as evidence for the thesis.
+6. **Bandwidth:** explain whether h=0.25 and h=1 changed enough hard labels to test your prediction; cite the accuracy effect and a rival explanation. Explain why the h=0.5 row must recover the earlier paired result. State how your curve differs from the paper's aggregate pattern.
 
 YOUR ANSWER: ...''')
  provided(['code_fingerprint'],'stable executable identity; excludes interpreter reference bookkeeping',(HERE/'_live_identity_l051.py').read_text())
@@ -238,7 +273,9 @@ for cls in [CheckpointMLP,CheckpointFT,CheckpointAttention,CheckpointBlock]:
     for method in ['__init__','forward']:
         live_identity[cls.__name__+'.'+method]=code_fingerprint(getattr(cls,method))
 ticket=dict(lesson=51,protocol=result['protocol'],verdict='INCOMPARABLE',identity=live_identity,
-            effects={n:r['effects'] for n,r in result['datasets'].items()},statistics=result['statistics'])
+            effects={n:r['effects'] for n,r in result['datasets'].items()},statistics=result['statistics'],
+            bandwidth=dict(identity=code_fingerprint(smoothing_sweep),artifact='data/cache/l051-bandwidth-live.json',
+                           effects=[dict(h=r['h'],status=r['status'],changed_labels=r['changed_labels'],effects=r['effects']) for r in bandwidth['rows']]))
 (LABS/'data/cache/l051-exit.json').write_text(json.dumps(ticket,indent=2))
 (LABS/'data/cache/l051-teacher-results.json').write_text(json.dumps(result,indent=2))
 print(json.dumps(ticket,indent=2))''')

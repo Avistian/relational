@@ -29,6 +29,13 @@ with sync_playwright() as p:
         page.evaluate('document.querySelectorAll("img").forEach(x=>x.loading="eager")')
         page.wait_for_function('Array.from(document.images).every(i=>i.complete&&i.naturalWidth>0)')
         if not page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'):problems.append([width,'page overflow'])
+        split_numbers=page.locator('td').evaluate_all('''cells=>cells.flatMap(c=>{
+          const value=c.textContent.trim();if(!/^[+\\-−]?\\d[\\d,]*(?:\\.\\d+)?%?$/.test(value))return [];
+          const range=document.createRange();range.selectNodeContents(c);
+          const lines=new Set([...range.getClientRects()].filter(r=>r.width&&r.height).map(r=>Math.round(r.top)));
+          return lines.size>1?[{value,table:c.closest('table').textContent.trim().slice(0,100)}]:[];
+        })''')
+        if split_numbers:problems.append([width,'numeric table values wrap across lines',split_numbers])
         for name in args.widgets:
             root=page.locator('#'+name)
             def inspect(state):
@@ -73,6 +80,6 @@ with sync_playwright() as p:
         page.close()
     browser.close()
 server.shutdown()
-report=dict(status='PASS' if not errors and not missing and not problems else 'FAIL',errors=errors,missing=missing,problems=problems,records=records,screenshots=str(OUT),scope='Live local Chromium; specified visual widgets, native buttons/selects/checkboxes, clickable SVG choices, slider endpoints and keyboard at 900/375; not live Colab or deployed site')
+report=dict(status='PASS' if not errors and not missing and not problems else 'FAIL',errors=errors,missing=missing,problems=problems,records=records,screenshots=str(OUT),scope='Live local Chromium; specified visual widgets, numeric table wrapping, native buttons/selects/checkboxes, clickable SVG choices, slider endpoints and keyboard at 900/375; not live Colab or deployed site')
 (ROOT/f'reviews/lesson-quality-audit-047-070/{args.lesson:03}-browser.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps({k:v for k,v in report.items() if k!='records'},indent=2))

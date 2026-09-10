@@ -68,4 +68,28 @@ for i,(m,rank) in enumerate(s['mean_ranks'].items()):ax.scatter(rank,i,s=70,colo
 ax.plot([1,1+s['cd']],[-.7,-.7],color='#555',lw=2);ax.text(1,-.95,f"Nemenyi CD = {s['cd']:.3f}",fontsize=10)
 ax.set(xlim=(.9,3.15),ylim=(2.5,-1.1),yticks=range(3),yticklabels=list(s['mean_ranks']),xlabel='Mean rank (smaller is better)',title=f"Original conditions: N=3 tasks, Friedman p={s['friedman_p']:.3f}\nNo pair exceeds CD; this is not evidence of equivalence")
 save(fig,'ranks')
-print('Saved six L051 figures')
+diagnostic=ROOT/'_diagnostic_l051_results.json'
+if diagnostic.exists():
+ d=json.loads(diagnostic.read_text());fig,axes=plt.subplots(2,1,figsize=(7,7),layout='constrained')
+ rows=d['rows'];hs=np.array([r['h'] for r in rows]);positions=np.arange(len(rows))
+ axes[0].bar(positions,[r['changed_labels'] for r in rows],color='#91acb6')
+ for i,row in enumerate(rows):
+  axes[0].text(i,row['changed_labels']+5,str(row['changed_labels']),ha='center')
+ axes[0].set(xticks=positions,xticklabels=hs,ylabel=f"Changed training labels / {len(d['split_rows'][0])}",title='1  Does the hard-label intervention actually change supervision?')
+ axes[0].set_ylim(0,max(r['changed_labels'] for r in rows)*1.22+10)
+ for j,m in enumerate(['MLP','FT-T','XGBoost']):
+  for i,row in enumerate(rows):
+   if row['status']!='TRAINED':
+    if j==0:axes[1].text(i,0,'NOT FIT\none class',ha='center',fontsize=9)
+    continue
+   delta=100*np.array([a['accuracy']-b['accuracy'] for a,b in zip(row['runs'][m],rows[0]['runs'][m])])
+   pos=i+(j-1)*.16;e=row['effects'][m]
+   axes[1].scatter(np.full(len(delta),pos),delta,color=colors[j],s=18,alpha=.65)
+   interval=np.array(e['ci95'])*100 if e['ci95'] is not None else None
+   err=None if interval is None else [[100*e['mean']-interval[0]],[interval[1]-100*e['mean']]]
+   axes[1].errorbar(pos,100*e['mean'],yerr=err,fmt='D',color=colors[j],capsize=3,label=m if i==0 else None)
+ axes[1].axhline(0,color='#667',ls='--');axes[1].legend(ncol=3,fontsize=9)
+ axes[1].set(xticks=positions,xticklabels=hs,xlabel='Lengthscale h (discrete tested values)',ylabel='Accuracy change from h=0 (percentage points)',title='2  Refit, validate and evaluate against the original task')
+ fig.suptitle(f"{d['dataset']} · one-task bandwidth diagnosis\n{len(d['config']['seeds'])} model seeds; fixed split, top-five columns and covariance",weight='bold')
+ save(fig,'bandwidth')
+print('Saved L051 mechanism and measured evidence figures')

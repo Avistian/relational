@@ -23,8 +23,21 @@ assert np.array_equal(reference[4],yv) and np.array_equal(reference[5],yv)
 ref=ns['apply_random_rotation'](x,v,v,y,yv,yv,rng=np.random.RandomState(9))
 q=special_ortho_group.rvs(3,random_state=np.random.RandomState(9))
 assert all(np.allclose(a,b) for a,b in zip(ref[:3],rotate_splits([x,v,v],q)))
+# Robust covariance parity with coupled estimator randomness and no fallback.
+# This extends operation coverage; the local training eigenvalue floor still differs.
+state=np.random.get_state();captured=io.StringIO()
+try:
+    np.random.seed(51)
+    with contextlib.redirect_stdout(captured):
+        robust_soft=ns['remove_high_frequency_from_train'](x,v,v,y,yv,yv,cov_mult=.49,covariance_estimation='robust',classif=False)[3]
+finally:np.random.set_state(state)
+assert 'Issue with robust' not in captured.getvalue(), 'Parity example unexpectedly exercised the upstream fallback'
+robust_probability,robust_labels=smooth_targets(x,y,.7,MinCovDet(random_state=51).fit(x).covariance_)
+assert np.allclose(robust_probability,robust_soft,atol=1e-12)
+assert np.array_equal(robust_labels,(robust_soft>.5).astype(int))
 result=dict(smoothing_max_error=float(np.max(np.abs(probability-soft))),hard_labels_equal=True,
             rotation_equal=True,heldout_labels_unchanged=True,
-            scope='Classic nonsingular covariance, h=.7, upstream cov_mult=.49; robust estimator and complete trainer parity not asserted',
+            robust_smoothing_max_error=float(np.max(np.abs(robust_probability-robust_soft))),robust_hard_labels_equal=True,
+            scope='Classic and coupled-seed robust nonsingular covariance, h=.7, upstream cov_mult=.49; eigenvalue floor, upstream fallback and complete trainer parity not asserted',
             sha256=hashlib.sha256(text.encode()).hexdigest())
 (root/'_reference_l051_results.json').write_text(json.dumps(result,indent=2));print(result)
