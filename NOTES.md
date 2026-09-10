@@ -1248,3 +1248,7 @@ notebook builder. Apply this to future new-model lessons; retrofit L047 (SAINT) 
 - Delivery status is machine-recorded in labs/_execution_foundation_results.json, labs/_source_check_foundation_results.json and labs/_delivery_foundation_results.json. Local rendering, live Colab and remote publication are separate checks.
 - Next learning unit is L058, not L071: these thirteen authored lessons are available ahead of study, not completed by the learner.
 <!-- FOUNDATION-058-070:end -->
+
+## Lesson package access correction — 2026-09-10
+
+The user rejected the 058–070 delivery as not ready and asked where the labs and other materials were. The notebooks were published, but their lesson links were buried below the reading; the gallery depended on JavaScript and there was no single package directory. Put lab/run/download links before the lesson body, distinguish a read-only preview from a runnable notebook, provide an exercises shortcut, and expose references, measured evidence, and reproduction instructions together. Check the actual click path and the no-JavaScript/failed-fetch cases; file existence and HTTP success alone do not establish a usable teaching package. This is a delivery correction, not a learner misconception or a completion record.

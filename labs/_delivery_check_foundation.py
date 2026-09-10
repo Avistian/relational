@@ -103,6 +103,10 @@ def check(stage=Path('/tmp/relational-foundation-pages')):
         assert item['labPath'] and (n not in [60,70] or item['checkpoint'])
     report['checks']['copied_pages_local_links']=checked
     report['checks']['manifest_registration']='PASS'
+    from _check_foundation_access import check as check_access
+    check_access(stage)
+    report['checks']['lesson_lab_access']='PASS; static entry points before lesson reading'
+    report['access_browser_report']='_access_foundation_results.json'
     report['status']='PASS'
     path.write_text(json.dumps(report,indent=2)+'\n')
     shutil.copy2(path,stage/'labs'/path.name)

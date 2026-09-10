@@ -25,6 +25,7 @@
 
   function row(lesson) {
     var li = document.createElement("li");
+    li.id = "lab-" + lesson.id;
 
     var head = document.createElement("div");
     head.className = "nb-head";
@@ -45,9 +46,10 @@
       links.appendChild(a);
     }
 
-    add(htmlPathFor(lesson.labPath), "View", "nb-view");
-    add(lesson.labPath, "Source .ipynb", "nb-src");
-    add(colabUrl(lesson.labPath), "Open in Colab", "nb-run", true);
+    add(htmlPathFor(lesson.labPath), "Read lab", "nb-view");
+    add(lesson.labPath, "Download notebook", "nb-src");
+    add(colabUrl(lesson.labPath), "Run in Colab", "nb-run", true);
+    add("lessons/" + lesson.slug + ".html", "Lesson", "nb-lesson");
 
     li.appendChild(links);
     return li;
@@ -80,6 +82,8 @@
         el.appendChild(ul);
       })
       .catch(function () {
+        // The generated HTML already contains the complete gallery. Preserve it offline.
+        if (el.querySelector("a[href]")) return;
         el.innerHTML = "<p class=\"nav-error\">Could not load the notebook list.</p>";
       });
   }
