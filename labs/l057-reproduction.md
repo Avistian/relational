@@ -1,4 +1,105 @@
-# L057 reproducibility contract
+# L057 reproducibility contract — corrected v2
+
+The current lesson uses `relkit/cross_experiment_v2.py` and `relkit/tabm_v2.py`.
+The historical `cross_experiment.py`, `tabm.py`, `_verify_l057_results.json` and
+`data/l057/` remain unchanged. Their TabM-mini had an extra first output adapter,
+member-specific backbone biases, and wrong fan-in initialization. Historical scores
+are evidence about that older implementation, not the corrected mini variant.
+
+## Corrected measured library and actual new work
+
+`_verify_l057_v2.py` performs **27 new TabM fold fits**: three datasets × three
+training seeds × three folds. It uses the original fixed lab recipe (width48, k8,
+three blocks, 32epochs, Adam .002, batch128, dropout .1). The corrected mini keeps
+only the first member input adapter, shared backbone weights/biases, independent
+member heads, and explicit fan-in initialization; no numeric feature embeddings.
+It is therefore numeric mini, not TabArena's dagger variant or paper training recipe.
+
+XGB and TabICL columns are copied exactly from the original hash-verified archives;
+they represent **54 earlier fit/context constructions**. They are not retrained in
+this correction. Before joining, the operator verifies dataset hashes, original row
+IDs, targets and every fit/held-out fold array. It checks the unchanged probability
+columns exactly. New archives `data/l057-v2/` additionally save class labels `[0,1]`,
+family order and development/test IDs. The old checkpoint/package identity applies
+to the copied TabICL arm; current installed versions apply to newly fit TabM.
+
+Weights, single-model choices, scores, paired gaps and all 27 leave-family-out
+ablations are recomputed from the corrected library. `_data_l057_v2.json` records
+array and source hashes plus origin per arm. `_verify_l057_v2_results.json` records
+the old-result hash, new source hashes, current versions, new fitting time and
+all results. The correction was motivated by a source mismatch, but these outer
+test rows were already inspected: **reused-test exploratory evaluation**, not a
+fresh confirmatory experiment. Three training seeds condition on fixed rows/folds.
+
+The actual-library source comparison matches **4/9** upstream-default weight vectors.
+Five differ (max OOF probability gap .003730906; max OOF loss gap 7.43412e-7).
+Disabling only six-decimal score rounding in a separately marked modified reference
+makes all nine match exactly. This controlled diagnosis does not establish default
+upstream parity and does not change the locally taught selection policy.
+
+The main notebook first trains a fresh two-family smoke example with the learner's
+live functions and corrected TabM; then it reanalyzes the new hybrid archive. Its
+fifth TODO actually drives family removal: remove a column, reselect using OOF
+labels, freeze, score. Positive loss(without)−loss(full) favors inclusion. This
+is conditional library usefulness, not a causal importance value. Test-label
+perturbation checks establish selection independence; exact source checks cover
+both non-tied synthetic fixtures and actual corrected OOF matrices.
+
+## Rebuild the current package
+
+From repository root, with cached original datasets and archived predictions:
+
+```bash
+.venv/bin/python labs/_check_l057_v2.py
+.venv/bin/python labs/_verify_l057_v2.py
+.venv/bin/python labs/_source_check_l057_v2.py
+MPLCONFIGDIR=/tmp/l057-mpl .venv/bin/python labs/_figures_l057_v2.py
+.venv/bin/python labs/_lesson_depth.py 57
+.venv/bin/python labs/_build_l057.py
+.venv/bin/python labs/_execute_l057.py
+.venv/bin/python labs/_delivery_check_l057.py
+```
+
+The correction runner overwrites only its v2 outputs and explicitly does not resume;
+a second run trains corrected TabM again. Current source hashes identify newly fit
+operators; the old hash identifies copied evidence. No hash is relabeled to imply
+historical scores came from new code.
+
+## Paper mapping and follow-up
+
+Read TabArena v1 full §§2–3, Appendix A evaluation details, C.1–C.3 model/portfolio
+procedure, and D released-artifact workflow. Figure 6 uses a 200-configuration
+portfolio learned with leave-one-dataset-out construction, a time-limited sequence
+of fits, and 40-step post-hoc selection. Conventional models use eight inner folds;
+TFMs use the specified refit policy. Binary evaluation uses AUC, not our log loss.
+The corrected Caruana 2004 paper (§§1–3, 7 and appendix9) uses a separate hillclimbing
+holdout and explores replacement, sorted initialization and bagged candidate
+libraries. Our implementation adapts replacement/best-prefix selection to OOF and
+omits the latter two extensions. Neither full paper experiment was reproduced.
+
+The executable notebook gate trains all three families afresh with corrected v2
+TabM (`lab`) or the larger `closer` recipe. It uses the learner's live definitions.
+The scoped Modal operator also imports v2; **no cloud run was launched**. The new
+hybrid result must not be described as a completed fresh three-family kernel run.
+The larger recipe still lacks the paper's portfolio/HPO/task roster and is
+INCOMPARABLE. For a confirmatory experiment freeze the corrected protocol and use
+new prespecified outer partitions or tasks before inspecting test results.
+
+Primary sources: [TabArena v1](https://arxiv.org/html/2506.16791v1),
+[Caruana corrected paper](https://www.cs.cornell.edu/~alexn/papers/shotgun.icml04.revised.rev2.pdf).
+Pinned upstream selector and the inspected current portfolio/greedy-ensemble source
+files are in `sources/l057/`, with URLs and hashes in `_sources_l057.json`. The current
+portfolio code is a source-reading reference, not the original Figure 6 evaluator.
+
+---
+
+# Historical v1 experiment record (preserved procedure and scores)
+
+The following procedure and numbers describe the **old TabM operator only**.
+Use the current commands above to build the teaching package; historical commands
+below are retained solely for tracing that old experiment.
+
+# Original contract
 
 Scope: a binary OOF probability stack and Caruana-style greedy combiner, implemented
 from scratch; the L054 numeric TabM is visible and reused. XGBoost is a provided base

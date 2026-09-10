@@ -24,15 +24,15 @@ def build(solution=False):
    u=urlsplit(a['href'])
    if not u.scheme and u.path:a['href']=os.path.relpath((ROOT.parent/'lessons'/u.path).resolve(),ROOT)+('#'+u.fragment if u.fragment else '')
   md(mdtext(el))
- def task(name,signature,description):
-  md(description);code('# TODO — '+name+'\n'+(piece('relkit/cross_ensemble.py',name) if solution else signature+'\n    raise NotImplementedError("Implement the operation described above")'))
+ def task(name,signature,description,file='relkit/cross_ensemble.py'):
+  md(description);code('# TODO — '+name+'\n'+(piece(file,name) if solution else signature+'\n    raise NotImplementedError("Implement the operation described above")'))
  md('''# Lab 057 · Cross-family ensembling
 
 **Skill:** build an OOF probability stack and evaluate a validation-selected combination against a validation-selected single model. [Lesson](../lessons/0057-cross-family-ensembling.html) · [Reference](../reference/cross-family-ensembling.html) · [Contract](l057-reproduction.md).
 
 **Before input:** explain why an OOF fold cannot also be its predictor's early-stopping set; why test-selected best-single is an oracle; and why more folds do not mean more independent datasets. Write your answers before proceeding.
 
-PROVIDED = read/run; TODO = implement; CHECK = immediate feedback; EXIT = submit evidence and interpretation. Four live TODO functions drive both the OOF trainer and complete three-family audit. Allow 45–60 minutes learning plus training time. No GPU or checkpoint download is needed for the main worksheet: it trains a small tree/TabM example and audits committed author XGB/TabM/TabICL predictions. The gated fresh-three-family/scale-up track downloads a 108 MB checkpoint and uses the exact same visible code.
+PROVIDED = read/run; TODO = implement; CHECK = immediate feedback; EXIT = submit evidence and interpretation. Five live TODO functions drive both the OOF trainer and complete three-family audit. Allow 45–60 minutes learning plus training time. No GPU or checkpoint download is needed for the main worksheet: it trains a small tree/TabM example and audits committed author XGB/TabM/TabICL predictions. The gated fresh-three-family/scale-up track downloads a 108 MB checkpoint and uses the exact same visible code.
 
 **Mirror scope:** OOF construction + Caruana greedy combiner from scratch; the known L054 TabM source is visible below. XGB is a provided base library; TabICL is a provided pretrained API baseline, not an architecture/pretraining reproduction. Small numeric OpenML tables are Tier A substitutes for TabArena's 51-task roster. Fixed recipes, 3 folds, log loss and fold-averaged TabICL differ from the paper. Exact Figure 6 verdict: **INCOMPARABLE**. Model seeds 0/1/2; row/outer/fold seed57. Version, dataset hash, row IDs and checkpoint hash are recorded in the author evidence. The synthetic four-row example only isolates a mechanism.''')
  for c in bootstrap_cells():cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']))
@@ -96,7 +96,7 @@ for w in ([-.1,1.1],[1,1],[np.nan,0]):
     except ValueError:pass
     else:raise AssertionError('Invalid weights accepted')
 print('PASS: convex prediction')''')
- section('selection');fig('selection','Synthetic trial mixtures: compare candidate losses at each step, then keep the best prefix.')
+ section('selection');fig('portfolio','Other datasets choose a portfolio; target-task development rows train its library and combiner; test rows evaluate frozen choices. The local lab fixes the three-member library.');fig('selection','Synthetic trial mixtures: compare candidate losses at each step, then keep the best prefix.')
  code('# PROVIDED — numeric log loss\n'+piece('relkit/cross_ensemble.py','binary_loss'))
  task('greedy_select','def greedy_select(oof, y, steps=40):','''## TODO 4 · Fit the combiner
 **Goal:** return (best_weights, history) using only OOF probabilities/labels. Start empty; at each positive integer step evaluate adding every column to the sum, choose minimum log loss (first-column ties within 1e-12), update counts/sum, and retain the first best prefix. Validate inputs using blend and binary_loss. **Why:** replacement converts counts into weights without test-label access. **Hint boundary:** divide a candidate sum by the number of selected members including the new one. History entries contain step, chosen, chosen_loss and losses (all candidate losses); no test argument belongs here.''')
@@ -108,17 +108,29 @@ w,tr=greedy_select(z1,y1,3);np.testing.assert_allclose(w,[.5,.5]);assert tr[-1][
 assert binary_loss(y1,blend(z1,w))<=min(binary_loss(y1,z1[:,j]) for j in range(2))
 print('PASS: replacement and best-prefix retention; test improvement is not guaranteed')''')
  md('''## PROVIDED · The known TabM branch, visible again
-L054's numeric TabM-mini is reproduced below in coherent parts. Each layer shares its main weights across internal members; member-specific adapters introduce diversity. The final probability averages member softmax outputs. These definitions are used by the trainer below; the new lesson task is OOF combination, not rebuilding the L054 architecture. XGBoost and pretrained TabICL are provided base-model integrations.''')
+L054's corrected v2 numeric TabM-mini is reproduced below (one first input adapter, shared backbone biases, explicit fan-in initialization) in coherent parts. The mini variant shares backbone weights and biases; only its first input adapter and independent output heads differ by member. The final probability averages member softmax outputs. These definitions are used by the trainer below; the new lesson task is OOF combination, not rebuilding the L054 architecture. XGBoost and pretrained TabICL are provided base-model integrations.''')
  for names in [('kaiming_','sign_pm1','batchensemble_linear','packed_head'),('member_mean_loss','ensemble_predict'),('MLP','BatchEnsembleLinear','PackedHead'),('TabM',)]:
-  code('# PROVIDED — L054 / TabM paper §3\n'+'\n\n'.join(piece('relkit/tabm.py',n) for n in names))
+  code('# PROVIDED — L054 / TabM paper §3\n'+'\n\n'.join(piece('relkit/tabm_v2.py',n) for n in names))
  md('''## PROVIDED · Training and evaluation protocol
 Each fit uses only its supplied rows. Trees and neural epochs are fixed before evaluation, so there is no early-stopping leak. The optional TabICL branch supplies only these fitting rows as labeled context. It uses a released checkpoint; its internal architecture is an explicit API exception for this ensemble lesson.
 
 Read oof_library closely: your train_indices and write_oof are invoked in its actual fold loop. Test probabilities use the very same models, averaged within each family. evaluate_library calls your greedy_select and blend; the best-single family is chosen by OOF loss before any test scoring.''')
- from relkit.cross_experiment import PRESETS,CHECKPOINT
+ from relkit.cross_experiment_v2 import PRESETS,CHECKPOINT
  code('# PROVIDED — fixed presets\nPRESETS='+repr(PRESETS)+'\nCHECKPOINT='+repr(CHECKPOINT))
  for name in ['load_binary','fit_predict','oof_library','evaluate_library','summarize','run_suite']:
-  code('# PROVIDED — visible '+name+'\n'+piece('relkit/cross_experiment.py',name))
+  code('# PROVIDED — visible '+name+'\n'+piece('relkit/cross_experiment_v2.py',name))
+ task('family_ablation','def family_ablation(oof, test, y, yt, families, steps=40):','''## TODO 5 · Measure a family's conditional usefulness
+**Goal:** return one record per removed family after relearning the combiner using the remaining OOF columns. **Why:** deleting and renormalizing old weights does not measure replaceability. **Hint boundary:** call evaluate_library once on all families, then once for each reduced column set. Expand each reduced weight vector back to the original family order with zero for the removed family. Do not inspect test scores to choose weights.
+
+Each record needs removed, removed_index, weights, selected (OOF-selected single), original_weight, test_loss (reduced Greedy-stack), test_gap (reduced loss minus full Greedy-stack loss), and oof_loss (reduced mixture loss). Use blend/binary_loss for the last field. Reject fewer than two families. Positive test_gap favors inclusion; this is a conditional removal experiment, not causal importance.''','relkit/cross_experiment_v2.py')
+ code('''# CHECK — a duplicate can replace the member with weight one
+za=np.array([[.1,.1,.9],[.2,.2,.9],[.8,.8,.1],[.9,.9,.1]]);ya=np.array([0,0,1,1])
+removed=family_ablation(za,za,ya,ya,['A','copy-A','bad'],8)
+assert removed[0]['original_weight']==1 and abs(removed[0]['test_gap'])<1e-12
+assert removed[0]['weights'][0]==0 and removed[0]['weights'][1]==1
+changed=family_ablation(za,za,ya,1-ya,['A','copy-A','bad'],8)
+assert [r['weights'] for r in removed]==[r['weights'] for r in changed]
+print('PASS: weight one can be replaceable; test-label changes cannot change selection')''')
  md('''## Run your OOF pipeline on real rows
 This fresh CPU smoke run uses diabetes, two known families, seed0, cap360, three folds, 8epochs/40trees. It checks the implementation; it is not the main evidence table. Predict whether the greedy stack must improve test log loss before running. The full three-family author analysis follows.''')
  code('''# PROVIDED — fresh fit driven by your four functions
@@ -129,15 +141,22 @@ assert all(not set(f['fit_rows']) & set(f['held_rows']) for f in audit)
 assert sorted(i for f in audit for i in f['held_rows'])==list(range(len(fresh['datasets']['diabetes']['dev_ids'])))
 print('PASS: real-row disjointness and exact-once OOF coverage')''')
  md('''## Audit all three families on all three datasets
-The following are **author-reference predictions**, not fits from your current kernel. They come from 81 fold-family fits/context constructions: 3 datasets × 3 seeds × 3 folds × 3 families. Hashes protect exact arrays; the contract records fit recipes and checkpoint identity. Recompute their weights and test scores using your functions. Do not use test labels to change those weights.
+The following are **author-reference predictions**, not fits from your current kernel. The v2 library combines 27 newly trained corrected TabM fold models with the exact archived XGB and TabICL columns (54 earlier fold-fit/context constructions). Row IDs, labels, fold assignments and data hashes were checked before replacing the TabM column. This is a declared hybrid artifact, not 81 fresh fits. The same outer test was previously inspected; the corrected measurements are exploratory. Hashes protect exact arrays; the contract records fit recipes and checkpoint identity. Recompute their weights and test scores using your functions. Do not use test labels to change those weights.
 
 Report mean±sample SD for each dataset and a paired stack-minus-OOF-best interval. These intervals condition on fixed rows/folds; they do not measure generalization over new datasets. A zero-width interval from an identical selected model is not proof of population equivalence.''')
- code('''# PROVIDED — hash-verified complete archived audit
-provenance=json.loads((ROOT/'_data_l057.json').read_text());reference=json.loads((ROOT/'_verify_l057_results.json').read_text())
+ code('''# PROVIDED — hash-verified corrected hybrid audit
+provenance=json.loads((ROOT/'_data_l057_v2.json').read_text());reference=json.loads((ROOT/'_verify_l057_v2_results.json').read_text())
 rows=[]
 for entry in provenance['predictions']:
     path=ROOT/entry['path'];assert hashlib.sha256(path.read_bytes()).hexdigest()==entry['sha256']
     with np.load(path) as q:
+        assert q['families'].tolist()==reference['families'] and q['classes'].tolist()==[0,1]
+        np.testing.assert_array_equal(q['dev_ids'],reference['datasets'][entry['dataset']]['dev_ids'])
+        oldpath=ROOT/entry['archive_path'];assert hashlib.sha256(oldpath.read_bytes()).hexdigest()==entry['archive_sha256']
+        with np.load(oldpath) as old:
+            for key in ['oof','test']:
+                np.testing.assert_array_equal(q[key][:,[0,2]],old[key][:,[0,2]])
+            for key in ['y','yt']:np.testing.assert_array_equal(q[key],old[key])
         row=evaluate_library(q['oof'],q['test'],q['y'],q['yt'],reference['families'],reference['config']['steps'])
     row.update(dataset=entry['dataset'],seed=entry['seed']);rows.append(row)
     original=next(r for r in reference['rows'] if r['dataset']==entry['dataset'] and r['seed']==entry['seed'])
@@ -149,25 +168,52 @@ for dataset,table in summary['table'].items():
 print('Mean ranks:',summary['mean_ranks'],'Friedman p:',summary['friedman_p'],'Nemenyi CD:',summary['nemenyi_cd'])
 Path('data/cache/l057-student-audit.json').write_text(json.dumps(summary,indent=2))
 print('PASS: all 9 three-family runs match from your live functions')''')
- fig('results','Author-reference evidence: every seed shown; bars are sample SD, not confidence intervals.')
- fig('uncertainty','Author-reference paired seed intervals and dataset-balanced ranks; three datasets provide little power.')
+ md('''## Run your removal experiment on the corrected library
+Predict which family removal will hurt most before running. Hold predictions and selection steps fixed. These are exploratory paired comparisons on reused test rows. Use a positive removal gap to mean that including the family helped. Do not select a new final pipeline from the resulting test table.''')
+ code('''# PROVIDED — TODO 5 is the actual experiment, not an isolated exercise
+ablation_rows=[]
+for entry in provenance['predictions']:
+    with np.load(ROOT/entry['path']) as q:
+        for row in family_ablation(q['oof'],q['test'],q['y'],q['yt'],reference['families'],reference['config']['steps']):
+            row.update(dataset=entry['dataset'],seed=entry['seed']);ablation_rows.append(row)
+assert ablation_rows==reference['ablations']
+removal=pd.DataFrame(ablation_rows)
+display(removal.groupby(['dataset','removed'])[['original_weight','test_gap']].agg(['mean','std']))
+Path('data/cache/l057-student-ablation.json').write_text(json.dumps(ablation_rows,indent=2))
+print('PASS: 27 family-removal experiments match from your live TODO')''')
+ fig('results_v2','Author-reference evidence: every seed shown; bars are sample SD, not confidence intervals.')
+ fig('uncertainty_v2','Author-reference paired seed intervals and dataset-balanced ranks; three datasets provide little power.')
+ md('''## Trace one saved row through the fitted combiner
+Pick the first saved dataset/seed and first test row by position, not by its result. Before running, predict its weighted probability from the displayed contributions. Explain which class the number describes and when its target is allowed to enter this calculation. The selected family and weights use development labels; the row's test target enters only the final loss.''')
+ code('''# PROVIDED — expose input probabilities, weights, contributions, output and metric
+entry=provenance['predictions'][0]
+with np.load(ROOT/entry['path']) as q:
+    weights,_=greedy_select(q['oof'],q['y'],reference['config']['steps'])
+    row_probability=blend(q['test'][:1],weights)[0]
+    display(pd.DataFrame({'family':reference['families'],'probability_y1':q['test'][0],
+                         'weight':weights,'weighted_contribution':q['test'][0]*weights}))
+    row_trace={'original_test_row_id':int(q['test_ids'][0]),'probability_y1':float(row_probability),
+               'target':int(q['yt'][0]),'log_loss_nats':binary_loss(q['yt'][:1],np.array([row_probability]))}
+    assert np.isclose(row_probability,(q['test'][0]*weights).sum())
+print(row_trace)''')
  md('''## Interpretation checkpoint
 Before inspecting the source report again, answer: Which dataset improves against the OOF-selected single? Does any worsen? Is that the same as beating every individually measured test score? Why can an ensemble assign weight to a weaker test model? What extra matched-budget experiment is needed to compare cross-family and within-family diversity?''')
  code('''# EXIT — submit this artifact AND your written interpretation
 exit_artifact={'fresh_training':'two-family diabetes smoke; one seed',
- 'archived_audit':'three families, three datasets, three seeds; not current-kernel fits',
- 'summary':summary,'paper_verdict':'INCOMPARABLE','larger_run':'NOT_RUN unless gate below executed'}
+ 'corrected_hybrid_audit':'27 corrected TabM fits + 54 archived XGB/TabICL fit-context constructions; live audit only',
+ 'summary':summary,'family_ablation':ablation_rows,'prediction_provenance':provenance,
+ 'row_trace':row_trace,'current_model':'relkit/tabm_v2.py','test_status':'reused; exploratory','paper_verdict':'INCOMPARABLE','larger_run':'NOT_RUN unless gate below executed'}
 Path('data/cache/l057-exit.json').write_text(json.dumps(exit_artifact,indent=2))
 print('Saved data/cache/l057-exit.json. Add the OOF coverage, weights, identities and interpretation required above.')''')
  md('''## Required next experiment · fresh three-family stack and larger run
 The curriculum target includes XGB + TabM + TabICL. The author has measured the small three-family track; now run it with your implementation when ready, then run the larger preset. Installation is separate so the main notebook does not download unused foundation-model dependencies. `RUN_THREE_FAMILY=False` deliberately skips the download/training; it does not count as completing this track.
 
-Choose `lab` to regenerate the archived recipe (3folds, cap750, one TabICL view). Choose `closer` for 5folds, cap2000, TabM k32/width128/64epochs, 300trees, four TabICL views. Both use three seeds. GPU recommended for closer; do not claim a known Colab runtime before measuring it. Artifacts go into a persistent directory you choose; free Colab storage is ephemeral.
+Choose `lab` to train all three families afresh with the corrected v2 TabM recipe (3folds, cap750, one TabICL view). Choose `closer` for 5folds, cap2000, TabM k32/width128/64epochs, 300trees, four TabICL views. Both use three seeds. GPU recommended for closer; do not claim a known Colab runtime before measuring it. Artifacts go into a persistent directory you choose; free Colab storage is ephemeral.
 
 For unattended GPU execution: `modal run --detach modal/l057_paper_repro.py --preset closer` from the repository root, then `modal volume get relational-l057 closer-results.json .`. The cloud operator uses the canonical completed functions; the cell below uses **your live notebook functions**. This is a larger comparison, not a faithful TabArena paper preset. Full Figure 6 requires its original task/method roster, predictions, metric, folds, selection policy and evaluator; see the contract.''')
  code('''# PROVIDED — deliberate install/training gate (off by default)
 RUN_THREE_FAMILY=False
-PRESET='closer' # 'lab' regenerates the author recipe
+PRESET='closer' # 'lab' trains the corrected three-family recipe afresh
 if RUN_THREE_FAMILY:
     import subprocess
     subprocess.check_call([sys.executable,'-m','pip','install','-r',str(ROOT/'requirements-l057-tfm.txt')])
@@ -182,14 +228,15 @@ else:
 | Bucket | Status | Meaning |
 |---|---|---|
 | Your fresh CPU run | RUN after successful cells | Two-family one-dataset smoke; implementation check |
-| Author three-family experiment | RUN; audit MATCH after CHECK | Three small real datasets, three seeds, frozen recipes |
-| Source selector check | MATCH on five fixtures | Pinned selector with local loss adapter; tie rules differ |
+| Corrected hybrid library | RUN / ARCHIVED; audit MATCH after CHECK | 27 corrected fits plus 54 unchanged archived fit/context constructions |
+| Source selector check | 5 synthetic MATCH; actual 4/9 MATCH | 5 real libraries differ under upstream rounding; modified unrounded reference matches all 9 |
 | TabArena Figure 6 | CITED / INCOMPARABLE | Original full benchmark not regenerated |
 | Larger student / Modal track | NOT_RUN until executed | More compute and changed recipe, still not paper fidelity |
 | Browser / live Colab / publication | See delivery record | Local execution and image payload checks do not verify those frontends |
 
 Ask the tutor about any failed CHECK or conclusion you cannot justify. Submit your EXIT plus prose for feedback. Completing the notebook is evidence; reading an author table alone is not mastery.''')
- nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python','version':'3.12'}}),57);return nb
+ nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python','version':'3.12'}}),57)
+ return nb
 if __name__=='__main__':
  for sol in [False,True]:
   dest=ROOT/('solutions' if sol else '.')/(SLUG+'.ipynb');dest.parent.mkdir(exist_ok=True);nbf.write(build(sol),dest);print(dest)

@@ -9,8 +9,8 @@
  *    held-out rows is filled with a HONEST prediction (green). After stepping through
  *    all folds the whole meta column is filled cleanly.
  *  - Mode "In-sample (leak)": every row is TRAIN and PREDICT at once, so every meta cell
- *    fills instantly with a LEAKED prediction (red) — the base model saw each row's own
- *    label, so the value is a memorized copy, not a forecast.
+ *    fills instantly with a LEAKED prediction (red). This synthetic fixture gives the
+ *    base model near-memorized labels to illustrate a possible optimistic meta-feature.
  *
  * Expected states:
  *  - OOF, fold 0 active: rows 0..2 outlined green (predict), rows 3..11 blue (train),
@@ -66,7 +66,17 @@
     var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 360 300");
     svg.setAttribute("class", "stk-svg");
-    container.appendChild(svg);
+    var diagram = document.createElement("div");
+    diagram.className = "stk-diagram";
+    diagram.tabIndex = 0;
+    diagram.setAttribute("role", "region");
+    diagram.setAttribute("aria-label", "Scrollable out-of-fold row eligibility diagram");
+    diagram.appendChild(svg);
+    container.appendChild(diagram);
+    var guide = document.createElement("p");
+    guide.className = "stk-caption";
+    guide.textContent = "On narrow screens, scroll horizontally to inspect each row, its fitting role and its prediction.";
+    container.appendChild(guide);
 
     var readout = document.createElement("p");
     readout.className = "stk-readout";
@@ -105,10 +115,10 @@
 
       // headers
       svg.appendChild(el("text", { x: 12, y: 16, class: "stk-lab" }, "TRAINING ROWS"));
-      svg.appendChild(el("text", { x: 150, y: 16, class: "stk-lab" }, "LEVEL-0 BASE MODEL"));
-      svg.appendChild(el("text", { x: 262, y: 16, class: "stk-lab" }, "META-FEATURE"));
+      svg.appendChild(el("text", { x: 164, y: 16, class: "stk-lab" }, "LEVEL-0 BASE MODEL"));
+      svg.appendChild(el("text", { x: 278, y: 16, class: "stk-lab" }, "META-FEATURE"));
 
-      var rowH = 18, top = 26, boxX = 12, boxW = 96, metaX = 262, metaW = 70;
+      var rowH = 18, top = 26, boxX = 12, boxW = 142, metaX = 278, metaW = 70;
 
       for (var i = 0; i < NROWS; i++) {
         var y = top + i * rowH;
@@ -171,8 +181,9 @@
       if (mode === "insample") {
         readout.innerHTML =
           "<strong style='color:#b03a2e'>Leak:</strong> each base prediction was made on the row it " +
-          "trained on — the meta-feature is a memorized copy of the label, not a forecast. The meta-learner " +
-          "will over-trust whichever base memorizes best.";
+          "trained on. This synthetic fixture assigns near-memorized labels (0.97/0.03). Real in-sample " +
+          "predictions need not memorize perfectly, but fitting the combiner on them can favor an " +
+          "overfitting base model and fail to generalize.";
       } else if (allHonest) {
         readout.innerHTML =
           "<strong style='color:#1e6b3c'>Honest:</strong> every meta-feature came from a fold the base model " +

@@ -13,10 +13,10 @@ def run(preset='closer'):
  import sys,json,os,hashlib
  sys.path.insert(0,'/course/labs');os.chdir('/course/labs')
  from _fetch_l057 import fetch
- from relkit.cross_experiment import run_suite
+ from relkit.cross_experiment_v2 import run_suite
  if preset not in ('smoke','lab','closer'):raise ValueError('No faithful paper preset is implemented')
  result=run_suite(preset,include_tfm=True,device='cuda',checkpoint=fetch('/results/checkpoint'),output_dir='/results/'+preset)
- result['source_hashes']={p:hashlib.sha256(Path('/course/labs',p).read_bytes()).hexdigest() for p in ['relkit/cross_ensemble.py','relkit/cross_experiment.py','relkit/tabm.py']}
+ result['source_hashes']={p:hashlib.sha256(Path('/course/labs',p).read_bytes()).hexdigest() for p in ['relkit/cross_ensemble.py','relkit/cross_experiment_v2.py','relkit/tabm_v2.py']}
  path='/results/'+preset+'-results.json';Path(path).write_text(json.dumps(result,indent=2));volume.commit()
  return {'artifact':path,'summary':result['summary'],'verdict':result['verdict']}
 @app.local_entrypoint()
