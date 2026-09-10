@@ -1,4 +1,5 @@
 """Build the independently teachable L049 notebook from lesson prose and visible code."""
+from _lesson_depth import enrich_notebook
 import base64
 import json
 from pathlib import Path
@@ -270,7 +271,7 @@ if RUN_PAPER_REPRO:
 else:
     print('Current student scale-up: NOT_RUN. Author larger run is a separate snapshot.')''')
     md('''**Ask a follow-up.** Explain any unclear arrow, tensor axis, source discrepancy, seed interval or claim boundary. Bring your EXIT ticket; completion alone does not establish mastery of every introduced term. Next lesson is the Q1 fair-comparison checkpoint.''')
-    nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}})
+    nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}}),49)
     return nb
 
 if __name__=='__main__':

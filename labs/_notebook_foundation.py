@@ -1,4 +1,5 @@
 """Standalone notebook assembly with live student functions and executable checks."""
+from _lesson_depth import enrich_notebook
 import ast,base64,json,re,textwrap,html
 from pathlib import Path
 import nbformat as nbf
@@ -352,8 +353,8 @@ if RUN_PAPER_REPRO:
 else:
     print('Scale-up NOT_RUN in this kernel. See the protocol ledger before enabling.')
 ''')
-    nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},
-        'language_info':{'name':'python','version':'3.12'},'lesson':n,'evidence_boundary':'operator vs pretrained inference vs paper reproduction'})
+    nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},
+        'language_info':{'name':'python','version':'3.12'},'lesson':n,'evidence_boundary':'operator vs pretrained inference vs paper reproduction'}),n)
     # Stable cell IDs keep regeneration reviewable.
     import hashlib
     for i,c in enumerate(nb.cells):c.id=hashlib.sha256(f'{slug}:{i}:{c.cell_type}'.encode()).hexdigest()[:12]

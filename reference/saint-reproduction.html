@@ -1,4 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SAINT — reproduction card</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/saint-viz.css"></head><body><article>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>SAINT — reproduction card</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/saint-viz.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/></head><body><article>
 <p class="mission-tag">Reference · Lesson 047</p><h1>SAINT: mechanism and reproduction card</h1>
 <p><strong>Row attention:</strong> pack [B,T,d] → [1,B,Td], attend over B rows, restore [B,T,d]. T includes CLS. Each head has B×B weights; a whole row is one sequence element. Do not substitute attention down each individual column.</p>
 <p><strong>Prediction contract:</strong> weights + fitted preprocessing + query + permitted companion rows + batch order/membership. Permuting the same batch reorders outputs; replacing companions can change outputs. No target labels enter the encoder. Availability of held-out features must match the evaluation setting.</p>
@@ -34,4 +35,47 @@ modal volume get relational-artifacts l047/closer ./l047-bank-results</pre>
 <h2>Minimum saved artifacts</h2>
 <p>Dataset ID/content hash; source versions; selected row IDs; split indices and split seed; train-only means, scales and vocabulary; model and training seeds; architecture and optimizer configuration; evaluation batch membership/order; checkpoint rule; predictions and labels for post-hoc audit; versions/hardware; best weights; explicit protocol gaps. Save failures as well as successes.</p>
 <p><a href="../lessons/0047-saint.html">Full explanation and interactive diagrams</a> · <a href="../labs/_verify_l047_results.json">local experiment ledger</a> · <a href="../labs/_check_l047_results.json">mechanism checks</a>. Ask the teacher about any unresolved source choice before interpreting a reproduction score.</p>
-</article></body></html>
+<section class="lesson-depth" data-depth-reference="47"><h2 id="SAINT:-computation-and-protocol-at-a-glance">SAINT: computation and protocol at a glance<a class="anchor-link" href="#SAINT:-computation-and-protocol-at-a-glance">¶</a></h2><table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Meaning</th>
+<th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[B,T,d]</code></td>
+<td>Rows, tokens per row including CLS, token width</td>
+<td>Name a scalar before reshaping</td>
+</tr>
+<tr>
+<td><code>[1,B,T*d]</code></td>
+<td>Entire rows become the attention sequence</td>
+<td>Pack/unpack preserve coordinate order</td>
+</tr>
+<tr>
+<td><code>softmax(QKᵀ/√d_k)</code></td>
+<td>Each receiver normalizes over candidate keys</td>
+<td>Every source-weight row sums to one</td>
+</tr>
+<tr>
+<td>Attention output</td>
+<td>Weighted values, followed by head mixing</td>
+<td>Fixed weights do not imply fixed outputs</td>
+</tr>
+<tr>
+<td>Query batch</td>
+<td>Part of the prediction procedure</td>
+<td>Reordering and replacing companions are distinct</td>
+</tr>
+<tr>
+<td>Positive-pair index</td>
+<td>Same original row in two views</td>
+<td>Reordering one view requires remapping identities</td>
+</tr>
+</tbody>
+</table>
+<p>Worked trace: scores <code>[0,log(3)]</code> give weights <code>[.25,.75]</code>; values <code>[2,6]</code> give output 5. Replacing the second value by 10 gives output 8 without changing the weights.</p>
+<p>When debugging, test coordinate order first, then attention normalization, then stage wiring, then companion interventions. When interpreting accuracy, keep source-operation parity, supervised local training, pretraining, and the paper benchmark as separate claims. Record companion membership and batch size alongside model weights.</p>
+</section></article></body></html>

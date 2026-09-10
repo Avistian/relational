@@ -1,16 +1,55 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TabR retrieval reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>TabR retrieval reference</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/></head><body><article>
 <nav><a href="../index.html">Course</a> · <a href="../lessons/0052-tabr-retrieval.html">Lesson 052</a> · <a href="glossary.html">Glossary</a></nav><h1>TabR: retrieval contract</h1>
 <p><strong>TabR-S:</strong> shared linear encoder → one learned retrieval module → residual addition → one residual predictor block → prediction head. No numerical embeddings or pretraining. Both training and inference retain access to a labeled training memory.</p>
-<table><thead><tr><th>Operation</th><th>Equation / shape</th><th>Audit question</th></tr></thead><tbody>
+<div aria-label="Scrollable comparison table" class="lesson-table-scroll" role="region" tabindex="0"><table><thead><tr><th>Operation</th><th>Equation / shape</th><th>Audit question</th></tr></thead><tbody>
 <tr><td>Encode</td><td>h=E(x), k=K(h), [B,d]</td><td>Do query and candidate paths share parameters and train-fitted preprocessing?</td></tr>
 <tr><td>Eligibility</td><td>query_id ≠ candidate_id, [B,N]</td><td>Could this candidate label legally be known for this query?</td></tr>
 <tr><td>Search</td><td>top-m of −‖k−kᵢ‖²</td><td>Are masked rows excluded before selection? Are there enough legal rows?</td></tr>
 <tr><td>Weight</td><td>softmax over m, [B,m]</td><td>No 1/√d in final TabR. Dropout follows softmax without renormalization.</td></tr>
 <tr><td>Value</td><td>Wᵧ(yᵢ)+T(k−kᵢ), [B,m,d]</td><td>Is the difference directed correctly? No query label enters here.</td></tr>
 <tr><td>Aggregate</td><td>r=Σᵢ dropout(pᵢ)vᵢ, [B,d]</td><td>Are selected distances and values differentiated?</td></tr>
-<tr><td>Predict</td><td>P(h+r), [B,1]</td><td>A weighted label average is not the final model output.</td></tr></tbody></table>
+<tr><td>Predict</td><td>P(h+r), [B,1]</td><td>A weighted label average is not the final model output.</td></tr></tbody></table></div>
 <p><strong>Symbols:</strong> B queries, N candidate rows, d hidden coordinates, m context rows. Wᵧ is a class embedding or a scalar-to-vector regression map. T is Linear→ReLU→Dropout→LinearWithoutBias. Its first bias means T(0) need not be zero.</p>
 <h2>Three distinct boundaries</h2><p>Keep validation/test labels out of memory. Exclude the exact training query ID. Match deployment availability, including delayed labels and entity/group restrictions. Feature equality alone does not identify the query. Context freeze fixes neighbor IDs; it does not freeze the model’s gradients.</p>
 <h2>Evidence language</h2><p>Source parity checks a specified computation with copied weights. A fixed-budget local comparison estimates a different experiment from a tuned benchmark. Seed intervals condition on the split; rank tests use datasets as blocks. Permuting stored labels after training measures reliance on aligned labels, not performance after retraining without them.</p>
 <p>Paper target: TabR-S California RMSE 0.403, Table 3, 15 single-model seeds. Full TabR .400 and ensemble results are different targets. L052’s replay remains INCOMPARABLE due to named protocol differences. <a href="https://arxiv.org/abs/2307.14338v2">Primary source: §3.2, Equation 5, §4, Appendix B</a> · <a href="../labs/l052-reproduction.md">Reproduction record</a>.</p>
-</article></body></html>
+<section class="lesson-depth" data-depth-reference="52"><h2 id="Retrieval-computation-trace">Retrieval computation trace<a class="anchor-link" href="#Retrieval-computation-trace">¶</a></h2><p>Query key (1,1), candidates (1,0), (3,1), (0,0): squared distances <strong>1,4,2</strong>. Top-2 selects the first and third records. Softmax of (−1,−2) gives approximately <strong>0.731,0.269</strong>. These are weights over selected records, not all records.</p>
+<table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Meaning</th>
+<th>Audit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Key</td>
+<td>Learned search coordinate</td>
+<td>Encoder and memory versions agree</td>
+</tr>
+<tr>
+<td>ID</td>
+<td>Record identity</td>
+<td>Self-exclusion uses identity, not feature equality</td>
+</tr>
+<tr>
+<td>Value</td>
+<td>E(yᵢ)+T(k−kᵢ)</td>
+<td>Correct difference direction and eligible label</td>
+</tr>
+<tr>
+<td>Context</td>
+<td>Weighted selected values</td>
+<td>Training dropout need not preserve unit sum</td>
+</tr>
+<tr>
+<td>Predictor</td>
+<td>Query representation plus context, then head</td>
+<td>Save memory policy with parameters</td>
+</tr>
+</tbody>
+</table>
+<p>Forward parity supports the checked operator path. It is not a training or paper-score reproduction certificate.</p>
+</section></article></body></html>

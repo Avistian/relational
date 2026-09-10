@@ -7802,7 +7802,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-060-%C2%B7-A-baseline-comparison-you-can-defend">Lab 060 · A baseline comparison you can defend<a class="anchor-link" href="#Lab-060-%C2%B7-A-baseline-comparison-you-can-defend">¶</a></h1><p><a href="../../lessons/0060-broad-model-comparison.html">Lesson</a> · <a href="../../reference/0060-broad-model-comparison.html">Reference</a> · <a href="../l060-reproduction.md">Reproduction contract</a></p>
+<h1 id="Lab-060-·-A-baseline-comparison-you-can-defend">Lab 060 · A baseline comparison you can defend<a class="anchor-link" href="#Lab-060-%C2%B7-A-baseline-comparison-you-can-defend">¶</a></h1><p><a href="../../lessons/0060-broad-model-comparison.html">Lesson</a> · <a href="../../reference/0060-broad-model-comparison.html">Reference</a> · <a href="../l060-reproduction.md">Reproduction contract</a></p>
 <p><strong>Route:</strong> retrieve → explain → predict → implement → CHECK → inspect evidence → EXIT. PROVIDED cells are readable implementation and peripheral support. TODOs contain your load-bearing code; CHECKs give immediate diagnostic feedback. Complete the code before revealing teacher solutions. Core study: 35–50 minutes; lab: 45–75 minutes plus explicitly gated larger runs.</p>
 <p><strong>Before reading:</strong> Do two split regimes of one dataset create two independent datasets? Write your answer and justify the information boundary. Then recall one older lesson that could expose an error in this experiment.</p>
 <p><strong>Evidence contract:</strong> numerical figures labeled author-reference come from committed author measurements. They are not outputs of your current kernel. Reduced model mechanisms, pretrained reference inference, frozen-result reanalysis and paper reproduction are different tracks. Every track states its scope below.</p>
@@ -7857,16 +7857,66 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="The-checkpoint-is-a-defensible-comparison">The checkpoint is a defensible comparison<a class="anchor-link" href="#The-checkpoint-is-a-defensible-comparison">¶</a></h2><p>Your goal is to compare XGBoost, CatBoost, an MLP, RealMLP and TabM under a protocol you can explain and rerun. The passing outcome is an accurate evidence report, including a failed neural gain if that is what you measure. This is the single-table baseline the later relational work must beat.</p>
 <p>The core sources are <a href="https://arxiv.org/abs/2410.24210">TabM</a>, <a href="https://arxiv.org/abs/2407.04491">RealMLP</a>, <a href="https://arxiv.org/abs/2506.16791">TabArena</a> and <a href="https://arxiv.org/abs/2406.19380">TabReD</a>. They motivate the arms and protocol questions. Our small comparison does not reproduce their original tuning budgets, data rosters or paper tables.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=edfe23ae68cd">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Turn-a-model-comparison-into-an-executable-argument">Turn a model comparison into an executable argument<a class="anchor-link" href="#Turn-a-model-comparison-into-an-executable-argument">¶</a></h3><p>The checkpoint asks you to connect four things: a deployment question, a training procedure, saved predictions and a conclusion. If any link is missing, the result becomes difficult to audit. A score table without row identities cannot prove pairing; a recipe without predictions cannot reconstruct the metric; a conclusion without a target population can overgeneralize the evidence.</p>
+<p>Begin with an explicit claim template: “Under these fixed splits and resource limits, procedure A had this measured advantage over procedure B, with this variation across repetitions.” Fill it from artifacts after the run. This keeps the prose attached to what was actually measured.</p>
+<p>Random and temporal splits form separate panels because they ask different questions. The same dataset appearing in both panels is not two independent datasets. Likewise, three seeds on fixed rows improve your view of algorithmic variability without tripling the number of independent tasks.</p>
+<p>The checkpoint deliberately reuses strong tree and neural recipes. Its purpose is to compare credible procedures, not to make a new architecture look good against an undertrained baseline. Family-specific preprocessing and optimization are acceptable when their information access and resource allocation are declared.</p>
+<h3 id="Decide-what-failure-means-before-encountering-it">Decide what failure means before encountering it<a class="anchor-link" href="#Decide-what-failure-means-before-encountering-it">¶</a></h3><p>A timeout, unsupported feature type, nonfinite prediction and ordinary poor score are different outcomes. Preserve their status and cost. Silently dropping unsuccessful tasks can make a procedure look stronger by changing its denominator. A deployment decision may care deeply about coverage and reliability even when average loss on successful tasks is excellent.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4ffc4483a36f">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Freeze-the-experiment-before-fitting">Freeze the experiment before fitting<a class="anchor-link" href="#Freeze-the-experiment-before-fitting">¶</a></h2><p>Eight public tables cover small numeric tasks and mixed-type business tables: diabetes, blood transfusion, kc1, phoneme, German credit, churn, bank marketing and adult income. Three additional TabReD releases—Ecom Offers, Homesite Insurance and Sberbank Housing—provide random and temporal evaluation. That is eleven underlying datasets, not fourteen independent ones: the two split regimes of each TabReD task are related observations.</p>
 <p>Random public-table runs use at most 900 rows with a fixed 60/20/20 train/validation/test split and split seed 60. TabReD uses released split 0, label-blind caps of 540 training and 180 validation/test rows, and the earlier release loader. The measured task is binary log loss except Sberbank's released regression target, scored by root mean squared error. Preserve the release's target interpretation from lesson 55. Numeric and binary TabReD columns are included; categorical columns there are omitted and counted in provenance.</p>
 <p>The two candidates per fitted arm vary depth or learning rate. Trees use 100 boosting rounds; neural candidates use 24 epochs and width 64; TabM-mini has eight members. Validation selects candidates and neural epochs. Model seeds 0, 1 and 2 are crossed with all arms on the same rows. Equal candidate counts do not imply equal compute or equal effective search effort: a neural candidate also selects an epoch. Record both rather than claiming perfect budget equality.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9def9ab9b002">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Row-identity-is-the-spine-of-the-comparison">Row identity is the spine of the comparison<a class="anchor-link" href="#Row-identity-is-the-spine-of-the-comparison">¶</a></h3><p>Let I_train, I_valid and I_test be sets of stable row IDs. Each must be nonempty, contain no duplicate ID and be disjoint from the others. These are structural assertions you can test before fitting. They do not prove that features are historically legal or that entities are independent, but they catch a large class of accidental overlap and alignment errors.</p>
+<p>Store these IDs with the dataset version and target definition. A positional index generated after sorting is not necessarily the same identity used before sorting. When predictions are saved, include the row IDs so metrics can be reconstructed in the original order or after an explicit join.</p>
+<p>Preprocessing must be fitted on the training rows. Validation and test then pass through that frozen state. For a temporal panel, any label-based retrieval or feature aggregation must additionally respect the time at which information became available. The split validator is one gate, not the entire leakage audit.</p>
+<p>Candidate budgets should be declared before fitting. Equal candidate counts, equal wall-clock limits and published defaults are distinct comparison designs. Record the one you use and the realized resources. A method receiving a larger search should not be described as winning solely because of its architecture.</p>
+<p>Preserve each baseline's defining recipe. RealMLP's scaling and optimizer groups, TabM's member objective and probability aggregation, and tree early-stopping settings all affect the fitted procedure. Reusing a name while replacing its recipe with a generic loop weakens the comparison.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=81fa15db3725">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Preserve-each-baseline's-important-recipe">Preserve each baseline's important recipe<a class="anchor-link" href="#Preserve-each-baseline's-important-recipe">¶</a></h2><p>Training-only encoders median-impute numeric inputs and one-hot encode categorical values. Unknown categories at inference map to the declared encoder's unknown representation. This common input treatment removes CatBoost's native categorical advantage; the report must call that a limitation. It is a controlled numeric/one-hot comparison, not the strongest possible mixed-type CatBoost benchmark.</p>
 <p>MLP and TabM inputs are standardized from training rows. RealMLP uses training-derived robust scaling and smooth clipping, learned feature scales, neural tangent parameterization, its oscillating learning-rate schedule and parameter-group multipliers. Its classification objective includes label smoothing. The local width, epochs, numeric encoding, validation metric and candidate choice differ from the full paper defaults; retain the name <strong>reduced RealMLP-TD-S recipe</strong>. TabM averages member probabilities, with separate member losses during fitting. These mechanisms were implemented in lessons 53 and 54; the notebook exposes the reused source and the live selection/reporting code.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=edfe23ae68cd">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=01b837884df8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7878,7 +7928,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4ffc4483a36f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=05b673f7bb5f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7886,6 +7936,30 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Test-labels-enter-once-the-choice-is-frozen">Test labels enter once the choice is frozen<a class="anchor-link" href="#Test-labels-enter-once-the-choice-is-frozen">¶</a></h2><p>The fitting function receives training features/targets and validation features/targets. It returns a predictor, its validation error and its selected epoch. Only after comparing those validation errors does the runner supply test features; only the metric routine receives test labels. This interface makes the boundary reviewable. A checksum alone cannot prove the boundary, but it can identify exactly which implementation was used.</p>
 <p>Keep every selected prediction, target, candidate error, chosen index, split ID and measured duration. The lab checks that the chosen index minimizes validation error and reconstructs every reported test metric from saved predictions. A wrong row order can still produce a plausible score, which is why row identity and partition disjointness are separate checks.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=00711eb907ff">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Save-the-choice-before-saving-its-evaluation">Save the choice before saving its evaluation<a class="anchor-link" href="#Save-the-choice-before-saving-its-evaluation">¶</a></h3><p>Suppose validation chooses candidate 2 from a list of five. Save that index, its hyperparameters and its checkpoint identity before calculating the final test metric. This makes the causal order inspectable: validation selected; test evaluated. A later analysis can reconstruct the decision without relying on a narrative about what the author intended.</p>
+<p>For classification, store class order with probability columns. For regression, store the output units and any inverse target transform. A correct model can appear wrong if predictions and labels are misaligned, and an incorrect metric implementation can produce a plausible-looking number.</p>
+<p>Reconstruct the score from saved predictions using a separate evaluator. This checks the artifact chain and allows future summaries without refitting. It does not create a second independent experiment. Reanalysis and new measurements must be labeled separately.</p>
+<p>If you inspect test failures and then change the model, the change is a new hypothesis informed by that test. Keep the original result and obtain fresh evaluation evidence for the revision. The practical goal is not to avoid learning from mistakes; it is to stop using the same evidence both to invent and confirm the fix.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0873036c2d11">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Read-the-result-at-three-resolutions">Read the result at three resolutions<a class="anchor-link" href="#Read-the-result-at-three-resolutions">¶</a></h2><p>First inspect each dataset's raw metric, three seed points, sample standard deviation and paired gaps against the tree baseline. These seed intervals are conditional on fixed rows and splits; three seeds provide a fragile estimate of training randomness. They do not measure uncertainty over future enterprises or temporal regimes.</p>
 <p>Next average seed errors within each dataset, rank the arms there and average ranks. Keep random and temporal summaries separate. A Friedman test treats datasets as blocks; the Nemenyi critical difference supplies an exploratory pairwise rank comparison. With three temporal tasks, power is weak. A nonsignificant result neither proves equivalence nor rescues an unsupported superiority claim.</p>
 <p>Finally inspect fitting/selection time and inference time. These CPU measurements include the declared local pipeline, not a GPU-serving benchmark. A method with a tiny score advantage and much larger latency may be a poor deployment baseline. The task distribution, tolerance for error and latency budget determine the practical choice.</p>
@@ -7893,7 +7967,38 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9def9ab9b002">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1819ea96a168">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Start-at-the-row,-then-the-task,-then-the-collection">Start at the row, then the task, then the collection<a class="anchor-link" href="#Start-at-the-row,-then-the-task,-then-the-collection">¶</a></h3><p>At the row level, inspect probability validity, class alignment and a few metric contributions. For a positive binary label with predicted probability 0.8, log loss contributes −ln(0.8)≈0.223. For probability 0.2 it contributes about 1.609. This explains why a few confident errors can matter even when accuracy changes little.</p>
+<p>At the task level, average the declared repetitions and compute paired model differences. Keep raw score units meaningful within the task. Report seed variation as conditional on the fixed split when only initialization or procedure randomness changed.</p>
+<p>At the collection level, rank models within each dataset after averaging seeds. With three datasets, the rank analysis has three task blocks in each regime, not nine seeds or six random/temporal combinations. Small task counts impose real limits on broad significance claims.</p>
+<p>A mean-rank winner is an observed ordering, not an established universal winner. Friedman and Nemenyi summaries can indicate whether the panel resolves differences under their assumptions, but failure to reject does not prove equivalence. Report the unresolved uncertainty plainly.</p>
+<h3 id="Quality-and-cost-form-a-joint-decision">Quality and cost form a joint decision<a class="anchor-link" href="#Quality-and-cost-form-a-joint-decision">¶</a></h3><p>Two methods can trade lower loss for greater latency or search cost. A Pareto-dominated method is worse on every declared objective relative to another measured method; a nondominated method is not automatically best. The deployment constraint determines which trade-off matters.</p>
+<p>Measure cost consistently. Include or exclude loading, preprocessing and context preparation explicitly. A warm prediction timer and a cold end-to-end timer answer different questions. Do not place them on one axis as though they measured the same operation.</p>
+<p>The exit report should name the preferred local baseline, the evidence supporting it and a concrete condition that would change the decision. For example, a tighter latency constraint, a later temporal window or more datasets could overturn the choice. That conditional conclusion is more useful than a broad winner claim unsupported by the panel.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d402391b4422">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-model-by-regime-interaction-is-more-informative-than-two-winners">A model-by-regime interaction is more informative than two winners<a class="anchor-link" href="#A-model-by-regime-interaction-is-more-informative-than-two-winners">¶</a></h3><p>Suppose A's loss is 0.30 on random rows and 0.50 on later rows, while B's loss is 0.32 and 0.40. A wins the random comparison by 0.02; B wins the temporal comparison by 0.10. The relative gap changes by 0.12. That change motivates a hypothesis about how the procedures respond to the regime difference.</p>
+<p>It does not yet identify the cause. The temporal panel may have different training size, class balance, feature availability or target difficulty. A useful follow-up holds more of these factors fixed or measures them explicitly. For example, matching training sample size can distinguish a data-volume explanation from a temporal-distribution explanation.</p>
+<p>The same logic applies to context size, missing features and tuning budget. Instead of presenting a winner separately under each setting, inspect how the paired model difference changes with the intervention. This is the quantity that connects a mechanism prediction to comparative evidence.</p>
+<p>Keep uncertainty attached to the unit that changed. Repeated seeds on fixed temporal windows describe algorithmic variation; repeated windows add information about temporal stability. The checkpoint's fixed design should not be described as having measured the latter unless those windows were actually evaluated.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f2a47760a0e7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7905,7 +8010,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=81fa15db3725">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6aa6e2af6072">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7917,7 +8022,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=01b837884df8">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0fca7723483c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7928,7 +8033,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=05b673f7bb5f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ee1a27dfc657">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7940,20 +8045,30 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=00711eb907ff">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3d401089ae95">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>The critical-distance bar belongs to the complete declared method pool. It is an exploratory multiple-comparison threshold over dataset-level ranks, not a confidence interval around a model score.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=80840b7cc5e1">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit:-write-a-report-a-skeptic-can-rerun">Exit: write a report a skeptic can rerun<a class="anchor-link" href="#Exit:-write-a-report-a-skeptic-can-rerun">¶</a></h2><p>Submit the complete crossed result table, separate random/temporal rank summaries, paired dataset gaps, timing table and a reproduction ledger. Identify one dataset where the methods disagree and trace the disagreement to a hypothesis you can test—sample size, feature representation, irregular target behavior or temporal shift. The current run cannot establish that hypothesis causally.</p>
 <p>State which arm you would deploy under a stated budget, what evidence could reverse that decision, and which published claim remains untested. The broader <code>closer</code> runner increases resource budgets using the same implementation. Its output remains a new local experiment; there is no “paper” switch that turns eleven reduced tasks into four original paper protocols.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0873036c2d11">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=37ecdeca09e4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7963,7 +8078,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4632d76eabc4">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6a1ae786b3cf">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8001,7 +8116,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=845d81d43ab9">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=752bc7a7b5fa">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8017,7 +8132,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5d50cc78e8ad">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6e33eee12d91">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8039,7 +8154,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d8f872a8c527">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=09bbb6dfc022">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8056,7 +8171,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e9beb7f92e30">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7afcf6bd7cd8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8080,7 +8195,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=0c0ae1a005c1">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=159aababd73f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8097,7 +8212,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=49ea2b50d553">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=87e5fce45bdc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8114,7 +8229,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=916611ae421d">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=82393d995554">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8133,7 +8248,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5a23b1f6ae97">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=cecef6b1815f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8155,7 +8270,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6a1ae786b3cf">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=60b0c0e1fb0c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8189,7 +8304,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=752bc7a7b5fa">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f354b4c262d3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8207,7 +8322,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6e33eee12d91">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f09927ced388">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8224,7 +8339,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=09bbb6dfc022">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=db8b8f33c1b3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8251,7 +8366,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7afcf6bd7cd8">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=439a9a312ba7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8268,7 +8383,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=159aababd73f">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=26b1b875d93f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8290,7 +8405,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=87e5fce45bdc">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=11f359049ce7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8309,7 +8424,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=82393d995554">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d0122604a914">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8342,7 +8457,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=cecef6b1815f">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1890e5fa5cd6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8380,7 +8495,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=60b0c0e1fb0c">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=965ea89aa6dc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8403,7 +8518,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f354b4c262d3">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=93bbfb8f95b1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8458,7 +8573,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f09927ced388">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1446db1642b1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8474,7 +8589,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=db8b8f33c1b3">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=44ede95e0a9c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8553,19 +8668,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=94100ae88eaf">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e7032d2f8091">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<span id="lab-exercises"></span><h2 id="TODO-1-%C2%B7-validate_partitions">TODO 1 · validate_partitions<a class="anchor-link" href="#TODO-1-%C2%B7-validate_partitions">¶</a></h2><p><strong>Goal:</strong> Check three nonempty, duplicate-free and mutually disjoint row-ID partitions.</p>
+<span id="lab-exercises"></span><h2 id="TODO-1-·-validate_partitions">TODO 1 · validate_partitions<a class="anchor-link" href="#TODO-1-%C2%B7-validate_partitions">¶</a></h2><p><strong>Goal:</strong> Check three nonempty, duplicate-free and mutually disjoint row-ID partitions.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=26b1b875d93f">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=202a6628577a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8581,7 +8696,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=11f359049ce7">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=14082b913f6a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8603,19 +8718,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=965f199a0fbb">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=84ed1415e279">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="TODO-2-%C2%B7-choose_validation">TODO 2 · choose_validation<a class="anchor-link" href="#TODO-2-%C2%B7-choose_validation">¶</a></h2><p><strong>Goal:</strong> Freeze the candidate from validation errors only, rejecting invalid scores.</p>
+<h2 id="TODO-2-·-choose_validation">TODO 2 · choose_validation<a class="anchor-link" href="#TODO-2-%C2%B7-choose_validation">¶</a></h2><p><strong>Goal:</strong> Freeze the candidate from validation errors only, rejecting invalid scores.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1890e5fa5cd6">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5e19f8b2217e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8631,7 +8746,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=965ea89aa6dc">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=11321e36d9c0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8654,19 +8769,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2891a0142b84">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=86dd317c921b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="TODO-3-%C2%B7-paired_summary">TODO 3 · paired_summary<a class="anchor-link" href="#TODO-3-%C2%B7-paired_summary">¶</a></h2><p><strong>Goal:</strong> Reject incomplete dataset×arm×seed coverage, average seeds before ranking, and report conditional uncertainty and cost.</p>
+<h2 id="TODO-3-·-paired_summary">TODO 3 · paired_summary<a class="anchor-link" href="#TODO-3-%C2%B7-paired_summary">¶</a></h2><p><strong>Goal:</strong> Reject incomplete dataset×arm×seed coverage, average seeds before ranking, and report conditional uncertainty and cost.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1446db1642b1">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b8aa05924559">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8682,7 +8797,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=44ede95e0a9c">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1b936def48a8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8707,7 +8822,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e7032d2f8091">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a7120ba35459">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8717,7 +8832,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=202a6628577a">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a46adcdfda89">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8742,7 +8857,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=87b698ba5f09">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fd531d1e1e32">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8752,7 +8867,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=04b77c950a7a">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2adf876b5192">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8776,17 +8891,17 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0490372ce92d">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=64b2e9b77bdf">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="EXIT-TICKET-%C2%B7-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
+<h2 id="EXIT-TICKET-·-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=11321e36d9c0">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=34605fbf4fbf">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8809,18 +8924,18 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=86dd317c921b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=518e8bd67416">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l060-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
+<h2 id="NEXT-STEP-·-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l060-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
 <p>For unattended CPU execution: <code>modal run --detach modal/foundation_repro.py --lesson 60 --preset closer</code>. This is a supplied operator, not evidence that a cloud job was run.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b8aa05924559">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=1fa341474564">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

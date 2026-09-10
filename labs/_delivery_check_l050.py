@@ -28,7 +28,8 @@ for file in [ROOT/'lessons'/f'{SLUG}.html',ROOT/'reference/fair-comparison-check
                 assert dest.find(id=parts.fragment) or dest.find(id=unquote(parts.fragment)) or dest.find(attrs={'name':unquote(parts.fragment)}),(file,url)
             links+=1
 student=nbformat.read(HERE/f'{SLUG}.ipynb',4);teacher=nbformat.read(HERE/'solutions'/f'{SLUG}.ipynb',4)
-source_images={hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/l050').glob('*.png')}
+source_images={hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/l050').glob('*.png') if 'architecture' not in p.name}
+source_images.update(hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/architecture-revision').glob('0050-*.png'))
 for nb in [student,teacher]:
     nbformat.validate(nb);embedded=[]
     for cell in nb.cells:

@@ -129,3 +129,17 @@ implemented; `--preset paper` fails honestly. See `lNNN-reproduction.md`, `_sour
 and `_delivery_foundation_results.json`. Student TODOs remain blank; local solutions follow the
 workspace's ignored `labs/solutions/` convention.
 <!-- FOUNDATION-058-070:end -->
+
+## Expanded explanations and architecture studies, lessons 047–070
+
+All 24 packages include additional derivations, worked traces and computational reference aids.
+The [architecture gallery](html/architecture-review/index.html) collects sixteen redesigned
+model studies; each shows the forward path, a worked internal operator, shapes and variant scope.
+The same figures are embedded portably in the notebooks. Phone readers can open the responsive
+HTML study from each figure caption.
+
+Authoring sources and regeneration/check commands are recorded in the
+[revision review](../reviews/lessons-047-070-depth-and-architecture.md).
+`_depth_delivery_results.json` records content and code/output integrity;
+`_depth_browser_results.json` records the separate browser checks. These checks do not establish
+live Colab compatibility or full paper reproduction.

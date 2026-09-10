@@ -75,6 +75,8 @@ def main():
     for d in ['assets','lessons','reference']:shutil.copytree(REPO/d,stage/d)
     for f in ['index.html','notebooks.html','flashcards.html','.nojekyll']:shutil.copy2(REPO/f,stage/f)
     (stage/'labs').mkdir();shutil.copytree(ROOT/'html',stage/'labs/html');shutil.copytree(ROOT/'figures',stage/'labs/figures')
+    # The current Pages workflow also publishes the foundation source packages.
+    for directory in ['relkit','sources']:shutil.copytree(ROOT/directory,stage/'labs'/directory)
     for pattern in ['*.ipynb','*.json','*.md','*.py']:
         for f in ROOT.glob(pattern):shutil.copy2(f,stage/'labs'/f.name)
     shutil.copytree(REPO/'modal',stage/'modal')
@@ -86,7 +88,7 @@ def main():
     gate=json.loads((ROOT/'_gate_l053_results.json').read_text());assert gate['status']=='PASS'
     final=dict(status='PASS',local_prediction_checks=count,larger_prediction_checks=3,executed_solution_cells=len(scode),
         student_todos=4,portable_pngs=images,copied_pages_links=links,live_code_gate='PASS',
-        browser='NOT_CHECKED',browser_reason='No installed Chrome/Chromium/Firefox or browser tool found',
+        browser='NOT_CHECKED',browser_reason='Separate browser audit: _depth_browser_results.json',
         live_colab_ui='NOT_CHECKED',modal_execution='NOT_RUN',deployment='NOT_CHECKED',
         figures='Seven exported figures visually inspected; architecture and schedule revised',
         visual_improvement='Compared with L052: explicit per-coordinate NTP products and a fixed baseline under the feature-scale intervention; schedule displays all parameter-group rates.')

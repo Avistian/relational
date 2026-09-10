@@ -1,4 +1,5 @@
 """Build student and teacher notebooks with visible, live checkpoint implementation."""
+from _lesson_depth import enrich_notebook
 import base64
 import json
 from pathlib import Path
@@ -226,7 +227,7 @@ else:
         lab=[LabFinding('Your completed local experiment',str(result['mean_ranks']),
                         '3 numeric substitute datasets; two candidates; fixed split')],
         paper=[(TARGET,None,'NOT_RUN')]))''')
-    nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'},'lesson':50})
+    nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'},'lesson':50}),50)
     return nb
 
 if __name__=='__main__':

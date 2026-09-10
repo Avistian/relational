@@ -3,6 +3,7 @@
 Regenerate figures separately with _figures_l047.py when visuals/results change.
 Canonical model chunks are extracted by AST, never maintained as a second model.
 """
+from _lesson_depth import enrich_notebook
 import ast
 import base64
 import copy
@@ -569,11 +570,11 @@ Tomorrow, without reading this notebook, sketch the two attention axes and state
 **Figure provenance:** `_figures_l047.py` regenerates mechanism diagrams from the lesson's SVG components and author-reference plots from measured JSON; `figures/l047/provenance.json` records hashes. The PNGs are embedded directly in the markdown as data URLs, the format used by Colab, so viewing them does not depend on running JavaScript or finding an adjacent image folder.''')
     for index, cell in enumerate(cells):
         cell['id'] = f'l047-{index:03d}'
-    nb = nbf.v4.new_notebook(cells=cells, metadata={
+    nb = enrich_notebook(nbf.v4.new_notebook(cells=cells, metadata={
         'kernelspec': {'name': 'python3', 'display_name': 'Python 3', 'language': 'python'},
         'language_info': {'name': 'python'},
         'lesson': 47, 'canonical_model_sha256': hashlib.sha256(MODEL.encode()).hexdigest(),
-        'figure_provenance': json.loads((FIGURES / 'provenance.json').read_text())})
+        'figure_provenance': json.loads((FIGURES / 'provenance.json').read_text())}),47)
     out = HERE / ('solutions' if solution else '') / '0047-saint.ipynb'
     out.parent.mkdir(exist_ok=True)
     nbf.validate(nb)

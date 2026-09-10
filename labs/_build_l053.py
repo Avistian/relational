@@ -1,4 +1,5 @@
 """Build student + solution notebooks with visible model/training code and portable figures."""
+from _lesson_depth import enrich_notebook
 import ast,base64,os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -185,7 +186,7 @@ else:
     print('Scale-up for YOUR live code: NOT_RUN. Author larger-run evidence is separate.')''')
     md('''### Return tomorrow
 Without reopening the formula, explain the two evaluation levels and reconstruct the zero-IQR fallback. Then name the difference between the TD and TD-S variants. Ask the teacher about any CHECK or derivation you cannot explain.''')
-    nb=nbf.v4.new_notebook(cells=cells,metadata=dict(kernelspec=dict(display_name='Python 3',language='python',name='python3'),language_info=dict(name='python',version='3')))
+    nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata=dict(kernelspec=dict(display_name='Python 3',language='python',name='python3'),language_info=dict(name='python',version='3'))),53)
     if write:
         path=ROOT/('solutions' if solution else '')/f'{SLUG}.ipynb';path.parent.mkdir(exist_ok=True);nbf.write(nb,path);print(path)
     return nb

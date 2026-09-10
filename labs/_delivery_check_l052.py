@@ -71,6 +71,6 @@ def check():
     assert entry['labPath']==f'labs/{SLUG}.ipynb' and entry['published']
     result=dict(status='PASS',executed_solution_cells=len(code),student_todos=4,embedded_pngs=len(images),
                 prediction_scores_checked=n_scores,teacher_reference_mean_parity=True,local_links=local_count,copied_pages_links=staged_count,
-                browser='NOT_CHECKED: no installed browser or browser tool',live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
+                browser='Separate browser audit: _depth_browser_results.json',live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
     (HERE/'_delivery_l052_results.json').write_text(json.dumps(result,indent=2));print(result)
 if __name__=='__main__':check()

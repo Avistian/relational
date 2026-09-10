@@ -33,7 +33,8 @@ def check():
     assert '@colab-bootstrap' in codes[0].source
     assert sum(c.source.startswith('# TODO') and '____' in c.source for c in codes)==4,'Three code exercises plus written EXIT'
     assert all(c.execution_count is None and not c.outputs for c in codes),'Student must stay blank'
-    source_images={hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/l049').glob('*.png')}
+    source_images={hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/l049').glob('*.png') if 'architecture' not in p.name}
+    source_images.update(hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'figures/architecture-revision').glob('0049-*.png'))
     embedded=[]
     for c in student.cells:
         if c.cell_type=='markdown':

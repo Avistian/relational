@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from _foundation_config import SLUGS,TITLES,PRIMARY,WIDGET,PREDICT,ARCH,TASKS,QUIZ
 from _notebook_foundation import build as notebook
 from _foundation_access import launcher,lab_plan,build_directory,build_static_gallery
+from _lesson_depth import enrich_html
 
 ROOT=Path(__file__).resolve().parents[1];LABS=ROOT/'labs'
 
@@ -164,6 +165,7 @@ def build(n,notebooks=True,render=True):
     (ROOT/'lessons'/f'{slug}.html').write_text(head+opening+body+closing+scripts+'</body></html>')
     refbody=f'<nav><a href="../lessons/{slug}.html">Lesson {n:03}</a> · <a href="../labs/html/{slug}.html">Open lab</a> · <a href="../labs/html/foundation-sequence.html">All 58–70 materials</a> · <a href="glossary.html">Glossary</a></nav><h1>{TITLES[n]}</h1><p class="subtitle">A computation and evidence reference</p><h2>Core distinction</h2><p>{html.escape(PREDICT[n][1])}</p><h2>Implementation contract</h2><table><thead><tr><th>Operator</th><th>Required behavior</th></tr></thead><tbody>'+''.join(f'<tr><td><code>{a}</code></td><td>{html.escape(d)}</td></tr>' for a,b,c,d in TASKS[n])+'</tbody></table>'+figure(n,'mechanism')+f'<h2>Measured evidence and limit</h2><p>{html.escape(text)}</p><h2>Before making a claim</h2><ol><li>Identify source, model/checkpoint and data versions.</li><li>Trace which labels enter each computation.</li><li>State what is fixed, varied and measured.</li><li>Use the right uncertainty and aggregation unit.</li><li>Name the unrun comparison and a falsifying experiment.</li></ol><p>Primary reading: <a href="{PRIMARY[n][1]}">{html.escape(PRIMARY[n][0])}</a>. <a href="../labs/l{n:03}-reproduction.md">Exact regeneration contract</a>.</p>'
     (ROOT/'reference'/f'{slug}.html').write_text(head.replace(f'Lesson {n:03}','Reference')+refbody+'</article></body></html>')
+    enrich_html(n)
     contract(n)
     if notebooks:notebook(n);notebook(n,True)
     if render:

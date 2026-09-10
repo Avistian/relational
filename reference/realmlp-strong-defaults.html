@@ -1,8 +1,9 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RealMLP · strong-defaults reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>RealMLP · strong-defaults reference</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/></head><body><article>
 <nav><a href="../lessons/0053-realmlp-strong-defaults.html">Lesson 053</a> · <a href="glossary.html#strong-defaults">Glossary</a></nav><h1>RealMLP: recipe and evaluation boundaries</h1>
 <p><strong>Default on a new task ≠ never tuned.</strong> Develop the recipe on meta-train datasets, freeze it, then evaluate on separate meta-test datasets. Within each task, fit weights on training rows, choose an epoch on validation, and score once on test.</p>
 <h2>Numeric TD-S forward pass</h2><p>Train-fitted robust scale → smooth clip → learned coordinate scales → three NTP linear/activation stages → zero-initialized NTP head. Hidden width 256 in the published recipe; two logits for binary classification, one standardized target for regression. No retrieval or pretraining.</p>
-<table><thead><tr><th>Component</th><th>Exact rule</th></tr></thead><tbody>
+<div aria-label="Scrollable comparison table" class="lesson-table-scroll" role="region" tabindex="0"><table><thead><tr><th>Component</th><th>Exact rule</th></tr></thead><tbody>
 <tr><td>Robust scale</td><td>Subtract training median. Multiply by 1/IQR; if IQR=0 use 2/range; if constant use 0.</td></tr>
 <tr><td>Smooth clip</td><td>z/√(1+z²/9), strictly within (−3,3) for finite z in exact arithmetic.</td></tr>
 <tr><td>Feature scales</td><td>h=u⊙s; initialize s=1; scale learning rate ×6.</td></tr>
@@ -14,9 +15,46 @@
 <tr><td>Rates</td><td>Base 0.04 classification / 0.07 regression; factors scale 6, weight 1, bias 0.1.</td></tr>
 <tr><td>Schedule</td><td>½[1−cos(2πlog₂(1+15t))], where t is optimizer-step progress.</td></tr>
 <tr><td>Selection</td><td>Train 256 epochs, batch 256; restore last best validation epoch. No patience stop.</td></tr>
-</tbody></table>
+</tbody></table></div>
 <p>TD-S omits full TD’s embeddings, parametric activations, data-dependent initialization, scheduled dropout/weight decay and regression output clipping. The lab additionally excludes categorical encoding.</p>
 <h2>Interpretation checks</h2><p>State the search budget before saying “tuned.” Test error need not improve when validation error improves. A small feature scale is not a causal importance measure. A fresh row split does not undo dataset-level recipe development. A nonsignificant Friedman result is not proof of equivalence.</p>
 <p>Local evidence: three TabR-release splits, row caps 1200/600/600, three seeds, numeric TD-S width64/64epochs, six XGB candidates. Mean ranks: TD-S 3.000, XGB-fixed 1.667, XGB-tuned 1.333; Friedman p=.09697, CD=1.91362. <strong>INCOMPARABLE</strong> to the paper benchmark. Larger California TD-S evidence is a single-task demonstration; see the <a href="../labs/l053-reproduction.md">contract</a> for its measured numbers and limitations.</p>
 <p>Primary sources: <a href="https://arxiv.org/html/2407.04491v3">paper §2–3, Table A.1 and Appendix A.2</a>; <a href="https://github.com/dholzmueller/realmlp-td-s_standalone/tree/a8c73f75dbeae4ab1ba5bc92372c444ffa0f766e">pinned standalone implementation</a>. Our target scaling follows its training-only statistics, while the paper text describes train-plus-validation scaling.</p>
-</article></body></html>
+<section class="lesson-depth" data-depth-reference="53"><h2 id="RealMLP-TD-S-calculation-card">RealMLP-TD-S calculation card<a class="anchor-link" href="#RealMLP-TD-S-calculation-card">¶</a></h2><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Trace</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Smooth clipping</td>
+<td>c(3)=2.121; c(6)=2.683</td>
+<td>Finite values retain order; tails approach ±3</td>
+</tr>
+<tr>
+<td>Width scaling</td>
+<td>y=xW/√d+b</td>
+<td>Stored-parameter updates differ from direct effective-weight updates</td>
+</tr>
+<tr>
+<td>Zero output weights</td>
+<td>First hidden gradient through the head is zero</td>
+<td>Head begins moving before this route trains hidden layers</td>
+</tr>
+<tr>
+<td>Schedule troughs</td>
+<td>t=0,1/15,3/15,7/15,1</td>
+<td>Four cycles with increasing duration</td>
+</tr>
+<tr>
+<td>Selection</td>
+<td>Latest exact validation tie locally</td>
+<td>Selected epoch is part of the fitted procedure</td>
+</tr>
+</tbody>
+</table>
+<p>Preprocessing is training-fitted. TD-S variant, width, optimizer groups and training duration must accompany any score. A strong default is a transfer result for a recipe, not proof that its architecture dominates every tuned alternative.</p>
+</section></article></body></html>

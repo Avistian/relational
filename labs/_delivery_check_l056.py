@@ -34,7 +34,7 @@ entry=next(x for x in manifest['lessons'] if x['id']==56)
 assert entry['slug']==SLUG and entry['labPath']=='labs/'+SLUG+'.ipynb'
 assert len({x['id'] for x in manifest['lessons']})==len(manifest['lessons'])
 for name in ['index.html','notebooks.html']:
-    assert f'name="rdl-manifest-version" content="{manifest["version"]}"' in (site/name).read_text()
+    assert BeautifulSoup((site/name).read_text(),'html.parser').find('meta',attrs={'name':'rdl-manifest-version'})['content']==str(manifest['version'])
 stage=Path(tempfile.mkdtemp(prefix='l056-pages-'))
 for folder in ['assets','lessons','reference']:shutil.copytree(site/folder,stage/folder)
 (stage/'labs/html').mkdir(parents=True)

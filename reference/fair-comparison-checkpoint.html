@@ -1,6 +1,7 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fair model comparison · checkpoint reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Fair model comparison · checkpoint reference</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/></head><body><article>
 <h1>Fair model comparison</h1><p class="subtitle">A compact audit before claiming a neural model beats trees.</p><p><a href="../lessons/0050-q1-checkpoint.html">Lesson 050</a> · <a href="claim-audit.html">Claim scope</a> · <a href="glossary.html">Glossary</a></p>
-<table><thead><tr><th>Decision</th><th>Rule to freeze</th></tr></thead><tbody>
+<div aria-label="Scrollable comparison table" class="lesson-table-scroll" role="region" tabindex="0"><table><thead><tr><th>Decision</th><th>Rule to freeze</th></tr></thead><tbody>
 <tr><td>Population</td><td>Dataset IDs, task definitions, positive class, source hashes and exclusions.</td></tr>
 <tr><td>Information</td><td>Split first. Fit every imputer, scale and encoding using training rows only.</td></tr>
 <tr><td>Search</td><td>Declare family-specific candidates, count or time budget, stopping criterion and tie rule.</td></tr>
@@ -9,10 +10,47 @@
 <tr><td>Uncertainty</td><td>Pair differences within each task; state what changes across repeats.</td></tr>
 <tr><td>Across tasks</td><td>Average seeds first, then rank each task. N is datasets, not seed fits.</td></tr>
 <tr><td>Paper boundary</td><td>Match table, metric, model variant, preprocessing, split, tuning and aggregation.</td></tr>
-</tbody></table>
+</tbody></table></div>
 <h2>Minimal arithmetic</h2><p>Per-seed difference: δₛ=AUROC(FT-T)ₛ−AUROC(XGB)ₛ. Report δ̄, sample SD and, if useful, the conditional interval δ̄ ± t₀.₉₇₅,S−1 sδ/√S. At S=3, t≈4.303. This interval excludes uncertainty over other splits and populations.</p>
 <p>Rank task means, with shared ranks for ties. Friedman applies to three or more arms; Nemenyi CD=qα√[k(k+1)/(6N)]. With k=N=3, CD≈1.914. For two families, an exact sign test across independent non-tied datasets is a useful small-N check: even 3–0 has two-sided p=0.25.</p>
 <h2>Claim template</h2><p>“On [named tasks], under [split/preprocessing/search policy], A exceeded B on [count] tasks with [per-task differences]. Uncertainty covers [unit]. This does not establish [broader claim]. The paper comparison is [verdict] because [named protocol differences]. Next we will predeclare [experiment].”</p>
 <p>Overlapping error bars do not prove a tie. A nonsignificant test does not prove equivalence. Equal trials do not guarantee equal compute. An ensemble metric is computed after combining predictions; it differs from averaging seed metrics. A close number with a mismatched protocol remains INCOMPARABLE.</p>
 <p>Sources: <a href="https://arxiv.org/html/2106.11959v5">Gorishniy et al. (2021), §4 and Appendix D.2</a>; <a href="https://www.jmlr.org/papers/v7/demsar06a.html">Demšar (2006)</a>.</p>
-</article></body></html>
+<section class="lesson-depth" data-depth-reference="50"><h2 id="Comparison-trace-to-keep-beside-the-code">Comparison trace to keep beside the code<a class="anchor-link" href="#Comparison-trace-to-keep-beside-the-code">¶</a></h2><table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Question to answer</th>
+<th>Failure that invalidates the interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Population</td>
+<td>Which future rows does the split represent?</td>
+<td>Mixing random and temporal questions</td>
+</tr>
+<tr>
+<td>Fitting</td>
+<td>Where was every transform estimated?</td>
+<td>Full-table preprocessing</td>
+</tr>
+<tr>
+<td>Selection</td>
+<td>Which validation rule froze the candidate?</td>
+<td>Reporting the best test candidate</td>
+</tr>
+<tr>
+<td>Scoring</td>
+<td>Are output units and class columns correct?</td>
+<td>Standardized errors labeled as original units</td>
+</tr>
+<tr>
+<td>Aggregation</td>
+<td>What is the independent task unit?</td>
+<td>Treating seeds as new datasets</td>
+</tr>
+</tbody>
+</table>
+<p>Worked selection: validation (0.42,0.39,0.41) selects B; test (0.40,0.44,0.38) yields a reportable selected loss of <strong>0.44</strong>. Mean rank summarizes ordering, not magnitude. Preserve paired per-dataset differences and the complete procedure identity.</p>
+</section></article></body></html>

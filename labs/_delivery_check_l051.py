@@ -78,6 +78,6 @@ for file in [ROOT/'lessons'/f'{slug}.html',ROOT/'reference/inductive-bias-interv
 manifest=json.loads((ROOT/'lessons/manifest.json').read_text());row=next(x for x in manifest['lessons'] if x['id']==51)
 assert row['quarter']==2 and row['labPath']==f'labs/{slug}.ipynb'
 report=dict(prediction_runs_reconciled=count,larger_prediction_runs_checked=larger_count,executed_solution_code_cells=code_count,student_todos=4,inline_pngs_per_artifact=6,
-    local_links_checked=links,source_hashes_match=True,notebook_and_reference_scores_match=True,browser='NOT_CHECKED: no installed browser found',
+    local_links_checked=links,source_hashes_match=True,notebook_and_reference_scores_match=True,browser='Separate browser audit: _depth_browser_results.json',
     live_colab='NOT_CHECKED: inline PNG packaging verified only',svg_panels=20,svg_glyph_bounds='81 labels; no violations with librsvg')
 (HERE/'_delivery_l051_results.json').write_text(json.dumps(report,indent=2));print(report)

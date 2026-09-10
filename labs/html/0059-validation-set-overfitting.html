@@ -7802,7 +7802,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-059-%C2%B7-When-validation-becomes-training">Lab 059 · When validation becomes training<a class="anchor-link" href="#Lab-059-%C2%B7-When-validation-becomes-training">¶</a></h1><p><a href="../../lessons/0059-validation-set-overfitting.html">Lesson</a> · <a href="../../reference/0059-validation-set-overfitting.html">Reference</a> · <a href="../l059-reproduction.md">Reproduction contract</a></p>
+<h1 id="Lab-059-·-When-validation-becomes-training">Lab 059 · When validation becomes training<a class="anchor-link" href="#Lab-059-%C2%B7-When-validation-becomes-training">¶</a></h1><p><a href="../../lessons/0059-validation-set-overfitting.html">Lesson</a> · <a href="../../reference/0059-validation-set-overfitting.html">Reference</a> · <a href="../l059-reproduction.md">Reproduction contract</a></p>
 <p><strong>Route:</strong> retrieve → explain → predict → implement → CHECK → inspect evidence → EXIT. PROVIDED cells are readable implementation and peripheral support. TODOs contain your load-bearing code; CHECKs give immediate diagnostic feedback. Complete the code before revealing teacher solutions. Core study: 35–50 minutes; lab: 45–75 minutes plus explicitly gated larger runs.</p>
 <p><strong>Before reading:</strong> Must searching more noise candidates improve independent test performance? Write your answer and justify the information boundary. Then recall one older lesson that could expose an error in this experiment.</p>
 <p><strong>Evidence contract:</strong> numerical figures labeled author-reference come from committed author measurements. They are not outputs of your current kernel. Reduced model mechanisms, pretrained reference inference, frozen-result reanalysis and paper reproduction are different tracks. Every track states its scope below.</p>
@@ -7857,13 +7857,67 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="The-validation-set-becomes-training-data-for-your-decisions">The validation set becomes training data for your decisions<a class="anchor-link" href="#The-validation-set-becomes-training-data-for-your-decisions">¶</a></h2><p>Your goal is to diagnose a procedure that improves its validation score while learning nothing useful. A model's training loss measures how its parameters fit training examples. Its validation loss guides decisions such as hyperparameters, stopping epochs, preprocessing, retrieved context sizes and ensemble weights. Once a decision depends on validation labels, those labels have trained the <strong>selection procedure</strong>, even if no gradient used them.</p>
 <p>This extends lesson 57: an out-of-fold prediction excludes a row from fitting its base predictor, but the row's label still fits the combiner. Read <a href="https://jmlr.org/papers/v11/cawley10a.html">Cawley and Talbot, Section 2</a> for the distinction between overfitting the selection criterion and overfitting model parameters. Read <a href="https://arxiv.org/html/2506.16791v1">TabArena's protocol</a> with that distinction in mind. A benchmark can constrain individual trials while users adapt repeatedly to its reported results.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=673e6dc0ed13">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-human-decision-can-fit-noise-without-a-gradient">A human decision can fit noise without a gradient<a class="anchor-link" href="#A-human-decision-can-fit-noise-without-a-gradient">¶</a></h3><p>Training data changes model parameters directly. Validation data changes which parameters, recipes and ideas survive. If you repeatedly inspect validation outcomes and adapt your next attempt, the overall development procedure is learning from that validation set even when no optimizer receives its labels.</p>
+<p>This includes choosing hyperparameters, early stopping, selecting features, deciding whether to keep an augmentation, picking ensemble members and revising preprocessing after inspecting failures. Counting only launched model configurations undercounts the adaptive decisions that used the same feedback.</p>
+<p>The problem is not that validation should never guide development. That is its purpose. The problem is treating the performance of the selected candidate on the selection data as an unbiased estimate of how the selected procedure will behave on new data.</p>
+<p>Let the observed validation loss of candidate j be its true expected loss μⱼ plus estimation noise εⱼ. Selection chooses the smallest μⱼ+εⱼ. When several candidates have similar μ, the winner is disproportionately likely to have a favorable negative ε. Its observed validation loss then overstates how good its true loss is.</p>
+<p>If candidates are strongly correlated, the effective number of distinct opportunities for lucky noise can be smaller than the raw count. If they are diverse or the validation sample is small, selection can be more aggressive. There is no universal correction based only on the number of model names.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ba5ce29d6854">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="More-detailed-feedback-creates-more-ways-to-adapt">More detailed feedback creates more ways to adapt<a class="anchor-link" href="#More-detailed-feedback-creates-more-ways-to-adapt">¶</a></h3><p>A single aggregate validation score supplies one kind of feedback. Per-row errors, subgroup plots, feature attributions and repeated threshold curves supply much richer information. That richness is useful for diagnosis, but it also gives development more opportunities to specialize to the observed validation sample.</p>
+<p>Imagine inspecting 50 subgroups and changing the model to fix the worst one. Some subgroup may be worst partly by sampling noise, especially when it contains few rows. If you then report improvement on the same subgroup and same rows, the result combines real adaptation with selection of an extreme. A new subgroup sample or a prespecified independent evaluation is needed to assess the repair.</p>
+<p>Repeated cross-validation does not eliminate this issue if the same fold results repeatedly guide idea selection. It can reduce variance of individual estimates while still supplying adaptive feedback. More precise feedback and independent final evaluation are complementary, not interchangeable.</p>
+<p>The practical response is to distinguish exploration from confirmation. Use development evidence actively, record the changes it motivated, and reserve independent evidence for the claims you finally want to defend. The adaptation ledger is useful because it captures choices made by the researcher as well as choices made by code.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=49dcd197e9a9">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="A-minimum-selects-lucky-noise">A minimum selects lucky noise<a class="anchor-link" href="#A-minimum-selects-lucky-noise">¶</a></h2><p>Write each candidate's observed validation error as true error plus estimation noise: <code>E_hat_j = E_j + epsilon_j</code>. Selection chooses the smallest observed value. Even when each noise term is centered at zero, the noise of the selected candidate tends to be negative. Independence is not required for this effect, although strong correlation between candidates can reduce the effective search size.</p>
 <p>For three equally good candidates with true error <code>.30</code>, suppose noise is <code>+.03, −.04, +.01</code>. Validation reports <code>.33, .26, .31</code>, so the second candidate wins. Its expected new-data error remains <code>.30</code> under the equal-quality assumption. The apparent gain is a lucky selection event. Repeating candidate construction after inspecting validation makes the family of decisions still larger.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=673e6dc0ed13">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c4fae09edcc1">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-two-candidate-example-already-creates-optimism">A two-candidate example already creates optimism<a class="anchor-link" href="#A-two-candidate-example-already-creates-optimism">¶</a></h3><p>Suppose two candidates have the same true loss 0.5. Each validation estimate independently equals 0.4 or 0.6 with equal probability. The four equally likely pairs are (0.4,0.4), (0.4,0.6), (0.6,0.4) and (0.6,0.6). The selected minimum is 0.4 in three cases and 0.6 in one, so its expected value is 0.45.</p>
+<p>Nothing predictive was learned, yet the selected validation estimate is 0.05 better than the true loss. A fresh independent test estimate still has expectation 0.5 for the selected candidate. Selection created the gap by conditioning on favorable validation noise.</p>
+<p>With more candidates, the minimum can become more extreme. Increasing validation sample size reduces the variability of each estimate and generally reduces this mechanism, but it does not make arbitrary repeated adaptation free. Correlation among candidates and unequal true performance complicate the exact amount.</p>
+<p>For pure random binary predictions on balanced random labels, each validation error is a binomial proportion. With n independent examples and error probability 0.5, its standard deviation is 0.5/√n. At n=100 this is 0.05; at n=400 it is 0.025. Searching many such estimates can reveal apparently impressive candidates that still carry no signal.</p>
+<p>This calculation is a negative-control model, not a forecast of the exact optimism in a real benchmark. Real candidates have different true risks and correlated errors. The control isolates the selection mechanism precisely because those complications are removed.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d437d1a08cec">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7875,7 +7929,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ba5ce29d6854">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4892aa22a8ff">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7888,7 +7942,22 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=49dcd197e9a9">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9658f6f7b915">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Independence-must-survive-the-implementation">Independence must survive the implementation<a class="anchor-link" href="#Independence-must-survive-the-implementation">¶</a></h3><p>Generate candidate validation predictions without signal, select the best validation candidate and only then generate or reveal its independent test predictions. The test random stream must not be chosen or filtered based on validation success. Reusing labels, predictions or random state incorrectly can create dependence that defeats the purpose of the control.</p>
+<p>The local experiment uses separate random streams for validation and test. This makes the causal story clear: the candidate index depends on validation noise, while test outcomes remain independent of that index's favorable validation realization. A reproducible seed identifies the simulation; it is not evidence of statistical independence unless the generation logic enforces it.</p>
+<p>Run many independent repetitions of the entire search. For each repetition record selected validation error, selected test error and their difference. The mean difference estimates optimism under this simulation. Its Monte Carlo standard error describes numerical uncertainty from a finite number of simulation repetitions.</p>
+<p>Do not confuse that Monte Carlo standard error with variation between real datasets or with a model's test-set sampling uncertainty. These are different random objects. A very precise simulation estimate can teach a general mechanism while saying little about the exact size of the effect in your application.</p>
+<p>Inspect the distribution as well as the mean. Some repetitions can produce unusually good or bad test outcomes by chance. The expected test performance remains at chance; each finite realization need not equal exactly 0.5. A test error of 0.47 in one run is not a contradiction of the negative-control argument.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7b45ea63d7a8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7900,7 +7969,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c4fae09edcc1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=29053e0abcda">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7909,14 +7978,50 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 <h2 id="Nest-the-decision-that-is-actually-adaptive">Nest the decision that is actually adaptive<a class="anchor-link" href="#Nest-the-decision-that-is-actually-adaptive">¶</a></h2><p>An outer split evaluates an entire procedure. Within its training portion, create inner fitting and validation data; perform all recipe and ensemble decisions there; refit only according to a declared rule; then score once on the outer test. Repeat outer splits when your evaluation target allows it. For temporal deployment, preserve chronology rather than randomly nesting future rows into earlier fitting sets.</p>
 <p>The common mistake is to nest only the last numerical optimizer. If you chose features, model families or an ensemble library after reading outer scores, that redesign also belongs inside the evaluated procedure—or requires new evaluation evidence. A second test set is not permanently untouched once you repeatedly use it to guide decisions. <a href="https://jmlr.org/papers/v11/cawley10a.html">Cawley and Talbot</a>.</p>
 <p>OOF predictions alone are not a certificate against meta-level leakage. Suppose you train a head on OOF embeddings from several folds: check whether any “held-out” meta-evaluation target influenced the base models that generated the head's fitting features. Distinguish an audit of frozen predictions from a fresh nested evaluation. Record who fitted each layer and which labels they could access.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4a403f34e863">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Evaluate-the-whole-selection-procedure-in-the-outer-loop">Evaluate the whole selection procedure in the outer loop<a class="anchor-link" href="#Evaluate-the-whole-selection-procedure-in-the-outer-loop">¶</a></h3><p>In nested evaluation, the outer training partition contains an inner training/validation process. All candidate choices happen inside that outer training data. The selected procedure is then fitted according to the declared policy and evaluated on the untouched outer test partition. Repeating outer splits evaluates the procedure that includes selection.</p>
+<p>The object being estimated is therefore not the score of one configuration chosen using the full dataset. It is the performance of an algorithm that receives a training sample and carries out its selection process. This distinction explains why a nested estimate and the final fitted model are related but not identical objects.</p>
+<p>Every adaptive preprocessing decision must be nested too. Selecting features once using all labels before the outer loop leaks information even if the inner hyperparameter search is carefully implemented. The same applies to choosing ensemble membership or a representation layer from outer-test feedback.</p>
+<p>Nested evaluation costs more because it repeats selection. A practical alternative can be a strictly held-out final test used once after development, provided the development process and data size make that reasonable. The appropriate design depends on the decision and available data; the invariant is that final evaluation must be independent of the choices it assesses.</p>
+<h3 id="Ensembles-add-another-selection-layer">Ensembles add another selection layer<a class="anchor-link" href="#Ensembles-add-another-selection-layer">¶</a></h3><p>Uniformly averaging a fixed declared set of members is different from searching thousands of subsets on one validation set. The latter can overfit the combiner selection even when the members are diverse and individually well trained. Diversity and validation optimism are separate mechanisms.</p>
+<p>Keep an adaptation ledger: which feedback was viewed, what decision it changed and which independent evidence remains. If test results motivate a new hypothesis, record the hypothesis and evaluate it on fresh evidence. The exit task is to make the adaptive procedure visible enough that another researcher can reproduce both its choices and its final evaluation.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e3908a096b88">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Audit-an-ensemble-without-blaming-diversity">Audit an ensemble without blaming diversity<a class="anchor-link" href="#Audit-an-ensemble-without-blaming-diversity">¶</a></h2><p>For the lesson-57 combiner, count the base-family recipes, fold schemes, preprocessing variants, weight searches, maximum step counts and prefix-selection rules that were tried. Compare a prespecified uniform mixture, a prespecified greedy procedure and a single family selected by the same inner evidence. Do not call the family with minimum test loss a deployable best-single comparator; that identity is an oracle available only after evaluation.</p>
 <p>A growing OOF-to-test gap can arise from selection overfitting, distribution shift, different fold versus refit behavior, or ordinary uncertainty. The pure-noise experiment isolates one mechanism, not every explanation for a disappointing ensemble. A useful diagnosis proposes a discriminating experiment: freeze the whole procedure and evaluate a new outer split, or hold predictions fixed while varying only the amount of selection data.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=59a11e077f38">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit:-make-adaptation-countable">Exit: make adaptation countable<a class="anchor-link" href="#Exit:-make-adaptation-countable">¶</a></h2><p>Implement the selector without a test-label argument, run the negative control and report paired budget differences. Then write a decision ledger for lesson 60 with the metric, candidate lists, stopping rule, split identities and a freeze point. Name one tempting adjustment you will postpone until a separately labeled follow-up experiment. Explain why a better validation number can coexist with no improvement in the underlying predictor.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d437d1a08cec">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a4df133c88b6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7926,7 +8031,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=80f1a682c37a">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=55c17a86478b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7964,7 +8069,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e61a986d48fa">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7d2d7e8fb229">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7991,19 +8096,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7b45ea63d7a8">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7040134dffdb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<span id="lab-exercises"></span><h2 id="TODO-1-%C2%B7-choose_validation">TODO 1 · choose_validation<a class="anchor-link" href="#TODO-1-%C2%B7-choose_validation">¶</a></h2><p><strong>Goal:</strong> Choose the first finite minimum validation error; reject empty/nonfinite vectors.</p>
+<span id="lab-exercises"></span><h2 id="TODO-1-·-choose_validation">TODO 1 · choose_validation<a class="anchor-link" href="#TODO-1-%C2%B7-choose_validation">¶</a></h2><p><strong>Goal:</strong> Choose the first finite minimum validation error; reject empty/nonfinite vectors.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=461b715b61b4">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=24774a44e977">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8019,7 +8124,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=555d06cdcdd2">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=70d314bccb29">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8042,19 +8147,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e3908a096b88">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=202766528fe6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="TODO-2-%C2%B7-null_search">TODO 2 · null_search<a class="anchor-link" href="#TODO-2-%C2%B7-null_search">¶</a></h2><p><strong>Goal:</strong> Build the pure-noise negative control with separate validation/test RNG streams. Generate test predictions only after the validation choice.</p>
+<h2 id="TODO-2-·-null_search">TODO 2 · null_search<a class="anchor-link" href="#TODO-2-%C2%B7-null_search">¶</a></h2><p><strong>Goal:</strong> Build the pure-noise negative control with separate validation/test RNG streams. Generate test predictions only after the validation choice.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7e32df2b1b7f">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7d51f82de28a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8070,7 +8175,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=0acac040dc95">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3098217a73e1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8091,7 +8196,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5c85c8a676b2">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=70f328d13f51">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8101,7 +8206,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7d2d7e8fb229">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=dd801326d8e8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8119,7 +8224,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7040134dffdb">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=452d0ee9846c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8129,7 +8234,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=24774a44e977">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9093f3e45ad1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8153,17 +8258,17 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2d8945c2ead3">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=230940cfab7e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="EXIT-TICKET-%C2%B7-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
+<h2 id="EXIT-TICKET-·-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f72fff6915f8">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6b61067fe025">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8186,18 +8291,18 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7340959f610b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=51955324fc39">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l059-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
+<h2 id="NEXT-STEP-·-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l059-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
 <p>For unattended CPU execution: <code>modal run --detach modal/foundation_repro.py --lesson 59 --preset closer</code>. This is a supplied operator, not evidence that a cloud job was run.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3098217a73e1">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=cfae09769c54">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

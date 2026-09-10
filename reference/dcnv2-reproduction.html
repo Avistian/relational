@@ -1,6 +1,7 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DCNv2 — cross-network and reproduction card</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/dcn-viz.css"></head><body><article>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>DCNv2 — cross-network and reproduction card</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/dcn-viz.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/></head><body><article>
 <h1>DCNv2: cross-network reference</h1><p class="subtitle">A quick calculation card and a regenerable experiment contract · Lesson 048</p>
-<h2>The three computations</h2><div class="equation">Dense: x′ = x + x₀ ⊙ (Wx + b)<br>Linear factors: x′ = x + x₀ ⊙ [U(Vᵀx) + b]<br>Experts: x′ = x + Σₖ gₖ(x) Eₖ(x)</div>
+<h2>The three computations</h2><div class="equation">Dense: x′ = x + x₀ ⊙ (Wx + b)<br/>Linear factors: x′ = x + x₀ ⊙ [U(Vᵀx) + b]<br/>Experts: x′ = x + Σₖ gₖ(x) Eₖ(x)</div>
 <p>x₀ is the original embedded row; x is the current layer state. W is [d,d], U and V are [d,r], b is [d]. The bias lies inside x₀ multiplication. With row batches [B,d] and PyTorch [out,in] weights, use XWᵀ. No other rows enter the forward path. <a href="https://arxiv.org/html/2008.13535v2#S3">Paper §3, Eqs.1–4</a>.</p>
 <div class="table-scroll"><table class="paper-table"><thead><tr><th>Claim</th><th>Exact boundary</th></tr></thead><tbody>
 <tr><td>Degree ≤ L+1</td><td>L basic dense or linear factored crosses in x₀ coordinates; does not describe nonlinear experts/gates or the whole MLP/sigmoid model.</td></tr>
@@ -36,4 +37,43 @@ modal volume get relational-artifacts l048/closer ./l048-modal-artifacts</pre>
 <p>Each run directory contains <code>run_manifest.json</code>, <code>protocol.json</code>, one selected <code>seed-N.pt</code> weight file, <code>seed-N-predictions.npz</code> with test IDs/labels/probabilities, one <code>seed-N.json</code> history/metrics file, <code>summary.json</code> and <code>ledger.txt</code>. Completed seeds resume; an interrupted seed restarts. Different code/configuration/data/device/implementation identity requires a new directory. Local full artifacts are under <code>labs/data/cache/l048-closer/</code>; the committed summaries preserve the measured claim without adding raw data or large weights to the course.</p>
 <h2>Read the ledger literally</h2><p><strong>NOT_RUN:</strong> no corresponding run. <strong>INCOMPARABLE:</strong> protocol differs; even a coincidentally close score cannot validate the original result. <strong>MATCH / CLOSE / FAIL:</strong> permitted only after protocol agreement, using a declared tolerance. This runner always records the outstanding deviations and returns INCOMPARABLE. It cannot automatically certify them away.</p>
 <p><a href="../lessons/0048-dcnv2.html">Lesson 048</a> · <a href="../labs/html/0048-dcnv2.html">Prepared lab</a> · <a href="../labs/0048-dcnv2.ipynb">Notebook</a> · <a href="glossary.html">Glossary</a></p>
-</article></body></html>
+<section class="lesson-depth" data-depth-reference="48"><h2 id="DCNv2:-derive,-implement,-diagnose">DCNv2: derive, implement, diagnose<a class="anchor-link" href="#DCNv2:-derive,-implement,-diagnose">¶</a></h2><p><code>xₗ₊₁ = xₗ + x₀ ⊙ (Wₗxₗ + bₗ)</code> uses the original embedded vector x₀ at every layer. The bias is inside the elementwise product. With row-major batches, PyTorch's stored <code>[out,in]</code> matrix requires the corresponding transpose in explicit multiplication.</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Computation</th>
+<th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dense cross</td>
+<td>Full W</td>
+<td>Flexible coordinate mixtures</td>
+</tr>
+<tr>
+<td>Linear factorization</td>
+<td><code>W=UVᵀ</code></td>
+<td>r shared intermediate directions</td>
+</tr>
+<tr>
+<td>Parallel</td>
+<td>concatenate crossed state and MLP(x₀)</td>
+<td>Two direct representation branches</td>
+</tr>
+<tr>
+<td>Stacked</td>
+<td>MLP(final crossed state)</td>
+<td>Deep branch receives interactions</td>
+</tr>
+<tr>
+<td>Nonlinear mixture</td>
+<td>Input-dependent gated expert updates</td>
+<td>Linear-cross polynomial argument no longer applies</td>
+</tr>
+</tbody>
+</table>
+<p>For zero-bias scalar weights .5 and .25, two layers yield <code>x + .75x² + .125x³</code>; at x=2 the result is 6. For d-dimensional linear crosses, depth L gives degree at most L+1 in embedded coordinates, not independently adjustable arbitrary coefficients.</p>
+<p>Use a coordinate-zero fixture to check bias placement, named-coordinate values to check matrix orientation, constructed <code>W=UVᵀ</code> to check factor equivalence, and deliberately different x₀/x_L arrays to check branch wiring. Treat later training and paper-score agreement as separate tests.</p>
+</section></article></body></html>

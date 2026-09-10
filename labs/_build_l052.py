@@ -1,4 +1,5 @@
 """Build the standalone TabR lesson/lab from canonical code, prose and figures."""
+from _lesson_depth import enrich_notebook
 import ast,base64,json,os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -193,7 +194,7 @@ if RUN_PAPER_REPRO:
     print(repro['ledger'])
 else:
     print('Current-kernel scale-up: NOT_RUN. See the labeled author evidence above.')''')
- nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python'}})
+ nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python'}}),52)
  if write:
   out=HERE/('solutions' if solution else '')/f'{SLUG}.ipynb';out.parent.mkdir(parents=True,exist_ok=True);nbf.write(nb,out);print(out)
  return nb

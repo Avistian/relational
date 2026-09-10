@@ -1,4 +1,5 @@
 """Self-contained explanatory notebook; four live student intervention functions."""
+from _lesson_depth import enrich_notebook
 import ast,base64,json,os
 from urllib.parse import urlsplit
 from pathlib import Path
@@ -263,7 +264,7 @@ if RUN_PAPER_REPRO:
             device='cuda' if torch.cuda.is_available() else 'cpu',runner=run_experiment,identity=live_identity)
     finally:__file__=previous_file
 else:print('Scale-up gate OFF. Paper search curves remain NOT_RUN; author closer evidence is separately labeled.')''')
- return nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'},'lesson':51})
+ return enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'},'lesson':51}),51)
 if __name__=='__main__':
  for solution in [False,True]:
     path=HERE/('solutions' if solution else '')/f'{SLUG}.ipynb';path.parent.mkdir(exist_ok=True);nbf.write(build(solution),path);print(path)

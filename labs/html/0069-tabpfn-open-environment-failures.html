@@ -7802,7 +7802,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-069-%C2%B7-Find-the-broken-prediction-contract">Lab 069 · Find the broken prediction contract<a class="anchor-link" href="#Lab-069-%C2%B7-Find-the-broken-prediction-contract">¶</a></h1><p><a href="../../lessons/0069-tabpfn-open-environment-failures.html">Lesson</a> · <a href="../../reference/0069-tabpfn-open-environment-failures.html">Reference</a> · <a href="../l069-reproduction.md">Reproduction contract</a></p>
+<h1 id="Lab-069-·-Find-the-broken-prediction-contract">Lab 069 · Find the broken prediction contract<a class="anchor-link" href="#Lab-069-%C2%B7-Find-the-broken-prediction-contract">¶</a></h1><p><a href="../../lessons/0069-tabpfn-open-environment-failures.html">Lesson</a> · <a href="../../reference/0069-tabpfn-open-environment-failures.html">Reference</a> · <a href="../l069-reproduction.md">Reproduction contract</a></p>
 <p><strong>Route:</strong> retrieve → explain → predict → implement → CHECK → inspect evidence → EXIT. PROVIDED cells are readable implementation and peripheral support. TODOs contain your load-bearing code; CHECKs give immediate diagnostic feedback. Complete the code before revealing teacher solutions. Core study: 35–50 minutes; lab: 45–75 minutes plus explicitly gated larger runs.</p>
 <p><strong>Before reading:</strong> Can unsupported-class rows be dropped while claiming all-row deployment accuracy? Write your answer and justify the information boundary. Then recall one older lesson that could expose an error in this experiment.</p>
 <p><strong>Evidence contract:</strong> numerical figures labeled author-reference come from committed author measurements. They are not outputs of your current kernel. Reduced model mechanisms, pretrained reference inference, frozen-result reanalysis and paper reproduction are different tracks. Every track states its scope below.</p>
@@ -7857,13 +7857,53 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="A-strong-closed-task-score-leaves-several-contracts-untested">A strong closed-task score leaves several contracts untested<a class="anchor-link" href="#A-strong-closed-task-score-leaves-several-contracts-untested">¶</a></h2><p>Your goal is to identify which assumption broke before trying to repair a foundation model. Read <a href="https://arxiv.org/html/2505.16226v1">Cheng et al., Sections 4–5</a>. Its open-environment evaluation separates emerging classes, changing features, changing data distributions and changing learning objectives. These are different failure axes, so one aggregate “robustness” number can conceal the actual problem.</p>
 <p>A closed classification task usually assumes a fixed feature schema, target definition and class vocabulary. Deployment can violate any of them. The model may return probabilities of the expected shape while answering the wrong question. An honest baseline report therefore records the <strong>prediction contract</strong> as well as the score: what rows mean, which features exist, which labels are possible and how the prediction will be used.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=27ffc4cf2ae3">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-prediction-API-promises-more-than-an-average-score">A prediction API promises more than an average score<a class="anchor-link" href="#A-prediction-API-promises-more-than-an-average-score">¶</a></h3><p>A closed classification benchmark usually assumes a fixed feature schema, known class vocabulary and stable evaluation objective. Deployment can violate any of these assumptions. A model may retain strong performance on supported rows while failing to define a useful prediction for other required cases.</p>
+<p>Write the contract explicitly: which rows must receive predictions, which classes the output vector represents, what each feature means and when it is available, and which loss or decision cost matters. Robustness is always relative to a specified change in this contract.</p>
+<p>Unsupported classes, missing columns, changed units and changed decision costs are different failures. A single “open environment” score can hide which part of the system broke. The lesson uses separate interventions so each result has an interpretable cause.</p>
+<p>The local experiments combine measured feature-corruption comparisons with a synthetic unsupported-class diagnostic. The latter exposes scoring semantics; it is not a measured open-set detection system. Keep that distinction visible when discussing what the pretrained model actually did.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=efe894d0c00d">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Unsupported-classes-require-a-visible-policy">Unsupported classes require a visible policy<a class="anchor-link" href="#Unsupported-classes-require-a-visible-policy">¶</a></h2><p>Suppose context contains only classes A and B, and the classifier emits <code>[.2,.8]</code>. A later target belongs to new class C. The original two-class probability vector cannot assign calibrated probability to C. Dropping that row from evaluation falsely improves apparent performance, while relabeling C as B changes the task.</p>
 <p>The lab's diagnostic assigns unsupported labels zero probability, then clips at a declared epsilon only to obtain a finite log-loss value. With epsilon <code>1e−12</code>, a wholly unsupported target contributes about 27.63 nats. This is a diagnostic scoring convention, not a calibrated open-set detector. A deployment system might abstain, route the case or update its class vocabulary; each requires its own evaluation and coverage report.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=27ffc4cf2ae3">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fff3acd71fd2">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-probability-vector-must-name-the-events-it-covers">A probability vector must name the events it covers<a class="anchor-link" href="#A-probability-vector-must-name-the-events-it-covers">¶</a></h3><p>Suppose a classifier returns probabilities for classes [A,B], while a required test row has target C. There is no C column to score. Dropping the row changes the evaluated population. Relabeling C as B changes the task. A fallback or rejection policy must be declared explicitly.</p>
+<p>The local diagnostic assigns unsupported true classes a disclosed probability floor ε for all-row log-loss accounting. With ε=10⁻¹², that row contributes −ln ε≈27.631 nats. This is a scoring convention that makes missing support costly and visible; it does not mean the model learned a calibrated probability for the unknown class.</p>
+<p>If four supported rows each assign 0.8 to the correct class and one row is unsupported, mean all-row loss is [4·(−ln0.8)−ln(10⁻¹²)]/5≈5.705. Dropping the unsupported row reports only 0.223. The dramatic difference comes from coverage and the declared floor, not a subtle change in classification quality.</p>
+<p>Report coverage separately from conditional performance on supported rows. If the system can abstain, evaluate the abstention rule and its cost: how many rows are rejected, which kinds and what happens operationally afterward? A model that rejects every difficult case can look accurate on its retained subset while being unhelpful overall.</p>
+<p>Class-column alignment remains necessary even when all classes are supported. A probability matrix ordered [B,A] cannot be scored as [A,B]. Save the class vocabulary and check that it has no duplicates and matches the array width.</p>
+<h3 id="Epsilon-is-a-sensitivity-parameter,-not-a-hidden-repair">Epsilon is a sensitivity parameter, not a hidden repair<a class="anchor-link" href="#Epsilon-is-a-sensitivity-parameter,-not-a-hidden-repair">¶</a></h3><p>A different floor changes the penalty assigned to unsupported events. Disclose it and, when the conclusion depends on it, show sensitivity across reasonable declared conventions. Do not tune epsilon after seeing which value makes the system look acceptable. The missing class support is a substantive limitation regardless of the reporting floor.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b6ae2b2a64a4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7875,20 +7915,45 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=efe894d0c00d">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5a6ab494b4a5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>Keep <strong>known-class performance</strong>, <strong>unsupported-class frequency</strong>, <strong>abstention coverage</strong> and <strong>performance on all required rows</strong> separate. A high accuracy on the accepted subset is not enough if the model silently rejects most difficult cases. Thresholds for abstention must be chosen on validation evidence that represents the intended unknown-class process.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9c072206010a">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="A-feature-change-has-several-meanings">A feature change has several meanings<a class="anchor-link" href="#A-feature-change-has-several-meanings">¶</a></h2><p>Removing a column is a schema change. Replacing it by a training-derived imputation value is one explicit fallback; its usefulness depends on how the model was trained. Adding a new feature can change dimensional limits and representation behavior. Changing a sensor's units without changing the schema is a distributional change that may look superficially like ordinary numerical variation.</p>
 <p>The measured intervention holds trained models and test rows fixed, then alters one column selected using training variation only. One condition replaces it with its training mean; another scales its deviation from that mean by three. The clean condition remains visible. This isolates sensitivity to two corruptions and gives each arm identical altered data. It does not reproduce natural temporal drift, missing-not-at-random mechanisms or every feature-addition scenario in the paper.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fff3acd71fd2">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b80a49cc5999">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Distinguish-information-loss-from-a-schema-error">Distinguish information loss from a schema error<a class="anchor-link" href="#Distinguish-information-loss-from-a-schema-error">¶</a></h3><p>Setting a feature to missing removes observed information under the model's missing-value policy. Scaling it changes its numeric values and potentially its units. Permuting values across rows breaks their association with the target while preserving the marginal distribution. Reordering columns without updating identities is a schema mismatch. These interventions should not be summarized as the same kind of corruption.</p>
+<p>If income changes from units to thousands, a correct upstream unit conversion can preserve semantic information. Feeding the new numbers to a model expecting old units tests the system's sensitivity to an unannounced schema change. The appropriate remedy may be data-contract enforcement rather than a different architecture.</p>
+<p>The local corruption function uses a training-derived center and returns modified copies. Mutating the shared clean test array would contaminate subsequent comparisons. Re-fitting a scaler on each corrupted test set would also change more than the intended intervention and could leak query-distribution information.</p>
+<p>Keep row IDs, labels, checkpoint and all untouched columns fixed. Then a paired clean/corrupted loss difference can be attributed to the declared intervention within that experimental setup. If you also retrain or retune, you are evaluating adaptation to the change rather than immediate robustness of the frozen procedure.</p>
+<p>Missingness can itself be informative. A model trained on one missingness mechanism may fail when deployment missingness occurs for different reasons. Artificially blanking a column tests one controlled pattern; it does not represent every real missing-data process.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9e6989f065fc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7900,24 +7965,96 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b6ae2b2a64a4">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=977b92b58ecb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>The compared arms are pinned Nature-v2 inference and a small XGBoost recipe on three real binary datasets, with three seeds. The test corruption is a prespecified intervention, not a selected attack optimized against the test labels. A model's smaller degradation here supports a narrower statement than “robust in open environments.” Inspect both absolute error and the paired change from clean performance; a poor clean model can have little room to degrade.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c5981fc5919b">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="A-new-objective-is-not-necessarily-a-new-model">A new objective is not necessarily a new model<a class="anchor-link" href="#A-new-objective-is-not-necessarily-a-new-model">¶</a></h2><p>Suppose the original task optimized log loss, but deployment now values a recall constraint, asymmetric cost or a calibrated probability. Those requirements can change the decision rule without changing the underlying probability model. For a binary action, predicting a calibrated probability and choosing a threshold are separate operations. If probabilities cease to be calibrated under shift, moving the threshold alone may fail.</p>
 <p>Define the target label before discussing metrics. Predicting “will churn within 30 days” differs from “will churn eventually,” even if both produce a binary column. Feature availability and label delay also change the valid context. The paper's objective-change axis is a reminder to inspect the semantic task, not merely switch from accuracy to AUROC after viewing results.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=29a5ecebbfe7">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-changed-decision-cost-may-require-a-new-threshold">A changed decision cost may require a new threshold<a class="anchor-link" href="#A-changed-decision-cost-may-require-a-new-threshold">¶</a></h3><p>For a calibrated binary probability p, suppose a false positive costs C_FP and a false negative costs C_FN. Predicting positive has expected cost C_FP(1−p); predicting negative has expected cost C_FN p. Choose positive when p&gt;C_FP/(C_FP+C_FN).</p>
+<p>With false-negative cost nine times false-positive cost, the threshold is 0.1 rather than 0.5. The probability model can remain unchanged while the decision rule changes. This illustrates why a new operational objective does not automatically require a new representation or pretrained checkpoint.</p>
+<p>The derivation assumes the stated costs and useful probability calibration for the deployment population. If probabilities are miscalibrated or the population changes, the threshold's expected-cost interpretation can fail. Estimate calibration and choose any recalibration procedure using legal validation data.</p>
+<p>Ranking metrics, log loss and decision cost answer different questions. A model can have excellent ranking while assigning poor probabilities, or good average log loss while failing a high-cost subgroup. Choose the metric that connects to the intended action and retain complementary diagnostics.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ac84c6f48ed2">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="The-same-ranking-can-hide-very-different-probability-quality">The same ranking can hide very different probability quality<a class="anchor-link" href="#The-same-ranking-can-hide-very-different-probability-quality">¶</a></h3><p>Take two predictions for a negative and a positive row. Model A gives probabilities (0.1,0.9); model B gives (0.4,0.6). Both rank the positive row above the negative and both classify correctly at threshold 0.5. Their mean log losses differ: about 0.105 for A and 0.511 for B.</p>
+<p>Now imagine a distribution change makes a previously confident prediction wrong. Log loss penalizes that confident error strongly. Accuracy only records whether the thresholded class changed, and a ranking metric considers relative ordering across rows. These metrics expose different aspects of robustness.</p>
+<p>A calibration curve groups predictions and compares predicted probabilities with observed frequencies. Finite bins can be noisy, especially for rare classes or extreme probabilities. Use it as a diagnostic with sample counts, and evaluate any fitted recalibration on independent later data.</p>
+<p>For an open-environment report, state whether the intervention damaged information ranking, probability calibration, class support or the downstream decision threshold. A single metric change cannot uniquely identify all four. The appropriate repair follows the diagnosed component: schema correction, a context policy, recalibration or a different predictor may address different failures.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=33d8b2238ecf">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Build-a-failure-matrix-with-controlled-rows">Build a failure matrix with controlled rows<a class="anchor-link" href="#Build-a-failure-matrix-with-controlled-rows">¶</a></h2><p>Use one row per failure axis and columns for changed assumption, held-fixed quantities, intervention, measured output, fallback and untested claim. For an emerging class, the class-support contract changes. For a missing feature, the available input changes. For temporal concept shift, the conditional target rule changes. For a new utility function, the action criterion changes. A single corruption experiment cannot populate all four rows with “verified.”</p>
 <p>Ask what observation would distinguish your leading explanation from an alternative. If a missing-feature fallback fails, compare retraining under the same missingness to a frozen model with imputation. If a context lacks a class, distinguish representation failure from impossible class support. If a shift changes calibration, report both discrimination and a proper scoring rule. These follow-up experiments must use fresh or appropriately nested evaluation evidence.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=70a268b847ca">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="One-row-of-the-audit-should-describe-one-controlled-change">One row of the audit should describe one controlled change<a class="anchor-link" href="#One-row-of-the-audit-should-describe-one-controlled-change">¶</a></h3><p>For each intervention, record the changed input or assumption, what remained fixed, the affected population, the model's defined output policy and the measured quality/cost difference. Add a clean baseline in the same table. This makes it possible to compare failures without conflating their mechanisms.</p>
+<p>For example, an unsupported-class row might report class coverage and all-row log loss under the disclosed floor. A missing-feature row might report paired loss increase on all original test rows. A cost-change row might report expected decision cost at a validation-chosen threshold. These outcomes need not share one scalar ranking.</p>
+<p>Inspect whether the failure is in the model, wrapper, preprocessing or downstream decision policy. A class-order bug is not evidence that the pretrained representation lacks capacity. An unsupported task is not merely a poor accuracy score. The diagnosis determines the next useful intervention.</p>
+<p>The exit explanation should report one failure precisely and identify a result that would refute your proposed cause. Preserve the original rows and artifact chain so another researcher can reproduce both the clean and changed conditions. A candid boundary is more informative than claiming broad robustness from a small collection of successful cases.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=357df5ef8c7e">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit:-report-one-failure-without-overclaiming">Exit: report one failure without overclaiming<a class="anchor-link" href="#Exit:-report-one-failure-without-overclaiming">¶</a></h2><p>Submit the schema/class contract, all-row unsupported-class diagnostic and clean-versus-corrupted paired losses. Write a failure report that names the broken assumption, the evidence, a competing explanation and the next discriminating experiment. Include one case where the model did not fail, so the conclusion is not a curated collection of bad examples.</p>
 <p>For the relational mission, extend the matrix to new entities, new tables, foreign-key changes and delayed labels. Relational context can add information, but it also adds ways to violate availability and schema assumptions. The later model must be tested against those additional contracts rather than credited with robustness because it has a graph.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5a6ab494b4a5">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f18e3a71cd97">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7927,7 +8064,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b308f1d2b562">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a3266e724887">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7966,19 +8103,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b80a49cc5999">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d833fb75f479">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<span id="lab-exercises"></span><h2 id="TODO-1-%C2%B7-open_class_loss">TODO 1 · open_class_loss<a class="anchor-link" href="#TODO-1-%C2%B7-open_class_loss">¶</a></h2><p><strong>Goal:</strong> Score all required labels with a disclosed epsilon for unsupported classes; preserve class/probability alignment.</p>
+<span id="lab-exercises"></span><h2 id="TODO-1-·-open_class_loss">TODO 1 · open_class_loss<a class="anchor-link" href="#TODO-1-%C2%B7-open_class_loss">¶</a></h2><p><strong>Goal:</strong> Score all required labels with a disclosed epsilon for unsupported classes; preserve class/probability alignment.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=baa99b60f54a">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c47ea63cc6dc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7994,7 +8131,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=13f2060f5c39">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e1f8175350de">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8016,19 +8153,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c5981fc5919b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d64616d6477c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="TODO-2-%C2%B7-corrupt_column">TODO 2 · corrupt_column<a class="anchor-link" href="#TODO-2-%C2%B7-corrupt_column">¶</a></h2><p><strong>Goal:</strong> Create a non-mutating missing/scale test intervention using a training-derived center.</p>
+<h2 id="TODO-2-·-corrupt_column">TODO 2 · corrupt_column<a class="anchor-link" href="#TODO-2-%C2%B7-corrupt_column">¶</a></h2><p><strong>Goal:</strong> Create a non-mutating missing/scale test intervention using a training-derived center.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e1766a805392">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=986a944d2fa4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8044,7 +8181,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=43c0715f7958">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4d3b5a5621c0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8066,7 +8203,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=33d8b2238ecf">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=eb5f83f45d62">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8076,7 +8213,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5ef43c3a1709">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f1859c1057d2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8099,7 +8236,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=357df5ef8c7e">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=06e8cf535612">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8109,7 +8246,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=33aaa3298bd4">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=17c7bebbd17f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8133,17 +8270,17 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c520d8934fcc">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f741068345a2">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="EXIT-TICKET-%C2%B7-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
+<h2 id="EXIT-TICKET-·-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=494bdd48fe3b">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4538ae2a4833">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8166,18 +8303,18 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5468ce4f2e31">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c74210443156">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l069-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
+<h2 id="NEXT-STEP-·-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l069-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
 <p>For unattended CPU execution: <code>modal run --detach modal/foundation_repro.py --lesson 69 --preset closer</code>. This is a supplied operator, not evidence that a cloud job was run.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e1f8175350de">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a0593a6c91ce">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

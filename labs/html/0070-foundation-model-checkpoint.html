@@ -7802,7 +7802,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-070-%C2%B7-Defend-your-foundation-model-baseline">Lab 070 · Defend your foundation-model baseline<a class="anchor-link" href="#Lab-070-%C2%B7-Defend-your-foundation-model-baseline">¶</a></h1><p><a href="../../lessons/0070-foundation-model-checkpoint.html">Lesson</a> · <a href="../../reference/0070-foundation-model-checkpoint.html">Reference</a> · <a href="../l070-reproduction.md">Reproduction contract</a></p>
+<h1 id="Lab-070-·-Defend-your-foundation-model-baseline">Lab 070 · Defend your foundation-model baseline<a class="anchor-link" href="#Lab-070-%C2%B7-Defend-your-foundation-model-baseline">¶</a></h1><p><a href="../../lessons/0070-foundation-model-checkpoint.html">Lesson</a> · <a href="../../reference/0070-foundation-model-checkpoint.html">Reference</a> · <a href="../l070-reproduction.md">Reproduction contract</a></p>
 <p><strong>Route:</strong> retrieve → explain → predict → implement → CHECK → inspect evidence → EXIT. PROVIDED cells are readable implementation and peripheral support. TODOs contain your load-bearing code; CHECKs give immediate diagnostic feedback. Complete the code before revealing teacher solutions. Core study: 35–50 minutes; lab: 45–75 minutes plus explicitly gated larger runs.</p>
 <p><strong>Before reading:</strong> Can a v2 score fill an unrun v3 entry in a current-model checkpoint? Write your answer and justify the information boundary. Then recall one older lesson that could expose an error in this experiment.</p>
 <p><strong>Evidence contract:</strong> numerical figures labeled author-reference come from committed author measurements. They are not outputs of your current kernel. Reduced model mechanisms, pretrained reference inference, frozen-result reanalysis and paper reproduction are different tracks. Every track states its scope below.</p>
@@ -7857,17 +7857,81 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Select-a-baseline-whose-evidence-you-can-defend">Select a baseline whose evidence you can defend<a class="anchor-link" href="#Select-a-baseline-whose-evidence-you-can-defend">¶</a></h2><p>Your goal is to produce an independently reviewable comparison of pretrained in-context learners, a trained TabM and XGBoost, then identify what relational information could add beyond them. A passing report can recommend a tree, an in-context learner or an ensemble under a stated budget. It must not manufacture a foundation-model win.</p>
 <p>The core references are <a href="https://www.nature.com/articles/s41586-024-08328-6">Nature TabPFN v2</a>, <a href="https://arxiv.org/abs/2502.05564">TabICL</a>, <a href="https://arxiv.org/abs/2410.24210">TabM</a> and the version-specific <a href="https://arxiv.org/abs/2605.13986">TabPFN-3 technical report</a>. The curriculum's newer TabPFN-2.5/3 and TabICLv2 extension arms are explicitly tracked. Availability of their packages is not proof of checkpoint access or a completed run.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=de0b6774b97f">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="The-best-baseline-is-a-procedure-you-can-defend-and-deploy">The best baseline is a procedure you can defend and deploy<a class="anchor-link" href="#The-best-baseline-is-a-procedure-you-can-defend-and-deploy">¶</a></h3><p>A research baseline serves two purposes. It estimates what a strong existing method can achieve on the task, and it provides a credible control for a proposed improvement. A weakly configured baseline makes an apparent gain difficult to interpret; an impractically expensive baseline may be scientifically interesting while unsuitable for the deployment decision.</p>
+<p>Begin by naming the prediction unit, target, information cutoff and operational constraint. A row-level binary classification panel is not automatically a proxy for a relational forecasting task with repeated entities and delayed labels. The checkpoint prepares the comparison discipline that the later task will need.</p>
+<p>Separate the mechanism you implemented from the pretrained system you invoked. Implementing context masking teaches an information boundary; running a version-pinned checkpoint measures a particular learned predictor; reanalyzing saved outputs audits an existing experiment. All are valuable, but they support different claims of understanding and reproduction.</p>
+<p>The final recommendation can favor a tree, TabM or an in-context learner. Its quality comes from the evidence chain and the fit to constraints, not from rewarding the newest model family. State what observation would change your recommendation so the conclusion remains testable.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=18af03ab4353">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Keep-the-requested-roster-visible">Keep the requested roster visible<a class="anchor-link" href="#Keep-the-requested-roster-visible">¶</a></h2><p>The measured historical panel contains XGBoost, TabM-mini, Nature-v2 TabPFN and TabICL v1.1. It uses five real binary tasks: diabetes, blood transfusion, kc1, phoneme and Wisconsin diagnostic breast cancer. Each task is capped at 600 rows, split 60/20/20 with split seed 70, and evaluated with model/inference seeds 0, 1 and 2. The pretrained arms use one view; fitted arms use two validation-selected small recipes. The historical four-arm summary is retained separately so adding methods does not silently rewrite its rank definition.</p>
 <p>The extended panel <strong>measures all seven arms</strong>: the four historical arms plus TabPFN-2.5-synthetic, TabPFN-3 and TabICLv2. The current extension uses the exact same data identities, row partitions and seeds; the assembler rejects a mismatched or incomplete panel. It adds 45 runs, producing 105 selected task/seed/model results in total. TabPFN package 8.5.0 and TabICL package 2.2.0 load explicitly selected, revision-pinned checkpoints. Read the checkpoint filename and SHA-256, not just the package version.</p>
 <p>The 2.5 arm intentionally names its synthetic-pretrained checkpoint (<code>v2.5_default-2</code>), which is distinct from the later real-data-tuned default. It is not a claim about every 2.5 checkpoint. Newer models receive one inference view, just like the historical pretrained arms. These local runs do not reproduce the technical reports' larger benchmark suites, ensembles or compute allocations. The complete roster is measured; the <strong>full paper benchmark protocols remain unreproduced</strong>.
 This distinction is the checkpoint's first test of judgment. Rank only a declared complete panel. Report missing requested arms beside that panel; never fill their scores with a nearby version, silently drop them from a claimed full comparison or treat an access error as poor model accuracy.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=dc26883ce130">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Model-identity-includes-the-checkpoint-and-inference-recipe">Model identity includes the checkpoint and inference recipe<a class="anchor-link" href="#Model-identity-includes-the-checkpoint-and-inference-recipe">¶</a></h3><p>A package version can support several checkpoints, and a model family can contain differently pretrained or adapted variants. Record the checkpoint filename, revision and hash, along with preprocessing and inference settings. A label such as “v2.5” is insufficient when synthetic-pretrained and later real-data-tuned checkpoints differ.</p>
+<p>The current panel contains seven measured arms on a shared five-task, three-seed design. That is 7×5×3=105 selected results. The historical four-arm panel remains a separate summary because adding opponents changes the definition of ranks even when old predictions remain identical.</p>
+<p>For a simple rank example, suppose A and B have losses 0.2 and 0.3. Their ranks are 1 and 2. Add C with loss 0.1; A and B now rank 2 and 3 without either prediction changing. The changed rank is a property of the comparison pool, not a regression in A or B.</p>
+<p>Missing arms should retain a status such as not run, unsupported or access failed, with the reason. Never substitute a nearby version's score. A complete measured panel establishes coverage of that local roster; it does not establish reproduction of every model's original benchmark protocol.</p>
+<p>Pretraining-data overlap with public tasks is another uncertainty to record when it has not been independently audited. A downstream split prevents direct local train/test overlap, but it does not by itself establish what an externally pretrained model encountered historically. Keep this limitation separate from the checks you can perform on local row identities.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fc45ef46f597">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Freeze-a-shared-prediction-contract">Freeze a shared prediction contract<a class="anchor-link" href="#Freeze-a-shared-prediction-contract">¶</a></h2><p>Each arm predicts the probability of the same positive class on the same test row IDs. Training-derived preprocessing, context membership and validation decisions are recorded. Test labels enter scoring after selection. Each saved result includes predictions, targets, validation candidate errors, the selected index and measured durations. A CHECK reconstructs log loss from these artifacts and verifies that the winner was selected on validation.</p>
 <p>Inference seeds for a pretrained model vary its downstream configuration, not its pretraining history. Zero variation across three such seeds does not mean there is no uncertainty. Fixed splits also hide split uncertainty. For the five-dataset panel, dataset means—not individual seeds—form the blocks in the rank analysis.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=de0b6774b97f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e1b4dc35efd9">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Make-the-saved-result-independently-scoreable">Make the saved result independently scoreable<a class="anchor-link" href="#Make-the-saved-result-independently-scoreable">¶</a></h3><p>Each record should identify dataset version, row IDs, target mapping, model/checkpoint, seed role, selected candidate and probability outputs. A separate evaluator should be able to reconstruct the reported metric without refitting the model or trusting a precomputed scalar.</p>
+<p>For binary log loss, map the declared positive class consistently. A prediction p contributes −ln p when y=1 and −ln(1−p) when y=0. Validate finite probabilities in range and disclose any numerical clipping. Preserve every required test row.</p>
+<p>Selection should be reconstructible too. Store validation candidate errors and the chosen index, then verify the index follows the declared rule. If a pretrained arm uses one view while a fitted arm selects among two recipes, report that allocation rather than calling the procedures identical in every respect.</p>
+<p>Seeds have different meanings across arms. A training seed can change learned neural weights. An inference seed for a fixed pretrained checkpoint may change permutations, subsampling or other downstream configuration. Neither creates an independently pretrained foundation model. Zero variation across those seeds does not imply zero uncertainty.</p>
+<p>Fixed splits also leave split uncertainty unmeasured. The reported seed intervals should say what randomness they cover. A narrow interval over three downstream seeds cannot certify transfer to another table or another time period.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=50a1a295a98d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7879,7 +7943,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=18af03ab4353">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9fc64221ebbd">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7891,7 +7955,23 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=dc26883ce130">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=398a01b642ef">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Read-a-winner-claim-through-effect,-uncertainty-and-cost">Read a winner claim through effect, uncertainty and cost<a class="anchor-link" href="#Read-a-winner-claim-through-effect,-uncertainty-and-cost">¶</a></h3><p>First inspect task-level loss gaps. A negative model-minus-XGBoost gap favors the named model on that task. Keep the metric units and paired rows explicit. Then average seeds within each dataset and calculate ranks across the declared pool.</p>
+<p>With five datasets, a mean-rank ordering is based on five task blocks. The current panel's smallest mean rank does not by itself establish overall superiority; its exploratory rank test does not resolve a broad winner. A critical-distance bar is a multiple-comparison threshold in rank units, not a confidence interval around a model's log loss.</p>
+<p>Practical significance can differ from statistical resolution. A small but consistent latency gain may matter operationally even when quality differences are unresolved. A large quality gain on one critical task may justify a local choice without supporting a universal ranking.</p>
+<p>Cost has a lifecycle. Offline pretraining is a historical investment; checkpoint loading and context preparation occur in the downstream system; repeated query prediction determines serving cost. TabM pays downstream optimization up front and later predicts without attending to the full training table. An in-context learner can have little downstream weight fitting while paying context-dependent inference cost.</p>
+<p>Suppose procedure A costs 100 units to prepare and 1 per query batch, while B costs 10 to prepare and 4 per batch. Their total costs are 100+n and 10+4n. They tie at n=30 batches. Below that volume B is cheaper; above it A is cheaper. This illustrative break-even calculation explains why a single fit-time ranking is not a deployment decision.</p>
+<p>The actual timings here were observed on a shared CPU host. Treat them as a recorded local workload, with possible interference, rather than a controlled hardware performance certificate. Keep cold loading, context preparation and prediction definitions consistent when comparing arms.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=54c46357f55e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7903,7 +7983,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fc45ef46f597">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=48423293fc95">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7915,7 +7995,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e1b4dc35efd9">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6961309d2eee">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7926,7 +8006,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=50a1a295a98d">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4f0d976068c4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7938,24 +8018,70 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9fc64221ebbd">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4e8bd7b9df38">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>The critical-distance bar belongs to the complete declared method pool. It is an exploratory multiple-comparison threshold over dataset-level ranks, not a confidence interval around a model score.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3eb5e54ea6ac">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Make-a-transfer-test,-not-a-victory-slide">Make a transfer test, not a victory slide<a class="anchor-link" href="#Make-a-transfer-test,-not-a-victory-slide">¶</a></h2><p>Choose one mechanism from lessons 61–69 and predict an intervention outcome before running it: reduce context, change label availability, remove a feature, add an unsupported class or switch from random to temporal evaluation. Keep the unperturbed baseline and identify what changed. Carry that prediction and its actual outcome into your report, including a failed prediction.</p>
 <p>Use the evidence from lesson 65 to discuss representation access, lesson 67 to discuss local context and adaptation, and lesson 68 to discuss prior mismatch. Do not pool incompatible split seeds, row caps or metrics across those lessons into a new leaderboard. They form a connected argument because the mechanisms and contracts are explicit, not because every number belongs in one table.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7cce9f17be38">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Write-a-relational-research-handoff">Write a relational research handoff<a class="anchor-link" href="#Write-a-relational-research-handoff">¶</a></h2><p>Name the entity, target time and prediction horizon for a future relational task. List information available to a strong single-table baseline and additional relations you expect to matter. Propose a relational intervention that preserves the same prediction contract and evaluates whether those relations add value. Beat the best deployable baseline selected using validation, not the model that happened to lose one of these small historical comparisons.</p>
 <p>State one result that would count against your relational thesis. For example, if a leakage-safe aggregate table plus a strong pretrained learner matches the relational model at lower cost on the target regime, that is substantive counter-evidence. It should remain in the thesis dossier even if a different dataset favors relational learning.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8b7e337f377f">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-relational-hypothesis-must-identify-additional-legal-information">A relational hypothesis must identify additional legal information<a class="anchor-link" href="#A-relational-hypothesis-must-identify-additional-legal-information">¶</a></h3><p>A relational model earns an advantage by using structure or information that a strong single-table procedure cannot exploit as effectively under the same contract. Name that information: entity histories, event timing, typed links, neighborhood labels or cross-table interactions. Then specify which parts can already be summarized into leakage-safe aggregates for the baseline.</p>
+<p>For example, a future churn task may permit a customer's past interactions and related account events before a cutoff. A strong aggregate table can include counts, recency and prior outcomes available then. A relational model might preserve the sequence or typed interaction structure discarded by those aggregates. The experiment should test that concrete difference rather than comparing rich relational inputs with an impoverished flat baseline.</p>
+<p>Keep the target rows, horizon, feature/label availability and selection budget aligned. If the relational method gets later labels or additional entities that the baseline was forbidden to use, the result does not isolate representation of relations. Information parity matters before architectural novelty.</p>
+<p>Choose a transfer intervention before observing its result. Reduce eligible context, remove a relation type, shift the time window or replace relational structure with matched aggregates. Predict the direction and identify what remains fixed. A failed prediction is useful evidence if it was recorded before the measurement.</p>
+<p>State counter-evidence explicitly. If a legal aggregate table plus a strong pretrained learner matches the relational model at lower cost, that weakens the claim that the retained relation structure is necessary under this task. Preserve that result rather than moving the goalposts to another dataset.</p>
+<p>The exit report should connect the complete local roster, reconstructed scores, uncertainty, lifecycle cost and one falsifiable relational hypothesis. The course package can supply runnable tools and author evidence; mastery requires you to produce and defend your own artifact without borrowing the lesson's conclusion.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9d786920a1d8">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit:-submit-an-executable-argument">Exit: submit an executable argument<a class="anchor-link" href="#Exit:-submit-an-executable-argument">¶</a></h2><p>Submit the frozen protocol, version/checkpoint and data identities, complete measured panel, explicit unrun-arm ledger, paired uncertainty/ranks, cost report and one prespecified transfer test. Add a short deployment recommendation and a research handoff with a falsifiable relational hypothesis. Distinguish which code you implemented, which checkpoints you ran, which saved results you reanalyzed and which original paper results remain unreproduced.</p>
 <p>The learning sequence is ready when these tasks are runnable and reviewable. Your personal checkpoint mastery is assessed only after you submit the evidence and explain it without relying on the lesson text. Ask the tutor to challenge the weakest link in your argument before moving into self-supervised encoders.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=398a01b642ef">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=11c93a3e9eda">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7965,7 +8091,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=cac3ab65cc5f">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4238a3cbec6d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8004,19 +8130,19 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=48423293fc95">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2d60c62c0091">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<span id="lab-exercises"></span><h2 id="TODO-1-%C2%B7-choose_validation">TODO 1 · choose_validation<a class="anchor-link" href="#TODO-1-%C2%B7-choose_validation">¶</a></h2><p><strong>Goal:</strong> Keep final model choice independent of test labels.</p>
+<span id="lab-exercises"></span><h2 id="TODO-1-·-choose_validation">TODO 1 · choose_validation<a class="anchor-link" href="#TODO-1-%C2%B7-choose_validation">¶</a></h2><p><strong>Goal:</strong> Keep final model choice independent of test labels.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=afd2a2be6e31">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f6f50a53efac">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8032,7 +8158,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=0414a140f8aa">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9b142b477b5c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8055,19 +8181,19 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4e8bd7b9df38">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6d9e618fe129">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="TODO-2-%C2%B7-paired_summary">TODO 2 · paired_summary<a class="anchor-link" href="#TODO-2-%C2%B7-paired_summary">¶</a></h2><p><strong>Goal:</strong> Implement complete crossed-panel checking, seed-first aggregation, rank statistics and conditional intervals.</p>
+<h2 id="TODO-2-·-paired_summary">TODO 2 · paired_summary<a class="anchor-link" href="#TODO-2-%C2%B7-paired_summary">¶</a></h2><p><strong>Goal:</strong> Implement complete crossed-panel checking, seed-first aggregation, rank statistics and conditional intervals.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7bf258c41db5">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3ad00cac864d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8083,7 +8209,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6b3e7cbb6608">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2bd065ea864f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8108,7 +8234,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8b7e337f377f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5f84e2e22c51">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8118,7 +8244,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b0f45f2b02ac">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3f6cf0cb87c3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8144,7 +8270,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=11c93a3e9eda">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8a12f0602c36">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8154,7 +8280,7 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4238a3cbec6d">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9f4af2f95e77">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8178,17 +8304,17 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2d60c62c0091">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=60c67e5e8f80">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="EXIT-TICKET-%C2%B7-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
+<h2 id="EXIT-TICKET-·-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f6f50a53efac">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f5735126174b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8211,18 +8337,18 @@ This distinction is the checkpoint's first test of judgment. Rank only a declare
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8474849cca9d">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=13ddcb7dad96">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l070-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
+<h2 id="NEXT-STEP-·-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l070-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
 <p>For unattended CPU execution: <code>modal run --detach modal/foundation_repro.py --lesson 70 --preset closer</code>. This is a supplied operator, not evidence that a cloud job was run.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=6d114583c644">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3515eddad3fc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

@@ -1,11 +1,12 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inductive bias — intervention reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Inductive bias — intervention reference</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/></head><body><article>
 <nav><a href="../index.html">Course</a> · <a href="../lessons/0051-why-trees-still-win.html">Lesson 051</a> · <a href="glossary.html">Glossary</a></nav>
 <p class="mission-tag">Reference · experimental diagnosis</p><h1>Three interventions, three contracts</h1>
 <p>An inductive bias is a learning preference under limited evidence. A response to an intervention is evidence about the specified training procedure. It is not proof that a model family cannot represent the target.</p>
-<table><thead><tr><th>Question</th><th>Change</th><th>Keep fixed</th><th>Effect baseline</th></tr></thead><tbody>
+<div aria-label="Scrollable comparison table" class="lesson-table-scroll" role="region" tabindex="0"><table><thead><tr><th>Question</th><th>Change</th><th>Keep fixed</th><th>Effect baseline</th></tr></thead><tbody>
 <tr><td>Does fitting depend on short-range target variation?</td><td>Gaussian-average training labels; threshold at &gt;0.5</td><td>Top-five columns, raw evaluation labels</td><td>Unsmoothed top-five training</td></tr>
 <tr><td>Does fitting exploit individual coordinates?</td><td>X′=XR on every split</td><td>Rows, labels, recoverable information</td><td>Original full-feature training</td></tr>
-<tr><td>Does fitting suffer from irrelevant inputs?</td><td>Append independent noise columns</td><td>Original feature block and evaluation labels</td><td>Original full-feature training</td></tr></tbody></table>
+<tr><td>Does fitting suffer from irrelevant inputs?</td><td>Append independent noise columns</td><td>Original feature block and evaluation labels</td><td>Original full-feature training</td></tr></tbody></table></div>
 <h2>Calculations to reconstruct from memory</h2>
 <p><strong>Smoothing:</strong> d²=(xᵢ−xⱼ)ᵀC⁻¹(xᵢ−xⱼ); w=exp(−d²/(2h²)); pᵢ=Σwᵢⱼyⱼ/Σwᵢⱼ. Include self-weight. At h=0 return original y. The released classification function maps p&gt;0.5 to 1, otherwise 0. C, feature selection and quantile transforms must be trained without held-out labels.</p>
 <p><strong>Rotation:</strong> RᵀR=I, so (XR)Rᵀ=X. For first-layer weights W, W′=WR gives (XR)(WR)ᵀ=XWᵀ. This is transported-weight equivalence. Independently initialized AdamW runs need not match.</p>
@@ -16,4 +17,35 @@
 <h2>Source and reproduction boundaries</h2>
 <p><a href="https://arxiv.org/html/2207.08815v1#S5">Grinsztajn et al. (2022), §5 / A.4</a> supplies the investigation. Read the <a href="https://github.com/LeoGrin/tabular-benchmark/blob/9d54cf53d9fd3159e367e70a00005f4fcbf2c79d/src/data_transforms.py">pinned code</a> to audit thresholding and the added-noise distribution. L051 uses the later OpenML suite 337, three tasks, smaller samples and fixed local training recipes: <strong>INCOMPARABLE</strong> to original benchmark curves. Numerical transformation parity checks one specified operation, not the full experiment.</p>
 <p><a href="../labs/l051-reproduction.md">Reproduction contract</a> · <a href="fair-comparison-checkpoint.html">Fair comparison reference</a></p>
-</article></body></html>
+<section class="lesson-depth" data-depth-reference="51"><h2 id="Intervention-reasoning-sheet">Intervention reasoning sheet<a class="anchor-link" href="#Intervention-reasoning-sheet">¶</a></h2><table>
+<thead>
+<tr>
+<th>Intervention</th>
+<th>Preserve</th>
+<th>Deliberately change</th>
+<th>Check before interpreting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Smoothing</td>
+<td>Reference-label fit boundary</td>
+<td>Local target variation</td>
+<td>Bandwidth, target type, class balance</td>
+</tr>
+<tr>
+<td>Rotation</td>
+<td>Row IDs, labels, joint information</td>
+<td>Coordinate alignment</td>
+<td>Same orthogonal matrix for every partition</td>
+</tr>
+<tr>
+<td>Noise columns</td>
+<td>Original data and split</td>
+<td>Input dimension and distractors</td>
+<td>Target independence and realized cost</td>
+</tr>
+</tbody>
+</table>
+<p>Smoothing example: weights (0.6,0.3,0.1), labels (0,1,1) produce 0.4. Rotation example: x₁&gt;0 becomes u&gt;v under u=(x₁+x₂)/√2, v=(−x₁+x₂)/√2. These are mechanism checks, not empirical benchmark results. Report robustness under tested interventions rather than claiming architectural invariance.</p>
+</section></article></body></html>

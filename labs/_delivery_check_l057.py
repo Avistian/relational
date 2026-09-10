@@ -35,16 +35,20 @@ for c in student.cells:
  for token in re.findall(r'data:image/png;base64,([A-Za-z0-9+/=]+)',c.source):
   b=base64.b64decode(token);Image.open(BytesIO(b)).verify();payloads.append(hashlib.sha256(b).hexdigest())
 assert len(payloads)==5
-assert set(payloads)=={hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT/'figures/l057').glob('*.png')}
+expected_images={hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT/'figures/l057').glob('*.png') if 'architecture' not in p.name}
+expected_images.update(hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT/'figures/architecture-revision').glob('0057-*.png'))
+assert set(payloads)==expected_images
 teacher=json.loads((ROOT/'data/cache/l057-student-audit.json').read_text());assert teacher==r['summary']
 manifest=json.loads((site/'lessons/manifest.json').read_text());e=next(x for x in manifest['lessons'] if x['id']==57)
 assert e['labPath']=='labs/'+SLUG+'.ipynb' and e['published']
 assert len({x['id'] for x in manifest['lessons']})==len(manifest['lessons'])
-for name in ['index.html','notebooks.html']:assert f'name="rdl-manifest-version" content="{manifest["version"]}"' in (site/name).read_text()
+for name in ['index.html','notebooks.html']:assert BeautifulSoup((site/name).read_text(),'html.parser').find('meta',attrs={'name':'rdl-manifest-version'})['content']==str(manifest['version'])
 stage=Path(tempfile.mkdtemp(prefix='l057-pages-'))
 for folder in ['assets','lessons','reference']:shutil.copytree(site/folder,stage/folder)
 (stage/'labs/html').mkdir(parents=True);(stage/'modal').mkdir()
 shutil.copytree(ROOT/'figures/l057',stage/'labs/figures/l057')
+shutil.copytree(ROOT/'figures/architecture-revision',stage/'labs/figures/architecture-revision')
+shutil.copytree(ROOT/'html/architecture-review',stage/'labs/html/architecture-review')
 for rel in ['html/'+SLUG+'.html',SLUG+'.ipynb']:shutil.copy2(ROOT/rel,stage/'labs'/rel)
 for n in ['index.html','notebooks.html','flashcards.html']:shutil.copy2(site/n,stage/n)
 for n in ['l057-reproduction.md','_verify_l057_results.json','_sources_l057.json','_data_l057.json','_source_check_l057_results.json']:
@@ -67,6 +71,6 @@ assert all(lesson.find(id=m) for m in mounts)
 checks=dict(solution_code_cells=sum(c.cell_type=='code' for c in solution.cells),student_todos=4,portable_pngs=5,
  archived_three_family_runs=9,fold_model_fits=81,live_student_audit='MATCH',oof_coverage_and_disjointness='PASS',
  copied_pages_links=links,staging_path=str(stage),model_source_visible=True,selector_parity='MATCH on five non-tied fixtures',
- browser='NOT_CHECKED: no browser executable or browser tool available',live_colab='NOT_CHECKED',deployment='NOT_CHECKED',
- larger_run='NOT_RUN',modal_run='NOT_RUN',paper_figure6='INCOMPARABLE',figure_review='Five PNGs inspected; synthetic computations checked; no browser/mobile screenshot claim')
+ browser='Separate browser audit: _depth_browser_results.json',live_colab='NOT_CHECKED',deployment='NOT_CHECKED',
+ larger_run='NOT_RUN',modal_run='NOT_RUN',paper_figure6='INCOMPARABLE',figure_review='Synthetic computations checked here; revised architecture screenshots audited in _architecture_revision_results.json and _depth_browser_results.json')
 (ROOT/'_delivery_l057_results.json').write_text(json.dumps(checks,indent=2)+'\n');print(json.dumps(checks,indent=2))

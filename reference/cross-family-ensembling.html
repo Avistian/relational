@@ -1,7 +1,32 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reference · Cross-family OOF ensembles</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article><nav><a href="../lessons/0057-cross-family-ensembling.html">Lesson 057</a> · <a href="glossary.html">Glossary</a></nav><h1>An ensemble you can audit</h1><p>All probabilities must describe the same class on the same rows.</p><table><thead><tr><th>Stage</th><th>Allowed information</th><th>Invariant</th></tr></thead><tbody><tr><td>Base fit for fold f</td><td>Complementary development rows</td><td>Preprocessing, context labels and fitting exclude f; early stopping needs another inner split</td></tr><tr><td>OOF assembly</td><td>Predictions for held-out f</td><td>Scatter by row ID; exactly one prediction per row and family</td></tr><tr><td>Combiner fit</td><td>OOF probabilities and development labels</td><td>No outer-test labels; freeze library, steps and metric</td></tr><tr><td>Test prediction</td><td>Test features; fitted fold models and weights</td><td>Average folds within family, then combine families</td></tr><tr><td>Evaluation</td><td>Test labels, after freezing choices</td><td>Compare with OOF-selected single; do not deploy a test-selected oracle</td></tr></tbody></table><h2>Computation</h2><pre>Z: N × M OOF probabilities
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Reference · Cross-family OOF ensembles</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/></head><body><article><nav><a href="../lessons/0057-cross-family-ensembling.html">Lesson 057</a> · <a href="glossary.html">Glossary</a></nav><h1>An ensemble you can audit</h1><p>All probabilities must describe the same class on the same rows.</p><div aria-label="Scrollable comparison table" class="lesson-table-scroll" role="region" tabindex="0"><table><thead><tr><th>Stage</th><th>Allowed information</th><th>Invariant</th></tr></thead><tbody><tr><td>Base fit for fold f</td><td>Complementary development rows</td><td>Preprocessing, context labels and fitting exclude f; early stopping needs another inner split</td></tr><tr><td>OOF assembly</td><td>Predictions for held-out f</td><td>Scatter by row ID; exactly one prediction per row and family</td></tr><tr><td>Combiner fit</td><td>OOF probabilities and development labels</td><td>No outer-test labels; freeze library, steps and metric</td></tr><tr><td>Test prediction</td><td>Test features; fitted fold models and weights</td><td>Average folds within family, then combine families</td></tr><tr><td>Evaluation</td><td>Test labels, after freezing choices</td><td>Compare with OOF-selected single; do not deploy a test-selected oracle</td></tr></tbody></table></div><h2>Computation</h2><pre>Z: N × M OOF probabilities
 w: M nonnegative weights, sum(w)=1
 p = Z @ w
 binary log loss = −mean[y log(p)+(1−y) log(1−p)]
 candidate_j at step t = (previous_sum + Z[:,j]) / t
 choose lowest OOF loss; allow replacement
-retain best OOF prefix; weights = counts / prefix_length</pre><p>Worked trace: selected [A,A,B,A] → counts [3,1] → weights [.75,.25]. Each member is evaluated once at inference. Identical copies add no prediction diversity. A best-prefix guarantee applies to OOF loss, not test loss.</p><h2>Evidence boundaries</h2><p>Report logloss(stack)−logloss(OOF-best): negative favors the stack. Pair seed differences before constructing intervals. Seeds describe fit variation under fixed data, not future population shift. Average seed errors per dataset before ranking; keep datasets as the statistical units. Weight is not causal usefulness: remove a family and reselect for an ablation. Fair cross/within-family comparisons also require matched budgets.</p><p><a href="https://arxiv.org/html/2506.16791v1#S3.SS2">TabArena §3.2 / Figure 6</a> motivates the stronger baseline. Our small OOF stack is INCOMPARABLE to its full model pool, data, metric and protocol. <a href="../labs/l057-reproduction.md">Exact contract and run commands</a>.</p></article></body></html>
+retain best OOF prefix; weights = counts / prefix_length</pre><p>Worked trace: selected [A,A,B,A] → counts [3,1] → weights [.75,.25]. Each member is evaluated once at inference. Identical copies add no prediction diversity. A best-prefix guarantee applies to OOF loss, not test loss.</p><h2>Evidence boundaries</h2><p>Report logloss(stack)−logloss(OOF-best): negative favors the stack. Pair seed differences before constructing intervals. Seeds describe fit variation under fixed data, not future population shift. Average seed errors per dataset before ranking; keep datasets as the statistical units. Weight is not causal usefulness: remove a family and reselect for an ablation. Fair cross/within-family comparisons also require matched budgets.</p><p><a href="https://arxiv.org/html/2506.16791v1#S3.SS2">TabArena §3.2 / Figure 6</a> motivates the stronger baseline. Our small OOF stack is INCOMPARABLE to its full model pool, data, metric and protocol. <a href="../labs/l057-reproduction.md">Exact contract and run commands</a>.</p><section class="lesson-depth" data-depth-reference="57"><h2 id="OOF-stacking-trace">OOF stacking trace<a class="anchor-link" href="#OOF-stacking-trace">¶</a></h2><p>For row i in fold A: fit each base procedure on B∪C → predict xᵢ → place the output in row i of Z → train the combiner on (Z,y). Preserve row IDs and model/class column order.</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>May use row i's target?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Base model producing Zᵢ</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Combiner trained on (Z,y)</td>
+<td>Yes, as its training target</td>
+</tr>
+<tr>
+<td>Final model selection using test y</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>Uniform or convex weighted probability averaging preserves probability semantics after class alignment. It need not beat the best individual member. Compare against a validation-selected member and report OOF construction cost separately from serving cost.</p>
+</section></article></body></html>

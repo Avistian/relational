@@ -1,4 +1,5 @@
 """Build L055 student + solution notebooks from canonical prose/code/figures."""
+from _lesson_depth import enrich_notebook
 import ast,base64,os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -206,7 +207,7 @@ if RUN_PAPER_REPRO:
     display(pd.DataFrame({s:v['mean_ranks'] for s,v in closer['summary'].items()},index=ARMS))
 else:
     print('Scale-up NOT_RUN. Full paper Figure 2 NOT_RUN. Local evidence INCOMPARABLE.')''')
-    nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}})
+    nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}}),55)
     return nb
 
 if __name__=='__main__':

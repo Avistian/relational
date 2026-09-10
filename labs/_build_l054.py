@@ -1,4 +1,5 @@
 """Build L054 student + solution notebooks: visible TabM code, portable figures."""
+from _lesson_depth import enrich_notebook
 import ast, base64, os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -194,9 +195,9 @@ print('Your explanation:', interpretation or 'WRITE YOUR INTERPRETATION BEFORE S
     md('''### Return tomorrow
 Without reopening the formula, reconstruct the BatchEnsemble identity and explain why weight sharing plus joint training beats an explicit deep ensemble. Then state what changes when a benchmark's split stops being random — the L055 question. Ask the teacher about any CHECK or derivation you cannot defend.''')
 
-    nb = nbf.v4.new_notebook(cells=cells, metadata=dict(
+    nb = enrich_notebook(nbf.v4.new_notebook(cells=cells, metadata=dict(
         kernelspec=dict(display_name='Python 3', language='python', name='python3'),
-        language_info=dict(name='python', version='3')))
+        language_info=dict(name='python', version='3'))),54)
     if write:
         path = ROOT / ('solutions' if solution else '') / f'{SLUG}.ipynb'
         path.parent.mkdir(exist_ok=True); nbf.write(nb, path); print(path)

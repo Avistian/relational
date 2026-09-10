@@ -1,4 +1,5 @@
 """Build the L048 student/teacher package from visible canonical source chunks."""
+from _lesson_depth import enrich_notebook
 import base64
 import json
 from pathlib import Path
@@ -445,7 +446,7 @@ else:
 Paste your EXIT explanation and your scale-up ledger. Ask about the first tensor, equation, or protocol choice you cannot explain without reading. If your metric differs, keep the evidence and investigate the source of the discrepancy; a forced winning score is not the objective.
 
 [Cross-network reference](../reference/dcnv2-reproduction.html) · [Authoritative glossary](../reference/glossary.html) · [Primary paper](https://arxiv.org/html/2008.13535v2) · [Official cross-layer implementation, pinned 0.7.3](https://github.com/tensorflow/recommenders/blob/v0.7.3/tensorflow_recommenders/layers/feature_interaction/dcn.py)''')
-    notebook=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Relational Labs (.venv)','language':'python','name':'relational-labs'},'language_info':{'name':'python','version':'3.12'},'lesson':48})
+    notebook=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Relational Labs (.venv)','language':'python','name':'relational-labs'},'language_info':{'name':'python','version':'3.12'},'lesson':48}),48)
     return notebook
 
 

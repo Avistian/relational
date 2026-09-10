@@ -7802,7 +7802,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Lab-063-%C2%B7-What-a-synthetic-causal-prior-encodes">Lab 063 · What a synthetic causal prior encodes<a class="anchor-link" href="#Lab-063-%C2%B7-What-a-synthetic-causal-prior-encodes">¶</a></h1><p><a href="../../lessons/0063-synthetic-scm-prior.html">Lesson</a> · <a href="../../reference/0063-synthetic-scm-prior.html">Reference</a> · <a href="../l063-reproduction.md">Reproduction contract</a></p>
+<h1 id="Lab-063-·-What-a-synthetic-causal-prior-encodes">Lab 063 · What a synthetic causal prior encodes<a class="anchor-link" href="#Lab-063-%C2%B7-What-a-synthetic-causal-prior-encodes">¶</a></h1><p><a href="../../lessons/0063-synthetic-scm-prior.html">Lesson</a> · <a href="../../reference/0063-synthetic-scm-prior.html">Reference</a> · <a href="../l063-reproduction.md">Reproduction contract</a></p>
 <p><strong>Route:</strong> retrieve → explain → predict → implement → CHECK → inspect evidence → EXIT. PROVIDED cells are readable implementation and peripheral support. TODOs contain your load-bearing code; CHECKs give immediate diagnostic feedback. Complete the code before revealing teacher solutions. Core study: 35–50 minutes; lab: 45–75 minutes plus explicitly gated larger runs.</p>
 <p><strong>Before reading:</strong> Does a causal pretraining generator identify the true causal graph of a deployment table? Write your answer and justify the information boundary. Then recall one older lesson that could expose an error in this experiment.</p>
 <p><strong>Evidence contract:</strong> numerical figures labeled author-reference come from committed author measurements. They are not outputs of your current kernel. Reduced model mechanisms, pretrained reference inference, frozen-result reanalysis and paper reproduction are different tracks. Every track states its scope below.</p>
@@ -7857,13 +7857,54 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="The-prior-is-a-distribution-over-learning-problems">The prior is a distribution over learning problems<a class="anchor-link" href="#The-prior-is-a-distribution-over-learning-problems">¶</a></h2><p>Your goal is to build a small structural causal model, trace its generated observations, and identify a concrete mismatch between that prior and a possible deployment task. In a PFN, the prior determines which tasks the model practices before seeing your table. It is part of the model's inductive bias, alongside architecture, loss and optimization. Read <a href="https://arxiv.org/html/2207.01848v6">TabPFN v1, Section 4 and the prior appendix</a>, then compare the <a href="https://arxiv.org/html/2502.05564v1#S4.SS1">TabICL prior description</a>.</p>
 <p>An <strong>SCM</strong> assigns every variable a function of its parents and an exogenous noise variable: <code>V_j = f_j(parents_j, epsilon_j)</code>. A directed acyclic graph records which variables can enter each function. <strong>Acyclic</strong> means that a variable cannot ultimately depend on itself through a directed path, so one can evaluate nodes in topological order. Exogenous noise comes from outside the modeled graph; its independence assumptions are part of the generator, not facts inferred from an arbitrary observed table.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4af4ab515363">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-synthetic-dataset-generator-expresses-assumptions">A synthetic dataset generator expresses assumptions<a class="anchor-link" href="#A-synthetic-dataset-generator-expresses-assumptions">¶</a></h3><p>A prior over tasks says which learning problems the pretrained predictor should expect. It can vary graph structure, function shapes, noise, observed variables and target construction. Each sampled task then generates many rows from one shared mechanism. The resulting training distribution teaches the predictor which regularities tend to transfer between context and queries.</p>
+<p>A structural causal model, or SCM, specifies how variables are generated from their parents and exogenous noise. A directed acyclic graph defines a valid computation order. The graph is not merely a picture of correlations: its arrows identify which computed parent values enter each structural equation.</p>
+<p>In the local generator, weights[parent,child] form a strictly upper-triangular matrix. Variables are evaluated in index order, so every parent needed by a child has already been computed. Each child receives an activated weighted parent signal plus its own noise. This convention is visible in the code and must match any hand calculation.</p>
+<p>Sampling one graph and set of equations per row would create a different task distribution from sampling one shared mechanism for the whole context/query episode. The learner needs evidence in the context that is relevant to the query. Preserve the episode-level shared latent mechanism when constructing the generator.</p>
+<p>The use of causal generators is an inductive-bias choice. It does not imply that the trained predictor identifies the true causal graph of a deployment table or that its ordinary predictions estimate intervention effects. Those are additional inference tasks with additional assumptions.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=de5f06f0b4d7">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Compute-a-graph,-not-just-draw-one">Compute a graph, not just draw one<a class="anchor-link" href="#Compute-a-graph,-not-just-draw-one">¶</a></h2><p>Our small generator stores <code>weights[parent, child]</code> in a strictly upper-triangular matrix. For node j, multiply already computed parent values by their edge weights, apply tanh and add that node's sampled noise. A zero entry means that edge is absent. Tanh is a bounded nonlinear function; it makes descendants nonlinear even with linear weighted parent combinations.</p>
 <p>Start with a linear activation to check arithmetic. For noises <code>[1,.2,−.1]</code> and edges <code>0→1</code> of weight 2 and <code>1→2</code> of weight −1, node values are <code>[1,2.2,−2.3]</code>. Node 2 uses the computed value 2.2, not the original noise .2. A matrix multiplication of the raw noise by the adjacency matrix is therefore not a general SCM sampler: it skips the recursive dependence.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4af4ab515363">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=89948a026cf1">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Evaluate-computed-parents,-not-their-raw-noise">Evaluate computed parents, not their raw noise<a class="anchor-link" href="#Evaluate-computed-parents,-not-their-raw-noise">¶</a></h3><p>Use a simple three-node chain and temporarily choose the identity activation to make arithmetic transparent. Let noise be ε=(1,2,3), with edge weights w₀₁=2 and w₁₂=−1. Then V₀=1, V₁=2V₀+2=4, and V₂=−V₁+3=−1.</p>
+<p>If you mistakenly use raw parent noise for the last equation, you get −ε₁+3=1. The shape of the result is correct, but the effect transmitted through V₀→V₁→V₂ has disappeared. This is why the lab's check uses a multi-edge path rather than testing only isolated parent/child pairs.</p>
+<p>With the default tanh activation, the same convention gives V₀=1, V₁=tanh(2)+2 and V₂=tanh(−V₁)+3. Noise is added after the activation in this local function. Moving it inside tanh changes the distribution and the meaning of the noise parameter.</p>
+<p>The upper-triangular restriction prevents cycles in this representation. A general cyclic system would require a different definition of how variables are jointly solved or evolved. Rejecting lower-triangular entries is therefore enforcing the declared model class, not an arbitrary storage preference.</p>
+<p>Vectorizing across rows is safe because rows share the task's equations but have their own exogenous noise draws. Vectorizing across graph nodes without respecting dependencies is not safe unless the chosen operation explicitly implements the topological recurrence.</p>
+<h3 id="Structural-noise-and-measurement-noise-are-different">Structural noise and measurement noise are different<a class="anchor-link" href="#Structural-noise-and-measurement-noise-are-different">¶</a></h3><p>Noise in a node's equation can propagate to descendants. Noise added only to an observed feature after the latent graph is evaluated changes the measurement but need not affect the latent target. These choices can create different learning problems even when marginal feature variability looks similar. A prior card should state where noise enters.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0767563fa6be">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7875,20 +7916,45 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=de5f06f0b4d7">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cf2308aa2e9e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>The lab first verifies this linear fixture, then runs nonlinear four-node models with fixed noise. Reject a lower-triangular entry or a diagonal edge in this representation; silently evaluating it as if it were a DAG produces an incorrectly specified experiment. Other graph orderings are valid, but they must first be topologically reordered or evaluated by a graph algorithm.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3bf605ba6235">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="A-paired-intervention-isolates-one-mechanism">A paired intervention isolates one mechanism<a class="anchor-link" href="#A-paired-intervention-isolates-one-mechanism">¶</a></h2><p>The author run changes the edge from node 1 to node 2 while holding all exogenous noise draws fixed. Ancestors remain numerically identical; descendants may change. This pairing makes the effect of that edge visible without confounding it with different random samples. Inspect the full path from the changed parent input through the nonlinear operation to the target.</p>
 <p>This is an <strong>edge-mechanism intervention</strong>. It differs from conditioning on a variable taking some observed value. It also differs from a node intervention such as <code>do(V_2=c)</code>, which replaces the entire structural assignment of node 2 with a constant. Name the operation exactly: causal vocabulary should describe the computation performed, not decorate a correlation plot.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=89948a026cf1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c745d56a4a73">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Hold-the-world’s-other-ingredients-fixed">Hold the world’s other ingredients fixed<a class="anchor-link" href="#Hold-the-world%E2%80%99s-other-ingredients-fixed">¶</a></h3><p>To isolate the effect of an edge, evaluate the same exogenous noise under the original and modified graph. In the identity-activation chain above, removing V₁→V₂ leaves V₀=1 and V₁=4 unchanged, while V₂ becomes its noise value 3. The paired change at V₂ is +4.</p>
+<p>If you resample noise at the same time, the difference combines the edge change with a new random realization. That may be a valid comparison of distributions, but it no longer isolates the edge's effect on the same synthetic case. Pairing is the key to the clean mechanism trace.</p>
+<p>Only descendants of the changed structural equation can change in an acyclic forward computation, provided all other equations and noises stay fixed. Ancestors should remain exactly equal in the local deterministic evaluation. This gives a strong behavioral assertion for the lab.</p>
+<p>Removing an edge changes a mechanism. Setting a node to a fixed value with a do-intervention is another operation: it replaces that node's structural equation. Conditioning on an observed node value is different again. Do not use these terms interchangeably merely because they all involve a graph.</p>
+<p>For the lesson's measured synthetic intervention, the conclusion is about the implemented generator. It demonstrates causal propagation inside a known SCM. It does not establish the causal effect of a real-world feature whose generating graph is unknown.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ac5341010451">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7900,7 +7966,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0767563fa6be">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d28056ec578c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7909,14 +7975,65 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 <h2 id="Turn-latent-variables-into-a-supervised-task">Turn latent variables into a supervised task<a class="anchor-link" href="#Turn-latent-variables-into-a-supervised-task">¶</a></h2><p>An SCM alone does not specify a tabular benchmark. You must choose which generated nodes are observed features, which node becomes the target, which remain hidden, how continuous targets become classes, and which rows enter context versus query. Those observation choices can create confounding, redundant features or missing information. The same latent graph can produce very different supervised tasks when you change what the learner sees.</p>
 <p>For classification, thresholding a generated target using statistics from all rows would let the query distribution influence task construction. Synthetic pretraining may deliberately define tasks jointly, but that is a generator contract to state, not a preprocessing recipe to copy into deployment evaluation. In the lab, record the threshold rule and use the same sampled task mechanism for context and query unless you are explicitly testing shift.</p>
 <p>The four-node tanh generator does not reconstruct the released TabPFN prior. It omits the mixture of function families, graph/width distributions, hidden-node selections, noise distributions and preprocessing choices. The lesson mirrors topological sampling and mechanism intervention, which are independently testable load-bearing parts. A plot that looks “tabular” is not a fidelity certificate.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=337d1683b48c">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Observation-choices-can-make-a-task-easy,-hard-or-invalid">Observation choices can make a task easy, hard or invalid<a class="anchor-link" href="#Observation-choices-can-make-a-task-easy,-hard-or-invalid">¶</a></h3><p>After generating latent variables, select which nodes become observed features and which node defines the target. If the target node is also included directly among features, the problem can become trivially leaked. The local observation function rejects this overlap and repeated feature-node selections.</p>
+<p>A binary target can be formed by thresholding a latent target variable. The threshold is part of the task definition. Choosing it separately for training and test changes label semantics across partitions; choosing it using the full evaluation labels can introduce an unwanted dependence. Use the declared fixed threshold consistently.</p>
+<p>Observing causes of the target, effects of the target or noisy proxies yields different predictive information. A method pretrained over one mix of these structures may transfer differently to another. This is a concrete way to reason about prior mismatch without treating “causal data” as one homogeneous category.</p>
+<p>Class balance also depends on graph parameters, noise and threshold. A generator that produces nearly one-class episodes may teach a different inference problem from one that deliberately balances every task. Record whether balance is sampled, filtered or forced.</p>
+<h3 id="Prior-mismatch-needs-a-discriminating-test">Prior mismatch needs a discriminating test<a class="anchor-link" href="#Prior-mismatch-needs-a-discriminating-test">¶</a></h3><p>If a pretrained model fails on a real table, many explanations remain possible: preprocessing, unsupported scale, limited context, optimization of a local head or the pretraining task distribution. Prior mismatch is a hypothesis among these, not an automatic diagnosis.</p>
+<p>In a controlled synthetic study, change one generator property while holding the evaluation protocol fixed. Compare performance on matched and mismatched task families, including a baseline whose behavior you understand. If the effect follows the changed property and survives implementation checks, the evidence for that mismatch becomes stronger.</p>
+<p>The exit prior card should specify graph sampling, structural functions, noise placement, observed nodes, target rule and shared episode variables. It should also list at least one deployment property the generator does not model. This turns an opaque synthetic-data recipe into an inspectable set of learning assumptions.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c3dbc666f60c">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="A-hidden-variable-can-make-the-observed-table-look-complicated">A hidden variable can make the observed table look complicated<a class="anchor-link" href="#A-hidden-variable-can-make-the-observed-table-look-complicated">¶</a></h3><p>Suppose an unobserved variable U affects both observed X and target Y. Even a simple latent graph can create predictive dependence between X and Y. A learner receiving only X does not observe U directly; it must use the information about U carried by X and the labeled context.</p>
+<p>Changing which latent nodes are observed can therefore change task difficulty without changing the underlying graph. Observing a nearly sufficient parent of Y can make prediction easy. Observing a noisy distant descendant can make the useful relationship weaker or nonlinear. Prior design includes this observation process, not only edge sampling.</p>
+<p>Several latent mechanisms can induce similar or identical observed distributions. Accurate prediction from the observed table does not necessarily distinguish them. This is one reason that a predictor trained on SCM-generated data should not automatically be described as recovering causal structure.</p>
+<p>For a controlled prior study, compare observation patterns while holding the sampled latent worlds fixed. Record which nodes became features and how targets were constructed. Then you can ask whether transfer depends on the observed information structure, rather than attributing every change to the graph's complexity or the number of nodes.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7b0a81352120">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Prior-mismatch-is-a-hypothesis,-not-an-automatic-diagnosis">Prior mismatch is a hypothesis, not an automatic diagnosis<a class="anchor-link" href="#Prior-mismatch-is-a-hypothesis,-not-an-automatic-diagnosis">¶</a></h2><p>If deployment has abrupt thresholds but pretraining favors smooth functions, a threshold-rich prior might help. If deployment changes its target mechanism over time while synthetic tasks remain stationary, temporal extrapolation may fail. If a necessary parent variable is unobserved, no clever prior guarantees that the target is identifiable from the supplied features.</p>
 <p>To test a prior explanation, hold architecture, optimization steps, training-task count and evaluation data fixed, then change the prior component. Otherwise a gain could come from more compute or a different model. Compare in-prior held-out tasks, controlled out-of-prior tasks and real tasks separately. A causal generator does not mean the fitted PFN has identified the true causal graph of your database.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d123f3b24a4c">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="Exit:-produce-a-prior-card">Exit: produce a prior card<a class="anchor-link" href="#Exit:-produce-a-prior-card">¶</a></h2><p>Submit the graph, weight matrix, topological trace, paired edge intervention and unchanged-ancestor check. Your prior card must name task-function families, noise assumptions, observed/hidden variables, class-construction rules and context/query sampling. Propose one alternative prior and one controlled evaluation that could falsify the claim that it helps. Connect it to the relational mission: which database dependency would a single-table synthetic prior fail to represent?</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cf2308aa2e9e">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b2c3d8a428eb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7926,7 +8043,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=fb97c85db52b">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=139a244cc5f6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7964,7 +8081,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=99d2340ab47e">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=24dfcb29b7c6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7988,19 +8105,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ac5341010451">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2ac14b709ae1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<span id="lab-exercises"></span><h2 id="TODO-1-%C2%B7-sample_scm">TODO 1 · sample_scm<a class="anchor-link" href="#TODO-1-%C2%B7-sample_scm">¶</a></h2><p><strong>Goal:</strong> Evaluate the upper-triangular DAG in topological order; use computed parents, not raw parent noise.</p>
+<span id="lab-exercises"></span><h2 id="TODO-1-·-sample_scm">TODO 1 · sample_scm<a class="anchor-link" href="#TODO-1-%C2%B7-sample_scm">¶</a></h2><p><strong>Goal:</strong> Evaluate the upper-triangular DAG in topological order; use computed parents, not raw parent noise.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=3a7199dde0b8">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5e9124e5bfb0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8016,7 +8133,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=19e527bd8484">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=da63e58ffbdd">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8039,19 +8156,19 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c3dbc666f60c">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f184db9db823">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="TODO-2-%C2%B7-observe_scm">TODO 2 · observe_scm<a class="anchor-link" href="#TODO-2-%C2%B7-observe_scm">¶</a></h2><p><strong>Goal:</strong> Build observed X and binary y with a fixed threshold; reject target inclusion or repeated feature nodes.</p>
+<h2 id="TODO-2-·-observe_scm">TODO 2 · observe_scm<a class="anchor-link" href="#TODO-2-%C2%B7-observe_scm">¶</a></h2><p><strong>Goal:</strong> Build observed X and binary y with a fixed threshold; reject target inclusion or repeated feature nodes.</p>
 <p><strong>Why it matters:</strong> a wrong implementation can produce a plausible-looking experiment while violating this lesson's prediction contract. Before coding, name one input that should fail or one intervention that should leave the result unchanged.</p>
 <p><strong>Hint boundary:</strong> reason from the worked example and the function contract; the CHECK verifies behavior, not a required code layout.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=41bab1ad2ccb">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e172d2be8ce4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8067,7 +8184,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=8e401ea36cb7">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=0c6a55a3cca4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8090,7 +8207,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b2c3d8a428eb">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b86d839d3b04">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8100,7 +8217,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=139a244cc5f6">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9fad2a8280f5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8119,7 +8236,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=278b94a1d515">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=01b3b43fffb3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8129,7 +8246,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=01bc85a65619">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4aa2726b26ea">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8153,17 +8270,17 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b40147e18642">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3fa02a1cadd3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="EXIT-TICKET-%C2%B7-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
+<h2 id="EXIT-TICKET-·-submit-an-executable-argument">EXIT TICKET · submit an executable argument<a class="anchor-link" href="#EXIT-TICKET-%C2%B7-submit-an-executable-argument">¶</a></h2><p>Provide your code output plus a 30–100 word verdict: which implementation ran, what information it could use, what evidence supports the result, and which paper claim remains untested. Include an unexpected or failed case and a next discriminating experiment. The length check below only enforces an attempt; the tutor grades your reasoning. Do not infer personal mastery from a green code cell.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=da63e58ffbdd">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=80c0e376d558">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8186,18 +8303,18 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f184db9db823">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=17f761618df6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l063-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
+<h2 id="NEXT-STEP-·-reproduce-or-scale-the-declared-track">NEXT STEP · reproduce or scale the declared track<a class="anchor-link" href="#NEXT-STEP-%C2%B7-reproduce-or-scale-the-declared-track">¶</a></h2><p>Read <a href="../l063-reproduction.md">the exact reproduction contract</a> before increasing resources. The gate below invokes the shared runner in a subprocess; historical versions are installed into isolated package directories so v1 and v2 cannot silently replace one another. It may download the pinned checkpoint. Larger runs remain INCOMPARABLE wherever material paper-protocol gaps remain. A full paper preset deliberately fails until the original protocol is implemented.</p>
 <p>For unattended CPU execution: <code>modal run --detach modal/foundation_repro.py --lesson 63 --preset closer</code>. This is a supplied operator, not evidence that a cloud job was run.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e172d2be8ce4">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5dce29544448">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

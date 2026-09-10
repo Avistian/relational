@@ -1,4 +1,5 @@
 """Build the portable L056 audit lab; evaluator source remains visible and live."""
+from _lesson_depth import enrich_notebook
 import ast, base64, os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -190,7 +191,7 @@ print('EXIT needs your written interpretation before submission.')''')
 For full-pool ratings, use the pinned official example and environment instructions in [the reproduction contract](l056-reproduction.md#next-reproduction-track-full-official-leaderboard). It is **NOT_RUN** here. Reconcile the exact paper version, roster, imputation, evaluator and bootstrap before claiming historical table recovery. Fresh training is a different, still unrun task; score-only files cannot verify it.
 
 Ask the tutor about any failing CHECK or source discrepancy. The next integer-numbered unit, L057, builds cross-family ensembles.''')
-    nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}})
+    nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}}),56)
     return nb
 
 if __name__=='__main__':

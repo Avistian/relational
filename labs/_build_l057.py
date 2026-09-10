@@ -1,4 +1,5 @@
 """Build L057 with live, visible implementations and portable computation figures."""
+from _lesson_depth import enrich_notebook
 import ast,base64,json,os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -188,7 +189,7 @@ else:
 | Browser / live Colab / publication | See delivery record | Local execution and image payload checks do not verify those frontends |
 
 Ask the tutor about any failed CHECK or conclusion you cannot justify. Submit your EXIT plus prose for feedback. Completing the notebook is evidence; reading an author table alone is not mastery.''')
- nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python','version':'3.12'}});return nb
+ nb=enrich_notebook(nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python','version':'3.12'}}),57);return nb
 if __name__=='__main__':
  for sol in [False,True]:
   dest=ROOT/('solutions' if sol else '.')/(SLUG+'.ipynb');dest.parent.mkdir(exist_ok=True);nbf.write(build(sol),dest);print(dest)
