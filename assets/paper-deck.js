@@ -350,8 +350,8 @@
   "paper": "TabICL, Sections 3\u20134",
   "year": 2025,
   "lesson": 66,
-  "front": "Does inducing-point column attention make every stage of TabICL linear in rows?",
-  "back": "No, the final dataset-level context attention retains a quadratic component."
+  "front": "Where does TabICL introduce labels, and what remains expensive after its inducing summaries?",
+  "back": "Three column blocks and three row blocks build label-independent row representations. Only the twelve-block ICL stage adds context-label embeddings. Its attention still forms C² + QC score pairs per head. RoPE distinguishes otherwise exchangeable feature positions, sacrificing exact single-view column-permutation invariance; the supported one-none-view wrapper preserves query isolation, while an optional power-transform fallback can couple query preprocessing."
 }
 ];
 })(window);

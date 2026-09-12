@@ -212,17 +212,7 @@ panel(62,'rowpfn','TabPFN v1 · the actual released predictor','Model architectu
 
 # Lesson 065 owns its full pretrained extraction and head-selection pipeline.
 
-panel(66,'tabicl','TabICL · column, row, dataset','Model architecture',
-      'Which stage compresses the context, and which later stage can still be quadratic?',
-      [('Build column context','Inducing vectors read training-column tokens; every cell then reads the summaries.','C × d → m × d → N × d'),
-       ('Create cell and row representations','Context-conditioned W·x+B; row Transformer gathers feature tokens into four summaries.','4 × 128 → row width 512'),
-       ('Run dataset-level ICL','Add context labels; a separate Transformer learns from row representations.','N × 512; context-only memory'),
-       ('Predict query labels','Query states → output MLP → class probabilities.','Q × classes')],
-      'Compression changes one cost term',
-      op('<span><b>C=500</b><br>context rows</span>','<span><b>m=16</b><br>summaries</span>','<span><b>N=500</b><br>cell readers</span>')+pair('Full column attention','250,000','Two inducing stages','16,000')+eq('mC + Nm = 8,000 + 8,000')+eq('cell x=2: W=(.5,−1), B=(.1,.3)')+op('<span>W·x+B</span>',vec([1.1,-1.7])),
-      'Score elements per column/head; projection, row and dataset costs are excluded. W and B are cell/context-conditioned, not global constants.',
-      'Inducing attention reduces the column-memory term. It does not remove the final dataset learner’s context-attention cost.',
-      'Original paper dimensions in the overview; local code isolates inducing and affine operators. Actual timing/quality use pinned v1.1; larger v2 comparisons belong to the later checkpoint.')
+# Lesson 066 owns its complete original TabICL architecture in _build_l066.
 
 panel(67,'localpfn','Local PFN · select context, then adapt','Model architecture',
       'Which operation changes record IDs, and which changes pretrained tensors?',

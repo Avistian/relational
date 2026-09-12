@@ -149,6 +149,9 @@ def build(n,notebooks=True,render=True):
     if n == 64:
         from _build_l064 import build_package
         return build_package(notebooks=notebooks, render=render)
+    if n == 66:
+        from _build_l066 import build_package
+        return build_package(notebooks=notebooks,render=render)
     if n == 65:
         from _build_l065 import build_package
         return build_package(notebooks=notebooks, render=render)

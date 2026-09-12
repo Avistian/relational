@@ -288,6 +288,9 @@ def build(n,solution=False):
     if n == 64:
         from _build_l064 import build as build_l064
         return build_l064(solution)
+    if n == 66:
+        from _build_l066 import build as scoped_build
+        return scoped_build(solution)
     if n == 65:
         from _build_l065 import build as build_l065
         return build_l065(solution)

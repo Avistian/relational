@@ -1744,7 +1744,7 @@
     }
   ],
   "correct": "1",
-  "explain": "No, the final dataset-level context attention retains a quadratic component."
+  "explain": "The final ICL stage has C context readers and Q query readers, all reading C context keys: C² + QC scores per head. Inducing vectors reduce the separate column stage; they do not replace this dataset attention."
 },
 {
   "id": "l067-foundation-contract",
