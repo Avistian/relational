@@ -1,0 +1,138 @@
+{
+  "lesson": 61,
+  "version": "v2",
+  "primary_paper": {
+    "url": "https://arxiv.org/html/2112.10510v7",
+    "version": "v7",
+    "read_scope": "Full main text, proofs A\u2013C, training D, architecture/head/ablations E, fixed/hyperprior GP and BNN F, tabular G and Omniglot H; selected executable reproduction target is fixed GP \u00a75.1/F"
+  },
+  "original_repository_commit": "9c20031b355923bdd456d5fcfe4e98092b016b97",
+  "official_sources": [
+    {
+      "path": "transformer.py",
+      "url": "https://raw.githubusercontent.com/automl/TransformersCanDoBayesianInference/9c20031b355923bdd456d5fcfe4e98092b016b97/transformer.py",
+      "sha256": "f1f34a0953cd8519056231abefa0be437fc2814d18858e28debfc46e84c6bbf3"
+    },
+    {
+      "path": "bar_distribution.py",
+      "url": "https://raw.githubusercontent.com/automl/TransformersCanDoBayesianInference/9c20031b355923bdd456d5fcfe4e98092b016b97/bar_distribution.py",
+      "sha256": "26a0d15f2cbf160c1696a3c6cd56d1800b3ae639537dc28a2635615aa331640b"
+    },
+    {
+      "path": "utils.py",
+      "url": "https://raw.githubusercontent.com/automl/TransformersCanDoBayesianInference/9c20031b355923bdd456d5fcfe4e98092b016b97/utils.py",
+      "sha256": "cc59e10835a46e2739858e9bb115f8a57e9189701abcfd647aa585cd4f636a1a"
+    },
+    {
+      "path": "train.py",
+      "url": "https://raw.githubusercontent.com/automl/TransformersCanDoBayesianInference/9c20031b355923bdd456d5fcfe4e98092b016b97/train.py",
+      "sha256": "19d33d9bba025dc9d3b28cc6db162c628e91a8d1a037c094c186fe75abb037fd"
+    },
+    {
+      "path": "priors/fast_gp.py",
+      "url": "https://raw.githubusercontent.com/automl/TransformersCanDoBayesianInference/9c20031b355923bdd456d5fcfe4e98092b016b97/priors/fast_gp.py",
+      "sha256": "081d1c46010dc9d83fac367ee215017a56bb086a967d6a5ce8d0eaa723f4a1cb"
+    },
+    {
+      "path": "notebooks/SetupForGPFittingExperiments.ipynb",
+      "url": "https://raw.githubusercontent.com/automl/TransformersCanDoBayesianInference/9c20031b355923bdd456d5fcfe4e98092b016b97/notebooks/SetupForGPFittingExperiments.ipynb",
+      "sha256": "126e74454440cd4465fcc50f8e878877b755ca4138a09633cdc5ea840c41f86e"
+    }
+  ],
+  "secondary_primary_math": "https://gaussianprocess.org/gpml/chapters/RW2.pdf",
+  "claims": [
+    {
+      "claim": "Task-conditioned posterior predictive integral",
+      "source_location": "\u00a72 Eq1; \u00a7\u00a73/A/B",
+      "code": "sample_gp, train_pfn, gp_posterior",
+      "verdict_or_boundary": "Derivation independently explained; optimum conditional on prior support/representability; never a finite-training guarantee"
+    },
+    {
+      "claim": "Held-out prior-data NLL, cross-entropy and forward KL",
+      "source_location": "\u00a73 Eq2\u20134; Appendices A\u2013B",
+      "code": "train_pfn, riemann_nll",
+      "verdict_or_boundary": "Sampled query y targets; no posterior-distillation training"
+    },
+    {
+      "claim": "Finite Riemann approximation existence",
+      "source_location": "\u00a74 Theorem1; Appendix C",
+      "code": "64-bin head",
+      "verdict_or_boundary": "Theorem uses reverse KL(q||p); not substituted for forward-KL loss or a finite-bin error bound"
+    },
+    {
+      "claim": "Row-token architecture and query access",
+      "source_location": "\u00a74 Figure2a; Appendix E.1; transformer.py generate_D_q_matrix/forward",
+      "code": "RowPFN, context_attention_mask",
+      "verdict_or_boundary": "Original source adds query-self diagonal; x-only query tokens; other-query edges prohibited"
+    },
+    {
+      "claim": "Postnorm GELU blocks and initialization",
+      "source_location": "transformer.py __init__/init_weights",
+      "code": "PFNBlock, RowPFN",
+      "verdict_or_boundary": "Zero out-proj/FFN2; clone initialized template; copied-weight nonzero branch validation"
+    },
+    {
+      "claim": "Interior and full-support density",
+      "source_location": "\u00a74/E.2; bar_distribution.py FullSupportBarDistribution.forward",
+      "code": "riemann_nll, riemann_mean, riemann_cdf",
+      "verdict_or_boundary": "Mixture masses retained in tails; nominal tail widths contain half component mass; width cancellation follows code"
+    },
+    {
+      "claim": "Fixed GP kernel/likelihood",
+      "source_location": "\u00a75.1; Appendix F fixed-GP details; priors/fast_gp.py",
+      "code": "rbf_kernel, sample_gp, gp_posterior",
+      "verdict_or_boundary": "RBF lengthscale.6/outputvariance1/noisevariance1e-4; observed-y PPD; own exact float64 Cholesky"
+    },
+    {
+      "claim": "Conditional Gaussian computation",
+      "source_location": "Rasmussen/Williams GPML Chapter2 Eq2.22\u201324/Algorithm2.1",
+      "code": "gp_posterior",
+      "verdict_or_boundary": "Independent scalar and parent sklearn checks; signal K vs noisy \u03a3/C distinct"
+    },
+    {
+      "claim": "Context-size sampling and objective weighting",
+      "source_location": "Appendix E.1; utils.get_weighted_single_eval_pos_sampler; train.py losses.mean",
+      "code": "train_pfn",
+      "verdict_or_boundary": "1/(N\u2212n) sampling, mean over queries; no false uniform-context weighting claim"
+    },
+    {
+      "claim": "Training recipe and exact paper targets",
+      "source_location": "Appendix D/F; SetupForGPFittingExperiments.ipynb cell5\u20136; train.py signature",
+      "code": "PRESETS/run_experiment",
+      "verdict_or_boundary": "All local dimensions/updates/eval sizes explicit; source unused nhid loopvariable not treated as actual default"
+    },
+    {
+      "claim": "Fresh local approximation and mismatch",
+      "source_location": "_verify_l061_v2_results.json",
+      "code": "evaluate_pfn, summarize_records",
+      "verdict_or_boundary": "3trainedseeds,256tasks/context,onequery each; true-prior oracle in each regime; no realtable generalization"
+    },
+    {
+      "claim": "Fixed-head versus learned-mass errors",
+      "source_location": "_analysis_l061_v2.py/_analysis_l061_v2_results.json",
+      "code": "fixed_head_diagnostic",
+      "verdict_or_boundary": "Analytic GP region masses, identical fixed components; diagnostic not trainedmodel or exactGP"
+    },
+    {
+      "claim": "Other paper empirical claims",
+      "source_location": "\u00a7\u00a75.2\u20137; Appendices F/G/H including all tabular/Omniglot tables",
+      "code": "Not selected experiment",
+      "verdict_or_boundary": "Read for scope audit; no inherited speed/calibration/classification/fewshot results; paper Table3lists20 but Table7includes21withdionis, no local reproduction count claim"
+    }
+  ],
+  "measured_evidence": {
+    "path": "labs/_verify_l061_v2_results.json",
+    "sha256": "774e8e040ca030df684593fe9dea918644fb8c25159ba6bddcf06f7339e72798"
+  },
+  "local_sources": {
+    "labs/relkit/pfn_l061_v2.py": "f7928f5466b516988c1443b1cc8cb33863f3da73f4e1146e0d0ac9316c0b821f",
+    "labs/_check_l061_v2.py": "66d36175579a546d09f1f9e11050ff008a7c884ac862672a15b8bcc65c4ad2b7",
+    "labs/_analysis_l061_v2.py": "39c73df6b443ea247eb31790a0775f79ca45f779457eb737e04650be81788ae3"
+  },
+  "historical_preservation": [
+    "labs/_verify_l061.py",
+    "labs/_verify_l061_results.json",
+    "labs/relkit/foundation_core.py"
+  ],
+  "status": "MODEL_COMPUTATION_VALIDATED; LOCAL_APPROXIMATION_MEASURED; PAPER_RESULTS_INCOMPARABLE"
+}

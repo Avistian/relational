@@ -31,6 +31,10 @@ def run(lesson,preset='lab',output=None,current=False):
         if lesson!=70:raise ValueError('The current-version extension belongs to L070')
         from _fetch_foundation import fetch_current
         fetch_current();isolated('current','_run_current_foundation.py',['--output',str(out)]);return out
+    if lesson == 61:
+        from relkit.pfn_l061_v2 import run_experiment
+        run_experiment(preset=preset, output=str(out), device='cpu')
+        return out
     if lesson in [62,65,66,67,69]:
         from _fetch_foundation import fetch
         fetch('v1' if lesson in [62,67] else ('tabicl' if lesson==66 else 'v2'))
@@ -58,15 +62,11 @@ def run(lesson,preset='lab',output=None,current=False):
             out.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n')
         return out
     from relkit.foundation_experiments import (survey_audit,validation_audit,posterior_experiment,
-        train_count_pfn,scm_experiment,drift_experiment,temporal_pfn_experiment)
+        scm_experiment,drift_experiment,temporal_pfn_experiment)
     import torch
     torch.set_num_threads(1)
     if lesson==58:result=survey_audit()
     elif lesson==59:result=validation_audit()
-    elif lesson==61:
-        steps={'smoke':30,'lab':1500,'closer':5000}[preset]
-        result=dict(runs=[train_count_pfn(s,steps)[1] for s in ([0] if preset=='smoke' else [0,1,2])],
-                    scope='Beta-Bernoulli CountPFN; query-label pretraining',verdict='MECHANISM_ONLY')
     elif lesson==63:result=scm_experiment()
     elif lesson==68:
         result=drift_experiment();result['pfn_ablation']=temporal_pfn_experiment({'smoke':10,'lab':400,'closer':2000}[preset])

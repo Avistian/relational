@@ -1,0 +1,8 @@
+/* Default xq=.8, context(.2,1), lengthscale.6, noise variance.0001.
+   Native slider changes only query location. Fixed prior/observation baseline retained.
+   Expected extremes: xq=.2 -> mean.99990001, observed-y variance.00019999. */
+(function(){'use strict';const root=document.getElementById('gp-conditioning-viz');if(!root)return;
+root.innerHTML='<h3>Move the query; keep the observation fixed</h3><p>Context: x=.2, y=1. Prior: length scale=.6, signal variance=1, noise variance=.0001. Predict which quantity changes fastest near the observation.</p><label for="gp-query">Query location <output id="gp-query-value"></output></label><input id="gp-query" type="range" min="0" max="1" step="0.01" value="0.8"><button type="button" id="gp-reset">Reset</button><div class="pfn-readout" aria-live="polite"></div><p>Baseline at x=.8: mean .606470; variance .632257. The prior mean stays 0 and variance stays 1.0001.</p>';
+const slider=root.querySelector('input'),readout=root.querySelector('.pfn-readout');
+function update(){const x=Number(slider.value),k=Math.exp(-((x-.2)**2)/(2*.6**2)),mu=k/1.0001,v=1.0001-k*k/1.0001;root.querySelector('output').textContent=x.toFixed(2);readout.innerHTML='<p>Covariance k<br><strong>'+k.toFixed(6)+'</strong></p><p>Mean k/1.0001<br><strong>'+mu.toFixed(6)+'</strong></p><p>Variance 1.0001−k²/1.0001<br><strong>'+v.toFixed(6)+'</strong></p>';return{x,k,mean:mu,variance:v};}
+slider.addEventListener('input',update);root.querySelector('button').addEventListener('click',()=>{slider.value=.8;update();});window.l061GP={setQuery(x){slider.value=Math.max(0,Math.min(1,x));return update();},state:update};update();})();

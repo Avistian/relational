@@ -168,17 +168,19 @@ panel(57,'stack','OOF stack · predictions become features','Model architecture'
       'The combiner may train on yᵢ. The base fit producing Zᵢ must not have trained on that target.',
       'Cross-family stacking procedure, not a new base network. Group/time structure must also be respected by folds. Class order, row IDs and serving refit policy are part of the saved artifact.')
 
-panel(61,'countpfn','Count PFN · learn a posterior rule','Model architecture',
-      'What changes between pretraining episodes, and what stays fixed at inference?',
-      [('Sample one task','θ~Beta(1,1); context and query labels share this θ.','context labels + one query label'),
-       ('Count evidence','Encode successes s and failures f; divide by 32 inside the local model.','B × 2'),
-       ('Predict with an MLP','Linear → GELU → Linear → GELU → Linear.','2 → 32 → 32 → 1'),
-       ('Train / infer','Query-label BCE updates weights in pretraining; sigmoid predicts with fixed weights later.','B query probabilities')],
-      'An analytic answer beside the network',
-      matrix(['successes','failures'],[('observed',[3,1]),('prior',[1,1]),('posterior',[4,2])])+eq('P(next=1 | context) = 4 / 6')+bars([('prior mean',.5),('posterior',2/3),('empirical',.75)],1),
-      'Beta–Bernoulli example. Bars share a probability scale from zero to one; posterior shrinkage differs from the empirical rate.',
-      'Pretraining learns the mapping from evidence to prediction. New context changes the input; inference does not update neural weights.',
-      'CountPFN is a local sufficient-statistic MLP, not the paper Transformer. Its learned prediction approximates the analytic answer and need not extrapolate exactly.')
+panel(61,'gppfn','Row PFN · infer from a labeled set','Model architecture',
+      'Can a query read itself without reading its hidden target?',
+      [('Sample and split a GP task','One joint function draw; reveal n context labels, hide m query labels.','x: B × N × F; yc: B × n'),
+       ('Encode whole rows','Context: Ex(x)+Ey(y). Query: Ex(x) only. No positional encoding.','B × N × d; lab d=64'),
+       ('Masked attention residual','All context columns plus identity. H=4 heads; concatenate → output projection.','u = LayerNorm(h + Attention(h))'),
+       ('GELU residual; repeat three blocks','Linear 64→128 → GELU → Linear 128→64; independent postnorm blocks.','h′ = LayerNorm(u + FFN(u))'),
+       ('Predict query densities','Query states → Linear 64→128 → GELU → Linear 128→64; softmax masses.','B × m × 64 → full-support Riemann density'),
+       ('Train / infer','Pretraining query NLL updates weights. A new task only changes context inputs.','no query labels enter forward(x,yc)')],
+      'One head: equal allowed scores',
+      matrix(['c1','c2','q1','q2'],[('c1 reads',['½','½','×','×']),('c2 reads',['½','½','×','×']),('q1 reads',['⅓','⅓','⅓','×']),('q2 reads',['⅓','⅓','×','⅓']),('values',[2,6,10,90])],'receives ↓')+eq('q1 output = (2 + 6 + 10) / 3 = 6')+pair('q2 value = 90','q1 remains 6','q2 value = 900','q1 remains 6'),
+      'Synthetic one-coordinate attention fixture, not trained weights. Context outputs equal 4; q2 initially equals 98/3. Every block preserves this information boundary.',
+      'Self attention uses the query feature token only. Context tokens cannot read queries; extra query rows cannot leak through a later context state.',
+      'Original released row PFN mask includes query self edges. Postnorm GELU blocks, zero initial attention/FFN output projections, dropout 0. Local width 64/layers 3/bins 64 differs from original large GP training. Full-support tails preserve density outside sampled borders.')
 
 mask=matrix(['ctx 1','ctx 2','query 1','query 2'],[(r,['✓','✓','×','×']) for r in ['ctx 1','ctx 2','query 1','query 2']],'reads ↓')
 panel(62,'rowpfn','TabPFN v1 route · context is the memory','Model architecture',
@@ -259,10 +261,11 @@ PANELS[48][0]['graphic']=topology('dcn-route','Parallel DCNv2: original input br
 PANELS[52][0]['graphic']=topology('tabr-route','Query representation takes a direct residual route while learned keys retrieve corrected labeled values.',
     [(5,5,135,'query encoder','query'),(180,5,135,'memory enc.','memory'),(92,77,136,'key search',''),(92,142,136,'weighted values','memory'),(92,212,136,'+ query → head','')],
     [('73,43 73,60 130,60 130,75',False),('247,43 247,60 191,60 191,75',False),('160,115 160,140',False),('160,180 160,210',False),('25,43 25,231 90,231',True)],258)+PANELS[52][0]['graphic']
-PANELS[61][0]['graphic']=topology('pfn-train','One latent task probability generates both context and query label; only query loss updates the neural predictor.',
-    [(105,5,110,'sample θ',''),(5,76,135,'context counts','memory'),(180,76,135,'query label','query'),(5,143,135,'neural predictor',''),(180,143,135,'query loss','')],
-    [('160,43 160,58 73,58 73,74',False),('160,58 247,58 247,74',False),('73,114 73,141',False),('247,114 247,141',False),('140,162 178,162',False),('247,181 247,213 73,213 73,183',True)],230)+PANELS[61][0]['graphic']
-PANELS[61][0]['caption']+=' Dashed return arrow is the pretraining gradient update; it is absent at inference.'
+
+PANELS[61][0]['graphic']=topology('gp-row-route','Context labels enter context tokens; query labels enter pretraining loss only.',
+    [(3,5,150,'context x,y → Ec','memory'),(170,5,147,'query x → Eq','query'),(48,74,224,'row blocks × 3',''),(48,142,224,'query head → density',''),(3,220,140,'held-out y','query'),(177,220,140,'query NLL','')],
+    [('78,43 78,72',False),('244,43 244,72',False),('160,112 160,140',False),('244,180 244,218',False),('143,239 175,239',False),('245,258 245,281 24,281 24,94 46,94',True)],296)+PANELS[61][0]['graphic']
+PANELS[61][0]['caption']+=' Ec=Ex(x)+Ey(y), Eq=Ex(x); the feature encoder Ex is shared. Dashed path is the pretraining gradient; it is absent at inference.'
 
 
 def render(p,n,standalone=False):

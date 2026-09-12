@@ -146,6 +146,9 @@ unassessed until a completed EXIT and explanation are reviewed.
 
 
 def build(n,notebooks=True,render=True):
+    if n == 61:
+        from _build_l061 import build_package
+        return build_package(notebooks=notebooks, render=render)
     if n == 60:
         from _build_l060 import build_package
         return build_package(notebooks=notebooks, render=render)
