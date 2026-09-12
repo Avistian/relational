@@ -43,6 +43,10 @@ def run(lesson,preset='lab',output=None,current=False):
         result=run_experiment(ROOT,preset=preset)
         out.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n')
         return out
+    if lesson == 63:
+        from relkit.scm_l063_v2 import run_experiment
+        run_experiment(preset=preset,output=str(out))
+        return out
     if lesson in [65,66,67,69]:
         from _fetch_foundation import fetch
         fetch('v1' if lesson==67 else ('tabicl' if lesson==66 else 'v2'))
@@ -70,12 +74,11 @@ def run(lesson,preset='lab',output=None,current=False):
             out.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n')
         return out
     from relkit.foundation_experiments import (survey_audit,validation_audit,posterior_experiment,
-        scm_experiment,drift_experiment,temporal_pfn_experiment)
+        drift_experiment,temporal_pfn_experiment)
     import torch
     torch.set_num_threads(1)
     if lesson==58:result=survey_audit()
     elif lesson==59:result=validation_audit()
-    elif lesson==63:result=scm_experiment()
     elif lesson==68:
         result=drift_experiment();result['pfn_ablation']=temporal_pfn_experiment({'smoke':10,'lab':400,'closer':2000}[preset])
     else:raise ValueError('Lesson must be 58–70')

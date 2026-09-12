@@ -322,6 +322,14 @@
   "back": "It removes query self edges. All rows read only context keys and values; query features still affect their attention-query projection and residual state. Context self-attention plus query-to-context attention uses C² + QC scores per head."
 },
 {
+  "id": "foundation-paper-63",
+  "paper": "TabPFN v1 — synthetic prior",
+  "year": 2022,
+  "lesson": 63,
+  "front": "Why can an unlabeled query feature vector change posterior weights over synthetic worlds?",
+  "back": "In a joint generative prior, different worlds can assign different densities to X. Their posterior weights are proportional to prior × context likelihood × query-feature likelihood. The query label stays hidden. A fixed-design conditional prior can omit the last factor only when its assumptions justify doing so."
+},
+{
   "id": "foundation-paper-64",
   "paper": "Nature TabPFN v2",
   "year": 2025,

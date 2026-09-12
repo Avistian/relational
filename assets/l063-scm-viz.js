@@ -1,0 +1,11 @@
+/* Expected states: edge w=2 -> H2=7.3; w=0 -> .1; parents H1=3.6 unchanged.
+   Query evidence r=.8 -> weights1/7,6/7 -> P1=11/14; r=.5 -> .58.
+   Both sliders retain the baseline, have labels and reset buttons. */
+(function(){'use strict';
+const e=document.getElementById('scm-edge-viz');
+if(e){e.innerHTML='<h3>Delete an edge, retain the same world</h3><p>Predict: which earlier value changes when this final edge is removed?</p><label for="scm-edge-weight">Final coefficient w: <output id="scm-edge-value"></output></label><input id="scm-edge-weight" type="range" min="0" max="3" step=".1" value="2"><div class="scm-readout" aria-live="polite"></div><button type="button">Reset coefficient</button>';
+const s=e.querySelector('input'),o=e.querySelector('output'),r=e.querySelector('.scm-readout');function draw(){const w=Number(s.value);o.value=w.toFixed(1);r.textContent=`Fixed H₀=(2,−1); fixed H₁=3.6. Baseline H₂=2×3.6−.2+.3=7.3. Current H₂=${w.toFixed(1)}×3.6−.2+.3=${(w*3.6+.1).toFixed(2)}. Change=${((w-2)*3.6).toFixed(2)}. Causes, biases, noises and earlier layers stay fixed.`;}s.addEventListener('input',draw);e.querySelector('button').addEventListener('click',()=>{s.value=2;draw();});draw();}
+const p=document.getElementById('scm-posterior-viz');
+if(p){p.innerHTML='<h3>Let query features reweight the worlds</h3><p>Context-only baseline: world weights (.4,.6), P(class1)=.58.</p><label for="scm-query-likelihood">Query likelihood for world1, r: <output></output></label><input id="scm-query-likelihood" type="range" min=".01" max=".99" step=".01" value=".8"><p>World0 likelihood is 1−r. Other likelihoods and class probabilities stay fixed.</p><div class="scm-readout" aria-live="polite"></div><button type="button">Reset likelihood</button>';
+const s=p.querySelector('input'),o=p.querySelector('output'),d=p.querySelector('.scm-readout');function draw(){const r=Number(s.value),m0=.5*.4*(1-r),m1=.5*.6*r,total=m0+m1,w1=m1/total; o.value=r.toFixed(2);d.textContent=`Unnormalized masses (${m0.toFixed(4)}, ${m1.toFixed(4)}); total ${total.toFixed(4)}. Posterior weights (${(1-w1).toFixed(4)}, ${w1.toFixed(4)}). P(class 1) = .1 × ${(1-w1).toFixed(4)} + .9 × ${w1.toFixed(4)} = ${(.1+.8*w1).toFixed(4)}.`;}s.addEventListener('input',draw);p.querySelector('button').addEventListener('click',()=>{s.value=.8;draw();});draw();}
+})();

@@ -1675,7 +1675,7 @@
     }
   ],
   "correct": "1",
-  "explain": "No, the synthetic prior is an assumption over tasks, not an identification result."
+  "explain": "Hold exogenous causes, noise draws, biases and all other edge weights fixed. Recompute downstream nodes after changing the selected edge; their values can change. This controlled synthetic intervention does not identify a causal graph from observed data."
 },
 {
   "id": "l064-foundation-contract",
