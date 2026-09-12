@@ -17,7 +17,7 @@ PRACTICE={
 66:'Implement inducing summaries, conditional embeddings, rotary positions and context-only attention in the complete original pretrained TabICL model; measure nested support sets.',
 67:'Implement exact retrieval, disjoint local episodes, context normalization, query loss and validation selection; adapt the complete historical pretrained PFN.',
 68:'Implement context-only time normalization, learned time encoding, mapped mechanism shifts, temporal splits and dataset summaries; run the complete released temporal PFN.',
-69:'Score unsupported classes and apply training-derived feature corruptions. The default exercise uses a fitted logistic model; the v2/XGBoost panel is separate.',
+69:'Implement class holdouts, novelty scores, context-based imputation, all-row metrics and dataset summaries; evaluate the complete historical v2 model and XGBoost across open-environment challenges.',
 70:'Reconstruct the saved predictions and validation selections for all seven model arms, then calculate paired summaries and ranks. The full rerun is explicitly gated.'}
 EVIDENCE={
 58:'Frozen-result reanalysis: six methods on 300 tasks; a separate 276-task complete panel for tiny-benchmark selection. No new predictive-model fits.',
@@ -31,7 +31,7 @@ EVIDENCE={
 66:'New original-paper TabICL checkpoint predictions on complete numeric datasets at three nested context fractions, with independent source and operator checks.',
 67:'Fresh full-model global, random-context, local frozen and locally adapted comparisons; paper and released-code learning rates are separate declared arms.',
 68:'Fresh complete released base, drift and separately pretrained NoT2V checkpoints on three real datasets and Intersecting Blobs, with paired temporal cutoffs and a separate mechanism diagnostic.',
-69:'Actual v2/XGBoost corruption comparisons on three tasks and three seeds, plus a separate class-support diagnostic.',
+69:'Fresh full-model historical v2 and XGBoost comparisons: complete class holdouts, feature loss, controlled distribution changes and multiple classification objectives.',
 70:'105 selected results: seven named model/checkpoint arms × five datasets × three seeds.'}
 
 
@@ -59,6 +59,7 @@ def lab_plan(n):
     exit_path = f'data/cache/l{n:03}-student/exit.json' if n in (58, 59, 60, 61, 62) else f'student-l{n:03}-exit.json'
     if n == 63:exit_path = 'data/cache/l063-v2/student-l063-exit.json'
     if n == 64:exit_path = 'data/cache/l064-student/student-l064-v2-exit.json'
+    if n == 69:exit_path = 'data/cache/l069-student/exit-v2.json'
     if n == 68:exit_path = 'data/cache/l068-student/exit-v2.json'
     if n == 67:exit_path = 'data/cache/l067-student/exit-v2.json'
     if n == 66:exit_path = 'data/cache/l066-student/exit-v2.json'
@@ -74,6 +75,9 @@ def build_directory():
                link(f'https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{slug}.ipynb','Run in Colab'),
                link(f'../{slug}.ipynb','Download notebook',download=True),link(f'../../reference/{slug}.html','Reference'),
                link(f'../l{n:03}-reproduction.md','Reproduction instructions'),link(f'../_verify_l{n:03}_results.json','Measured results')]
+        if n == 69:
+            links[-1] = link('../_verify_l069_results.json','Historical corruption results')
+            links.append(link('../_verify_l069_v2_results.json','Complete open-environment evaluation results'))
         if n == 68:
             links[-1] = link('../_verify_l068_results.json','Historical reduced-prior results')
             links.append(link('../_verify_l068_v2_results.json','Complete released temporal model results'))

@@ -285,6 +285,9 @@ print('Complete seven-arm panel:',trial['mean_ranks']);print('Requested-arm ledg
 
 
 def build(n,solution=False):
+    if n == 69:
+        from _build_l069 import build as scoped_build
+        return scoped_build(solution=solution)
     if n == 68:
         from _build_l068 import build as scoped_build
         return scoped_build(solution=solution)

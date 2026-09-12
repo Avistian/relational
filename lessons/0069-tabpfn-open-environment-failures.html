@@ -1,163 +1,303 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Lesson 069 · Find the broken prediction contract</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/foundation-course.css" rel="stylesheet"/><link href="../assets/lab-access.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0068-pfns-under-temporal-shift.html">← Lesson 068</a> · <a href="0070-foundation-model-checkpoint.html">Lesson 070 →</a> · <a href="../reference/0069-tabpfn-open-environment-failures.html">Reference</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 069</p><h1>Find the broken prediction contract</h1><aside aria-label="Lesson 069 lab and materials" class="lab-access" data-lab-launch=""><p><strong>Lab 069 · 2 code tasks + EXIT</strong></p><nav aria-label="Lab actions" class="lab-access-links"><a class="lab-access-primary" href="../labs/html/0069-tabpfn-open-environment-failures.html">Open lab</a><a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0069-tabpfn-open-environment-failures.ipynb">Run in Colab</a><a download="" href="../labs/0069-tabpfn-open-environment-failures.ipynb">Download notebook</a><a href="../reference/0069-tabpfn-open-environment-failures.html">Reference</a><a href="../labs/html/foundation-sequence.html">All 58–70 materials</a></nav><p>Read the lab here, or open the runnable notebook in Colab. The student tasks are intentionally blank.</p></aside><p class="subtitle">Understand the computation. Challenge the evidence. Produce a defensible result.</p><p>Core reading: 35–50 minutes. Lab: 45–75 minutes plus declared experiment time. This sequence builds the strong single-table baseline and information discipline required to test the relational thesis.</p><section id="retrieval"><h2>Retrieve before reading</h2><p>Without notes: Can unsupported-class rows be dropped while claiming all-row deployment accuracy? Explain why, then recall a related failure mode from an older lesson.</p><div id="warmup"></div></section><div id="prediction"></div><h2 id="A-strong-closed-task-score-leaves-several-contracts-untested">A strong closed-task score leaves several contracts untested<a class="anchor-link" href="#A-strong-closed-task-score-leaves-several-contracts-untested">¶</a></h2><p>Your goal is to identify which assumption broke before trying to repair a foundation model. Read <a href="https://arxiv.org/html/2505.16226v1">Cheng et al., Sections 4–5</a>. Its open-environment evaluation separates emerging classes, changing features, changing data distributions and changing learning objectives. These are different failure axes, so one aggregate “robustness” number can conceal the actual problem.</p>
-<p>A closed classification task usually assumes a fixed feature schema, target definition and class vocabulary. Deployment can violate any of them. The model may return probabilities of the expected shape while answering the wrong question. An honest baseline report therefore records the <strong>prediction contract</strong> as well as the score: what rows mean, which features exist, which labels are possible and how the prediction will be used.</p>
-<div class="lesson-depth" data-lesson-depth="prediction-contract" id="depth-prediction-contract"><h3 id="A-prediction-API-promises-more-than-an-average-score">A prediction API promises more than an average score<a class="anchor-link" href="#A-prediction-API-promises-more-than-an-average-score">¶</a></h3><p>A closed classification benchmark usually assumes a fixed feature schema, known class vocabulary and stable evaluation objective. Deployment can violate any of these assumptions. A model may retain strong performance on supported rows while failing to define a useful prediction for other required cases.</p>
-<p>Write the contract explicitly: which rows must receive predictions, which classes the output vector represents, what each feature means and when it is available, and which loss or decision cost matters. Robustness is always relative to a specified change in this contract.</p>
-<p>Unsupported classes, missing columns, changed units and changed decision costs are different failures. A single “open environment” score can hide which part of the system broke. The lesson uses separate interventions so each result has an interpretable cause.</p>
-<p>The local experiments combine measured feature-corruption comparisons with a synthetic unsupported-class diagnostic. The latter exposes scoring semantics; it is not a measured open-set detection system. Keep that distinction visible when discussing what the pretrained model actually did.</p>
-</div><h2 id="Unsupported-classes-require-a-visible-policy">Unsupported classes require a visible policy<a class="anchor-link" href="#Unsupported-classes-require-a-visible-policy">¶</a></h2><p>Suppose context contains only classes A and B, and the classifier emits <code>[.2,.8]</code>. A later target belongs to new class C. The original two-class probability vector cannot assign calibrated probability to C. Dropping that row from evaluation falsely improves apparent performance, while relabeling C as B changes the task.</p>
-<p>The lab's diagnostic assigns unsupported labels zero probability, then clips at a declared epsilon only to obtain a finite log-loss value. With epsilon <code>1e−12</code>, a wholly unsupported target contributes about 27.63 nats. This is a diagnostic scoring convention, not a calibrated open-set detector. A deployment system might abstain, route the case or update its class vocabulary; each requires its own evaluation and coverage report.</p>
-<div data-foundation-viz="classes"></div><figure class="foundation-figure"><div class="foundation-image-scroll"><img alt="Synthetic numerical trace. Values are generated by the displayed operator; this is not a measured benchmark." loading="lazy" src="../labs/figures/l069/mechanism.png"/></div><figcaption>Synthetic numerical trace. Values are generated by the displayed operator; this is not a measured benchmark.</figcaption></figure>
-<p>Keep <strong>known-class performance</strong>, <strong>unsupported-class frequency</strong>, <strong>abstention coverage</strong> and <strong>performance on all required rows</strong> separate. A high accuracy on the accepted subset is not enough if the model silently rejects most difficult cases. Thresholds for abstention must be chosen on validation evidence that represents the intended unknown-class process.</p>
-<div class="lesson-depth" data-lesson-depth="unsupported-class-loss" id="depth-unsupported-class-loss"><h3 id="A-probability-vector-must-name-the-events-it-covers">A probability vector must name the events it covers<a class="anchor-link" href="#A-probability-vector-must-name-the-events-it-covers">¶</a></h3><p>Suppose a classifier returns probabilities for classes [A,B], while a required test row has target C. There is no C column to score. Dropping the row changes the evaluated population. Relabeling C as B changes the task. A fallback or rejection policy must be declared explicitly.</p>
-<p>The local diagnostic assigns unsupported true classes a disclosed probability floor ε for all-row log-loss accounting. With ε=10⁻¹², that row contributes −ln ε≈27.631 nats. This is a scoring convention that makes missing support costly and visible; it does not mean the model learned a calibrated probability for the unknown class.</p>
-<p>If four supported rows each assign 0.8 to the correct class and one row is unsupported, mean all-row loss is [4·(−ln0.8)−ln(10⁻¹²)]/5≈5.705. Dropping the unsupported row reports only 0.223. The dramatic difference comes from coverage and the declared floor, not a subtle change in classification quality.</p>
-<p>Report coverage separately from conditional performance on supported rows. If the system can abstain, evaluate the abstention rule and its cost: how many rows are rejected, which kinds and what happens operationally afterward? A model that rejects every difficult case can look accurate on its retained subset while being unhelpful overall.</p>
-<p>Class-column alignment remains necessary even when all classes are supported. A probability matrix ordered [B,A] cannot be scored as [A,B]. Save the class vocabulary and check that it has no duplicates and matches the array width.</p>
-<h3 id="Epsilon-is-a-sensitivity-parameter,-not-a-hidden-repair">Epsilon is a sensitivity parameter, not a hidden repair<a class="anchor-link" href="#Epsilon-is-a-sensitivity-parameter,-not-a-hidden-repair">¶</a></h3><p>A different floor changes the penalty assigned to unsupported events. Disclose it and, when the conclusion depends on it, show sensitivity across reasonable declared conventions. Do not tune epsilon after seeing which value makes the system look acceptable. The missing class support is a substantive limitation regardless of the reporting floor.</p>
-</div><h2 id="A-feature-change-has-several-meanings">A feature change has several meanings<a class="anchor-link" href="#A-feature-change-has-several-meanings">¶</a></h2><p>Removing a column is a schema change. Replacing it by a training-derived imputation value is one explicit fallback; its usefulness depends on how the model was trained. Adding a new feature can change dimensional limits and representation behavior. Changing a sensor's units without changing the schema is a distributional change that may look superficially like ordinary numerical variation.</p>
-<p>The measured intervention holds trained models and test rows fixed, then alters one column selected using training variation only. One condition replaces it with its training mean; another scales its deviation from that mean by three. The clean condition remains visible. This isolates sensitivity to two corruptions and gives each arm identical altered data. It does not reproduce natural temporal drift, missing-not-at-random mechanisms or every feature-addition scenario in the paper.</p>
-<figure class="foundation-figure"><div class="foundation-image-scroll"><img alt="Author-reference measurements. See the protocol, seed points and interpretation; these are not your notebook kernel outputs." loading="lazy" src="../labs/figures/l069/results.png"/></div><figcaption>Author-reference measurements. See the protocol, seed points and interpretation; these are not your notebook kernel outputs.</figcaption></figure><div class="foundation-evidence"><p><strong>Measured interpretation.</strong> The three-task corruption panel retains every test row and pairs each intervention with its clean baseline. The separate synthetic unseen-class fixture has all-row log loss 9.359 with epsilon 1e−12. It is a class-support diagnostic, not measured v2 open-set detection performance.</p><details><summary>Inspect the numerical evidence table</summary><div class="foundation-scroll"><table border="1" class="dataframe">
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Lesson 069 · TabPFN in open environments: measure the broken contract</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/foundation-course.css" rel="stylesheet"/><link href="../assets/lab-access.css" rel="stylesheet"/><link href="../assets/l069-openenv.css" rel="stylesheet"/></head><body class="l069"><article><nav><a href="../index.html">Course</a> · <a href="0068-pfns-under-temporal-shift.html">← Lesson 068</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 069</p><h1>TabPFN in open environments: measure the broken contract</h1><aside class="lab-access" data-lab-launch=""><p><strong>Lab 069 · six live operations, complete historical checkpoint and EXIT</strong></p><nav class="lab-access-links"><a href="../labs/html/0069-tabpfn-open-environment-failures.html">Read-only lab preview</a><a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0069-tabpfn-open-environment-failures.ipynb">Run in Colab</a><a href="../labs/0069-tabpfn-open-environment-failures.ipynb">Download notebook</a><a href="../labs/html/0069-tabpfn-open-environment-failures.html#lab-exercises">Jump to exercises</a><a href="../reference/0069-tabpfn-open-environment-failures.html">Reference</a><a href="../labs/_verify_l069_v2_results.json">Measured evidence</a><a href="../labs/l069-reproduction.md">Reproduction instructions</a></nav><p>The preview is read-only. Run the notebook in Colab or Jupyter. Built with TabPFN.</p></aside><h2>Retrieve before reading</h2><div id="warmup"></div><div id="prediction"></div><h2 id="Start-with-the-prediction-contract">Start with the prediction contract<a class="anchor-link" href="#Start-with-the-prediction-contract">¶</a></h2><p><strong>Your skill:</strong> turn an open-environment claim into a controlled experiment, then explain exactly what its score measures. By EXIT you will implement six live operations, run complete historical TabPFN v2 weights, and distinguish inability to name a new class from inability to detect an unfamiliar row. You will also test feature loss, separate changes in inputs from changes in the label rule, and interpret several objectives on the same predictions.</p>
+<p>Before reading, write answers from memory: What does a PFN learn during pretraining? Which labels can enter its context? Why does a temporal holdout answer a different question from a random split? What must be fixed before comparing two losses? Retrieve these connections from lessons <a href="0062-tabpfn-v1.html">062</a>, <a href="0064-tabpfn-v2.html">064</a>, <a href="0066-tabicl-column-row-attention.html">066</a> and <a href="0068-pfns-under-temporal-shift.html">068</a>; the essential definitions are restated below.</p>
+<p>A <strong>prediction contract</strong> says what one row represents, which columns are available when an action is taken, which labels may occur, and which errors matter. A model can return a perfectly shaped probability vector while violating that contract. A new disease category breaks label support. A disconnected sensor breaks feature availability. A changed relationship between measurements and disease breaks the conditional label rule. A new cost of a missed case changes the evaluation objective. These are different questions, even when all are called “robustness.”</p>
+<p>The primary reading is <a href="https://arxiv.org/html/2505.16226v1">Cheng et al., <em>Realistic Evaluation of TabPFN v2 in Open Environments</em>, v1, Sections 4–5 and Appendices C–H</a>. It provides the four-axis organizing framework. Treat its conclusions as claims to examine against tables, definitions and implementation. This lesson is an evaluation lesson; it introduces no new model.</p>
+<h2 id="Trace-the-whole-evaluation-before-interpreting-a-failure">Trace the whole evaluation before interpreting a failure<a class="anchor-link" href="#Trace-the-whole-evaluation-before-interpreting-a-failure">¶</a></h2><p>A <strong>context</strong> is the labeled training table supplied to a pretrained PFN. <strong>Query rows</strong> have available features but unavailable labels during prediction. The pretrained weights stay fixed: constructing a new context is not gradient training. Our complete v2 implementation carries numeric values and missing-value flags through two-feature groups, feature attention and context-only row attention, repeated in twelve blocks. Its ten-output head is restricted and normalized to the classes present in the context. The original classifier therefore cannot acquire the name of an unseen class merely because its head has unused output coordinates.</p>
+<p>The measured variant is the full historical Nature classifier: width 192, six attention heads, hidden width 768, twelve layers, 7,244,554 parameters in 81 checkpoint tensors. The checkpoint SHA starts <code>f65a35685aeef42e3</code>. We use one raw numeric view, model seed 0 and temperature 0.9. The historical default wrapper averages four transformed views. Matching the complete network does <strong>not</strong> make this single-view protocol identical to that wrapper. Lesson <a href="0064-tabpfn-v2.html">064</a> derives the architecture and checks the original 2.0.9 implementation.</p>
+<figure id="l069-pipeline"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="One query ID through context selection, full historical model, class mapping and all-row evaluation. The available labels stop at the context boundary. Evaluation labels appear only after probabilities exist." src="../labs/figures/l069/pipeline-v2.png" style="min-width:820px"/></div><figcaption>One query ID through context selection, full historical model, class mapping and all-row evaluation. The available labels stop at the context boundary. Evaluation labels appear only after probabilities exist. <a href="../labs/figures/l069/pipeline-v2.png">Full-size figure</a>.</figcaption></figure><p>Trace a single query through the figure: retain its original row ID; construct context without its label; apply the declared intervention; predict on exactly those query features; map probability columns back to context labels; score every required query. Changing a denominator at the last step changes the experiment. The saved JSON preserves splits, original IDs, targets, class maps, probabilities and live code identities so the path can be reconstructed.</p>
+<p><strong>Important boundary:</strong> context-only attention does not imply unconditional independence of query predictions. Historical numeric preprocessing counts active variation across all supplied rows. We keep each declared query set in one call. Changing query batching can therefore change preprocessing and is a protocol change; it is not a free memory optimization.</p>
+<h2 id="What-the-released-source-actually-certifies">What the released source actually certifies<a class="anchor-link" href="#What-the-released-source-actually-certifies">¶</a></h2><p>The <a href="https://github.com/LAMDA-NeSy/Evaluation-on-Tabular-Model-in-Open-Environments/tree/744c010457f68284faa7ae6ded793a8b3f3e03a4">official repository snapshot</a> is pinned by commit and per-file hashes. Its current README describes v2.5 and its requirements select <code>tabpfn==6.4.1</code>; it was released after the May 2025 v1 paper. It cannot certify which code or checkpoint produced the original tables. We retain original files under <code>labs/sources/l069-v2</code> and execute isolated source fragments as independent checks.</p>
+<p>The current <code>newclass.py</code> converts every feature to an integer, uses seed 42, applies a fixed confidence interval, passes the resulting <strong>binary</strong> decision to ROC-AUC and average precision, and overwrites the result for each held-out class. Its final saved value is the last class, although the paper describes averaging classes and three seeds. On Wine, integer conversion also destroys distinctions: volatile acidity .70 and .88 both become 0, while density .9978 becomes 0. These are actual first-row values in the released red-wine CSV. Our run preserves released CSV floating-point values, all class results and three actual split seeds. These corrections deliberately break whole-script parity.</p>
+<p>The source audit verifies the parts we retain: all sixteen class partitions across CMC/red/white at seed 42, the binary scoring fragment, and all fifteen Iris feature-removal subsets. It separately records what we change. The model check compares complete logits and gradients against isolated original TabPFN 2.0.9 source; the lesson's faster CPU attention kernel changes scheduling, not the checkpoint or mathematical scale. <strong>Source primitive parity, protocol alignment and result reproduction are three different claims.</strong></p>
+<h2 id="Emerging-classes:-naming-and-detecting-are-separate-tasks">Emerging classes: naming and detecting are separate tasks<a class="anchor-link" href="#Emerging-classes:-naming-and-detecting-are-separate-tasks">¶</a></h2><p>Suppose context labels are A and B. A query has probabilities <code>[0.2, 0.8]</code>, but its true label is C. The classifier can choose A or B; it cannot correctly name C. This is a <strong>support failure</strong>, independent of whether its internal representation is useful. A detector might still flag the row as unfamiliar. Detection predicts “known or novel,” not the new semantic class name.</p>
+<p>For the paper-shaped <strong>leave-one-class-out</strong> task, choose one held-out label, put every row of that label into the novel query set, and sample an equal number of rows from the remaining labels as known queries. All other known rows become context. Repeat for every label. Context and query IDs are disjoint, and their union is the full dataset. A class is an intervention within a dataset, not an independent benchmark dataset.</p>
+<p>This balanced design fixes novel prevalence at one half. It is useful for comparing detectors under a controlled query mixture, but it is not the dataset's natural class prevalence. The companion natural-prevalence task first makes a stratified 80/20 split, removes original class 0 only from training, and scores <strong>every</strong> test row without rebalancing. Excluded training rows remain listed in the artifact. The two designs change both context size and test composition, so a score difference between them cannot be attributed solely to prevalence.</p>
+<h2 id="Derive-what-a-confidence-detector-is-measuring">Derive what a confidence detector is measuring<a class="anchor-link" href="#Derive-what-a-confidence-detector-is-measuring">¶</a></h2><p>Let <code>p[i,c]</code> be the probability of context class <code>c</code> for query <code>i</code>. Maximum confidence is <code>m[i] = max_c p[i,c]</code>. Our continuous novelty score is <code>s[i] = 1 − m[i]</code>: larger means less confident in any supported class. This is a diagnostic heuristic, not a calibrated probability of novelty. A familiar but ambiguous row can also have low confidence.</p>
+<p>The source instead scores <code>b[i] = 1{0.4 ≤ m[i] ≤ 0.6}</code>. The lower bound matters. For three known classes, <code>[.34,.33,.33]</code> has lower confidence than <code>[.50,.25,.25]</code>, yet the interval flags only the second row. An interval is not equivalent to “lower confidence means more novel.” With two known classes, maximum confidence cannot fall below 0.5; with one class a softmax detector is degenerate, which our API rejects.</p>
+<figure id="l069-figure-novelty"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Synthetic six-row arithmetic used in the source check: continuous novelty ROC-AUC 8/9 and AP 11/12; the [.4,.6] confidence interval reduces both to .5. The most uncertain row is missed by the lower bound." src="../labs/figures/l069/novelty-v2.png" style="min-width:820px"/></div><figcaption>Synthetic six-row arithmetic used in the source check: continuous novelty ROC-AUC 8/9 and AP 11/12; the [.4,.6] confidence interval reduces both to .5. The most uncertain row is missed by the lower bound. <a href="../labs/figures/l069/novelty-v2.png">Full-size figure</a>.</figcaption></figure><div class="l069-widget" id="l069-novelty-viz"><p>Interactive controls require JavaScript. The static worked figure above remains available.</p></div><p><strong>Predict before changing the interval:</strong> in the six-row example, will using the interval preserve the continuous score's ordering? There are three novel and three known rows. Continuous scores correctly order eight of the nine novel–known pairs, so ROC-AUC is <code>8/9 = .8889</code>. The interval produces <code>[1,0,0,1,0,0]</code>; its novel hit rate is <code>1/3</code> and its known rejection specificity is <code>2/3</code>. For any binary score, trapezoids through <code>(0,0)</code>, <code>(FPR,TPR)</code>, <code>(1,1)</code> give <code>AUC = (TPR + 1 − FPR)/2</code>. Here that is <code>.5</code>. Both use the same underlying probabilities.</p>
+<p><strong>Average precision (AP)</strong> sums recall increments weighted by precision at each distinct score threshold. It differs from trapezoidal area under a precision–recall curve; the released API is <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html"><code>average_precision_score</code></a>, even though the paper calls the column AUPR. The example's continuous AP is <code>.9167</code>, versus <code>.5</code> for the binary interval. AP's baseline depends on novel prevalence. For a constant score it equals the positive fraction, so a balanced task's <code>.5</code> baseline cannot be carried into a rare-novelty task unchanged.</p>
+<h2 id="Keep-the-unsupported-rows-in-the-loss">Keep the unsupported rows in the loss<a class="anchor-link" href="#Keep-the-unsupported-rows-in-the-loss">¶</a></h2><p>For a required target outside the context class map, assign target probability zero. Ordinary log loss is then infinite: <code>−log(0)</code>. To make a finite diagnostic, we explicitly clip each target probability below at <code>epsilon = 10⁻¹²</code>. An unsupported row contributes <code>−log(epsilon) = 27.6310</code> nats, where a nat uses the natural logarithm. This number reflects the declared clipping convention; it is not a learned estimate of open-set risk.</p>
+<p>If two known rows have target probabilities <code>.8</code> and <code>.6</code>, their mean loss is <code>(.2231 + .5108)/2 = .3670</code>. Add one unsupported row and the all-row diagnostic becomes <code>(.2231 + .5108 + 27.6310)/3 = 9.4550</code>. Reporting only <code>.3670</code> would hide a third of the required task. Changing epsilon changes the penalty, so report epsilon and unsupported frequency beside the score.</p>
+<p>The lab reports all-row accuracy, known-only accuracy, known-only loss, unsupported count/fraction and clipped all-row loss. In the balanced leave-one-out design, one half of queries are unsupported, so an ordinary classifier's all-row accuracy is at most one half. This is built into the task; it is not evidence that the classifier randomly forgot half its classes. Abstention would need its own coverage and accepted-risk evaluation, with thresholds fixed from appropriate validation evidence. We do not fit an abstention policy from test labels.</p>
+<h2 id="Feature-removal:-compare-the-same-row-with-a-declared-fallback">Feature removal: compare the same row with a declared fallback<a class="anchor-link" href="#Feature-removal:-compare-the-same-row-with-a-declared-fallback">¶</a></h2><p>A <strong>schema</strong> identifies columns by meaning and order. Simply deleting a required column makes the old input invalid. A mean-imputation fallback restores the original width, but gives the model less information: for removed numeric column <code>j</code>, replace every query value with the mean of context column <code>j</code>. Context and weights stay fixed. This corresponds to the numeric path of the released feature-shift experiment. Its categorical path uses the training mode; our measured panel has numeric input only.</p>
+<figure id="l069-figure-features"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Synthetic two-query trace: context sensor [2,4,6] supplies mean 4, erasing its distinction between query 1 and query 7. Context labels and the other column stay fixed." src="../labs/figures/l069/features-v2.png" style="min-width:820px"/></div><figcaption>Synthetic two-query trace: context sensor [2,4,6] supplies mean 4, erasing its distinction between query 1 and query 7. Context labels and the other column stay fixed. <a href="../labs/figures/l069/features-v2.png">Full-size figure</a>.</figcaption></figure><div class="l069-widget" id="l069-features-viz"><p>Interactive controls require JavaScript. The static worked figure above remains available.</p></div><p>In the worked example, context sensor values <code>[2,4,6]</code> give mean 4. Query readings 1 and 7 become 4 and 4, while a second column <code>[10,20]</code> remains unchanged. The sensor no longer distinguishes these two rows. Using their query mean would accidentally give 4 in this example too; change the second query from 7 to 9 and the error becomes visible. An invariant test must vary values that would distinguish the competing implementations.</p>
+<p>The local run uses six predeclared nominal levels: 0%, 20%, 40%, 60%, 80%, 100%. For <code>F</code> features it removes <code>floor(level × F)</code> columns from one seeded random permutation. Levels are nested and use no labels. On Iris, 20% means <code>floor(.2 × 4) = 0</code>; the actual removed fraction is saved, so the duplicate baseline cannot masquerade as a one-feature intervention. Three seeds vary the real train/test split <strong>and</strong> the mask ordering jointly. They do not separately estimate those two variance components.</p>
+<p>The released <code>random/all</code> path enumerates every subset of each size; our three nested permutations are a sampled-mask diagnostic. All fifteen nonempty Iris subsets are independently checked at the transformation level and separately measured with both complete models at seed 42. The <a href="../labs/_feature_control_l069_v2_results.json">saved control</a> records every subset and prediction. At 50% removal the all-subset mean accuracy is .6500 for v2 and .6611 for XGBoost. This one-dataset control does not stand in for the full twelve-task feature suite; it makes mask selection inspectable. The released <code>least/most</code> alternatives compute feature–label correlation using the full table, including test labels, and reuse mutable frames across levels. We do not use those paths. This matters because selecting a “damaging feature” after seeing test labels changes the scientific claim.</p>
+<h2 id="Absolute-performance-and-degradation-answer-different-questions">Absolute performance and degradation answer different questions<a class="anchor-link" href="#Absolute-performance-and-degradation-answer-different-questions">¶</a></h2><p>For a higher-is-better metric <code>a</code>, an absolute change is <code>a_shift − a_clean</code>. Relative change is <code>(a_shift − a_clean)/a_clean</code>. A fall from <code>.852</code> to <code>.809</code> is <code>−.043</code> on the unit accuracy scale (−4.3 percentage points), or <code>−5.05%</code> relative. The paper's Appendix F equation defines the latter; Table 2 displays numbers resembling the former. Our artifacts store both under different names. Neither is a confidence interval: the paper's “± gap” annotations must not be read as uncertainty bars.</p>
+<p>A model beginning at <code>.50</code> can decline less than one beginning at <code>.90</code> while remaining worse after corruption. Always inspect both clean and shifted scores. At 100% removal every query has identical features. With our fixed deterministic recipe, predictions should become identical within a model/context call; any remaining accuracy is explained by the predicted class and test prevalence, not retained row-specific information.</p>
+<p><strong>Incremental features:</strong> the implemented policy aligns by training column names and ignores a newly available sensor. It can accept reordered or additional columns, and rejects missing required names until a fallback is specified. Its aligned input is exactly the baseline input; invariance here is evidence that the new information was discarded. It is not evidence that v2 learned how to use a sensor without context examples. The input equality is measured for each real feature split and retained as a negative control. On the separate Iris control, both predictors are actually called on aligned augmented inputs; the maximum probability change is exactly zero.</p>
+<h2 id="Distribution-shift:-change-the-law,-not-just-the-terminology">Distribution shift: change the law, not just the terminology<a class="anchor-link" href="#Distribution-shift:-change-the-law,-not-just-the-terminology">¶</a></h2><p>Write the joint distribution as <code>p(x,y) = p(x)p(y|x)</code>. <strong>Covariate shift</strong> changes <code>p(x)</code> while preserving the conditional label rule <code>p(y|x)</code>. <strong>Concept shift</strong> changes that rule. A natural temporal dataset can combine both; changed marginal features alone do not identify which mechanism explains a performance gap.</p>
+<p>The lab constructs a controlled two-coordinate family. Source rows have independent standard-normal coordinates and label <code>y = 1{x₀ &gt; 0}</code>. A covariate intervention moves query coordinate zero by +1.5 and recomputes labels using the same threshold rule. A concept intervention leaves every query feature exactly unchanged and reverses the label rule to <code>y = 1{x₀ ≤ 0}</code>. We retain the original query row IDs, use the same frozen context, and run both complete models. Generated tasks are labeled synthetic throughout; their seeds are not additional real datasets.</p>
+<figure id="l069-figure-shift"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Generated-law controls: covariate shift moves X and retains the threshold rule; concept reversal retains exactly the same X and reverses y. A distance based only on fixed f(X) cannot detect the latter." src="../labs/figures/l069/shift-v2.png" style="min-width:820px"/></div><figcaption>Generated-law controls: covariate shift moves X and retains the threshold rule; concept reversal retains exactly the same X and reverses y. A distance based only on fixed f(X) cannot detect the latter. <a href="../labs/figures/l069/shift-v2.png">Full-size figure</a>.</figcaption></figure><div class="l069-widget" id="l069-shift-viz"><p>Interactive controls require JavaScript. The static worked figure above remains available.</p></div><p>For concept reversal, the frozen predictor must return the same probabilities as on the IID query set: it receives identical context, labels and query features. Only the evaluator's labels changed. For these fixed binary predictions, the new accuracy is <code>1 − old_accuracy</code> and the new AUC is <code>1 − old_AUC</code>. This is an exact check on the experiment. A collapse here does not reveal a special defect of TabPFN; any unchanged accurate binary predictor must fail when its correct labels are reversed.</p>
+<p>The paper uses feature-space distances and learned representations to help discuss shift. Here is a limitation you can derive without trusting a model ranking: if source and target have identical <code>X</code>, any fixed representation <code>f(X)</code> is also identical. A Fréchet distance computed solely from <code>f(X)</code> is zero even when every label reverses. Such a distance cannot by itself identify pure conditional shift. This does not invalidate the separate DISDE risk decomposition discussed in Appendix G; it prevents a feature-distance proxy from becoming proof of a changed label law.</p>
+<p>Moving a standard-normal coordinate by 1.5 raises positive prevalence from .5 to approximately .9332 under the unchanged threshold rule. A higher covariate-shift accuracy can therefore reflect an easier class mixture. A changed label marginal alone is not proof of pure label shift, which additionally preserves the class-conditional feature distribution. The generated evidence reports realized class counts beside each score.</p>
+<p>The original nine WhyShift/TableShift tasks are <strong>not run here</strong>. They include geographic and temporal ACS settings plus College Scorecard, BRFSS Diabetes and hospital readmission. Their row universes, domain definitions and large contexts differ from our generated control. The accompanying reproduction document records the specific missing protocol and source discrepancies. Lesson <a href="0068-pfns-under-temporal-shift.html">068</a> supplies the sequence's distinct real temporal experiment; its evidence must not be counted again as a new 069 run.</p>
+<h2 id="A-different-objective-can-expose-a-different-failure">A different objective can expose a different failure<a class="anchor-link" href="#A-different-objective-can-expose-a-different-failure">¶</a></h2><p>The paper's fourth axis rescored predictions with several classification metrics. It does not, by itself, demonstrate adaptation to a new utility function. Here we compute all four metrics from the same unmodified real query predictions, without choosing a winning metric after the run.</p>
+<p><strong>Accuracy</strong> is the fraction correct. <strong>Recall for class c</strong> is the fraction of true-c rows predicted c. <strong>Balanced accuracy</strong> averages these recalls equally across classes. <strong>Precision for class c</strong> is the fraction of predicted-c rows that truly are c. The class F1 is the harmonic mean <code>2 × precision × recall/(precision + recall)</code>, or equivalently <code>2TP/(2TP+FP+FN)</code>. <strong>Macro F1</strong> averages class F1 values equally; it is not minority-class F1. Our multiclass <strong>ROC-AUC</strong> averages one-versus-rest probability rankings equally over classes; binary AUC uses class-1 probability. Undefined values require an explicit missing status rather than zero. The declared sklearn metric adapters (<a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html">F1 definition</a>, <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html">balanced accuracy</a>) average balanced accuracy over true classes present in that test and macro F1 over the union of true and predicted labels. An absent test class therefore needs particular care when comparing class-averaged metrics across splits; the full context class set is required for our macro OVR AUC.</p>
+<figure id="l069-figure-objectives"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Synthetic 90:10 confusion matrix, always class 0: accuracy .90, balanced accuracy .50, minority F1=0 and macro F1=.4737. Identical predictions, different metric definitions." src="../labs/figures/l069/objectives-v2.png" style="min-width:820px"/></div><figcaption>Synthetic 90:10 confusion matrix, always class 0: accuracy .90, balanced accuracy .50, minority F1=0 and macro F1=.4737. Identical predictions, different metric definitions. <a href="../labs/figures/l069/objectives-v2.png">Full-size figure</a>.</figcaption></figure><div class="l069-widget" id="l069-objectives-viz"><p>Interactive controls require JavaScript. The static worked figure above remains available.</p></div><p>Consider ninety class-0 and ten class-1 rows, with every row predicted class 0. Accuracy is <code>.90</code>, class-1 recall and F1 are zero, balanced accuracy is <code>.50</code>, and macro F1 is <code>(180/190 + 0)/2 = .4737</code>. A high accuracy does not prove useful minority recall. Conversely, a lower balanced accuracy than accuracy is not a statistical test of intrinsic model bias; it depends on class proportions and the confusion matrix. The paper's current source uses macro F1, while the published BRFSS accuracy .875 and F1 .044 cannot be binary macro F1 on the same predictions: binary macro F1 is at least accuracy/(1+accuracy), here .4667. To see that lower bound, write correct positive and negative fractions as u and v, with u+v=a and error fraction e=1−a. Macro F1 is u/(2u+e)+v/(2v+e). This concave expression is minimized when one of u,v is zero, giving a/(1+a). We name our averaging explicitly and do not compare incompatible targets.</p>
+<p>For calibrated binary probability p, predicting positive has expected cost C_FP × (1−p); predicting negative costs C_FN × p. Comparing them gives the threshold p &gt; C_FP/(C_FP+C_FN). If a false negative costs nine times a false positive, the threshold becomes .1. This derivation assumes those costs and deployment calibration; a changed cost alone does not require a new representation. A ranking can also remain perfect while probability quality differs: probabilities [.1,.9] and [.4,.6] on one negative and one positive row both give AUC 1, but mean log losses .1054 and .5108.</p>
+<p>Changing a decision threshold can change accuracy/F1 while leaving ranking AUC unchanged. Choosing that threshold against test labels would leak the objective into evaluation. A real cost change may require validation-based calibration or decision selection; simple post-hoc metric reporting establishes neither. For relational systems, “new objective” might also mean a new prediction horizon, which changes the label itself and needs a new availability audit.</p>
+<h2 id="Read-the-fresh-evidence-at-its-actual-unit-of-analysis">Read the fresh evidence at its actual unit of analysis<a class="anchor-link" href="#Read-the-fresh-evidence-at-its-actual-unit-of-analysis">¶</a></h2><p>Before revealing the author panel, predict: will continuous confidence and the interval have the same novelty ranking? Must all feature-removal curves worsen monotonically? Must v2 outperform the fixed tree in every metric? Which generated shift should defeat both unchanged models by construction? Write one reason for each answer.</p>
+<div aria-label="Scrollable evidence table" class="table-scroll" role="region" tabindex="0"><table>
 <thead>
-<tr style="text-align: right;">
-<th></th>
-<th></th>
-<th></th>
-<th>mean</th>
-<th>std</th>
-</tr>
 <tr>
-<th>dataset</th>
-<th>arm</th>
-<th>condition</th>
-<th></th>
-<th></th>
+<th>Dataset</th>
+<th>Arm</th>
+<th style="text-align:right">Continuous novelty AUC ± SD</th>
+<th style="text-align:right">Interval AUC ± SD</th>
+<th style="text-align:right">Natural novel fraction</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<th rowspan="6" valign="top">blood_transfusion</th>
-<th rowspan="3" valign="top">TabPFN-v2</th>
-<th>clean</th>
-<td>0.4726</td>
-<td>0.0190</td>
+<td>cmc</td>
+<td>v2</td>
+<td style="text-align:right">0.5568 ± 0.0168</td>
+<td style="text-align:right">0.5125 ± 0.0130</td>
+<td style="text-align:right">0.4271</td>
 </tr>
 <tr>
-<th>missing-column</th>
-<td>0.4863</td>
-<td>0.0174</td>
+<td>cmc</td>
+<td>xgboost</td>
+<td style="text-align:right">0.5587 ± 0.0107</td>
+<td style="text-align:right">0.5092 ± 0.0083</td>
+<td style="text-align:right">0.4271</td>
 </tr>
 <tr>
-<th>scaled-column</th>
-<td>0.5043</td>
-<td>0.0208</td>
+<td>winequality-red</td>
+<td>v2</td>
+<td style="text-align:right">0.5709 ± 0.0374</td>
+<td style="text-align:right">0.5322 ± 0.0251</td>
+<td style="text-align:right">0.0063</td>
 </tr>
 <tr>
-<th rowspan="3" valign="top">XGBoost</th>
-<th>clean</th>
-<td>0.4896</td>
-<td>0.0094</td>
+<td>winequality-red</td>
+<td>xgboost</td>
+<td style="text-align:right">0.5828 ± 0.0154</td>
+<td style="text-align:right">0.5173 ± 0.0248</td>
+<td style="text-align:right">0.0063</td>
 </tr>
 <tr>
-<th>missing-column</th>
-<td>0.4940</td>
-<td>0.0050</td>
+<td>winequality-white</td>
+<td>v2</td>
+<td style="text-align:right">0.5992 ± 0.0349</td>
+<td style="text-align:right">0.5447 ± 0.0164</td>
+<td style="text-align:right">0.0041</td>
 </tr>
 <tr>
-<th>scaled-column</th>
-<td>0.4993</td>
-<td>0.0058</td>
-</tr>
-<tr>
-<th rowspan="6" valign="top">diabetes</th>
-<th rowspan="3" valign="top">TabPFN-v2</th>
-<th>clean</th>
-<td>0.5083</td>
-<td>0.0219</td>
-</tr>
-<tr>
-<th>missing-column</th>
-<td>0.5027</td>
-<td>0.0175</td>
-</tr>
-<tr>
-<th>scaled-column</th>
-<td>0.4979</td>
-<td>0.0139</td>
-</tr>
-<tr>
-<th rowspan="3" valign="top">XGBoost</th>
-<th>clean</th>
-<td>0.4780</td>
-<td>0.0063</td>
-</tr>
-<tr>
-<th>missing-column</th>
-<td>0.4623</td>
-<td>0.0058</td>
-</tr>
-<tr>
-<th>scaled-column</th>
-<td>0.4591</td>
-<td>0.0083</td>
-</tr>
-<tr>
-<th rowspan="6" valign="top">phoneme</th>
-<th rowspan="3" valign="top">TabPFN-v2</th>
-<th>clean</th>
-<td>0.3131</td>
-<td>0.0127</td>
-</tr>
-<tr>
-<th>missing-column</th>
-<td>0.3844</td>
-<td>0.0102</td>
-</tr>
-<tr>
-<th>scaled-column</th>
-<td>0.3576</td>
-<td>0.0200</td>
-</tr>
-<tr>
-<th rowspan="3" valign="top">XGBoost</th>
-<th>clean</th>
-<td>0.3334</td>
-<td>0.0057</td>
-</tr>
-<tr>
-<th>missing-column</th>
-<td>0.4036</td>
-<td>0.0082</td>
-</tr>
-<tr>
-<th>scaled-column</th>
-<td>0.3606</td>
-<td>0.0048</td>
+<td>winequality-white</td>
+<td>xgboost</td>
+<td style="text-align:right">0.5149 ± 0.0499</td>
+<td style="text-align:right">0.5164 ± 0.0284</td>
+<td style="text-align:right">0.0041</td>
 </tr>
 </tbody>
-</table></div></details></div>
-<p>The compared arms are pinned Nature-v2 inference and a small XGBoost recipe on three real binary datasets, with three seeds. The test corruption is a prespecified intervention, not a selected attack optimized against the test labels. A model's smaller degradation here supports a narrower statement than “robust in open environments.” Inspect both absolute error and the paired change from clean performance; a poor clean model can have little room to degrade.</p>
-<div class="lesson-depth" data-lesson-depth="schema-interventions" id="depth-schema-interventions"><h3 id="Distinguish-information-loss-from-a-schema-error">Distinguish information loss from a schema error<a class="anchor-link" href="#Distinguish-information-loss-from-a-schema-error">¶</a></h3><p>Setting a feature to missing removes observed information under the model's missing-value policy. Scaling it changes its numeric values and potentially its units. Permuting values across rows breaks their association with the target while preserving the marginal distribution. Reordering columns without updating identities is a schema mismatch. These interventions should not be summarized as the same kind of corruption.</p>
-<p>If income changes from units to thousands, a correct upstream unit conversion can preserve semantic information. Feeding the new numbers to a model expecting old units tests the system's sensitivity to an unannounced schema change. The appropriate remedy may be data-contract enforcement rather than a different architecture.</p>
-<p>The local corruption function uses a training-derived center and returns modified copies. Mutating the shared clean test array would contaminate subsequent comparisons. Re-fitting a scaler on each corrupted test set would also change more than the intended intervention and could leak query-distribution information.</p>
-<p>Keep row IDs, labels, checkpoint and all untouched columns fixed. Then a paired clean/corrupted loss difference can be attributed to the declared intervention within that experimental setup. If you also retrain or retune, you are evaluating adaptation to the change rather than immediate robustness of the frozen procedure.</p>
-<p>Missingness can itself be informative. A model trained on one missingness mechanism may fail when deployment missingness occurs for different reasons. Artificially blanking a column tests one controlled pattern; it does not represent every real missing-data process.</p>
-</div><h2 id="A-new-objective-is-not-necessarily-a-new-model">A new objective is not necessarily a new model<a class="anchor-link" href="#A-new-objective-is-not-necessarily-a-new-model">¶</a></h2><p>Suppose the original task optimized log loss, but deployment now values a recall constraint, asymmetric cost or a calibrated probability. Those requirements can change the decision rule without changing the underlying probability model. For a binary action, predicting a calibrated probability and choosing a threshold are separate operations. If probabilities cease to be calibrated under shift, moving the threshold alone may fail.</p>
-<p>Define the target label before discussing metrics. Predicting “will churn within 30 days” differs from “will churn eventually,” even if both produce a binary column. Feature availability and label delay also change the valid context. The paper's objective-change axis is a reminder to inspect the semantic task, not merely switch from accuracy to AUROC after viewing results.</p>
-<div class="lesson-depth" data-lesson-depth="objective-threshold" id="depth-objective-threshold"><h3 id="A-changed-decision-cost-may-require-a-new-threshold">A changed decision cost may require a new threshold<a class="anchor-link" href="#A-changed-decision-cost-may-require-a-new-threshold">¶</a></h3><p>For a calibrated binary probability p, suppose a false positive costs C_FP and a false negative costs C_FN. Predicting positive has expected cost C_FP(1−p); predicting negative has expected cost C_FN p. Choose positive when p&gt;C_FP/(C_FP+C_FN).</p>
-<p>With false-negative cost nine times false-positive cost, the threshold is 0.1 rather than 0.5. The probability model can remain unchanged while the decision rule changes. This illustrates why a new operational objective does not automatically require a new representation or pretrained checkpoint.</p>
-<p>The derivation assumes the stated costs and useful probability calibration for the deployment population. If probabilities are miscalibrated or the population changes, the threshold's expected-cost interpretation can fail. Estimate calibration and choose any recalibration procedure using legal validation data.</p>
-<p>Ranking metrics, log loss and decision cost answer different questions. A model can have excellent ranking while assigning poor probabilities, or good average log loss while failing a high-cost subgroup. Choose the metric that connects to the intended action and retain complementary diagnostics.</p>
-</div><div class="lesson-depth" data-lesson-depth="calibration-ranking" id="depth-calibration-ranking"><h3 id="The-same-ranking-can-hide-very-different-probability-quality">The same ranking can hide very different probability quality<a class="anchor-link" href="#The-same-ranking-can-hide-very-different-probability-quality">¶</a></h3><p>Take two predictions for a negative and a positive row. Model A gives probabilities (0.1,0.9); model B gives (0.4,0.6). Both rank the positive row above the negative and both classify correctly at threshold 0.5. Their mean log losses differ: about 0.105 for A and 0.511 for B.</p>
-<p>Now imagine a distribution change makes a previously confident prediction wrong. Log loss penalizes that confident error strongly. Accuracy only records whether the thresholded class changed, and a ranking metric considers relative ordering across rows. These metrics expose different aspects of robustness.</p>
-<p>A calibration curve groups predictions and compares predicted probabilities with observed frequencies. Finite bins can be noisy, especially for rare classes or extreme probabilities. Use it as a diagnostic with sample counts, and evaluate any fitted recalibration on independent later data.</p>
-<p>For an open-environment report, state whether the intervention damaged information ranking, probability calibration, class support or the downstream decision threshold. A single metric change cannot uniquely identify all four. The appropriate repair follows the diagnosed component: schema correction, a context policy, recalibration or a different predictor may address different failures.</p>
-</div><h2 id="Build-a-failure-matrix-with-controlled-rows">Build a failure matrix with controlled rows<a class="anchor-link" href="#Build-a-failure-matrix-with-controlled-rows">¶</a></h2><p>Use one row per failure axis and columns for changed assumption, held-fixed quantities, intervention, measured output, fallback and untested claim. For an emerging class, the class-support contract changes. For a missing feature, the available input changes. For temporal concept shift, the conditional target rule changes. For a new utility function, the action criterion changes. A single corruption experiment cannot populate all four rows with “verified.”</p>
-<p>Ask what observation would distinguish your leading explanation from an alternative. If a missing-feature fallback fails, compare retraining under the same missingness to a frozen model with imputation. If a context lacks a class, distinguish representation failure from impossible class support. If a shift changes calibration, report both discrimination and a proper scoring rule. These follow-up experiments must use fresh or appropriately nested evaluation evidence.</p>
-<div class="lesson-depth" data-lesson-depth="failure-matrix" id="depth-failure-matrix"><h3 id="One-row-of-the-audit-should-describe-one-controlled-change">One row of the audit should describe one controlled change<a class="anchor-link" href="#One-row-of-the-audit-should-describe-one-controlled-change">¶</a></h3><p>For each intervention, record the changed input or assumption, what remained fixed, the affected population, the model's defined output policy and the measured quality/cost difference. Add a clean baseline in the same table. This makes it possible to compare failures without conflating their mechanisms.</p>
-<p>For example, an unsupported-class row might report class coverage and all-row log loss under the disclosed floor. A missing-feature row might report paired loss increase on all original test rows. A cost-change row might report expected decision cost at a validation-chosen threshold. These outcomes need not share one scalar ranking.</p>
-<p>Inspect whether the failure is in the model, wrapper, preprocessing or downstream decision policy. A class-order bug is not evidence that the pretrained representation lacks capacity. An unsupported task is not merely a poor accuracy score. The diagnosis determines the next useful intervention.</p>
-<p>The exit explanation should report one failure precisely and identify a result that would refute your proposed cause. Preserve the original rows and artifact chain so another researcher can reproduce both the clean and changed conditions. A candid boundary is more informative than claiming broad robustness from a small collection of successful cases.</p>
-</div><h2 id="Exit:-report-one-failure-without-overclaiming">Exit: report one failure without overclaiming<a class="anchor-link" href="#Exit:-report-one-failure-without-overclaiming">¶</a></h2><p>Submit the schema/class contract, all-row unsupported-class diagnostic and clean-versus-corrupted paired losses. Write a failure report that names the broken assumption, the evidence, a competing explanation and the next discriminating experiment. Include one case where the model did not fail, so the conclusion is not a curated collection of bad examples.</p>
-<p>For the relational mission, extend the matrix to new entities, new tables, foreign-key changes and delayed labels. Relational context can add information, but it also adds ways to violate availability and schema assumptions. The later model must be tested against those additional contracts rather than credited with robustness because it has a graph.</p>
-<section id="lab"><h2>Run the companion lab</h2><p><strong>What you will do:</strong> Score unsupported classes and apply training-derived feature corruptions. The default exercise uses a fitted logistic model; the v2/XGBoost panel is separate.</p><ol><li><code>open_class_loss</code>: Score all required labels with a disclosed epsilon for unsupported classes; preserve class/probability alignment.</li><li><code>corrupt_column</code>: Create a non-mutating missing/scale test intervention using a training-derived center.</li></ol><p><strong>Author-reference evidence:</strong> Actual v2/XGBoost corruption comparisons on three tasks and three seeds, plus a separate class-support diagnostic.</p><p><strong>Submit:</strong> your completed notebook and <code>student-l069-exit.json</code>, plus your written interpretation. CHECK cells give immediate code feedback; paste the EXIT output here for a reasoning review.</p><p><a href="../labs/0069-tabpfn-open-environment-failures.ipynb">Student notebook</a> · <a href="../labs/html/0069-tabpfn-open-environment-failures.html">Prepared lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0069-tabpfn-open-environment-failures.ipynb">Open in Colab</a></p><p>2 substantive code tasks feed the live experiment, followed by behavioral CHECKs and a written EXIT artifact. The notebook contains the explanation and portable figures so it is teachable independently.</p><div class="foundation-contract"><strong>Keep the evidence boundaries visible.</strong> <a href="../labs/l069-reproduction.md">Reproduction contract</a> · <a href="../labs/_verify_l069_results.json">Measured evidence</a> · <a href="../labs/_sources_foundation.json">Source/checkpoint identities</a> · <a href="../labs/relkit/foundation_core.py">Visible model mechanisms</a>. These artifacts do not certify full paper reproduction or personal mastery.</div><div id="teachback"></div><p>Ask me follow-up questions about any operation, CHECK or conclusion you cannot defend. Paste the EXIT artifact and your explanation for review. Revisit the retrieval question tomorrow and again in a week, before reopening the reference.</p></section><nav><a href="../reference/0069-tabpfn-open-environment-failures.html">Printable reference</a> · <a href="../notebooks.html">Notebook gallery</a></nav></article><script id="foundation-config" type="application/json">{"lesson": 69, "mode": "classes", "prompt": "Can unsupported-class rows be dropped while claiming all-row deployment accuracy?", "answer": "No, dropping them changes the evaluated population and hides coverage failures.", "quiz": ["Four correct-class probabilities are .8; one required class is unsupported. With epsilon 1e\u221212, approximately what is all-row mean log loss?", ["Approximately 0.223 nats", "Approximately 1.609 nats", "Approximately 5.705 nats"], 2, "The mean is [\u22124 ln(.8) \u2212 ln(1e\u221212)]/5 \u2248 5.705. Dropping the unsupported row would hide the failure."]}</script><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/foundation-viz.js"></script><script src="../assets/foundation-lesson.js"></script></body></html>
+</table></div>
+<figure id="l069-figure-results"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Fresh full-row diagnostic, AUC detail axis .3–.9. Panels retain dataset units; points/error bars show three actual split/mask repetitions and sample SD, not independent-dataset confidence intervals. The single raw numeric v2 view and fixed XGBoost recipe do not reproduce the paper benchmark." src="../labs/figures/l069/results-v2.png" style="min-width:1050px"/></div><figcaption>Fresh full-row diagnostic, AUC detail axis .3–.9. Panels retain dataset units; points/error bars show three actual split/mask repetitions and sample SD, not independent-dataset confidence intervals. The single raw numeric v2 view and fixed XGBoost recipe do not reproduce the paper benchmark. <a href="../labs/figures/l069/results-v2.png">Full-size figure</a>.</figcaption></figure><figure id="l069-figure-feature_results"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Fresh full-model feature-loss curves for every actual removal level; connected means and sample SD summarize three split/mask seeds. Faint dots retain seed outcomes. Iris nominal 20% removes zero of four columns and coincides with 0%." src="../labs/figures/l069/feature_results-v2.png" style="min-width:1050px"/></div><figcaption>Fresh full-model feature-loss curves for every actual removal level; connected means and sample SD summarize three split/mask seeds. Faint dots retain seed outcomes. Iris nominal 20% removes zero of four columns and coincides with 0%. <a href="../labs/figures/l069/feature_results-v2.png">Full-size figure</a>.</figcaption></figure><p>The mean continuous novelty AUC gap (v2 minus XGBoost), after averaging every held class and split within each dataset, is +0.0235. The paired three-dataset bootstrap interval is [-0.0118, +0.0843] (10,000 resamples, seed 69). This is a descriptive interval over only these three dataset units, two of which are related Wine tasks; it does not establish general detector superiority. Two-arm mean ranks are v2 1.667 and XGBoost 1.333.</p>
+<p>Clean-to-100%-removed accuracy: iris/v2 0.9889 → 0.3111; iris/xgboost 0.9889 → 0.3111; cmc/v2 0.5650 → 0.3164; cmc/xgboost 0.5559 → 0.4452; winequality-red/v2 0.6375 → 0.4177; winequality-red/xgboost 0.6729 → 0.4177. The fully removed query matrix contains no row-specific feature differences. The saved probabilities and class prevalences explain the remaining accuracy.</p>
+<p>On the generated concept-reversal control, probabilities match the IID case and binary accuracy/AUC complement exactly within numeric tolerance. Both arms fail for the same information reason. Added-column alignment also produces exactly the baseline input; that is a control for ignoring new information, not learned feature adaptation. The source-scored interval and continuous confidence should therefore be interpreted as separate detectors, and supported-only losses remain separate from all-row clipped losses.</p>
+<p>The measured clean-objective table below uses the same saved predictions throughout. Macro F1 averages the union of true and predicted labels; balanced accuracy averages true-present classes. These values must not be substituted for the paper's unreconciled F1 convention.</p>
+<div aria-label="Scrollable evidence table" class="table-scroll" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Arm</th>
+<th style="text-align:right">Accuracy</th>
+<th style="text-align:right">Balanced accuracy</th>
+<th style="text-align:right">Macro F1</th>
+<th style="text-align:right">AUC (available seeds)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>iris</td>
+<td>v2</td>
+<td style="text-align:right">0.9889</td>
+<td style="text-align:right">0.9861</td>
+<td style="text-align:right">0.9873</td>
+<td style="text-align:right">0.9976 (3)</td>
+</tr>
+<tr>
+<td>iris</td>
+<td>xgboost</td>
+<td style="text-align:right">0.9889</td>
+<td style="text-align:right">0.9861</td>
+<td style="text-align:right">0.9873</td>
+<td style="text-align:right">0.9945 (3)</td>
+</tr>
+<tr>
+<td>cmc</td>
+<td>v2</td>
+<td style="text-align:right">0.5650</td>
+<td style="text-align:right">0.5451</td>
+<td style="text-align:right">0.5456</td>
+<td style="text-align:right">0.7682 (3)</td>
+</tr>
+<tr>
+<td>cmc</td>
+<td>xgboost</td>
+<td style="text-align:right">0.5559</td>
+<td style="text-align:right">0.5318</td>
+<td style="text-align:right">0.5335</td>
+<td style="text-align:right">0.7255 (3)</td>
+</tr>
+<tr>
+<td>winequality-red</td>
+<td>v2</td>
+<td style="text-align:right">0.6375</td>
+<td style="text-align:right">0.3308</td>
+<td style="text-align:right">0.3275</td>
+<td style="text-align:right">0.8725 (2)</td>
+</tr>
+<tr>
+<td>winequality-red</td>
+<td>xgboost</td>
+<td style="text-align:right">0.6729</td>
+<td style="text-align:right">0.3887</td>
+<td style="text-align:right">0.3906</td>
+<td style="text-align:right">0.8312 (2)</td>
+</tr>
+</tbody>
+</table></div>
+<p>The generated conditions below report realized positive prevalence. Covariate shift preserves the threshold law but changes class composition; concept reversal changes labels while retaining identical input rows.</p>
+<div aria-label="Scrollable evidence table" class="table-scroll" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>Generated condition</th>
+<th>Arm</th>
+<th style="text-align:right">Positive fraction</th>
+<th style="text-align:right">Accuracy ± SD</th>
+<th style="text-align:right">AUC ± SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>iid</td>
+<td>v2</td>
+<td style="text-align:right">0.4714</td>
+<td style="text-align:right">0.9987 ± 0.0023</td>
+<td style="text-align:right">1.0000 ± 0.0000</td>
+</tr>
+<tr>
+<td>iid</td>
+<td>xgboost</td>
+<td style="text-align:right">0.4714</td>
+<td style="text-align:right">0.9961 ± 0.0034</td>
+<td style="text-align:right">0.9959 ± 0.0036</td>
+</tr>
+<tr>
+<td>covariate</td>
+<td>v2</td>
+<td style="text-align:right">0.9342</td>
+<td style="text-align:right">1.0000 ± 0.0000</td>
+<td style="text-align:right">1.0000 ± 0.0000</td>
+</tr>
+<tr>
+<td>covariate</td>
+<td>xgboost</td>
+<td style="text-align:right">0.9342</td>
+<td style="text-align:right">0.9954 ± 0.0030</td>
+<td style="text-align:right">0.9976 ± 0.0016</td>
+</tr>
+<tr>
+<td>concept</td>
+<td>v2</td>
+<td style="text-align:right">0.5286</td>
+<td style="text-align:right">0.0013 ± 0.0023</td>
+<td style="text-align:right">0.0000 ± 0.0000</td>
+</tr>
+<tr>
+<td>concept</td>
+<td>xgboost</td>
+<td style="text-align:right">0.5286</td>
+<td style="text-align:right">0.0039 ± 0.0034</td>
+<td style="text-align:right">0.0041 ± 0.0036</td>
+</tr>
+</tbody>
+</table></div>
+<p>Natural-prevalence class 0-only task: every original 20% test row remains. The balanced detector table above has a different training context and test mixture; comparing them does not isolate prevalence alone. Clipped losses use epsilon 10⁻¹².</p>
+<div aria-label="Scrollable evidence table" class="table-scroll" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Arm</th>
+<th style="text-align:right">All-row accuracy</th>
+<th style="text-align:right">Known accuracy</th>
+<th style="text-align:right">Unsupported fraction</th>
+<th style="text-align:right">All-row clipped loss</th>
+<th style="text-align:right">Novel AP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cmc</td>
+<td>v2</td>
+<td style="text-align:right">0.3672</td>
+<td style="text-align:right">0.6410</td>
+<td style="text-align:right">0.4271</td>
+<td style="text-align:right">12.1429</td>
+<td style="text-align:right">0.3969</td>
+</tr>
+<tr>
+<td>cmc</td>
+<td>xgboost</td>
+<td style="text-align:right">0.3503</td>
+<td style="text-align:right">0.6114</td>
+<td style="text-align:right">0.4271</td>
+<td style="text-align:right">12.2522</td>
+<td style="text-align:right">0.4485</td>
+</tr>
+<tr>
+<td>winequality-red</td>
+<td>v2</td>
+<td style="text-align:right">0.6594</td>
+<td style="text-align:right">0.6635</td>
+<td style="text-align:right">0.0063</td>
+<td style="text-align:right">0.9633</td>
+<td style="text-align:right">0.1757</td>
+</tr>
+<tr>
+<td>winequality-red</td>
+<td>xgboost</td>
+<td style="text-align:right">0.6771</td>
+<td style="text-align:right">0.6813</td>
+<td style="text-align:right">0.0063</td>
+<td style="text-align:right">1.1845</td>
+<td style="text-align:right">0.0204</td>
+</tr>
+<tr>
+<td>winequality-white</td>
+<td>v2</td>
+<td style="text-align:right">0.6694</td>
+<td style="text-align:right">0.6721</td>
+<td style="text-align:right">0.0041</td>
+<td style="text-align:right">0.9017</td>
+<td style="text-align:right">0.0229</td>
+</tr>
+<tr>
+<td>winequality-white</td>
+<td>xgboost</td>
+<td style="text-align:right">0.6619</td>
+<td style="text-align:right">0.6646</td>
+<td style="text-align:right">0.0041</td>
+<td style="text-align:right">1.0353</td>
+<td style="text-align:right">0.0926</td>
+</tr>
+</tbody>
+</table></div>
+<p>The separate Iris all-subset control averages all six pairs at 50% removal (seed 42): v2 all-subset accuracy 0.6500, nested-path accuracy 0.3000 on columns [3, 2]; xgboost all-subset accuracy 0.6611, nested-path accuracy 0.3000 on columns [3, 2]; the same nominal difficulty can therefore give different scores depending on the removed subset. Source subset parity and this 32-prediction-set control are distinct from the sampled-mask main panel.</p>
+<p>The author panel uses all 1,473 CMC rows, all 1,599 red-wine rows, all 4,898 white-wine rows and all 150 Iris rows. CMC is nine numeric-coded features and three classes; the released wine labels have six and seven classes respectively, despite Appendix E's four-level description. CMC/red/white are the novelty panel; Iris/CMC/red are the feature panel. Iris belongs to the paper's feature suite; CMC and red wine extend feature tests to source-prepared novelty datasets. These related Wine tasks are two reported dataset units, not evidence of broad domain diversity.</p>
+<p>Red wine seed 789 contains no class-0 test row in the feature experiment. Its multiclass AUC is undefined, recorded as <code>None</code>; AUC means use only the two available seeds, named in the artifact, while other clean metrics retain three. No missing value is converted to zero.</p>
+<p>Each reported real-task mean first averages held-out classes equally where relevant, then averages split seeds 42, 2023 and 789. Error bars show sample standard deviation across those three split/mask repetitions, conditional on the dataset and fixed checkpoint. They are not confidence intervals over future datasets. Paired comparisons keep the same intervention and query rows; a separate paired dataset bootstrap resamples the three dataset units. With only three related tasks, its interval is descriptive and cannot establish general model-family superiority.</p>
+<p>The comparator is fixed XGBoost 3.3.0, 100 histogram trees, depth 6, learning rate .3, full row/column sampling and one CPU thread. There is no validation search in either arm. This is not Appendix D's five-fold tree search or 100-trial neural optimization. Two-arm average ranks are reported within each dataset. Paired dataset differences are the relevant comparison here; with only three dataset units the uncertainty remains descriptive. We do not add a comparator merely to fit a particular omnibus test.</p>
+<h2 id="Reconstruct-a-claim-before-accepting-it">Reconstruct a claim before accepting it<a class="anchor-link" href="#Reconstruct-a-claim-before-accepting-it">¶</a></h2><p>A paper's narrative is not stronger evidence than its table. Section 5.1 calls v2 consistently better at novelty detection, but Table 1's red-wine MLP <code>.700</code> ROC-AUC and <code>.658</code> AUPR exceed v2 <code>.533</code> and <code>.521</code>. Eye Movement <code>.511</code> and CMC <code>.522</code> are near chance on the reported scale. They do not establish broad reliable new-class detection. Our corrected local scoring experiment is also not a reproduction of those numbers.</p>
+<p>The broader “trees remain optimal” wording extends beyond a finite benchmark. Even inside the paper, Table 3 gives RandomForest average rank <code>3.93</code> and v2 <code>3.53</code>, where smaller is better; it cannot support the accompanying statement that RandomForest consistently beats v2. Neither these inconsistencies nor our local counterexamples prove that the paper's entire empirical direction is false. They require narrower, table-specific claims and reproducible operators.</p>
+<p>For each claim, ask for: exact source location; data/split identity; estimator and wrapper identity; metric definition; aggregation unit; uncertainty; and a saved result. If any is absent, record the gap. A local code match cannot repair an unavailable historical protocol by assertion.</p>
+<h2 id="Connect-the-failure-to-the-earlier-mechanisms">Connect the failure to the earlier mechanisms<a class="anchor-link" href="#Connect-the-failure-to-the-earlier-mechanisms">¶</a></h2><p>Lesson 062 explains a prior fitted network as amortized inference over a training-task distribution. Its predictive behavior inherits that task distribution; a new deployment contract need not match it. Lesson 064 shows how complete v2 weights turn context into probabilities, including preprocessing dependence. A ten-output head does not imply ten named classes of permanent semantic meaning.</p>
+<p>Lesson 066's scalable TabICL mechanisms address how to represent and process large tables. More feasible context does not automatically supply a missing class, interpret a new column or fix a reversed label law. Lesson 068 explicitly conditions predictions on time and changes its pretraining tasks to model drift. That is a proposed adaptation mechanism; 069 is the measurement discipline needed to establish when such a mechanism helps. Do not conclude that an architecture is robust merely because it accepts a larger or time-stamped table.</p>
+<p>For the relational mission, name an operational example: a new merchant category, a dropped transaction attribute, a changed link between activity and fraud, or a higher cost of missing fraud. Relational neighbors might provide the missing signal, but only if their features and labels were available at prediction time. Graph structure can add useful information and additional contracts to audit; it does not excuse a weaker baseline protocol.</p>
+<h2 id="EXIT:-explain-a-failure-and-a-non-failure">EXIT: explain a failure and a non-failure<a class="anchor-link" href="#EXIT:-explain-a-failure-and-a-non-failure">¶</a></h2><p>Run the six live TODOs and their diagnostic CHECKs. The notebook displays the visible complete model and evaluation code, independently checks the source-scoring fragment and complete original network, and executes a fresh CMC/Iris panel plus the controlled shift family. Your functions determine the actual splits, masks, scores, label laws and summaries. The broader gate reruns the full author panel using your current definitions.</p>
+<p>Submit the fresh <code>exit-v2.json</code> and a written explanation that identifies one failure, one negative control, one metric disagreement, the all-row denominator, and the next discriminating experiment. Explain why a continuous detector may rank novelty usefully while an ordinary classifier still cannot name the held-out class. State precisely which paper results remain unrun. The tutor will assess the reasoning; execution alone does not establish mastery.</p>
+<p>Close the lesson and teach the prediction contract back from memory. If a calculation or implementation step is unclear, ask the teacher about that exact row, probability or control. The next lesson's model comparison should preserve this discipline: more compute is useful only when the task and evidence are still identifiable.</p>
+<section id="lab"><h2>Run the companion lab</h2><aside class="lab-access" data-lab-launch=""><p><strong>Lab 069 · six live operations, complete historical checkpoint and EXIT</strong></p><nav class="lab-access-links"><a href="../labs/html/0069-tabpfn-open-environment-failures.html">Read-only lab preview</a><a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0069-tabpfn-open-environment-failures.ipynb">Run in Colab</a><a href="../labs/0069-tabpfn-open-environment-failures.ipynb">Download notebook</a><a href="../labs/html/0069-tabpfn-open-environment-failures.html#lab-exercises">Jump to exercises</a><a href="../reference/0069-tabpfn-open-environment-failures.html">Reference</a><a href="../labs/_verify_l069_v2_results.json">Measured evidence</a><a href="../labs/l069-reproduction.md">Reproduction instructions</a></nav><p>The preview is read-only. Run the notebook in Colab or Jupyter. Built with TabPFN.</p></aside><div id="teachback"></div></section></article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l069-openenv.js"></script></body></html>

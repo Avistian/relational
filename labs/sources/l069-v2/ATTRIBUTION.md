@@ -1,0 +1,1 @@
+Original evaluation code: Zi-Jian Cheng, Zi-Yi Jia, Zhi Zhou, Yu-Feng Li, Lan-Zhe Guo; LAMDA-NeSy repository. Snapshot commit 744c010457f68284faa7ae6ded793a8b3f3e03a4. Unmodified files retained for source audit, not an assertion of historical paper parity. No license file is present in the snapshot. Dataset files are downloaded separately from their original released paths.

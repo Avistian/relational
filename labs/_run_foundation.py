@@ -105,9 +105,11 @@ def run(lesson,preset='lab',output=None,current=False):
         out.write_text(json.dumps(result,indent=2,allow_nan=False)+chr(10))
         return out
     if lesson == 69:
-        from _fetch_foundation import fetch
-        fetch('v2')
-        isolated('v2','_run_pretrained_foundation.py',['--lesson',str(lesson),'--output',str(out)])
+        from relkit import openenv_l069_v2 as core
+        if out.exists():raise FileExistsError('Choose a fresh output; no resume/overwrite')
+        result=core.run_experiment(ROOT,config=core.PRESETS69[preset])
+        result['requested_preset']=preset
+        out.write_text(json.dumps(result,indent=2,allow_nan=False)+chr(10))
         return out
     if lesson == 60:
         from _fetch_l055 import fetch
