@@ -1,0 +1,1 @@
+The original verification entrypoint is preserved before adding explicit `legacy=True` to its historical four-arm route. Historical scientific operators and recorded predictions are unchanged. The default lesson 070 route now fits the corrected versioned evaluator.

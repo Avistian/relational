@@ -23,7 +23,8 @@ def isolated(mode,script,arguments):
     subprocess.run([sys.executable,str(ROOT/script),*arguments],env=env,cwd=ROOT,check=True)
 
 
-def run(lesson,preset='lab',output=None,current=False):
+def run(lesson,preset='lab',output=None,current=False,legacy=False):
+    if legacy and (lesson != 70 or current):raise ValueError('--legacy belongs only to the historical L070 route and cannot combine with --current')
     if preset=='paper':raise ValueError('No full paper-fidelity preset exists. Use a declared local track and list the remaining original-protocol work.')
     out=Path(output).resolve() if output else ROOT/'data/cache/foundation'/f'l{lesson:03}-{preset}.json'
     out.parent.mkdir(parents=True,exist_ok=True)
@@ -118,6 +119,13 @@ def run(lesson,preset='lab',output=None,current=False):
         from relkit.checkpoint_l060_v2 import run_checkpoint
         run_checkpoint(preset=preset, output=str(out))
         return out
+    if lesson == 70 and not legacy:
+        from _prepare_l070_v2 import prepare_inputs
+        from relkit.checkpoint_l070_v2 import run_experiment,PRESETS70
+        if out.exists():raise FileExistsError('Choose a fresh output; no resume/overwrite')
+        prepare_inputs(ROOT)
+        run_experiment(ROOT,PRESETS70[preset],output=str(out))
+        return out
     if lesson == 70:
         from _fetch_foundation import fetch
         fetch('v2');fetch('tabicl')
@@ -137,8 +145,8 @@ def run(lesson,preset='lab',output=None,current=False):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--lesson',type=int,required=True);p.add_argument('--preset',choices=['smoke','lab','closer','paper','full_local'],default='lab')
-    p.add_argument('--output');p.add_argument('--current',action='store_true');p.add_argument('--worker',action='store_true');a=p.parse_args()
+    p.add_argument('--output');p.add_argument('--current',action='store_true');p.add_argument('--worker',action='store_true');p.add_argument('--legacy',action='store_true');a=p.parse_args()
     if a.worker:
         from relkit.foundation_benchmark import run_checkpoint
         run_checkpoint(a.lesson,a.preset,a.output)
-    else:print(run(a.lesson,a.preset,a.output,a.current))
+    else:print(run(a.lesson,a.preset,a.output,a.current,a.legacy))
