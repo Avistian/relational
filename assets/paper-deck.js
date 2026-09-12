@@ -318,8 +318,8 @@
   "paper": "TabPFN v1",
   "year": 2022,
   "lesson": 62,
-  "front": "May an unrelated query become a context key for another query in this mask?",
-  "back": "No, only labeled context rows supply keys in this inductive path."
+  "front": "How does TabPFN v1 change the original GP PFN attention mask?",
+  "back": "It removes query self edges. All rows read only context keys and values; query features still affect their attention-query projection and residual state. Context self-attention plus query-to-context attention uses C² + QC scores per head."
 },
 {
   "id": "foundation-paper-64",

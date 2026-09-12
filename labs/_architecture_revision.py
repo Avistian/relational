@@ -183,16 +183,30 @@ panel(61,'gppfn','Row PFN · infer from a labeled set','Model architecture',
       'Original released row PFN mask includes query self edges. Postnorm GELU blocks, zero initial attention/FFN output projections, dropout 0. Local width 64/layers 3/bins 64 differs from original large GP training. Full-support tails preserve density outside sampled borders.')
 
 mask=matrix(['ctx 1','ctx 2','query 1','query 2'],[(r,['✓','✓','×','×']) for r in ['ctx 1','ctx 2','query 1','query 2']],'reads ↓')
-panel(62,'rowpfn','TabPFN v1 route · context is the memory','Model architecture',
-      'Can query 2 become a key or value used by query 1?',
-      [('Encode whole rows','Feature projection plus label representation; query targets are unknown.','B × (C+Q) × D'),
-       ('Read context only','Projected queries read labeled context keys/values; query-key columns are blocked.','per head: (C+Q) × C'),
-       ('Repeat Transformer blocks','Attention and feed-forward residual paths transform row states.','B × (C+Q) × D'),
-       ('Read query states','Normalization → class head → softmax.','B × Q × classes')],
-      'An information-access matrix',mask,
-      '✓ means an allowed sender, not weight one. Softmax distributes mass over allowed context columns. Residual paths preserve each row’s own features.',
-      'Query 1 cannot read query 2 through attention. With fixed context and preprocessing, appending query 2 leaves query 1’s path unchanged.',
-      'Historical v1 conceptual route; the local RowPFN is a reduced two-layer mirror with an explicit unknown-label embedding. Actual v1 measurements use a separately pinned pretrained implementation.')
+panel(62,'rowpfn','TabPFN v1 · the actual released predictor','Model architecture',
+      'Where do labels enter, and how does a query keep its own information?',
+      [('Prepare each view','Context-only moments → constants/power/outliers → scale 100/k and zero pad.','B × (C+Q) × 100'),
+       ('Encode whole rows','Linear feature 100→512; add Linear label 1→512 only to context. No unknown-label or position embedding.','context: Ex(x)+Ey(y); query: Ex(x)'),
+       ('Read context memory','Four shared-projection heads; all receivers read only context keys/values. Query self edges removed.','head width 128; scores (C+Q) × C'),
+       ('Postnorm residuals · repeat 12','Attention → add → LayerNorm; Linear 512→1024 → GELU → Linear 1024→512 → add → LayerNorm.','B × (C+Q) × 512'),
+       ('Read query states','Linear 512→1024 → GELU → Linear 1024→10; keep first K class logits.','B × Q × K'),
+       ('Align and combine views','Undo class rotations → mean logits → divide by .8 → softmax. Frozen weights at inference.','V × Q × K → Q × K')],
+      'One connected query path',
+      topology('tabpfn-v1-encode','Context and query rows are encoded separately before the repeated blocks',
+       [(5,8,145,'context x,y','memory'),(170,8,145,'query x','query'),(5,78,145,'Ex(x) + Ey(y)','memory'),(170,78,145,'Ex(x) only','query')],
+       [('77,46 77,78',False),('242,46 242,78',False)],128)
+      +'<div style="border:2px solid #087e83;border-radius:8px;padding:10px"><strong>↓ Repeat this block 12 times ↓</strong><p>Current context and query states enter each block. Context states update at every layer.</p>'
+      +topology('tabpfn-v1-block','Shared projections; context self attention and query cross attention; both residual paths then feed forward',
+       [(5,8,145,'context h → U,K,V','memory'),(170,8,145,'query h → U','query'),(5,90,145,'context ← context','memory'),(170,90,145,'query ← context','query'),(45,174,230,'add own h → LayerNorm','output'),(45,246,230,'FFN → add → LayerNorm','output')],
+       [('77,46 77,90',False),('242,46 242,90',False),('105,46 105,65 220,65 220,90',False),('77,128 77,152 105,152 105,174',False),('242,128 242,152 215,152 215,174',False),('160,212 160,246',False)],290)
+      +'<p>Feed both updated row sets into the next block. After block 12, read only query states.</p></div>'
+      +topology('tabpfn-v1-head','Query states enter a classification head; class mapping is reversed before logit averaging and softmax',
+       [(20,8,280,'query head 512→1024→10','output'),(20,78,280,'class align → mean logits / .8','output'),(20,148,280,'softmax → probabilities','output')],
+       [('160,46 160,78',False),('160,116 160,148',False)],194)
+      +matrix(['c1','c2','q1','q2'],[('q1 weights',['.269','.731','×','×']),('value a',[1,0,8,90]),('value b',[0,2,6,70])],'receives ↓')+eq('q1 attention = (.269, 1.462)'),
+      'Synthetic width-2 head fixture: scores(0,1), softmax(.269,.731). Query values are blocked. Residual h preserves the receiver; the final head is not this illustrative two-coordinate vector.',
+      'Context labels enter Ey before all 12 blocks. Another query supplies no key/value; each query keeps its own projected features and residual state.',
+      'Full released historical v1: d512, H4, FFN1024, L12, output10, dropout0, postnorm, GELU, numeric wrapper and actual copied pretrained weights. Prior fitting used synthetic held-out labels; this lab measures frozen inference, not new training.')
 
 panel(64,'axialpfn','TabPFN v2 route · alternate table axes','Model architecture',
       'How does a query target token obtain feature and labeled-context information?',

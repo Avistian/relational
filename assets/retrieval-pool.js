@@ -1636,23 +1636,23 @@
   "lesson": 62,
   "quarter": "Q3",
   "concept": "foundation-tabpfn-v1",
-  "question": "What may supply row-attention keys in the reduced inductive PFN?",
+  "question": "Which rows supply attention keys in historical TabPFN v1?",
   "options": [
     {
       "label": "Context rows",
       "value": "0"
     },
     {
-      "label": "Query targets",
+      "label": "Query rows",
       "value": "1"
     },
     {
-      "label": "Future labels",
+      "label": "Both row roles",
       "value": "2"
     }
   ],
   "correct": "0",
-  "explain": "No, only labeled context rows supply keys in this inductive path."
+  "explain": "Only context rows supply keys and values. Each query keeps its own features through its attention-query projection and residual path; it supplies no attention key, including to itself."
 },
 {
   "id": "l063-foundation-contract",

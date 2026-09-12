@@ -35,10 +35,18 @@ def run(lesson,preset='lab',output=None,current=False):
         from relkit.pfn_l061_v2 import run_experiment
         run_experiment(preset=preset, output=str(out), device='cpu')
         return out
-    if lesson in [62,65,66,67,69]:
+    if lesson == 62:
+        from relkit.tabpfn_l062_v2 import run_experiment
+        import torch
+        if out.exists():raise FileExistsError('Choose a fresh output; no resume/overwrite')
+        torch.set_num_threads(1)
+        result=run_experiment(ROOT,preset=preset)
+        out.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n')
+        return out
+    if lesson in [65,66,67,69]:
         from _fetch_foundation import fetch
-        fetch('v1' if lesson in [62,67] else ('tabicl' if lesson==66 else 'v2'))
-        isolated('v1' if lesson in [62,67] else 'v2','_run_pretrained_foundation.py',
+        fetch('v1' if lesson==67 else ('tabicl' if lesson==66 else 'v2'))
+        isolated('v1' if lesson==67 else 'v2','_run_pretrained_foundation.py',
                  ['--lesson',str(lesson),'--output',str(out)])
         return out
     if lesson == 60:

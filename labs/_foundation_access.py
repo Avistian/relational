@@ -10,7 +10,7 @@ PRACTICE={
 59:'Replay the noise control, implement analytic leave-one-out KRR and nested selection, and compare 30 versus 1,000 independent synthetic repetitions.',
 60:'Fit a corrected five-family checkpoint, verify row identity and prediction metrics, select on validation, and audit the complete declared dataset and seed panels.',
 61:'Sample Gaussian-process tasks, derive exact posterior predictions, implement context attention and a full-support density, and train a row-token PFN.',
-62:'Implement attention and its information mask; check a reduced row-token PFN on real rows. Historical pretrained v1 inference is a separate rerun.',
+62:'Implement context normalization, feature scaling, rectangular attention, postnorm blocks and class-aligned logit ensembling in the full historical TabPFN v1 model; run its released checkpoint.',
 63:'Evaluate a synthetic causal graph, remove an edge with noise held fixed, and test which descendants change.',
 64:'Implement the sample-axis operation of a reduced axial PFN and test query isolation. The saved Nature-v2 comparison uses separate pretrained weights.',
 65:'Extract cross-fitted query embeddings and fit a linear head. The default exercise uses a random-weight encoder; actual v2 inference is a separate rerun.',
@@ -24,7 +24,7 @@ EVIDENCE={
 59:'Historical 200-repeat noise control plus new paper-equation KRR experiments: 30 and 1,000 repeated datasets, with matched fresh evaluation of nested and contaminated procedures.',
 60:'Corrected five-family, eleven-dataset checkpoint with three seeds; 210 selected evaluations, with random and temporal regimes kept separate from each other and from historical evidence.',
 61:'New row-token PFN measurements against an exact GP posterior, with training-range, longer-context and prior-shift checks; historical coin results remain separate.',
-62:'Actual historical v1 checkpoint inference on three datasets and three seeds.',
+62:'Visible full-model inference with the historical v1 checkpoint on three complete paper datasets, three local split seeds and one versus four prediction views; no new pretraining.',
 63:'Paired SCM intervention with fixed exogenous noise.',
 64:'The exact v2/XGBoost predictions reused from the lesson 70 historical panel.',
 65:'Actual v2 cross-fitted representation heads versus native inference on three tasks and three seeds.',
@@ -56,7 +56,7 @@ def launcher(n,prepared=False):
 
 def lab_plan(n):
     tasks=''.join(f'<li><code>{name}</code>: {html.escape(goal)}</li>' for name,_,_,goal in TASKS[n])
-    exit_path = f'data/cache/l{n:03}-student/exit.json' if n in (58, 59, 60, 61) else f'student-l{n:03}-exit.json'
+    exit_path = f'data/cache/l{n:03}-student/exit.json' if n in (58, 59, 60, 61, 62) else f'student-l{n:03}-exit.json'
     return f'<p><strong>What you will do:</strong> {PRACTICE[n]}</p><ol>{tasks}</ol><p><strong>Author-reference evidence:</strong> {EVIDENCE[n]}</p><p><strong>Submit:</strong> your completed notebook and <code>{exit_path}</code>, plus your written interpretation. CHECK cells give immediate code feedback; paste the EXIT output here for a reasoning review.</p>'
 
 
@@ -68,6 +68,8 @@ def build_directory():
                link(f'https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{slug}.ipynb','Run in Colab'),
                link(f'../{slug}.ipynb','Download notebook',download=True),link(f'../../reference/{slug}.html','Reference'),
                link(f'../l{n:03}-reproduction.md','Reproduction instructions'),link(f'../_verify_l{n:03}_results.json','Measured results')]
+        if n == 62:
+            links.append(link('../_verify_l062_v2_results.json','Visible pretrained v1 results'))
         if n == 61:
             links.append(link('../_verify_l061_v2_results.json','Row PFN and exact GP results'))
         if n == 60:
