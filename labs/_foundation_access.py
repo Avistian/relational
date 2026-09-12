@@ -16,7 +16,7 @@ PRACTICE={
 65:'Extract ten-fold query representations through the complete historical pretrained v2 model, preserve row identity, combine layers and select a linear head using validation.',
 66:'Implement inducing summaries, conditional embeddings, rotary positions and context-only attention in the complete original pretrained TabICL model; measure nested support sets.',
 67:'Implement exact retrieval, disjoint local episodes, context normalization, query loss and validation selection; adapt the complete historical pretrained PFN.',
-68:'Implement label-availability checks and a changing-mechanism task generator; train a short temporal PFN exercise.',
+68:'Implement context-only time normalization, learned time encoding, mapped mechanism shifts, temporal splits and dataset summaries; run the complete released temporal PFN.',
 69:'Score unsupported classes and apply training-derived feature corruptions. The default exercise uses a fitted logistic model; the v2/XGBoost panel is separate.',
 70:'Reconstruct the saved predictions and validation selections for all seven model arms, then calculate paired summaries and ranks. The full rerun is explicitly gated.'}
 EVIDENCE={
@@ -30,7 +30,7 @@ EVIDENCE={
 65:'New full-model query embeddings, intermediate-layer heads and validation-selected layer combinations, with native inference and a separate published-table audit.',
 66:'New original-paper TabICL checkpoint predictions on complete numeric datasets at three nested context fractions, with independent source and operator checks.',
 67:'Fresh full-model global, random-context, local frozen and locally adapted comparisons; paper and released-code learning rates are separate declared arms.',
-68:'Matched stationary-prior versus changing-edge-prior PFNs, trained for 400 steps across three seeds.',
+68:'Fresh complete released base, drift and separately pretrained NoT2V checkpoints on three real datasets and Intersecting Blobs, with paired temporal cutoffs and a separate mechanism diagnostic.',
 69:'Actual v2/XGBoost corruption comparisons on three tasks and three seeds, plus a separate class-support diagnostic.',
 70:'105 selected results: seven named model/checkpoint arms × five datasets × three seeds.'}
 
@@ -59,6 +59,7 @@ def lab_plan(n):
     exit_path = f'data/cache/l{n:03}-student/exit.json' if n in (58, 59, 60, 61, 62) else f'student-l{n:03}-exit.json'
     if n == 63:exit_path = 'data/cache/l063-v2/student-l063-exit.json'
     if n == 64:exit_path = 'data/cache/l064-student/student-l064-v2-exit.json'
+    if n == 68:exit_path = 'data/cache/l068-student/exit-v2.json'
     if n == 67:exit_path = 'data/cache/l067-student/exit-v2.json'
     if n == 66:exit_path = 'data/cache/l066-student/exit-v2.json'
     if n == 65:exit_path = 'data/cache/l065-student/student-l065-v2-exit.json'
@@ -73,6 +74,9 @@ def build_directory():
                link(f'https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{slug}.ipynb','Run in Colab'),
                link(f'../{slug}.ipynb','Download notebook',download=True),link(f'../../reference/{slug}.html','Reference'),
                link(f'../l{n:03}-reproduction.md','Reproduction instructions'),link(f'../_verify_l{n:03}_results.json','Measured results')]
+        if n == 68:
+            links[-1] = link('../_verify_l068_results.json','Historical reduced-prior results')
+            links.append(link('../_verify_l068_v2_results.json','Complete released temporal model results'))
         if n == 67:
             links[-1] = link('../_verify_l067_results.json','Historical six-step results')
             links.append(link('../_verify_l067_v2_results.json','Full pretrained retrieval and adaptation results'))

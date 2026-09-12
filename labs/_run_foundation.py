@@ -95,6 +95,15 @@ def run(lesson,preset='lab',output=None,current=False):
         result['requested_preset']=preset
         out.write_text(json.dumps(result,indent=2,allow_nan=False)+chr(10))
         return out
+    if lesson == 68:
+        from relkit import driftpfn_l068_v2 as core
+        import torch
+        if out.exists():raise FileExistsError('Choose a fresh output; no resume/overwrite')
+        torch.set_num_threads(1)
+        result=core.run_experiment(ROOT,config=core.PRESETS68[preset])
+        result['requested_preset']=preset
+        out.write_text(json.dumps(result,indent=2,allow_nan=False)+chr(10))
+        return out
     if lesson == 69:
         from _fetch_foundation import fetch
         fetch('v2')
@@ -125,7 +134,7 @@ def run(lesson,preset='lab',output=None,current=False):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--lesson',type=int,required=True);p.add_argument('--preset',choices=['smoke','lab','closer','paper'],default='lab')
+    p=argparse.ArgumentParser();p.add_argument('--lesson',type=int,required=True);p.add_argument('--preset',choices=['smoke','lab','closer','paper','full_local'],default='lab')
     p.add_argument('--output');p.add_argument('--current',action='store_true');p.add_argument('--worker',action='store_true');a=p.parse_args()
     if a.worker:
         from relkit.foundation_benchmark import run_checkpoint

@@ -1,87 +1,282 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Lesson 068 · Teach a PFN about changing mechanisms</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/foundation-course.css" rel="stylesheet"/><link href="../assets/lab-access.css" rel="stylesheet"/><link href="../assets/lesson-depth.css" rel="stylesheet"/><link href="../assets/architecture-atlas.css" rel="stylesheet"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0067-local-pfn-retrieval-finetuning.html">← Lesson 067</a> · <a href="0069-tabpfn-open-environment-failures.html">Lesson 069 →</a> · <a href="../reference/0068-pfns-under-temporal-shift.html">Reference</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 068</p><h1>Teach a PFN about changing mechanisms</h1><aside aria-label="Lesson 068 lab and materials" class="lab-access" data-lab-launch=""><p><strong>Lab 068 · 2 code tasks + EXIT</strong></p><nav aria-label="Lab actions" class="lab-access-links"><a class="lab-access-primary" href="../labs/html/0068-pfns-under-temporal-shift.html">Open lab</a><a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0068-pfns-under-temporal-shift.ipynb">Run in Colab</a><a download="" href="../labs/0068-pfns-under-temporal-shift.ipynb">Download notebook</a><a href="../reference/0068-pfns-under-temporal-shift.html">Reference</a><a href="../labs/html/foundation-sequence.html">All 58–70 materials</a></nav><p>Read the lab here, or open the runnable notebook in Colab. The student tasks are intentionally blank.</p></aside><p class="subtitle">Understand the computation. Challenge the evidence. Produce a defensible result.</p><p>Core reading: 35–50 minutes. Lab: 45–75 minutes plus declared experiment time. This sequence builds the strong single-table baseline and information discipline required to test the relational thesis.</p><section id="retrieval"><h2>Retrieve before reading</h2><p>Without notes: Is an earlier event sufficient for using its label as context? Explain why, then recall a related failure mode from an older lesson.</p><div id="warmup"></div></section><div id="prediction"></div><h2 id="A-later-row-is-a-different-evaluation-question">A later row is a different evaluation question<a class="anchor-link" href="#A-later-row-is-a-different-evaluation-question">¶</a></h2><p>Your goal is to distinguish a time-dependent task prior from merely attaching a timestamp to stationary data. Read <a href="https://arxiv.org/html/2411.10634v1">Helli et al., Section 3 and Algorithm 1</a>. Drift-Resilient TabPFN changes the synthetic pretraining distribution so that generating mechanisms can vary across temporal domains. It aims to learn how context informs predictions under those changes; it does not guarantee robustness to every possible future event.</p>
-<p>For features X, target Y and domain/time T, <strong>covariate shift</strong> changes the distribution of X while preserving the conditional target rule <code>P(Y|X)</code>. <strong>Label/prior shift</strong> changes class proportions while preserving <code>P(X|Y)</code>. <strong>Concept shift</strong> changes the target relationship itself. These are idealized assumptions used to define tests. Observing a changed marginal distribution does not identify which assumption holds, and stable marginals do not prove a stable target rule.</p>
-<div class="lesson-depth" data-lesson-depth="shift-definitions" id="depth-shift-definitions"><h3 id="A-timestamp-alone-does-not-teach-adaptation">A timestamp alone does not teach adaptation<a class="anchor-link" href="#A-timestamp-alone-does-not-teach-adaptation">¶</a></h3><p>Adding time as an input gives the model a coordinate on which predictions may depend. It does not guarantee that the training tasks contain useful examples of changing mechanisms. If every pretraining task is stationary, the learner may have little reason to interpret time as a predictor of how relationships evolve.</p>
-<p>A time-dependent prior changes the distribution of learning problems themselves. Context and query rows can come from different temporal domains while sharing a structured rule for how the mechanism changes. Pretraining then rewards predictions that use historical evidence and domain information under that task distribution.</p>
-<p>Covariate shift changes P(X) while preserving P(Y|X). Label shift changes P(Y) while preserving P(X|Y). Concept or conditional shift changes the relationship from features to targets. These are idealized definitions; real datasets can exhibit combinations, and finite observed changes do not identify the underlying cause automatically.</p>
-<p>For example, if older and newer customers differ in age distribution but the outcome rule given features is unchanged, a covariate-shift model may be appropriate. If a policy changes the outcome for otherwise similar customers, the conditional rule may have changed. The same aggregate accuracy drop can arise from either situation.</p>
-<p>The lesson separates known synthetic mechanism changes from diagnosis on real temporal data. In a generator, we know what changed because we set it. In a real system, we need additional evidence to distinguish explanations.</p>
-</div><h2 id="Model-architecture:-a-generator-of-changing-generators">Model architecture: a generator of changing generators<a class="anchor-link" href="#Model-architecture:-a-generator-of-changing-generators">¶</a></h2><figure aria-labelledby="aa-title-driftpfn" class="arch-atlas" data-architecture-revision="driftpfn" id="architecture-driftpfn">
-<div class="aa-header"><p class="aa-kicker">Lesson 068 / architecture study</p><h3 id="aa-title-driftpfn">Temporal PFN · train on changing tasks</h3><p class="aa-question"><strong>Trace this:</strong> What generates drift during pretraining, and what history is legal at inference?</p></div>
-<div class="aa-body"><div class="aa-route"><p class="aa-section-label">The forward path</p><ol><li><strong>Sample a changing mechanism</strong><span>A task-specific function of time produces SCM edge weights.</span><code class="aa-shape">time t → W(t)</code></li><li><strong>Generate an episode</strong><span>Earlier context and later queries share that changing mechanism and declared noise model.</span><code class="aa-shape">SCM → [features, time], labels</code></li><li><strong>Pretrain a PFN</strong><span>Query-label loss trains the predictor across episodes; generating graph is not supplied at inference.</span><code class="aa-shape">episodes → fixed θ</code></li><li><strong>Predict later rows</strong><span>Eligible historical labels + query features/time → fixed pretrained predictor.</span><code class="aa-shape">context before cutoff → future probability</code></li></ol></div><div class="aa-focus"><p class="aa-section-label">Inside the key operation</p><h4>Past event does not imply known label</h4><table class="aa-matrix"><thead><tr><th>stage ↓</th><th>event</th><th>label arrives</th><th>cutoff</th></tr></thead><tbody><tr><th>record</th><td class="">3</td><td class="">5</td><td class="">4</td></tr></tbody></table><div class="aa-pair"><div class="aa-tile"><strong>Event test: 3 ≤ 4</strong><b>passes</b></div><div class="aa-tile aa-change"><strong>Label test: 5 ≤ 4</strong><b>blocked</b></div></div><div class="aa-equation">eligible = (event ≤ cutoff) AND (label ≤ cutoff)</div><p class="aa-caption">A concrete availability fixture. Time changes the task generator during pretraining; at deployment the model receives observed features/time, not the true SCM.</p></div></div>
-<figcaption class="aa-answer"><strong>Read the path:</strong> Two boundaries matter: what dynamics pretraining teaches, and which labels were actually available when a prediction was made.</figcaption><div class="aa-scope"><p><strong>Variant &amp; evidence.</strong> Local changing-edge RowPFN ablation, not the full published temporal architecture or benchmark. Earlier/later evaluation is paired across the stationary and drifting-prior arms.</p><p><a href="../labs/html/architecture-review/0068-driftpfn.html">Open the responsive diagram</a></p></div></figure><p>The paper starts with a base SCM whose graph determines relationships among variables. It chooses a sparse subset of edges to change over temporal domains. A second randomly sampled SCM maps domain information to the changing edge parameters. The base SCM then generates feature/target rows for each domain. Those tasks pretrain a PFN, which later conditions on historical labeled context and query-domain information.</p>
-<p>The second-order SCM is a data generator, not a learned forecast of the true deployment graph. No gradient is needed to sample its edge trajectories. Neural optimization trains the PFN on the resulting tasks. Distinguish this pretraining-only path from inference: the deployed PFN is not given the true generating graph or future target labels.</p>
-<p>Our narrow mirror uses a random function <code>w(t)=a+c*tanh(b*t+d)</code> to change one causal edge. The four coefficients are sampled once per task. A feature value x produces a binary target with probability <code>sigmoid(w(t)*x)</code>. Context times lie between 0 and .6; query times lie between .6 and 1. A two-layer RowPFN observes <code>[x,t]</code> and historical context labels. This is a complete controlled prior ablation, not the paper's released architecture or full second-order-SCM distribution.</p>
-<div class="lesson-depth" data-lesson-depth="changing-generator" id="depth-changing-generator"><h3 id="Two-levels-of-generation,-one-learned-predictor">Two levels of generation, one learned predictor<a class="anchor-link" href="#Two-levels-of-generation,-one-learned-predictor">¶</a></h3><p>The paper's construction uses a base SCM to generate feature/target variables and another sampled mechanism to make selected base-model parameters vary across domains. The second level describes how a data-generating rule changes. It is part of the synthetic task generator, not a neural optimizer and not the true deployment graph supplied at prediction time.</p>
-<p>The local mirror uses a simpler edge trajectory w(t)=a+c·tanh(bt+d). The coefficients a,b,c,d are sampled once per task. For a feature x at time t, the target probability is sigmoid(w(t)x). Earlier context and later queries share the same sampled trajectory.</p>
-<p>The coefficient a sets a baseline level, c controls the signed amplitude, b changes the transition rate/direction and d shifts the transition along time. Their combined effect can produce a gradual sign change or a nearly stationary edge. These interpretations describe the local smooth function family; they do not cover arbitrary real-world drift.</p>
-<p>The PFN observes features and time plus historical labels. It does not receive a,b,c,d or the true future edge value. The learning problem is to infer useful predictive consequences from the available episode data. Supplying the latent coefficients would turn the experiment into an easier, different task.</p>
-<p>Pretraining updates PFN weights over many sampled episodes. At evaluation, the pretrained model is frozen and receives a new task's eligible context. A separately gradient-adapted model would be another arm, not an implicit consequence of conditioning on time.</p>
-</div><h2 id="Make-a-mechanism-change-visible">Make a mechanism change visible<a class="anchor-link" href="#Make-a-mechanism-change-visible">¶</a></h2><p>The first visual holds exogenous noise fixed while changing one edge across five domains. Follow the cause through the edge weight and nonlinear target mechanism. Correlation may reverse as the edge changes sign. The source of change is known because we generated it; a plot of real correlations would not identify causation by itself.</p>
-<div data-foundation-viz="time"></div><figure class="foundation-figure"><div class="foundation-image-scroll"><img alt="Synthetic numerical trace. Values are generated by the displayed operator; this is not a measured benchmark." loading="lazy" src="../labs/figures/l068/mechanism.png"/></div><figcaption>Synthetic numerical trace. Values are generated by the displayed operator; this is not a measured benchmark.</figcaption></figure>
-<p>The next experiment pretrains identical reduced PFNs under two priors: a stationary edge and a sampled changing edge. Architecture, initialization seeds, optimizer, number of steps and task counts are matched. Evaluate both on the same 200 unseen stationary tasks and the same 200 unseen drifting tasks. Query-label losses are averaged within tasks first. Model seeds are repeated fits; the shared evaluation tasks are paired observations, not extra independently trained models.</p>
-<p>Predict whether the changing-edge prior must win on both evaluation conditions. It need not. It can spend finite capacity on variation irrelevant to stationary tasks; neither reduced model may learn the intended extrapolation within the small budget. A failed improvement is an informative result about this training setup, not evidence that the paper's larger method fails.</p>
-<figure class="foundation-figure"><div class="foundation-image-scroll"><img alt="Author-reference measurements. See the protocol, seed points and interpretation; these are not your notebook kernel outputs." loading="lazy" src="../labs/figures/l068/results.png"/></div><figcaption>Author-reference measurements. See the protocol, seed points and interpretation; these are not your notebook kernel outputs.</figcaption></figure><div class="foundation-evidence"><p><strong>Measured interpretation.</strong> The changing-edge prior lowers mean loss on the matched drifting task collection in this reduced experiment. Its stationary-task result must be inspected separately. The figure shows three model seeds; the 200 shared tasks are paired evaluation cases, not independent pretrained models. The full published temporal model and benchmark remain unrun.</p><details><summary>Inspect the numerical evidence table</summary><div class="foundation-scroll"><table border="1" class="dataframe">
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Lesson 068 · Drift-Resilient TabPFN: learn how relationships change</title><link href="../assets/lesson.css" rel="stylesheet"/><link href="../assets/foundation-course.css" rel="stylesheet"/><link href="../assets/lab-access.css" rel="stylesheet"/><link href="../assets/l068-drift.css" rel="stylesheet"/></head><body class="l068"><article><nav><a href="../index.html">Course</a> · <a href="0067-local-pfn-retrieval-finetuning.html">← Lesson 067</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 068</p><h1>Drift-Resilient TabPFN: learn how relationships change</h1><aside class="lab-access" data-lab-launch=""><p><strong>Lab 068 · five live operations + complete released checkpoints + EXIT</strong></p><nav class="lab-access-links"><a href="../labs/html/0068-pfns-under-temporal-shift.html">Read-only lab preview</a><a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0068-pfns-under-temporal-shift.ipynb">Run in Colab</a><a href="../labs/0068-pfns-under-temporal-shift.ipynb">Download notebook</a><a href="../labs/html/0068-pfns-under-temporal-shift.html#lab-exercises">Jump to exercises</a><a href="../reference/0068-pfns-under-temporal-shift.html">Reference</a><a href="../labs/_verify_l068_v2_results.json">Measured evidence</a><a href="../labs/l068-reproduction.md">Reproduction instructions</a></nav><p>The preview is read-only. Run the notebook in Colab or Jupyter. Built with TabPFN.</p></aside><h2>Retrieve before reading</h2><div id="warmup"></div><div id="prediction"></div><h2 id="The-task:-extrapolate-a-learning-problem">The task: extrapolate a learning problem<a class="anchor-link" href="#The-task:-extrapolate-a-learning-problem">¶</a></h2><p>A sales conversion model trained through June may face a changed July relationship between lead activity and purchase. Holding out June rows estimates performance on the observed mixture. It does not establish whether the model can recognize a changing relationship and use its trend in July. For the relational mission, this distinction appears whenever customers, products, policies or measurements evolve. Even a point-in-time correct feature join can feed a prediction rule that has become stale.</p>
+<p><strong>Your outcome:</strong> trace how a temporal prior generates changing relationships; reconstruct the complete released Drift-Resilient TabPFN forward pass; and measure future-domain predictions with frozen historical contexts. You will implement five live operations, compare actual pretrained checkpoints, and explain a negative result without changing the evaluation after seeing it.</p>
+<p>Before reading, retrieve three ideas in writing. What information may a query use in a PFN context? Why does a temporal split answer a different question from a random split? How can two predictors have identical accuracy but different log loss? The lab assumes matrix multiplication, sample standard deviation and softmax; each operation is restated below.</p>
+<p><strong>Built with TabPFN.</strong> Original weights and the visible re-expressed implementation use the <a href="../labs/sources/l068-v2/LICENSE.txt">supplied license</a>. Read Helli et al., <a href="https://papers.nips.cc/paper_files/paper/2024/file/b2e2774c8e76afe191b5bf518f5cb727-Paper-Conference.pdf">NeurIPS 2024, §§3–4 and Appendices A.4–A.8</a>, alongside the <a href="https://github.com/automl/Drift-Resilient_TabPFN/tree/a6e75afb82d13e7abb46deade3669c4106b3d636">pinned original implementation</a>. The full paper and appendices were audited. The release contains the evaluator, benchmark generators and seven real checkpoints; the original synthetic pretraining-prior generator was not found in that release.</p>
+<h2 id="What-shifts,-and-what-is-observed?">What shifts, and what is observed?<a class="anchor-link" href="#What-shifts,-and-what-is-observed?">¶</a></h2><p>One row is <code>(x, y, c)</code>: a feature vector, class label and ordered domain index. A domain is a period or ordered group within which we approximate the data distribution as stable. Prediction receives source rows <code>(X_context, y_context, c_context)</code> and a new <code>(x_query, c_query)</code>. It does not receive future labels. The target is <code>p(y_query | x_query, c_query, context)</code>, with future domain indices beyond those observed in context.</p>
+<div aria-label="Scrollable evidence table" class="table-scroll" role="region" tabindex="0"><table>
 <thead>
-<tr style="text-align: right;">
-<th></th>
-<th></th>
-<th>mean</th>
-<th>std</th>
-</tr>
 <tr>
-<th>arm</th>
-<th>condition</th>
-<th></th>
-<th></th>
+<th>Shift</th>
+<th>What changes</th>
+<th>What remains fixed in this special case</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<th rowspan="2" valign="top">changing-edge-prior</th>
-<th>drifting</th>
-<td>0.5935</td>
-<td>0.0021</td>
+<td>Covariate</td>
+<td>Distribution of X</td>
+<td>P(Y given X)</td>
 </tr>
 <tr>
-<th>stationary</th>
-<td>0.6474</td>
-<td>0.0035</td>
+<td>Label or prior-probability</td>
+<td>Class prevalence P(Y)</td>
+<td>P(X given Y)</td>
 </tr>
 <tr>
-<th rowspan="2" valign="top">stationary-prior</th>
-<th>drifting</th>
-<td>0.6069</td>
-<td>0.0116</td>
-</tr>
-<tr>
-<th>stationary</th>
-<td>0.6504</td>
-<td>0.0091</td>
+<td>Concept</td>
+<td>P(Y given X)</td>
+<td>P(X) may remain fixed</td>
 </tr>
 </tbody>
-</table></div></details></div>
-<div class="lesson-depth" data-lesson-depth="paired-drift" id="depth-paired-drift"><h3 id="A-sign-change-gives-a-concrete-prediction-to-trace">A sign change gives a concrete prediction to trace<a class="anchor-link" href="#A-sign-change-gives-a-concrete-prediction-to-trace">¶</a></h3><p>Hold x=1 fixed. If the edge weight is +2, the positive-class probability is sigmoid(2)≈0.881. If the weight becomes −2, the probability is sigmoid(−2)≈0.119. The same observed feature now predicts the opposite tendency because the conditional mechanism changed.</p>
-<p>If labels are generated using a uniform noise draw u and the rule y=1[u&lt;p], holding u fixed across these two conditions creates a paired synthetic case. At u=0.5, the label changes from one to zero. Resampling u would mix mechanism change with new sampling noise.</p>
-<p>The local ablation trains identical reduced PFNs under stationary and changing-edge priors, then evaluates both on shared stationary and drifting task collections. Matching architecture, optimization budget and evaluation tasks makes the pretraining distribution the intended intervention.</p>
-<p>The changing-prior model need not win everywhere. It may spend capacity on variation irrelevant to stationary tasks, or fail to learn useful extrapolation within the finite budget. A favorable drifting-task result supports the local intervention; it does not guarantee robustness to a discontinuous shock absent from the generator.</p>
-<p>Keep the random units separate. Model seeds are independently trained predictors under the declared procedure. Evaluation tasks are paired cases shared across those predictors. Counting every query row as a new trained model would grossly overstate the amount of independent training evidence.</p>
-<h3 id="Match-the-explanation-to-the-actual-trajectory">Match the explanation to the actual trajectory<a class="anchor-link" href="#Match-the-explanation-to-the-actual-trajectory">¶</a></h3><p>Plot several sampled w(t) curves and mark context/query time ranges. If all sampled curves are nearly constant, the intended drift experiment may be weak even though the generator contains a time variable. If queries extend far beyond the observed time range, explicitly describe the extrapolation demand.</p>
-</div><h2 id="Two-clocks-govern-context-eligibility">Two clocks govern context eligibility<a class="anchor-link" href="#Two-clocks-govern-context-eligibility">¶</a></h2><p>An event can occur before a prediction while its label arrives afterward. To include a row as labeled context at cutoff c, require both <code>event_time≤c</code> and <code>label_available_time≤c</code>. The equality convention must match the deployment contract. For event times <code>[1,2,3]</code>, label times <code>[2,8,4]</code> and cutoff 4, rows 0 and 2 are eligible; row 1 is not, despite occurring earlier.</p>
-<p>The time widget changes label delay while keeping event times and cutoff fixed. Watch the context shrink, then explain why a recent-window policy must apply eligibility before selecting the most recent k rows. Sorting by event time and taking k can otherwise retrieve labels that were unavailable at prediction time. Learned preprocessing, adaptation steps and feature availability require analogous point-in-time checks.</p>
-<div class="lesson-depth" data-lesson-depth="availability-before-window" id="depth-availability-before-window"><h3 id="Eligibility-comes-before-recency">Eligibility comes before recency<a class="anchor-link" href="#Eligibility-comes-before-recency">¶</a></h3><p>A historical record can have an event time before the cutoff and a label arrival after it. At cutoff 4, event time 3 passes the event test, but label arrival 5 fails the availability test. The row cannot supply that target as labeled context for the cutoff-4 prediction.</p>
-<p>Apply the eligibility filter first, then choose a recent window or top-k context from the eligible records. Selecting the most recent k events and dropping delayed labels afterward can leave fewer records than intended and a different context distribution. The policy should say whether it backfills with older eligible rows.</p>
-<p>Feature availability needs the same treatment. A historical aggregate computed from current database values may include corrections or outcomes that were unavailable at the original prediction time. Event timestamps alone cannot establish point-in-time correctness.</p>
-<p>If label delays correlate with the target, the available labeled context can be systematically biased. For example, difficult outcomes may resolve later. This is a property of the observation process, not merely a smaller sample size. A realistic deployment study should inspect that relationship before assuming eligible labels represent all recent events.</p>
-<h3 id="Separate-a-new-evaluation-from-a-new-adaptive-method">Separate a new evaluation from a new adaptive method<a class="anchor-link" href="#Separate-a-new-evaluation-from-a-new-adaptive-method">¶</a></h3><p>Switching from a random split to a future window changes the test question. Restricting context to recent labels changes the prediction procedure. Fine-tuning changes parameters. A time-conditioned pretrained prior changes transferred knowledge. These interventions can interact, but each should first be named and controlled.</p>
-<p>Choose window lengths and adaptation settings using earlier validation periods. If the future test window repeatedly selects the best policy, it has become validation feedback. Chronological ordering does not by itself prevent adaptive overfitting.</p>
-<p>The exit should state the three clocks—event, feature availability and label availability—alongside the prior intervention. Keep the reduced synthetic ablation, the real temporal benchmark and the paper's full method in separate evidence statements. Then name a shift the local generator cannot represent and propose a test that could falsify your preferred explanation.</p>
-</div><div class="lesson-depth" data-lesson-depth="delay-selection" id="depth-delay-selection"><h3 id="Delayed-feedback-changes-the-observed-training-population">Delayed feedback changes the observed training population<a class="anchor-link" href="#Delayed-feedback-changes-the-observed-training-population">¶</a></h3><p>Let A indicate that a label has arrived by the cutoff. The available context is sampled from P(X,Y|A=1), not necessarily from the full recent-event distribution P(X,Y). If arrival depends on the outcome or its difficulty, these populations can differ systematically.</p>
-<p>For example, uncomplicated cases may resolve quickly while disputed cases take weeks. A recent eligible context can then overrepresent easy outcomes even when event sampling is otherwise unbiased. A model trained on that context may be well calibrated for resolved cases and poorly calibrated for all current cases.</p>
-<p>Increasing the recent window can add more resolved history, but it also adds older mechanisms. Waiting longer for labels reduces availability bias while delaying adaptation. These are operational trade-offs that a temporal experiment should make visible.</p>
-<p>In a synthetic extension, hold the event/target generator fixed and change only the label-delay mechanism. Evaluate on the same required query population. This isolates the observation process from concept drift. In a real dataset, inspect delay distributions by known covariates and eventual outcomes using an appropriate historical audit, then avoid using those eventual outcomes in the simulated prediction inputs.</p>
-</div><h2 id="Separate-adaptation-from-evaluation-redesign">Separate adaptation from evaluation redesign<a class="anchor-link" href="#Separate-adaptation-from-evaluation-redesign">¶</a></h2><p>A stationary global model, a recent-history model, a time-conditioned PFN and a gradient-adapted PFN answer different questions. Give each a declared context policy and tuning budget. Choose window lengths and adaptation settings using earlier validation domains; evaluate later domains after the choice is frozen. Repeatedly selecting on the future test window turns a temporal benchmark into an adaptive validation loop.</p>
-<p>The lesson-60 TabReD results provide real temporal evidence under their recorded release protocol. The synthetic changing-edge experiment provides mechanism isolation. Do not combine their numbers into one rank table or claim that a synthetic sign reversal explains a particular enterprise dataset's drift. They are complementary evidence with different targets.</p>
-<h2 id="Exit:-diagnose-a-shift-you-can-falsify">Exit: diagnose a shift you can falsify<a class="anchor-link" href="#Exit:-diagnose-a-shift-you-can-falsify">¶</a></h2><p>Submit the sampled edge trajectories, temporal episode boundaries, eligibility checks and paired stationary/drifting losses. Explain what changed in the prior and what stayed fixed in the learner. Name an out-of-prior shift that could still defeat the model—for example, a discontinuous rule change not represented by its smooth mechanism generator.</p>
-<p>For a real task, write the three-clock contract: event time, feature availability and label availability. Propose a chronological validation/test design and one fixed baseline. Your verdict must keep the paper claim, the reduced PFN experiment and the real TabReD comparison distinct.</p>
-<section id="lab"><h2>Run the companion lab</h2><p><strong>What you will do:</strong> Implement label-availability checks and a changing-mechanism task generator; train a short temporal PFN exercise.</p><ol><li><code>temporal_eligible</code>: Require both event and label availability by the inclusive cutoff.</li><li><code>temporal_tasks</code>: Sample task-specific time-to-edge mechanisms, then earlier context and later queries sharing that mechanism.</li></ol><p><strong>Author-reference evidence:</strong> Matched stationary-prior versus changing-edge-prior PFNs, trained for 400 steps across three seeds.</p><p><strong>Submit:</strong> your completed notebook and <code>student-l068-exit.json</code>, plus your written interpretation. CHECK cells give immediate code feedback; paste the EXIT output here for a reasoning review.</p><p><a href="../labs/0068-pfns-under-temporal-shift.ipynb">Student notebook</a> · <a href="../labs/html/0068-pfns-under-temporal-shift.html">Prepared lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0068-pfns-under-temporal-shift.ipynb">Open in Colab</a></p><p>2 substantive code tasks feed the live experiment, followed by behavioral CHECKs and a written EXIT artifact. The notebook contains the explanation and portable figures so it is teachable independently.</p><div class="foundation-contract"><strong>Keep the evidence boundaries visible.</strong> <a href="../labs/l068-reproduction.md">Reproduction contract</a> · <a href="../labs/_verify_l068_results.json">Measured evidence</a> · <a href="../labs/_sources_foundation.json">Source/checkpoint identities</a> · <a href="../labs/relkit/foundation_core.py">Visible model mechanisms</a>. These artifacts do not certify full paper reproduction or personal mastery.</div><div id="teachback"></div><p>Ask me follow-up questions about any operation, CHECK or conclusion you cannot defend. Paste the EXIT artifact and your explanation for review. Revisit the retrieval question tomorrow and again in a week, before reopening the reference.</p></section><nav><a href="../reference/0068-pfns-under-temporal-shift.html">Printable reference</a> · <a href="../notebooks.html">Notebook gallery</a></nav></article><script id="foundation-config" type="application/json">{"lesson": 68, "mode": "time", "prompt": "Is an earlier event sufficient for using its label as context?", "answer": "No, its label must also be available by prediction time.", "quiz": ["An event occurs at time 3, its label arrives at time 5, and prediction is at time 4. Is that label eligible?", ["Eligible through event time", "Blocked by label arrival", "Eligible through row order"], 1, "Eligibility requires both event time and label arrival to be at or before the prediction cutoff."]}</script><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/foundation-viz.js"></script><script src="../assets/foundation-lesson.js"></script></body></html>
+</table></div>
+<p>Here “prior-probability shift” concerns class prevalence, not the PFN’s prior over whole generating mechanisms. Real data can combine these changes. An edge change does not automatically identify the shift category after variables are hidden and marginalized.</p>
+<p>For a simple concept shift, let <code>Y = 1[X1 + a(c) X2 &gt; 0]</code>. If <code>a(c)</code> grows from zero to one while the feature distribution stays fixed, the decision boundary rotates. A historical mixture fit may place one compromise boundary through all periods. A temporal model may infer a trajectory and condition the boundary on the requested period. But two trajectories can agree on all observed domains and diverge tomorrow. Extrapolation requires an assumption; timestamp encoding does not make the future uniquely identifiable.</p>
+<h2 id="The-prior:-a-graph-changes-through-another-graph">The prior: a graph changes through another graph<a class="anchor-link" href="#The-prior:-a-graph-changes-through-another-graph">¶</a></h2><p>An SCM, or structural causal model, generates variables through a directed acyclic graph. Each variable depends on its parents and sampled noise. The paper represents a causal variable by scalar subnodes, then expands parent-to-child assignments into hidden scalar computations. A causal relationship can therefore correspond to several functional edges, or neural weights.</p>
+<p>The lab’s paper-grounded reconstruction has causal variables U, V, X and Y. U and V are noise roots. X has parents U and V; Y has parents U and X. X is computed through two hidden units:</p>
+<p><code>hX0 = tanh(w0 U + w2 V + ε2)</code></p>
+<p><code>hX1 = tanh(w1 U + w3 V + ε3)</code></p>
+<p><code>X = w4 hX0 + w5 hX1 + ε4</code>.</p>
+<p>Y has two more hidden units using U and X, followed by its output. The target is <code>1[Y &gt; 0]</code>; observed features are U, V and X. All eight scalar nodes are explicitly computed. Each of twelve functional edges has a source, destination and causal-relationship ID. This fixed declared topology is an inspectable expansion, not the paper’s unpublished graph-sampling distribution.</p>
+<figure id="l068-figure-scm"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Seed 2 paper-grounded reconstruction: one nonlinear second-order graph produces correlated edge trajectories. Only causal relations 0 and 3 shift; the shown relation-1 edge remains fixed. This is not the unavailable original pretraining sampler." src="../labs/figures/l068/scm-v2.png" style="min-width:900px"/></div><figcaption>Seed 2 paper-grounded reconstruction: one nonlinear second-order graph produces correlated edge trajectories. Only causal relations 0 and 3 shift; the shown relation-1 edge remains fixed. This is not the unavailable original pretraining sampler. <a href="../labs/figures/l068/scm-v2.png">Full-size figure</a>.</figcaption></figure><div class="l068-widget" id="l068-scm-viz"><p>Interactive controls need JavaScript. The static figure preserves a worked example.</p></div><p><strong>Predict before tracing:</strong> if only U→X and X→Y shift, may the V→X weights change? No. Selecting sparse relationships means applying a mask through the edge-to-relationship mapping. It does not mean sampling unrelated masks over arbitrary weight coordinates. Our relationship IDs <code>[0,0,1,1,-1,-1,2,2,3,3,-1,-1]</code> and selected IDs <code>[0,3]</code> activate only coordinates 0, 1, 8 and 9. The hidden-to-output edges marked −1 stay fixed in this reconstruction.</p>
+<p>A second randomly generated nonlinear graph H receives time and emits a vector of shifts. In the visible reconstruction, time drives five shared hidden causes, then four nonlinear causes, then twelve outputs:</p>
+<p><code>r(c) = tanh(c A + b)</code>; <code>s(c) = sin(r(c) W)</code>; <code>ω(c) = 0.6 s(c) V</code>.</p>
+<p>A, b, W and V are sampled once per generated dataset. They are not resampled independently at each time or row. Outputs share hidden causes, making temporal shifts correlated. The update is</p>
+<p><code>w_e(c) = w_e(base) + 1[relation(e) is selected] ω_e(c)</code>.</p>
+<p>The additive update, activation choices, noise scale and topology above are explicit reconstruction choices. Algorithm 1 specifies a second-order SCM and a weight update; the release does not establish these exact hyperprior choices. We do not call this a reproduction of the original sampler.</p>
+<p>A coherent numerical trace uses reconstruction seed 2. Base <code>w0 = 0.1891</code> becomes <code>0.8277</code> at domain-time 0 and <code>−0.1455</code> at domain-time 1. The V→X coefficient <code>w2 = −0.4131</code> remains fixed. In the first row at time 0, <code>U = 1.4285</code>, <code>V = −0.6676</code>, X’s hidden values are <code>0.9017, 0.9544</code>, and <code>X = 2.6814</code> after noise. Y’s hidden values are <code>−0.1612, 0.9475</code>; its continuous output is <code>−0.5573</code>, hence class 0. Values are rounded from the saved trace.</p>
+<p>The timescales matter. H generates one weight vector per domain. G_c stays fixed while many rows receive fresh noise. Only after sampling the dataset do we create context/query tasks. Resampling H independently per row would remove the coherent changing mechanism that time is meant to identify. The lab saves H parameters, masks, node values, weight trajectories and actual checkpoint predictions for three reconstructed tasks. Its <code>shifted_weights</code> TODO changes the generated data and the measured predictions.</p>
+<h2 id="Pretraining-learns-the-inference-rule">Pretraining learns the inference rule<a class="anchor-link" href="#Pretraining-learns-the-inference-rule">¶</a></h2><p>A PFN trains on many synthetic supervised tasks. Some labels become context inputs; held-out labels become targets. A schematic objective is</p>
+<p><code>E_task [ − Σ_query log q_θ(y_query | X_context, y_context, c_context, x_query, c_query) ]</code>.</p>
+<p>The expectation covers graphs, mechanisms, time domains and row noise. Gradient descent changes transformer parameters θ. It does not optimize the sampled graph H: H generates tasks. With sufficient capacity and suitable optimization, this expected-loss training approximates posterior prediction under the chosen synthetic prior. That interpretation is conditional on the prior and approximation quality, not a correctness guarantee for a new real process.</p>
+<p>The original base and drift models each processed 30,720,000 synthetic datasets over 30 pretraining epochs. The paper describes three retrainings and eight GPUs per pretraining job; Appendix A.3 reports roughly seven/eight days for the variants. These are offline development costs. At prediction time the learned weights stay fixed and in-context computation supplies predictions without gradient updates. This lab loads every tensor of those original checkpoints. Original pretraining is <strong>NOT_RUN</strong> here.</p>
+<p>The main contribution is broader than adding time. A baseline with time can represent a temporal relationship, but its inference rule was pretrained on a different task distribution. Comparing base-with-time and drift-with-time tests the released packages under a matched wrapper. It does not isolate every pretraining choice individually.</p>
+<h2 id="Time2Vec:-preserve-extrapolation,-then-encode-the-clock">Time2Vec: preserve extrapolation, then encode the clock<a class="anchor-link" href="#Time2Vec:-preserve-extrapolation,-then-encode-the-clock">¶</a></h2><p>The drift encoder rescales time using the source-context minimum and maximum. A query can map beyond [0,1]. Source times <code>[0,2,4]</code> and query time 6 give <code>τ = (6−0)/(4−0) = 1.5</code>. Including the query in range fitting would instead map it to 1, erasing its distance beyond the source endpoint. The source clips extreme normalized times to [−5,6], not [0,1].</p>
+<p>If all source times equal 3, the source uses denominator 1: query time 4 maps to 1 and time 100 clips to 6. This avoids division by zero, but supplies no observed temporal trend. It is a degenerate case, not evidence of learning a trend from one period.</p>
+<figure id="l068-figure-time"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Illustrative arithmetic, not actual checkpoint weights: source endpoints 0 and 4 map query 6 to 1.5; one linear and three sine channels give [1.5,0.7071,−1,0]. The actual model learns 100 time coordinates." src="../labs/figures/l068/time-v2.png" style="min-width:800px"/></div><figcaption>Illustrative arithmetic, not actual checkpoint weights: source endpoints 0 and 4 map query 6 to 1.5; one linear and three sine channels give [1.5,0.7071,−1,0]. The actual model learns 100 time coordinates. <a href="../labs/figures/l068/time-v2.png">Full-size figure</a>.</figcaption></figure><div class="l068-widget" id="l068-time-viz"><p>Interactive controls need JavaScript. The static figure preserves a worked example.</p></div><p>Time2Vec applies a learned affine phase <code>a_j = ω_j τ + φ_j</code> to 100 coordinates. Coordinate 0 stays linear; coordinates 1–99 use sine. The linear channel can represent a trend; sinusoidal channels supply learned periods/phases. Neither guarantees seasonal stability. An illustrative four-coordinate encoding with weights <code>[1, π/2, π, 2π]</code> and zero phases maps τ=1.5 to <code>[1.5, 0.7071, −1, 0]</code>. These four weights teach arithmetic; the actual model uses all 100 learned coordinates.</p>
+<p>The release repeats that 100-vector for every feature group and concatenates it with two numeric coordinates before a 102→192 projection. It does <strong>not</strong> make a separate time token. An original forward comment describes a separate token; the executed repetition/concatenation and the checkpoint’s 102-column weight matrix determine the implemented architecture.</p>
+<h2 id="Model-architecture:-complete-released-checkpoint">Model architecture: complete released checkpoint<a class="anchor-link" href="#Model-architecture:-complete-released-checkpoint">¶</a></h2><figure id="l068-architecture"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Complete released drift checkpoint: 12 alternating feature/row blocks, width 192, six heads, group size 2. Time is repeated within every feature group. Queries provide features/time and a censored target channel; the prediction head reads the query target token." src="../labs/figures/l068/architecture-v2.png" style="min-width:900px"/></div><figcaption>Complete released drift checkpoint: 12 alternating feature/row blocks, width 192, six heads, group size 2. Time is repeated within every feature group. Queries provide features/time and a censored target channel; the prediction head reads the query target token. <a href="../labs/figures/l068/architecture-v2.png">Full-size figure</a>.</figcaption></figure><p>Let B count datasets in a batch, T=C+Q their rows, F their numeric columns, and G=ceil(F/2) their groups. C labels are provided; Q are withheld. Follow the whole computation:</p>
+<ol>
+<li><strong>Group and normalize.</strong> Pad F to an even number and group adjacent columns in pairs. Flatten groups into the batch axis for preprocessing. Pack varying coordinates first, impute missing values with source means, standardize with the source sample standard deviation plus <code>1e−6</code>, clip to ±100, and multiply by <code>sqrt(2 / active_coordinates)</code> before padding back to two. Numeric NaN flags are disabled in these checkpoints. Source constant/active-coordinate checks inspect all supplied rows despite training-only comments. Mean/variance fitting still uses context rows. We preserve and disclose that query-dependent edge case rather than silently changing it and claiming parity.</li>
+<li><strong>Encode groups and time.</strong> Drift concatenates 100 time coordinates and two numeric values, then projects 102→192 with bias. Separately pretrained NoT2V concatenates one normalized time coordinate and projects 3→192. Base projects 2→192. Add a group identity drawn as a 48-dimensional Gaussian vector and projected to 192 with checkpoint weights. Our wrapper resets a recorded nonzero seed before each call; raw original calls otherwise advance the generator.</li>
+<li><strong>Encode labels.</strong> Context classes are contiguous ordinal IDs. Query labels are censored, imputed for a value channel, and accompanied by missing flag −2. The ordinal encoder ranks values relative to observed classes. A query may therefore have value 1 and flag −2, distinguished from observed class 1 by its flag. A 2→192 projection makes one target token per row. Query targets are absent from the model’s forward signature.</li>
+<li><strong>Repeat twelve blocks.</strong> State shape is B×T×(G+1)×192. Six-head attention first mixes feature-group and target tokens within each row. Row attention then mixes rows separately at each token position. Source rows attend to source rows. Query rows use source keys/values only, sharing the first key/value head across six query heads; source attention keeps all six. A bias-free 192→768→192 GELU MLP follows. Every sublayer adds its residual before non-affine LayerNorm, epsilon <code>1e−5</code>.</li>
+<li><strong>Read the query target.</strong> Select Q target-token states; apply a biased 192→768→10 GELU head. Keep K observed-class logits and softmax. Softmax maps scores z to <code>exp(z_k)/Σ exp(z_j)</code>. Our matched wrapper uses temperature 1 for every arm.</li>
+</ol>
+<p>Attention computes <code>softmax(Q Kᵀ / sqrt(32)) V</code>: a weighted average of value vectors. The head width is 192/6=32. The active original Torch ≥2 branch uses the exact inverse-square-root scale; the older fallback rounded that scalar. Our final operator matches the active branch. Query features enter their own row’s feature attention, but query rows never become memory keys. All twelve layers and every learned tensor are loaded, including time, group identity, label encoder and head. Full source checks compare input tokens, every block and logits across all three variants and both float32/float64 fixtures.</p>
+<h2 id="Decide-the-experiment-before-opening-results">Decide the experiment before opening results<a class="anchor-link" href="#Decide-the-experiment-before-opening-results">¶</a></h2><p>The author panel uses exact released dataset preparation and full datasets: Electricity (1,260 rows, 5 features), Parking Birmingham (1,294, 4), Chess (533, 9), and Intersecting Blobs (1,680, 2). Every processed feature, label, domain and column name matches the original loader. Numeric category codes are retained. The first three are real data; Blobs is a separate synthetic mechanism probe.</p>
+<p>Electricity uses weekly groups after every-fourth-half-hour selection and a fixed 15-week segment; the executed code uses one week despite a nearby two-week comment. Parking predicts occupancy quartile at one specified car park with week as its domain. Chess groups twenty sorted games to approximate progress; this clock compresses irregular elapsed time. Blobs has three moving classes over fourteen domains. Appendix A.7.2.1 calls it binary in one sentence but then describes three classes; the release and this lab use three. Age bins and house-build years in the broader paper roster are ordered proxies, not automatically deployment-time forecasting tasks.</p>
+<figure id="l068-figure-split"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Actual Electricity row counts for three predeclared cutoffs. ID rows are withheld inside each source week; all OOD weeks share the frozen historical context. These are new deterministic cutoffs, not a replay of original random split selection." src="../labs/figures/l068/split-v2.png" style="min-width:800px"/></div><figcaption>Actual Electricity row counts for three predeclared cutoffs. ID rows are withheld inside each source week; all OOD weeks share the frozen historical context. These are new deterministic cutoffs, not a replay of original random split selection. <a href="../labs/figures/l068/split-v2.png">Full-size figure</a>.</figcaption></figure><p>We predeclare source fractions 0.40, 0.55 and 0.70 of ordered domains, rounded down to whole domains. Context stays frozen before each boundary. Ten percent of each source domain (floor, at least one) is held out as ID test. All remaining future domains are OOD test. Their labels never enter prediction calls. Seeds 0, 1, 2 choose source holdouts and pair with original base/drift checkpoints 1, 2, 3 and group-vector seeds 17, 18, 19. <strong>All rows are retained</strong> in the final panel. The capped and rounded-scale pilots retain separate evidence/operator identities.</p>
+<p>These repetitions vary cutoff, holdout and pretrained initialization together. Sample SD describes those declared repetitions; it neither separates variance components nor estimates uncertainty across independent datasets. Only NoT2V checkpoint 1 is released, so it is reused. Some ID slices lack a class: accuracy and log loss remain defined, but full-class AUC is unavailable. We do not retry labels into a more convenient ID sample.</p>
+<div aria-label="Scrollable evidence table" class="table-scroll" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>Arm</th>
+<th>Context/data</th>
+<th>Learned package</th>
+<th>Question</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>base_no_time</td>
+<td>Historical context, no time</td>
+<td>Original base checkpoint</td>
+<td>Historical mixture baseline</td>
+</tr>
+<tr>
+<td>base_time</td>
+<td>Same context, time appended</td>
+<td>Same base checkpoint</td>
+<td>Does ordinary time access help?</td>
+</tr>
+<tr>
+<td>drift</td>
+<td>Same context, separate domain input</td>
+<td>Original drift checkpoint</td>
+<td>Does the temporal package help?</td>
+</tr>
+<tr>
+<td>drift_zero</td>
+<td>Same features, all times zero</td>
+<td>Same drift checkpoint</td>
+<td>Sensitivity to clock information?</td>
+</tr>
+<tr>
+<td>noT2V</td>
+<td>Same context, normalized scalar time</td>
+<td>Separately pretrained checkpoint 1</td>
+<td>Available training ablation behavior?</td>
+</tr>
+</tbody>
+</table></div>
+<p>Zero-time still passes through learned Time2Vec biases. It is not the paper’s NoT2V training ablation. Base-with-time changes feature grouping, as the original baseline strategy does; it is a package contrast, not a surgical prior-only intervention.</p>
+<p>The paper uses three random eligible cutoffs, with 30–80% of <strong>both domains and samples</strong> in the source portion, class-coverage checks/retries, and three model initializations per split. Our deterministic fractions do not claim that full selection contract or factorial replication. Original preprocessing was selected on twelve validation datasets. The released <code>best_dist</code> uses robust preprocessing plus original features, fingerprints, 32 feature/class-shuffled views, 99% sample subsampling, outlier setting 7, temperature 0.9 and fp16. <code>best_base</code> uses a different selected recipe and temperature 0.75. Our raw numeric, one-view, fp32, temperature-1 comparison has no preprocessing search or class retries: <strong>INCOMPARABLE to reproducing paper Tables 1/2 or Figure 5</strong>.</p>
+<h2 id="What-the-published-experiment-establishes">What the published experiment establishes<a class="anchor-link" href="#What-the-published-experiment-establishes">¶</a></h2><p>The paper’s <strong>published means</strong> are separate from every local number below. On eight synthetic tasks, Table 1 reports OOD accuracy 0.754 for drift versus the strongest baseline 0.665. On ten real tasks those means are 0.736 versus 0.712. The real-data AUC difference is much smaller: 0.822 versus the strongest baseline 0.820. Stronger synthetic improvements do not establish a comparably large real-data advantage.</p>
+<p>Table 2 compares drift with the separately pretrained NoT2V ablation: OOD accuracy 0.744 versus 0.742 and AUC 0.832 for both. The authors describe the Time2Vec contribution as statistically insignificant; this is why the lesson emphasizes the shifting prior. These results use the original selected recipes and repetitions. “Strongest baseline” can select different packages for different metrics, so this summary is not a pure prior-only causal intervention. See <a href="https://arxiv.org/html/2411.10634v1#A1.SS4.SSS1">Tables 1–2 and Appendix A.4.1</a> for the reported uncertainty and exact comparator settings.</p>
+<h2 id="Read-measured-probabilities,-not-just-winners">Read measured probabilities, not just winners<a class="anchor-link" href="#Read-measured-probabilities,-not-just-winners">¶</a></h2><p>Before revealing results, predict whether drift must beat base-with-time on every real task, and whether confidence must fall monotonically into the future. Commit a direction and reason. The mechanism allows exceptions to both claims.</p>
+<div aria-label="Scrollable evidence table" class="table-scroll" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Arm</th>
+<th style="text-align:right">OOD accuracy ± SD</th>
+<th style="text-align:right">OOD AUC ± SD</th>
+<th style="text-align:right">OOD log loss ± SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>blobs</td>
+<td>base_no_time</td>
+<td style="text-align:right">0.4910 ± 0.0868</td>
+<td style="text-align:right">0.6398 ± 0.0158</td>
+<td style="text-align:right">3.1463 ± 1.0432</td>
+</tr>
+<tr>
+<td>blobs</td>
+<td>base_time</td>
+<td style="text-align:right">0.5961 ± 0.2934</td>
+<td style="text-align:right">0.7758 ± 0.1988</td>
+<td style="text-align:right">1.1951 ± 0.7433</td>
+</tr>
+<tr>
+<td>blobs</td>
+<td>drift</td>
+<td style="text-align:right">0.9487 ± 0.0406</td>
+<td style="text-align:right">0.9965 ± 0.0058</td>
+<td style="text-align:right">0.2019 ± 0.0714</td>
+</tr>
+<tr>
+<td>blobs</td>
+<td>drift_zero</td>
+<td style="text-align:right">0.4448 ± 0.0961</td>
+<td style="text-align:right">0.6241 ± 0.0787</td>
+<td style="text-align:right">2.8558 ± 0.6079</td>
+</tr>
+<tr>
+<td>blobs</td>
+<td>noT2V</td>
+<td style="text-align:right">0.9908 ± 0.0026</td>
+<td style="text-align:right">0.9998 ± 0.0001</td>
+<td style="text-align:right">0.1573 ± 0.1091</td>
+</tr>
+<tr>
+<td>chess</td>
+<td>base_no_time</td>
+<td style="text-align:right">0.7197 ± 0.0115</td>
+<td style="text-align:right">0.7860 ± 0.0306</td>
+<td style="text-align:right">0.6947 ± 0.0214</td>
+</tr>
+<tr>
+<td>chess</td>
+<td>base_time</td>
+<td style="text-align:right">0.7158 ± 0.0360</td>
+<td style="text-align:right">0.7872 ± 0.0337</td>
+<td style="text-align:right">0.7033 ± 0.0294</td>
+</tr>
+<tr>
+<td>chess</td>
+<td>drift</td>
+<td style="text-align:right">0.6762 ± 0.0540</td>
+<td style="text-align:right">0.7577 ± 0.0346</td>
+<td style="text-align:right">0.7721 ± 0.0537</td>
+</tr>
+<tr>
+<td>chess</td>
+<td>drift_zero</td>
+<td style="text-align:right">0.6947 ± 0.0146</td>
+<td style="text-align:right">0.7872 ± 0.0313</td>
+<td style="text-align:right">0.7101 ± 0.0330</td>
+</tr>
+<tr>
+<td>chess</td>
+<td>noT2V</td>
+<td style="text-align:right">0.6483 ± 0.0535</td>
+<td style="text-align:right">0.6358 ± 0.2443</td>
+<td style="text-align:right">0.8016 ± 0.1218</td>
+</tr>
+<tr>
+<td>electricity</td>
+<td>base_no_time</td>
+<td style="text-align:right">0.6435 ± 0.0573</td>
+<td style="text-align:right">0.7730 ± 0.0451</td>
+<td style="text-align:right">0.6979 ± 0.0882</td>
+</tr>
+<tr>
+<td>electricity</td>
+<td>base_time</td>
+<td style="text-align:right">0.6456 ± 0.1547</td>
+<td style="text-align:right">0.7492 ± 0.0541</td>
+<td style="text-align:right">0.6135 ± 0.1161</td>
+</tr>
+<tr>
+<td>electricity</td>
+<td>drift</td>
+<td style="text-align:right">0.6616 ± 0.0480</td>
+<td style="text-align:right">0.7467 ± 0.0602</td>
+<td style="text-align:right">0.6096 ± 0.0550</td>
+</tr>
+<tr>
+<td>electricity</td>
+<td>drift_zero</td>
+<td style="text-align:right">0.6343 ± 0.0086</td>
+<td style="text-align:right">0.7625 ± 0.0148</td>
+<td style="text-align:right">0.6843 ± 0.0047</td>
+</tr>
+<tr>
+<td>electricity</td>
+<td>noT2V</td>
+<td style="text-align:right">0.6773 ± 0.0577</td>
+<td style="text-align:right">0.7403 ± 0.0763</td>
+<td style="text-align:right">0.5924 ± 0.0595</td>
+</tr>
+<tr>
+<td>parking</td>
+<td>base_no_time</td>
+<td style="text-align:right">0.4725 ± 0.1848</td>
+<td style="text-align:right">0.8012 ± 0.0429</td>
+<td style="text-align:right">1.0072 ± 0.1754</td>
+</tr>
+<tr>
+<td>parking</td>
+<td>base_time</td>
+<td style="text-align:right">0.5101 ± 0.0589</td>
+<td style="text-align:right">0.8327 ± 0.0208</td>
+<td style="text-align:right">1.0233 ± 0.0675</td>
+</tr>
+<tr>
+<td>parking</td>
+<td>drift</td>
+<td style="text-align:right">0.6644 ± 0.0559</td>
+<td style="text-align:right">0.8496 ± 0.0255</td>
+<td style="text-align:right">0.8757 ± 0.0961</td>
+</tr>
+<tr>
+<td>parking</td>
+<td>drift_zero</td>
+<td style="text-align:right">0.6866 ± 0.0170</td>
+<td style="text-align:right">0.8653 ± 0.0175</td>
+<td style="text-align:right">0.8521 ± 0.0908</td>
+</tr>
+<tr>
+<td>parking</td>
+<td>noT2V</td>
+<td style="text-align:right">0.7119 ± 0.0336</td>
+<td style="text-align:right">0.8507 ± 0.0253</td>
+<td style="text-align:right">0.8686 ± 0.0702</td>
+</tr>
+</tbody>
+</table></div>
+<p>The complete-model panel is mixed on real data. On Chess, drift worsens mean OOD accuracy from base-with-time 0.7158 to 0.6762 and log loss from 0.7033 to 0.7721. On Parking it raises accuracy from 0.5101 to 0.6644 and lowers loss from 1.0233 to 0.8757, but zeroing time improves the drift checkpoint further (accuracy 0.6866, loss 0.8521): clock sensitivity is not uniformly beneficial. Electricity illustrates metric disagreement: drift slightly improves accuracy (0.6456 to 0.6616) and log loss (0.6135 to 0.6096), while AUC falls from 0.7492 to 0.7467. Blobs is much stronger evidence for extrapolating this synthetic mechanism: drift accuracy 0.9487 versus base-with-time 0.5961; zero-time falls to 0.4448. The separately pretrained NoT2V checkpoint reaches 0.9908 on Blobs, supporting the distinction between the temporal prior and Time2Vec without isolating pretraining variance. These are local matched-wrapper results, not the paper benchmark. Across three real datasets the mean drift-minus-base-time log-loss gap is -0.0276, with a coarse dataset-bootstrap 95% percentile interval [-0.1476, 0.0688]. Three datasets cannot support a broad superiority conclusion; the bootstrap cannot invent unseen tasks.</p>
+<figure id="l068-figure-results"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Fresh full-model OOD log loss on three real tasks and the released synthetic Blobs task. Dots are joint cutoff/checkpoint repetitions; bars are sample SD, not independent-dataset confidence intervals." src="../labs/figures/l068/results-v2.png" style="min-width:1150px"/></div><figcaption>Fresh full-model OOD log loss on three real tasks and the released synthetic Blobs task. Dots are joint cutoff/checkpoint repetitions; bars are sample SD, not independent-dataset confidence intervals. <a href="../labs/figures/l068/results-v2.png">Full-size figure</a>.</figcaption></figure><p>Accuracy is the fraction whose highest-probability class is correct. AUC measures class-score ranking; multiclass AUC averages one-versus-rest class AUCs when every class is present. Log loss averages <code>−log(probability of the true class)</code>, penalizing confident wrong predictions. Giving the true class 0.9 costs 0.105 nats; giving it 0.1 costs 2.303. Accuracy cannot distinguish a wrong 0.51/0.49 decision from a wrong 0.99/0.01 decision.</p>
+<figure id="l068-figure-horizon"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Actual per-domain OOD losses in repetition 0. Every line retains one historical context and checkpoint. Domain difficulty varies; adjacent points are not independent datasets." src="../labs/figures/l068/horizon-v2.png" style="min-width:900px"/></div><figcaption>Actual per-domain OOD losses in repetition 0. Every line retains one historical context and checkpoint. Domain difficulty varies; adjacent points are not independent datasets. <a href="../labs/figures/l068/horizon-v2.png">Full-size figure</a>.</figcaption></figure><p>The horizon plots hold repetition 0’s context and checkpoint fixed. Each point scores only one future domain. Error need not grow smoothly: domains differ in prevalence and difficulty, and sample sizes are finite. These points diagnose where the model helps or fails; they are not independent dataset replications.</p>
+<figure id="l068-figure-boundary"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Original Blobs source, domains 0–3 as fixed context, checkpoint 1; actual predictions on a 36×36 query grid. Panels vary requested future domain only. Background is predicted class, points are class-labeled observations; optimized paper Figure 5 was not reproduced." src="../labs/figures/l068/boundary-v2.png" style="min-width:1150px"/></div><figcaption>Original Blobs source, domains 0–3 as fixed context, checkpoint 1; actual predictions on a 36×36 query grid. Panels vary requested future domain only. Background is predicted class, points are class-labeled observations; optimized paper Figure 5 was not reproduced. <a href="../labs/figures/l068/boundary-v2.png">Full-size figure</a>.</figcaption></figure><p>The boundary figure uses original Blobs data, fixed source domains 0–3, checkpoint 1 and a fixed 36×36 grid at domains 4, 8 and 13. Colors encode predicted class. Weights never change between panels. A changed boundary comes from conditioned inference, not later labels or gradient steps. The matched wrapper differs from published Figure 5: this is fresh evidence, not a reproduction claim.</p>
+<p>On the fixed grid, drift mean maximum-class confidence is approximately 0.685, 0.648 and 0.669. It is lower than the corresponding base values but rises again at the last horizon. This contradicts a universal claim that uncertainty always grows with elapsed time. It is not a calibration measurement: grid points form an artificial spatial measure, and calibration needs outcomes under a defined distribution.</p>
+<figure id="l068-figure-ranks"><div aria-label="Scrollable computational figure" class="figure-wide" role="region" tabindex="0"><img alt="Average repetitions within each real dataset, rank arms, then average three dataset ranks. Exploratory Friedman/Nemenyi checks show no resolved pairwise difference; this neither proves equivalence nor reproduces the paper’s Wilcoxon-Holm diagram." src="../labs/figures/l068/ranks-v2.png" style="min-width:800px"/></div><figcaption>Average repetitions within each real dataset, rank arms, then average three dataset ranks. Exploratory Friedman/Nemenyi checks show no resolved pairwise difference; this neither proves equivalence nor reproduces the paper’s Wilcoxon-Holm diagram. <a href="../labs/figures/l068/ranks-v2.png">Full-size figure</a>.</figcaption></figure><p>Average repetitions within each dataset, then rank methods within that dataset. The real-task aggregate weights Electricity, Parking and Chess equally; Blobs is separate. The displayed Friedman/Nemenyi calculation is exploratory on only three datasets. The paper’s Figure 10 instead uses Wilcoxon-Holm comparisons on its larger benchmark. Rows, seeds and domains cannot become extra independent datasets to manufacture narrower uncertainty.</p>
+<h2 id="Diagnose-a-failure-and-design-the-next-experiment">Diagnose a failure and design the next experiment<a class="anchor-link" href="#Diagnose-a-failure-and-design-the-next-experiment">¶</a></h2><p>Find the earliest changed computation. Wrong query time suggests context-plus-query range fitting or [0,1] clipping. Wrong input tokens with correct numeric z-scores suggest packing, concatenation, target censoring or group-RNG state. Correct input followed by a first-block discrepancy suggests attention axes, first-head query K/V sharing, scaling, or pre-norm versus post-norm. Correct logits with changed scores suggests temperature, class axis, row IDs or metric definitions.</p>
+<p>Source correspondence covers the tested path. It does not establish exact historical library execution, original prior sampling/training, optimized 32-view inference, or paper-score reproduction. The <a href="../labs/l068-reproduction.md">reproduction contract</a> provides executable smoke, full local and broader routes with precise remaining paper work. Original and live notebook identities stay separate; EXIT records the actual current implementation and run.</p>
+<p>Lesson 064 exposed alternating feature/row attention, while Lesson 066 used a column→row→in-context prediction pipeline. This released temporal model also uses a two-axis transformer, but its new assumption comes from changing task mechanisms and a domain-conditioned encoding. Efficient representation and reliable drift extrapolation answer different questions; sharing an attention pattern does not confer the latter.</p>
+<p>LoCalPFN chooses a local context and fine-tunes model weights. This model learns a temporal inductive bias during pretraining, then holds weights and historical context fixed while conditioning on the requested domain. Combining them may help, but nearest-neighbor selection may also erase older domains needed to infer a trend. A useful next experiment varies history length at a fixed prediction horizon, with the same checkpoint and test rows, before adding adaptation.</p>
+<p><strong>Teach back:</strong> explain why H generates a prior rather than acting as the deployed forecaster; why a relationship mask differs from one arbitrary edge; why normalized query time 1.5 is legitimate; and why zero-time sensitivity differs from NoT2V pretraining. Use one actual negative real-task result and the nonmonotonic confidence trace to limit your conclusion. Bring EXIT and your explanation to the tutor; notebook completion alone is not mastery evidence.</p>
+<section id="lab"><h2>Run the companion lab</h2><aside class="lab-access" data-lab-launch=""><p><strong>Lab 068 · five live operations + complete released checkpoints + EXIT</strong></p><nav class="lab-access-links"><a href="../labs/html/0068-pfns-under-temporal-shift.html">Read-only lab preview</a><a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0068-pfns-under-temporal-shift.ipynb">Run in Colab</a><a href="../labs/0068-pfns-under-temporal-shift.ipynb">Download notebook</a><a href="../labs/html/0068-pfns-under-temporal-shift.html#lab-exercises">Jump to exercises</a><a href="../reference/0068-pfns-under-temporal-shift.html">Reference</a><a href="../labs/_verify_l068_v2_results.json">Measured evidence</a><a href="../labs/l068-reproduction.md">Reproduction instructions</a></nav><p>The preview is read-only. Run the notebook in Colab or Jupyter. Built with TabPFN.</p></aside><div id="teachback"></div></section></article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l068-drift-viz.js"></script></body></html>

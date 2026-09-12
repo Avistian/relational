@@ -214,17 +214,7 @@ panel(62,'rowpfn','TabPFN v1 · the actual released predictor','Model architectu
 
 # Lesson 066 owns its complete original TabICL architecture in _build_l066.
 
-panel(68,'driftpfn','Temporal PFN · train on changing tasks','Model architecture',
-      'What generates drift during pretraining, and what history is legal at inference?',
-      [('Sample a changing mechanism','A task-specific function of time produces SCM edge weights.','time t → W(t)'),
-       ('Generate an episode','Earlier context and later queries share that changing mechanism and declared noise model.','SCM → [features, time], labels'),
-       ('Pretrain a PFN','Query-label loss trains the predictor across episodes; generating graph is not supplied at inference.','episodes → fixed θ'),
-       ('Predict later rows','Eligible historical labels + query features/time → fixed pretrained predictor.','context before cutoff → future probability')],
-      'Past event does not imply known label',
-      matrix(['event','label arrives','cutoff'],[('record',[3,5,4])])+pair('Event test: 3 ≤ 4','passes','Label test: 5 ≤ 4','blocked')+eq('eligible = (event ≤ cutoff) AND (label ≤ cutoff)'),
-      'A concrete availability fixture. Time changes the task generator during pretraining; at deployment the model receives observed features/time, not the true SCM.',
-      'Two boundaries matter: what dynamics pretraining teaches, and which labels were actually available when a prediction was made.',
-      'Local changing-edge RowPFN ablation, not the full published temporal architecture or benchmark. Earlier/later evaluation is paired across the stationary and drifting-prior arms.')
+# Lesson 068 owns the complete released temporal PFN and prior diagrams.
 
 # Routing diagrams expose branches that a numbered forward-path list cannot.
 PANELS[48][0]['graphic']=topology('dcn-route','Parallel DCNv2: original input branches into cross and deep networks, then concatenates before the head.',
