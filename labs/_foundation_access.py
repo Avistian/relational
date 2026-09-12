@@ -13,7 +13,7 @@ PRACTICE={
 62:'Implement context normalization, feature scaling, rectangular attention, postnorm blocks and class-aligned logit ensembling in the full historical TabPFN v1 model; run its released checkpoint.',
 63:'Construct sparse layered generators, propagate shared task mechanisms, select observed nodes, assign multiclass labels and compute a finite-world posterior; audit paired interventions and context-label controls.',
 64:'Implement feature grouping, target encoding, attention and residual normalization in the full historical TabPFN v2 model; run its pretrained weights and diagnose preprocessing boundaries.',
-65:'Extract cross-fitted query embeddings and fit a linear head. The default exercise uses a random-weight encoder; actual v2 inference is a separate rerun.',
+65:'Extract ten-fold query representations through the complete historical pretrained v2 model, preserve row identity, combine layers and select a linear head using validation.',
 66:'Implement inducing attention and distribution-conditioned cell embeddings. The default exercise isolates a column mechanism; pretrained TabICL context scaling is separate.',
 67:'Build disjoint retrieved training episodes and run a small optimization loop. The saved comparison separately measures adaptation of historical v1 weights.',
 68:'Implement label-availability checks and a changing-mechanism task generator; train a short temporal PFN exercise.',
@@ -27,7 +27,7 @@ EVIDENCE={
 62:'Visible full-model inference with the historical v1 checkpoint on three complete paper datasets, three local split seeds and one versus four prediction views; no new pretraining.',
 63:'New bounded SCM/BNN generator experiments, paired known-noise edge interventions, fitted logistic diagnostics and an exact two-world posterior experiment; no new TabPFN prior fitting.',
 64:'New full-model historical v2 predictions on three complete numeric datasets across three seeds, with observed versus shuffled context labels and separate original-wrapper checks.',
-65:'Actual v2 cross-fitted representation heads versus native inference on three tasks and three seeds.',
+65:'New full-model query embeddings, intermediate-layer heads and validation-selected layer combinations, with native inference and a separate published-table audit.',
 66:'Actual TabICL v1.1 predictions at context sizes 60, 180, and 540, with three seeds.',
 67:'Actual v1 global context, retrieval, and six-step fine-tuning on three tasks and three seeds.',
 68:'Matched stationary-prior versus changing-edge-prior PFNs, trained for 400 steps across three seeds.',
@@ -59,6 +59,7 @@ def lab_plan(n):
     exit_path = f'data/cache/l{n:03}-student/exit.json' if n in (58, 59, 60, 61, 62) else f'student-l{n:03}-exit.json'
     if n == 63:exit_path = 'data/cache/l063-v2/student-l063-exit.json'
     if n == 64:exit_path = 'data/cache/l064-student/student-l064-v2-exit.json'
+    if n == 65:exit_path = 'data/cache/l065-student/student-l065-v2-exit.json'
     return f'<p><strong>What you will do:</strong> {PRACTICE[n]}</p><ol>{tasks}</ol><p><strong>Author-reference evidence:</strong> {EVIDENCE[n]}</p><p><strong>Submit:</strong> your completed notebook and <code>{exit_path}</code>, plus your written interpretation. CHECK cells give immediate code feedback; paste the EXIT output here for a reasoning review.</p>'
 
 
@@ -70,6 +71,9 @@ def build_directory():
                link(f'https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{slug}.ipynb','Run in Colab'),
                link(f'../{slug}.ipynb','Download notebook',download=True),link(f'../../reference/{slug}.html','Reference'),
                link(f'../l{n:03}-reproduction.md','Reproduction instructions'),link(f'../_verify_l{n:03}_results.json','Measured results')]
+        if n == 65:
+            links.append(link('../_verify_l065_v2_results.json','Pretrained query-embedding results'))
+            links.append(link('../_paper_l065_v2_results.json','Published embedding-table audit'))
         if n == 64:
             links.append(link('../_verify_l064_v2_results.json','Full historical v2 prediction results'))
         if n == 63:
@@ -94,9 +98,9 @@ def build_directory():
 <nav class="lab-access-links" aria-label="Start practicing"><a class="lab-access-primary" href="0058-surveys-meta-benchmarks.html">Open lab 58</a><a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0058-surveys-meta-benchmarks.ipynb">Run lab 58 in Colab</a></nav>
 <details><summary>How to use the labs and interpret their results</summary>
 <ol><li><strong>Retrieve and read:</strong> answer the lesson's opening prompt before checking its explanation.</li><li><strong>Practice:</strong> choose Run in Colab or download the notebook for Jupyter. Complete TODOs, run each CHECK, and inspect the live experiment.</li><li><strong>Explain:</strong> write the EXIT verdict and submit its artifact for review. Use the reference later for spaced recall.</li></ol>
-<p><strong>What is runnable?</strong> The default notebooks contain the stated practice experiments. Pretrained inference and larger runs are explicitly gated and may download weights. Saved author results are separate from what runs in your notebook; each entry spells out that distinction. Full original paper benchmark reproduction remains unestablished.</p></details>
+<p><strong>What is runnable?</strong> The default notebooks contain the stated practice experiments. Some labs download pretrained weights for their main exercises. Optional broader runs have explicit gates. Saved author results are separate from what runs in your notebook; each entry spells out that distinction. Full original paper benchmark reproduction remains unestablished.</p></details>
 <nav class="lab-access-links" aria-label="Jump to lesson">'''+''.join(link(f'#lesson-{n}',f'{n:03}') for n in range(58,71))+'</nav>'+''.join(cards)+'''
-<section><h2>Source code and verification</h2><p><a href="../_sources_foundation.json">Checkpoint and source identities</a> · <a href="../relkit/foundation_core.py">Model mechanisms</a> · <a href="../relkit/benchmark_core.py">Evaluation algorithms</a> · <a href="../_execution_foundation_results.json">Solution execution record</a> · <a href="../_delivery_foundation_results.json">Artifact checks</a></p><p>Teacher solution notebooks are kept locally under <code>labs/solutions/</code> under the course convention; downloadable student notebooks keep their TODOs blank. Ask for help with a specific CHECK or paste your EXIT output for review.</p></section></article></body></html>'''
+<section><h2>Source code and verification</h2><p><a href="../_sources_foundation.json">Checkpoint and source identities</a> · <a href="../relkit/foundation_core.py">Historical model mechanisms</a> · <a href="../relkit/benchmark_core.py">Evaluation algorithms</a> · <a href="../_execution_foundation_results.json">Historical execution record</a> · <a href="../_delivery_foundation_results.json">Artifact checks</a></p><p>Teacher solution notebooks are kept locally under <code>labs/solutions/</code> under the course convention; downloadable student notebooks keep their TODOs blank. Ask for help with a specific CHECK or paste your EXIT output for review.</p></section></article></body></html>'''
     (ROOT/'labs/html/foundation-sequence.html').write_text(page)
 
 

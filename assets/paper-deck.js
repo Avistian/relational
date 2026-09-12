@@ -338,6 +338,14 @@
   "back": "The attention boundary applies after encoding. The uncached historical encoder counts varying feature channels across all supplied rows and rescales each group. A new query can change that count and therefore earlier representations. The lesson reproduces this behavior in version 2.0.9, including a default four-view example; a finite constant-column control is unchanged."
 },
 {
+  "id": "foundation-paper-65",
+  "paper": "Ye, Liu and Chao — A Closer Look at TabPFN v2",
+  "year": 2025,
+  "lesson": 65,
+  "front": "What does ten-fold query extraction fix, and what evaluation problems remain?",
+  "back": "A row is represented without its own target entering the labeled context; its vector is scattered back to its original position. Labels then train the head normally. Fitted head scores remain in-sample, layer selection consumes validation information, and using full training context at evaluation changes support coverage from about 90% to 100%. Query role alone does not remove those differences."
+},
+{
   "id": "foundation-paper-66",
   "paper": "TabICL, Sections 3\u20134",
   "year": 2025,

@@ -61,7 +61,21 @@ def run(lesson,preset='lab',output=None,current=False):
         result['hardware']=platform.machine()+' CPU; one torch thread'
         out.write_text(json.dumps(result,indent=2,allow_nan=False)+chr(10))
         return out
-    if lesson in [65,66,67,69]:
+    if lesson == 65:
+        from relkit import query_embeddings_l065_v2 as core
+        import hashlib
+        import torch
+        if out.exists():raise FileExistsError('Choose a fresh output; no resume/overwrite')
+        torch.set_num_threads(1)
+        actual_preset='lab' if preset=='smoke' else preset
+        model,_=core.load_pretrained(core.ensure_checkpoint(ROOT))
+        result=core.run_experiment(ROOT,model,config=core.PRESETS65[actual_preset])
+        result['requested_preset']=preset
+        result['executed_preset']=actual_preset
+        result['source_sha256']=hashlib.sha256(Path(core.__file__).read_bytes()).hexdigest()
+        out.write_text(json.dumps(result,indent=2,allow_nan=False)+chr(10))
+        return out
+    if lesson in [66,67,69]:
         from _fetch_foundation import fetch
         fetch('v1' if lesson==67 else ('tabicl' if lesson==66 else 'v2'))
         isolated('v1' if lesson==67 else 'v2','_run_pretrained_foundation.py',

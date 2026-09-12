@@ -210,17 +210,7 @@ panel(62,'rowpfn','TabPFN v1 · the actual released predictor','Model architectu
 
 # Lesson 064 owns its complete historical-v2 architecture in _build_l064.
 
-panel(65,'crossfit','Query embeddings · hide the right labels','Model architecture',
-      'How can a supervised head train on labels that the encoder was forbidden to see?',
-      [('Partition training rows','Preserve row IDs and assign K folds.','N rows → fold IDs'),
-       ('Encode each held-out fold','Frozen pretrained encoder gets other folds as labeled context; held-out rows are unlabeled queries.','fold queries → fold × D'),
-       ('Restore order and train head','Scatter embeddings to original rows; fit scaler and logistic head on (Z,y).','Z: N × D'),
-       ('Evaluate with frozen head','Average test embeddings over declared fold contexts; test labels score only.','test × D → probabilities')],
-      'One row has two distinct label roles',
-      matrix(['encoder context','encoder query','head target'],[('row in A',['absent','hidden','yᵢ allowed']),('rows B+C',['labels','not queried','their own OOF y'])])+eq('zᵢ = encoder(D outside fold A, xᵢ)')+eq('head training pair = (zᵢ, yᵢ)'),
-      'The row’s target is hidden while constructing its representation, then used as ordinary supervised head-training data.',
-      'Cross-fitting protects the encoder input route. It does not remove the need for independent head selection and test evaluation.',
-      'Frozen historical v2 encoder plus local cross-fitted linear head. The final-layer local protocol differs from the paper’s intermediate-layer selection experiment.')
+# Lesson 065 owns its full pretrained extraction and head-selection pipeline.
 
 panel(66,'tabicl','TabICL · column, row, dataset','Model architecture',
       'Which stage compresses the context, and which later stage can still be quadratic?',

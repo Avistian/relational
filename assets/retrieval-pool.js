@@ -1721,7 +1721,7 @@
     }
   ],
   "correct": "0",
-  "explain": "No, their information roles differ because one can contain its own target."
+  "explain": "Extract the row as an unlabeled query against context from other folds, then restore its vector to the original row position. Its label may subsequently train the linear head. That head still needs independent validation and test evaluation; cross-fitting does not make its fitted training score unbiased."
 },
 {
   "id": "l066-foundation-contract",
