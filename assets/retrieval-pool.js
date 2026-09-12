@@ -1682,23 +1682,23 @@
   "lesson": 64,
   "quarter": "Q3",
   "concept": "foundation-tabpfn-v2",
-  "question": "Which representation feeds the reduced v2 classification head?",
+  "question": "Which final representation feeds the historical TabPFN v2 classification head?",
   "options": [
     {
-      "label": "Context features",
+      "label": "Context feature positions",
       "value": "0"
     },
     {
-      "label": "All features",
+      "label": "All feature positions",
       "value": "1"
     },
     {
-      "label": "Query target",
+      "label": "Query target positions",
       "value": "2"
     }
   ],
   "correct": "2",
-  "explain": "No, it checks an operator boundary, not pretrained weights, data, tuning or scores."
+  "explain": "Each query's target position passes through the full twelve-layer network and then the decoder. Its initial value encodes an unknown target; the true query label is never supplied. Row attention reads only labeled context, while feature attention exchanges information within each row."
 },
 {
   "id": "l065-foundation-contract",

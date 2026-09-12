@@ -47,6 +47,20 @@ def run(lesson,preset='lab',output=None,current=False):
         from relkit.scm_l063_v2 import run_experiment
         run_experiment(preset=preset,output=str(out))
         return out
+    if lesson == 64:
+        from relkit import tabpfn_l064_v2 as core
+        import hashlib,importlib.metadata,platform
+        import torch
+        if out.exists():raise FileExistsError('Choose a fresh output; no resume/overwrite')
+        torch.set_num_threads(1)
+        model,checkpoint_config=core.load_pretrained(core.ensure_checkpoint(ROOT))
+        result=core.run_experiment(ROOT,model,config=core.PRESETS[preset])
+        result['checkpoint_config']=checkpoint_config
+        result['source_sha256']=hashlib.sha256(Path(core.__file__).read_bytes()).hexdigest()
+        result['versions']={k:importlib.metadata.version(k) for k in ['torch','numpy','scikit-learn','pandas']}
+        result['hardware']=platform.machine()+' CPU; one torch thread'
+        out.write_text(json.dumps(result,indent=2,allow_nan=False)+chr(10))
+        return out
     if lesson in [65,66,67,69]:
         from _fetch_foundation import fetch
         fetch('v1' if lesson==67 else ('tabicl' if lesson==66 else 'v2'))
@@ -60,18 +74,10 @@ def run(lesson,preset='lab',output=None,current=False):
         from relkit.checkpoint_l060_v2 import run_checkpoint
         run_checkpoint(preset=preset, output=str(out))
         return out
-    if lesson in [64,70]:
-        if lesson in [64,70]:
-            from _fetch_foundation import fetch
-            fetch('v2');fetch('tabicl')
-            isolated('v2','_run_foundation.py',['--lesson','70','--preset',preset,'--output',str(out),'--worker'])
-        if lesson==64:
-            from relkit.benchmark_core import paired_summary
-            result=json.loads(out.read_text());result['lesson']=64
-            result['records']=[r for r in result['records'] if r['arm'] in ['XGBoost','TabPFN-v2']]
-            result['summary']={'random':paired_summary(result['records'])}
-            result['scope']='Focused Nature-v2 versus XGBoost slice of the newly run historical checkpoint'
-            out.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n')
+    if lesson == 70:
+        from _fetch_foundation import fetch
+        fetch('v2');fetch('tabicl')
+        isolated('v2','_run_foundation.py',['--lesson','70','--preset',preset,'--output',str(out),'--worker'])
         return out
     from relkit.foundation_experiments import (survey_audit,validation_audit,posterior_experiment,
         drift_experiment,temporal_pfn_experiment)

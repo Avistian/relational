@@ -12,7 +12,7 @@ PRACTICE={
 61:'Sample Gaussian-process tasks, derive exact posterior predictions, implement context attention and a full-support density, and train a row-token PFN.',
 62:'Implement context normalization, feature scaling, rectangular attention, postnorm blocks and class-aligned logit ensembling in the full historical TabPFN v1 model; run its released checkpoint.',
 63:'Construct sparse layered generators, propagate shared task mechanisms, select observed nodes, assign multiclass labels and compute a finite-world posterior; audit paired interventions and context-label controls.',
-64:'Implement the sample-axis operation of a reduced axial PFN and test query isolation. The saved Nature-v2 comparison uses separate pretrained weights.',
+64:'Implement feature grouping, target encoding, attention and residual normalization in the full historical TabPFN v2 model; run its pretrained weights and diagnose preprocessing boundaries.',
 65:'Extract cross-fitted query embeddings and fit a linear head. The default exercise uses a random-weight encoder; actual v2 inference is a separate rerun.',
 66:'Implement inducing attention and distribution-conditioned cell embeddings. The default exercise isolates a column mechanism; pretrained TabICL context scaling is separate.',
 67:'Build disjoint retrieved training episodes and run a small optimization loop. The saved comparison separately measures adaptation of historical v1 weights.',
@@ -26,7 +26,7 @@ EVIDENCE={
 61:'New row-token PFN measurements against an exact GP posterior, with training-range, longer-context and prior-shift checks; historical coin results remain separate.',
 62:'Visible full-model inference with the historical v1 checkpoint on three complete paper datasets, three local split seeds and one versus four prediction views; no new pretraining.',
 63:'New bounded SCM/BNN generator experiments, paired known-noise edge interventions, fitted logistic diagnostics and an exact two-world posterior experiment; no new TabPFN prior fitting.',
-64:'The exact v2/XGBoost predictions reused from the lesson 70 historical panel.',
+64:'New full-model historical v2 predictions on three complete numeric datasets across three seeds, with observed versus shuffled context labels and separate original-wrapper checks.',
 65:'Actual v2 cross-fitted representation heads versus native inference on three tasks and three seeds.',
 66:'Actual TabICL v1.1 predictions at context sizes 60, 180, and 540, with three seeds.',
 67:'Actual v1 global context, retrieval, and six-step fine-tuning on three tasks and three seeds.',
@@ -58,6 +58,7 @@ def lab_plan(n):
     tasks=''.join(f'<li><code>{name}</code>: {html.escape(goal)}</li>' for name,_,_,goal in TASKS[n])
     exit_path = f'data/cache/l{n:03}-student/exit.json' if n in (58, 59, 60, 61, 62) else f'student-l{n:03}-exit.json'
     if n == 63:exit_path = 'data/cache/l063-v2/student-l063-exit.json'
+    if n == 64:exit_path = 'data/cache/l064-student/student-l064-v2-exit.json'
     return f'<p><strong>What you will do:</strong> {PRACTICE[n]}</p><ol>{tasks}</ol><p><strong>Author-reference evidence:</strong> {EVIDENCE[n]}</p><p><strong>Submit:</strong> your completed notebook and <code>{exit_path}</code>, plus your written interpretation. CHECK cells give immediate code feedback; paste the EXIT output here for a reasoning review.</p>'
 
 
@@ -69,6 +70,8 @@ def build_directory():
                link(f'https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{slug}.ipynb','Run in Colab'),
                link(f'../{slug}.ipynb','Download notebook',download=True),link(f'../../reference/{slug}.html','Reference'),
                link(f'../l{n:03}-reproduction.md','Reproduction instructions'),link(f'../_verify_l{n:03}_results.json','Measured results')]
+        if n == 64:
+            links.append(link('../_verify_l064_v2_results.json','Full historical v2 prediction results'))
         if n == 63:
             links.append(link('../_verify_l063_v2_results.json','Layered generator and finite posterior results'))
         if n == 62:

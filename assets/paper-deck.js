@@ -334,8 +334,8 @@
   "paper": "Nature TabPFN v2",
   "year": 2025,
   "lesson": 64,
-  "front": "Does passing an attention-mask check establish Nature-v2 accuracy reproduction?",
-  "back": "No, it checks an operator boundary, not pretrained weights, data, tuning or scores."
+  "front": "Why does excluding query keys and values not by itself guarantee query-batch independence in historical TabPFN v2?",
+  "back": "The attention boundary applies after encoding. The uncached historical encoder counts varying feature channels across all supplied rows and rescales each group. A new query can change that count and therefore earlier representations. The lesson reproduces this behavior in version 2.0.9, including a default four-view example; a finite constant-column control is unchanged."
 },
 {
   "id": "foundation-paper-66",

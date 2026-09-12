@@ -208,17 +208,7 @@ panel(62,'rowpfn','TabPFN v1 · the actual released predictor','Model architectu
       'Context labels enter Ey before all 12 blocks. Another query supplies no key/value; each query keeps its own projected features and residual state.',
       'Full released historical v1: d512, H4, FFN1024, L12, output10, dropout0, postnorm, GELU, numeric wrapper and actual copied pretrained weights. Prior fitting used synthetic held-out labels; this lab measures frozen inference, not new training.')
 
-panel(64,'axialpfn','TabPFN v2 route · alternate table axes','Model architecture',
-      'How does a query target token obtain feature and labeled-context information?',
-      [('Encode cells and labels','Feature tokens plus a target token; query target is unknown.','B × N × G × D; G=F+1'),
-       ('Mix within each row','Feature attention reads all G tokens of the same row.','BN × G × D'),
-       ('Mix each token position across rows','Sample attention reads context rows only. Repeat feature/sample blocks.','BG × N × D'),
-       ('Read query target tokens','Take the target-token position for query rows; apply class head.','B × Q × D → B × Q × classes')],
-      'Same table, two legal reading directions',
-      matrix(['feature 1','feature 2','target'],[('context',['x₁','x₂','y']),('query',['x₁*','x₂*','?'])])+eq('feature: [BN, G, D] → mix G')+eq('sample: [BG, N, D] → read C')+pair('Within a row','features ↔ target','Across rows','query ← context'),
-      'N=C+Q. The unknown target token can first mix with its row features, then read target-position context states. Later stages repeat this exchange.',
-      'Changing the reshape changes the information graph. Feature attention and sample attention normalize over different axes.',
-      'Local AxialPFN key-part mirror. Official feature grouping/IDs, distribution encoders, priors and inference ensembling are omitted locally; measured v2 scores use the pinned official checkpoint.')
+# Lesson 064 owns its complete historical-v2 architecture in _build_l064.
 
 panel(65,'crossfit','Query embeddings · hide the right labels','Model architecture',
       'How can a supervised head train on labels that the encoder was forbidden to see?',
