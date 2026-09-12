@@ -214,18 +214,6 @@ panel(62,'rowpfn','TabPFN v1 · the actual released predictor','Model architectu
 
 # Lesson 066 owns its complete original TabICL architecture in _build_l066.
 
-panel(67,'localpfn','Local PFN · select context, then adapt','Model architecture',
-      'Which operation changes record IDs, and which changes pretrained tensors?',
-      [('Define a memory geometry','Fit scaling on training rows; preserve IDs and label eligibility.','N × F'),
-       ('Retrieve a local context','Squared distances → stable eligible top-k; exclude anchor/query identity.','query → k labeled rows'),
-       ('Optional adaptation','Build disjoint local context/query episodes; query loss updates a copied checkpoint.','θ → θ′ by optimizer steps'),
-       ('Select and predict','Validation selects adaptation step; frozen chosen weights predict untouched test queries.','PFN(context, query) → probability')],
-      'Two interventions, two state changes',
-      matrix(['context IDs','weights'],[('retrieval',['change','fixed θ']),('fine-tuning',['episode-specific','change θ→θ′'])])+eq('episode context IDs ∩ query IDs = ∅')+pair('Retrieval evidence','saved neighbor IDs','Adaptation evidence','nonzero tensor delta'),
-      'This is a state-change audit. A different prediction alone cannot tell you whether retrieval or gradient adaptation caused it.',
-      'Retrieval changes the model input. Fine-tuning changes the fitted function. Compare them as separate arms before interpreting their combination.',
-      'Actual historical v1 checkpoint in the local comparison. Exact retrieval, six-step adaptation and tiny test panels differ from the full paper protocol; approximate-neighborhood scale claims remain separate.')
-
 panel(68,'driftpfn','Temporal PFN · train on changing tasks','Model architecture',
       'What generates drift during pretraining, and what history is legal at inference?',
       [('Sample a changing mechanism','A task-specific function of time produces SCM edge weights.','time t → W(t)'),

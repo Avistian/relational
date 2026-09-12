@@ -352,6 +352,14 @@
   "lesson": 66,
   "front": "Where does TabICL introduce labels, and what remains expensive after its inducing summaries?",
   "back": "Three column blocks and three row blocks build label-independent row representations. Only the twelve-block ICL stage adds context-label embeddings. Its attention still forms C² + QC score pairs per head. RoPE distinguishes otherwise exchangeable feature positions, sacrificing exact single-view column-permutation invariance; the supported one-none-view wrapper preserves query isolation, while an optional power-transform fallback can couple query preprocessing."
+},
+{
+  "id": "foundation-paper-67",
+  "paper": "Thomas et al. — LoCalPFN",
+  "year": 2024,
+  "lesson": 67,
+  "front": "Why does approximate local training share a context instead of merely speeding up nearest-neighbor search?",
+  "back": "Exact per-query neighborhoods require separate transformer context computations. LoCalPFN samples an anchor neighborhood and splits it into disjoint context and query sets, allowing several queries to reuse one context. This trades neighborhood accuracy for shared forward/backward work. The lesson separately measures frozen retrieval and local gradient adaptation; nearest-neighbor lookup alone does not update weights."
 }
 ];
 })(window);

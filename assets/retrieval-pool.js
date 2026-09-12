@@ -1767,7 +1767,7 @@
     }
   ],
   "correct": "2",
-  "explain": "No, retrieval changes inputs; fine-tuning requires measured parameter updates."
+  "explain": "Retrieval changes the labeled context supplied to a fixed model. Fine-tuning applies a query-loss gradient to pretrained parameters; verify the actual tensor change and keep the frozen baseline intact."
 },
 {
   "id": "l068-foundation-contract",

@@ -1,64 +1,49 @@
-# L067 reproduction and evidence contract
+# L067 · Full pretrained LoCalPFN: local reproduction contract
 
-Primary source: [Retrieval & Fine-Tuning for In-Context Tabular Models](https://arxiv.org/html/2406.05207v1). [Lesson](../lessons/0067-local-pfn-retrieval-finetuning.html).
+Active scientific source: [final NeurIPS 2024 paper](https://papers.nips.cc/paper_files/paper/2024/file/c40daf14d7a6469e65116507c21faeb7-Paper-Conference.pdf), Sections 2–5 and Appendix A.2/A.5. [Pinned official code and checkpoint](_sources_l067_v2.json), [lesson](../lessons/0067-local-pfn-retrieval-finetuning.html), [student notebook](0067-local-pfn-retrieval-finetuning.ipynb).
 
-## What ships
+## What is implemented and measured
 
-Student notebook, local executed teacher solution (ignored by Git under the course convention),
-prepared student HTML, numerical mechanism/architecture/result figures, visible canonical code,
-behavioral checks, source/checkpoint provenance and committed author evidence.
+`relkit/localpfn_l067_v2.py` uses the immutable, fully visible `relkit/tabpfn_l062_v2.py` backbone: twelve complete blocks, width 512, four heads, FFN 1024, every original pretrained tensor. The LoCalPFN wrapper uses outer train StandardScaler/clip 10, exact Euclidean neighbors, zero padding to 100 features before source-layout context-only sample normalization, division by F/100 and temperature 1 softmax. The student notebook inlines both the backbone and local algorithm; all five TODOs drive its actual experiment.
 
-## Three separate claims
+The exact normalization implementation matches the official T×B×100 contiguous masked-reduction layout. An algebraically equivalent B×N×F mean/std implementation did not reproduce a real constant local feature in float32: source cancellation amplified by epsilon 1e-6 changed predictions. The corrected source check includes this fixture; `_normalization_l067_results.json` records the isolated precision diagnostic. This is not evidence that the amplified constant feature is scientifically desirable.
 
-1. **Operator/architecture:** the specified local functions implement the named computation;
-   reduced PFNs are not official checkpoint architectures. Read their explicit omissions.
-2. **Measured evidence:** `_verify_l067_results.json` contains the actual local run or frozen-result
-   reanalysis. Score outputs identify which implementation produced them.
-3. **Paper results:** full original pretraining/benchmark replication is NOT_ESTABLISHED.
-   No resource preset silently changes this verdict into MATCH.
+Author panel: all rows of diabetes/blood transfusion/WDBC, new stratified 80/10/10 split seeds 7/17/27; dynamic k=min(floor(10√N_train),1000), B=2, Q=16 per context, 30 updates for each of two predeclared learning rates .01 and 1e-5, AdamW weight decay .01, no scheduler, validation candidates step 0 and 30. Five arms: global-all, random-k, local-frozen, local FT paper rate, local FT released CLI rate. Global-all is an added control; random-k is a label-blind prefix without replacement, whereas the released vanilla helper uses class quotas and can sample with replacement. All targets, raw row IDs, neighbors, episodes, validation histories, predictions, selected/final weights and identities are retained.
 
-## Regeneration
+Full dataset names occur in the paper roster, but the released TabZilla folds are not used. The numeric subset does not exercise categorical one-hot behavior. Paper budget 1000 queries, longer early stopping, 95 datasets/10 folds, tuned baselines, synthetic pretraining and original GPU runtime table remain NOT_RUN. The overall paper-result verdict is **INCOMPARABLE**.
 
-From the repository root, install `requirements-labs.txt`, then:
+## Fresh local commands
+
+From repository root, with `requirements-labs.txt` installed:
 
 ```bash
-.venv/bin/python labs/_run_foundation.py --lesson 67 --preset lab --output labs/data/cache/foundation/l067-rerun.json
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python labs/_check_l067_v2.py
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python labs/_verify_l067_v2.py --preset lab --output labs/data/cache/l067-my-lab.json
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python labs/_verify_l067_v2.py --preset closer --output labs/data/cache/l067-my-panel.json
 .venv/bin/python labs/_build_l067.py
 ```
 
-The default notebook track needs no pretrained download. The explicit post-EXIT gate uses
-an isolated package directory for historical packages; it may download immutable checkpoints.
-Historical package/checkpoint hashes are in `_sources_foundation.json`; TALENT source tables
-are pinned separately in `_sources_l058.json`. TabReD and public-table loaders retain their
-earlier source/data identities. Do not treat a package version as a checkpoint identity.
+Each measurement refuses an existing output path. The `lab` preset is one complete diabetes split; `closer` is the three-dataset/three-seed panel. `smoke` is a separate small-context/two-update execution check. `paper` fails explicitly; it does not rename this panel into a paper replication. The generic foundation runner delegates to this same active version, while old `_verify_l067_results.json` remains a historical six-step experiment.
 
-The `smoke` preset is a small execution check. `closer` increases supported training budgets,
-or reruns an already full frozen-result audit. Historical checkpoint experiments retain their
-declared small protocol unless their runner explicitly says otherwise. `paper` deliberately
-raises an error: the full heterogeneous paper protocols are not implemented.
+The notebook default saves `labs/data/cache/l067-student/exit-v2.json` in the local repository. It uses current notebook functions and checks their identity against its own source CHECK. It never copies the author identity into its live evidence. The optional post-EXIT gate repeats the broader panel with those same live definitions. The default experiment can take several minutes on one CPU thread; the corrected nine-record author panel took 1,676.65 seconds (27 minutes 56.65 seconds), including 540 full-model updates. No GPU is required.
 
-For unattended execution, the supplied CPU operator is:
+## Public evidence and private runtime artifacts
 
-```bash
-modal run --detach modal/foundation_repro.py --lesson 67 --preset closer
-```
+- `_verify_l067_v2_results.json`: fresh complete panel, probabilities, targets, original IDs, model/code/runtime hashes and weight-file SHA256 values.
+- `_check_l067_v2_results.json`: full official pretrained forward, all 152 gradient tensors, full AdamW step and real float32 normalization regression.
+- `_analysis_l067_v2_results.json`: dataset-level summaries, sample SD, paired seed intervals, mean ranks, Friedman and Nemenyi statistics, interpreted limitations.
+- `_normalization_l067_results.json`: independently generated exact constant-feature source precision diagnostic.
+- `_evidence_l067.py`: parent-owned independent raw-data/geometry/episode/weight/official-prediction reconstruction.
+- `_execution_l067_v2_results.json`: actual executed teacher-cell record; teacher notebook remains gitignored.
 
-No Modal job or live Colab browser run is claimed by packaging this command.
+Adapted state dicts are saved under ignored `labs/data/cache/l067-weights/<run-id>/`. Each selected and final filename plus hash is in the result; these files are local execution artifacts, not published downloads. A fresh public runner reconstructs the states. Initial checkpoint download is immutable and SHA-checked before loading. The official LoCalPFN repository exposes no license file; its source is fetched into the local ignored cache for validation, not redistributed in this package.
 
-## Evaluation boundaries
+A provisional full-k run made before the source-specific normalization correction was stopped and preserved in the ignored cache. No result from that operator is rehashed or relabeled as a corrected measurement.
 
-Read the lesson for exact dataset roster/caps, split seeds, model/inference seeds, candidates,
-metric direction, context policy and omitted paper components. Compare methods on aligned
-rows. Average model seeds inside datasets before ranking. Conditional seed intervals do not
-cover dataset or temporal-split uncertainty. Frozen result tables are not new model fits.
+## Further work needed for paper-result reproduction
 
-The common local checkpoint records predictions, targets, selection traces and costs.
-L064 explicitly reuses L070 predictions; do not count those as additional evidence.
-Current-version arms have separate statuses; historical-v2 scores cannot stand in for v3.
+First reconcile the actual experiment roster: final Tables 2/3 list only 37/42 names despite their 47/48 captions. `_paper_audit_l067_v2_results.json` preserves this independently counted discrepancy, with rendered pages inspected. Then use the exact TabZilla released roster, train/validation/test folds and preprocessing. Reconcile the paper's anchor exclusion with the released sampler that retains anchors; reconcile its total-query notation with the released per-context query-length flag. Fix the global training class axis before evaluating batches containing only one target class. Keep paper .01 learning rate and released 1e-5 discrepancy explicit. Match the reported longer training/evaluation and baseline tuning protocols, and compute the same dataset/fold aggregation and stratified-bootstrap IQM/mean intervals. Only then assess paper score tolerances.
 
-## Delivery evidence
+The local/Colab notebook path retains adapted state files alongside its evidence. No Modal job was run; the older generic Modal helper is not advertised as an adapted-state export operator for this lesson. Its current result export does not retain this runner’s cached checkpoint files.
 
-See `_execution_foundation_results.json`, `_source_check_foundation_results.json` and
-`_delivery_foundation_results.json` for performed checks. Browser rendering, copied Pages
-staging, live Colab and post-push deployment are independent checks. User mastery remains
-unassessed until a completed EXIT and explanation are reviewed.
+Local source checks, copied Pages access, browser layout, live Colab and deployed byte matching are independent verification statements. Learner mastery is unassessed until the completed EXIT explanation is reviewed.
