@@ -1,6 +1,6 @@
 ## The checkpoint is a defensible comparison
 
-A future relational model must beat a credible single-table procedure. That means more than placing five model names in a table: the competitor includes the feature representation, optimizer, search, validation rule and resource budget. Your outcome here is a report whose selected models, predictions, uncertainty and recommendation can all be reconstructed. A failed neural improvement is a valid outcome.
+A future relational model must beat a credible single-table procedure. That competitor includes the feature representation, optimizer, search, validation rule and resource budget, not only five model names in a table. Your outcome here is a report whose selected models, predictions, uncertainty and recommendation can all be reconstructed. A failed neural improvement is a valid outcome.
 
 **Retrieve first, without notes.** From Lesson 058, why can a carefully chosen collection of datasets still favor a particular family? From Lesson 059, which labels may select a candidate, and which labels may estimate its performance? From Lesson 054, does TabM train on the loss of the average prediction or the average of member losses? Write your answers before reading the code.
 

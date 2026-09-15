@@ -9,11 +9,11 @@ p(t | D) ∝ p(D | t) p(t)
 p(y | x,D) = ∫ p(y | x,t) p(t | D) dt
 ```
 
-The normalizing constant in the first line makes posterior probabilities sum or integrate to one. The integral in the second line matters: making one best guess for the task and ignoring alternatives generally produces a different predictive distribution. In supervised Bayesian inference, the likelihood can condition on the feature design; in our GP experiment the features are independently uniform, so observing their locations does not change the prior over functions.
+The normalizing constant in the first line makes posterior probabilities sum or integrate to one. The integral in the second line changes the prediction: making one best guess for the task and ignoring alternatives generally produces a different predictive distribution. In supervised Bayesian inference, the likelihood can condition on the feature design; in our GP experiment the features are independently uniform, so observing their locations does not change the prior over functions.
 
 A conventional neural predictor optimizes weights on one table. A **prior-data fitted network** optimizes shared weights across many synthetic tables. A single pretraining example is therefore an entire context plus one or more held-out queries. Once pretraining ends, a new context changes the forward computation while the weights remain fixed. “No downstream training” means no downstream weight optimization in this basic use, not no labels, no computation or no earlier training cost. This is the mechanism introduced by [Müller et al., Algorithm 1 and §§2–3](https://arxiv.org/html/2112.10510v7#S3).
 
-For the relational mission, the important question is not whether synthetic data are automatically good. It is which properties a task generator makes probable: smooth response functions here, richer table-generating mechanisms later, eventually entity relationships and temporal structure. A learned inference procedure transfers only as far as its assumptions and approximation allow. This lesson has no evidence about relational benchmark performance.
+For the relational mission, the question is which properties a task generator makes probable: smooth response functions here, richer table-generating mechanisms later, eventually entity relationships and temporal structure. Whether synthetic data are automatically good is a separate matter. A learned inference procedure transfers only as far as its assumptions and approximation allow. This lesson has no evidence about relational benchmark performance.
 
 ## Derive a posterior you can check exactly
 
@@ -26,11 +26,11 @@ Beta(1,1), labels [1,0,1] -> Beta(3,2) -> 3/5 = 0.6
 
 This shrinks the empirical rate `2/3` toward the prior mean `1/2`. With no observations it returns the prior mean; with many observations the prior's relative weight decreases. Counts retain everything needed for this exchangeable coin task, but they cannot encode where a function was observed. Two regression contexts with identical target counts but different feature locations usually give different predictions.
 
-The historical package trained a **CountPFN**, an MLP of those sufficient statistics. Its [old measurements](../labs/_verify_l061_results.json) remain available with their original operator identity. That is a useful objective sanity check, but it omits learned row representations, attention and a regression density. The current lab implements those missing mechanisms rather than treating the coin experiment as the whole paper.
+The historical package trained a **CountPFN**, an MLP of those sufficient statistics. Its [old measurements](../labs/_verify_l061_results.json) remain available with their original operator identity. That is a useful objective sanity check, but it omits learned row representations, attention and a regression density. The current lab implements the learned row representations, attention and regression density that the coin experiment omits.
 
 ## Sample a distribution over functions
 
-Our main experiment follows the fixed Gaussian-process study in paper §5.1 and Appendix F. A **Gaussian process**, or GP, specifies a jointly Gaussian distribution for the function values at any finite set of inputs. You do not have to enumerate every possible function: at the locations you need, construct its covariance matrix and sample the corresponding vector.
+Our main experiment follows the fixed Gaussian-process study in paper §5.1 and Appendix F. A **Gaussian process**, or GP, specifies a jointly Gaussian distribution for the function values at any finite set of inputs. At the locations you need, construct its covariance matrix and sample the corresponding vector, without enumerating every possible function.
 
 The **radial basis function kernel**, or RBF kernel, sets how strongly two locations covary. Here output variance is one, length scale `ℓ=.6`, and independent observation-noise variance is `σ²=.0001`. Inputs are uniformly sampled from `[0,1]^F`; the local lab uses one feature. For any two feature vectors:
 

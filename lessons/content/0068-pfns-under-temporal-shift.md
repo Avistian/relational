@@ -122,7 +122,7 @@ The paper’s **published means** are separate from every local number below. On
 
 Table 2 compares drift with the separately pretrained NoT2V ablation: OOD accuracy 0.744 versus 0.742 and AUC 0.832 for both. The authors describe the Time2Vec contribution as statistically insignificant; this is why the lesson emphasizes the shifting prior. These results use the original selected recipes and repetitions. “Strongest baseline” can select different packages for different metrics, so this summary is not a pure prior-only causal intervention. See [Tables 1–2 and Appendix A.4.1](https://arxiv.org/html/2411.10634v1#A1.SS4.SSS1) for the reported uncertainty and exact comparator settings.
 
-## Read measured probabilities, not just winners
+## Read the measured probabilities behind each prediction
 
 Before revealing results, predict whether drift must beat base-with-time on every real task, and whether confidence must fall monotonically into the future. Commit a direction and reason. The mechanism allows exceptions to both claims.
 

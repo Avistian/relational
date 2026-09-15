@@ -1237,6 +1237,16 @@ notebook builder. Apply this to future new-model lessons; retrofit L047 (SAINT) 
 
     Extends #18 / #20 / #22 / #24. Reference: L043–L045 retrofits this session. Full checklist in `lab-authoring`.
 
+### Explaining language: state concepts directly, do not persuade (2026-09-15, user directive) — applies to L048–L070 and all future lessons/labs
+
+26. **Write clear technical/ML prose that states what a thing *is*; drop the rhetorical "it's not X, it's Y" device and all persuasion (from 2026-09-15, user `/teach`: "improve explaining language, don't use [the] 'it's not X it's Y' type of language, you don't need to persuade anybody. I need clear technical/ML language so concepts are clear and easy to understand. Remember that for future lessons.").** The reader is already committed to learning; the job is explanation, not advocacy. Concretely, for every lesson (HTML in `lessons/00NN-*.html` for L048–L057; prose in `lessons/content/00NN-*.md` for L058–L070, plus any inline prose in `labs/_build_l0NN.py` — quiz answers, reference text, evidence-table intros) and every lab intro from here on:
+    - **State the concept positively first.** Give the direct definition/mechanism (what it *is*, what it *does*, the shapes/steps), then, only if a contrast genuinely aids understanding, add it as a plain clause. Prefer "A feature cross is a product term x_i·x_j; a linear model cannot represent it without adding that term" over "A cross isn't a normal layer — it's a multiplication."
+    - **Remove the definitional-negation-for-effect device.** Rewrite "This is not simply X, it is Y", "X is not about A — it's about B", "not just A but B", "the real point is…", "think of it as…" into a plain assertion of what holds. Keep a negation only when the *false belief is a named misconception being corrected* (then state the correct fact plainly, once).
+    - **Cut persuasion/hype words:** "remarkably", "surprisingly", "the magic/beauty", "crucially", "note that", "it turns out", "powerful", "elegant", and similar. Let the numbers and mechanism carry the weight.
+    - **DO NOT weaken honesty/scope discipline (#20/#23/#25).** Statements like "INCOMPARABLE", "does not reproduce the paper's table", "cannot justify a population-wide claim", "the interval crosses zero" are load-bearing *technical facts*, not persuasion — keep them, just phrase them plainly and directly. Legitimate methodological contrasts ("average ranks rather than rank sums, so a 15-task subset stays comparable") are fine when the contrast is the actual technical content.
+    - **Preserve everything else exactly:** all numbers, formulas, symbols, links, HTML tags/ids/classes, section structure, and the thoroughness/first-principles standard (#17). This is a phrasing pass, not a content cut.
+    - **Pipeline note (so edits are durable):** L048–L057 lesson HTML is hand-maintained (the `_build_l0NN.py` scripts *read* it to build the lab) — edit the `.html` directly. L058–L070 lesson HTML is generated from `lessons/content/00NN-*.md` by `labs/_build_l0NN.py` — edit the `.md` (and any inline rhetorical strings in the build script), then regenerate. Retrofit target: **L048–L070** this pass; standard applies to every future unit.
+
 <!-- FOUNDATION-058-070:begin -->
 ## Lesson 057 complete; lessons 058–070 prepared — 2026-09-09
 

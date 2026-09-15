@@ -38,7 +38,7 @@ Lesson 064 adds an important boundary: masked attention alone does not guarantee
 
 Let T be the outer training row IDs. Partition them into K=10 folds F₀,…,F₉. For each k, context Sₖ=T∖Fₖ supplies features and known labels. Rows in Fₖ supply query features only. For row i in Fₖ we compute zᵢ^(ℓ)=gθ^(ℓ)(xᵢ; Sₖ). The semicolon emphasizes that labeled context is an input. Frozen θ does not remove that conditioning.
 
-Each forward yields approximately one tenth of the training representations, at every layer. An empty allocation of shape |T|×12×192 receives those representations at the original training positions. This is a **scatter** operation: destinations are explicit indices. Merely concatenating fold outputs changes row order. For positions [0,1,2,3,4,5] with fold IDs [1,0,1,0,2,2], fold traversal returns positions [1,3], then [0,2], then [4,5]. Concatenation would attach the second row's vector to the first row's label. The shape would still look correct.
+Each forward yields approximately one tenth of the training representations, at every layer. An empty allocation of shape |T|×12×192 receives those representations at the original training positions. This is a **scatter** operation: destinations are explicit indices. Concatenating fold outputs changes row order. For positions [0,1,2,3,4,5] with fold IDs [1,0,1,0,2,2], fold traversal returns positions [1,3], then [0,2], then [4,5]. Concatenation would attach the second row's vector to the first row's label. The shape would still look correct.
 
 <!--figure:scatter-->
 

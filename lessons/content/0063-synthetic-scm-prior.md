@@ -1,6 +1,6 @@
 ## What does a pretrained predictor expect a table to look like?
 
-A database table is not a bag of unrelated cells. A customer's age may affect income; income may affect a purchasing decision; a recorded account score may be an effect of several hidden causes. Two observed columns can correlate because one causes the other, because they share an unobserved cause, or because the process that selected the rows couples them. A useful supervised predictor can exploit those associations without identifying which causal story is true.
+The columns of a database table can depend on one another. A customer's age may affect income; income may affect a purchasing decision; a recorded account score may be an effect of several hidden causes. Two observed columns can correlate because one causes the other, because they share an unobserved cause, or because the process that selected the rows couples them. A useful supervised predictor can exploit those associations without identifying which causal story is true.
 
 Lesson 061 trained a prior-data fitted network, or **PFN**, to predict from a context: labeled examples of a new task. Lesson 062 traced a released TabPFN v1 checkpoint through a real prediction. Here we open the other half of that system: the **distribution of synthetic tasks** used to teach such an inference algorithm. Your tangible outcome is a runnable prior card: sample one mechanism, generate a table through it, inspect what becomes visible, form classes, and diagnose which assumptions change a prediction.
 
@@ -39,7 +39,7 @@ Trace a three-affine-layer identity example. Take `C=(1,−2)`, `W0=diag(2,1)`, 
 
 The lab checks this recurrence against the actual historical MLP class, using its sampled weights and recorded causes/noises. Sixteen cases span SCM/BNN, independent/block sparsity and Identity/Tanh/LeakyReLU/ELU. The maximum absolute discrepancy is about `5.09×10⁻⁶` between the original float32 path and NumPy float64 evaluation. That checks conditional computation. It does not establish identical random streams, complete task distributions, or training trajectories.
 
-## Sparsity changes the world, not a training-time dropout mask
+## Sparsity is a task-level graph sample
 
 An edge has a coefficient. Setting that coefficient to zero removes its contribution from every row of the task. This is a **task-level graph sample**. It differs from ordinary neural-network dropout that redraws masks during training to regularize a fixed predictive model.
 
@@ -100,7 +100,7 @@ A posterior predictive distribution, or **PPD**, averages predictions over world
 
 `p(y* | x*, D) = ∫ p(y* | x*, φ) p(φ | x*, D) dφ`.
 
-Bayes' rule gives `p(φ | x*, D) ∝ p(φ) p(D | φ) p(x* | φ)` when rows are conditionally independent given φ. The last term matters: a query's features can favor one world over another even before its label is known. The familiar simplification using only `p(φ | D)` is justified when the feature distribution contributes the same factor across hypotheses, or when the prior is explicitly conditional on fixed inputs. A general SCM models X as well as Y, so that simplification is not automatic. Joint synthetic label construction can require an even more explicit episode-level likelihood; the independent-row factorization below belongs to the stated finite oracle.
+Bayes' rule gives `p(φ | x*, D) ∝ p(φ) p(D | φ) p(x* | φ)` when rows are conditionally independent given φ. The last term, `p(x* | φ)`, shifts the posterior: a query's features can favor one world over another even before its label is known. The familiar simplification using only `p(φ | D)` is justified when the feature distribution contributes the same factor across hypotheses, or when the prior is explicitly conditional on fixed inputs. A general SCM models X as well as Y, so that simplification is not automatic. Joint synthetic label construction can require an even more explicit episode-level likelihood; the independent-row factorization below belongs to the stated finite oracle.
 
 Work through two candidate worlds. Prior weights are `(.5,.5)`, context likelihoods `(.4,.6)`, and query-feature likelihoods `(.2,.8)`. Their unnormalized posterior masses are `(.04,.24)`. Divide by total .28 to obtain `(1/7,6/7)`. If the class-1 probabilities in those worlds are `(.1,.9)`, the PPD is `11/14≈.7857`. Ignoring query-feature evidence gives context-only weights `(.4,.6)` and prediction .58. The difference is inference about a **distribution of worlds**, not selecting a single causal graph.
 
@@ -120,7 +120,7 @@ The metric is **negative log likelihood**, equivalently multiclass log loss, mea
 
 <!--figure:results-->
 
-On this panel, SCM mean loss is .7934 versus 1.0083 after shuffling; the paired gap is .2150 with sample standard deviation .3013 across worlds. Eleven of twelve gaps are positive. BNN mean loss is .8551 versus 1.0468; gap .1917 with standard deviation .2518, positive on eight of twelve worlds. The exceptions matter: permutation can accidentally improve a weak finite-data logistic fit. These probes show learnable feature-label information in many generated tasks. They do not train or evaluate a PFN, and do not rank SCM-trained versus BNN-trained TabPFNs.
+On this panel, SCM mean loss is .7934 versus 1.0083 after shuffling; the paired gap is .2150 with sample standard deviation .3013 across worlds. Eleven of twelve gaps are positive. BNN mean loss is .8551 versus 1.0468; gap .1917 with standard deviation .2518, positive on eight of twelve worlds. These exceptions occur because permutation can accidentally improve a weak finite-data logistic fit. These probes show learnable feature-label information in many generated tasks. They do not train or evaluate a PFN, and do not rank SCM-trained versus BNN-trained TabPFNs.
 
 A separate exact oracle experiment samples 500 tasks from a fully specified two-world distribution: equal world probabilities; `X | φ ~ Normal(2φ−1,1)`; `Y | φ ~ Bernoulli(.1+.8φ)`; X and Y independent conditional on φ. Each task has two labeled context observations and one query. Correct joint prediction gives mean loss .3449; dropping query-feature likelihood gives .3656. The difference is measured on a finite sample; the general expected-loss justification comes from proper probabilistic prediction, not from this one observed sign. The saved artifact includes every context, query, hidden world and posterior weight, so you can reconstruct the calculation independently.
 
