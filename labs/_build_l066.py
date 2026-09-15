@@ -222,7 +222,7 @@ def build_package(notebooks=True,render=True):
 
 ## Boundaries and costs
 
-Column memory excludes queries; row attention stays within a row; ICL keys exclude queries. Own query features still enter queries/residuals. The checked none-view wrapper fits context only. Optional power-view fallback can couple query preprocessing; inspect the executed counterexample.
+Column memory excludes queries. Row attention stays within a row. ICL keys exclude queries. Own query features still enter their own queries and residuals. The checked none-view wrapper fits context only. The optional power-view fallback can couple query preprocessing; inspect the executed counterexample.
 
 With N=C+Q, F features and m=128, conceptual scores: column 12Fm(C+N); row 24N(F+4)²; ICL 48NC. The final term includes C². Full eager score matrices are visible here; original FlashAttention/batching/offload are not implemented.
 

@@ -183,9 +183,9 @@ def build_package(notebooks=True,render=True):
 
 ## Critical distinctions
 
-Frozen weights can consume labels during conditioning. Context states contain own-label information; query states must be generated without it. Role matching is not identical context distribution: training vectors see about 90% support, evaluation vectors see all training support. Cross-fitting does not make fitted head training scores unbiased. An attention mask does not ensure wrapper query independence when preprocessing inspects all supplied rows.
+Frozen weights can still consume labels during conditioning. Context states contain own-label information. Query states must be generated without it. Role matching is not the same as an identical context distribution. Training vectors see about 90% support. Evaluation vectors see all training support. Cross-fitting does not make fitted head training scores unbiased. An attention mask does not ensure wrapper query independence when preprocessing inspects all supplied rows.
 
-The 2.0.9 get_embeddings X argument supplies query rows even for data_source='train'; the selector returns context states. One call is not cross-fitting. Layer labels refer to complete block outputs, before the native head.
+The 2.0.9 get_embeddings X argument supplies query rows even for data_source='train'; the selector returns context states. One such call is not cross-fitting. Layer labels refer to complete block outputs, before the native head.
 
 ## Evidence boundaries
 

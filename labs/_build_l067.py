@@ -58,7 +58,7 @@ def build(solution=False):
 
 **Skill:** implement five live functions that retrieve, construct, normalize, supervise and select local episodes around a complete pretrained TabPFN. **PROVIDED** cells expose the model and training loop. **TODO** cells contain your live blanks; **CHECK** validates their behavior against independent source; **EXIT** saves an actual measured interpretation.
 
-Default CPU experiment: all 768 diabetes rows, stratified 80/10/10 split seed 7, paper dynamic k=247, two contexts with 16 queries each,30 updates, validation selection between 0 and 30. Two predeclared learning rates .01 and 1e-5 probe the paper/released-CLI discrepancy. Five inference arms share held-out rows. Full 25.8M historical model download≈103MB. The three-dataset author panel is larger than the default notebook. Original pretraining and 95-task 10-fold paper benchmark are NOT_RUN; this run is INCOMPARABLE to paper-result reproduction.""")
+Default CPU experiment: all 768 diabetes rows, stratified 80/10/10 split seed 7, paper dynamic k=247, and two contexts with 16 queries each, run for 30 updates. Validation then selects between step 0 and step 30. Two predeclared learning rates, .01 and 1e-5, probe the paper/released-CLI discrepancy. Five inference arms share the same held-out rows. The full 25.8M historical model download is ≈103MB. The three-dataset author panel is larger than the default notebook. Original pretraining and the 95-task 10-fold paper benchmark are NOT_RUN; this run is INCOMPARABLE to paper-result reproduction.""")
  for c in bootstrap_cells():cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']))
  for p in parts():
   m=re.fullmatch(r'<!--figure:(\w+)-->',p)

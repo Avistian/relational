@@ -122,6 +122,27 @@ predict commit/reveal flow, the paper deck + flashcard scheduling, and the teach
 it after editing any pedagogy asset, the pool, or the deck. When browser MCP returns, also eyeball the
 widgets in a lesson (per `lesson-visuals` checklist).
 
+## Easy to follow: assume nothing, intuition before formalism (user 2026-09-15)
+
+Clarity is a first-class deliverable, not a by-product of thoroughness. Defining every term (standard #17)
+is necessary but not sufficient — a lesson still fails if it overloads the reader with ~5 new concepts per
+paragraph, formalism before intuition, or sentences that stack definition + caveat + claim. Apply, every lesson:
+
+- **Intuition before formalism.** Precede each hard idea/equation with a plain-language gloss, then the precise
+  form. Use a marked aside: `> **In plain terms.** …` (markdown lessons, L058+) or
+  `<blockquote><p><strong>In plain terms.</strong> …</p></blockquote>` (hand-maintained HTML lessons, L048–L057).
+- **One idea per sentence.** Split any sentence carrying a definition *and* a caveat *and* a claim.
+- **Named beats** (bold lead-ins) to build big definitions/derivations step by step, not one dense block.
+- **Worked examples announced and numbers-first:** lead with `**Worked example.**`, numbers before the general rule.
+- **Signpost long sections** with `###` sub-headings; **define every new term on first use** in its own sentence.
+- **Scope check asides:** move honesty/scope caveats (`INCOMPARABLE`, `NOT_RUN`, "does not reproduce", intervals
+  crossing zero, downscaling notes) into `> **Scope check.** …` asides — preserved verbatim, no longer breaking
+  the teaching thread. Exception: keep failure-mode facts in the main text when they *are* the lesson's content.
+- Aside CSS lives in `assets/lesson.css` and `assets/foundation-course.css`. Length may grow; never cut content.
+
+Extends standards #17/#20/#23/#25/#26 (NOTES Preferences). **Reference implementation: L062** — its source
+`lessons/content/0062-tabpfn-v1.md` is the style template; the full L048–L070 retrofit (2026-09-15) followed it.
+
 ## Reference implementation
 
 **L019 ("When trees win")** carries a spaced-retrieval warm-up, a prediction-before-reveal prompt (on the

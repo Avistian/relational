@@ -261,6 +261,8 @@ def build_package(notebooks=True,render=True):
  (ROOT.parent/'lessons'/(SLUG+'.html')).write_text(head+opening+body+'<section id="lab"><h2>Run the companion lab</h2>'+launcher()+'<div id="teachback"></div></section></article>'+scripts+'</body></html>')
  ref=head+'<nav><a href="../lessons/'+SLUG+'.html">Lesson 060</a></nav><h1>Comparison protocol reference</h1>'+launcher()+figure('protocol')+markdown2html_mistune('''## The invariant evidence chain
 
+Run these six links in order every time; each one keeps the next honest.
+
 1. Declare task versions, metric, rows, arms, seeds and candidate budgets.
 2. Fit preprocessing on training rows and fit/choose using train/validation only.
 3. Freeze candidate and epoch; score aligned test predictions afterward.
