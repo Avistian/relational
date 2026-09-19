@@ -1,0 +1,192 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 072 — SCARF / SubTab: learning from different views</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0071-vime-masked-tabular-ssl.html">Previous: VIME</a></nav><header><p>Year 2 · Quarter 4 · Lesson 072</p><h1>SCARF / SubTab: learning from different views</h1><p class="lesson-route">Repair a row → recognize its companion → reconcile partial observations → test the representation.</p></header><aside class="lab-access"><strong>Lesson 072 package</strong><nav><a href="../labs/html/0072-scarf-subtab-contrastive-views.html">Lab preview</a><a href="../labs/0072-scarf-subtab-contrastive-views.ipynb">Student notebook</a><a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0072-scarf-subtab-contrastive-views.ipynb">Colab after publication</a><a href="../reference/0072-scarf-subtab-contrastive-views.html">Reference</a><a href="../labs/_verify_l072_results.json">Measured evidence</a><a href="../labs/l072-reproduction.md">Reproduction contract</a></nav><p>Prepared locally. Live Colab and deployment NOT_CHECKED.</p></aside><h2 id="Start-with-the-question-VIME-leaves-open">Start with the question VIME leaves open<a class="anchor-link" href="#Start-with-the-question-VIME-leaves-open">&#182;</a></h2><p>In <a href="0071-vime-masked-tabular-ssl.html">Lesson 71</a>, an encoder learned from unlabeled rows by repairing corrupted values and detecting changes. An <strong>encoder</strong> is a function that turns an input row into a vector of learned features. Repairing an input gives that function a training signal even when the target label is unavailable. But accurate repair and useful classification are different goals: a model can spend its capacity reconstructing large, predictable nuisance variables.</p>
+<p>This lesson asks a different question: <strong>what if the training signal asked the encoder to recognize a row across two incomplete or corrupted observations?</strong> SCARF makes a second observation by replacing values. SubTab makes several observations by selecting different columns. Their choices determine what information the representation is encouraged to preserve.</p>
+<p>The connection to the mission is concrete. Before making an entity representation invariant to missing columns, dropped relations, or sampled neighbors, we need to decide which changes preserve the prediction target. Tabular views give us a small, inspectable place to learn that discipline. A useful augmentation for one task can erase the signal for another.</p>
+<p><strong>Your outcome:</strong> trace both training-to-prediction paths, implement three operations used by the running models, and defend a frozen linear-probe result. Suggested pacing: 10 minutes cold retrieval, 35 minutes paper mechanisms, a separate 45–60 minute lab. You may need longer for the experiment and interpretation.</p>
+<div id="warmup"></div>
+
+<p>Before reading on, answer from memory: what are VIME’s two targets? Can replacing a value leave it unchanged? Why must unlabeled test rows stay outside an inductive pretraining pool? Write your answers before opening the check.</p>
+<details><summary>Check the bridge from Lesson 71</summary><p>VIME trains reconstruction and mask estimation; the implementation studied in L071 targets actual changes, so donor collisions matter. Unlabeled test features still reveal the test distribution. Using them changes the experiment to a transductive one. This lesson uses an inductive boundary: training rows alone define preprocessing, donors and pretraining.</p></details>
+
+<h2 id="1-%C2%B7-From-repairing-values-to-identifying-a-companion">1 &#183; From repairing values to identifying a companion<a class="anchor-link" href="#1-%C2%B7-From-repairing-values-to-identifying-a-companion">&#182;</a></h2><p>Imagine a customer row containing tenure, balance, visits, region and purchases. We create a second row by replacing three entries with values observed in the corresponding training columns. We still know which original produced it. That known relationship supplies a <strong>positive pair</strong> without a class label. Other rows’ corrupted companions become <strong>negative candidates</strong>. Here, “negative” means a different row identity; it does not mean a different class.</p>
+<p>This distinction explains both the opportunity and the risk. Recognizing a companion encourages the model to retain clues that survive corruption. Yet two different customers who will both churn can be negatives. Conversely, replacing the sole feature that determines churn can destroy what makes the positive useful. The augmentation is therefore a hypothesis about which information should survive, not a proof of semantic equivalence.</p>
+<p>SCARF applies this idea to marginal feature replacement and a contrastive objective, then transfers the learned encoder to supervised learning. Read <a href="https://arxiv.org/html/2106.15147v2#S3">SCARF Algorithm 1 and Figure 1</a> alongside the next diagram. The paper’s experiments report improvements over its baselines across 69 classification datasets; our small frozen-probe experiment tests a narrower question.</p>
+<h3 id="Model-architecture-%C2%B7-SCARF%E2%80%99s-complete-route">Model architecture &#183; SCARF&#8217;s complete route<a class="anchor-link" href="#Model-architecture-%C2%B7-SCARF%E2%80%99s-complete-route">&#182;</a></h3><figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable scarf-architecture diagram"><img src="../labs/figures/l072/scarf-architecture.png" alt="Complete local SCARF path. The two branches share weights; row identity supplies the diagonal targets. At transfer, keep the encoder and discard the projector. The diagram distinguishes the frozen lab probe from paper fine-tuning. Values in the five-column row are an illustrative corruption trace."></div><figcaption>Complete local SCARF path. The two branches share weights; row identity supplies the diagonal targets. At transfer, keep the encoder and discard the projector. The diagram distinguishes the frozen lab probe from paper fine-tuning. Values in the five-column row are an illustrative corruption trace. On small screens, scroll the diagram horizontally.</figcaption></figure>
+
+<p>Follow the orange cells first. They change the second input but leave its identity paired with the first input. Then follow both teal branches: the encoder weights are shared, so this is one function evaluated twice. Its output <strong>h</strong> is the representation we intend to reuse. A separate <strong>projection head</strong>, g, transforms h into z for the pretraining comparison. The final normalization makes the comparison depend on direction rather than vector length.</p>
+<p>The loss sends gradients through both branches, updating f and g. At transfer, the corruption machinery and g disappear. The paper fine-tunes an encoder and a task head. Our <strong>linear probe</strong> instead freezes f and learns only a linear classifier on h. That deliberate change asks whether useful class information is already accessible through a linear boundary. It does not measure the full benefit of supervised fine-tuning.</p>
+<p><strong>Local architecture details:</strong> numeric inputs have shape [B,d], where B is batch size and d is feature count. Two linear layers with ReLU produce h of shape [B,64]. ReLU maps negative activations to zero. The projector maps 64→64→32, with ReLU between layers; its vectors are normalized inside the loss. A C-class probe maps h to C scores, then softmax turns those scores into probabilities. These compact widths are our teaching configuration, not a claim of paper-model parity.</p>
+<p>The paper’s experimental network is larger: a four-layer encoder and two-layer pretraining/classification heads, with hidden width 256. It uses validation-based stopping and supervised fine-tuning. The diagram deliberately pictures our runnable compact variant; the shared-branch logic and transfer boundary carry over, while parameter counts and evaluation claims do not.</p>
+<h3 id="A-corruption-trace-you-can-audit">A corruption trace you can audit<a class="anchor-link" href="#A-corruption-trace-you-can-audit">&#182;</a></h3><p>For x = [2,8,5,1,9], rate c = 0.6 selects exactly floor(5×0.6) = 3 positions. Suppose they are columns 0, 2 and 4, and independent donor draws return 7, 6 and 2. The companion becomes [7,8,6,1,2]. Each donor value comes from its own column’s training distribution; selecting one whole donor row would preserve extra cross-column dependence and define another augmentation.</p>
+<p>The selected-count rule also differs from independently flipping a coin for every feature: a coin rule has a random count. Neither rule guarantees that selected values actually change. If a donor returns 5 for column 2, that selected cell remains 5. These distinctions are exactly what the first lab CHECK tests.</p>
+<h2 id="2-%C2%B7-Turn-companion-recognition-into-a-differentiable-loss">2 &#183; Turn companion recognition into a differentiable loss<a class="anchor-link" href="#2-%C2%B7-Turn-companion-recognition-into-a-differentiable-loss">&#182;</a></h2><p>Now the architecture needs a precise training instruction. For each clean vector zᵢ, compare it with every corrupted vector z̃ⱼ in the batch. Define cosine similarity sᵢⱼ = (zᵢ·z̃ⱼ)/(‖zᵢ‖‖z̃ⱼ‖). A value near 1 means their directions align. Divide by a positive <strong>temperature</strong> τ before softmax; smaller τ makes score differences more decisive.</p>
+<p>The N×N score matrix is a classification problem with N choices per row. For clean anchor i, its correct choice is corrupted candidate i. Thus the diagonal contains positives. The denominator <strong>includes the positive</strong>:</p>
+<p class="formula">pᵢ = exp(sᵢᵢ/τ) / Σⱼ exp(sᵢⱼ/τ)<br>ℓᵢ = −log pᵢ; L = meanᵢ ℓᵢ</p>
+
+<p>Cross-entropy with targets [0,1,…,N−1] implements that instruction stably, without explicitly exponentiating large scores. The paper writes the denominator as a mean, so its displayed objective equals this cross-entropy minus log N. That additive constant leaves the gradients unchanged for fixed N. It does mean that raw loss numbers require a stated convention.</p>
+<p><strong>Work it out.</strong> Take two unit vectors [1,0] and [0,1] in each branch, with τ=1. The score matrix is [[1,0],[0,1]]. Each correct probability is e/(e+1)=0.7311, and the cross-entropy is 0.3133. Removing the diagonal would remove the correct answer. Adding clean-to-clean candidates would change the learning problem.</p>
+<div id="loss-trace"></div>
+
+<p>Use the temperature control to predict the change before reading the output. Then switch the candidate layout. With both views as anchors, each anchor has one matching companion and <strong>two</strong> orthogonal negatives in this example, producing log(1+2/e)=0.5514. That is the layout used by the SubTab contrastive operator we audit, not SCARF’s N-way layout.</p>
+<details><summary>Reasoning check: can collapse look aligned?</summary><p>Yes. If all N vectors are identical, every positive has cosine similarity 1, but so does every negative. The correct probability is 1/N and the cross-entropy is log N. Alignment alone is insufficient. For N=1, there is no negative competition and this recognition objective carries no useful signal.</p></details>
+
+<p>The derivative with respect to a row’s unscaled similarity is (pᵢⱼ − 1[j=i])/τ, before the batch mean. A wrong candidate with high probability gets a stronger downward signal. This explains why temperature changes optimization, and why same-class false negatives can matter: their similarity is discouraged despite their shared downstream label.</p>
+<h2 id="3-%C2%B7-What-if-the-view-is-a-different-set-of-columns?">3 &#183; What if the view is a different set of columns?<a class="anchor-link" href="#3-%C2%B7-What-if-the-view-is-a-different-set-of-columns?">&#182;</a></h2><p>SCARF retains the full input width and replaces values. Suppose instead that measurements arrive in groups: one system knows transactions, another knows visits. A representation should combine what each partial observation can tell us. This motivates SubTab’s feature subsets.</p>
+<p>SubTab shares an encoder across overlapping column windows, reconstructs the full row, and can add contrastive and projection-distance losses. At prediction, it aggregates the subset representations. Read <a href="https://arxiv.org/html/2110.04361v1#S2">SubTab §2 and Figures 1–2</a>. The important shift is that reconstruction and agreement now work together: each subset must support a useful account of the whole.</p>
+<h3 id="Model-architecture-%C2%B7-SubTab%E2%80%99s-complete-route">Model architecture &#183; SubTab&#8217;s complete route<a class="anchor-link" href="#Model-architecture-%C2%B7-SubTab%E2%80%99s-complete-route">&#182;</a></h3><figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable subtab-architecture diagram"><img src="../labs/figures/l072/subtab-architecture.png" alt="Complete local SubTab path. The coverage map shows which measurements each view can use. All views share E, G and D; reconstruction and pair losses train them together. Inference averages latent vectors for the same row before the frozen probe. The twelve-column layout and latent mean are illustrative, not measured model outputs."></div><figcaption>Complete local SubTab path. The coverage map shows which measurements each view can use. All views share E, G and D; reconstruction and pair losses train them together. Inference averages latent vectors for the same row before the frozen probe. The twelve-column layout and latent mean are illustrative, not measured model outputs. On small screens, scroll the diagram horizontally.</figcaption></figure>
+
+<p>Start at the coverage map rather than the neural layers. Row identity is preserved horizontally across all three views; the available columns change. The three paths use the same encoder E. Each latent vector h feeds two destinations: decoder D predicts the full original row, while projector G supplies a space for agreement losses. Reconstructing unseen columns forces the decoder to use statistical relationships, though those relationships need not be useful for the class label.</p>
+<p>The bottom path answers the deployment question. We retain the same subset layout, remove training noise, evaluate E for each subset, and average the latent vectors for each row. We discard D and G. Averaging over the <strong>row</strong> axis would mix different examples and destroy their identities; the third lab task makes that mistake observable.</p>
+<p>The pictured d=12 layout follows the released indexing with three subsets and overlap 0.75: [0…6], [1…7], [5…11]. “75% overlap” here is relative to the base width floor(d/3)=4, not the resulting seven-column view. If d is not divisible by three, this released formula can omit trailing columns from every encoder input. Our implementation exposes that behavior; the decoder still predicts all d columns. Inspect <code>subsets(13)</code> before interpreting the wine result.</p>
+<p>The losses are configurable, rather than mandatory ingredients of every reported result. In particular, the paper’s additional OpenML experiments use reconstruction-only SubTab. Our joint-versus-reconstruction comparison asks whether adding agreement helps this local recipe; it does not assume the most elaborate loss must win.</p>
+<h3 id="Why-three-loss-terms?">Why three loss terms?<a class="anchor-link" href="#Why-three-loss-terms?">&#182;</a></h3><p>Reconstruction asks, “can this part predict the whole?” Contrastive recognition asks, “which other-view vector belongs to this row?” Squared projection distance asks, “how close are the same row’s two projections?” They impose different constraints. A constant representation minimizes agreement distance but cannot generally reconstruct varying rows or identify companions.</p>
+<p>For the local joint model, average reconstruction over the three views. For each of the three view pairs, add symmetric NT-Xent and squared projection distance, then average these pair losses. NT-Xent concatenates two B-row views, masks self-similarity, and keeps the paired companion among 2B−1 candidates. This is the matrix layout you toggled above.</p>
+<p>The <a href="https://github.com/AstraZeneca/SubTab/blob/aa3ab1b97231fc37229ef3e55d98ae13bdbfb4fc/utils/loss_functions.py">released loss code</a> sums squared errors over coordinates and averages over rows. We preserve that reduction. For reconstruction residual [1,2,0], its row contribution is 5, not 5/3. Consequently, dimensionality affects the balance with the contrastive term. Quietly replacing this with an all-cell mean changes the method.</p>
+<div id="subset-trace"></div>
+
+<p>The aggregation trace uses h₁=(1,3), h₂=(5,7), h₃=(3,2). Their mean is (3,4). Hide a view and predict the new mean. This is a computation exercise, not a claim that losing a view improves or harms classification; that requires a measured downstream task.</p>
+<h2 id="4-%C2%B7-From-an-appealing-objective-to-an-honest-test">4 &#183; From an appealing objective to an honest test<a class="anchor-link" href="#4-%C2%B7-From-an-appealing-objective-to-an-honest-test">&#182;</a></h2><p>We now have two plausible solutions. Plausibility is not evidence of useful representations. This connects back to <a href="0059-validation-set-overfitting.html">Lesson 59’s selection boundaries</a>: representation training, probe fitting, regularization selection, and final scoring each need an information boundary. It also connects to Lesson 71’s label accounting: validation labels are part of the annotation cost.</p>
+<p><strong>Local protocol, fixed before scoring:</strong> three real datasets bundled with scikit-learn—wine, breast cancer and digits—each with three paired split/model seeds (0,1,2). Stratified splits allocate approximately 70%/10%/20% to train/validation/test. Pretraining and input standardization use only the training rows; labels are hidden during pretraining. The benchmark split designer uses labels for stratification; the pretrainer receives no labels. The probe sees labels from 25% of training rows, and selects C from {0.1,1,10} using validation accuracy. Its feature standardizer is fitted on those labeled training rows. Validation labels therefore add roughly 10% of the full dataset to the labeled budget. The split record gives exact counts.</p>
+<p>We pretrain for 40 fixed epochs with Adam at 0.001, batches of at most 64, no early stopping. SCARF uses c=0.6 and τ=1. SubTab uses three windows, overlap 0.75, and independent Gaussian noise with standard deviation 0.1 on entries selected with probability 0.3 during training only. All probe encoders remain frozen. Test rows are transformed and scored only after the training choices are fixed; no statistic is fitted to them.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>What it asks</th>
+  <th>What the comparison cannot isolate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Raw standardized features</td>
+  <td>Can a linear classifier already solve the task?</td>
+  <td>The value of a nonlinear supervised network</td>
+</tr>
+<tr>
+  <td>Random frozen encoder</td>
+  <td>Does architecture alone supply useful features?</td>
+  <td>Optimization without the SSL objective</td>
+</tr>
+<tr>
+  <td>SCARF</td>
+  <td>Does corrupted-companion training help over the identical random encoder?</td>
+  <td>Which individual pretraining choice caused a gain</td>
+</tr>
+<tr>
+  <td>SCARF c=0</td>
+  <td>What changes when replacement is removed but instance recognition remains?</td>
+  <td>A no-training baseline; this arm still learns</td>
+</tr>
+<tr>
+  <td>SubTab reconstruction</td>
+  <td>What can subset reconstruction learn?</td>
+  <td>The effect of subsetting versus a full-row autoencoder</td>
+</tr>
+<tr>
+  <td>SubTab joint</td>
+  <td>What do contrastive and distance terms add together?</td>
+  <td>Their separate effects, or a perfectly matched SCARF architecture</td>
+</tr>
+</tbody>
+</table></div>
+<div id="prediction"></div>
+
+<p>Predict which dataset will show the largest SCARF gain over its random encoder, and whether raw features might still win. Then reveal the evidence. These arms compare <strong>recipes</strong>, not a fair contest that isolates every architecture decision.</p>
+<p><strong>Author-reference accuracy (%), mean ± sample SD. These are saved author results, not your current kernel output.</strong></p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Dataset</th>
+  <th>Raw</th>
+  <th>Random</th>
+  <th>SCARF</th>
+  <th>SCARF c=0</th>
+  <th>SubTab R</th>
+  <th>SubTab R+C+D</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>wine</td>
+  <td>99.07 ± 1.60</td>
+  <td>88.89 ± 14.43</td>
+  <td>96.30 ± 4.24</td>
+  <td>93.52 ± 11.23</td>
+  <td>93.52 ± 4.24</td>
+  <td>92.59 ± 5.78</td>
+</tr>
+<tr>
+  <td>breast_cancer</td>
+  <td>95.91 ± 2.53</td>
+  <td>94.74 ± 1.75</td>
+  <td>95.61 ± 1.52</td>
+  <td>95.91 ± 1.83</td>
+  <td>91.52 ± 2.21</td>
+  <td>92.11 ± 1.75</td>
+</tr>
+<tr>
+  <td>digits</td>
+  <td>94.07 ± 0.85</td>
+  <td>83.33 ± 1.73</td>
+  <td>90.28 ± 3.47</td>
+  <td>88.52 ± 0.58</td>
+  <td>90.65 ± 0.16</td>
+  <td>90.46 ± 1.70</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Paired SCARF minus random-encoder gains (percentage points):</strong></p>
+<ul>
+<li>breast_cancer: +0.88, +0.00, +1.75.</li>
+<li>digits: +8.61, +7.78, +4.44.</li>
+<li>wine: +0.00, +19.44, +2.78.</li>
+</ul>
+<p><strong>Observed in this run:</strong> SCARF improves the random encoder at the mean on all three datasets, but the raw-feature probe has higher mean accuracy on all three. Joint SubTab does not consistently beat reconstruction-only SubTab. These outcomes separate learning a representation from choosing the best prediction recipe.</p>
+<p>Read these gains alongside the raw-feature arm. A positive gain over random features need not beat the original inputs. Differences between SubTab and SCARF also include different architectures and objectives. This experiment cannot attribute them solely to the choice of views.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable results diagram"><img src="../labs/figures/l072/results.png" alt="Author-run measurements: three real datasets, three paired split/initialization seeds, fixed frozen-probe protocol. Orange points are individual seeds; bars are sample SD, not confidence intervals over datasets. R = reconstruction, C = contrastive recognition, D = projection distance."></div><figcaption>Author-run measurements: three real datasets, three paired split/initialization seeds, fixed frozen-probe protocol. Orange points are individual seeds; bars are sample SD, not confidence intervals over datasets. R = reconstruction, C = contrastive recognition, D = projection distance. On small screens, scroll the diagram horizontally.</figcaption></figure>
+
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable ranks diagram"><img src="../labs/figures/l072/ranks.png" alt="Dataset-balanced rank audit of these six local recipes. Seeds are averaged before ranking. The orange segment is the Nemenyi critical difference; comparisons exceeding it would pass that exploratory threshold. Three selected datasets provide weak evidence for general rankings."></div><figcaption>Dataset-balanced rank audit of these six local recipes. Seeds are averaged before ranking. The orange segment is the Nemenyi critical difference; comparisons exceeding it would pass that exploratory threshold. Three selected datasets provide weak evidence for general rankings. On small screens, scroll the diagram horizontally.</figcaption></figure>
+
+<p>Sample standard deviation describes variation across these paired seeds. The seeds change splits and initialization together, so this is neither a confidence interval over new datasets nor separate estimates of those two variance sources. Ranks first average seeds within each dataset, then weight the three datasets equally. The rank diagram and Friedman/Nemenyi audit are exploratory; three chosen datasets cannot establish broad superiority or equivalence.</p>
+<h3 id="What-was-actually-reproduced?">What was actually reproduced?<a class="anchor-link" href="#What-was-actually-reproduced?">&#182;</a></h3><div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Evidence bucket</th>
+  <th>Status and boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>SCARF equation</td>
+  <td>Independent numeric checks; paper’s N-way layout, exact selected count, and marginal donors; CE offset disclosed</td>
+</tr>
+<tr>
+  <td>SubTab released operator</td>
+  <td>Pinned NT-Xent outputs and input gradients checked against the author release on two batch sizes</td>
+</tr>
+<tr>
+  <td>Local training</td>
+  <td>Fresh fits and frozen probes on three datasets; table and seed-level predictions archived</td>
+</tr>
+<tr>
+  <td>Original benchmark tables</td>
+  <td><strong>INCOMPARABLE</strong>: datasets, architectures, schedules, downstream protocol and repetitions differ</td>
+</tr>
+<tr>
+  <td>Larger run</td>
+  <td><strong>NOT_RUN</strong> until the explicit operator is executed; increasing epochs alone does not establish fidelity</td>
+</tr>
+<tr>
+  <td>Live Colab and deployment</td>
+  <td><strong>NOT_CHECKED</strong> in this delivery; local notebook and browser checks are recorded separately</td>
+</tr>
+</tbody>
+</table></div>
+<p>The paper-code comparison checks an operator, not the full released model or training procedure. Read the <a href="../labs/l072-reproduction.md">reproduction contract</a> and <a href="../labs/_sources_l072.json">source audit</a> before making a stronger claim.</p>
+<h2 id="5-%C2%B7-Implement,-interpret,-and-carry-the-question-forward">5 &#183; Implement, interpret, and carry the question forward<a class="anchor-link" href="#5-%C2%B7-Implement,-interpret,-and-carry-the-question-forward">&#182;</a></h2><p>Open the <a href="../labs/html/0072-scarf-subtab-contrastive-views.html#lab-exercises">lab preview</a> or <a href="../labs/0072-scarf-subtab-contrastive-views.ipynb">student notebook</a>. The model and training loop are visible. Your three TODOs implement column-respecting corruption, SCARF’s N-way loss, and SubTab’s view aggregation. Every TODO has an immediate independent CHECK and is called by the actual experiment. Passing these fixtures is necessary; the written interpretation remains part of the exit.</p>
+<p><strong>EXIT:</strong> produce all 54 evaluation records, report each paired SCARF-minus-random gain, account for validation labels, and explain one case where the result limits your initial prediction. Diagnose how replacing exact-count corruption with independent masks, confusing N-way with 2N-way loss, or averaging different rows changes the experiment. Explain why a better frozen probe is not automatically evidence of better fine-tuning.</p>
+<div id="teachback"></div>
+
+<p>Tomorrow, explain both diagrams from a blank page before reopening them. In one week, recreate the two-candidate loss calculation and the subset mean from memory. Ask the tutor about any unclear step, and paste your EXIT interpretation for feedback; creating this lesson does not mark it mastered.</p>
+<p><strong>The next question:</strong> once we can build these representations, when is their extra training worthwhile? Planned Lesson 73 varies label availability and the match between unlabeled and downstream data. The connection is causal: today fixes the machinery; next we vary the conditions under which that machinery should help. Later, relational pretraining will inherit the same question about which entity views preserve task information.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2106.15147v2">Bahri et al., SCARF, Algorithm 1 and Figure 1</a>, then <a href="https://arxiv.org/html/2110.04361v1">Ucar et al., SubTab, §2 and Figures 1–2</a>. Use the <a href="../reference/0072-scarf-subtab-contrastive-views.html">printable reference</a> after attempting retrieval.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/contrastive-views-viz.js"></script><script src="../assets/l072-lesson.js"></script></body></html>

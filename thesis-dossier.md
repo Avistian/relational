@@ -458,3 +458,8 @@ No, version identity is part of the model and the missing arm must stay visible.
 ### L071 — BAR: unlabeled single-table structure is a baseline resource
 
 VIME provides a testable way to learn a flat-table encoder from unlabeled rows. The local five-arm label-efficiency curve uses paired splits and counts validation labels. Its conclusions are restricted to sklearn digits and the declared training recipe; it supplies no relational-versus-flat result. [Lesson](lessons/0071-vime-masked-tabular-ssl.html) · [Evidence](labs/_verify_l071_results.json) · [Scope](labs/l071-reproduction.md).
+
+
+### L072 · BAR · Views encode task assumptions
+
+Three-dataset frozen-probe experiments show SCARF improving mean accuracy over its random encoder, while raw-feature logistic regression has higher mean accuracy on all three datasets. This is a local representation audit, not a relational-versus-flat comparison or original-paper reproduction. SubTab contrastive operator outputs and gradients match a pinned author release; complete training parity is unestablished. [Evidence](labs/_verify_l072_results.json) · [Contract](labs/l072-reproduction.md).

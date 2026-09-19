@@ -1280,3 +1280,12 @@ The user rejected the 058–070 delivery as not ready and asked where the labs a
 ## Lesson 071 prepared — 2026-09-19
 
 VIME package follows Year 2 Q4: collision-aware marginal corruption, full-coordinate reconstruction plus mask estimation, explicit frozen/fine-tuned variants and released logit-variance consistency. Five matched arms, three label budgets and three seeds on offline digits. Source pinned to 996c58cf4c570061b30c38ecf2a754a9af85aafd. Fine-tuned VIME did not improve mean accuracy over scratch in the local recipe; retain the negative finding and protocol limits. Student lab, source-visible solution, reference, evidence and MNIST follow-up operators accompany the lesson. Authorship does not advance learner completion. Live Colab, Modal follow-up and publication are separate unperformed checks.
+
+## Lesson design preference · 2026-09-19
+
+User requests architecture visuals that show the complete solution in a model-specific visual form, rather than repeating a generic diagram template. Include actual data/view construction, meaningful internal computations, shared paths, objectives, transfer/inference and prediction. Connect points into the paper’s reasoning and connect lessons through the unresolved question each next method addresses. Clarity and narrative continuity are deliverables, not optional polish.
+
+
+## Lesson 072 created · SCARF / SubTab
+
+Complete architecture-to-inference diagrams, connected VIME→contrastive→multi-view narrative, visible implementations and three live TODOs. Three datasets × three paired seeds × six frozen-probe arms. SCARF improves the random encoder at the mean on all three; raw features still have higher means on all three. Full benchmark reproduction remains INCOMPARABLE. User completion/mastery is not asserted. Reproduction and delivery evidence live under labs/*l072*.

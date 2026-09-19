@@ -1860,6 +1860,29 @@
   ],
   "correct": "0",
   "explain": "The released pretext_generator recomputes the mask as original != corrupted. The sampled replacement can leave a value unchanged."
+},
+{
+  "id": "l072-contrastive-candidates",
+  "lesson": 72,
+  "quarter": "Q4",
+  "concept": "contrastive-views",
+  "question": "For SCARF clean-to-corrupt matching, what belongs in the denominator?",
+  "options": [
+    {
+      "label": "All corrupt rows, including companion",
+      "value": "0"
+    },
+    {
+      "label": "All corrupt rows, excluding companion",
+      "value": "1"
+    },
+    {
+      "label": "All clean rows, excluding anchor",
+      "value": "2"
+    }
+  ],
+  "correct": "0",
+  "explain": "Each clean anchor classifies its own corrupted companion among all corrupted candidates. The diagonal is the positive and stays in the denominator."
 }
 ];
 })(window);

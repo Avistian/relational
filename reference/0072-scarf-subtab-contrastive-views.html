@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 072 — SCARF / SubTab: learning from different views</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"></head><body><article><h1 id="Reference-%C2%B7-two-ways-to-learn-from-views">Reference &#183; two ways to learn from views<a class="anchor-link" href="#Reference-%C2%B7-two-ways-to-learn-from-views">&#182;</a></h1><p>Follow the training-to-prediction boundary: a head used to train the representation may disappear before classification.</p>
+<table>
+<thead>
+<tr>
+  <th>Step</th>
+  <th>SCARF</th>
+  <th>SubTab</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>View</td>
+  <td>Clean row plus marginally corrupted companion</td>
+  <td>Fixed overlapping feature subsets</td>
+</tr>
+<tr>
+  <td>Encoder</td>
+  <td>Shared across clean/corrupt branches</td>
+  <td>Shared across all subsets</td>
+</tr>
+<tr>
+  <td>Signal</td>
+  <td>N-way companion recognition</td>
+  <td>Full-row reconstruction, optional pair recognition and distance</td>
+</tr>
+<tr>
+  <td>Transfer representation</td>
+  <td>Clean-row encoder output h</td>
+  <td>Mean of same-row subset latents h</td>
+</tr>
+<tr>
+  <td>Local downstream</td>
+  <td>Frozen linear probe</td>
+  <td>Frozen linear probe</td>
+</tr>
+</tbody>
+</table>
+<p>N-way loss: mean negative log softmax diagonal of normalized clean × corrupted vectors / temperature. Keep the diagonal. SubTab pair loss: concatenate two views, remove self-similarity, retain the other-view positive. Do not interchange these candidate sets.</p>
+<p><strong>Arithmetic:</strong> two orthogonal companions at tau=1 give SCARF CE 0.3133; two-view NT-Xent 0.5514. Identical vectors give N-way CE log(N). The paper's SCARF convention subtracts log(N), without changing gradients.</p>
+<p><strong>Axes:</strong> views × rows × hidden → average over views → rows × hidden. For one row with (1,3), (5,7), (3,2), the mean is (3,4).</p>
+<p><strong>Audit:</strong> train-only donor pool and scaler; no test rows in pretraining; count validation labels; freeze the representation for a probe; compare paired seeds; state the raw-feature result. Contrastive positives encode augmentation assumptions, not guaranteed class equivalence.</p>
+<p><strong>Failure diagnosis:</strong> wrong column donors change feature meaning; a row-mean mixes examples; positive removal changes the denominator; low pretext loss does not establish a downstream gain. SubTab's released floor division can omit trailing input columns.</p>
+<p><strong>Evidence boundary:</strong> operator parity is not training parity. These compact numeric models and frozen probes do not reproduce either original benchmark table.</p>
+<p><a href="../lessons/0072-scarf-subtab-contrastive-views.html">Full lesson</a> · <a href="../labs/l072-reproduction.md">Reproduction contract</a></p>
+</article></body></html>

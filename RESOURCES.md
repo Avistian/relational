@@ -360,3 +360,11 @@ _Optional / extension (◆):_
 - Yoon et al., NeurIPS 2020, [VIME paper](https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Paper.pdf), §4, Eqs. 3–10: corruption, dual pretext tasks and downstream consistency.
 - [Supplement](https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Supplemental.pdf), §§2, 5–6: data splits and model selection.
 - [Author code, pinned commit](https://github.com/jsyoon0823/VIME/tree/996c58cf4c570061b30c38ecf2a754a9af85aafd): collision-aware targets, fixed corruption, frozen encoder and logit variance; checked in labs/_sources_l071.json.
+
+
+## Lesson 072 · contrastive tabular views
+
+- Bahri et al., SCARF (ICLR 2022; 2021 preprint), Algorithm 1 and Figure 1: https://arxiv.org/html/2106.15147v2
+- Ucar et al., SubTab (NeurIPS 2021), sections 2.1–2.3: https://arxiv.org/html/2110.04361v1
+- Author SubTab implementation, pinned aa3ab1b97231fc37229ef3e55d98ae13bdbfb4fc: https://github.com/AstraZeneca/SubTab/tree/aa3ab1b97231fc37229ef3e55d98ae13bdbfb4fc
+- Local source/operator and protocol audit: labs/_sources_l072.json and labs/l072-reproduction.md.

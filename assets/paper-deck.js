@@ -364,6 +364,22 @@
     {id: "yoon2020-vime", paper: "Yoon et al. — VIME", year: 2020, lesson: 71,
      front: "What are VIME's two self-supervised tasks, and what must a label-efficiency comparison control?",
      back: "Reconstruct the original row and estimate its corruption mask with a shared encoder. The release targets actual changed values. Compare downstream performance at equal labeled budgets including validation, with paired splits and test rows excluded from pretraining. Useful pretext representations do not guarantee a task gain."}
-
+,
+{
+  "id": "bahri2022-scarf",
+  "paper": "Bahri et al. \u2014 SCARF",
+  "year": 2022,
+  "lesson": 72,
+  "front": "What assumption turns marginal corruption into a useful positive pair?",
+  "back": "The row and its corrupted companion should retain information relevant to the downstream task. That assumption can fail when corruption erases decisive features. Companion recognition is an unlabeled pretext task; frozen probes and supervised fine-tuning test different downstream paths."
+},
+{
+  "id": "ucar2021-subtab",
+  "paper": "Ucar et al. \u2014 SubTab",
+  "year": 2021,
+  "lesson": 72,
+  "front": "How does SubTab turn several partial observations into one prediction representation?",
+  "back": "Encode fixed overlapping feature subsets with shared weights, reconstruct the full row, and optionally apply contrastive and distance losses between projections. At inference, aggregate the same row\u2019s latent representations across subsets, then apply a predictor. Do not average different rows."
+}
 ];
 })(window);
