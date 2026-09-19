@@ -291,3 +291,8 @@ The old 210-record run used incorrect historical TabM-mini. The v2 run uses corr
 if __name__=='__main__':
  import argparse
  p=argparse.ArgumentParser();p.add_argument('--keep-notebooks',action='store_true');a=p.parse_args();build_package(notebooks=not a.keep_notebooks)
+
+# Keep the authored solution maps and connected reading route after regeneration.
+if __name__ == "__main__":
+    from _build_solution_maps import revise as revise_solution_maps
+    revise_solution_maps(60)

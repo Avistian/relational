@@ -305,3 +305,8 @@ What is checked, and what remains out of scope. The original row Transformer com
 if __name__=='__main__':
  import argparse
  parser=argparse.ArgumentParser();parser.add_argument('--keep-notebooks',action='store_true');args=parser.parse_args();build_package(notebooks=not args.keep_notebooks)
+
+# Keep the authored solution maps and connected reading route after regeneration.
+if __name__ == "__main__":
+    from _build_solution_maps import revise as revise_solution_maps
+    revise_solution_maps(61)

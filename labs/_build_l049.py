@@ -347,3 +347,8 @@ if __name__=='__main__':
     for solution in (False,True):
         path=HERE/('solutions' if solution else '')/'0049-excelformer-trompt.ipynb'
         path.parent.mkdir(exist_ok=True);nbf.write(build(solution),path);print(path)
+
+# Keep the authored solution maps and connected reading route after regeneration.
+if __name__ == "__main__":
+    from _build_solution_maps import revise as revise_solution_maps
+    revise_solution_maps(49)

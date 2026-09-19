@@ -198,3 +198,8 @@ The new local experiment includes full historical pretrained layers, ten-fold ex
  if render:render_preview()
  print('Built scoped L065 pretrained query-embedding package')
 if __name__=='__main__':build_package()
+
+# Keep the authored solution maps and connected reading route after regeneration.
+if __name__ == "__main__":
+    from _build_solution_maps import revise as revise_solution_maps
+    revise_solution_maps(65)

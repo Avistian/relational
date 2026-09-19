@@ -214,3 +214,8 @@ Six-model panel: 300 tasks, 120/80/100 by type. Paper-like tiny panel: 276 compl
 if __name__=='__main__':
  import argparse
  p=argparse.ArgumentParser();p.add_argument('--keep-notebooks',action='store_true');args=p.parse_args();build_package(notebooks=not args.keep_notebooks)
+
+# Keep the authored solution maps and connected reading route after regeneration.
+if __name__ == "__main__":
+    from _build_solution_maps import revise as revise_solution_maps
+    revise_solution_maps(58)

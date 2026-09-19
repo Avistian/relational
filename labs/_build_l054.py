@@ -250,3 +250,8 @@ Without reopening the formula, reconstruct the BatchEnsemble identity and explai
 
 if __name__ == '__main__':
     build(False); build(True)
+
+# Keep the authored solution maps and connected reading route after regeneration.
+if __name__ == "__main__":
+    from _build_solution_maps import revise as revise_solution_maps
+    revise_solution_maps(54)
