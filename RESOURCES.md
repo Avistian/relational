@@ -457,3 +457,9 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 - [Xu et al., ICLR2019](https://arxiv.org/abs/1810.00826v3): §4 GIN and graph readout, §7 Table1 MUTAG target, expressiveness bound and scope.
 - [Pinned powerful-gnns release](https://github.com/weihua916/powerful-gnns/tree/9a2ce8ac3e99278307093a464a95caf0fb04b602): model, data, training recipe and clarified common-epoch cross-validation.
 - [PyTorch1.0 scheduler](https://github.com/pytorch/pytorch/blob/v1.0.0/torch/optim/lr_scheduler.py): historical StepLR initialization for faithful decay timing.
+
+## L089 · Cluster-GCN
+
+- [Chiang et al., KDD2019](https://arxiv.org/abs/1905.07953v2): §§3.1–3.3,Algorithm1 and Table10; batching, diagonal enhancement and PPI result target.
+- [2019 release](https://github.com/google-research/google-research/tree/89c16e403d42015c3133634788ed0b7965f56395/cluster_gcn): PPI shell recipe, precomputed first layer, loss, partition and inference details.
+- [Stanford GraphSAGE datasets](https://snap.stanford.edu/graphsage/): original PPI archive, fixed split, features and multi-label targets.

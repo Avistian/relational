@@ -98,13 +98,14 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Bridge** — expressiveness theory underpinning Y4 RelGNN (why vanilla MPNNs lose many-to-many signal);
   callback L081 aggregation.
 
-### 089 · Sampling at scale — *Chiang 2019 (Cluster-GCN), ◆ `1905.07953`*
+### 089 · [Sampling at scale](../lessons/0089-sampling-at-scale.html) — *Chiang 2019 (Cluster-GCN), ◆ `1905.07953`*
+- **Prepared package** — [lab](../labs/0089-sampling-at-scale.ipynb), [full reproduction contract](../labs/l089-reproduction.md). Complete inline PPI release reconstruction;12 full-data teaching runs and full-width update executed. Full400-epoch target NOT_RUN: Modal GPU blocked by account payment requirement. Historical parity INCOMPARABLE; no learner completion inferred.
 - **Skill** — train a GNN on a graph too large for full-batch using clustering-based subgraph sampling.
 - **Teach** — Cluster-GCN partitioning, memory/accuracy trade-offs vs neighbor sampling; scale is a
   first-class RDL concern (millions of nodes).
 - **Lab** — Tier B · crucial fragment: partition a large graph + train on cluster batches. Deliverable:
   scale-vs-accuracy vs full-batch.
-- **Viz** — reuse `group-viz.js` (partitioned clusters).
+- **Viz** — `cluster-sampling-viz.js`: induced graph union restores cut edges and changes normalized messages; `group-viz.js` concerns leakage folds and is not a graph-partition visual.
 - **Bridge** — callback L083 neighbor sampling; forward to Y4 L134 (mini-batch over millions of REG nodes).
 
 ### 090 · **Q1 checkpoint** — *Kipf + Hamilton · Deliverable-based*

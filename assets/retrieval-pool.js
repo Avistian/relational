@@ -2146,6 +2146,29 @@
   ],
   "correct": "cycle",
   "explain": "Each graph has six nodes with two neighbors per node. Joint WL refinement preserves identical color histograms forever."
+},
+{
+  "id": "l089-induced-union",
+  "lesson": 89,
+  "quarter": "Q1",
+  "concept": "cluster-sampling",
+  "question": "When two graph partitions enter one Cluster-GCN batch, which edges belong in its adjacency?",
+  "options": [
+    {
+      "label": "All original edges within union",
+      "value": "union"
+    },
+    {
+      "label": "Only original edges within partitions",
+      "value": "blocks"
+    },
+    {
+      "label": "All original edges touching union",
+      "value": "touch"
+    }
+  ],
+  "correct": "union",
+  "explain": "The induced subgraph restores crossing edges with both endpoints selected; it excludes edges to unselected nodes."
 }
 ];
 })(window);

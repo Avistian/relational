@@ -1355,3 +1355,7 @@ Full reproducibility requested. Prepared split/decoder/ranking lesson with three
 ## Lesson088 created · Graph classification / GIN · 2026-09-19
 
 User requested full reproducibility. Complete visible GIN-0, hash-pinned MUTAG loader, release-aligned training/grid and common-epoch CV selection. Separate readout intervention, three live TODOs, WL counterexample widget and portable architecture figures. Executed the first full 10-fold/350-epoch configuration:87.25% mean,7.89pp sample SD. Full8-configuration search INCOMPLETE; remaining jobs stopped without retaining partial-fold evidence. Thirty separate teaching runs compare readouts. Exact execution coverage is in labs/_paper_l088_results.json; runnable search is not a completion claim. Historical parity INCOMPARABLE; no learner completion inferred.
+
+## Lesson089 created · Cluster-GCN · 2026-09-19
+
+User requested full reproducibility. Full visible PPI release model/trainer, source/data hashes, original split and a runnable five-layer width2048/400-epoch recipe. Twelve separate teaching runs cover full/random/cluster1/cluster5 across3 seeds. One real full-width update passed; full target NOT_RUN because Modal rejected GPU execution pending a payment method. Modern PyTorch/PyMetis historical parity INCOMPARABLE. No learner completion inferred.

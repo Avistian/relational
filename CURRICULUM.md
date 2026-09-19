@@ -266,7 +266,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 086 | [PyG fundamentals](lessons/0086-pyg-fundamentals.html) | Fey & Lenssen 2019 | [MessagePassing parity, NeighborLoader, full100-seed Cora reconstruction](labs/0086-pyg-fundamentals.ipynb) |
 | 087 | [Link prediction](lessons/0087-link-prediction.html) | Zhang & Chen 2018 (skim) | [Edge splits, decoder, ranking; full baseline reconstruction](labs/0087-link-prediction.ipynb) |
 | 088 | [Graph classification](lessons/0088-graph-classification.html) | Xu et al. 2019 (GIN) | [GIN, WL and whole-graph readout; MUTAG reproduction track](labs/0088-graph-classification.ipynb) |
-| 089 | Sampling at scale | Chiang et al. 2019 (Cluster-GCN) | Large-graph training |
+| 089 | [Sampling at scale](lessons/0089-sampling-at-scale.html) | Chiang et al. 2019 (Cluster-GCN) | [Cluster batches, scale/F1 comparison and full PPI recipe](labs/0089-sampling-at-scale.ipynb) |
 | 090 | **Q1 checkpoint** | Kipf + Hamilton | GNN from scratch on one benchmark |
 
 ### Q2 · Heterogeneous graphs (091–100)

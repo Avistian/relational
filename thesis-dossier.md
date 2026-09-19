@@ -487,3 +487,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 | L087 | BAR | Full8-graph,10-split CN/AA/RA baseline reconstruction and separate GCN decoder/ranking lab expose how graph visibility and candidate selection define the task. Static edge recovery is not temporal recommendation evidence; historical numerical parity INCOMPARABLE, full SEAL training NOT_RUN. |
 
 | L088 | BAR | GIN makes multiset counting and the 1-WL ceiling explicit. A six-cycle and two triangles remain indistinguishable under identical initial labels; empirical graph classification cannot establish universal relational expressiveness. MUTAG execution coverage and historical protocol gaps are reported separately. |
+
+| L089 | BAR | Training feasibility depends on which relational messages fit inside each batch. PPI teaching runs quantify retained edges, hidden-state proxies and F1, but equal passes give different update counts. Full published-scale recipe is supplied; its result is not reproduced. |

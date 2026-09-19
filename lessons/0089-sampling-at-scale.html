@@ -1,0 +1,134 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 89 — Sampling at scale: Cluster-GCN</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/cluster-sampling.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0088-graph-classification.html">Lesson 88</a> · <a href="../reference/cluster-gcn.html">Reference</a></nav><header><p>Year 3 · Quarter 1 · Lesson 089</p><h1>Sampling at scale: Cluster-GCN</h1></header><aside><a href="../labs/0089-sampling-at-scale.ipynb">Download lab</a> · <a href="../labs/html/0089-sampling-at-scale.html">Read lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0089-sampling-at-scale.ipynb">Open in Colab</a></aside><h2 id="0-%C2%B7-Retrieve-before-reading">0 &#183; Retrieve before reading<a class="anchor-link" href="#0-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p><strong>Your win:</strong> build a graph mini-batch that restores every edge between its selected partitions, and explain the memory–information trade-off from your own measurements.</p>
+<p>Close the previous lesson. Write answers before opening the explanations: (1) In GraphSAGE, why can a small set of target nodes still require many intermediate nodes? (2) What does an induced subgraph retain? (3) Why must an inductive training graph exclude held-out nodes even if their labels are masked?</p>
+<div id="warmup"></div>
+
+<p><a href="0088-graph-classification.html">Lesson 88</a> asked which structures an aggregation can distinguish. Expressive aggregation is useful only if we can afford to train it. <a href="0083-graphsage.html">Lesson 83</a> controlled cost by sampling neighbors. Here we change <strong>which nodes share a training step</strong>. This matters for the mission: a relational entity graph may contain millions of rows, and a training method must respect both memory and information-access boundaries.</p>
+<p><strong>Primary reading:</strong> Chiang et al., <a href="https://arxiv.org/html/1905.07953v2#S3">Cluster-GCN, KDD 2019, §§3.1–3.3 and Algorithm 1</a>. Read §4.3 and Table 10 for our named reproduction target. The <a href="https://github.com/google-research/google-research/tree/89c16e403d42015c3133634788ed0b7965f56395/cluster_gcn">2019 release</a> supplies concrete settings that the algorithm alone does not.</p>
+<h2 id="1-%C2%B7-Why-a-mini-batch-can-grow-outside-its-targets">1 &#183; Why a mini-batch can grow outside its targets<a class="anchor-link" href="#1-%C2%B7-Why-a-mini-batch-can-grow-outside-its-targets">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> To update one node, a deep GNN needs intermediate representations of other nodes. A batch of labels is not the same as a batch of computation.</p>
+</blockquote>
+<p>A <strong>full-batch</strong> step computes representations for the whole eligible graph before one parameter update. If there are N nodes, L hidden stages and F coordinates per stage, those dense states alone occupy roughly N×L×F numbers. A float32 number needs four bytes. Gradients, parameters, optimizer state, sparse indices and temporary operations add memory beyond this estimate.</p>
+<p><strong>Worked example.</strong> One million nodes × four stages × 128 coordinates × four bytes is 2.048 billion bytes (about 1.91 GiB) for one copy of those states. This is an accounting example, not a peak-memory measurement.</p>
+<p><strong>Neighbor sampling</strong> takes a fixed number of neighbors per hop. With 256 target nodes and fanouts 10 then 10, there can be 256 + 2,560 + 25,600 = 28,416 node occurrences before deduplication. The same real node may occur repeatedly. Sampling, deduplication and overlap change actual cost; the product explains the pressure as depth grows.</p>
+<p><strong>Cluster sampling</strong> instead chooses a fixed set of nodes and reuses those nodes at every layer. More layers add states and operations, but do not recursively expand the node set. The graph and input features may still occupy host memory. Cluster-GCN is not automatically an out-of-core database engine. See <a href="https://arxiv.org/html/1905.07953v2#S3.SS1">paper §3.1 and Table 1</a>.</p>
+<h2 id="2-%C2%B7-Partition-once;-build-an-induced-batch">2 &#183; Partition once; build an induced batch<a class="anchor-link" href="#2-%C2%B7-Partition-once;-build-an-induced-batch">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Put strongly connected nodes together so that a small batch keeps many of the messages those nodes need.</p>
+</blockquote>
+<p>A <strong>partition</strong> splits the eligible nodes into disjoint groups whose union is the whole eligible node set. METIS is a graph partitioner that seeks roughly balanced groups with relatively few edges crossing between groups. Its objective is structural; it does not use the target labels. <strong>Cut edges</strong> connect different groups. An <strong>induced subgraph</strong> on B keeps every original edge with both endpoints in B.</p>
+<p>Write A[i,j] for the weight of the edge carrying node j's message to node i. For selected node IDs B, the batch adjacency is <strong>A[B,B]</strong>. Slice both axes in the same node order. A sparse matrix stores only its nonzero entries; there is no reason to allocate a dense million-by-million matrix.</p>
+<p><strong>Worked example.</strong> A six-node path has five edges: 0–1–2–3–4–5. Partition it into C0={0,1}, C1={2,3}, C2={4,5}. One group keeps one edge. Selecting C0 and C1 gives nodes {0,1,2,3} and <strong>three</strong> edges, including the restored edge 1–2. Concatenating two pre-cut block matrices would keep only two edges and implement the wrong algorithm.</p>
+<div id="prediction"></div>
+
+<div id="cluster-sampling"></div>
+
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l089/partition.png" alt="Synthetic path: the induced union restores edge 1–2; concatenating cut blocks would omit it."></div><figcaption>Synthetic path: the induced union restores edge 1–2; concatenating cut blocks would omit it.</figcaption></figure>
+
+<p><strong>Indexing checkpoint.</strong> Choose C1 followed by C0. The local-to-global IDs are [2,3,0,1]. Global edge 1–2 becomes local edge 3–0. A correct neighbor sum paired with the wrong feature order is still a wrong model. Your first notebook TODO returns both the IDs and the induced adjacency.</p>
+<h2 id="3-%C2%B7-Why-choose-several-clusters-together?">3 &#183; Why choose several clusters together?<a class="anchor-link" href="#3-%C2%B7-Why-choose-several-clusters-together?">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Clustering saves messages within a group. Mixing groups brings some boundary messages back and changes the labels represented in each update.</p>
+</blockquote>
+<p>One fixed cluster per step can omit the same boundary edges repeatedly. Structurally similar nodes can also have similar labels, so different clusters can give very different gradients. A <strong>gradient</strong> is the change in loss with respect to each trainable parameter. It is the direction used by the optimizer to update weights.</p>
+<p>Cluster-GCN's multiple-partition variant shuffles a larger collection of small clusters, then combines q clusters into each induced batch. It uses the original adjacency to restore edges between the chosen groups. q is a number of clusters, not a guaranteed node count; clusters are only approximately balanced. See <a href="https://arxiv.org/html/1905.07953v2#S3.SS2">paper §3.2, Figure 3 and Algorithm 1</a>.</p>
+<p><strong>Worked probability.</strong> Uniformly sample q of p clusters without replacement. Given that one endpoint's cluster is selected, a different endpoint's cluster is selected with probability <strong>(q−1)/(p−1)</strong>. With p=50 and q=5, that is 4/49, about 8.16%. This is a conditional inclusion probability for a crossing edge in a sampled batch, not the fraction of all edges retained. Within-cluster edges are always present whenever their group is selected.</p>
+<p><strong>Missing messages change the function.</strong> Normalization, nonlinear activations and several layers mean the mini-batch gradient need not be an unbiased estimate of the full-graph gradient. More mixing can help, but it does not guarantee better accuracy. Increasing q also increases memory and reduces updates per data pass.</p>
+<p><strong>Limit case.</strong> Choose every cluster: the induced adjacency becomes the full eligible adjacency. With a single full batch, you also get one update per epoch. That changes optimization even when the per-node forward operator is the same.</p>
+<h2 id="4-%C2%B7-Model-architecture:-the-released-deep-PPI-model">4 &#183; Model architecture: the released deep PPI model<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-the-released-deep-PPI-model">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Cluster-GCN chooses the training subgraph. The release also makes specific choices about the GNN that runs inside it. Reproducing its score requires both.</p>
+</blockquote>
+<p><strong>PPI</strong> is a protein–protein interaction dataset. Nodes have 50 input features and may carry several of 121 labels simultaneously. The original split has 44,906 training, 6,514 validation and 5,524 test nodes. We standardize each input coordinate using its training-node mean and standard deviation; held-out nodes never fit those statistics. The model predicts a vector of 121 <strong>logits</strong>, real-valued scores before a sigmoid conversion to probabilities.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l089/architecture.png" alt="Complete 2019 PPI release recipe: raw first-layer cache, four hidden stages, output logits and distinct evaluation contexts."></div><figcaption>Complete 2019 PPI release recipe: raw first-layer cache, four hidden stages, output logits and distinct evaluation contexts.</figcaption></figure>
+
+<h3 id="First-stage:-a-release-detail-worth-noticing">First stage: a release detail worth noticing<a class="anchor-link" href="#First-stage:-a-release-detail-worth-noticing">&#182;</a></h3><p>The release precomputes <strong>[A_train X, X]</strong>, a concatenation with 100 columns. A_train is the raw training-induced adjacency. This step occurs <strong>before partitioning</strong>, so first-hop input messages can cross training-cluster boundaries. It never includes held-out input features during training. The first trainable layer applies dropout, a learned matrix, layer normalization and ReLU to this cached input.</p>
+<p>The raw first-layer cache is not the normalized support described next. Substituting a standard GCN layer here would change the released model. See <a href="https://github.com/google-research/google-research/blob/89c16e403d42015c3133634788ed0b7965f56395/cluster_gcn/train.py"><code>train.py::load_data</code></a>.</p>
+<h3 id="Later-stages:-strengthen-the-center,-then-concatenate">Later stages: strengthen the center, then concatenate<a class="anchor-link" href="#Later-stages:-strengthen-the-center,-then-concatenate">&#182;</a></h3><p>Let A_B be a batch's adjacency. Add self-loops with the identity I. Let D contain the row sums of A_B. First form T=(D+I)⁻¹(A_B+I): every row divides by its sum. Then use <strong>S=T+λ diag(T)</strong>, with λ=1. <code>diag(T)</code> keeps only diagonal entries. This <strong>diagonal enhancement</strong> gives extra weight to a node's own representation. S generally has row sums greater than one; it is not a probability transition matrix.</p>
+<p><strong>Worked example.</strong> For path node1, use scalar states h0=1,h1=2,h2=4. With all three available, the row of S is [1/3,2/3,1/3], giving 1/3+4/3+4/3=3. If its batch contains only nodes0 and1, the row becomes [1/2,1], giving .5+2=2.5. The batch has changed both the messages and their normalization.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l089/support.png" alt="Synthetic later-layer trace: changing the batch changes node 1’s enhanced message from 2.5 to 3."></div><figcaption>Synthetic later-layer trace: changing the batch changes node 1’s enhanced message from 2.5 to 3.</figcaption></figure>
+
+<p>At each later hidden layer, compute <strong>[S H, H] W</strong>, apply layer normalization, then ReLU. H has b rows, one per batch node; at hidden width2048, the concatenation has4096 columns. The matrix W mixes those columns into2048 output coordinates. Neighbor and self branches have separate columns of W. <strong>Layer normalization</strong> standardizes coordinates within each node, then learns a scale and offset; it is not a statistic fitted across training and test nodes. <strong>ReLU</strong> clips negative values to zero. <strong>Dropout</strong> randomly removes20% of the concatenated input coordinates during training and rescales those retained.</p>
+<p>The five-layer recipe has four hidden stages of width2048. Its fifth layer returns121 logits with no normalization or ReLU. All nodes share the same weights at a given depth; different depths have different weights. Binary cross-entropy penalizes each node-label prediction independently, then averages those losses. At evaluation, a label is predicted present exactly when its logit is greater than zero. <strong>Micro-F1</strong> pools all node-label true positives, false positives and false negatives: 2TP/(2TP+FP+FN).</p>
+<p><strong>Self-loop audit.</strong> The PPI archive already includes some loops. The released loader adds adjacency to its transpose, doubling their raw weight. Its q=1 partition builder replaces nonzero weights with1 before support normalization. The precomputed cache and later supports therefore have different loop conventions. Our paper track preserves this; the teaching experiment uses one binary raw graph in every arm. See the <a href="../labs/l089-reproduction.md">reproduction contract</a> for the exact sequence.</p>
+<h3 id="Training-boundary-and-inference">Training boundary and inference<a class="anchor-link" href="#Training-boundary-and-inference">&#182;</a></h3><p>Training partitions contain only training nodes. Masking held-out labels alone would not enforce this boundary: their features could still enter messages. At validation, the release precomputes from the full graph and uses two partitions. At final test, it uses the full graph as one partition and scores test nodes only. Evaluation therefore has a different propagation context from training. Test labels never enter the forward pass or choose an epoch.</p>
+<h2 id="5-%C2%B7-Predict,-implement,-then-measure">5 &#183; Predict, implement, then measure<a class="anchor-link" href="#5-%C2%B7-Predict,-implement,-then-measure">&#182;</a></h2><p><strong>Prediction before evidence.</strong> Write which arm should keep the most edges, which should use the fewest node states, and why neither prediction determines the best test F1.</p>
+<p>Open the <a href="../labs/0089-sampling-at-scale.ipynb">student lab</a>, <a href="../labs/html/0089-sampling-at-scale.html">prepared lab</a>, or <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0089-sampling-at-scale.ipynb">Colab notebook</a>. The <a href="../labs/solutions/0089-sampling-at-scale.ipynb">solution</a> is for checking after an attempt. The complete model, data loader, partitioner and trainer are visible inline.</p>
+<ol>
+<li><strong>TODO · induced batch.</strong> Combine selected partition IDs and recover every original edge between them. CHECK tests an edge that a block-diagonal implementation would lose.</li>
+<li><strong>TODO · enhanced support.</strong> Implement the ordered normalization and diagonal adjustment. CHECK includes an isolated node; adding identity makes its support defined.</li>
+<li><strong>TODO · concatenated message.</strong> Build neighbor/self branches in the released order. CHECK examines both output values and gradients.</li>
+</ol>
+<p><strong>Experiment held fixed:</strong> all PPI nodes, original split, train-only scaling, a binary raw graph, two layers,width32,dropout.2,Adam.01,ten data passes,three declared seeds. <strong>Varied:</strong> full batch;50 random groups;50 METIS clusters with q1;the same50 clusters with q5. <strong>Measured:</strong> test micro-F1, largest batch, retained adjacency entries, training time, and a dense-hidden-state memory proxy.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Equal data passes are not equal updates: the arms make10,500,500 and100 updates respectively. This evaluates the combined batching strategy, not clustering in isolation. The first-hop cache contains all eligible training-neighbor messages in every arm. One dataset and three seeds cannot establish a universal method ranking.</p>
+</blockquote>
+<p><strong>Author-reference measurements, not your current kernel output.</strong></p>
+<table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>Test micro-F1, mean ± sample SD</th>
+  <th>Largest batch</th>
+  <th>Retained entries</th>
+  <th>Hidden-state proxy</th>
+  <th>Train time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>full</td>
+  <td>43.54 ± 0.31%</td>
+  <td>44,906</td>
+  <td>100.0%</td>
+  <td>5.482 MiB</td>
+  <td>2.61 s</td>
+</tr>
+<tr>
+  <td>random</td>
+  <td>58.28 ± 0.52%</td>
+  <td>899</td>
+  <td>3.6%</td>
+  <td>0.110 MiB</td>
+  <td>2.78 s</td>
+</tr>
+<tr>
+  <td>cluster1</td>
+  <td>58.69 ± 0.54%</td>
+  <td>925</td>
+  <td>61.1%</td>
+  <td>0.113 MiB</td>
+  <td>3.12 s</td>
+</tr>
+<tr>
+  <td>cluster5</td>
+  <td>54.47 ± 0.23%</td>
+  <td>4,618</td>
+  <td>63.8%</td>
+  <td>0.564 MiB</td>
+  <td>2.88 s</td>
+</tr>
+</tbody>
+</table>
+<p>Sample SD describes three initialization/shuffle runs on one fixed split; it is not uncertainty across datasets. Times are CPU author measurements, averaged across seeds.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l089/results.png" alt="Fresh PPI teaching experiment: three seeds, ten passes and a hidden-state array estimate; not the paper target or peak-memory measurement."></div><figcaption>Fresh PPI teaching experiment: three seeds, ten passes and a hidden-state array estimate; not the paper target or peak-memory measurement.</figcaption></figure>
+
+<p>The memory column counts one float32 hidden-state array per hidden stage at the largest batch. It excludes parameters, gradients, optimizer buffers, sparse matrices, caches and temporaries. It is <strong>not peak RAM or VRAM</strong>. Retention counts directed nonzero adjacency entries, including loops; it is not the conditional probability derived in §3. Training time excludes graph preprocessing and evaluation.</p>
+<p><strong>Interpretation task.</strong> Random grouping and clustering have very different edge retention here. Explain why their F1 values can nevertheless be close: input caching, model width, training duration, optimization and seed variability all matter. Propose an update-matched follow-up before claiming one factor caused the difference.</p>
+<h2 id="6-%C2%B7-Full-reproduction:-one-named-cell,-explicit-evidence">6 &#183; Full reproduction: one named cell, explicit evidence<a class="anchor-link" href="#6-%C2%B7-Full-reproduction:-one-named-cell,-explicit-evidence">&#182;</a></h2><p><strong>Target:</strong> <a href="https://arxiv.org/html/1905.07953v2#S4.SS3">paper Table10</a>, PPI test micro-F1 <strong>99.36%</strong>. The release's <code>run_ppi.sh</code> specifies five layers,width2048,50 clusters,q1,400 epochs,dropout.2,diagonal enhancement1 and layer normalization. Table4's width512 belongs to different experiments; copying it would not reproduce this target.</p>
+<p>Our full command uses every released training node and all400 epochs. The release keeps final-epoch weights: its patience1000 is longer than the run. We do not substitute a best-validation checkpoint or select from test scores. NumPy shuffle seed1 is retained; fresh PyTorch initialization seed1 is declared. Historical initialization and partition identity cannot be recovered from the paper alone.</p>
+<div class="highlight"><pre><span></span>python<span class="w"> </span>labs/_run_l089.py<span class="w"> </span>--preset<span class="w"> </span>paper<span class="w"> </span>--device<span class="w"> </span>cuda<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--seed<span class="w"> </span><span class="m">1</span><span class="w"> </span>--output<span class="w"> </span>/tmp/l089-full-fresh
+python<span class="w"> </span>labs/_audit_l089.py<span class="w"> </span>--run<span class="w"> </span>/tmp/l089-full-fresh
+</pre></div>
+<p>See the <a href="../labs/requirements-l089-runtime.txt">environment pins</a>, <a href="../labs/_sources_l089.json">source hashes</a>, <a href="../labs/l089-reproduction.md">complete protocol audit</a>, and <a href="../labs/_paper_l089_results.json">execution ledger</a>. The notebook has a gated full-run cell; the repository includes a persistent Modal operator. A smoke or closer preset is a separately labeled experiment.</p>
+<p><strong>Full paper run: NOT_RUN.</strong> The full GPU run was blocked: Modal rejected A10G and T4 execution with a payment-method requirement. No GPU training launched. A local full-width update took 2.02s; the released run requires 20,000 updates plus evaluation, beyond this authoring run. Historical result parity: <strong>INCOMPARABLE</strong>. Full-model one-update preflight and the completed teaching comparison are separate evidence.</p>
+<p><strong>Evidence boundary.</strong> PyTorch/PyMetis versus historical TensorFlow/METIS, missing original partitions and missing initial weights make historical numerical parity <strong>INCOMPARABLE</strong>. The source's normalization functions, an independent dense forward calculation, gradient routing, optimizer arithmetic and held-out interventions are checked locally. Those checks support implementation correctness, not a completed paper result. Reddit, Amazon2M and the original timing/memory benchmark remain <strong>NOT_RUN</strong>.</p>
+<h2 id="7-%C2%B7-EXIT:-justify-the-batch-you-trained">7 &#183; EXIT: justify the batch you trained<a class="anchor-link" href="#7-%C2%B7-EXIT:-justify-the-batch-you-trained">&#182;</a></h2><p>Submit <code>l089-exit.json</code>, your three TODO implementations, a table from your own four-arm experiment, and the explanation below. The EXIT writer refuses to mark completion without all12 run records and substantive explanations. Author-reference results are not your live notebook output.</p>
+<ul>
+<li>Trace edge1–2 and the local IDs when C1 and C0 are combined.</li>
+<li>Explain why lost edges can bias the gradient even with uniform cluster selection.</li>
+<li>Distinguish measured F1, estimated hidden-state bytes, and unmeasured peak memory.</li>
+<li>Give one remaining mismatch between the runnable full recipe and historical result parity.</li>
+</ul>
+<div id="teachback"></div>
+
+<p>Tomorrow, derive the conditional boundary-edge inclusion probability without opening this page. At the next checkpoint, choose full-batch, neighbor sampling or cluster sampling for a stated graph and memory budget, then defend the information boundary. This connects to the planned Lesson90 checkpoint and later large relational entity graphs.</p>
+<p>Ask the teaching agent follow-up questions whenever the normalization, sampling boundary or evidence ledger is unclear. Bring the graph trace or run artifact so feedback can target the actual computation.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/cluster-sampling-viz.js"></script><script src="../assets/l089-lesson.js"></script></body></html>
