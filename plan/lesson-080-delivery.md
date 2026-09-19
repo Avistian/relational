@@ -1,0 +1,9 @@
+# Lesson 080 delivery design
+
+The existing Year 2 exit criterion authorizes a deliverable-based assessment: compare FT-Transformer, TabM, historical TabPFN v2 and a tuned GBDT under random and temporal splits; explain the three biases, TabM, TabPFN v2, TabICL and the single-table ceiling. No new architecture lesson or learner completion is inferred.
+
+An essay-only exam would miss the training deliverable. Reusing L060/L070 alone would omit required methods or regimes. Chosen design: a new reproducible local comparison on the same two real TabReD classification datasets under both released split strategies, plus cold teach-back, failure diagnosis, a submission template and explicit rubric. The bounded author experiment fixes small caps before seeing scores; the complete raw subsets ship with hashes. Full historical v2 weights are used with a disclosed simple wrapper. FT uses pinned released architecture, TabM uses the corrected numeric implementation. Larger caps are a separate run, not paper reproduction.
+
+Students implement loss reconstruction, validation selection and coverage/isolation checks used by the live experiment. All architectures and trainer are visible inline. Source/data/checkpoint/environment hashes, predictions, candidate/epoch losses, temporal boundaries and omitted columns are retained. Exact full-local replay and an optional larger run are provided. Original published benchmarks remain separate, unrun claims; this is a cross-paper exam with no single matching paper table.
+
+Validate primitive edge cases, copied-weight source parity, failed-evidence mutations, all 48 selected records, raw row/target consistency, executed solution with live functions, portable figures, desktop/mobile controls and copied Pages staging. Author delivery never certifies student mastery.

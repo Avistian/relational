@@ -101,3 +101,7 @@ Full raw released Cora files from tkipf/gcn revision39a4089fe72ad9f055ed6fdb9746
 ## L079 decision evidence
 
 `l079/l060-v2.json.gz` is a deterministic gzip copy of the complete corrected `_verify_l060_v2_results.json`, including all 210 prediction records. Uncompressed hash and source-course revision are pinned in `_sources_l079.json`; no sampling or rounding was introduced. Reanalysis only, not new training.
+
+## L080 raw subsets
+
+`l080/{smoke,exam}.npz` stores complete float32 numeric/binary raw subsets and int64 targets from hash-pinned TabReD Ecom Offers/Homesite release archives. Matching JSON contains exact original IDs, full split boundaries, omitted categorical counts and archive/NPZ hashes. No preprocessing is fitted before packaging. `_prepare_l080.py` rebuilds the extraction.

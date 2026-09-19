@@ -239,7 +239,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 077 | **Single-table ceiling** (synthesis) | — | Write: what rows-only models cannot represent |
 | 078 | Bridge: message passing preview | Gilmer 2017 · Kipf 2017 §2 | Manual one-hop aggregate |
 | 079 | [Year 2 essay](lessons/0079-neural-tabular-decision-guide.html) | — | [Decision guide + reproducible evidence audit](labs/0079-neural-tabular-decision-guide.ipynb): when which model |
-| 080 | **Year 2 exit exam** | All Y2 papers | Teach-back: 3 biases + TabM + TabPFN v2 + TabICL |
+| 080 | [**Year 2 exit exam**](lessons/0080-year-2-exit-exam.html) | All Y2 papers | [Four-model random/temporal comparison + teach-back](labs/0080-year-2-exit-exam.ipynb) |
 
 **Year 2 exit criterion:** Train and fairly compare FT-Transformer, TabM, and TabPFN v2 against a tuned GBDT under both random *and* temporal splits; articulate in writing why single-table models plateau and where ICL helps.
 

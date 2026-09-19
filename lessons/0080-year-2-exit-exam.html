@@ -1,0 +1,136 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Year 2 exit exam: defend a reproducible comparison</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/decision-guide.css"><link rel="stylesheet" href="../assets/exit-exam.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0079-neural-tabular-decision-guide.html">Lesson 79</a></nav><header><p>Year 2 · Quarter 4 · Lesson 080</p><h1>Year 2 exit exam: defend a reproducible comparison</h1></header><aside><a href="../labs/0080-year-2-exit-exam.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0080-year-2-exit-exam.ipynb">Open in Colab</a> · <a href="../labs/html/0080-year-2-exit-exam.html">Read lab</a> · <a href="../labs/l080-submission.md">Submission template</a> · <a href="../labs/l080-reproduction.md">Reproduce</a></aside><h2 id="Start-cold-%C2%B7-defend-your-choices">Start cold &#183; defend your choices<a class="anchor-link" href="#Start-cold-%C2%B7-defend-your-choices">&#182;</a></h2><div id="warmup"></div>
+
+<p>Close the notes. In six short explanations, answer: <strong>Why can trees benefit from irregular targets, meaningful feature axes and irrelevant features? How does TabM train its members? What does TabPFN v2 learn before seeing your table? How does TabICL turn columns into predictions?</strong> For every mechanism, name an intervention that could expose its failure. Save your answers before opening the reference.</p>
+<p><strong>Your tangible win:</strong> deliver one reproducible comparison and a defensible explanation of when to stay with a single-table model. This is the gate to Year 3, not a race to a higher score. Use one session for protocol and cold recall, one for the lab, and one for interpretation and teach-back. A tie or a neural loss can earn full marks.</p>
+<p><a href="0079-neural-tabular-decision-guide.html">Lesson 79</a> asked you to choose a model conditionally. This exam tests whether you can turn that choice into evidence another person can reproduce. <a href="0077-single-table-ceiling.html">Lesson 77</a> then helps you explain what even the winning row model cannot recover; <a href="0078-message-passing-preview.html">Lesson 78</a> supplies the next mechanism to investigate.</p>
+<h2 id="1-%C2%B7-Freeze-the-comparison-before-opening-the-test">1 &#183; Freeze the comparison before opening the test<a class="anchor-link" href="#1-%C2%B7-Freeze-the-comparison-before-opening-the-test">&#182;</a></h2><p>A <strong>prediction-time contract</strong> states what is known when a prediction is made. A <strong>candidate</strong> is one declared model recipe. A <strong>validation split</strong> selects that recipe; a <strong>test split</strong> estimates the selected recipe's performance. An <strong>initialization seed</strong> controls downstream randomness without creating another independent dataset.</p>
+<p>Write your intended prediction time, features, metric and selection budget into the <a href="../labs/l080-submission.md">submission template</a>. Record a prediction about the random versus temporal comparison before viewing the author results. Explain what would change your mind.</p>
+<p><strong>The required four arms.</strong> Fit FT-Transformer and TabM from initialization, fit a two-candidate XGBoost baseline, and condition the frozen historical TabPFN v2 on training rows. “Train TabPFN” here means prepare its task context; it does not mean recreate its pretraining. TabICL is a required written teach-back, not an extra experimental arm.</p>
+<p><strong>The paired regimes.</strong> Use the same two real tasks, Ecom Offers and Homesite Insurance, under released random and chronological partitions. Within a panel all four arms receive exactly the same rows, labels and numeric/binary columns. Temporal ordering asks about later observations. It does not by itself certify historical aggregates or label availability; you must identify that remaining assumption.</p>
+<figure class="exam-figure dg-figure"><span class="dg-scroll-note">Scroll horizontally to inspect the full-size figure.</span><div class="dg-image" tabindex="0" role="region" aria-label="Scrollable exam figure"><img src="../labs/figures/l080/protocol.png" alt="Illustrative validation selection: .31 beats .33, so the selected test loss is .40 even if another candidate has .25."></div><figcaption>Illustrative validation selection: .31 beats .33, so the selected test loss is .40 even if another candidate has .25.</figcaption></figure>
+
+<p><strong>The declared local budget.</strong> The complete author exam has four panels × four arms × three seeds = <strong>48 selected evaluations</strong>. Each panel contains 128 training, 48 validation and 48 test rows. There are two candidates per arm. FT and TabM get 16 epochs with validation-selected checkpoints; XGBoost gets 120 trees. All 119 Ecom or 276 Homesite numeric/binary columns are retained. Categorical columns are omitted and counted in the evidence.</p>
+<blockquote>
+<p><strong>Scope check.</strong> These small caps make the complete local exam replay practical; they do not reproduce any paper benchmark. Equal candidate counts do not equalize compute, pretraining or validation adaptivity. The larger executable extension is a separate experiment. The evidence supports these two task panels, not a universal family ranking. See the <a href="../labs/l080-reproduction.md">complete protocol and deviation audit</a>.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Trace-the-boundary-that-prevents-a-false-win">2 &#183; Trace the boundary that prevents a false win<a class="anchor-link" href="#2-%C2%B7-Trace-the-boundary-that-prevents-a-false-win">&#182;</a></h2><p><strong>Worked example.</strong> Candidate A has validation loss .31 and test loss .40. Candidate B has validation loss .33 and test loss .25. Select A. Once you use .25 to revise the choice, that test set has become another validation set. Your selected result is .40; disappointing evidence is still evidence.</p>
+<p><strong>Log loss</strong> measures the probability assigned to the observed class. For a positive label, probability .8 costs −log(.8) ≈ .223 nats; probability .2 costs ≈ 1.609. For a negative label, use the probability of class zero. Average those row losses. Smaller is better. A confident wrong prediction is costly.</p>
+<p><strong>Four boundaries to inspect in code:</strong> fit imputation and scaling on training rows; give the trainer only training and validation inputs; select the first minimum validation loss; call the selected predictor on the locked test rows. Save predictions and labels in the same order so a second implementation can reconstruct the reported score.</p>
+<p><strong>FT-Transformer</strong> turns each scalar into a feature token, mixes tokens with attention, and reads a learned classification token. <strong>TabM</strong> produces several member logits using shared matrices and small member-specific adapters. Its training averages member losses; its inference averages member probabilities. <strong>TabPFN v2</strong> applies pretrained weights to labeled context and unlabeled query rows. The context is part of the predictor, so its size, feature encoding and query batch must be reproducible. Read the full forward passes and the common trainer in the notebook, not just the wrappers.</p>
+<p>The FT arm uses the pinned released architecture, including ReGLU and omission of the first attention normalization. It does not silently inherit the simpler GELU model from the earlier introductory FT lesson. The historical v2 arm loads all checkpoint tensors but uses a disclosed simple numeric wrapper rather than the paper's complete evaluation ensemble.</p>
+<h2 id="3-%C2%B7-Run,-break,-repair">3 &#183; Run, break, repair<a class="anchor-link" href="#3-%C2%B7-Run,-break,-repair">&#182;</a></h2><p>Open the <a href="../labs/0080-year-2-exit-exam.ipynb">student notebook</a>. Implement three live functions: binary log loss, first-minimum validation selection, and temperature-to-probability conversion. The fresh comparison calls your functions. The CHECK cells test invalid inputs and boundary cases, not just one happy-path number.</p>
+<ol>
+<li>Predict what a broken validation selector would do, then implement the correct one.</li>
+<li>Reconstruct all 48 saved test losses and every saved candidate validation loss. Verify row isolation, target identity, checkpoint selection and full coverage.</li>
+<li>Run the complete four-arm, two-regime smoke. This proves your live code executes. For the assessed submission set the preset to <code>exam</code> and run the full 48-cell comparison into a new file.</li>
+<li>Deliberately mutate a saved test prediction, duplicate a run and overlap a train/test ID. Each must fail the audit. Repair the evidence by rerunning or restoring verified input, never by deleting an inconvenient check.</li>
+<li>Submit the notebook, fresh result JSON and written template. Include source, data, checkpoint and environment identities.</li>
+</ol>
+<blockquote>
+<p><strong>Scope check.</strong> A saved-prediction replay proves analysis reproducibility; it does not train a model. A fresh downstream run still does not reproduce historical pretraining. Notebook execution and automatic checks do not establish your conceptual mastery.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Interpret-only-after-committing-a-prediction">4 &#183; Interpret only after committing a prediction<a class="anchor-link" href="#4-%C2%B7-Interpret-only-after-committing-a-prediction">&#182;</a></h2><details><summary>Reveal the fresh author experiment after writing your prediction</summary>
+
+<p><strong>Fresh author training / frozen-v2 inference; not student output or paper-result reproduction.</strong></p>
+<div class="exam-table"><table>
+<thead>
+<tr>
+  <th>Task / regime</th>
+  <th style="text-align:right">XGBoost</th>
+  <th style="text-align:right">FT-Transformer</th>
+  <th style="text-align:right">TabM</th>
+  <th style="text-align:right">TabPFN v2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>ecom-offers / random</td>
+  <td style="text-align:right">0.513 ± 0.023</td>
+  <td style="text-align:right">0.410 ± 0.006</td>
+  <td style="text-align:right">0.517 ± 0.023</td>
+  <td style="text-align:right">0.436 ± 0.000</td>
+</tr>
+<tr>
+  <td>ecom-offers / temporal</td>
+  <td style="text-align:right">0.764 ± 0.005</td>
+  <td style="text-align:right">0.679 ± 0.017</td>
+  <td style="text-align:right">0.758 ± 0.055</td>
+  <td style="text-align:right">0.666 ± 0.001</td>
+</tr>
+<tr>
+  <td>homesite-insurance / random</td>
+  <td style="text-align:right">0.339 ± 0.005</td>
+  <td style="text-align:right">0.558 ± 0.022</td>
+  <td style="text-align:right">0.512 ± 0.018</td>
+  <td style="text-align:right">0.303 ± 0.000</td>
+</tr>
+<tr>
+  <td>homesite-insurance / temporal</td>
+  <td style="text-align:right">0.338 ± 0.006</td>
+  <td style="text-align:right">0.364 ± 0.012</td>
+  <td style="text-align:right">0.350 ± 0.018</td>
+  <td style="text-align:right">0.412 ± 0.000</td>
+</tr>
+</tbody>
+</table></div>
+<p>Mean ± sample SD of test log loss across three seeds. Lower is better.</p>
+<figure class="exam-figure dg-figure"><span class="dg-scroll-note">Scroll horizontally to inspect the full-size figure.</span><div class="dg-image" tabindex="0" role="region" aria-label="Scrollable exam figure"><img src="../labs/figures/l080/results.png" alt="Author-reference evidence: fresh local runs, three downstream seeds per task/regime. Dots show seeds; black bars show means."></div><figcaption>Author-reference evidence: fresh local runs, three downstream seeds per task/regime. Dots show seeds; black bars show means.</figcaption></figure>
+
+<p>Read each row as a separate held-out question. The sample standard deviation describes three downstream seeds on fixed rows. It is not a confidence interval over future tasks. Average seeds first, rank methods within each dataset, and only then average ranks with equal dataset weight. With two datasets, a population significance claim would be unjustified.</p>
+<p>The random and temporal panels change the sampled populations and the fitted models. A reversal is descriptive evidence to investigate; it does not isolate drift as its sole cause. Inspect class balance, eligible features, sample size and selection before telling an architectural story.</p>
+</details>
+
+<h2 id="5-%C2%B7-Write-the-explanation-that-earns-the-exit">5 &#183; Write the explanation that earns the exit<a class="anchor-link" href="#5-%C2%B7-Write-the-explanation-that-earns-the-exit">&#182;</a></h2><p>Write 250–400 words connecting your actual result to three questions. <strong>Why does the single-table model plateau?</strong> Distinguish an information ceiling from insufficient model capacity or failed optimization. If two histories become the same row but require different labels, no deterministic row predictor can distinguish them. <strong>Where does ICL help?</strong> Explain transfer from a learned prior when labels are scarce, then discuss prior mismatch and context/prediction cost. <strong>Why investigate relational learning next?</strong> Specify one eligible historical aggregate to test before a GNN and the evidence that would justify the added complexity.</p>
+<p>Your six cold explanations must also cover the three tree-bias interventions, TabM's loss versus prediction aggregation, and the historical TabICL pipeline: column-wise embedding, row-wise interaction and in-context prediction. A diagram label or slogan is insufficient; explain what enters each stage, what is learned, and where a query label is unavailable.</p>
+<div id="teachback"></div>
+
+<h2 id="6-%C2%B7-Rubric-and-submission-gate">6 &#183; Rubric and submission gate<a class="anchor-link" href="#6-%C2%B7-Rubric-and-submission-gate">&#182;</a></h2><p>Each row is scored 0 (missing/wrong), 1 (partly correct), or 2 (correct, explained and backed by the named artifact). The tutor assigns the final score; the browser only tracks whether artifacts are present.</p>
+<div class="exam-table"><table>
+<thead>
+<tr>
+  <th>Criterion</th>
+  <th>Evidence for 2 points</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Three biases</td>
+  <td>Explain all three mechanisms, interventions and limitations in your own words</td>
+</tr>
+<tr>
+  <td>TabM</td>
+  <td>Correct shared/member parameters, member-loss training and probability averaging</td>
+</tr>
+<tr>
+  <td>TabPFN v2 + TabICL</td>
+  <td>Correct prior/context/query boundaries and both pipelines; distinguish pretraining and downstream inference</td>
+</tr>
+<tr>
+  <td>Fair protocol</td>
+  <td>Both regimes, all four arms, train-only transforms and validation-only selection</td>
+</tr>
+<tr>
+  <td>Executable evidence</td>
+  <td>Fresh complete exam, hashes, all predictions and passing negative audits</td>
+</tr>
+<tr>
+  <td>Interpretation</td>
+  <td>Within-dataset uncertainty, budget caveats and no causal/population overclaim</td>
+</tr>
+<tr>
+  <td>Relational bridge</td>
+  <td>Distinguish information/capacity limits and propose a point-in-time aggregate test</td>
+</tr>
+<tr>
+  <td>Reproduction ledger</td>
+  <td>Exact commands; distinguish local training, analysis replay and unrun paper results</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Pass:</strong> at least 13/16, no zero row, and full credit on fair protocol and executable evidence. Leakage, missing required arms/regimes, or presenting author evidence as your own run blocks the exit regardless of total points. Repair the specific gap and resubmit. There is no required winning model and no required accuracy target.</p>
+<div id="exam-gates"><label><input type="checkbox"> Cold explanations saved</label><label><input type="checkbox"> Fresh full exam + hashes attached</label><label><input type="checkbox"> Both regimes and all four arms audited</label><label><input type="checkbox"> Decision essay and reproduction ledger attached</label><output aria-live="polite"></output></div>
+
+<p>Ask the tutor follow-up questions on anything unclear. Submit your artifacts for grading; the course does not advance automatically. After a pass, carry your comparison harness, <a href="0075-pytorch-frame-row-encoder.html">row encoder</a> and information-ceiling argument into Year 3.</p>
+<h2 id="Primary-sources-and-exact-scope">Primary sources and exact scope<a class="anchor-link" href="#Primary-sources-and-exact-scope">&#182;</a></h2><p>Start with <a href="https://arxiv.org/abs/2207.08815">Grinsztajn et al., §5</a> for the bias mechanisms, then review <a href="https://arxiv.org/abs/2106.11959">FT-Transformer</a>, <a href="https://arxiv.org/abs/2410.24210v3">TabM v3</a>, <a href="https://www.nature.com/articles/s41586-024-08328-6">TabPFN v2</a>, <a href="https://arxiv.org/abs/2502.05564v2">TabICL 2025 v2</a> and <a href="https://arxiv.org/abs/2406.19380">TabReD</a>. These are historical course sources, not a claim about the latest model releases.</p>
+<p><a href="../labs/_sources_l080.json">Source inventory</a> · <a href="../labs/_verify_l080_results.json">Measured author evidence</a> · <a href="../labs/l080-reproduction.md">Reproduction contract</a> · <a href="../reference/0080-year-2-exit-exam.html">Printable exam reference</a></p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l080-lesson.js"></script></body></html>

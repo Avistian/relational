@@ -407,3 +407,7 @@ _Optional / extension (◆):_
 ## L079 decision guide
 
 Primary historical sources for mechanism-based shortlists: [trees](https://arxiv.org/abs/2207.08815), [FT-Transformer](https://arxiv.org/abs/2106.11959), [RealMLP](https://arxiv.org/abs/2407.04491), [TabM v3](https://arxiv.org/abs/2410.24210v3), [TabPFN v2](https://www.nature.com/articles/s41586-024-08328-6), [TabICL 2025 v2](https://arxiv.org/abs/2502.05564v2). This is a course synthesis, not a current leaderboard. Local quantitative evidence uses corrected L060 v2 predictions only; source/hash inventory: labs/_sources_l079.json.
+
+## L080 exit exam
+
+Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature TabPFN v2, TabICL 2025 and TabReD. Pinned sources: `labs/_sources_l080.json`. FT uses the released architecture (including ReGLU and first-layer normalization exception). Local cross-paper comparison has no matching published target; original benchmarks remain NOT_RUN.

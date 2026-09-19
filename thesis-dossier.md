@@ -475,3 +475,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 | L077 | FOR / BAR | Full paired-history construction reproduced on five seeds: specified flat input has exact .5 accuracy ceiling; adding eligible order delta permits1 with the same tabular stump. Supports an information-loss mechanism. Limits the broader claim: adequate manually derived relational features solve this task; neither GNN superiority nor real-world prevalence follows. |
 
 | L078 | BAR | Full Cora GCN release-protocol port,100 initializations:81.401% mean versus published81.5%; implementation makes learned neighbor aggregation concrete. Single static transductive graph, modern-framework deviations and no tabular baseline comparison: neither temporal safety nor relational-database superiority follows. |
+
+| L080 | BAR | Prepared reproducible four-family random/temporal comparison and an assessed information-ceiling argument. Two capped datasets cannot establish population superiority or relational benefit; no learner pass inferred. |

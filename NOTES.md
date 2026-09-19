@@ -1319,3 +1319,7 @@ Full reproducibility requested. Added manual mean-message bridge and complete in
 ## Lesson 079 created · Year 2 decision guide · 2026-09-19
 
 Writing capstone with a one-page template/rubric, source-grounded historical family shortlist, matched-cohort rank analysis and synthetic latency constraint. Full corrected L060 v2 prediction audit (210 records) is reproducible offline with embedded/pinned bytes and complete inline analysis. It is not fresh training or paper reproduction. No learner completion inferred.
+
+## Lesson 080 created · Year 2 exit exam · 2026-09-19
+
+Full reproducibility requested. Prepared cross-paper exam with four required arms, two real TabReD classification tasks, both split regimes and three seeds. Full local 48-record comparison and complete visible notebook implementations; historical v2 weights with disclosed simple wrapper. Small caps are local evidence, not original paper benchmark parity. Includes cold teach-back, fail-closed audits, rubric and submission template. Authorship does not advance learner completion.

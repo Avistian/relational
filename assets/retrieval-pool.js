@@ -2022,5 +2022,15 @@
   "correct": "0",
   "explain": "A mean-sign reversal locates a descriptive bracket on the sampled grid. Paired variability, selection effects and new-data evaluation still matter."
 }
+,{
+  "id":"l080-validation-selection",
+  "lesson":80,
+  "quarter":"Q4",
+  "concept":"validation-only-selection",
+  "question":"A has lower validation loss; B has lower test loss. Which recipe should be reported?",
+  "options":[{"label":"Select A using validation evidence","value":"0"},{"label":"Select B using test evidence","value":"1"},{"label":"Select both using combined evidence","value":"2"}],
+  "correct":"0",
+  "explain":"Validation selects the recipe before test evaluation. Using the test winner makes test another selection set."
+}
 ];
 })(window);
