@@ -1,3 +1,5 @@
+> **Reproduction repair, 2026-09-19.** The former larger-run recipe below is a teaching extension. The main notebook now includes a separate, complete inline paper/release implementation and executable protocol. See [the reproduction guide](reproductions/README.md) for targets, commands and unresolved gaps. Source parity, a longer teaching run and a close score do not certify exact paper reproduction.
+
 # L072 reproducibility contract
 
 Run from the repository root with the course environment:
@@ -15,7 +17,7 @@ The source audit fetches four files from pinned AstraZeneca/SubTab commit
 It checks NT-Xent outputs and input gradients, not the full model or optimizer trajectory.
 SCARF is an independent reading of Algorithm 1 (arXiv v2); author-code parity is not established.
 
-## Local protocol
+## Existing teaching protocol
 
 Wine, breast cancer and digits are sklearn-bundled real datasets, available offline.
 Data hashes, versions, splits, selected regularization, predictions and pretraining curves
@@ -54,9 +56,7 @@ modal run --detach modal/l072_paper_repro.py --preset closer
 
 `smoke`: wine/one seed/two epochs; `closer`: all three datasets, five seeds, 200 epochs.
 The latter is a convergence/stability follow-up, **not** a paper-fidelity preset. It retains
-the compact architecture, frozen probes and substitute suite. `paper` is deliberately
-rejected: implementing exact full benchmarks and paper-specific supervised paths remains
-unrun work, and a misleading preset would hide it. Outputs are written to a new result file;
+the compact architecture, frozen probes and substitute suite. `paper` is excluded from this legacy teaching runner. The separate reproduction operators now implement the full SCARF supervised path and the SubTab MNIST release; their remaining source/protocol gaps are listed in the new guide. Outputs are written to a new result file;
 there is no resume/cache of fitted results and no cloud job is launched by the builder.
 The notebook's gated follow-up calls the student's live functions with this same configuration.
 

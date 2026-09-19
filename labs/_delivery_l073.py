@@ -18,7 +18,7 @@ def run():
             if isinstance(n,(ast.FunctionDef,ast.ClassDef)) and (file.endswith('ssl_regimes_l073.py') or n.name in ['SCARF','corrupt','draw_view','scarf_loss']):expected[n.name]=ast.dump(n,include_attributes=False)
     actual={}
     for c in teacher.cells:
-        if c.cell_type!='code' or '@colab-bootstrap' in c.source:continue
+        if c.cell_type!='code' or '@colab-bootstrap' in c.source or c.source.startswith('%%writefile '):continue
         for n in ast.parse(c.source).body:
             if isinstance(n,(ast.FunctionDef,ast.ClassDef)):actual[n.name]=ast.dump(n,include_attributes=False)
     assert all(actual[k]==v for k,v in expected.items())

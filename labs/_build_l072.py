@@ -88,8 +88,10 @@ def notebook(solution=False):
  md('### EXIT · the result is an argument, not just a table\n\nThe structural checks verify completeness and boundaries. Submit the table, per-seed SCARF-minus-random gains, total labeled budgets, and 150–250 words interpreting one success or failure of your prediction. Explain why these frozen-probe scores cannot reproduce SCARF’s fine-tuning benchmark. Include a concrete false-negative example and propose one ablation for Lesson 73.')
  code("assert len(result['records'])==54\nassert len({(r['dataset'],r['seed'],r['arm']) for r in result['records']})==54\nfor s in result['splits']:\n    tr,va,te=map(set,[s['train'],s['validation'],s['test']])\n    assert not tr&va and not tr&te and not va&te\n    assert set(s['labeled'])<=tr\nfor r in result['records']:\n    assert r['frozen_delta']==0, 'The probe must not update the representation'\n    assert abs(np.mean(np.array(r['prediction'])==r['target'])-r['accuracy'])<1e-12\n    assert len(r['trials'])==3\nfor r in result['summary']:\n    if r['arm']=='scarf':print(r['dataset'], 'paired gain pp:',100*np.array(r['gain_vs_random']))\nprint('Structural EXIT passed; written interpretation still requires tutor review.')")
  md('**Write your interpretation here.** After a day, reconstruct both architectures without looking. Ask the tutor to check what you preserved or omitted.')
- md('### NEXT STEP · longer convergence and seed audit\n\nThis reuses YOUR functions for 200 epochs and five seeds. It is not a paper-fidelity preset: the suite, compact models and frozen probes still differ. Set a GPU runtime before enabling if available. The unattended alternative is `modal run --detach modal/l072_paper_repro.py --preset closer`; see the contract for retrieval of the persisted evidence.')
- code("RUN_PAPER_REPRO=False\nif RUN_PAPER_REPRO:\n    followup=run_experiment(seeds=tuple(range(5)),epochs=200,device='cuda' if torch.cuda.is_available() else 'cpu')\n    Path('l072-closer-results.json').write_text(json.dumps(followup,indent=2))\n    display(pd.DataFrame(followup['summary']))\n    print('Longer local protocol measured. Original paper tables: INCOMPARABLE.')\nelse:\n    print('Larger run NOT_RUN. Original paper benchmarks INCOMPARABLE. Live Colab NOT_CHECKED.')")
+ md('### Optional teaching extension · longer convergence and seed audit\n\nThis reuses YOUR functions for 200 epochs and five seeds. It is not a paper-fidelity preset: the suite, compact models and frozen probes still differ. Set a GPU runtime before enabling if available. The unattended alternative is `modal run --detach modal/l072_paper_repro.py --preset closer`; see the contract for retrieval of the persisted evidence.')
+ code("RUN_TEACHING_EXTENSION=False\nif RUN_TEACHING_EXTENSION:\n    followup=run_experiment(seeds=tuple(range(5)),epochs=200,device='cuda' if torch.cuda.is_available() else 'cpu')\n    Path('l072-closer-results.json').write_text(json.dumps(followup,indent=2))\n    display(pd.DataFrame(followup['summary']))\n    print('Longer local protocol measured. Original paper tables: INCOMPARABLE.')\nelse:\n    print('Larger run NOT_RUN. Original paper benchmarks INCOMPARABLE. Live Colab NOT_CHECKED.')")
+ from _paper_tracks_071_074 import paper_cells
+ cells.extend(paper_cells(72))
  nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'}})
  for i,c in enumerate(nb.cells):c.id=f'l072-{i:03d}'
  return nb
@@ -113,7 +115,7 @@ def build():
  preview,_=HTMLExporter().from_notebook_node(notebook(False));soup=BeautifulSoup(preview,'html.parser')
  for a in soup.find_all('a',href=True):
   if a['href'].startswith('../'):a['href']='../'+a['href']
- (ROOT/'html'/f'{SLUG}.html').write_text(str(soup))
+ (ROOT/'html'/f'{SLUG}.html').write_text('\n'.join(line.rstrip() for line in str(soup).splitlines())+'\n')
  ref='''# Reference · two ways to learn from views
 
 Follow the training-to-prediction boundary: a head used to train the representation may disappear before classification.

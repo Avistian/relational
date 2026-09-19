@@ -208,3 +208,7 @@ Ask the tutor to review your code and your interpretation. Reading or executing 
 ## Primary reading
 
 Read [VIME, §4.1–4.2, Eqs. 3–10 and Figures 1–2](https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Paper.pdf), then inspect [the pinned released implementation](https://github.com/jsyoon0823/VIME/tree/996c58cf4c570061b30c38ecf2a754a9af85aafd). Use [supplement §§2, 5–6](https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Supplemental.pdf) to distinguish the example architecture from the paper's experimental search. The [printable reference](../reference/0071-vime-masked-tabular-ssl.html) collects the equations and evidence boundaries.
+
+## Paper reproduction track
+
+The [paper reproduction section](../labs/html/0071-vime-masked-tabular-ssl.html#paper-reproduction) in the companion notebook includes the full runnable paper/release implementation after EXIT, separately from its compact teaching experiment. Read the [reproduction guide](../labs/reproductions/README.md) for the named target, full-data commands, source pins and remaining gaps. The full model and training code are visible in the notebook. Smoke execution and source equivalence are checks; published-result reproduction requires the aligned experiment and its measured comparison.

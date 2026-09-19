@@ -40,7 +40,8 @@ if __name__=='__main__':
         page=browser.new_page(java_script_enabled=False)
         for filename in ['index.html','notebooks.html']:
             page.goto((ROOT/filename).as_uri())
-            assert page.locator(f'a[href="lessons/{SLUG}.html"]').count()>=1
+            if filename=='index.html':assert page.locator('#lesson-nav').count()==1
+            else:assert page.locator(f'a[href="lessons/{SLUG}.html"]').count()>=1
         page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri())
         assert page.locator('#lab-exercises').count()==1
         assert page.locator('img[src^="data:image/png;base64,"]').count()==5

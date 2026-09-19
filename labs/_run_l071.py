@@ -5,7 +5,7 @@ from relkit.vime_l071 import run_experiment
 PRESETS={
  'smoke':dict(dataset='digits',seeds=(0,),budgets=(50,),pre_epochs=2,epochs=3),
  'closer':dict(dataset='mnist',seeds=(0,1,2),budgets=(100,1000,6000),pre_epochs=30,epochs=60),
- 'paper':dict(dataset='mnist',seeds=tuple(range(10)),budgets=(100,1000,6000),pre_epochs=100,epochs=100),
+ 'extended':dict(dataset='mnist',seeds=tuple(range(10)),budgets=(100,1000,6000),pre_epochs=100,epochs=100),
 }
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--preset',choices=PRESETS,default='smoke');p.add_argument('--device',default='cpu');p.add_argument('--output',default='l071-followup.json');a=p.parse_args()

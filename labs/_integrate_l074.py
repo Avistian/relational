@@ -6,11 +6,11 @@ R=Path(__file__).resolve().parents[1];L=R/'labs';slug='0074-carte-cross-table-tr
 p=R/'lessons/manifest.json';m=json.loads(p.read_text())
 if not any(z['id']==74 for z in m['lessons']):
  m['lessons'].append({'id':74,'slug':slug,'year':2,'quarter':4,'checkpoint':False,'labPath':'labs/'+slug+'.ipynb','title':title,'published':True});m['version']+=1;p.write_text(json.dumps(m,indent=2)+'\n')
-for file in ['index.html','notebooks.html']:
+# Home-page navigation uses the manifest-driven tiles.
+for file in ['notebooks.html']:
  p=R/file;s=p.read_text()
  if f'lessons/{slug}.html' not in s:
-  if file=='index.html':s=s.replace('<p><a href="lessons/0073-',f'<p><a href="lessons/{slug}.html">Lesson 074 · {title}</a> · <a href="labs/html/{slug}.html">Lab</a></p>\n  <p><a href="lessons/0073-',1)
-  else:s=s.replace('<ul class="nb-gallery">',f'<ul class="nb-gallery"><li id="lab-74"><div class="nb-head"><span class="num">Lesson 0074</span><span class="title">{title}</span></div><div class="nb-links"><a href="labs/html/{slug}.html">Read lab</a><a href="labs/{slug}.ipynb" download>Download notebook</a><a href="lessons/{slug}.html">Lesson</a></div></li>',1)
+  s=s.replace('<ul class="nb-gallery">',f'<ul class="nb-gallery"><li id="lab-74"><div class="nb-head"><span class="num">Lesson 0074</span><span class="title">{title}</span></div><div class="nb-links"><a href="labs/html/{slug}.html">Read lab</a><a href="labs/{slug}.ipynb" download>Download notebook</a><a href="lessons/{slug}.html">Lesson</a></div></li>',1)
   p.write_text(s)
 p=R/'.github/workflows/pages.yml';s=p.read_text()
 if '# L074 CARTE' not in s:s=s.replace('          # L073 label-budget', '          # L074 CARTE source-checked transfer, compact real vectors and checkpoint.\n          cp labs/_verify_l074_results.json labs/_sources_l074.json labs/l074-reproduction.md labs/_check_l074_results.json labs/_execution_l074_results.json labs/_browser_l074_results.json public/labs/\n          cp labs/_verify_l074.py labs/_run_l074.py labs/_check_l074.py labs/_prepare_l074.py public/labs/\n          mkdir -p public/labs/data\n          cp -r labs/data/l074 public/labs/data/\n          # L073 label-budget');p.write_text(s)

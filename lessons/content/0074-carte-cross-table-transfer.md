@@ -197,3 +197,7 @@ CARTE contributes a way to encode semantically described values across schemas. 
 - [Local provenance](../labs/_sources_l074.json), [measured evidence](../labs/_verify_l074_results.json), and [contract](../labs/l074-reproduction.md): identities, predictions and deviations.
 
 **Verified locally:** see the measured evidence and delivery report. **Paper claim:** cross-schema pretraining and supervised transfer benefits under the authors' experiments. **Original benchmark reproduction:** INCOMPARABLE. **New YAGO pretraining and source-table joint learning:** NOT_RUN. Browser, live Colab and deployment each have separate verification status.
+
+## Paper reproduction track
+
+The [paper reproduction section](../labs/html/0074-carte-cross-table-transfer.html#paper-reproduction) in the companion notebook includes the full runnable paper/release implementation after EXIT, separately from its compact teaching experiment. Read the [reproduction guide](../labs/reproductions/README.md) for the named target, full-data commands, source pins and remaining gaps. The full model and training code are visible in the notebook. Smoke execution and source equivalence are checks; published-result reproduction requires the aligned experiment and its measured comparison.

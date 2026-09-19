@@ -1,8 +1,10 @@
+> **Reproduction repair, 2026-09-19.** The former larger-run recipe below is a teaching extension. The main notebook now includes a separate, complete inline paper/release implementation and executable protocol. See [the reproduction guide](reproductions/README.md) for targets, commands and unresolved gaps. Source parity, a longer teaching run and a close score do not certify exact paper reproduction.
+
 # L073 reproducibility contract
 
 This is an evaluation lesson, not a new architecture or paper-table reproduction.
 
-## Verified local protocol
+## Verified teaching protocol
 
 Three offline sklearn datasets: wine, breast_cancer, digits (flattened images). Split/model seeds 0,1,2. Stratified outer 70/10/20 splits; within training, one label-blind permutation seeded seed+73, prefixes floor(f*n), f=0.1,0.2,0.4,0.7,1.0. Dataset bytes hashed; exact split/subset IDs retained. Known class vocabulary comes from dataset metadata. No class-based label subset repair.
 
@@ -36,4 +38,4 @@ OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python labs/_execute_l073.py
 .venv/bin/python labs/_delivery_l073.py
 ```
 
-Student notebook definitions execute in the current kernel and feed fresh training and summaries. The teacher execution compares complete prediction records against the author run. Students should not import solution definitions to bypass TODOs. No paper-parity tolerance is defined because the protocols are incomparable.
+Student notebook definitions execute in the current kernel and feed fresh training and summaries. The teacher execution compares complete prediction records against the author run. Students should not import solution definitions to bypass TODOs. No paper-parity tolerance applies to this local crossover experiment. The new Tables 2/4 reproduction track has separate published references and measured comparisons.

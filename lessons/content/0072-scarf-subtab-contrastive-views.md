@@ -145,3 +145,7 @@ Tomorrow, explain both diagrams from a blank page before reopening them. In one 
 **The next question:** once we can build these representations, when is their extra training worthwhile? Planned Lesson 73 varies label availability and the match between unlabeled and downstream data. The connection is causal: today fixes the machinery; next we vary the conditions under which that machinery should help. Later, relational pretraining will inherit the same question about which entity views preserve task information.
 
 **Primary reading:** [Bahri et al., SCARF, Algorithm 1 and Figure 1](https://arxiv.org/html/2106.15147v2), then [Ucar et al., SubTab, §2 and Figures 1–2](https://arxiv.org/html/2110.04361v1). Use the [printable reference](../reference/0072-scarf-subtab-contrastive-views.html) after attempting retrieval.
+
+## Paper reproduction track
+
+The [paper reproduction section](../labs/html/0072-scarf-subtab-contrastive-views.html#paper-reproduction) in the companion notebook includes the full runnable paper/release implementation after EXIT, separately from its compact teaching experiment. Read the [reproduction guide](../labs/reproductions/README.md) for the named target, full-data commands, source pins and remaining gaps. The full model and training code are visible in the notebook. Smoke execution and source equivalence are checks; published-result reproduction requires the aligned experiment and its measured comparison.

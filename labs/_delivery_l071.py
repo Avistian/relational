@@ -10,7 +10,7 @@ def check():
     stage=Path('/tmp/l071-pages');stage.mkdir(exist_ok=True)
     for name in ['assets','lessons','reference']:
         shutil.copytree(ROOT/name,stage/name,dirs_exist_ok=True)
-    for name in ['html','figures','relkit']:
+    for name in ['html','figures','relkit','reproductions']:
         shutil.copytree(LABS/name,stage/'labs'/name,dirs_exist_ok=True)
     for name in ['index.html','notebooks.html']:shutil.copy2(ROOT/name,stage/name)
     (stage/'modal').mkdir(exist_ok=True)
@@ -43,7 +43,7 @@ def check():
     cells=[c.source for c in student.cells if c.cell_type=='code']
     assert sum('raise NotImplementedError' in c for c in cells)==3
     assert not any('raise NotImplementedError' in c.source for c in solutions.cells if c.cell_type=='code')
-    code='\n'.join(c for c in cells if '@colab-bootstrap' not in c)
+    code='\n'.join(c for c in cells if '@colab-bootstrap' not in c and not c.startswith('%%writefile '))
     tree=ast.parse(code)
     for name in ['corrupt','pretext_loss','consistency_loss']:
         assert sum(isinstance(n,ast.FunctionDef) and n.name==name for n in tree.body)==1

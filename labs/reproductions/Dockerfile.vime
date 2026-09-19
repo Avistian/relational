@@ -1,0 +1,10 @@
+FROM python:3.7.17-slim-bullseye
+ENV TF_CPP_MIN_LOG_LEVEL=2 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+COPY requirements-vime.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+COPY sources/vime /work
+COPY vime_release.py /work/run_release.py
+WORKDIR /work
+RUN mkdir -p /work/save_model /evidence
+ENTRYPOINT ["python", "run_release.py"]

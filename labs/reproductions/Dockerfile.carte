@@ -1,0 +1,9 @@
+FROM python:3.11.9-slim-bookworm
+ENV OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+COPY requirements-carte-paper.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r /tmp/requirements.txt
+COPY sources /work/sources
+COPY carte.py carte_compat.py carte_vectors.py carte_bestparams.csv carte_singletable.csv /work/
+WORKDIR /work
+ENTRYPOINT ["python", "carte.py"]

@@ -68,8 +68,10 @@ def notebook(solution=False):
  md('### EXIT · measurements plus argument\n\nSubmit your curves, paired gains, label counts, ties and brackets. Explain one failed prediction in 150–250 words; include a practical comparator, interval limits, validation-label cost and one controlled follow-up. No crossing is an acceptable finding.')
  code("assert len(result['records'])==270\nfor s in result['splits']:\n    tr,va,te=map(set,[s['train'],s['validation'],s['test']])\n    assert not tr&va and not tr&te and not va&te\n    previous=set()\n    for g in s['labeled_groups']:\n        assert previous<=set(g)<=tr\n        previous=set(g)\nfor r in result['records']:\n    assert abs(np.mean(np.array(r['prediction'])==r['target'])-r['accuracy'])<1e-12\n    assert r['total_development_labels']==r['train_labels']+r['validation_labels']\n    if r['arm'] in ['scratch','scarf_ft']:assert r['encoder_delta']>0\nprint('Structural EXIT passed. Written explanation needs tutor review.')")
  md('**Write your interpretation here.** Tomorrow, reconstruct the evaluation boundary from memory.')
- md('### NEXT STEP · predeclared convergence audit\n\nHold datasets, budgets and method choices fixed; run five seeds with 200 pretraining and supervised epochs using your live functions. This changes the optimization budget and repetition count, not benchmark fidelity. Use fresh evaluation data before turning a test-derived crossover into a deployment decision. The larger run is gated off by default.')
+ md('### Optional teaching extension · predeclared convergence audit\n\nHold datasets, budgets and method choices fixed; run five seeds with 200 pretraining and supervised epochs using your live functions. This changes the optimization budget and repetition count, not benchmark fidelity. Use fresh evaluation data before turning a test-derived crossover into a deployment decision. The larger run is gated off by default.')
  code("RUN_LONGER=False\nif RUN_LONGER:\n    longer=run_regimes(seeds=tuple(range(5)),pre_epochs=200,fine_epochs=200)\n    Path('l073-longer-results.json').write_text(json.dumps(longer,indent=2))\nelse:\n    print('Longer run NOT_RUN; original paper benchmarks INCOMPARABLE; live Colab NOT_CHECKED.')")
+ from _paper_tracks_071_074 import paper_cells
+ cells.extend(paper_cells(73))
  nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'}})
  for i,c in enumerate(nb.cells):c.id=f'l073-{i:03d}'
  return nb
@@ -93,7 +95,7 @@ def build():
  preview,_=HTMLExporter().from_notebook_node(notebook());soup=BeautifulSoup(preview,'html.parser')
  for a in soup.find_all('a',href=True):
   if a['href'].startswith('../'):a['href']='../'+a['href']
- (ROOT/'html'/f'{SLUG}.html').write_text(str(soup))
+ (ROOT/'html'/f'{SLUG}.html').write_text('\n'.join(line.rstrip() for line in str(soup).splitlines())+'\n')
  ref='''# Reference · SSL label-budget audits
 
 **Define help:** fine-tuned SSL minus matched scratch tests pretraining; frozen SSL minus random features tests fixed representation utility; raw logistic and trees test practical competitiveness.

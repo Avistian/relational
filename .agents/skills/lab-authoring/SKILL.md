@@ -5,6 +5,13 @@ description: Author mid-difficulty lab notebooks with PROVIDED/TODO/CHECK/EXIT c
 
 Use when creating, retrofitting, or reviewing lab notebooks in `labs/`.
 
+
+## Paper reproductions and home-page navigation — user requirement, 2026-09-19
+
+Every paper lab must include both a readable inline implementation and a runnable reproduction of a named published experiment. A longer run of a simplified model does not meet this requirement. Audit architecture, objective, initialization/checkpoint loading, optimizer, data, preprocessing, split, selection, training schedule, seeds, metric and aggregation against primary sources. Include the full model and trainer inline, exact runnable commands, pinned source/configuration, paper targets, measured results and an explicit deviation/unrun ledger. Preserve small teaching experiments as a separate lane. Never call execution parity or a preset name evidence of paper-result parity. Where the paper omits details, record the missing information and reproduce the released implementation explicitly; do not invent an exact protocol. Evaluation-only lessons reuse the aligned model and distinguish extensions from published experiments.
+
+The home page already has lesson tiles. Do not add individual lesson/lab announcement links above or below the Lessons heading. Use the manifest-driven tiles for lesson navigation.
+
 ## Notebook quality is a delivery requirement (user, 2026-09-05)
 
 Compare each new notebook with the strongest recent lessons. Existence, length, and a passing
@@ -60,8 +67,7 @@ lesson N", the `Lab` column in `CURRICULUM.md` is a deliverable, not a suggestio
      architecture as a PROVIDED cell (not `from relkit.X import TheModel` as the only copy the
      student can read); a post-EXIT **paper-results** cell + `modal/l0NN_paper_repro.py` exist
      whenever the lab downscaled. Completion criterion: a hostile reader can scroll the notebook
-     and see the forward pass / train loop, and has a Modal or Colab command that trains closer
-     to the paper's table.
+     and see the forward pass / train loop, and has a tested command for a named paper/release experiment. A longer simplified experiment does not satisfy this requirement.
 - **Reconcile numbers:** if `_verify` contradicts numbers already written into the lesson/viz/dossier,
   fix the lesson to the verified numbers (honesty rule, standard #20) — never ship the borrowed story.
 - **Miss of record (do not repeat):** L042 ("Train ResNet baseline") was first published `labPath: null`
@@ -131,11 +137,10 @@ paper's table. **Do not stop there.** After EXIT, every paper-mirror lab ships a
 tries harder to reproduce the paper's *results*:
 
 1. **Same from-scratch code** the student just read (inlined), not a different library model.
-2. **Paper dataset / HPs / metric** when open and affordable; otherwise a documented closer-to-paper
-   run with protocol deviations listed.
+2. **Paper dataset / HPs / metric and complete model/trainer** for a named published target. A cheaper teaching extension may accompany it but cannot replace it. Pin publication-era source when available; later releases must be separate, explicit choices. If exact settings were never released, provide the complete released replay and identify the remaining reproduction gap without claiming it solved.
 3. **If local CPU cannot train it:** ship **both** of
    - `modal/l0NN_paper_repro.py` (unattended; `modal run --detach ... --preset closer`)
-   - a Colab-gated cell in the same notebook (`RUN_PAPER_REPRO = True` on a T4).
+   - a Colab-gated cell in the same notebook (`RUN_PAPER_REPRO = True` on a T4, or an isolated historical interpreter when required). Test environments and operators; record account/runtime blockers separately from code readiness.
    Optional stretch does **not** satisfy this. A comment that says "the paper used more trees" does
    **not** satisfy this.
 4. **Conclusion ledger** (`relkit.paper_repro.format_ledger`): three buckets —

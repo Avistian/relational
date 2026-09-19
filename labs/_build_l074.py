@@ -69,8 +69,10 @@ def notebook(solution=False):
  md('### EXIT · submit the evidence and explanation\n\nSubmit the mean/SD table, per-seed paired gains and a 150–250-word explanation of one failed prediction. Name the pretraining source, input semantics, development-label cost, and one inference boundary. Describe a follow-up that changes exactly one intended factor. A loss for transfer is an admissible result.')
  code("assert len(result['records'])==54\nfor s in result['splits']:\n    tr,va,te=map(set,[s['train'],s['validation'],s['test']])\n    assert len(tr)==64 and len(va)==64 and len(te)==256\n    assert not tr&va and not tr&te and not va&te\nfor r in result['records']:\n    assert abs(r2_score(r['target'],r['prediction'])-r['r2'])<1e-12\nprint('Structural EXIT passed. Written interpretation requires tutor review.')")
  md('**Write your interpretation here.** Return tomorrow and reconstruct the graph without the figure.')
- md('### NEXT STEP · required larger-run plan\n\nPredeclare the 128-row target budget and 100 supervised epochs before running. This local extension uses the same graph/model functions, 64 validation rows and the remaining 192 test rows. It varies two resources together; use separate one-factor follow-ups to diagnose the cause of any difference. Its test population differs from the default, so do not interpret score changes as a pure training-budget effect. This is closer local training, still INCOMPARABLE to paper pretraining, joint transfer and bagged benchmarks. CPU is sufficient; no Modal dependency is needed.')
- code("RUN_PAPER_REPRO=False\nif RUN_PAPER_REPRO:\n    larger=run_transfer(train_size=128,epochs=100)\n    Path('l074-closer-results.json').write_text(json.dumps(larger,indent=2))\n    print('Verified here: larger local target adaptation; paper benchmark: INCOMPARABLE')\nelse:\n    print('Verified here: default local run; paper claim: cited; larger run: NOT_RUN; live Colab: NOT_CHECKED')")
+ md('### Optional teaching extension · larger local run\n\nPredeclare the 128-row target budget and 100 supervised epochs before running. This local extension uses the same graph/model functions, 64 validation rows and the remaining 192 test rows. It varies two resources together; use separate one-factor follow-ups to diagnose the cause of any difference. Its test population differs from the default, so do not interpret score changes as a pure training-budget effect. This is closer local training, still INCOMPARABLE to paper pretraining, joint transfer and bagged benchmarks. CPU is sufficient; no Modal dependency is needed.')
+ code("RUN_TEACHING_EXTENSION=False\nif RUN_TEACHING_EXTENSION:\n    larger=run_transfer(train_size=128,epochs=100)\n    Path('l074-closer-results.json').write_text(json.dumps(larger,indent=2))\n    print('Verified here: larger local target adaptation; paper benchmark: INCOMPARABLE')\nelse:\n    print('Verified here: default local run; paper claim: cited; larger run: NOT_RUN; live Colab: NOT_CHECKED')")
+ from _paper_tracks_071_074 import paper_cells
+ cells.extend(paper_cells(74))
  nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'}})
  for i,c in enumerate(nb.cells):c.id=f'l074-{i:03d}'
  return nb
@@ -94,7 +96,7 @@ def build():
  preview,_=HTMLExporter().from_notebook_node(notebook());soup=BeautifulSoup(preview,'html.parser')
  for a in soup.find_all('a',href=True):
   if a['href'].startswith('../'):a['href']='../'+a['href']
- (ROOT/'html'/f'{SLUG}.html').write_text(str(soup))
+ (ROOT/'html'/f'{SLUG}.html').write_text('\n'.join(line.rstrip() for line in str(soup).splitlines())+'\n')
  ref='''# CARTE: a transfer audit card
 
 **Represent.** Each observed cell becomes a leaf; its column supplies the edge vector. Text uses a string embedding. Numeric values multiply the column embedding after train-fitted scaling. Missing values remove leaves.

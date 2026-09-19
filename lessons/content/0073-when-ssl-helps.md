@@ -135,3 +135,7 @@ Structural EXIT checks verify the row boundary, nested subsets and saved predict
 **Mission connection.** Before attributing a future gain to relational structure, match supervision and feature access. This experiment raises the evidential bar; it provides no direct evidence that relational models outperform single-table models. Lesson 74 moves to cross-table transfer, where source-table identity and schema access introduce additional boundaries.
 
 **Primary reading:** [SCARF, Figure 1, §4 and Appendix B](https://arxiv.org/html/2106.15147v2). Read alongside [the tabular SSL survey](https://arxiv.org/html/2402.01204v3) and [Oliver et al.'s evaluation recommendations](https://arxiv.org/html/1804.09170v2). Reproduce their questions about evidence before borrowing their conclusions.
+
+## Paper reproduction track
+
+The [paper reproduction section](../labs/html/0073-when-ssl-helps.html#paper-reproduction) in the companion notebook includes the full runnable paper/release implementation after EXIT, separately from its compact teaching experiment. Read the [reproduction guide](../labs/reproductions/README.md) for the named target, full-data commands, source pins and remaining gaps. The full model and training code are visible in the notebook. Smoke execution and source equivalence are checks; published-result reproduction requires the aligned experiment and its measured comparison.

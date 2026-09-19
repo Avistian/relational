@@ -8,7 +8,7 @@ from sklearn.metrics import r2_score
 ROOT=Path(__file__).resolve().parents[1];LAB=ROOT/'labs';SLUG='0074-carte-cross-table-transfer'
 def run():
     student=nbformat.read(LAB/f'{SLUG}.ipynb',as_version=4);teacher=nbformat.read(LAB/'solutions'/f'{SLUG}.ipynb',as_version=4)
-    assert sum('raise NotImplementedError' in c.source for c in student.cells if c.cell_type=='code')==3
+    assert sum('raise NotImplementedError' in c.source for c in student.cells if c.cell_type=='code' and not c.source.startswith('%%writefile '))==3
     assert all(not c.outputs and c.execution_count is None for c in student.cells if c.cell_type=='code')
     assert all(c.execution_count is not None and all(o.output_type!='error' for o in c.outputs) for c in teacher.cells if c.cell_type=='code')
     for nb in [student,teacher]:
@@ -17,7 +17,7 @@ def run():
     expected={n.name:ast.dump(n,include_attributes=False) for n in ast.parse((LAB/'relkit/carte_l074.py').read_text()).body if isinstance(n,(ast.FunctionDef,ast.ClassDef))}
     actual={}
     for c in teacher.cells:
-        if c.cell_type!='code' or '@colab-bootstrap' in c.source:continue
+        if c.cell_type!='code' or '@colab-bootstrap' in c.source or c.source.startswith('%%writefile '):continue
         for n in ast.parse(c.source).body:
             if isinstance(n,(ast.FunctionDef,ast.ClassDef)):actual[n.name]=ast.dump(n,include_attributes=False)
     assert all(actual[k]==v for k,v in expected.items())

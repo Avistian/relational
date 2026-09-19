@@ -31,7 +31,9 @@ def run():
             page.close()
         page=browser.new_page(java_script_enabled=False)
         for filename in ['index.html','notebooks.html']:
-            page.goto((ROOT/filename).as_uri());assert page.locator(f'a[href="lessons/{SLUG}.html"]').count()>=1,filename
+            page.goto((ROOT/filename).as_uri())
+            if filename=='index.html':assert page.locator('#lesson-nav').count()==1
+            else:assert page.locator(f'a[href="lessons/{SLUG}.html"]').count()>=1,filename
         page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==5
         browser.close()
     assert not errors,errors

@@ -1,6 +1,8 @@
+> **Reproduction repair, 2026-09-19.** The former larger-run recipe below is a teaching extension. The main notebook now includes a separate, complete inline paper/release implementation and executable protocol. See [the reproduction guide](reproductions/README.md) for targets, commands and unresolved gaps. Source parity, a longer teaching run and a close score do not certify exact paper reproduction.
+
 # L071 reproduction contract
 
-## What is implemented
+## Existing teaching implementation
 
 A numeric-data PyTorch port of the released one-layer d→d encoder, two d-output pretext
 heads, and two-100-hidden-layer downstream predictor. Corruption uses independently
@@ -16,7 +18,7 @@ Supplement: https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf
 The paper uses sampled masks in its equations and a clean-prediction consistency reference.
 The released code recomputes changed cells and minimizes augmented-view logit variance.
 These differences are taught and checked. Exact corruption parity on the saved fixture
-establishes only that operation; historical Keras/TensorFlow training is NOT_RUN.
+establishes only that operation; historical Keras/TensorFlow execution is now tracked separately in `reproductions/vime-release-results.json`.
 
 ## Local experiment
 
@@ -64,8 +66,8 @@ modal volume ls relational-l071-results
 modal volume get relational-l071-results closer-TIMESTAMP.json ./l071-mnist.json
 ```
 
-The notebook includes the corresponding `RUN_PAPER_REPRO = False` cell with the full loop
-already visible. Enable only when ready for the longer run. The `paper` preset increases
+The notebook includes the corresponding `RUN_TEACHING_EXTENSION = False` cell with the full loop
+already visible. Enable only when ready for the longer run. The `extended` teaching preset increases
 to ten seeds and 100/100 pretrain/downstream epochs; its name does not certify fidelity.
 
 | Track | Data / seeds / epochs | Evidence status at creation |
@@ -73,7 +75,7 @@ to ten seeds and 100/100 pretrain/downstream epochs; its name does not certify f
 | Local | digits / 3 / 30 + 60 | See measured JSON |
 | smoke | digits / 1 / 2 + 3 | Operator smoke check |
 | closer | MNIST / 3 / 30 + 60 | NOT_RUN |
-| paper | MNIST / 10 / 100 + 100 | NOT_RUN |
+| extended | MNIST / 10 / 100 + 100 | NOT_RUN |
 
 ## Named published target (not reproduced)
 
@@ -102,4 +104,4 @@ checks and remain NOT_CHECKED unless separately executed.
 Operator references: [Modal local files](https://modal.com/docs/guide/local-files) and [persistent volumes / downloads](https://modal.com/docs/guide/volumes). These APIs were checked while preparing the operator; no remote job was launched.
 
 Public MNIST data access was checked: see `_mnist_access_l071_results.json`. The archive
-identity is the SHA-256 published by [Keras's loader](https://github.com/keras-team/keras/blob/master/keras/src/datasets/mnist.py). No MNIST training was performed.
+identity is the SHA-256 published by [Keras's loader](https://github.com/keras-team/keras/blob/master/keras/src/datasets/mnist.py). That data-access check did not train MNIST; the later historical replay has its own measured evidence.

@@ -19,7 +19,7 @@ def run():
     expected_nodes={n.name:ast.dump(n,include_attributes=False) for n in expected.body if isinstance(n,(ast.FunctionDef,ast.ClassDef))}
     actual_nodes={}
     for c in teacher.cells:
-        if c.cell_type!='code' or '@colab-bootstrap' in c.source:continue
+        if c.cell_type!='code' or '@colab-bootstrap' in c.source or c.source.startswith('%%writefile '):continue
         for n in ast.parse(c.source).body:
             if isinstance(n,(ast.FunctionDef,ast.ClassDef)):actual_nodes[n.name]=ast.dump(n,include_attributes=False)
     assert all(actual_nodes[k]==v for k,v in expected_nodes.items())

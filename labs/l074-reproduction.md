@@ -1,6 +1,8 @@
+> **Reproduction repair, 2026-09-19.** The former larger-run recipe below is a teaching extension. The main notebook now includes a separate, complete inline paper/release implementation and executable protocol. See [the reproduction guide](reproductions/README.md) for targets, commands and unresolved gaps. Source parity, a longer teaching run and a close score do not certify exact paper reproduction.
+
 # L074 CARTE reproduction contract
 
-## What this package implements
+## Existing teaching implementation
 
 Primary skill: build schema-variable row graphs, extract real CARTE embeddings, and compare transfer with scratch target learning. A visible PyTorch implementation matches the pinned release's one-readout `CARTE_Base` architecture at zero dropout. Source commit: `f54690da4cddbedd1e1a9113a312f85783d2c125`. Source code and BSD license are retained under `sources/carte-l074/`.
 
@@ -55,4 +57,4 @@ Presets: smoke = one seed, 2 epochs, 64 train; closer = three seeds, 100 epochs,
 `_browser_l074_results.json`: local responsive browser interactions.
 `_delivery_l074_results.json`: canonical definition parity, portable images and actual copied Pages links.
 
-Live Colab and remote deployment: **NOT_CHECKED**. New YAGO pretraining, paper-scale benchmark and joint supervised multi-table experiment: **NOT_RUN**. Authored material does not establish learner completion.
+Live Colab and remote deployment: **NOT_CHECKED**. New YAGO pretraining, the complete all-budget/all-split benchmark and joint supervised multi-table experiment: **NOT_RUN**. Selected full-protocol rows are reported separately in the new reproduction guide. Authored material does not establish learner completion.
