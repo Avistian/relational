@@ -1289,3 +1289,7 @@ User requests architecture visuals that show the complete solution in a model-sp
 ## Lesson 072 created · SCARF / SubTab
 
 Complete architecture-to-inference diagrams, connected VIME→contrastive→multi-view narrative, visible implementations and three live TODOs. Three datasets × three paired seeds × six frozen-probe arms. SCARF improves the random encoder at the mean on all three; raw features still have higher means on all three. Full benchmark reproduction remains INCOMPARABLE. User completion/mastery is not asserted. Reproduction and delivery evidence live under labs/*l072*.
+
+## Lesson 074 created · CARTE cross-table transfer
+
+Source-visible single-readout CARTE, real FastText vectors and selected YAGO checkpoint transfer to three wine schemas. Paper/release center, sender-index and initial_x loading discrepancies are explicit. Authorship does not advance learner completion. Full benchmark INCOMPARABLE; joint source-table learning and new pretraining NOT_RUN. Pretrained fine-tuning trails scratch at all three dataset means. Final delivery: 54 evaluations, 21 executed solution cells with exact record parity, source/gradient/numerical checks, five portable figures, desktop/mobile browser pass and 39 copied Pages links. Live Colab and deployment NOT_CHECKED. See per-lesson evidence and contract.

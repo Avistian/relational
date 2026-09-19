@@ -373,3 +373,9 @@ _Optional / extension (◆):_
 - Wang et al., [A Survey on Self-Supervised Learning for Non-Sequential Tabular Data](https://arxiv.org/html/2402.01204v3), taxonomy and transfer context.
 - Bahri et al., [SCARF](https://arxiv.org/html/2106.15147v2), Figure 1 and training/evaluation sections; pretraining then fine-tuning.
 - Oliver et al., [Realistic Evaluation of Semi-Supervised Learning Algorithms](https://arxiv.org/html/1804.09170v2), §4.6 and §5; image-domain evidence used to motivate validation-label accounting, not tabular scores.
+
+## L074 CARTE
+
+- [CARTE v2](https://arxiv.org/html/2402.16785v2), Figures 1–3 and Sections 3.1–3.3: graph representation and cross-schema transfer.
+- [Pinned release](https://github.com/soda-inria/carte/tree/f54690da4cddbedd1e1a9113a312f85783d2c125): implementation/checkpoint/example-table provenance.
+- [FastText English crawl vectors](https://fasttext.cc/docs/en/crawl-vectors.html): real language inputs and licensing.

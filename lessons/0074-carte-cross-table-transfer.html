@@ -1,0 +1,230 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 074 — CARTE: transfer across table schemas</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0073-when-ssl-helps.html">Previous lesson</a></nav><header><p>Year 2 · Quarter 4 · Lesson 074</p><h1>CARTE: transfer across table schemas</h1><p>Encode the row → trace the message → transfer the parameters → measure the gain.</p></header><aside class="lab-access"><nav><a href="../labs/html/0074-carte-cross-table-transfer.html">Read lab preview</a><a href="../labs/0074-carte-cross-table-transfer.ipynb" download>Download student notebook</a><a href="../labs/html/0074-carte-cross-table-transfer.html#lab-exercises">Jump to exercises</a><a href="../reference/0074-carte-cross-table-transfer.html">Reference</a><a href="../labs/_verify_l074_results.json">Measured evidence</a><a href="../labs/l074-reproduction.md">Reproduction contract</a></nav><p>Run locally in the course labs directory, or upload the notebook to Colab after the course assets are published. Local package; live Colab and deployment NOT_CHECKED.</p></aside><h2 id="Before-reading:-retrieve-the-boundary">Before reading: retrieve the boundary<a class="anchor-link" href="#Before-reading:-retrieve-the-boundary">&#182;</a></h2><p>Close the previous lesson. Write three short answers: What comparison isolates pretraining from architecture? Which rows may fit a numerical transform? Why can a positive gain at one label budget fail at another? Keep your answers, then complete the spaced warm-up.</p>
+<div id="warmup"></div>
+
+<p><strong>Your tangible win.</strong> Given a row from a table with unfamiliar columns, draw the graph CARTE consumes, trace how column meaning changes one message, and design a fair test of whether a pretrained encoder helps a small target table. The companion lab makes you implement graph construction, attention normalization and validation-only probe selection.</p>
+<p>The route is <strong>row → typed messages → shared encoder → target prediction → transfer audit</strong>. Allow one focused reading session and a separate lab session. Ask the tutor about any step you cannot reconstruct; bring your graph and intermediate values.</p>
+<h2 id="1.-The-unresolved-question-from-Lesson-73">1. The unresolved question from Lesson 73<a class="anchor-link" href="#1.-The-unresolved-question-from-Lesson-73">&#182;</a></h2><p><a href="0073-when-ssl-helps.html">Lesson 73</a> held one table's feature representation fixed while changing the amount of supervision. Its central comparison was the same network with and without self-supervised pretraining. That experiment leaves another problem: how can parameters learned on one collection of columns accept a different collection?</p>
+<p>A <strong>schema</strong> describes the columns of a table, including their names and types. A network whose first layer takes <code>[age, income, city]</code> cannot directly interpret <code>[winery, rating, country, vintage]</code>: the number and meanings of its input coordinates have changed. Padding the shorter row solves the length problem but leaves the meanings unspecified.</p>
+<p><strong>Schema matching</strong> explicitly determines which columns across sources correspond. <strong>Entity matching</strong> explicitly determines which records or names refer to the same real-world thing. Both can be valuable, and both can be expensive or ambiguous. For example, <code>country</code> and <code>nation</code> might correspond; two wines with nearly identical names might still be different vintages.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> CARTE turns each observed cell into a value paired with a description of its role. A shared graph encoder reads any number of such pairs. The learned parameters no longer have one separate input position for every column in every table.</p>
+</blockquote>
+<p>CARTE expands to <em>Context Aware Representation of Table Entries</em>. Read <a href="https://arxiv.org/html/2402.16785v2">the paper, especially Figures 1–3 and Sections 3.1–3.3</a>. Keep <a href="https://github.com/soda-inria/carte/blob/f54690da4cddbedd1e1a9113a312f85783d2c125/carte_ai/src/carte_model.py">the pinned released model</a> open for the implementation audit. We will separate the model's ability to accept a schema from evidence that useful knowledge transfers to it.</p>
+<h2 id="2.-Turn-one-row-into-a-small-graph">2. Turn one row into a small graph<a class="anchor-link" href="#2.-Turn-one-row-into-a-small-graph">&#182;</a></h2><h3 id="Values-and-roles-have-separate-vectors">Values and roles have separate vectors<a class="anchor-link" href="#Values-and-roles-have-separate-vectors">&#182;</a></h3><p>An <strong>embedding</strong> is a numerical vector representing an input such as a string. FastText represents words using learned word and character-subword information; the released CARTE converter uses its sentence-vector operation for strings. The input dimension is 300. This operation accepts new strings, although semantic quality depends on language, spelling and domain. See <a href="https://fasttext.cc/docs/en/english-vectors.html">the FastText documentation</a> and <a href="https://github.com/soda-inria/carte/blob/f54690da4cddbedd1e1a9113a312f85783d2c125/carte_ai/src/carte_table_to_graph.py">the actual converter</a>.</p>
+<p>A <strong>node</strong> holds a value vector. An <strong>edge</strong> connects two nodes and holds a relation vector. In a row graph, the relation describes the column. The <strong>center</strong> is an extra node representing the entire row; each observed cell is a <strong>leaf</strong>, a node attached to that center. This is a star graph. A <strong>graphlet</strong> here means this small local graph, not a new database table.</p>
+<p>For a text cell, use the embedding of its value as the leaf vector. Use the embedding of its column name as the edge vector. For a numerical cell, first transform its scalar value using statistics fitted on training rows. Multiply that scalar by the column vector to obtain its leaf vector. Thus a number's representation carries its role: a rating of 4 and a volume of 4 need not have the same vector.</p>
+<p>A missing value contributes no leaf. A zero contributes a leaf with a zero numerical vector and a present relation. Missing and zero therefore give different graph structures. If every value is missing, the mean used for the center is undefined. Our lab raises an error so the application must choose and document a fallback.</p>
+<h3 id="Worked-example:-distinguish-two-means">Worked example: distinguish two means<a class="anchor-link" href="#Worked-example:-distinguish-two-means">&#182;</a></h3><p>Use a two-dimensional teaching embedding, independent of the real 300-dimensional FastText cache. Let <code>colour → [1, 2]</code>, <code>red → [2, −1]</code>, and <code>volume → [3, 1]</code>. The row contains colour=<code>red</code>, transformed volume=<code>2</code>, and a missing region.</p>
+<p>The leaves are <code>[2, −1]</code> and <code>2 × [3, 1] = [6, 2]</code>. The paper's plain leaf average is <code>[4, 0.5]</code>. The pinned released converter instead averages <strong>edge-conditioned</strong> leaves: <code>[1, 2] ⊙ [2, −1] = [2, −2]</code> and <code>[3, 1] ⊙ [6, 2] = [18, 2]</code>. Its center is <code>[10, 0]</code>. The symbol <code>⊙</code> means coordinate-by-coordinate multiplication. The drawing focuses on messages entering the center; the executable graph additionally includes leaf self-messages with an all-ones relation vector.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable graph figure"><img src="../labs/figures/l074/graph.png" alt="Illustrative two-dimensional row encoding. Trace the value-edge products before averaging. The real cache uses 300 coordinates."></div><figcaption>Illustrative two-dimensional row encoding. Trace the value-edge products before averaging. The real cache uses 300 coordinates. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<blockquote>
+<p><strong>Source audit.</strong> Paper Section 3.1 describes the center as the leaf mean. The pinned converter computes <code>Z = edge_attr * x[edge_index[1]]</code> and averages the messages addressed to node 0. The lab follows this released computation. We retain both values above so the implementation choice is explicit.</p>
+</blockquote>
+<p>Predict what happens when volume becomes missing, then use the control. Also predict what happens when the same volume is assigned a different column vector. The toy vectors expose arithmetic; they do not claim to encode real linguistic similarity.</p>
+<div id="cell-graph"></div>
+
+<p><strong>Graph dimensions.</strong> With two observed cells, there are three nodes. The release converter creates two leaf-to-center messages plus one self-message per leaf, so its index tensor has shape <code>2 × 4</code>. Node and edge feature matrices have shapes <code>3 × 300</code> and <code>4 × 300</code>. In this code, the first row of the index tensor names the receiver; the second names the sender. Read these roles from the actual indexing operation rather than assuming a library convention.</p>
+<h2 id="3.-Model-architecture:-follow-the-entire-solution">3. Model architecture: follow the entire solution<a class="anchor-link" href="#3.-Model-architecture:-follow-the-entire-solution">&#182;</a></h2><h3 id="From-background-facts-to-target-rows">From background facts to target rows<a class="anchor-link" href="#From-background-facts-to-target-rows">&#182;</a></h3><p><strong>Pretraining</strong> learns reusable parameters before target labels are used. CARTE's background source is YAGO, a knowledge graph containing triples such as <code>(Louvre, located in, Paris)</code>. A triple has a subject, relation and object. Its local neighborhoods can be represented with node and relation vectors of the same dimensions as the row graphs.</p>
+<p>For pretraining, a neighborhood can extend two hops: one hop traverses one relation edge, and two hops reach a neighbor of a neighbor. This background graph contains richer structure than the one-row stars used downstream.</p>
+<p>Two views of an entity graph provide a positive pair. One view removes a random subset of edges. Other entities in the batch provide negative examples. A <strong>contrastive objective</strong> trains representations of the positive pair to agree while distinguishing other examples. Recall <a href="0072-scarf-subtab-contrastive-views.html">Lesson 72</a>: changing the view-construction rule changes which variations the representation learns to tolerate.</p>
+<p>For a similarity score <code>s</code>, a temperature <code>τ &gt; 0</code>, anchor <code>a</code>, and positive <code>p</code>, the generic InfoNCE form is <code>−log(exp(s(a,p)/τ) / Σ_b exp(s(a,b)/τ))</code>. The denominator contains the positive and eligible negatives; the anchor itself is excluded. Deleting edges teaches partial-context consistency. It does not automatically teach every synonym or unit conversion.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable architecture figure"><img src="../labs/figures/l074/architecture.png" alt="Complete pretraining-to-prediction route. Upper lane: paper pretraining overview. Lower lane: the exact single-readout local encoder and its two target adaptation choices."></div><figcaption>Complete pretraining-to-prediction route. Upper lane: paper pretraining overview. Lower lane: the exact single-readout local encoder and its two target adaptation choices. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Read the upper lane.</strong> Background graphlets share the encoder. The paper's pretraining stack has 12 attention layers, 12 heads and width 300. An output projection supplies the contrastive objective. Parameters, not the sampled background graphlets, move to downstream prediction.</p>
+<p><strong>Read the lower lane.</strong> A target row becomes a star graph. Separate learned linear maps, GELU activations and layer normalization transform node and edge inputs. A linear map mixes coordinates using learned weights. GELU is a smooth nonlinearity. Layer normalization centers and rescales coordinates within each node or edge, with learned scale and offset. These operations keep each input vector at width 300 in this implementation.</p>
+<p>The lab uses the release's one-readout downstream configuration: initial maps → graph attention → node normalization → two-layer feed-forward network → node normalization → center selection. It uses 12 attention heads, each of width 25. Concatenating their outputs restores width 300. A <strong>readout</strong> extracts the center vector, giving one row embedding. The lab computes only those final center outputs during training; it still uses every observed leaf as an input message. The full forward pass remains visible, and output plus gradient checks verify that this execution shortcut preserves the model. A target head then turns that vector into a scalar prediction.</p>
+<p>A <strong>frozen probe</strong> keeps encoder weights fixed and fits a target predictor on the embeddings. <strong>Fine-tuning</strong> updates the encoder as well as a new target head. Our frozen predictor is ridge regression; our fine-tuning predictor is a learned linear head. The feed-forward network (FFN) is a two-layer map applied separately to each node. An <strong>ensemble</strong> averages or otherwise combines predictions from multiple trained models. The paper's training and ensemble recipe differs, so compare matched local arms before making claims about the original benchmark.</p>
+<blockquote>
+<p><strong>Source audit.</strong> The pinned estimator uses <code>num_layers − 1</code> ordinary blocks before its readout. Its default <code>num_layers=1</code> therefore leaves zero ordinary blocks. It also renames <code>initial_x</code> checkpoint keys before loading with <code>strict=False</code>, leaving that input map uninitialized from the checkpoint. This lab deliberately loads <strong>all selected encoder keys strictly</strong>, including <code>initial_x</code>. Architecture parity is checked separately from this weight-loading choice. The source release's node block has no residual addition; we do not silently insert a standard Transformer residual.</p>
+</blockquote>
+<h3 id="Trace-the-load-bearing-attention-computation">Trace the load-bearing attention computation<a class="anchor-link" href="#Trace-the-load-bearing-attention-computation">&#182;</a></h3><blockquote>
+<p><strong>In plain terms.</strong> Each cell sends a proposal to the center. The column vector changes that proposal before attention decides its weight.</p>
+</blockquote>
+<p>Let <code>x_j</code> denote the sender's vector and <code>e_ij</code> the relation vector for the message from <code>j</code> to receiver <code>i</code>. First calculate <code>z_ij = x_j ⊙ e_ij</code>. Three learned matrices make a <strong>query</strong>, a vector describing what the receiver seeks; a <strong>key</strong>, a vector used to score a proposal; and a <strong>value</strong>, the content to be averaged:</p>
+<p><code>q_i = W_Q x_i</code>, <code>k_ij = W_K z_ij</code>, <code>v_ij = W_V z_ij</code>.</p>
+<p>For one head of width <code>d_h</code>, its logit is <code>q_i · k_ij / √d_h</code>. A dot product multiplies corresponding coordinates and sums them. The square-root factor controls the growth of score magnitude with dimension. Softmax exponentiates these logits and divides by their sum <strong>over neighbors of the same receiver</strong>. The resulting weights sum to one for that receiver. The output is their weighted sum of the value vectors.</p>
+<p><strong>Worked example.</strong> Let the center query be <code>[1,0]</code>, keys be <code>[1,0]</code> and <code>[0,1]</code>, and values be <code>[2,0]</code> and <code>[0,4]</code>. The scaled logits are approximately <code>[0.7071,0]</code>. Their softmax weights are <code>[0.6698,0.3302]</code>. The output is approximately <code>[1.3395,1.3210]</code>. These numbers illustrate the attention kernel after projection, separately from the raw row-graph example.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable attention figure"><img src="../labs/figures/l074/attention.png" alt="Illustrative projected query/key/value fixture. Weights and contributions are calculated, then rounded to four decimals. A second receiver has a separate denominator."></div><figcaption>Illustrative projected query/key/value fixture. Weights and contributions are calculated, then rounded to four decimals. A second receiver has a separate denominator. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>A global softmax over every edge in a batch would let another row change these weights. The notebook CHECK includes a second receiver with only one neighbor; that neighbor must receive weight 1 regardless of the first receiver's scores. This is a useful failure test because a plausible-looking implementation can normalize over the wrong dimension.</p>
+<blockquote>
+<p><strong>Source audit.</strong> We use the sender vector, as the released model does in <code>x[edge_index[1]]</code>. The paper's printed key/value equations use an <code>i</code> subscript; its accompanying discussion describes neighbors. The implementation and our index-role definition remove that ambiguity. Copied-weight output parity checks the whole local encoder, not just a hand-calculated softmax.</p>
+</blockquote>
+<h2 id="4.-What-transfers-when-columns-change?">4. What transfers when columns change?<a class="anchor-link" href="#4.-What-transfers-when-columns-change?">&#182;</a></h2><p>The model shares the transformations applied to every node, edge and message. It can process two cells today and eleven tomorrow without allocating eleven new feature-specific weight matrices. Column order also disappears from the representation: permuting whole leaf-edge pairs permutes intermediate leaf states while leaving the center readout unchanged, up to floating-point rounding.</p>
+<p><strong>Preserve the pairing.</strong> Permuting values while leaving edge labels fixed changes the facts represented by the row. That transformation should generally change the prediction. Reordering pairs and scrambling their alignment are different experiments.</p>
+<p><strong>Names still carry assumptions.</strong> Two meaningful column descriptions may have useful neighboring language representations. Two arbitrary codes may not. Renaming <code>ABV</code> to <code>column_7</code> preserves its numeric values but changes the relation vector. The model needs no explicit matching table to run, yet its predictions can depend strongly on the quality of names and embeddings.</p>
+<p><strong>Units still matter.</strong> A numerical transform fitted separately on each training table removes some scale differences. It does not guarantee that centimeters, kilograms and currencies become semantically interchangeable. Type handling, target meaning and deployment distribution remain part of the prediction contract.</p>
+<h3 id="Three-distinct-transfer-questions">Three distinct transfer questions<a class="anchor-link" href="#Three-distinct-transfer-questions">&#182;</a></h3><div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Setting</th>
+  <th>Source of reusable information</th>
+  <th>Target supervision</th>
+  <th>What our lab runs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Background pretraining → target</td>
+  <td>Released YAGO weights and FastText vectors</td>
+  <td>Small target train and validation sets</td>
+  <td>Yes, on three schemas</td>
+</tr>
+<tr>
+  <td>Labeled source table + target</td>
+  <td>Joint supervised fitting of related outcomes</td>
+  <td>Labels from both sources</td>
+  <td>Discussed, not run</td>
+</tr>
+<tr>
+  <td>Multiple source tables + target</td>
+  <td>Pairwise learners and their validation-weighted combination</td>
+  <td>Labels and target validation</td>
+  <td>Discussed, not run</td>
+</tr>
+</tbody>
+</table></div>
+<p>For supervised source-table transfer, compatible output meaning is essential. A common input representation alone cannot make two unrelated labels interchangeable. The paper's pairwise recipe mixes source and target rows during fine-tuning, monitors target validation, and combines pairwise and target-only learners using validation-based weights. Outcome transformations and source choice are part of that recipe. See <a href="https://arxiv.org/html/2402.16785v2#S3.SS3">Section 3.3</a>.</p>
+<p>The wine targets supplied with the released examples already contain transformed prices, and the transformations differ across sources. Our experiment preserves each source's released target and evaluates it separately. It does not pool those targets into one supervised regression problem. This is why you must inspect target units before attempting the next transfer setting.</p>
+<h2 id="5.-A-controlled-experiment-with-real-target-tables">5. A controlled experiment with real target tables<a class="anchor-link" href="#5.-A-controlled-experiment-with-real-target-tables">&#182;</a></h2><h3 id="State-the-prediction-before-reading-the-measurements">State the prediction before reading the measurements<a class="anchor-link" href="#State-the-prediction-before-reading-the-measurements">&#182;</a></h3><div id="prediction"></div>
+
+<p>The lab uses three real released tables: Wine Poland, Wine.com prices and Vivino prices. The column sets differ. Each table contributes 384 rows sampled without looking at target values after removing exact repeated entity names within that source. Sixty-four rows train the target predictor, 64 select its hyperparameters or epoch, and 256 score it. The split is repeated with three fixed seeds. Each arm receives identical rows for a given seed.</p>
+<p>The full FastText binary is large. We extracted real 300-dimensional sentence vectors for the union of required strings into a compact portable cache. Computing a fixed pretrained vector for a held-out string does not fit on held-out labels or learn vocabulary statistics. The manifest records the binary hash, source row IDs, checkpoint hash and cache identity. Unknown strings outside this teaching cache require running the real string encoder; no zero or random replacement is supplied.</p>
+<p>The source checkpoint and text model may have seen related public entities during their original training. That possible background overlap is not audited here. Exact name deduplication within these tables also does not resolve all real-world aliases. We test held-out sampled rows, not a guarantee of novel real-world entities or future vintages.</p>
+<h3 id="Know-what-each-arm-answers">Know what each arm answers<a class="anchor-link" href="#Know-what-each-arm-answers">&#182;</a></h3><div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>Fitted components</th>
+  <th>Question</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>FastText center + ridge</td>
+  <td>Train-fitted feature scaling and ridge</td>
+  <td>How useful are language-conditioned inputs alone?</td>
+</tr>
+<tr>
+  <td>Random encoder + ridge</td>
+  <td>Same probe; encoder stays random</td>
+  <td>What comes from architecture and a probe alone?</td>
+</tr>
+<tr>
+  <td>Pretrained encoder + ridge</td>
+  <td>Same probe; encoder stays pretrained</td>
+  <td>Do transferred graph weights help fixed embeddings?</td>
+</tr>
+<tr>
+  <td>Scratch encoder + head</td>
+  <td>Encoder and linear head</td>
+  <td>What can this architecture learn from target labels?</td>
+</tr>
+<tr>
+  <td>Pretrained encoder + head</td>
+  <td>Encoder and linear head</td>
+  <td>Does pretrained initialization help matched target training?</td>
+</tr>
+<tr>
+  <td>CatBoost</td>
+  <td>Fixed 150-tree recipe on native columns</td>
+  <td>Is a practical tabular baseline competitive?</td>
+</tr>
+</tbody>
+</table></div>
+<p>Numerical transforms fit on target training rows only. A column constant among its observed training values uses standard scaling instead of a fitted power transform. A column entirely missing in training is omitted everywhere for that split. This fallback was added after a constant-volume split produced a power exponent near 35 and float32 overflow; the final experiment reruns every arm under the same rule. Ridge selects among <code>α = 1, 10, 100</code> on validation error; α controls the penalty on large coefficients. Fine-tuning and scratch use the same AdamW optimizer, learning rate <code>10⁻⁴</code>, weight decay <code>10⁻³</code>, 40 epochs, zero dropout and paired target-head initialization. Validation chooses the saved epoch. AdamW is a gradient-based update rule with adaptive coordinate step sizes and a separate weight-decay shrinkage term. An epoch is one pass through the labeled training rows; our small neural run uses all of them in one batch. Zero dropout means no hidden coordinates are randomly suppressed during these runs. Before neural training, target values are centered and scaled using the training target mean and standard deviation; predictions are converted back before scoring. Test scores never choose among these options. The tree recipe is fixed before evaluation.</p>
+<p>The main metric is <strong>R²</strong>, <code>1 − Σ(y − prediction)² / Σ(y − mean_test(y))²</code>. A perfect prediction scores 1. A negative score means greater squared error than using the held-out target mean as a constant oracle comparator. That denominator is part of the metric, not a predictor fitted on test labels. Comparisons within a dataset share the same test rows and denominator.</p>
+<p><strong>Author-reference R², mean ± sample SD across three seeds.</strong> These saved values are separate from your fresh notebook run.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Method</th>
+  <th>Wine Poland</th>
+  <th>Wine.com</th>
+  <th>Vivino</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>fasttext_ridge</td>
+  <td>-11.361 ± 19.166</td>
+  <td>0.328 ± 0.164</td>
+  <td>0.528 ± 0.028</td>
+</tr>
+<tr>
+  <td>random_probe</td>
+  <td>-0.056 ± 0.288</td>
+  <td>0.328 ± 0.034</td>
+  <td>0.397 ± 0.099</td>
+</tr>
+<tr>
+  <td>scratch</td>
+  <td>0.261 ± 0.150</td>
+  <td>0.408 ± 0.025</td>
+  <td>0.541 ± 0.018</td>
+</tr>
+<tr>
+  <td>pretrained_probe</td>
+  <td>0.162 ± 0.079</td>
+  <td>-0.072 ± 0.167</td>
+  <td>0.262 ± 0.024</td>
+</tr>
+<tr>
+  <td>pretrained_ft</td>
+  <td>0.047 ± 0.028</td>
+  <td>0.270 ± 0.198</td>
+  <td>0.476 ± 0.051</td>
+</tr>
+<tr>
+  <td>catboost</td>
+  <td>0.134 ± 0.034</td>
+  <td>0.278 ± 0.035</td>
+  <td>0.446 ± 0.013</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Observed pattern.</strong> Pretrained fine-tuning has higher mean R² than scratch on 0 of 3 targets. The frozen pretrained probe exceeds the frozen random probe on 1 of 3. These comparisons isolate different adaptation settings; neither count establishes broad superiority.</p>
+<p><strong>Paired fine-tuned pretrained minus scratch gains:</strong></p>
+<ul>
+<li>wine_pl: -0.259, -0.317, -0.067; mean -0.215, descriptive t95 [-0.539, +0.110].</li>
+<li>wine_dot_com_prices: -0.359, -0.039, -0.015; mean -0.138, descriptive t95 [-0.615, +0.340].</li>
+<li>wine_vivino_price: -0.026, -0.079, -0.090; mean -0.065, descriptive t95 [-0.150, +0.020].</li>
+</ul>
+<p><strong>Exploratory dataset-balanced mean ranks</strong> (lower is better): fasttext_ridge 3.67, random_probe 4.00, scratch 1.00, pretrained_probe 4.67, pretrained_ft 4.00, catboost 3.67. Friedman p=0.221; Nemenyi critical difference=4.35. Only three related datasets contribute.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable results figure"><img src="../labs/figures/l074/results.png" alt="Author-reference measurements, three paired split/model repetitions per table. Dots show each run; bars show mean plus or minus sample SD. Poland uses a symmetric-log vertical scale (linear within ±0.5) to keep the large negative baseline score visible; the other panels are linear. These related wine datasets do not establish general cross-domain superiority."></div><figcaption>Author-reference measurements, three paired split/model repetitions per table. Dots show each run; bars show mean plus or minus sample SD. Poland uses a symmetric-log vertical scale (linear within ±0.5) to keep the large negative baseline score visible; the other panels are linear. These related wine datasets do not establish general cross-domain superiority. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>Read the per-seed points before the means. For the main initialization contrast, subtract scratch R² from fine-tuned pretrained R² within each seed. Averaging unpaired scores first hides whether a difficult split affected both arms. The notebook stores predictions so you can recompute each metric independently.</p>
+<blockquote>
+<p><strong>Scope check.</strong> These three datasets share a wine domain. Three overlapping split repetitions measure sensitivity within these datasets; they are not three independent new populations. The displayed standard deviations describe repetitions. The exploratory Friedman and Nemenyi calculations use one mean rank per dataset, not one dataset per seed. With only three related datasets and six methods, they support very limited inference.</p>
+</blockquote>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable audit figure"><img src="../labs/figures/l074/audit.png" alt="Paired initialization gains with descriptive t95 intervals over three repetitions; separate dataset-balanced rank/CD view. Repeated splits overlap and the datasets share a domain. These are exploratory summaries, not broad population intervals."></div><figcaption>Paired initialization gains with descriptive t95 intervals over three repetitions; separate dataset-balanced rank/CD view. Repeated splits overlap and the datasets share a domain. These are exploratory summaries, not broad population intervals. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>A <strong>rank</strong> is a method’s position within one dataset, with rank 1 assigned to the highest mean R² and ties receiving averaged positions. The <strong>Friedman test</strong> evaluates whether methods have systematically different within-dataset ranks. Its p-value measures how unusual the observed rank differences would be under the test’s equal-performance null model. The <strong>Nemenyi comparison</strong> uses a critical difference: a threshold for a pair’s mean-rank separation that accounts for comparing multiple methods.</p>
+<p>The paired interval uses <code>mean gain ± 4.303 × sample SD / √3</code>, with the Student-t multiplier for two degrees of freedom. Its assumptions are imperfect because repeated splits overlap. The critical difference is the Nemenyi threshold on average ranks under its dataset-level assumptions; it is larger than many plausible rank gaps with this small collection. Treat both as descriptive checks on the strength of the evidence.</p>
+<h3 id="What-this-run-found">What this run found<a class="anchor-link" href="#What-this-run-found">&#182;</a></h3><p>Pretrained fine-tuning has a lower mean R² than scratch on all three targets in this particular single-readout, linear-head recipe. Frozen pretrained embeddings improve over random embeddings on Wine Poland and trail them on Wine.com and Vivino. The initialization and frozen-representation questions therefore have different answers even within these related sources.</p>
+<p>The raw language-conditioned ridge baseline has a large negative Wine Poland score in one repetition. The numerical fix guarantees finite inputs; it does not guarantee useful extrapolation beyond a constant training feature. The result table preserves that error. The Poland plot uses a symmetric-log vertical scale, linear near zero and compressed for large magnitudes, so both the failed run and the neural scores remain visible. Other panels use ordinary linear scales. This is a diagnostic observation, not a causal attribution to one column; establishing the cause would require a separately declared feature intervention.</p>
+<p>The selected downstream depth, strict input-map transfer, head, training budget and lack of bagging all differ from the paper's full evaluation recipe. This local result is a reason to audit those choices in a follow-up; it cannot establish that published CARTE transfer gains are false.</p>
+<h3 id="Diagnose-a-gain-or-a-failure">Diagnose a gain or a failure<a class="anchor-link" href="#Diagnose-a-gain-or-a-failure">&#182;</a></h3><p>If frozen transfer helps but fine-tuning loses, inspect the selected epoch and optimization sensitivity. If both random and pretrained probes help similarly, the architecture or input language vectors may explain much of the gain. If a tree wins, preserve that result and ask which information or sample-size advantage the encoder has yet to demonstrate.</p>
+<p>Pretraining consumes substantial historical compute even when a checkpoint is cheap to download. Target fitting receives 128 development labels in this experiment, including validation. A statement such as “64-label learning” must retain that validation cost. Model-selection effort and pretraining resources are different accounting dimensions.</p>
+<h2 id="6.-Lab:-implement,-check,-then-interpret">6. Lab: implement, check, then interpret<a class="anchor-link" href="#6.-Lab:-implement,-check,-then-interpret">&#182;</a></h2><p>Open the notebook using the links at the top. Its explanations and portable figures travel with it.</p>
+<ol>
+<li><strong>TODO — construct a row graph.</strong> Omit missing cells, encode values according to type, build receiver/sender indices, and compute the release-specific center. CHECK the worked fixture and the all-missing policy.</li>
+<li><strong>TODO — group attention by receiver.</strong> Implement a numerically stable grouped softmax and weighted sum. CHECK the two-receiver example and extreme logits.</li>
+<li><strong>TODO — select a probe honestly.</strong> Fit scaling on training embeddings, choose the ridge penalty on validation labels, and predict the untouched test embeddings. CHECK that changing held-out inputs cannot alter predictions for another held-out row.</li>
+<li><strong>RUN — transfer against scratch.</strong> The visible encoder and trainer call your functions. Generate fresh scores and paired gains; compare your results to the clearly labeled author reference.</li>
+<li><strong>EXIT — explain one failed prediction.</strong> Submit the three tables, paired initialization gains and a 150–250-word explanation. Identify the exact source of transferred information, count development labels, state one unresolved alternative explanation, and propose a controlled follow-up.</li>
+</ol>
+<p>The required post-EXIT extension increases target training rows from 64 to 128 and training length from 40 to 100 epochs while retaining the same implementation. It is a closer local sensitivity check, gated off by default. It remains far from original YAGO pretraining, original splits, full downstream ensembles and the published benchmark. The <a href="../labs/l074-reproduction.md">reproduction contract</a> states what was actually run.</p>
+<h2 id="7.-The-bridge-to-relational-learning">7. The bridge to relational learning<a class="anchor-link" href="#7.-The-bridge-to-relational-learning">&#182;</a></h2><p>A CARTE row graph organizes relationships <em>inside one record</em>. Its node and edge labels supply context for each cell. At target inference, our graph for a wine contains no link to another row's producer record, transactions or future events.</p>
+<p>A relational database graph can additionally connect distinct records through entity relationships such as foreign keys. Those links introduce a new information-access question: which neighboring records existed and were observable at prediction time? Good within-row transfer does not settle that temporal question.</p>
+<p>CARTE contributes a way to encode semantically described values across schemas. The next planned unit, <strong>Lesson 75: PyTorch Frame</strong>, makes mixed-type row encoding an explicit reusable component. Later graph models can place such row representations on a graph of related records. Keep the two levels clear: encode a record's contents, then propagate permitted information between records.</p>
+<p><strong>Tomorrow, without notes:</strong> draw a text leaf and a numerical leaf; reconstruct the grouped attention denominator; explain why schema acceptance is weaker than evidence of useful transfer. In a week, repeat the explanation with a source table whose target uses different units.</p>
+<h2 id="Sources-and-evidence-boundaries">Sources and evidence boundaries<a class="anchor-link" href="#Sources-and-evidence-boundaries">&#182;</a></h2><ul>
+<li><a href="https://arxiv.org/html/2402.16785v2">CARTE paper v2</a>: primary reading for representation, background pretraining and supervised transfer recipes.</li>
+<li><a href="https://github.com/soda-inria/carte/blob/f54690da4cddbedd1e1a9113a312f85783d2c125/carte_ai/src/carte_model.py">Pinned model implementation</a> and <a href="https://github.com/soda-inria/carte/blob/f54690da4cddbedd1e1a9113a312f85783d2c125/carte_ai/src/carte_table_to_graph.py">converter</a>: executable conventions and the source discrepancies explained above.</li>
+<li><a href="https://github.com/soda-inria/carte/blob/f54690da4cddbedd1e1a9113a312f85783d2c125/carte_ai/src/carte_estimator.py">Pinned estimator</a>: downstream depth and weight-loading behavior.</li>
+<li><a href="../labs/_sources_l074.json">Local provenance</a>, <a href="../labs/_verify_l074_results.json">measured evidence</a>, and <a href="../labs/l074-reproduction.md">contract</a>: identities, predictions and deviations.</li>
+</ul>
+<p><strong>Verified locally:</strong> see the measured evidence and delivery report. <strong>Paper claim:</strong> cross-schema pretraining and supervised transfer benefits under the authors' experiments. <strong>Original benchmark reproduction:</strong> INCOMPARABLE. <strong>New YAGO pretraining and source-table joint learning:</strong> NOT_RUN. Browser, live Colab and deployment each have separate verification status.</p>
+<div id="teachback"></div></article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/cell-graph-viz.js"></script><script src="../assets/l074-lesson.js"></script></body></html>

@@ -23,6 +23,29 @@
 
   global.RETRIEVAL_POOL = [
 {
+  "id": "l074-schema-transfer",
+  "lesson": 74,
+  "quarter": "Q4",
+  "concept": "schema-transfer",
+  "question": "Why can CARTE accept previously unseen column sets?",
+  "options": [
+    {
+      "label": "It shares learned operations across value-relation pairs",
+      "value": "shared"
+    },
+    {
+      "label": "It learns separate positions for every schema",
+      "value": "positions"
+    },
+    {
+      "label": "It aligns all source columns before inference",
+      "value": "align"
+    }
+  ],
+  "correct": "shared",
+  "explain": "Shared message operations act on cell and column embeddings. Input compatibility still requires empirical transfer evaluation."
+},
+{
   "id": "l055-protocol-gap",
   "lesson": 55,
   "quarter": "Q2",

@@ -145,3 +145,5 @@ Authoring sources and regeneration/check commands are recorded in the
 live Colab compatibility or full paper reproduction.
 
 - L073: [When SSL actually helps](0073-when-ssl-helps.ipynb) — nested label budgets, matched fine-tuning controls and crossover audits.
+
+- L074: [CARTE cross-table transfer](0074-carte-cross-table-transfer.ipynb) — real FastText/YAGO embeddings, graph attention, matched scratch controls.

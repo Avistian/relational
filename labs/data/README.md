@@ -77,3 +77,7 @@ Tier A: OpenML 44120 electricity (38474 × 7), 44125 MagicTelescope (13376 × 10
 
 ## L073
 Tier A: offline sklearn Wine, Breast Cancer Wisconsin Diagnostic, and Digits. Digits is flattened image data. Full built-in datasets, stratified 70/10/20 splits; label-blind nested training subsets. Data bytes and row IDs recorded in `_verify_l073_results.json`. No original SCARF benchmark table reproduced.
+
+## L074 CARTE
+
+Tier A: three 384-row subsets of released wine tables. Fixed real FastText sentence-vector cache and YAGO checkpoint accompany source IDs and SHA256 digests in `l074/manifest.json`. No full string-model download is needed for the lab; see `../l074-reproduction.md`.
