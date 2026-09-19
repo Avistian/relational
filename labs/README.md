@@ -155,3 +155,5 @@ live Colab compatibility or full paper reproduction.
 - L077: [Single-table ceiling](0077-single-table-ceiling.ipynb) — complete five-seed synthetic reproduction, exact information bound and tabular feature-repair control.
 
 - L078: [Message passing](0078-message-passing-preview.ipynb) — hand aggregation plus the full100-seed Cora GCN experiment with visible code and pinned bytes.
+
+- L079: [Decision guide](0079-neural-tabular-decision-guide.ipynb) — one-page writing deliverable plus complete frozen-prediction audit. [Reproduction](l079-reproduction.md).

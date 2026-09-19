@@ -1,0 +1,143 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Year 2 essay: choose a model you can defend</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/decision-guide.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0078-message-passing-preview.html">Lesson 78</a></nav><header><p>Year 2 · Quarter 4 · Lesson 079</p><h1>Year 2 essay: choose a model you can defend</h1><p>From model familiarity to a falsifiable recommendation.</p></header><aside><a href="../labs/l079-decision-template.md">Essay template</a> · <a href="../labs/html/0079-neural-tabular-decision-guide.html">Read lab</a> · <a href="../labs/0079-neural-tabular-decision-guide.ipynb">Notebook</a> · <a href="../reference/0079-neural-tabular-decision-guide.html">Reference</a></aside><h2 id="Start-cold-%C2%B7-choose-before-reading">Start cold &#183; choose before reading<a class="anchor-link" href="#Start-cold-%C2%B7-choose-before-reading">&#182;</a></h2><div id="warmup"></div>
+
+<p>A fraud table has 6,000 labeled transactions, merchant IDs, a text description and timestamps. Predictions must serve next month's traffic within 5 ms per request. Write down your first baseline, validation split, strongest challenger and one result that would change your mind. <strong>Commit to four sentences before reading on.</strong> A model name without a split is not yet a decision.</p>
+<p><strong>Today's win:</strong> write a one-page decision guide that another researcher can execute and challenge. Spend about 20 minutes on sections 1–4, then 20 minutes on the writing task. The optional audit notebook rebuilds every displayed rank from the complete corrected Lesson 60 predictions. It does not train new models.</p>
+<h2 id="1-%C2%B7-The-missing-step-between-knowing-models-and-choosing-one">1 &#183; The missing step between knowing models and choosing one<a class="anchor-link" href="#1-%C2%B7-The-missing-step-between-knowing-models-and-choosing-one">&#182;</a></h2><p><a href="0077-single-table-ceiling.html">Lesson 77</a> showed an information ceiling: a better learner cannot recover information discarded by its input. <a href="0078-message-passing-preview.html">Lesson 78</a> supplied a mechanism for bringing in neighboring information. Neither result says that a GNN should be your first baseline. You still need to establish that the extra information is available at prediction time, useful beyond simple aggregates, and worth its cost.</p>
+<p>The same logic applies within single-table learning. Choose in this order: <strong>available information → deployment-matching split → feasible candidates → validation comparison → locked test evaluation</strong>. A <em>regime</em> is the combination of task, sample size, feature types, availability, shift and resource constraints. A <em>shortlist</em> is a set of hypotheses to test, not a prediction of a universal winner.</p>
+<p>For the fraud example, define one prediction per transaction at arrival. Build merchant aggregates only from events and labels already available then. Use earlier periods for training and later periods for validation/test, allowing the fraud-label delay. If production includes unseen merchants, report that subgroup separately; a group split is useful for that question but does not replace chronological evaluation. Measure p95 latency on the intended hardware, batch size, context size and complete preprocessing path.</p>
+<figure class="dg-figure"><span class="dg-scroll-note">On small screens, scroll the figure horizontally for full-size labels.</span><div class="dg-image" tabindex="0" role="region" aria-label="Scrollable decision figure"><img src="../labs/figures/l079/decision.png" alt="Worked fraud case: information eligibility precedes evaluation, measured feasibility and validation-only selection. Each gate carries a concrete requirement."></div><figcaption>Worked fraud case: information eligibility precedes evaluation, measured feasibility and validation-only selection. Each gate carries a concrete requirement.</figcaption></figure>
+
+<h2 id="2-%C2%B7-A-decision-table,-with-reasons-and-falsifiers">2 &#183; A decision table, with reasons and falsifiers<a class="anchor-link" href="#2-%C2%B7-A-decision-table,-with-reasons-and-falsifiers">&#182;</a></h2><p>This is a guide to the <strong>historical model versions studied in Year 2</strong>, not a September 2026 leaderboard. Pin the exact implementation and checkpoint before testing. Row-count thresholds are feasibility prompts, not scientific phase transitions. The paper sources support the mechanisms; the candidate order below is our operational judgment.</p>
+<div class="dg-table"><table>
+<thead>
+<tr>
+  <th>Regime</th>
+  <th>Start and challenge</th>
+  <th>Why this is a useful test</th>
+  <th>What would change the decision?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Ordinary mixed numeric/categorical table</td>
+  <td>Tuned GBDT; challenge with RealMLP and TabM</td>
+  <td>Tree partitions are a strong baseline for heterogeneous features; strong MLP recipes and efficient ensembles deserve a fair comparison</td>
+  <td>A neural candidate improves the prespecified validation metric within the serving budget</td>
+</tr>
+<tr>
+  <td>Few labels; checkpoint fits task and memory</td>
+  <td>GBDT plus historical TabPFN v2; TabICL 2025 for supported classification</td>
+  <td>In-context inference reuses a learned prior without fitting fresh weights for each task</td>
+  <td>Chronological validation, calibration or end-to-end inference cost removes the apparent advantage</td>
+</tr>
+<tr>
+  <td>More rows or larger context</td>
+  <td>Trees/TabM; feasibility-test the pinned TabICL classification model</td>
+  <td>Full-context ICL and gradient-trained predictors incur different memory and prediction costs</td>
+  <td>Measured batching/context cost or validation performance changes the feasible set</td>
+</tr>
+<tr>
+  <td>A plausible feature-interaction hypothesis</td>
+  <td>Keep trees/MLPs; add FT-Transformer</td>
+  <td>Feature-token attention offers a distinct mixing mechanism</td>
+  <td>Its gain disappears under equal selection budget or a simpler model matches it</td>
+</tr>
+<tr>
+  <td>High-cardinality categories or unseen IDs</td>
+  <td>CatBoost with its native categorical route; compare a training-fitted vocabulary/embedding route</td>
+  <td>Identity reuse and unseen-category behavior matter more than a nominal model family</td>
+  <td>Group/cold-start evaluation exposes memorization; larger embeddings do not rescue it</td>
+</tr>
+<tr>
+  <td>Informative names or free text</td>
+  <td>Compare no-text, simple text features and an explicitly pinned semantic encoder; consider CARTE for suitable cross-table transfer</td>
+  <td>Text representation changes the information interface and the cost</td>
+  <td>A frozen text ablation shows no value, or text was unavailable at the cutoff</td>
+</tr>
+<tr>
+  <td>Complementary validation errors; enough serving budget</td>
+  <td>Out-of-fold blend/stack of retained families</td>
+  <td>Diversity may improve predictions; every selection step must stay out of held-out folds</td>
+  <td>Honest OOF comparison and a locked holdout fail to beat the best feasible single model</td>
+</tr>
+<tr>
+  <td>Relevant history or neighbors absent from the row</td>
+  <td>First add point-in-time aggregates; then compare a relational model</td>
+  <td>Test access to additional information before crediting a graph architecture</td>
+  <td>Matched aggregates erase the gain, or any neighbor path leaks future information</td>
+</tr>
+</tbody>
+</table></div>
+<p>Read the mechanism evidence: <a href="https://arxiv.org/abs/2207.08815">trees, §5</a>, <a href="https://arxiv.org/abs/2407.04491">RealMLP</a>, <a href="https://arxiv.org/abs/2410.24210v3">TabM</a>, <a href="https://arxiv.org/abs/2106.11959">FT-Transformer</a>, <a href="https://www.nature.com/articles/s41586-024-08328-6">TabPFN v2</a>, and <a href="https://arxiv.org/abs/2502.05564v2">TabICL 2025</a>. The original TabICL paper is a classification study: do not silently apply later regression support to that historical checkpoint.</p>
+<p><strong>Mechanisms are not slogans.</strong> RealMLP is an MLP plus a carefully designed training recipe. TabM trains multiple predictions using shared parameters and averages them for inference. FT-Transformer mixes feature tokens through attention. TabPFN/TabICL use labeled training rows as inference context; “no task-specific gradient fitting” does not mean “no prediction cost.” An external ensemble combines separately obtained predictions and adds their serving requirements. Explain the particular mechanism that makes your challenger worth measuring.</p>
+<h2 id="3-%C2%B7-Evidence-cannot-travel-farther-than-its-protocol">3 &#183; Evidence cannot travel farther than its protocol<a class="anchor-link" href="#3-%C2%B7-Evidence-cannot-travel-farther-than-its-protocol">&#182;</a></h2><p>The corrected <a href="0060-broad-model-comparison.html">Lesson 60 comparison</a> has 210 selected runs: 14 dataset/regime cells × five methods × three initialization seeds. It uses small training caps, two candidates per method and compressed neural training. Its RealMLP-TD-S and TabM-mini arms are reduced recipes. CatBoost receives common one-hot inputs. FT-Transformer, TabPFN and TabICL are <strong>absent</strong>. A blank cell for these families means <strong>not measured</strong>, not “worse.”</p>
+<p>Reconstruct each saved loss from targets and predictions, verify split IDs and validation-only candidate selection, then average the three seed errors within each dataset. Rank the five means within that dataset; average those ranks with equal dataset weight. Low rank is good. Never pool log loss with RMSE or treat three seeds as three new datasets.</p>
+<p><strong>Worked tie.</strong> Dataset A has seed-mean errors <code>[.20,.20,.50]</code>, giving ranks <code>[1.5,1.5,3]</code>. Dataset B has <code>[20,10,30]</code>, giving <code>[2,1,3]</code>. Their equal-weight mean ranks are <code>[1.75,1.25,3]</code>. The large numerical scale of B does not give it more votes. Ranking loses effect-size information, so inspect within-dataset losses too.</p>
+<p><strong>Fresh author reanalysis of frozen predictions; not new training.</strong></p>
+<div class="dg-table"><table>
+<thead>
+<tr>
+  <th>Method</th>
+  <th style="text-align:right">Random (11)</th>
+  <th style="text-align:right">Matched random (3)</th>
+  <th style="text-align:right">Temporal (3)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>XGBoost</td>
+  <td style="text-align:right">2.909</td>
+  <td style="text-align:right">3.000</td>
+  <td style="text-align:right">3.667</td>
+</tr>
+<tr>
+  <td>CatBoost</td>
+  <td style="text-align:right">1.818</td>
+  <td style="text-align:right">1.000</td>
+  <td style="text-align:right">2.667</td>
+</tr>
+<tr>
+  <td>MLP</td>
+  <td style="text-align:right">4.182</td>
+  <td style="text-align:right">4.667</td>
+  <td style="text-align:right">3.000</td>
+</tr>
+<tr>
+  <td>RealMLP-TD-S</td>
+  <td style="text-align:right">2.909</td>
+  <td style="text-align:right">2.333</td>
+  <td style="text-align:right">3.667</td>
+</tr>
+<tr>
+  <td>TabM-mini</td>
+  <td style="text-align:right">3.182</td>
+  <td style="text-align:right">4.000</td>
+  <td style="text-align:right">2.000</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="dg-figure"><span class="dg-scroll-note">On small screens, scroll the figure horizontally for full-size labels.</span><div class="dg-image" tabindex="0" role="region" aria-label="Scrollable ranks figure"><img src="../labs/figures/l079/ranks.png" alt="Reanalysis of corrected L060 v2 predictions: seed means ranked within each of the same three underlying datasets, then averaged. No causal interpretation or fresh training."></div><figcaption>Reanalysis of corrected L060 v2 predictions: seed means ranked within each of the same three underlying datasets, then averaged. No causal interpretation or fresh training.</figcaption></figure>
+
+<div id="cohort-viz"></div>
+
+<p>The random panel contains eleven datasets; the temporal panel contains three. Restrict random results to those same three names before interpreting the difference. Even then, these are separately sampled train/test populations, not an isolated intervention on chronology. A matched rank reversal is a reason to test the deployment split, not a causal estimate of time's effect or a universal ordering.</p>
+<p>The notebook preserves per-dataset seed values, sample SD and ranks. Its inherited Friedman/Nemenyi summaries are exploratory, especially with only three temporal blocks; their presence does not establish equivalence or significance for a hand-picked pair. Seed variation is conditional on fixed rows. Repeating seeds cannot establish uncertainty over new business domains.</p>
+<p><strong>Reproduction boundary.</strong> We freshly audit all 210 frozen prediction records here. No predictive models are retrained in this unit; no paper benchmark is newly reproduced. The <a href="../labs/l079-reproduction.md">reproduction contract</a> gives exact analysis commands, the full local training rerun command, and links to the original experiment contracts. A deterministic reanalysis is a reproducible artifact, not a replacement for full paper training.</p>
+<h2 id="4-%C2%B7-Make-the-recommendation-executable">4 &#183; Make the recommendation executable<a class="anchor-link" href="#4-%C2%B7-Make-the-recommendation-executable">&#182;</a></h2><p>Here is a <strong>synthetic decision example</strong>, not measured model performance. The validation log losses are Trees .32, TabM .29 and ICL .27. Their measured-in-the-example p95 latencies are 2, 8 and 35 ms. All other constraints are assumed satisfied. Predict the choice under a 5 ms budget before moving the control.</p>
+<div id="budget-viz"></div>
+
+<figure class="dg-figure"><span class="dg-scroll-note">On small screens, scroll the figure horizontally for full-size labels.</span><div class="dg-image" tabindex="0" role="region" aria-label="Scrollable budget figure"><img src="../labs/figures/l079/budget.png" alt="Synthetic fixture: the 5 ms constraint excludes TabM and ICL despite lower validation losses. These are illustrative latencies, not measured model comparisons."></div><figcaption>Synthetic fixture: the 5 ms constraint excludes TabM and ICL despite lower validation losses. These are illustrative latencies, not measured model comparisons.</figcaption></figure>
+
+<p>At 5 ms only Trees qualifies. At 10 ms TabM becomes the lowest-loss feasible candidate; at 40 ms ICL does. Under 2 ms none qualifies. The decision rule is: filter by the declared constraint, then minimize validation loss, with a prespecified tie rule. Real latency is a measured distribution, so include a margin and repeat measurements near a threshold. The synthetic fixture uses exact point estimates to expose the logic.</p>
+<p>The test set has no role in that rule. Once a family, preprocessing recipe and ensemble are chosen, freeze them before the final evaluation. If you inspect test results and redesign the shortlist, the old test has become development evidence; acquire a new holdout or report the adaptive nature of the evaluation. Revisit <a href="0059-validation-set-overfitting.html">validation overfitting</a> and <a href="0057-cross-family-ensembling.html">OOF ensembling</a>.</p>
+<h2 id="5-%C2%B7-Write-the-one-page-artifact">5 &#183; Write the one-page artifact<a class="anchor-link" href="#5-%C2%B7-Write-the-one-page-artifact">&#182;</a></h2><p>Download the <a href="../labs/l079-decision-template.md">blank decision guide</a>. Fill six to eight rows, at most about 650 words. Each row must name a regime, baseline, challenger, split/metric, resource limit, evidence source and a result that would change your mind. Include all Year 2 families across the table. Add a short worked recommendation for the opening fraud case, and a reproduction footer recording source revisions, data/split identities, seeds, environment and unrun work.</p>
+<p><strong>CHECK yourself on an unfamiliar case.</strong> A 120,000-row regression dataset has repeated customers and daily targets. Someone recommends “TabICL because it handles large tables.” Identify three missing premises before accepting the claim.</p>
+<details><summary>Feedback · reveal after answering</summary><p>The historical 2025 TabICL paper studies classification; task support must match the pinned checkpoint. Daily targets and repeated customers require a deployment-specific temporal/entity protocol. Actual memory, context size and serving cost must be measured. Also ask whether past targets and text are available at the cutoff. Row count alone cannot settle the choice.</p></details>
+
+<p><strong>Rubric: 12 points.</strong> Award 0–2 each for deployment/split precision, mechanism-based shortlist, evidence with scope, feasible costs, falsifiable change criteria, and a complete reproduction footer. Two means concrete enough to execute; one means partially specified; zero means missing. A passing rehearsal is at least 10/12, with no test-based selection, future-information leakage or invented paper-reproduction claim. This is self-assessment until your written artifact is reviewed.</p>
+<p>The optional notebook has two live TODOs: constrained validation selection and matching dataset populations. Its CHECK cells test your definitions; the audit runs those same functions. Submit the guide, the audit output if attempted, and your four initial sentences. A <a href="../solutions/l079-example-guide.md">worked guide</a> is available <strong>after your own draft</strong>; different defensible shortlists are welcome.</p>
+<div id="teachback"></div>
+
+<p>Tomorrow, reconstruct the choice order and one counterexample without reopening the table. Before Lesson 80, explain why a model can have the best benchmark rank yet be excluded from your deployment. Ask the agent follow-up questions and bring your draft for a strict evidence review. Creating this lesson does not mark the exit exam—or this essay—complete.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/abs/2410.24210v3">TabM, abstract and comparative experiments</a>. Use its distinction between architectural complexity and measured performance-efficiency to challenge one row of your guide. Then read the primary paper linked in the row you find least certain.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/decision-guide-viz.js"></script><script src="../assets/l079-lesson.js"></script></body></html>

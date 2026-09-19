@@ -403,3 +403,7 @@ _Optional / extension (◆):_
 - [Gilmer et al., ICML2017, §2](https://proceedings.mlr.press/v70/gilmer17a.html): message, sum, update and graph readout.
 - [Kipf & Welling, ICLR2017](https://arxiv.org/html/1609.02907v4): Eq2/9 and Table2 Cora fixed-split experiment.
 - [Pinned GCN release](https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81): preprocessing, architecture, loss, initialization and exact stopping code; paper/code stopping mismatch documented.
+
+## L079 decision guide
+
+Primary historical sources for mechanism-based shortlists: [trees](https://arxiv.org/abs/2207.08815), [FT-Transformer](https://arxiv.org/abs/2106.11959), [RealMLP](https://arxiv.org/abs/2407.04491), [TabM v3](https://arxiv.org/abs/2410.24210v3), [TabPFN v2](https://www.nature.com/articles/s41586-024-08328-6), [TabICL 2025 v2](https://arxiv.org/abs/2502.05564v2). This is a course synthesis, not a current leaderboard. Local quantitative evidence uses corrected L060 v2 predictions only; source/hash inventory: labs/_sources_l079.json.

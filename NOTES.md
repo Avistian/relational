@@ -1315,3 +1315,7 @@ User reiterated full reproduction. L077 is the planned synthesis construction, n
 ## Lesson 078 created · message passing · 2026-09-19
 
 Full reproducibility requested. Added manual mean-message bridge and complete inline Cora GCN port of the pinned release. Executed100 initializations on the full fixed split:81.401% mean,0.658 percentage-point sample SD. Paper target81.5%; modern-framework/original-seed differences remain explicit. Gilmer QM9 and original TensorFlow parity NOT_RUN. Student/solution notebooks, portable architecture and arithmetic figures, reusable Y3 widget, source/data hashes and full commands included. No learner completion inferred.
+
+## Lesson 079 created · Year 2 decision guide · 2026-09-19
+
+Writing capstone with a one-page template/rubric, source-grounded historical family shortlist, matched-cohort rank analysis and synthetic latency constraint. Full corrected L060 v2 prediction audit (210 records) is reproducible offline with embedded/pinned bytes and complete inline analysis. It is not fresh training or paper reproduction. No learner completion inferred.

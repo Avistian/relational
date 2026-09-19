@@ -97,3 +97,7 @@ Tier C, generated entirely in `relkit/ceiling_l077.py`. Full experiment uses 100
 ## L078 Cora
 
 Full raw released Cora files from tkipf/gcn revision39a4089fe72ad9f055ed6fdb9746abdcfebc4d81; `_sources_l078.json` pins every file hash. Load only after verification. Fixed140/500/1000 train/validation/test label split, all2708 nodes visible under the transductive protocol. Separate four-node synthetic fixture exists only for manual arithmetic.
+
+## L079 decision evidence
+
+`l079/l060-v2.json.gz` is a deterministic gzip copy of the complete corrected `_verify_l060_v2_results.json`, including all 210 prediction records. Uncompressed hash and source-course revision are pinned in `_sources_l079.json`; no sampling or rounding was introduced. Reanalysis only, not new training.
