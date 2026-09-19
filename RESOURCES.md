@@ -391,3 +391,9 @@ _Optional / extension (◆):_
 - [PyTorch Frame v2, Figure1 and §3](https://arxiv.org/html/2404.00776v2): typed table-to-row interface.
 - [RelBench v1, Table6 and AppendixB](https://arxiv.org/html/2407.20060v1): driver-dnf target and training protocol.
 - [Publication-day source](https://github.com/snap-stanford/relbench/tree/5894184f3d1b2432feb9a208a8aaf18b106fbdf4): original model, neural layers and gnn_node trainer.
+
+## L077 single-table ceiling
+
+- [Fey et al., ICML2024 position paper](https://proceedings.mlr.press/v235/fey24a.html): primary motivation for graph learning over databases.
+- [Zaheer et al., Deep Sets](https://arxiv.org/abs/1703.06114): permutation-invariant set functions; supporting reading, no paper experiment claimed.
+- [RelBench v1](https://arxiv.org/html/2407.20060v1): real-data evaluation and feature-engineering comparison, distinct from the authored collision construction.

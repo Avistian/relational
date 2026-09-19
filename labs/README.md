@@ -151,3 +151,5 @@ live Colab compatibility or full paper reproduction.
 - L075: [PyTorch Frame row encoder](0075-pytorch-frame-row-encoder.ipynb) — five-stype API trace, train-only materialization, real credit_g row vectors; no accuracy claim.
 
 - L076: [Encoder → predictor stack](0076-encoder-predictor-stack.ipynb) — full two-table teaching composition; separate historical RelBench replay and explicit NOT_RUN ledger.
+
+- L077: [Single-table ceiling](0077-single-table-ceiling.ipynb) — complete five-seed synthetic reproduction, exact information bound and tabular feature-repair control.

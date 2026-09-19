@@ -23,6 +23,29 @@
 
   global.RETRIEVAL_POOL = [
 {
+  "id": "l077-ceiling",
+  "lesson": 77,
+  "quarter": "Q4",
+  "concept": "representation-ceiling",
+  "question": "Opposite labels share identical flat vectors in balanced pairs. What repairs this information gap?",
+  "options": [
+    {
+      "label": "Supply an informative history feature",
+      "value": "feature"
+    },
+    {
+      "label": "Increase the existing model depth",
+      "value": "depth"
+    },
+    {
+      "label": "Repeat the existing training loop",
+      "value": "repeat"
+    }
+  ],
+  "correct": "feature",
+  "explain": "A deterministic function gives identical vectors the same prediction. A permissible feature that distinguishes the histories can break the collision."
+},
+{
   "id": "l076-routing",
   "lesson": 76,
   "quarter": "Q4",

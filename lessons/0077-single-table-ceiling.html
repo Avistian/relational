@@ -1,0 +1,127 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson077 — Single-table ceiling: an information audit</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/ceiling-viz.css"><link rel="stylesheet" href="../assets/flatten-loss-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0076-encoder-predictor-stack.html">Lesson76</a></nav><header><p>Year2 · Quarter4 · Lesson077</p><h1>Single-table ceiling: an information audit</h1><p>Exhibit a collision. Prove its bound. Restore the missing information.</p></header><aside><a href="../labs/html/0077-single-table-ceiling.html">Read lab</a> · <a href="../labs/0077-single-table-ceiling.ipynb" download>Download notebook</a> · <a href="../reference/0077-single-table-ceiling.html">Reference</a> · <a href="../labs/l077-reproduction.md">Reproduction contract</a></aside><h2 id="Start-with-retrieval">Start with retrieval<a class="anchor-link" href="#Start-with-retrieval">&#182;</a></h2><p>Before reading further, answer from memory: what did the L035 aggregation discard? Why can an old event be unavailable at prediction time? In L076, which operation decides what a customer can receive from other rows?</p>
+<div id="warmup"></div>
+
+<p>Your tangible win is a <strong>ceiling certificate</strong>: two different histories, one identical input vector, incompatible labels, and a calculation showing the best possible accuracy from that vector. You will then break the collision with a feature computed from the eligible history.</p>
+<p>This strengthens the mission by making the relational thesis falsifiable. You must name the information a model receives before interpreting its score. The <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al. position paper</a> motivates learning over connected database records. Here we test one carefully bounded consequence of discarding information.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This curriculum unit is an original synthesis experiment, with no newly introduced model or assigned published table. Its complete experiment is reproduced below. The construction establishes a possibility and an information bound; it does not measure the prevalence of this problem in real databases.</p>
+</blockquote>
+<h2 id="1-%C2%B7-Two-histories-become-the-same-row">1 &#183; Two histories become the same row<a class="anchor-link" href="#1-%C2%B7-Two-histories-become-the-same-row">&#182;</a></h2><p><strong>A representation</strong> is the information passed to a predictor. A predictor maps that information to a label or probability. In this lesson it receives one fixed vector for each customer. Customer IDs, input positions, pair IDs and other customers' records are excluded from that vector.</p>
+<p><strong>Worked example.</strong> Customer A has amounts 10, 30, 50 on days 1, 2, 3. Customer B has 50, 30, 10 on the same days. Both have the same own-row feature. Let the label be 1 when the final eligible amount exceeds the first, otherwise 0. These labels describe a historical pattern, so we can inspect their correctness directly.</p>
+<p>For each history, count = 3, sum = 90, mean = 30, maximum = 50. Our flat representation is <code>[own, count, sum, mean, max]</code>. It gives A and B the same vector, although their labels differ.</p>
+<div id="prediction"></div>
+
+<figure class="ceiling-figure"><div tabindex="0" role="region" aria-label="Scrollable collision figure"><img src="../labs/figures/l077/collision.png" alt="Worked example: the same three eligible amounts in opposite time order. Count, sum, mean and maximum coincide; last-minus-first has opposite signs."></div><figcaption>Worked example: the same three eligible amounts in opposite time order. Count, sum, mean and maximum coincide; last-minus-first has opposite signs.</figcaption></figure>
+
+<p><strong>A collision</strong> occurs when different underlying records map to the same representation. A join can retain both histories as multiple ordered records. The information loss here occurs in the chosen aggregation, which discards event order. A single-table layout can preserve the missing information if we choose richer columns.</p>
+<p>The L035 visual below also varies product identity. Use it as a retrieval exercise: identify which displayed columns collide and which recovered columns distinguish the customers. Our new experiment varies time order only, isolating a single cause.</p>
+<div class="ceiling-scroll"><div id="flatten-recall"></div></div>
+
+<h2 id="2-%C2%B7-Prove-the-ceiling-before-training">2 &#183; Prove the ceiling before training<a class="anchor-link" href="#2-%C2%B7-Prove-the-ceiling-before-training">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A predictor that sees the same input must make the same deterministic prediction. If half the customers sharing that input need label 0 and half need label 1, it must miss half of them.</p>
+</blockquote>
+<p>Let <code>z = F(H)</code> be the flat vector produced by aggregation <code>F</code> from history <code>H</code>. A <strong>collision class</strong> is the collection of examples with the same <code>z</code>. Write <code>n(z,0)</code> and <code>n(z,1)</code> for the counts of their two labels. Let <code>N</code> be the total number of examples.</p>
+<p>For a given class, predicting 0 gets <code>n(z,0)</code> correct. Predicting 1 gets <code>n(z,1)</code> correct. The best choice therefore gets <code>max(n(z,0), n(z,1))</code> correct. Summing these independent choices gives the exact empirical upper bound:</p>
+<p><code>best accuracy using z alone = Σ_z max(n(z,0), n(z,1)) / N</code>.</p>
+<p>This bound allows <strong>any</strong> mapping from vectors to labels. A particular trained model may perform worse. The calculation uses labels to audit information after the model is frozen; the classifier never receives those test labels.</p>
+<p><strong>Worked example.</strong> One class has labels <code>[0,0,1]</code>; another contains <code>[1]</code>. The ceiling is <code>(2 + 1) / 4 = 0.75</code>. Balanced classes give 0.5. Merely finding one collision does not establish a 0.5 ceiling for the entire dataset.</p>
+<div id="bound-viz"></div>
+
+<figure class="ceiling-figure"><div tabindex="0" role="region" aria-label="Scrollable bound figure"><img src="../labs/figures/l077/bound.png" alt="Four-example illustration, distinct from the balanced experiment. Each collision class gets one prediction: majority counts 2 and 1 give 75% overall."></div><figcaption>Four-example illustration, distinct from the balanced experiment. Each collision class gets one prediction: majority counts 2 and 1 give 75% overall.</figcaption></figure>
+
+<p><strong>Random predictions.</strong> If a balanced collision class receives probability <code>q</code> of predicting 1, expected accuracy is <code>0.5q + 0.5(1−q) = 0.5</code>. Independent randomized predictions can score above 0.5 on a finite draw, but cannot exceed it in expectation. Our measured classifiers are deterministic. Allowing a row index or unique ID changes the information interface and invalidates this particular bound.</p>
+<p><strong>A population statement.</strong> For our generator, every base history has an equally likely forward and reverse version. Its flat vector is identical in the two cases, so <code>P(label=1 | z)=0.5</code>. This establishes the same bound for that defined distribution. On arbitrary real continuous features, absence of exact duplicates does not establish predictability: a finite-sample lookup can achieve a vacuous ceiling of 1 without generalizing.</p>
+<h2 id="3-%C2%B7-Restore-the-information-and-keep-the-classifier-fixed">3 &#183; Restore the information and keep the classifier fixed<a class="anchor-link" href="#3-%C2%B7-Restore-the-information-and-keep-the-classifier-fixed">&#182;</a></h2><p><strong>Point-in-time eligibility</strong> means that information was available at the declared prediction cutoff. Here an event is eligible only when both <code>event_day ≤ 10</code> and <code>available_day ≤ 10</code>. A day-2 record arriving on day 11 is excluded. A day-12 record is also excluded. This restates the time boundary from <a href="0076-encoder-predictor-stack.html">L076</a>.</p>
+<p><strong>An ordered feature.</strong> Sort eligible events by their event time, then compute <code>delta = last amount − first amount</code>. A gets +40; B gets −40. Add delta as a sixth column. Now the classes separate, and the rule <code>delta &gt; 0</code> exactly matches the defined target.</p>
+<div id="repair-viz"></div>
+
+<p><strong>Our trained control.</strong> A decision stump is a tree with one threshold comparison. The visible trainer enumerates columns, thresholds between observed training values, and the label on each side. It chooses the most accurate training rule, with a fixed first-match tie policy. We fit the same learner on five columns and then on six. No hyperparameter or threshold is selected using validation or test labels.</p>
+<p><strong>Why this control matters.</strong> A tabular learner can use a relationally derived feature. The perfect result after adding delta demonstrates that this representation contains enough information for this target. It also falsifies the broader claim that tabular predictors intrinsically cannot solve relationally defined tasks. A GNN is unnecessary for this construction.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The target is deliberately computed from available historical order. This is a controlled representational task, not a forecast of future spending. Computing delta is legitimate here; using post-cutoff spending to predict a future outcome would be leakage. The experiment does not establish an advantage for learned feature discovery over manual feature engineering.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Other-boundaries:-name-the-missing-operation">4 &#183; Other boundaries: name the missing operation<a class="anchor-link" href="#4-%C2%B7-Other-boundaries:-name-the-missing-operation">&#182;</a></h2><p><strong>Cardinality</strong> means the number of records. Mean pooling maps <code>[2]</code> and <code>[2,2]</code> to 2. A target asking whether there are two records requires a count. Sum distinguishes these two cases, but <code>[1,3]</code> and <code>[2,2]</code> have equal count and sum. A reducer's sufficiency depends on the target.</p>
+<p><strong>Identity</strong> means which entity a key refers to. Two customers can have identical amounts and counts while buying from different merchants. Numeric differences between arbitrary merchant IDs have no semantic meaning. Following a foreign key to the merchant's attributes can expose useful information. Renaming IDs while preserving links should preserve the answer.</p>
+<p><strong>Multi-hop access</strong> means following more than one relation. In the example below, a customer links to an order, and the order links to a merchant. Merchant risk is two edges away. Own-row features and one-hop order amounts cannot distinguish the pictured worlds. Two-hop access can expose the risk bit if the message and reduction preserve it. All pictured records are assumed available at the cutoff.</p>
+<div id="reach-viz"></div>
+
+<figure class="ceiling-figure"><div tabindex="0" role="region" aria-label="Scrollable reach figure"><img src="../labs/figures/l077/reach.png" alt="Two illustrative database worlds. Own features and order amounts agree; merchant risk differs two edges away. This shows information access, without claiming every graph reducer preserves the signal."></div><figcaption>Two illustrative database worlds. Own features and order amounts agree; merchant risk differs two edges away. This shows information access, without claiming every graph reducer preserves the signal.</figcaption></figure>
+
+<p><strong>Aggregation limits also apply to graph models.</strong> If all messages are identical and a graph layer takes their mean, duplicating a neighbor may leave the representation unchanged. More relational access supplies candidate information; the encoding and aggregation still determine what survives. <a href="https://arxiv.org/abs/1703.06114">Deep Sets</a> studies permutation-invariant functions on sets. It is a useful reading on this design problem; no Deep Sets benchmark is reproduced here.</p>
+<p><strong>Rule constraints</strong> restrict combinations of outputs. Suppose two bookings compete for one remaining seat. Independent high probabilities for both bookings do not enforce <code>accepted_A + accepted_B ≤ 1</code>. A shared allocation or constrained decision rule is needed. Features may encode seat availability, but a row-wise prediction loss alone gives no hard feasibility guarantee. Message passing alone gives no such guarantee either.</p>
+<h2 id="5-%C2%B7-Run-the-complete-reproduction">5 &#183; Run the complete reproduction<a class="anchor-link" href="#5-%C2%B7-Run-the-complete-reproduction">&#182;</a></h2><p>The full construction uses <strong>1,000 independent pairs per seed</strong>, two customers per pair, three eligible events per customer, and two excluded events. Each pair shares a random base amount, positive increment and own-row feature. Its two histories reverse the same three values. IDs and physical row order are randomized and used only for routing.</p>
+<p><strong>Split.</strong> Shuffle pair groups using <code>split_seed = seed + 10000</code>. Put 60% of groups in training, 20% in validation and 20% in test. That yields 1,200 / 400 / 400 customers. Keeping each pair together makes every partition exactly balanced within each flat collision class. Different pairs can also collide; each contributes one label of each kind. Customers and their event rows never cross partitions.</p>
+<p><strong>Held fixed.</strong> Database, cutoff, pair partition, target, stump trainer and accuracy metric. <strong>Varied.</strong> Only whether delta is supplied. <strong>Measured.</strong> Train, validation and test accuracy, plus a post-freeze collision audit on test. Accuracy is the fraction of correct hard labels. Validation is reported as a diagnostic; the declared protocol makes no selection with it.</p>
+<p><strong>Complete implementation.</strong> The notebook exposes generation, eligibility, representations, splitting, fitting, prediction and evaluation. Three TODOs remain live in the actual runner. SQL provides an independent aggregation/ordering oracle, and a library decision tree checks the information-access control. Changing only excluded amounts must leave both representations unchanged.</p>
+<p><strong>Author-reference evidence — measured locally; not output from your current kernel.</strong></p>
+<div class="ceiling-table"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th>Flat test accuracy</th>
+  <th>Restored test accuracy</th>
+  <th>Exact ceilings, flat / restored</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td>0.500</td>
+  <td>1.000</td>
+  <td>0.500 / 1.000</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td>0.500</td>
+  <td>1.000</td>
+  <td>0.500 / 1.000</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>0.500</td>
+  <td>1.000</td>
+  <td>0.500 / 1.000</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>0.500</td>
+  <td>1.000</td>
+  <td>0.500 / 1.000</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>0.500</td>
+  <td>1.000</td>
+  <td>0.500 / 1.000</td>
+</tr>
+<tr>
+  <td>Mean ± sample SD</td>
+  <td>0.500 ± 0.000</td>
+  <td>1.000 ± 0.000</td>
+  <td>0.500 / 1.000</td>
+</tr>
+</tbody>
+</table></div>
+<p>SQL feature oracle, future/late-arrival invariance, pair isolation, storage-order invariance and independent depth-three tree control: <strong>PASS</strong>.</p>
+<figure class="ceiling-figure"><div tabindex="0" role="region" aria-label="Scrollable results figure"><img src="../labs/figures/l077/results.png" alt="Author-reference measurement: all five complete paired-history runs. Flat test accuracy 0.5; restored test accuracy 1.0. These are synthetic experiments under one generator."></div><figcaption>Author-reference measurement: all five complete paired-history runs. Flat test accuracy 0.5; restored test accuracy 1.0. These are synthetic experiments under one generator.</figcaption></figure>
+
+<p>Five seeds vary the generated database and split, so these are five finite-support experiments under one generator. They are not five independent real datasets. Sample standard deviation describes those five runs; zero spread reflects the exact construction. It gives no estimate of a cross-domain RDL advantage. No significance test is needed to prove the collision argument.</p>
+<p><strong>Reproduce locally:</strong> from the repository root, run <code>.venv/bin/python labs/_verify_l077.py</code>. This executes all five full experiments and the independent checks. The notebook's final experiment uses the same pair count and seeds; it is not a smaller proxy.</p>
+<p><a href="../labs/html/0077-single-table-ceiling.html">Open the lab</a> · <a href="../labs/0077-single-table-ceiling.ipynb">Download the notebook</a> · <a href="../labs/l077-reproduction.md">Protocol and commands</a> · <a href="../labs/_verify_l077_results.json">Machine-readable evidence</a>.</p>
+<h2 id="6-%C2%B7-Synthesize-a-claim-that-could-fail">6 &#183; Synthesize a claim that could fail<a class="anchor-link" href="#6-%C2%B7-Synthesize-a-claim-that-could-fail">&#182;</a></h2><p>Separate three questions when carrying this result into real work:</p>
+<ol>
+<li><strong>Information:</strong> does the representation discard a variable required by the target? This lesson answers that exactly for one construction.</li>
+<li><strong>Generalization:</strong> do the accessible relationships remain predictive across new entities or time periods? Revisit <a href="0055-tabred-temporal-splits.html">temporal splits in L055</a> and <a href="0068-pfns-under-temporal-shift.html">temporal shift in L068</a>. A collision proof cannot answer this.</li>
+<li><strong>Operational cost:</strong> what are the cost, latency and maintenance demands of computing or learning relational features? Revisit <a href="0069-tabpfn-open-environment-failures.html">L069's operating limits</a>. A representation can be sufficient while its implementation is impractical.</li>
+</ol>
+<p>The planned L056b/L069b extensions are not present as published lesson files here; these links point to the available related units. Their questions remain distinct from the information proof.</p>
+<p><strong>A bounded thesis.</strong> “For the paired-history generator and <code>[own,count,sum,mean,max]</code>, every deterministic row-only predictor has accuracy at most 0.5. Adding the eligible last-minus-first feature permits perfect classification.” You can refute an implementation of this thesis by producing a same-interface deterministic prediction vector with accuracy above its exact bound, or a wrong restoration result. Check IDs, cutoff, order, partition and labels before changing the theorem.</p>
+<p><strong>A research hypothesis.</strong> “On specified real temporal tasks, a learned relational model improves held-out performance over a tabular model with a declared feature-engineering budget, at acceptable inference cost.” This needs several real tasks, matched data access and tuning budgets, and a frozen evaluation protocol. Tabular models with adequate relational features, weak or unstable links, and restrictive graph reducers are potential counter-evidence.</p>
+<p><a href="https://arxiv.org/html/2407.20060v1">RelBench v1</a> supplies real predictive tasks and comparisons against feature-engineered tabular models. Those empirical claims require their own reproduction. <a href="../labs/l076-reproduction.md">L076's full historical replay</a> names a published target and contains the complete archived model/trainer with local, Colab and Modal operators. That benchmark remains <strong>NOT_RUN</strong> in the saved L076 evidence. This lesson's exact synthetic results do not fill that gap.</p>
+<h2 id="EXIT-%C2%B7-submit-a-ceiling-certificate">EXIT &#183; submit a ceiling certificate<a class="anchor-link" href="#EXIT-%C2%B7-submit-a-ceiling-certificate">&#182;</a></h2><p>Complete the notebook's three TODOs and all CHECK cells. Submit the saved five-seed results together with 150–250 words containing: your exact input vector; two colliding histories with labels; the bound and its assumptions; the feature that repairs it; and one real-data experiment that could weaken the broader relational thesis.</p>
+<p>Then create a new collision: preserve count and sum while changing a target you define. State whether your current repair feature distinguishes it. Explain why a perfect lookup using unique IDs would leave new-entity generalization unresolved.</p>
+<div id="teachback"></div>
+
+<p><strong>Reading route.</strong> Start with the <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al. position paper</a> for the relational learning motivation, then <a href="https://arxiv.org/html/2407.20060v1#S6">RelBench's user-study design</a> for the empirical test it demands. Ask the teaching agent about any step you cannot derive; send your certificate for grading. Authored material and passing checks do not record learner mastery.</p>
+<p><strong>Next conceptual step.</strong> L078 develops message passing: specify which record sends a message, which neighbors receive it, and what their reduction preserves. Keep this lesson's question beside every graph layer: which different histories still produce the same representation?</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/flatten-loss-viz.js"></script><script src="../assets/ceiling-viz.js"></script><script src="../assets/l077-lesson.js"></script></body></html>

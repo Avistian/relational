@@ -1307,3 +1307,7 @@ API/tool lesson per curriculum; not a downscaled paper benchmark. Pinned0.3.0 so
 ## Lesson 076 created · encoder → predictor stack
 
 Complete Frame0.3.0 two-table composition with three live TODOs, exact mean/gradient oracle, future fit/output intervention and identity tests. Four-row overfit diagnostic only; no held-out claim. Historical RelBench Table6 rel-f1 driver-dnf replay includes full archived model/trainer, source pin, protocol audit and isolated CLI/Colab/Modal operators. Local historical preflight blocked by missing/incompatible runtime; full benchmark NOT_RUN. User reiterated full reproduction where possible. No learner completion inferred.
+
+## Lesson 077 created · single-table ceiling · 2026-09-19
+
+User reiterated full reproduction. L077 is the planned synthesis construction, not a new paper architecture. Full 1000-pair × five-seed experiment reproduced locally: deterministic flat stump accuracy/ceiling .5; same learner with eligible last-minus-first accuracy/ceiling1. Complete visible generator/split/aggregation/trainer and three live TODOs, SQL and library-tree controls, interventions, four portable figures and browser-checked controls. This proves a specified information ceiling, not real-data RDL superiority. L076 historical benchmark remains separate and NOT_RUN. No learner completion inferred.
