@@ -121,3 +121,6 @@ Tier B: reuses pinned Planetoid Cora bytes in data/l078, independently checked a
 ## L085 · over-smoothing
 
 Karate graph: full34 nodes and78 binary undirected edges, identity features; serialized in `../sources/l085/karate.json`, pinned in `../_sources_l085.json`. Li et al. Figure2 setup, untrained, labels only color points. Cora: reuse L078/L082 full pinned data and fixed label masks for a separate depth extension; not Li et al. classification-table protocol.
+
+### L090: Cora checkpoint
+Tier B, full real citation graph; shared hash-pinned release data with L078/L082. Full fixed-split100-initialization GCN reconstruction and separate inductive context extension. See [contract](../l090-reproduction.md).

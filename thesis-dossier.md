@@ -489,3 +489,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 | L088 | BAR | GIN makes multiset counting and the 1-WL ceiling explicit. A six-cycle and two triangles remain indistinguishable under identical initial labels; empirical graph classification cannot establish universal relational expressiveness. MUTAG execution coverage and historical protocol gaps are reported separately. |
 
 | L089 | BAR | Training feasibility depends on which relational messages fit inside each batch. PPI teaching runs quantify retained edges, hidden-state proxies and F1, but equal passes give different update counts. Full published-scale recipe is supplied; its result is not reproduced. |
+
+- **L090 · BAR · 2026-09-19:** Full100-seed Cora GCN reconstruction reaches81.401% mean versus81.5% reported; full protocol audit and a separate inductive extension support implementation fluency. One citation graph is not evidence of relational-database superiority. Historical framework identity remains INCOMPARABLE.

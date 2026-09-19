@@ -2170,5 +2170,29 @@
   "correct": "union",
   "explain": "The induced subgraph restores crossing edges with both endpoints selected; it excludes edges to unselected nodes."
 }
+,
+{
+  "id": "l090-protocol-before-score",
+  "lesson": 90,
+  "quarter": "Q1",
+  "concept": "reproduction",
+  "question": "A GNN matches the paper mean but uses a different split. What is the correct verdict?",
+  "options": [
+    {
+      "label": "Declare numerical reproduction",
+      "value": "match"
+    },
+    {
+      "label": "Declare protocol incomparability",
+      "value": "gap"
+    },
+    {
+      "label": "Declare architecture superiority",
+      "value": "win"
+    }
+  ],
+  "correct": "gap",
+  "explain": "A close score cannot repair a mismatched split or information-access contract."
+}
 ];
 })(window);

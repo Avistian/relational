@@ -1,0 +1,186 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 90 — Q1 checkpoint: build and defend a GNN</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/gnn-boundary-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0089-sampling-at-scale.html">Lesson 89</a> · <a href="../reference/gnn-checkpoint.html">Reference</a></nav><header><p>Year 3 · Quarter 1 · Lesson 090</p><h1>Q1 checkpoint: build and defend a GNN</h1></header><h2 id="0-%C2%B7-Close-the-notes-first">0 &#183; Close the notes first<a class="anchor-link" href="#0-%C2%B7-Close-the-notes-first">&#182;</a></h2><p><strong>Your win:</strong> hand over a runnable GNN, a benchmark report and an inductive mini-batch implementation whose information boundary you can defend. This is the Q1 checkpoint, not a new architecture survey. Allow one session for the short reading and several sessions for the lab and written defense.</p>
+<p>Before reading further, answer from memory:</p>
+<ol>
+<li>On a three-node path, why does adding self-loops change the degrees used by a GCN?</li>
+<li>Why does masking test labels fail to make a transductive graph experiment inductive?</li>
+<li>What evidence would distinguish “my mean accuracy is close” from “I reproduced the experiment”?</li>
+</ol>
+<div id="warmup"></div>
+
+<p><a href="0089-sampling-at-scale.html">Lesson 89</a> made a large graph trainable. Here you must assemble the whole argument: the messages are right, the training data is allowed, the benchmark is faithfully specified, and the conclusion follows from the measurements. These are prerequisites for learning across foreign-key relationships in the next quarter. Our mission demands defensible relational results, not simply a working GNN import.</p>
+<p><strong>Primary reading:</strong> revisit <a href="https://arxiv.org/html/1609.02907v4">Kipf &amp; Welling, §3, §5.2 and Table 2</a> and <a href="https://arxiv.org/html/1706.02216v4">Hamilton et al., Algorithm 1 and §3.1</a>. The <a href="https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81">pinned GCN release</a> resolves concrete implementation choices. <a href="0082-gcn.html">Lesson 82</a> and <a href="0083-graphsage.html">Lesson 83</a> are repair references; attempt retrieval first.</p>
+<h2 id="1-%C2%B7-Freeze-the-claim-before-training">1 &#183; Freeze the claim before training<a class="anchor-link" href="#1-%C2%B7-Freeze-the-claim-before-training">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A score has meaning only together with the rules that produced it.</p>
+</blockquote>
+<p>A <strong>protocol</strong> specifies the data, information available during training, preprocessing, model, optimization, selection, seeds and metric. A <strong>seed</strong> initializes a pseudorandom stream; repeating seeds on the same split measures initialization variability, not generalization across datasets.</p>
+<p>Our named experiment is <strong>GCN on the fixed Cora split in Table 2</strong>, with a reported mean accuracy of <strong>81.5%</strong> over 100 initializations. Cora is a citation graph: 2,708 documents, 1,433 word features and seven classes. The released split provides 140 training labels, 500 validation labels and 1,000 test labels. The remaining nodes supply graph context, not extra supervised targets. Accuracy is the fraction of test nodes whose predicted class matches the label.</p>
+<p>The course acceptance band is <strong>±1 percentage point</strong> around 81.5%, fixed before this run. This is an educational tolerance, not a confidence interval or a criterion supplied by the paper. Do not enlarge it after seeing a disappointing result.</p>
+<table>
+<thead>
+<tr>
+  <th>Decision</th>
+  <th>Frozen GCN reproduction lane</th>
+  <th>Inductive extension lane</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Purpose</td>
+  <td>Reconstruct one named published experiment</td>
+  <td>Demonstrate unseen-node mini-batching</td>
+</tr>
+<tr>
+  <td>Training graph</td>
+  <td>All 2,708 nodes and their features</td>
+  <td>1,208 nodes: exclude validation and test</td>
+</tr>
+<tr>
+  <td>Training labels</td>
+  <td>Original 140 only</td>
+  <td>The same 140 only</td>
+</tr>
+<tr>
+  <td>Validation graph</td>
+  <td>Full graph, validation labels only for stopping</td>
+  <td>Training context plus 500 validation nodes</td>
+</tr>
+<tr>
+  <td>Test graph</td>
+  <td>Full graph after stopping</td>
+  <td>Training context plus 1,000 test nodes</td>
+</tr>
+<tr>
+  <td>Model</td>
+  <td>Two-layer GCN, width 16</td>
+  <td>Two-layer mean/concatenate variant, width 32</td>
+</tr>
+<tr>
+  <td>Budget</td>
+  <td>100 seeds; at most 200 epochs each</td>
+  <td>Three seeds; 100 epochs each</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Released moving-mean stop; last weights</td>
+  <td>Lowest validation loss; restore that epoch</td>
+</tr>
+<tr>
+  <td>Inference</td>
+  <td>Full normalized GCN propagation</td>
+  <td>Full eligible-neighbor means</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Scope check.</strong> The two lanes change model, information access, optimization and sampling together. Their score difference cannot isolate the benefit of sampling or rank GCN against GraphSAGE. The inductive lane is an explicitly designed Cora extension, not a Hamilton paper-table reproduction. See the <a href="../labs/l090-reproduction.md">complete reproduction contract</a>.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Rebuild-a-message-you-can-check-by-hand">2 &#183; Rebuild a message you can check by hand<a class="anchor-link" href="#2-%C2%B7-Rebuild-a-message-you-can-check-by-hand">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Each GCN layer combines a node's transformed features with its neighbors' transformed features. Degree factors control their contributions.</p>
+</blockquote>
+<p>Write the binary undirected adjacency as <strong>A</strong>, with A[i,j]=1 for an edge. Add the identity matrix <strong>I</strong>, which gives each node exactly one self-loop. Let d[i] be the sum of row i of A+I. The normalized operator is <strong>S[i,j]=(A+I)[i,j]/√(d[i]d[j])</strong>. It is symmetric; it is not generally a row-stochastic mean.</p>
+<p>A layer computes <strong>S H W</strong>, where H has one feature vector per node and W is the shared learned feature transformation. The first layer applies ReLU, which replaces negative values with zero. The second emits seven <strong>logits</strong>, unnormalized class scores. During training, cross-entropy compares logits with training labels; inference picks the largest logit.</p>
+<p><strong>Worked example.</strong> Take path 0–1–2, scalar features [2,4,8], and W=1. Adding loops gives degrees [2,3,2]. The middle output is 2/√6 + 4/3 + 8/√6 = <strong>5.415816</strong>, rounded to six decimals. Remove node 2 before normalization: the remaining degrees are [2,2], and the middle output is (2+4)/2 = <strong>3</strong>. Removing a feature contribution alone would miss the change in normalization.</p>
+<div id="prediction"></div>
+
+<div id="boundary"></div>
+
+<p>The widget holds the graph, weights and training labels fixed within each declared context. Its slider changes only the held-out node's feature. Merely hiding that node's label leaves a computational route into training. For the inductive lane, remove the node and incident edges from the training context. Validation nodes become available during validation; test nodes become available only for final inference. No held-out labels enter the optimizer.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l090/trace.png" alt="Hand fixture: removing node 2 changes both available messages and augmented degrees."></div><figcaption>Hand fixture: removing node 2 changes both available messages and augmented degrees.</figcaption></figure>
+
+<p><strong>Lab task A:</strong> implement sparse propagation and the masked objective. Check against the hand calculation, an isolated node and an independent dense matrix expression. “The loss went down” does not diagnose a reversed edge or incorrect degree.</p>
+<h2 id="3-%C2%B7-Model-architecture-and-training-contract">3 &#183; Model architecture and training contract<a class="anchor-link" href="#3-%C2%B7-Model-architecture-and-training-contract">&#182;</a></h2><figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l090/architecture.png" alt="GCN benchmark port and separate inductive extension: actual shapes, shared transforms, objectives and inference contexts."></div><figcaption>GCN benchmark port and separate inductive extension: actual shapes, shared transforms, objectives and inference contexts.</figcaption></figure>
+
+<p><strong>GCN lane.</strong> Row-normalize each document's word features. Apply dropout with probability 0.5 to the nonzero input values, then sparse propagation through W₀ of shape 1,433×16. Apply ReLU and hidden dropout, then propagate through W₁ of shape 16×7. Both weight matrices use Glorot uniform initialization; neither layer has a bias. Evaluation disables dropout. The notebook shows the loader, both transformations and complete trainer, using the same canonical implementation as L082.</p>
+<p><strong>Objective.</strong> Average cross-entropy over the 140 training nodes and add 0.0005 × ½‖W₀‖². Only the first weight matrix receives that penalty. Generic optimizer weight decay on every parameter would implement a different objective. Adam uses learning rate 0.01, betas (0.9,0.999) and epsilon 10⁻⁸. These choices follow the pinned <a href="https://github.com/tkipf/gcn/blob/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81/gcn/models.py">model</a> and <a href="https://github.com/tkipf/gcn/blob/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81/gcn/train.py">trainer</a>.</p>
+<p><strong>Selection is executable behavior.</strong> After each update, evaluate regularized validation loss without dropout. Once the zero-based epoch exceeds 10, stop if the current loss exceeds the mean of the preceding ten losses. Evaluate the last weights. Do not silently replace this with patience or restore the best checkpoint: the released implementation and the paper's prose differ here. A maximum of 200 epochs still applies.</p>
+<p><strong>Lab task B:</strong> make loss masking survive a label intervention. Change every nontraining label while keeping logits fixed; the training objective must remain identical. Then verify the first-layer L2 gradient independently of classification loss.</p>
+<h2 id="4-%C2%B7-Mini-batch-targets-are-not-the-entire-computation">4 &#183; Mini-batch targets are not the entire computation<a class="anchor-link" href="#4-%C2%B7-Mini-batch-targets-are-not-the-entire-computation">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Predicting a small batch still requires the neighbors that supply its messages.</p>
+</blockquote>
+<p>A <strong>root</strong> is a target node whose loss enters this update. A <strong>fanout</strong> is the number of neighbor draws per node per hop. For 64 roots and fanouts [10,10], our sampling tree contains at most 64 + 640 + 6,400 = <strong>7,104 node occurrences</strong>, before any deduplication. Occurrences can repeat; this is not the number of unique nodes or a measurement of peak memory.</p>
+<p>Our extension uniformly samples with replacement from eligible neighbors. For a node with no eligible neighbors, a validity mask makes its neighbor mean zero; its own features still pass through the self branch. Hidden states concatenate the root features and neighbor mean, apply a shared linear transform and ReLU, then divide by their Euclidean length (with a numerical floor). A second self/neighbor concatenation produces class logits. The two occurrences of the first-layer transform use the <strong>same weights</strong>.</p>
+<p>At training time the second layer needs hidden states for both roots and their sampled neighbors. Those neighbors therefore need their own first-hop inputs. The notebook exposes both sampling calls and routes all aggregation through your <code>masked_mean</code>. At validation and test time, the same learned transformations use full eligible-neighbor means for deterministic inference. Sampling a nonlinear network is not an exact full-neighbor gradient estimator merely because a sampled raw mean is unbiased.</p>
+<p><strong>Lab task C:</strong> build adjacency lists that exclude an edge unless both endpoints are eligible, then implement the masked mean. Test an excluded feature changed to one million, a degree-one graph where sampled/full predictions coincide, and an empty neighborhood. The test must exercise the model, not only inspect lists.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This extension uses biased linear layers, width 32, no dropout, Adam 0.01 with weight decay 0.0005, batches of 64 and a validation-selected checkpoint. It illustrates Hamilton's sample-and-aggregate principle; it does not duplicate his released supervised model or original benchmarks.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Read-the-evidence-in-the-right-order">5 &#183; Read the evidence in the right order<a class="anchor-link" href="#5-%C2%B7-Read-the-evidence-in-the-right-order">&#182;</a></h2><p>Before opening the measured results, predict which is sufficient for acceptance: a close mean alone, a protocol audit alone, or both with complete execution coverage. Write one reason.</p>
+<p><strong>Author-reference evidence, not the learner's current kernel output.</strong></p>
+<table>
+<thead>
+<tr>
+  <th>Experiment</th>
+  <th style="text-align:right">Completed runs</th>
+  <th style="text-align:right">Mean test accuracy ± sample SD</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Full GCN released-protocol port</td>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">81.401% ± 0.658 pp</td>
+  <td>CLOSE: within frozen tolerance</td>
+</tr>
+<tr>
+  <td>Inductive Cora extension</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">72.467% ± 1.124 pp</td>
+  <td>Executed; paper comparison INCOMPARABLE</td>
+</tr>
+</tbody>
+</table>
+<p>GCN standard error: <strong>0.0658 percentage points</strong>. Fresh CPU training took 193.0 seconds for the GCN lane and 19.6 seconds for the extension. Raw evidence: <a href="../labs/_paper_l090_results.json">GCN</a>, <a href="../labs/_inductive_l090_results.json">inductive</a>, <a href="../labs/_verify_l090_results.json">behavior checks</a>. A <a href="../labs/_clean_environment_l090_results.json">fresh pinned environment</a> also completed both lanes; its 100 GCN scores and validation traces exactly matched the author run.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l090/results.png" alt="Author measurements: 100 GCN initializations and three inductive runs; separate protocols, not a ranking."></div><figcaption>Author measurements: 100 GCN initializations and three inductive runs; separate protocols, not a ranking.</figcaption></figure>
+
+<p><strong>Interpretation.</strong> Sample standard deviation describes variation among the declared initializations. Standard error divides that SD by √100; it estimates uncertainty of the mean conditional on this fixed split and implementation. Neither quantifies performance across future graphs. The plot retains individual seed scores so you can see what the mean hides.</p>
+<p><strong>Historical fidelity.</strong> This is a modern PyTorch port of the released GCN protocol. Original seed identities and exact paper-run source revision are unavailable. TensorFlow-1 RNG streams, sparse operations and Adam arithmetic differ. Full execution coverage and a close score establish a useful reconstruction; bitwise historical parity remains <strong>INCOMPARABLE</strong>. Original TensorFlow training, other datasets and other Table 2 methods remain <strong>NOT_RUN</strong>.</p>
+<p><strong>Lab task D:</strong> implement a verdict that checks protocol compatibility before score tolerance, rejects fewer than 100 runs as incomplete, and distinguishes CLOSE from FAIL. A high score under an incompatible split must remain INCOMPARABLE. An honest FAIL report is a valid scientific artifact; it is not permission to tune against test labels.</p>
+<h2 id="6-%C2%B7-Produce-the-checkpoint-artifact">6 &#183; Produce the checkpoint artifact<a class="anchor-link" href="#6-%C2%B7-Produce-the-checkpoint-artifact">&#182;</a></h2><p>Open the <a href="../labs/0090-gnn-checkpoint.ipynb">student notebook</a>, <a href="../labs/html/0090-gnn-checkpoint.html">prepared readable lab</a>, or <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0090-gnn-checkpoint.ipynb">Colab</a>. A <a href="../labs/solutions/0090-gnn-checkpoint.ipynb">teacher solution</a> is available after your attempt. Every load-bearing implementation is visible inline; no graph library supplies the model.</p>
+<p>From the repository root, the full author reproduction is:</p>
+<div class="highlight"><pre><span></span>python<span class="w"> </span>labs/_verify_l090.py
+python<span class="w"> </span>labs/_run_l090.py<span class="w"> </span>--lane<span class="w"> </span>paper<span class="w"> </span>--preset<span class="w"> </span>paper
+python<span class="w"> </span>labs/_run_l090.py<span class="w"> </span>--lane<span class="w"> </span>inductive<span class="w"> </span>--preset<span class="w"> </span>paper
+</pre></div>
+<p>Use the pinned environment in the <a href="../labs/l090-reproduction.md">contract</a>. <code>--preset smoke</code> is a diagnostic; <code>closer</code> executes ten GCN initializations. Only <code>paper</code> executes the complete 100-initialization GCN lane. The notebook also offers the full run after the short checks, using your current functions rather than importing a hidden finished model.</p>
+<table>
+<thead>
+<tr>
+  <th>Gate</th>
+  <th>Evidence to submit</th>
+  <th>What fails the gate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Arithmetic</td>
+  <td>Hand trace, sparse/dense agreement, masked loss gradient</td>
+  <td>Training curve alone</td>
+</tr>
+<tr>
+  <td>Induction</td>
+  <td>Sampling checks and excluded-feature intervention</td>
+  <td>Label masking alone</td>
+</tr>
+<tr>
+  <td>Reproduction</td>
+  <td>Raw 100-run artifact, exact command, versions, hashes, protocol audit</td>
+  <td>Best seed or reduced run count</td>
+</tr>
+<tr>
+  <td>Interpretation</td>
+  <td>Mean/SD, frozen tolerance, deviations and unrun work</td>
+  <td>Score closeness presented as historical identity</td>
+</tr>
+<tr>
+  <td>Defense</td>
+  <td>Explain one failed mutation and the repair without notes</td>
+  <td>Executed solution presented as learner mastery</td>
+</tr>
+</tbody>
+</table>
+<p>The notebook writes <code>l090-exit.json</code>. It records actual kernel results and leaves the written defense pending. Full learner completion requires your own completed tasks, both experiment lanes and a reviewed explanation. These prepared materials do not mark you complete.</p>
+<div id="teachback"></div>
+
+<p><strong>Spaced return.</strong> Tomorrow, rederive the three-node calculation without the diagram. A week later, rerun the sampling-boundary intervention from a blank cell. Ask me follow-up questions or send your EXIT artifact and explanation for strict feedback. Next, relation-specific messages in L091 will replace the assumption that every graph edge means the same thing.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/gnn-boundary-viz.js"></script><script src="../assets/l090-lesson.js"></script></body></html>

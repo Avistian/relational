@@ -463,3 +463,9 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 - [Chiang et al., KDD2019](https://arxiv.org/abs/1905.07953v2): §§3.1–3.3,Algorithm1 and Table10; batching, diagonal enhancement and PPI result target.
 - [2019 release](https://github.com/google-research/google-research/tree/89c16e403d42015c3133634788ed0b7965f56395/cluster_gcn): PPI shell recipe, precomputed first layer, loss, partition and inference details.
 - [Stanford GraphSAGE datasets](https://snap.stanford.edu/graphsage/): original PPI archive, fixed split, features and multi-label targets.
+
+## L090 · GNN checkpoint
+
+- Kipf & Welling, [GCN](https://arxiv.org/html/1609.02907v4), §§3,5.2, Table2; primary benchmark source.
+- [Pinned GCN release](https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81): implementation resolves normalization, objective and stopping.
+- Hamilton et al., [GraphSAGE](https://arxiv.org/html/1706.02216v4), Algorithm1 and §3.1: inductive sample/aggregate principle; Cora extension does not reproduce its tables.

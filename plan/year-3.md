@@ -108,7 +108,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — `cluster-sampling-viz.js`: induced graph union restores cut edges and changes normalized messages; `group-viz.js` concerns leakage folds and is not a graph-partition visual.
 - **Bridge** — callback L083 neighbor sampling; forward to Y4 L134 (mini-batch over millions of REG nodes).
 
-### 090 · **Q1 checkpoint** — *Kipf + Hamilton · Deliverable-based*
+### 090 · [**Q1 checkpoint**](../lessons/0090-gnn-checkpoint.html) — *Kipf + Hamilton · Deliverable-based*
+- **Prepared package** — [lab](../labs/0090-gnn-checkpoint.ipynb), [reproduction contract](../labs/l090-reproduction.md). Fresh full100-seed Cora release-protocol port:81.401% mean,0.658pp sample SD; separate three-seed inductive extension:72.467% mean. Historical exact parity INCOMPARABLE. No learner completion inferred.
 - **Deliverable** — a GNN implemented **from scratch** (message passing, not just `import`) reproducing a
   node-classification benchmark within tolerance, with an inductive mini-batch variant.
 - **Bridge** — proves message-passing fluency before heterogeneity; callback L082/L083.

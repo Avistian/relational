@@ -1359,3 +1359,7 @@ User requested full reproducibility. Complete visible GIN-0, hash-pinned MUTAG l
 ## Lesson089 created · Cluster-GCN · 2026-09-19
 
 User requested full reproducibility. Full visible PPI release model/trainer, source/data hashes, original split and a runnable five-layer width2048/400-epoch recipe. Twelve separate teaching runs cover full/random/cluster1/cluster5 across3 seeds. One real full-width update passed; full target NOT_RUN because Modal rejected GPU execution pending a payment method. Modern PyTorch/PyMetis historical parity INCOMPARABLE. No learner completion inferred.
+
+## Lesson090 created · GNN checkpoint · 2026-09-19
+
+Full reproducibility requested. Full100-initialization Cora GCN reconstruction executed afresh, plus separate three-seed inductive mini-batch extension. Five live tasks, full visible implementations, data/source hashes, protocol audit and frozen tolerance. Historical identity remains INCOMPARABLE. No learner completion inferred.

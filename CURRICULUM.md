@@ -267,7 +267,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 087 | [Link prediction](lessons/0087-link-prediction.html) | Zhang & Chen 2018 (skim) | [Edge splits, decoder, ranking; full baseline reconstruction](labs/0087-link-prediction.ipynb) |
 | 088 | [Graph classification](lessons/0088-graph-classification.html) | Xu et al. 2019 (GIN) | [GIN, WL and whole-graph readout; MUTAG reproduction track](labs/0088-graph-classification.ipynb) |
 | 089 | [Sampling at scale](lessons/0089-sampling-at-scale.html) | Chiang et al. 2019 (Cluster-GCN) | [Cluster batches, scale/F1 comparison and full PPI recipe](labs/0089-sampling-at-scale.ipynb) |
-| 090 | **Q1 checkpoint** | Kipf + Hamilton | GNN from scratch on one benchmark |
+| 090 | [**Q1 checkpoint: build and defend a GNN**](lessons/0090-gnn-checkpoint.html) | Kipf + Hamilton | [Full 100-run Cora reconstruction + inductive mini-batch extension](labs/0090-gnn-checkpoint.ipynb) |
 
 ### Q2 · Heterogeneous graphs (091–100)
 **Papers:** Schlichtkrull 2018 · Wang 2019 (HAN) · Hu 2020 (HGT) · Sun 2020 (HIN survey)
