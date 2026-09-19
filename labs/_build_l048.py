@@ -475,3 +475,8 @@ if __name__=='__main__':
         path.parent.mkdir(exist_ok=True)
         notebook=build(solution);nbf.write(notebook,path)
         print(path, len(notebook.cells),'cells')
+
+# Retain the complete architecture and connected HTML/notebook explanation.
+if __name__ == "__main__":
+    from _build_solution_maps import revise as revise_solution_maps
+    revise_solution_maps(48)

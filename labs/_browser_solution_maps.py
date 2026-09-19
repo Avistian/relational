@@ -18,7 +18,8 @@ def stage():
         commands.append(re.sub(r'\bpublic\b',str(STAGE),command))
     subprocess.run(['bash','-e','-c','\n'.join(commands)],cwd=ROOT,check=True,capture_output=True,text=True)
 
-def check():
+def check(lessons=None):
+    selected=lessons or list(range(48,71))
     stage();SHOTS.mkdir(exist_ok=True)
     class Quiet(SimpleHTTPRequestHandler):
         def log_message(self,*args):pass
@@ -31,7 +32,7 @@ def check():
             page=browser.new_page(viewport={'width':width,'height':1000},reduced_motion='reduce')
             page.on('pageerror',lambda e:errors.append(str(e)))
             page.on('response',lambda r:missing.append(r.url) if r.url.startswith(base) and r.status>=400 else None)
-            for n in range(49,71):
+            for n in selected:
                 path=next((STAGE/'lessons').glob(f'{n:04}-*.html'))
                 page.goto(base+'/lessons/'+path.name,wait_until='networkidle')
                 if not page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'):overflows.append([n,width,'lesson'])
@@ -48,7 +49,7 @@ def check():
                         f.locator('.sm-scroll').evaluate('e=>e.scrollLeft=100')
                         assert f.locator('.sm-scroll').evaluate('e=>e.scrollLeft')>0
                         f.locator('.sm-scroll').evaluate('e=>e.scrollLeft=0')
-                    if n in [49,52,55,64,66,70]:
+                    if n in [48,49,52,55,64,66,70]:
                         page.evaluate('document.activeElement.blur()')
                         f.evaluate('e=>e.scrollIntoView()')
                         page.screenshot(path=str(SHOTS/f'{n:04}-{f.get_attribute("data-solution-map")}-{width}.png'),animations='disabled',timeout=20000)
@@ -81,17 +82,19 @@ def check():
                 print(json.dumps(records[-1]),flush=True)
             page.close()
         page=browser.new_page(viewport={'width':1100,'height':1000},java_script_enabled=False)
-        page.goto(base+'/reference/solution-map-atlas.html');assert page.locator('article').count()==22
-        page.locator('article h3 a').first.focus();page.keyboard.press('Enter');page.wait_for_url('**/0049-excelformer-trompt.html')
-        assert page.locator('.solution-map').count()==2
+        page.goto(base+'/reference/solution-map-atlas.html');assert page.locator('article').count()==23
+        page.locator('article h3 a').first.focus();page.keyboard.press('Enter');page.wait_for_url('**/0048-dcnv2.html')
+        assert page.locator('.solution-map').count()==1
         page.emulate_media(media='print')
         assert page.locator('.solution-map svg').first.evaluate('e=>parseFloat(getComputedStyle(e).minWidth)')==0
         page.locator('.solution-map').first.evaluate('e=>e.scrollIntoView()')
-        page.screenshot(path=str(SHOTS/'0049-print.png'),animations='disabled',timeout=20000)
+        page.screenshot(path=str(SHOTS/'0048-print.png'),animations='disabled',timeout=20000)
         browser.close()
     server.shutdown()
     result=dict(status='PASS' if not any([errors,missing,geometry,overflows,links]) else 'FAIL',records=records,js_errors=errors,missing_local_assets=sorted(set(missing)),node_geometry=geometry,page_overflow=overflows,broken_new_links=sorted(set(links)),screenshots=str(SHOTS),keyboard_and_no_js='PASS',print_layout='PASS',live_colab='NOT_CHECKED',deployment='NOT_RUN')
-    (ROOT/'labs/_solution_maps_browser_results.json').write_text(json.dumps(result,indent=2)+'\n')
+    (ROOT/'labs'/('_solution_maps_browser_l048_results.json' if selected==[48] else '_solution_maps_browser_results.json')).write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps({k:v for k,v in result.items() if k!='records'},indent=2))
     assert result['status']=='PASS'
-if __name__=='__main__':check()
+if __name__=='__main__':
+    import sys
+    check([int(n) for n in sys.argv[1:]] or None)

@@ -136,7 +136,8 @@ def revise_html(n):
     if not s.select_one('link[href="../assets/solution-maps.css"]'):s.head.append(s.new_tag('link',rel='stylesheet',href='../assets/solution-maps.css'))
     path.write_text(str(s))
     # Export the author-controlled story independently from generated HTML.
-    (ROOT/'lessons/story'/f'{n:04}.md').write_text('# '+story['title']+'\n\n'+story['opening']+'\n\n'+ '\n\n'.join('## Before: '+a+'\n\n'+t for a,t in story['seams'])+'\n\n## Carry this forward\n\n'+story['handoff']+'\n')
+    if story.get('export_markdown',True):
+        (ROOT/'lessons/story'/f'{n:04}.md').write_text('# '+story['title']+'\n\n'+story['opening']+'\n\n'+ '\n\n'.join('## Before: '+a+'\n\n'+t for a,t in story['seams'])+'\n\n## Carry this forward\n\n'+story['handoff']+'\n')
     return s
 
 def notebook_figure(m,n):
@@ -187,7 +188,7 @@ def revise_notebook(n,path):
     nb.cells.insert(first,cell(opening,'solution_story','opening'))
     placements=[]
     def find(anchor):
-        aliases={57:{'Different mistakes':'Concept recap','Measure the gain':'Interpretation checkpoint'},63:{'Sparsity is a task':'Sparsity changes the world'},62:{'Combining several views':'Ensembling means aligning','What the experiment measured':'What was measured here'}}
+        aliases={48:{'Derive the cross layer':'Task 1 — the dense cross update','Why the degree grows':'Task 2 — a low-rank cross','Low rank:':'Task 2 — a low-rank cross','Where does the deep':'Task 3 — route the deep branch','Extension: a mixture':'Task 4 — mix nonlinear expert updates','The local evidence':'Train the comparison','Reproduction:':'The full-data paper-results attempt'},57:{'Different mistakes':'Concept recap','Measure the gain':'Interpretation checkpoint'},63:{'Sparsity is a task':'Sparsity changes the world'},62:{'Combining several views':'Ensembling means aligning','What the experiment measured':'What was measured here'}}
         anchor=aliases.get(n,{}).get(anchor,anchor)
         for i,c in enumerate(nb.cells):
             if c.cell_type!='markdown' or c.metadata.get('solution_map') or c.metadata.get('solution_story'):continue
@@ -243,7 +244,7 @@ re-rendered to ensure that every new cell is actually visible in the HTML.
 
 
 def atlas():
-    groups=[(49,54,'Build the predictor','Routing, retrieval, recipes and shared ensembles.'),(55,60,'Make the comparison meaningful','Availability, aggregation, selection and matched evidence.'),(61,66,'Learn inference across tasks','Objective → prior → row / feature representations → labels.'),(67,70,'Adapt, stress and decide','Local contexts, changing worlds, broken contracts and a research handoff.')]
+    groups=[(48,54,'Build the predictor','Routing, retrieval, recipes and shared ensembles.'),(55,60,'Make the comparison meaningful','Availability, aggregation, selection and matched evidence.'),(61,66,'Learn inference across tasks','Objective → prior → row / feature representations → labels.'),(67,70,'Adapt, stress and decide','Local contexts, changing worlds, broken contracts and a research handoff.')]
     body=''
     for lo,hi,title,desc in groups:
         body+=f'<h2>{title}</h2><p>{desc}</p><div class="atlas-grid">'
@@ -252,7 +253,7 @@ def atlas():
             for m in MAPS[n]:body+=f'<a class="map-link" href="../lessons/{lesson(n).name}#solution-{m.key}">{E(m.title)} →</a>'
             body+='</article>'
         body+='</div>'
-    page='''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>How the solutions connect · Lessons 049–070</title><style>body{background:#f3f7f7;color:#193b4a;font:16px/1.7 system-ui,sans-serif;margin:0}main{max-width:1100px;margin:50px auto;padding:0 24px}h1{font:48px/1.12 Georgia,serif;max-width:800px}h2{font:32px/1.2 Georgia,serif;margin:50px 0 12px}h3{font:25px/1.25 Georgia,serif}a{color:#08737b;text-underline-offset:3px}.atlas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:22px}article{padding:26px;background:white;border:1px solid #d0e0e2;border-radius:12px}.eyebrow{font-size:11px;letter-spacing:.15em;font-weight:700}.map-link{display:block;margin-top:14px}a:focus-visible{outline:3px solid #ae601e;outline-offset:4px}@media(max-width:600px){h1{font-size:36px}main{padding:0 18px}article{padding:20px}}</style></head><body><main><nav><a href="../index.html">← Course</a></nav><h1>Different solutions.<br>A connected argument.</h1><p>Follow what each paper changes, why that change matters, and which question remains. Each lesson pairs a complete solution map with worked mechanisms and an explicit evidence boundary.</p>'''+body+'</main></body></html>'
+    page='''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>How the solutions connect · Lessons 048–070</title><style>body{background:#f3f7f7;color:#193b4a;font:16px/1.7 system-ui,sans-serif;margin:0}main{max-width:1100px;margin:50px auto;padding:0 24px}h1{font:48px/1.12 Georgia,serif;max-width:800px}h2{font:32px/1.2 Georgia,serif;margin:50px 0 12px}h3{font:25px/1.25 Georgia,serif}a{color:#08737b;text-underline-offset:3px}.atlas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:22px}article{padding:26px;background:white;border:1px solid #d0e0e2;border-radius:12px}.eyebrow{font-size:11px;letter-spacing:.15em;font-weight:700}.map-link{display:block;margin-top:14px}a:focus-visible{outline:3px solid #ae601e;outline-offset:4px}@media(max-width:600px){h1{font-size:36px}main{padding:0 18px}article{padding:20px}}</style></head><body><main><nav><a href="../index.html">← Course</a></nav><h1>Different solutions.<br>A connected argument.</h1><p>Follow what each paper changes, why that change matters, and which question remains. Each lesson pairs a complete solution map with worked mechanisms and an explicit evidence boundary.</p>'''+body+'</main></body></html>'
     (ROOT/'reference/solution-map-atlas.html').write_text(page)
 
 def revise(n):
@@ -269,4 +270,4 @@ def revise(n):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('lessons',nargs='*',type=int);args=p.parse_args()
-    for n in args.lessons or range(49,71):revise(n)
+    for n in args.lessons or range(48,71):revise(n)

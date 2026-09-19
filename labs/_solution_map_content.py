@@ -1,4 +1,4 @@
-"""Authored solution topology and causal reading routes for lessons 49–70.
+"""Authored solution topology and causal reading routes for lessons 48–70.
 
 Coordinates are deliberate: two-lane comparisons, feedback systems, nested
 selection, temporal lanes and axis-changing networks must not share one graph.
@@ -489,3 +489,48 @@ story(70,'Carry a defensible tabular baseline into relational research',
  ('Choose the statistical','A reproducible metric still needs an appropriate evidence unit. Preserve method pairing and aggregate within each dataset before across datasets; repeated seeds describe conditional variation, not a multiplied task population.'),
  ('Turn the evidence','Quality, lifecycle cost and information stress now bound what the single-table system establishes. The relational handoff should identify a specific missing entity or event relationship and test its value against this strong baseline under the same availability rules.')],
  'Return to [[55|the temporal availability contract]] when designing relational joins, and to [[52|the retrieval baseline]] when claiming gains from access to other records. The next research question is which explicit relationships add information that these strong flat-table procedures cannot already use.')
+
+# L048 retrofits the same delivery system directly into the lesson HTML.
+m=diagram(48,'anchored-cross-system','DCNv2: two routes from a row to a prediction','Explicit products and a nonlinear deep branch learn together.',1240,'Model architecture',
+ 'Which value stays fixed through both cross layers, and where do the two branches meet?',
+ 'Save the embedded row x₀ once. Each cross layer mixes its current state, multiplies that mixture by the same x₀, and adds its own current state back. The independent deep branch reads x₀ through two ReLU layers. Only their final outputs are concatenated. A low-rank factorization changes the mixing operator inside the cross branch, not these connections.',
+ 'Complete local parallel dense/factored DCNv2: two cross layers, category embeddings of width4, deep widths32/32, binary head. The paper also studies stacked routing. Nonlinear gated experts are a separate extension and are not pictured as a trained arm here.')
+m.node('numeric',40,155,285,'Numeric fields','training mean / standard deviation','missing → standardized mean',role='query')
+m.node('category',675,155,285,'Categorical fields','training vocabulary; unknown ID','learned 4-wide embeddings',role='query')
+m.node('x0',350,295,300,'Concatenate → original x₀','B × d; keep this vector available','d = numeric width + embeddings')
+m.group(25,440,635,440,'CROSS BLOCK × 2 · separate W,b; the anchor x₀ never changes')
+m.group(690,440,285,440,'DEEP BRANCH · reads x₀ directly')
+m.node('state',50,490,245,'Current state xₗ','start with xₗ = x₀','B × d')
+m.node('mix',375,490,245,'Mix coordinates','a = Wₗxₗ + bₗ','or Uₗ(Vₗᵀxₗ) + bₗ')
+m.node('product',375,650,245,'Multiply by anchor','u = x₀ ⊙ a','B × d; creates feature products')
+m.node('add',50,650,245,'Add the residual','xₗ₊₁ = xₗ + u','retain the current state')
+m.node('cross',375,780,245,'After the second block','x₂: B × d','explicit crossed representation')
+m.node('deep',715,490,235,'Two hidden layers','d → 32 → 32','Linear → ReLU each time')
+m.node('deepout',715,780,235,'Deep representation','B × 32','implicit feature interactions')
+m.node('join',350,930,300,'Join both branch outputs','concatenate [x₂ ; MLP(x₀)]','B × (d + 32)')
+m.node('head',350,1060,300,'Linear head → logit z','sigmoid(z) for prediction','one probability per row',role='query')
+m.node('loss',715,1060,250,'Supervised binary loss','training target y + logit z','updates all learned weights',role='learn')
+m.edge('numeric','x0',via=[(182,270),(500,270)]).edge('category','x0',via=[(817,270),(500,270)])
+m.edge('x0','state',via=[(500,410),(172,410)]).edge('x0','deep',via=[(500,410),(832,410)])
+m.edge('x0','product',ports='rr',via=[(675,338),(675,693)])
+m.edge('state','mix',ports='rl').edge('mix','product')
+m.edge('state','add')
+m.edge('product','add',ports='lr').edge('add','cross',via=[(172,755),(497,755)]).edge('deep','deepout')
+m.edge('cross','join',via=[(497,900),(500,900)]).edge('deepout','join',via=[(832,900),(500,900)])
+m.edge('join','head').edge('head','loss',ports='rl')
+m.note(50,1175,'Solid paths carry one row’s features or training target. No cross-row attention is present.')
+m.note(50,1206,'Factored mixing: d → r → d, with no activation between Vᵀ and U. The anchor stays outside.')
+
+story(48,'Make interactions explicit, then ask whether that bias helped',
+ '[[47|SAINT]] changed which rows could communicate. DCNv2 keeps prediction within one row and changes how its features interact. Start with a concrete limitation: an additive score cannot make one feature’s effect depend on another without an interaction term. The paper builds products into the network, then asks how to make that operation expressive and affordable. We will follow that one idea through the full prediction path, derive its depth and cost consequences, and use the experiments to test the resulting claims.',[
+ ('Model architecture','The motivating product x₁x₂ is a term in a score, not yet a complete predictor. First locate where such products are created in the full system. Embeddings and numeric values form x₀; the cross branch explicitly multiplies its coordinates, while an independent deep branch supplies nonlinear transformations. Their outputs meet at the head. Keep that map beside the derivation below.'),
+ ('Derive the cross layer','Now open the cross block from the diagram. Its matrix first mixes the current coordinates; multiplication by the saved original input turns that mixture into feature products; the residual retains the previous state. Deriving one output coordinate will show exactly which interaction coefficients DCNv2 can learn, rather than treating “cross layer” as a label.'),
+ ('Why the degree grows','The one-layer expansion exposed quadratic terms. Repeating the block raises a new question: which higher-order products can it create? The answer depends on the unchanged x₀ connection in the diagram. Because that multiplier is always degree one, we can bound how quickly the degree grows instead of assuming that any recurrent multiplication is equivalent.'),
+ ('Low rank:','Depth controls the maximum interaction degree, but a dense matrix pays for d² mixing coefficients in every layer. Low rank addresses that cost by sharing a smaller set of directions. It leaves the original-input multiplication and residual untouched, so distinguish a cheaper or restricted mixing map from a change in the cross recurrence itself.'),
+ ('Where does the deep','We have varied the cross operator without changing its place in the model. Now vary the routing: should the MLP read the original features alongside the cross branch, or read the crossed representation after it? This is an independent design choice. The parallel diagram above fixes the local experiment’s choice; the next comparison makes the stacked alternative explicit.'),
+ ('Extension: a mixture','A single low-rank map trades freedom for cost. Multiple experts offer several such directions, with a gate choosing how much each update contributes. But the added nonlinearities and input-dependent gate change the function class: the simple polynomial bound derived for the linear cross block cannot just be carried over. Keep this extension separate from the dense and factored arms we actually train.'),
+ ('The local evidence','The architecture now suggests testable contrasts: remove the cross branch, use a dense map, or factor that map while retaining the same parallel layout. The local experiment compares those complete procedures with a tree baseline. Inspect held-out error and variability to test whether the extra interaction structure helped; greater expressiveness alone does not determine the winner.'),
+ ('Reproduction:','The local comparison tests the mechanism under a small declared budget. Matching a paper result asks a larger question: are the dataset, target construction, split, embedding sizes, training and selection rules also aligned? Follow that chain before comparing the MovieLens scores. An identical cross equation is necessary for this implementation claim, but insufficient for a benchmark-reproduction claim.')],
+ '[[49|ExcelFormer and Trompt]] pursue feature interactions through a different operation: routing information between tokens or into prompts. Carry forward the distinction established here between an operator, the full prediction architecture, and the experiment used to justify it. First trace what a feature can influence; only then ask whether the measured comparison supports the claimed advantage.')
+
+STORIES[48]["export_markdown"] = False
