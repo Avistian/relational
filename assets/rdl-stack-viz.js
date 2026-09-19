@@ -1,0 +1,11 @@
+/* Exact illustrative fixture, not learned embeddings. Default cutoff10 excludes
+ * late event3 and future event4. Default mean: customer42=[4,3], customer7=[4,3].
+ * Cutoff12: customer42=[52,51.5], customer99=[8,7]. Sum affects repeated receivers.
+ * Two independent mounts expose eligibility and reduction beside their prose. */
+(function(g){
+ const events=[{fk:7,t:1,a:1,z:[2,1]},{fk:42,t:2,a:2,z:[4,3]},{fk:7,t:3,a:3,z:[6,5]},{fk:99,t:4,a:11,z:[8,7]},{fk:42,t:12,a:12,z:[100,100]}];
+ function compute(cutoff,mode){return [42,7,99,105].map(id=>{const es=events.filter(e=>e.fk===id&&e.t<=cutoff&&e.a<=cutoff);const sum=es.reduce((a,e)=>a.map((v,k)=>v+e.z[k]),[0,0]);return {id,n:es.length,sum,value:sum.map(v=>mode==='mean'?v/Math.max(es.length,1):v)};});}
+ function mount(el,kind){el.className='rdl-viz';const time=kind==='time';el.innerHTML=time?'<p><b>Predict:</b> At which cutoff does the day-4 event become usable?</p><label>Prediction cutoff: <input type="range" min="3" max="12" value="10" step="1"></label><p class="baseline">Baseline day10: events0,1,2 eligible; customer99 has zero neighbors.</p><output aria-live="polite"></output><button type="button">Reset</button>':'<p><b>Predict:</b> Does changing mean to sum distinguish one event from two?</p><label>Reduction <select><option value="mean">Mean</option><option value="sum">Sum</option></select></label><p class="baseline">Fixed: day10, embeddings and edges. Baseline mean: customer42=[4,3], customer7=[4,3].</p><output aria-live="polite"></output><button type="button">Reset</button>';
+ const control=el.querySelector(time?'input':'select'),out=el.querySelector('output');function draw(){if(time){const cutoff=Number(control.value);out.textContent='Cutoff day '+cutoff+'\n'+events.map((e,i)=>'Event'+i+' → customer'+e.fk+': happened '+e.t+', available '+e.a+' → '+(e.t<=cutoff&&e.a<=cutoff?'INCLUDED':'EXCLUDED')).join('\n')+'\nCounts [42,7,99,105]: '+compute(cutoff,'mean').map(x=>x.n).join(', ');}else out.textContent=compute(10,control.value).map(x=>'Customer'+x.id+': sum ['+x.sum+'], count '+x.n+' → '+control.value+' ['+x.value+']').join('\n');}control.addEventListener('input',draw);control.addEventListener('change',draw);el.querySelector('button').onclick=()=>{control.value=time?'10':'mean';draw();};draw();}
+ g.RDLStackViz={mount,compute};
+})(window);

@@ -1303,3 +1303,7 @@ The home page already has lesson tiles. Do not add individual lesson/lab announc
 ## Lesson 075 created · PyTorch Frame row encoder
 
 API/tool lesson per curriculum; not a downscaled paper benchmark. Pinned0.3.0 source, training-only materializer, four parent encoders/five input columns, visible MLP readout, numeric reconstruction and real credit_g encoding. Split-column leakage demonstrated (mean20 vs265). Authorship does not mark learner completion. Paper benchmarks NOT_RUN; no predictive comparison. See per-lesson execution/browser/delivery reports.
+
+## Lesson 076 created · encoder → predictor stack
+
+Complete Frame0.3.0 two-table composition with three live TODOs, exact mean/gradient oracle, future fit/output intervention and identity tests. Four-row overfit diagnostic only; no held-out claim. Historical RelBench Table6 rel-f1 driver-dnf replay includes full archived model/trainer, source pin, protocol audit and isolated CLI/Colab/Modal operators. Local historical preflight blocked by missing/incompatible runtime; full benchmark NOT_RUN. User reiterated full reproduction where possible. No learner completion inferred.

@@ -23,6 +23,29 @@
 
   global.RETRIEVAL_POOL = [
 {
+  "id": "l076-routing",
+  "lesson": 76,
+  "quarter": "Q4",
+  "concept": "relational-identity",
+  "question": "Customer rows are reordered. What preserves event-to-customer messages?",
+  "options": [
+    {
+      "label": "Remap foreign keys into positions",
+      "value": "remap"
+    },
+    {
+      "label": "Reuse old destination row positions",
+      "value": "reuse"
+    },
+    {
+      "label": "Replace foreign keys with amounts",
+      "value": "amount"
+    }
+  ],
+  "correct": "remap",
+  "explain": "Primary keys identify entities; tensor positions depend on current ordering. Rebuild destinations so messages follow identities."
+},
+{
   "id": "l075-materialization",
   "lesson": 75,
   "quarter": "Q4",

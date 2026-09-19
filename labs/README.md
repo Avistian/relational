@@ -149,3 +149,5 @@ live Colab compatibility or full paper reproduction.
 - L074: [CARTE cross-table transfer](0074-carte-cross-table-transfer.ipynb) — real FastText/YAGO embeddings, graph attention, matched scratch controls.
 
 - L075: [PyTorch Frame row encoder](0075-pytorch-frame-row-encoder.ipynb) — five-stype API trace, train-only materialization, real credit_g row vectors; no accuracy claim.
+
+- L076: [Encoder → predictor stack](0076-encoder-predictor-stack.ipynb) — full two-table teaching composition; separate historical RelBench replay and explicit NOT_RUN ledger.

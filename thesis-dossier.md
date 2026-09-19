@@ -469,3 +469,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 | L074 | BAR | CARTE provides schema-variable within-row encodings; local YAGO transfer is measured on three related wine tables with scratch controls. Pretrained fine-tuning trails scratch at all three dataset means; frozen pretraining beats random on one. This does not establish foreign-key reasoning or temporal validity. Full benchmark INCOMPARABLE. See labs/_verify_l074_results.json. |
 
 | L075 | BAR | PyTorch Frame provides the typed row-encoding interface needed before relational message passing. Local five-type and real credit_g checks establish shape, fit scope and gradient behavior, not relational advantage or predictive quality. No benchmark run; random row vectors remain interface evidence. |
+
+| L076 | BAR | Executed real Frame encoders → explicit eligible one-hop mean → binary head, with identity, fit-scope and gradient checks. Demonstrates the integration interface, not relational predictive advantage. Historical RelBench driver-dnf replay packaged; benchmark NOT_RUN due to historical runtime prerequisites. |

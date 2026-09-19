@@ -1,0 +1,127 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson076 — Encoder → predictor: the relational stack</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0075-pytorch-frame-row-encoder.html">Lesson75</a></nav><header><p>Year2 · Quarter4 · Lesson076</p><h1>Encoder → predictor: the relational stack</h1><p>Encode records → route eligible messages → predict → differentiate.</p></header><aside><a href="../labs/html/0076-encoder-predictor-stack.html">Read lab</a> · <a href="../labs/0076-encoder-predictor-stack.ipynb" download>Download notebook</a> · <a href="../reference/0076-encoder-predictor-stack.html">Reference</a> · <a href="../labs/l076-reproduction.md">Reproduction contract</a> · <a href="../labs/_verify_l076_results.json">Measured evidence</a></aside><h2 id="Start-with-retrieval">Start with retrieval<a class="anchor-link" href="#Start-with-retrieval">&#182;</a></h2><div id="warmup"></div>
+
+<p>Before reading, explain these three things without looking them up: what state a row encoder fits, why a foreign key is not automatically a row number, and why an event timestamp alone cannot prove information was available. If one is unclear, write your current guess. Return to it after the worked example.</p>
+<p><strong>Your tangible win.</strong> Build a complete two-table predictor and account for every input coordinate, edge and gradient. You will connect the row encoder from <a href="0075-pytorch-frame-row-encoder.html">Lesson 75</a> to another table, rather than treating relational learning as an unexplained box. This is the architecture preview specified by the curriculum. The core lab takes about an hour; the historical benchmark replay is a separate, longer track.</p>
+<h2 id="1.-Why-the-row-encoder-needs-a-neighbor">1. Why the row encoder needs a neighbor<a class="anchor-link" href="#1.-Why-the-row-encoder-needs-a-neighbor">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A customer row describes the customer. Purchase rows describe what the customer did. A relational predictor needs a controlled way to bring those descriptions together.</p>
+</blockquote>
+<p>A <strong>table</strong> contains records with named columns. A <strong>primary key</strong>, or PK, identifies a record uniquely within a table. A <strong>foreign key</strong>, or FK, points to a primary key in another table. These keys define relationships. They do not say that larger IDs mean greater amounts or more important customers.</p>
+<p>A <strong>row encoder</strong> is a learned function that maps the descriptive features of one record to a vector of numbers. A vector coordinate has no predetermined business meaning; training adjusts coordinates to support the prediction task. <strong>Message passing</strong> lets one record receive information from related records. An <strong>aggregation</strong> combines a variable number of incoming vectors into one fixed-width vector. A <strong>head</strong> maps the resulting representation to the task's output.</p>
+<p>PyTorch Frame separates typed input conversion, column encoding, within-row interaction and readout. Its row representations can feed a graph model. Read the <a href="https://arxiv.org/html/2404.00776v2">primary paper's Figure 1 and §3</a> with one question: where does within-row computation end? That boundary is where this lesson begins.</p>
+<p><strong>The distinction that matters.</strong> Mixing age and region within a customer row is column interaction. Combining that customer's purchase records is cross-row message passing. A very sophisticated row encoder still cannot use a purchase it never receives.</p>
+<h2 id="2.-Model-architecture:-a-complete,-small-RDL-stack">2. Model architecture: a complete, small RDL stack<a class="anchor-link" href="#2.-Model-architecture:-a-complete,-small-RDL-stack">&#182;</a></h2><p><strong>RDL</strong> means relational deep learning: learning representations and predictions using records and their relationships. Our pictured variant has two table-specific encoders, one direction of communication, one aggregation step, and a binary prediction head. <strong>One hop</strong> means a message traverses one relationship. There is no recurrent update and no hidden second hop.</p>
+<figure class="rdl-figure"><div class="rdl-figure-scroll" tabindex="0" role="region" aria-label="Scrollable architecture diagram"><img src="../labs/figures/l076/architecture.png" alt="Complete teaching variant: two independent Frame encoders, one eligible event-to-customer hop, mean, concatenation and binary head. d=D=4; keys are metadata."></div><figcaption>Complete teaching variant: two independent Frame encoders, one eligible event-to-customer hop, mean, concatenation and binary head. d=D=4; keys are metadata.</figcaption></figure>
+
+<p><strong>Read the shapes.</strong> <code>[N,C,d]</code> means N rows, C columns per row, and d encoded coordinates per column. The customer feature table has 4 rows and 2 columns. With d=4, its tokens are <code>[4,2,4]</code>. Flattening the last two axes gives <code>[4,8]</code>. A learned linear projection and a bounded activation, <code>tanh</code>, produce <code>[4,4]</code> customer vectors. The event encoder follows the same pattern for 5 event rows, producing <code>[5,4]</code> vectors. The encoders have separate weights even though these example schemas have the same number of columns.</p>
+<p><strong>Why separate encoders?</strong> A region category and a purchase kind are different vocabularies. A customer's age and an event's amount have different statistics. The shared contract is the output width D=4, not shared feature semantics. Another encoder could replace either one if it preserves its row identities, output width, device, numeric type and gradient connection.</p>
+<p><strong>The final connection.</strong> Aggregating events creates <code>[4,4]</code> neighbor vectors aligned to customers. Concatenation places each customer's own four coordinates beside its four neighbor coordinates, producing <code>[4,8]</code>. The head applies a learned 8→8 transformation, <code>tanh</code>, and an 8→1 transformation. Removing the singleton last axis returns four <strong>logits</strong>, shape <code>[4]</code>. A logit is an unconstrained score; the sigmoid function converts it to a number between zero and one. That number is not automatically calibrated.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This is a complete teaching model, not a new architecture paper or the RelBench benchmark model. Its actual PyTorch Frame encoders are the API under study. Key routing, temporal eligibility, reduction, composition and training are visible in the notebook. The historical RelBench model and trainer are shown separately after EXIT.</p>
+</blockquote>
+<h2 id="3.-Identity-comes-before-arithmetic">3. Identity comes before arithmetic<a class="anchor-link" href="#3.-Identity-comes-before-arithmetic">&#182;</a></h2><p><strong>Worked example.</strong> The customer IDs, in their current table order, are <code>[42, 7, 99, 105]</code>. The event foreign keys are <code>[7, 42, 7, 99, 42]</code>. Therefore the destination row positions are <code>[1, 0, 1, 2, 0]</code>. The first event belongs to customer 7, which occupies row position 1.</p>
+<figure class="rdl-figure"><div class="rdl-figure-scroll" tabindex="0" role="region" aria-label="Scrollable routing diagram"><img src="../labs/figures/l076/routing.png" alt="Illustrative width-2 embeddings, distinct from learned width-4 rows. Customers42 and7 have equal means despite different histories. Event3 arrives late; event4 is in the future."></div><figcaption>Illustrative width-2 embeddings, distinct from learned width-4 rows. Customers42 and7 have equal means despite different histories. Event3 arrives late; event4 is in the future.</figcaption></figure>
+
+<p>A <strong>graph node</strong> is a record. A directed <strong>edge</strong> specifies which record sends to which receiver. Here an event sends to its customer. A relationship in a database does not force a graph's communication direction: a model designer chooses it. A reverse edge would let a customer send to an event, and a second hop could then carry information farther. This lab deliberately has neither.</p>
+<p><strong>Failure case.</strong> Using the FK value 42 directly as a tensor index is wrong for a four-row table. Subtracting the smallest ID is still wrong because IDs are not contiguous. Sorting customers without updating destinations silently routes messages to the wrong people. Both tensors may retain perfectly valid shapes.</p>
+<p><strong>A stronger check than shape.</strong> Permute customer rows, rebuild the ID-to-position mapping, and verify that predictions move with customer identities. Independently permute events and their edge metadata. A mean reduction should give the same prediction, up to floating-point roundoff. These are <strong>equivariance</strong> and <strong>invariance</strong> checks: an output ordering changes appropriately under the first transformation, while numeric outputs stay fixed under the second.</p>
+<details><summary>Check yourself: customer order becomes [99,42,105,7]. Where does FK 7 go?</summary><p>Position 3. The entity remains customer 7. Position is a property of the current tensor layout, not the database identity.</p></details>
+
+<h2 id="4.-Time-decides-whether-an-edge-can-carry-information">4. Time decides whether an edge can carry information<a class="anchor-link" href="#4.-Time-decides-whether-an-edge-can-carry-information">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> An old event recorded tomorrow was not available for today's prediction.</p>
+</blockquote>
+<p>A <strong>prediction cutoff</strong> is the moment at which the model must make its decision. An <strong>event time</strong> records when something happened. An <strong>availability time</strong> records when the feature became accessible to the predictor. They can differ because records arrive late. The lab uses integer days and an inclusive boundary: both times must be less than or equal to day 10. In a real application, the boundary convention must match the task.</p>
+<p>Our first three events are visible. The fourth occurred on day 4 but became available on day 11, so it is excluded. The fifth occurred and arrived on day 12, so it is also excluded. The corresponding mask is <code>[true,true,true,false,false]</code>.</p>
+<figure class="rdl-figure"><div class="rdl-figure-scroll" tabindex="0" role="region" aria-label="Scrollable time diagram"><img src="../labs/figures/l076/time.png" alt="Day10 cutoff: event3 happened on day4 but arrived on day11. Event4 is later still. Both are excluded; the first three events are eligible."></div><figcaption>Day10 cutoff: event3 happened on day4 but arrived on day11. Event4 is later still. Both are excluded; the first three events are eligible.</figcaption></figure>
+
+<div id="time-viz"></div>
+
+<p><strong>Two distinct leakage paths.</strong> Filtering edges prevents an unavailable event vector from directly reaching a customer. It does not prevent unavailable raw values from influencing a fitted mean, vocabulary or normalization statistic. The lab therefore fits event materialization on eligible rows, then converts all rows using that frozen state. Changing only excluded amounts must leave both fitted state and predictions unchanged.</p>
+<p><strong>Why convert excluded rows at all?</strong> This small fixture keeps all five rows to make masking and gradient checks inspectable. Its encoder is row-local. A batch-dependent normalization across all events would reintroduce influence before masking; it would require a different treatment. At scale, filter or sample eligible rows before encoding them.</p>
+<p><strong>What is held fixed?</strong> Customer attributes are assumed already available at day 10. The fixture has one snapshot and no held-out data. For a predictive benchmark, fit data-dependent state only on the training information allowed by the protocol, then enforce each query's own cutoff. A single global mask is insufficient when queries have different times.</p>
+<details><summary>Check yourself: is event_day≤cutoff enough?</summary><p>No. It admits late-arriving records. In this fixture the day-4 event is unavailable until day 11. Feature revisions and label availability also need their own audit in a real task.</p></details>
+
+<h2 id="5.-Compute-one-hop,-coordinate-by-coordinate">5. Compute one hop, coordinate by coordinate<a class="anchor-link" href="#5.-Compute-one-hop,-coordinate-by-coordinate">&#182;</a></h2><p><strong>Worked example.</strong> To expose the arithmetic, temporarily use two-dimensional illustrative event embeddings. These are hand-chosen values, not the trained width-4 encoder output. The first three events encode as <code>[2,1]</code>, <code>[4,3]</code>, and <code>[6,5]</code>. Their destination positions are <code>[1,0,1]</code>.</p>
+<p>Customer 42 receives <code>[4,3]</code>, so its mean is <code>[4,3]</code>. Customer 7 receives two vectors. Add them coordinatewise to get <code>[8,6]</code>, then divide by two to get <code>[4,3]</code>. Customers 99 and 105 have no eligible events. Their neighbor vectors are explicitly defined as <code>[0,0]</code>.</p>
+<div id="prediction"></div>
+<div id="aggregate-viz"></div>
+
+<p><strong>The general rule.</strong> Write z_j for event j's vector and N(i,t) for the set of events linked to customer i and available at cutoff t. The count n_i is the number of events in that set. The neighbor vector is:</p>
+<pre><code>m_i = sum(z_j for j in N(i,t)) / max(n_i, 1)
+</code></pre>
+<p>The sum over an empty set is a zero vector. The denominator guard makes the empty case finite; it does not invent a neighbor. The implementation accumulates messages using indexed addition. Repeated destinations must add their contributions. Assigning values directly into destination slots would overwrite earlier events and teach the wrong operation.</p>
+<p><strong>A mean loses information.</strong> One <code>[4,3]</code> and the mean of <code>[2,1]</code> plus <code>[6,5]</code> collide. Both produce <code>[4,3]</code> despite different event counts. A sum produces <code>[4,3]</code> versus <code>[8,6]</code>, preserving this particular distinction but making scale depend on count. Concatenating the count is another design option. Neither choice is universally superior. Our head receives the mean but not the count; the returned count is an audit artifact.</p>
+<p><strong>An empty-neighborhood collision.</strong> No events and a real event whose embedding is exactly zero both give a zero aggregate. Own-row features still let the head make a prediction, but cannot recover the missing neighborhood distinction by themselves. A learned empty token or an explicit count could expose it.</p>
+<p><strong>Why the dense oracle helps.</strong> Build an incidence matrix A with one column per eligible event and one row per customer. Entry A[i,j]=1 when event j routes to customer i, otherwise zero. Multiplying A by the event matrix sums each customer's messages. Dividing each row by its count gives an independent expression for the same result. The verifier compares both values and derivatives to this oracle, then compares the mean primitive to a configured PyG SAGEConv with identity neighbor weights and no root contribution.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The primitive comparison verifies this reduction. It does not establish equivalence between the complete toy predictor and GraphSAGE or RelBench.</p>
+</blockquote>
+<h2 id="6.-The-head-sends-a-learning-signal-back-across-the-join">6. The head sends a learning signal back across the join<a class="anchor-link" href="#6.-The-head-sends-a-learning-signal-back-across-the-join">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A prediction error can change how a purchase is encoded, even though the prediction is attached to the customer.</p>
+</blockquote>
+<p><strong>Training objective.</strong> A binary target is 0 or 1. Binary cross-entropy penalizes confident wrong predictions. The notebook uses the numerically stable logits form, <code>binary_cross_entropy_with_logits</code>, without first applying sigmoid. The optimizer, Adam, adjusts learned parameters using the derivative of the loss. A <strong>gradient</strong> tells us how a small parameter change would change that loss locally.</p>
+<figure class="rdl-figure"><div class="rdl-figure-scroll" tabindex="0" role="region" aria-label="Scrollable gradients diagram"><img src="../labs/figures/l076/gradients.png" alt="Backward trace for customer7 with two eligible events. I denotes the identity matrix; each message receives one half of the arriving derivative. Excluded event embeddings have no loss path."></div><figcaption>Backward trace for customer7 with two eligible events. I denotes the identity matrix; each message receives one half of the arriving derivative. Excluded event embeddings have no loss path.</figcaption></figure>
+
+<p><strong>Trace the derivative.</strong> If customer 7 has two eligible events, each receives one half of the gradient arriving at their mean vector. The head and event encoder contribute further derivatives. With only one eligible event, that event receives the full aggregate derivative. Excluded event embeddings receive zero gradient through this path. They do not receive a message simply because they were materialized.</p>
+<p><strong>An important distinction.</strong> Encoder weights are shared across events within a table. Training on visible events can change how an excluded event would be encoded in a later forward pass. That does not mean the excluded event supplied information to the current loss. The verifier checks gradient support on individual event embeddings, not an incorrect requirement that their shared weights never change.</p>
+<p><strong>The accidental break.</strong> Calling <code>detach()</code>, converting learned vectors to NumPy, or saving fixed embeddings before fitting only the head prevents loss derivatives from reaching upstream encoders. Frozen features can be an intentional baseline. They are not end-to-end training. The lab asserts nonzero finite gradients in both encoders and in the head.</p>
+<h2 id="7.-Execute-the-diagnostic-and-interpret-it-honestly">7. Execute the diagnostic and interpret it honestly<a class="anchor-link" href="#7.-Execute-the-diagnostic-and-interpret-it-honestly">&#182;</a></h2><p><strong>Before running.</strong> Predict whether the model can reduce loss on four labeled rows, and whether that establishes anything about unseen customers. The labels are arbitrary fixture labels, never included in feature materialization. We fix seed 76, use full-batch Adam with learning rate 0.03, and run 100 updates. No validation selection takes place.</p>
+<p><strong>Author-reference evidence — measured locally, not your current kernel output.</strong></p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Measurement</th>
+  <th>Observed</th>
+  <th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>First / final training loss</td>
+  <td>0.681352 / 0.000726</td>
+  <td>Four-row overfit diagnostic only</td>
+</tr>
+<tr>
+  <td>Counts in customer order [42,7,99,105]</td>
+  <td>[1, 2, 0, 0]</td>
+  <td>Late and future events excluded</td>
+</tr>
+<tr>
+  <td>Customer / event row vectors</td>
+  <td>[4,4] / [5,4]</td>
+  <td>Actual PyTorch Frame path</td>
+</tr>
+<tr>
+  <td>Concatenated / logit shape</td>
+  <td>[4,8] / [4]</td>
+  <td>One prediction per customer</td>
+</tr>
+<tr>
+  <td>PyG mean primitive maximum error</td>
+  <td>0.0e+00</td>
+  <td>Primitive forward parity</td>
+</tr>
+<tr>
+  <td>Key/time/gradient/permutation checks</td>
+  <td>PASS</td>
+  <td>See saved verifier report</td>
+</tr>
+<tr>
+  <td>Historical RelBench training</td>
+  <td>NOT_RUN</td>
+  <td>No measured paper AUROC</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Held fixed / varied / measured.</strong> Architecture, data and labels stay fixed. The optimizer varies the weights. We measure the loss on the same four rows used to fit them. Loss reduction confirms an executable differentiable path with enough capacity to fit this fixture. A constant-label predictor, a tiny head-only model or memorization may also fit tiny data. This diagnostic does not measure generalization, relational advantage or paper reproducibility.</p>
+<p><strong>What the tests contribute.</strong> Loss alone could fall with misrouted edges. Key remapping tests catch that. Loss alone could fall with future leakage. The excluded-value intervention catches that. Loss alone could fall with frozen encoders. Gradient checks catch that. A useful verification suite tests the behavior the lesson claims, not merely whether Python finished.</p>
+<h2 id="8.-Your-lab:-three-load-bearing-repairs">8. Your lab: three load-bearing repairs<a class="anchor-link" href="#8.-Your-lab:-three-load-bearing-repairs">&#182;</a></h2><p>Open the companion notebook. It contains the complete architecture and training loop in readable cells. Implement three functions: <strong>key_positions</strong>, <strong>eligible_events</strong>, and <strong>mean_messages</strong>. Each is called by the live pipeline. Each has an immediate CHECK that fails for a meaningful mistake. Complete the functions before consulting the solution notebook.</p>
+<p><strong>EXIT deliverable.</strong> Export a JSON trace with tensor shapes, eligible counts, seed and measured loss. Submit it with a short explanation of why customer 99 has no eligible events, why customer 7 receives half-gradients per event, and what evidence would be necessary to claim a relational performance benefit. Re-run after permuting customer rows and remapping keys. Predict the outcome before executing.</p>
+<p><strong>Retrieval tomorrow.</strong> Draw the stack from memory. Label where a vocabulary is fitted, where a PK becomes a tensor index, where time removes an edge, and where the task loss enters. Ask the teaching agent to quiz you on the weakest step; paste your EXIT explanation for feedback.</p>
+<h2 id="9.-Historical-reproduction:-from-this-skeleton-to-RelBench">9. Historical reproduction: from this skeleton to RelBench<a class="anchor-link" href="#9.-Historical-reproduction:-from-this-skeleton-to-RelBench">&#182;</a></h2><p>The optional target is <strong>RelBench v1, Table 6, rel-f1 / driver-dnf</strong>. The published test AUROC mean is <strong>72.62%</strong>, over five runs. AUROC measures ranking across positive and negative examples; it is not threshold accuracy. The paper uses two GNN layers, width 128, summation, batch size 512, learning rate 0.005 and up to 10 epochs for this task. See the <a href="https://arxiv.org/html/2407.20060v1">primary experiment and Appendix B</a>.</p>
+<p>The archived code is the publication-day revision <code>5894184f3d1b2432feb9a208a8aaf18b106fbdf4</code>. Its complete model, heterogeneous encoder, temporal encoder, GraphSAGE blocks and training script appear after EXIT in the notebook. It adds learned relative-time features and temporal neighborhood sampling. It uses validation AUROC to select the checkpoint before final test evaluation. The toy model's mean and shallow head cannot stand in for this experiment.</p>
+<p><strong>A concrete mismatch to diagnose.</strong> The released loader calculates fanouts as <code>[128,64]</code> when asked for 128 neighbors and two layers. The paper describes a maximum of 128 neighbors per foreign key. The replay preserves the released code and records that distinction. We choose seeds 0–4; the precise published seed list was not identified. Source identity, environment pins, text-model download, dataset versions and protocol differences belong in the <a href="../labs/l076-reproduction.md">reproduction contract</a>.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Full benchmark training is <strong>NOT_RUN</strong>. This WSL machine has an ARM CPU environment without the historical temporal sampling stack. The local preflight records the blocker rather than running a modified current implementation. CLI, isolated Colab and Modal operators accompany the full archived code. Their availability is not evidence of completed cloud execution or paper-result parity. Consult the contract for the exact remaining gaps and run commands.</p>
+</blockquote>
+<p><strong>The next conceptual step.</strong> Curriculum L077 tests what rows-only information cannot express. L078 develops message passing itself. In later RDL work this same separation—encode records, exchange eligible messages, predict a target—will let you change one component while keeping the experiment interpretable.</p>
+<div id="teachback"></div></article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/rdl-stack-viz.js"></script><script src="../assets/l076-lesson.js"></script></body></html>
