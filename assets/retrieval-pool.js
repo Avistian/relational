@@ -2054,6 +2054,29 @@
   ],
   "correct": "correct",
   "explain": "Equivariance transports node outputs with their nodes; invariant readout preserves the whole-graph prediction."
+},
+{
+  "id": "l082-endpoint-degrees",
+  "lesson": 82,
+  "quarter": "Q1",
+  "concept": "gcn-normalization",
+  "question": "What determines an edge coefficient in symmetric GCN normalization?",
+  "options": [
+    {
+      "label": "Both augmented endpoint degrees determine weights",
+      "value": "correct"
+    },
+    {
+      "label": "Only augmented receiver degrees determine weights",
+      "value": "receiver"
+    },
+    {
+      "label": "Only augmented sender degrees determine weights",
+      "value": "sender"
+    }
+  ],
+  "correct": "correct",
+  "explain": "Add self-loops first, then use 1/sqrt(d_source*d_destination). This is not ordinary row averaging."
 }
 ];
 })(window);

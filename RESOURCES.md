@@ -417,3 +417,8 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 - [Primary paper](https://proceedings.mlr.press/v70/gilmer17a.html): framework §2, features §6, training §7.
 - [Supplement](https://proceedings.mlr.press/v70/gilmer17a/gilmer17a-supp.pdf): GCN mapping §1.1; sparse GG-NN Table3 and chemical accuracy Table1.
 - [Official source](https://github.com/brain-research/mpnn/tree/4a1f0ddea3cd7de5eebc96e509da2161624aaacd): model-only release with missing reader/trainer; pin and hashes in labs/_sources_l081.json.
+
+## L082 · GCN
+
+- [Kipf & Welling 2017](https://arxiv.org/html/1609.02907v4): spectral motivation, Eq2 propagation, Table2 Cora target.
+- [Pinned TensorFlow release](https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81): actual stopping rule, regularization, dropout and Planetoid data. Source/data provenance shared with L078 and verified again for L082.

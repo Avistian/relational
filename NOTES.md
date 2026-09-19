@@ -1327,3 +1327,7 @@ Full reproducibility requested. Prepared cross-paper exam with four required arm
 ## Lesson 081 created · MPNN framework · 2026-09-19
 
 User explicitly requested full reproducibility. Generic routing lab plus full sparse GG-NN QM9 model, loader, trainer and budgeted search are visible. Named target: Gilmer supplementary Table3 GG-NN mu (.394 Debye). Official source lacks reader/trainer/search configurations; fresh IDs and modern features are documented gaps. Three fresh 512-molecule/40-update smoke runs execute; full historical result NOT_RUN, reconstruction scores INCOMPARABLE. No learner completion inferred.
+
+## Lesson 082 created · GCN · 2026-09-19
+
+Full Cora Table2 experiment port: 100 fresh runs, mean81.401%, sample SD0.658pp; target81.5%. Inline normalization, propagation and masked-loss TODOs feed the complete trainer. Full-size release protocol, source/data hashes, four computation figures, hidden-state diagnostic and exact commands. PyTorch versus TensorFlow1 and unavailable historical seeds remain explicit. Original-framework parity NOT_RUN. Authorship does not advance learner completion.

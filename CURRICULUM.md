@@ -259,7 +259,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 **Papers (chronological):** Gilmer 2017 · Kipf & Welling 2017 · Hamilton 2017 · Veličković 2018
 
 | 081 | [MPNN framework](lessons/0081-mpnn-framework.html) | Gilmer 2017 | [Generic MPNN + auditable QM9 reconstruction](labs/0081-mpnn-framework.ipynb) |
-| 082 | GCN | Kipf 2017 | Cora node classification |
+| 082 | [GCN](lessons/0082-gcn.html) | Kipf 2017 | [Full Cora fixed-split reproduction port](labs/0082-gcn.ipynb) |
 | 083 | GraphSAGE | Hamilton 2017 | Inductive mini-batch training |
 | 084 | GAT | Veličković 2018 | Attention aggregation |
 | 085 | Over-smoothing | Li et al. 2018 | Depth vs performance |

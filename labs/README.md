@@ -161,3 +161,5 @@ live Colab compatibility or full paper reproduction.
 - L080: [Year 2 exit exam](0080-year-2-exit-exam.ipynb) — fresh four-family comparison, random + temporal, cold teach-back and rubric. [Reproduce](l080-reproduction.md).
 
 - L081: [MPNN framework](0081-mpnn-framework.ipynb) — routing, permutation tests, full sparse molecular GG-NN and [reconstruction protocol](l081-reproduction.md).
+
+- L082: [GCN](0082-gcn.ipynb) — exact normalization, sparse propagation, masked gradients and [full Cora experiment](l082-reproduction.md).

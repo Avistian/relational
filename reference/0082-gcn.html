@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GCN contract card</title><link rel="stylesheet" href="../assets/lesson.css"><article><h1 id="GCN-contract-card">GCN contract card<a class="anchor-link" href="#GCN-contract-card">&#182;</a></h1><p><strong>S = D̃⁻¹ᐟ²(A+I)D̃⁻¹ᐟ²; H′ = σ(SHW).</strong> Add self-loops once, then count augmented degrees. Sender and receiver both determine the coefficient. Rows need not sum to one. An isolated node has a self-message of weight one before channel mixing.</p>
+<table>
+<thead>
+<tr>
+  <th>Stage</th>
+  <th>Shape / rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Inputs</td>
+  <td>Cora X: 2708×1433; row-normalized</td>
+</tr>
+<tr>
+  <td>Hidden</td>
+  <td>ReLU(S X W₀), width16</td>
+</tr>
+<tr>
+  <td>Output</td>
+  <td>S H W₁, seven logits/node; no pooling</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>Input/hidden dropout .5; mean CE on140 labels; .0005 × half squared norm W₀</td>
+</tr>
+<tr>
+  <td>Validation</td>
+  <td>500 nodes; after epoch index10, current regularized loss &gt; previous-ten mean stops</td>
+</tr>
+<tr>
+  <td>Inference</td>
+  <td>Last weights, dropout off;1000 test nodes</td>
+</tr>
+<tr>
+  <td>Replication</td>
+  <td>100 initializations, fixed split; target81.5%; modern PyTorch port</td>
+</tr>
+</tbody>
+</table>
+<p>On A—B—C with [2,4,8], B=2/√6+4/3+8/√6=5.415816. Ordinary mean is4.666667. GCN is node-equivariant. Permute features AND both adjacency axes. Features and edges of unlabeled nodes can participate in transductive training; held-out labels cannot supervise gradients.</p>
+<p>A close mean is not protocol identity. The port has different framework/RNG; original100 seeds are unavailable. SD is initialization variation on one graph, not across datasets. Original TensorFlow training remains NOT_RUN.</p>
+<p><a href="../lessons/0082-gcn.html">Lesson</a> · <a href="../labs/0082-gcn.ipynb">Lab</a> · <a href="../labs/l082-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/1609.02907v4">Primary source</a></p>
+</article></html>
