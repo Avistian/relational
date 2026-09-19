@@ -17,6 +17,14 @@
   "use strict";
 
   global.PAPER_DECK = [
+{
+  "id": "hu2024-frame",
+  "paper": "Hu et al. \u2014 PyTorch Frame",
+  "year": 2024,
+  "lesson": 75,
+  "front": "What separates a TensorFrame from a row embedding in PyTorch Frame?",
+  "back": "Materialization organizes typed tensor data. Type-specific encoders create column vectors; column interaction and decoding produce a row vector. Relationships between database records need a separate graph and temporal protocol."
+},
     {
       id: "fey2024", paper: "Fey et al. — Relational Deep Learning", year: 2024, lesson: 1,
       front: "Fey et al. 2024 — what does Relational Deep Learning propose, and what problem with the standard pipeline motivates it?",

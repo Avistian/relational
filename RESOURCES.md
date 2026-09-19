@@ -379,3 +379,9 @@ _Optional / extension (◆):_
 - [CARTE v2](https://arxiv.org/html/2402.16785v2), Figures 1–3 and Sections 3.1–3.3: graph representation and cross-schema transfer.
 - [Pinned release](https://github.com/soda-inria/carte/tree/f54690da4cddbedd1e1a9113a312f85783d2c125): implementation/checkpoint/example-table provenance.
 - [FastText English crawl vectors](https://fasttext.cc/docs/en/crawl-vectors.html): real language inputs and licensing.
+
+## L075 PyTorch Frame
+
+- [Hu et al., v2, Figure1 and §3](https://arxiv.org/html/2404.00776v2): materialization, encoding, column interactions and decoding.
+- [Pinned release0.3.0](https://github.com/pyg-team/pytorch-frame/tree/d998aae368db6a4e36139ccc56bd54579a70874b): executable enum, converter, statistics and encoders; local files byte-matched.
+- [Official heterogeneous-type tutorial](https://pytorch-frame.readthedocs.io/en/latest/handling_advanced_stypes/handle_heterogeneous_stypes.html): conceptual configuration guide; latest docs can differ from the pin.

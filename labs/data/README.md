@@ -81,3 +81,7 @@ Tier A: offline sklearn Wine, Breast Cancer Wisconsin Diagnostic, and Digits. Di
 ## L074 CARTE
 
 Tier A: three 384-row subsets of released wine tables. Fixed real FastText sentence-vector cache and YAGO checkpoint accompany source IDs and SHA256 digests in `l074/manifest.json`. No full string-model download is needed for the lab; see `../l074-reproduction.md`.
+
+## L075 PyTorch Frame
+
+Tier C: four training/two query rows generated visibly in `relkit/frame_l075.py`, isolating five semantic types. Tier A: existing OpenML31 credit_g cache, actual numeric/categorical columns, seed75 fixed 128/32 rows, labels unused. Cache hash and IDs are recorded in `_verify_l075_results.json`; no new download required when cached.

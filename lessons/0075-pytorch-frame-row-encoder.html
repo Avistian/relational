@@ -1,0 +1,175 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson075 — PyTorch Frame: the row encoder</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0074-carte-cross-table-transfer.html">Previous lesson</a></nav><header><p>Year2 · Quarter4 · Lesson075</p><h1>PyTorch Frame: the row encoder</h1><p>Choose types → fit the converter → encode columns → read out a row.</p></header><aside class="lab-access"><nav><a href="../labs/html/0075-pytorch-frame-row-encoder.html">Read lab</a><a href="../labs/0075-pytorch-frame-row-encoder.ipynb" download>Download notebook</a><a href="../labs/html/0075-pytorch-frame-row-encoder.html#lab-exercises">Exercises</a><a href="../reference/0075-pytorch-frame-row-encoder.html">Reference</a><a href="../labs/_verify_l075_results.json">Measured evidence</a><a href="../labs/l075-reproduction.md">Reproduction contract</a></nav><p>Local package; live Colab and deployment NOT_CHECKED.</p></aside><h2 id="Start-with-retrieval">Start with retrieval<a class="anchor-link" href="#Start-with-retrieval">&#182;</a></h2><p>Before reading, write three short answers from memory. What distinguishes a numeric feature token from a category lookup in L046? What information does a within-row CARTE graph omit about a relational database? Why must a fitted transformation be learned without looking at the test set? Keep these answers for your exit ticket.</p>
+<div id="warmup"></div>
+
+<p><strong>Today’s tangible win:</strong> take a table containing numbers, categories, text, timestamps and stored vectors; produce a typed <code>TensorFrame</code>, column tokens and one vector per row; explain which operations learned from which rows. Plan for 35–45 minutes of reading and prediction, then 30–45 minutes in the lab.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> A database row contains several kinds of information. Before a neural network can use it, each kind needs an appropriate translator. PyTorch Frame organizes those translators and their outputs. It does not decide which information was legally available at prediction time.</p>
+</blockquote>
+<p>This advances our mission at a specific seam: the representation of each database row <strong>before</strong> a GNN exchanges information along relationships. L074’s <a href="0074-carte-cross-table-transfer.html">CARTE lesson</a> handled schema-variable row graphs. Here we deliberately use a fixed schema and explicit type assignments. L076 will connect row vectors to relationships between records.</p>
+<h2 id="1.-Semantic-type-is-a-modeling-decision">1. Semantic type is a modeling decision<a class="anchor-link" href="#1.-Semantic-type-is-a-modeling-decision">&#182;</a></h2><p>A <strong>data type</strong> tells software how a value is stored: integer, floating-point number, string, datetime. A <strong>semantic type</strong>, abbreviated <strong>stype</strong>, tells the model how to interpret a column. Integer <code>101</code> might be an amount, a postal region, or a record identifier. The storage alone cannot settle that decision.</p>
+<p><strong>Worked example.</strong> The value <code>20</code> in an amount column has meaningful distance from <code>10</code>. The code <code>20</code> in a region column need not be twice region <code>10</code>. A numeric encoder gives the former a continuous direction. A categorical encoder gives the latter a lookup vector. Changing the stype changes the computation even when the underlying values stay identical.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Column in our fixture</th>
+  <th>Meaning</th>
+  <th>User-facing stype in release 0.3.0</th>
+  <th>Operation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>amount</code></td>
+  <td>A measured scalar</td>
+  <td><code>numerical</code></td>
+  <td>Normalize, then a column-specific affine map</td>
+</tr>
+<tr>
+  <td><code>region</code></td>
+  <td>A discrete label</td>
+  <td><code>categorical</code></td>
+  <td>Training vocabulary → integer → embedding lookup</td>
+</tr>
+<tr>
+  <td><code>note</code></td>
+  <td>A short description</td>
+  <td><code>text_embedded</code></td>
+  <td>Fixed text adapter → stored vector → learned projection</td>
+</tr>
+<tr>
+  <td><code>created</code></td>
+  <td>Calendar time</td>
+  <td><code>timestamp</code></td>
+  <td>Calendar components → positional/cyclic features → projection</td>
+</tr>
+<tr>
+  <td><code>vector</code></td>
+  <td>An already computed representation</td>
+  <td><code>embedding</code></td>
+  <td>Column-specific projection to a common width</td>
+</tr>
+</tbody>
+</table></div>
+<p>A <strong>projection</strong> is a learned linear map that changes vector coordinates and often their number. An <strong>embedding</strong> is a vector used to represent a value. A category’s integer ID is an address into a learned embedding table; its numeric distance is not a model assumption.</p>
+<p>The <a href="https://arxiv.org/html/2404.00776v2#S3">paper, §3</a> introduces the semantic-type abstraction. Be careful with spelling: the paper describes <code>text_embedding</code>, whereas our <a href="https://github.com/pyg-team/pytorch-frame/blob/d998aae368db6a4e36139ccc56bd54579a70874b/torch_frame/_stype.py">pinned release enum</a> exposes <code>text_embedded</code>. Copy executable names from the version you actually install.</p>
+<p><strong>Stop and classify.</strong> Would you encode <code>customer_id</code> as a continuous number? Usually no: subtraction between arbitrary IDs has no meaningful units. Would a timestamp automatically prevent leakage? No: a timestamp describes a value; eligibility still needs an explicit cutoff. Do not include a label or a post-outcome measurement among the predictors merely because you can assign it a stype.</p>
+<h2 id="2.-Materialization-creates-data,-not-learned-row-vectors">2. Materialization creates data, not learned row vectors<a class="anchor-link" href="#2.-Materialization-creates-data,-not-learned-row-vectors">&#182;</a></h2><p><strong>Materialization</strong> converts a DataFrame into the tensor-friendly containers expected by the model. A <code>Dataset</code> manages the raw frame, type assignments, fitted column statistics and conversion. A <code>TensorFrame</code> holds converted feature blocks plus their column-name metadata, and optionally targets.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Materialization packs values into boxes that PyTorch can process. It has not yet learned what makes a useful prediction.</p>
+</blockquote>
+<p>For a batch containing <strong>B rows</strong>, materialization groups columns by their parent semantic type. It preserves the association between each column and its role. Let <strong>C</strong> be the number of feature columns and <strong>d</strong> the common token width. The different raw blocks need not be ordinary tensors of the same shape. Only <strong>after encoding</strong> do we require one dense tensor of shape <code>[B, C, d]</code>.</p>
+<p><strong>Worked example.</strong> Our training fixture has four rows. <code>amount</code> is <code>[10, 20, 30, missing]</code>, while the categorical vocabulary contains <code>north</code> and <code>south</code>. The note <code>red apple</code> becomes <code>[1, 0, 1, 0]</code> under the lab’s explicitly provided vocabulary <code>[red, green, apple, pear]</code>. The stored vector has three coordinates. These two vector columns have different widths, so they cannot be naively stacked as a rectangular <code>[B, 2, width]</code> tensor.</p>
+<p>The release uses a <code>MultiEmbeddingTensor</code> container for variable-width embedding columns. It groups <code>text_embedded</code> under its parent <code>embedding</code>, retaining the column identity and individual dimension. The encoder therefore has <strong>four parent-type configurations for five columns</strong>. Our measured token order is <code>amount, region, created, vector, note</code>. Do not assume that the original DataFrame order survives grouping. Use the names returned with the encoded tensor.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable types diagram"><img src="../labs/figures/l075/types.png" alt="Synthetic five-column fixture: text width4 and stored-vector width3 share the embedding parent type, then each receives a width8 token. B denotes rows."></div><figcaption>Synthetic five-column fixture: text width4 and stored-vector width3 share the embedding parent type, then each receives a width8 token. B denotes rows. Scroll the diagram horizontally on narrow screens.</figcaption></figure>
+
+<p>The <a href="https://github.com/pyg-team/pytorch-frame/blob/d998aae368db6a4e36139ccc56bd54579a70874b/torch_frame/data/dataset.py">release converter</a> determines these groups. The <a href="https://pytorch-frame.readthedocs.io/en/latest/handling_advanced_stypes/handle_heterogeneous_stypes.html">heterogeneous-types tutorial</a> shows how to configure encoders, but its latest version may differ from our pinned package.</p>
+<p><strong>Text choices.</strong> With <code>text_embedded</code>, a fixed adapter turns each string into a vector during conversion. Downstream training learns the projection of that vector; it does not backpropagate through the earlier materialization step into the text model. With <code>text_tokenized</code>, conversion retains token information for a text model that can participate in later training. The lab executes the first path only. Its four-word adapter is a transparent teaching fixture, not a language model: <code>blue fruit</code> becomes all zeros because neither word is in its vocabulary.</p>
+<p><strong>Check your understanding.</strong> Is a five-column table guaranteed to create five separate <code>feat_dict</code> keys? No. Columns share a parent type. Is a zero text vector equivalent to missing text? Not necessarily. Here it means no vocabulary matches; the learned embedding projection can still add its bias.</p>
+<h2 id="3.-Fit-the-materializer-on-training-rows">3. Fit the materializer on training rows<a class="anchor-link" href="#3.-Fit-the-materializer-on-training-rows">&#182;</a></h2><p>A <strong>fitted statistic</strong> depends on the rows used to estimate it: a mean, standard deviation, category vocabulary, or timestamp range. At evaluation time those fitted quantities must represent the training information permitted by the protocol.</p>
+<p>The pinned <code>Dataset.materialize()</code> computes statistics from the DataFrame supplied to that dataset. Its <code>split_col</code> records split membership; it does <strong>not</strong> restrict this computation to the training partition. Splitting a materialized dataset afterward retains the earlier fitted state. This is a source-checked behavior, not an inference from the name of the method.</p>
+<div id="prediction"></div>
+
+<p><strong>Worked example.</strong> Training values are <code>10, 20, 30, NaN</code>. Ignoring the missing value gives a mean of <code>60 / 3 = 20</code>. A held-out value of <code>1000</code> changes an all-row mean to <code>(60 + 1000) / 4 = 265</code>. Merely assigning that row split ID <code>2</code> does not change the all-row calculation. The learner must control the fit scope.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable scope diagram"><img src="../labs/figures/l075/scope.png" alt="Exact fit-scope intervention: missing values are ignored for this mean. Holding training values fixed, adding held-out1000 changes the all-row mean from20 to265."></div><figcaption>Exact fit-scope intervention: missing values are ignored for this mean. Holding training values fixed, adding held-out1000 changes the all-row mean from20 to265. Scroll the diagram horizontally on narrow screens.</figcaption></figure>
+
+<div id="frame-scope"></div>
+
+<p>The safe contract has two operations: construct and materialize the dataset using training rows; then call its fitted <code>convert_to_tensor_frame</code> on query rows. The latter is a converter property that is itself callable. It uses the training vocabulary and statistics. The student implements this contract in the first TODO.</p>
+<p>A <strong>query row</strong> is a row to encode with the fitted state; in an evaluation it might belong to validation or test. The fixture’s query is an intervention, not a scored test set. The real-data exercise also withholds labels: it checks representation plumbing rather than prediction accuracy.</p>
+<p><strong>What stays fixed?</strong> Training rows, type assignments, encoder weights and text vocabulary. <strong>What changes?</strong> A held-out numeric value. <strong>What do we measure?</strong> Whether the fitted training mean changes. This isolates access to held-out data without conflating it with optimization or model quality.</p>
+<p><strong>Failure case.</strong> Running a fresh <code>Dataset(query).materialize()</code> also fails the contract: it estimates a new vocabulary and statistics on query rows. A category might acquire a different integer address. A row can receive a different representation simply because a second query row changed. Reuse the fitted converter; do not independently fit each batch.</p>
+<h2 id="4.-From-typed-blocks-to-column-tokens">4. From typed blocks to column tokens<a class="anchor-link" href="#4.-From-typed-blocks-to-column-tokens">&#182;</a></h2><p>A <strong>token</strong> here is a learned vector for one column value. It is not necessarily a word or text token. <code>StypeWiseFeatureEncoder</code> dispatches each block to the appropriate encoder and concatenates the outputs along the column axis. Every column now has the same width, even though the original inputs did not.</p>
+<h3 id="Numeric-path:-normalize,-then-map">Numeric path: normalize, then map<a class="anchor-link" href="#Numeric-path:-normalize,-then-map">&#182;</a></h3><blockquote>
+<p><strong>In plain terms.</strong> Express an amount relative to typical training amounts, then let the model learn what a unit change should do to its vector.</p>
+</blockquote>
+<p>For column j, let μⱼ be its training mean, sⱼ its training standard deviation plus the release’s <code>1e-6</code> stabilizer, wⱼ a learned vector of width d, and bⱼ a learned bias of the same width. A row’s numeric token is <code>tⱼ = ((xⱼ − μⱼ) / sⱼ) wⱼ + bⱼ</code>. Each numeric column has its own w and b. Normalization statistics are stored state; w and b are trainable parameters.</p>
+<p><strong>Worked example.</strong> Use illustrative μ=20, s=10, w=<code>[2, −1]</code>, b=<code>[0.5, 0.5]</code>. For x=30, the normalized value is 1, so the token is <code>[2.5, −0.5]</code>. For x=20, it is <code>[0.5, 0.5]</code>. These deliberately chosen parameters make arithmetic visible; they are not the initialized lab weights or its computed standard deviation.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable numeric diagram"><img src="../labs/figures/l075/numeric.png" alt="Illustrative parameters, not the measured fixture standard deviation. Trace normalization, multiplication and bias. Mean imputation makes missing tokens equal the bias."></div><figcaption>Illustrative parameters, not the measured fixture standard deviation. Trace normalization, multiplication and bias. Mean imputation makes missing tokens equal the bias. Scroll the diagram horizontally on narrow screens.</figcaption></figure>
+
+<div id="frame-numeric"></div>
+
+<p>Our configured numeric encoder uses <code>NAStrategy.MEAN</code>. It replaces missing x with μ before normalization; a missing numeric token therefore equals <strong>b</strong>, not necessarily zero. The package’s default <code>na_strategy=None</code> instead lets missing values propagate through the affine map and zeroes NaN outputs afterward. These are distinct behaviors. The lab explicitly chooses mean imputation and checks finite gradients. It does not claim that a zeroed forward output alone proves safe training.</p>
+<p>The second mechanism TODO reconstructs the normalized affine operation using broadcasted tensor arithmetic. A <strong>broadcast</strong> lets dimensions of size one align with larger dimensions: <code>[B,C,1] × [1,C,d]</code> yields <code>[B,C,d]</code>. We check both a hand-calculated oracle and equality with the configured package encoder. The <a href="https://github.com/pyg-team/pytorch-frame/blob/d998aae368db6a4e36139ccc56bd54579a70874b/torch_frame/nn/encoder/stype_encoder.py">source</a> is the version-specific authority for normalization and missing policies.</p>
+<h3 id="Category-path:-addresses-and-unknowns">Category path: addresses and unknowns<a class="anchor-link" href="#Category-path:-addresses-and-unknowns">&#182;</a></h3><p>The training converter builds a vocabulary for each categorical column. Materialized IDs start at zero; unseen and missing values map to <code>−1</code>. The configured <code>EmbeddingEncoder</code> shifts valid IDs, adds a per-column offset, and sends negative IDs to a shared padding entry. With the default missing strategy that padding embedding is zero.</p>
+<p><strong>Worked example.</strong> Query <code>region=east</code> was absent during fitting; query <code>region=None</code> is missing. Both materialize as <code>−1</code>, and both yield a zero region token. The model therefore cannot distinguish those two causes from that token alone. If the distinction matters, create an explicit, protocol-valid indicator before fitting. Do not invent a learned unseen-category vector and attribute it to this default encoder.</p>
+<h3 id="Timestamp-and-stored-vector-paths">Timestamp and stored-vector paths<a class="anchor-link" href="#Timestamp-and-stored-vector-paths">&#182;</a></h3><p>A timestamp is decomposed into seven calendar components in this release. The encoder represents the year relative to the training minimum year and uses cyclic encodings for recurring components. A <strong>cyclic encoding</strong> puts the start and end of a repeating period near one another. Learned weights combine these intermediate features into d coordinates. Missing timestamps use the configured default median training timestamp. The lab checks a missing timestamp and a later year; neither grants permission to access future information.</p>
+<p>An embedding column has its own projection from its original width into d coordinates. The note adapter produces width 4; <code>vector</code> has width 3; both become width 8. Sharing the <code>embedding</code> parent type means sharing the encoder machinery, not necessarily sharing one weight matrix between columns.</p>
+<p><strong>Predict.</strong> If d doubles, which dimension changes in the numeric, category and timestamp outputs? The last one. Does materializing a timestamp make it a learned width-d token? No; its calendar representation must still pass through the encoder.</p>
+<h2 id="5.-A-row-encoder-needs-a-readout">5. A row encoder needs a readout<a class="anchor-link" href="#5.-A-row-encoder-needs-a-readout">&#182;</a></h2><p>A feature encoder returns <code>[B,C,d]</code>, not automatically <code>[B,D]</code>. <strong>D</strong> is the desired width of the final row representation. A <strong>readout</strong> combines a row’s column representations into that vector. Different tabular architectures make different choices about column interaction and readout.</p>
+<p>The <a href="https://arxiv.org/html/2404.00776v2#S3">paper’s Figure 1 and §§3.2–3.4</a> separate encoding, column interaction and decoding. PyTorch Frame is a framework for composing these stages, not a single model with one mandatory prediction function.</p>
+<h3 id="Model-architecture:-the-exact-teaching-composition">Model architecture: the exact teaching composition<a class="anchor-link" href="#Model-architecture:-the-exact-teaching-composition">&#182;</a></h3><p>Our lab uses an intentionally small, visible composition. The official feature encoder produces <code>[B,5,8]</code>. Flattening joins each row’s five tokens into <code>[B,40]</code> without mixing rows. A learned linear layer maps 40 values to 16; a ReLU replaces negative activations with zero; a final linear layer maps 16 to D=6. That is the complete row encoder used for the fixture. A two-output linear head is added only for a gradient-flow check.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable architecture diagram"><img src="../labs/figures/l075/architecture.png" alt="Complete local teaching composition. Column mixing occurs inside the flattened MLP. No cross-row message passing or benchmark training is pictured."></div><figcaption>Complete local teaching composition. Column mixing occurs inside the flattened MLP. No cross-row message passing or benchmark training is pictured. Scroll the diagram horizontally on narrow screens.</figcaption></figure>
+
+<p>The hidden linear layer mixes information across columns because each hidden unit reads all 40 coordinates. Flattening keeps column positions distinguishable. It consequently requires a stable fitted schema: arbitrary reordering of token positions changes the function. Reordering <strong>DataFrame columns</strong> is safe only because the fitted converter restores the schema; this is not proof of arbitrary schema transfer.</p>
+<p>The lab checks <strong>row locality</strong>: encoding a query row alone agrees with encoding it in a batch. This composition has no operation that exchanges information between rows. A separate GNN can consume the resulting vectors and edges later. That GNN needs explicit row-to-node identity, foreign-key edges and a time-valid sampling policy. None are supplied by <code>TensorFrame</code> itself.</p>
+<p><strong>Gradient check.</strong> A gradient tells a parameter how a differentiable loss changes when the parameter changes. We place a linear head on the row vectors, compute a scalar loss and call <code>backward()</code>. Finite gradients reaching the stype encoders establish that the composed path can be optimized. They do not establish good accuracy or correct temporal sampling. The fixed text adapter and categorical vocabulary remain outside that learned path.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This MLP readout is a teaching composition, not a reproduction of the paper’s FT-Transformer or relational GraphSAGE experiments. The lesson’s skill is the PyTorch Frame API, using the workspace’s explicit tool/API exception to model-from-scratch requirements. The independent numeric reconstruction makes one load-bearing operation inspectable; the full framework is the library being learned.</p>
+</blockquote>
+<h2 id="6.-What-we-actually-verified">6. What we actually verified<a class="anchor-link" href="#6.-What-we-actually-verified">&#182;</a></h2><p><strong>Author-reference evidence, measured locally.</strong> These values are saved audit results, not outputs from your current notebook kernel.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Check</th>
+  <th>Observed</th>
+  <th>What it establishes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Five-type query tokens</td>
+  <td><code>[2, 5, 8]</code></td>
+  <td>One width8 token per column</td>
+</tr>
+<tr>
+  <td>Five-type query rows</td>
+  <td><code>[2, 6]</code></td>
+  <td>Readout returns one width6 vector per row</td>
+</tr>
+<tr>
+  <td>Fitted numeric standard deviation</td>
+  <td>8.164966</td>
+  <td>Training population SD; encoder adds1e-6</td>
+</tr>
+<tr>
+  <td>Numeric primitive maximum absolute error</td>
+  <td>0.0e+00</td>
+  <td>Forward parity on this fixture</td>
+</tr>
+<tr>
+  <td>Training mean: train-only / all rows</td>
+  <td>20 / 265</td>
+  <td>Split-column metadata does not enforce fit scope</td>
+</tr>
+<tr>
+  <td>Unknown and missing region IDs</td>
+  <td>−1 / −1</td>
+  <td>Both enter default category padding</td>
+</tr>
+<tr>
+  <td>Real credit_g tokens / row vectors</td>
+  <td><code>[32, 20, 8]</code> / <code>[32, 16]</code></td>
+  <td>Actual mixed-schema encoding, no accuracy claim</td>
+</tr>
+<tr>
+  <td>Gradient flow, row locality, column reorder</td>
+  <td>PASS</td>
+  <td>Tested configured composition behaves as described</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Evidence limits:</strong> no trained benchmark, no pretrained language model, no relational message passing. Browser and notebook execution have their own delivery reports. Paper-result parity is INCOMPARABLE.</p>
+<p>The real-data lane uses <strong>credit_g, OpenML 31</strong>: a small real table already cached for earlier lessons. A label-blind permutation with seed 75 chooses 128 fitting rows and 32 query rows. Numeric and categorical columns use their actual values. No fake timestamps or text columns are attached to make a real dataset appear multimodal. The five-type synthetic fixture isolates the modalities absent from this table.</p>
+<p>Both lanes export the schema and row tensors. The real-data model is randomly initialized; those row vectors are a verified interface artifact, not a trained useful representation. There are no accuracy claims, method rankings or confidence intervals to infer from their coordinates. Repeating seeds would describe arbitrary initialization variation rather than comparative predictive performance.</p>
+<p>The installed implementation is compared byte-for-byte with selected files at release commit <code>d998aae368db6a4e36139ccc56bd54579a70874b</code>. That verifies the code whose behavior we teach. It does not date the release to the paper’s experiments. The paper’s single-table, text and relational results remain cited results, <strong>NOT_RUN</strong> locally. Our API trace is <strong>INCOMPARABLE</strong> to those benchmark tables.</p>
+<p>Read the <a href="../labs/l075-reproduction.md">reproduction contract</a> for versions, exact commands and the boundary between paper, release and local evidence. Reproduce the local audit with <code>python _verify_l075.py</code> from <code>labs/</code>. Consult the <a href="../labs/_sources_l075.json">pinned source ledger</a> before upgrading the package.</p>
+<h2 id="7.-Lab:-implement,-perturb,-explain">7. Lab: implement, perturb, explain<a class="anchor-link" href="#7.-Lab:-implement,-perturb,-explain">&#182;</a></h2><p><a href="../labs/html/0075-pytorch-frame-row-encoder.html">Read the lab</a> · <a href="../labs/0075-pytorch-frame-row-encoder.ipynb">Download student notebook</a> · <a href="../reference/0075-pytorch-frame-row-encoder.html">Reference card</a></p>
+<p><strong>TODO 1 — Fit scope.</strong> Implement materialization on training rows and conversion of query rows. CHECK perturbs only query values and tests that training statistics stay fixed.</p>
+<p><strong>TODO 2 — Encoder dispatch.</strong> Configure all required parent-type encoders, including mean imputation for numeric values. CHECK requires five finite column tokens and the expected behavior of an unseen category.</p>
+<p><strong>TODO 3 — Numeric tokens.</strong> Implement the mean-imputed normalized affine map. CHECK compares a hand-worked example and package outputs. A parity failure means you must inspect shape, epsilon, missing policy and column order before proceeding.</p>
+<p><strong>RUN — Real schema.</strong> Encode the real credit_g rows and save <code>l075-row-encoder.pt</code> plus <code>l075-schema.json</code>. The output must identify the row IDs, package version, stypes and token order. Save the encoder state too if those vectors will be consumed later.</p>
+<p><strong>EXIT — Explain without the page.</strong> Submit the output shapes and your files, then answer: why do five columns need four encoder keys? Why does setting a split column not prevent fitted-statistic leakage? Which missing values become bias tokens and which become zero tokens under this configuration? Why is a row vector not yet a relational prediction? What must be frozen and saved to encode a future row consistently?</p>
+<p><strong>Mastery gate.</strong> All CHECK cells pass; the artifacts preserve schema and row identity; each of those five explanations states the actual configured behavior. Running the notebook is not sufficient. Ask me follow-up questions or paste your exit ticket for feedback. Creation of this lesson does not mark it as learned.</p>
+<h2 id="Primary-reading-and-next-step">Primary reading and next step<a class="anchor-link" href="#Primary-reading-and-next-step">&#182;</a></h2><p>Read <a href="https://arxiv.org/html/2404.00776v2">Hu et al., PyTorch Frame, Figure 1 and §3</a>, then inspect <a href="https://github.com/pyg-team/pytorch-frame/blob/d998aae368db6a4e36139ccc56bd54579a70874b/torch_frame/nn/encoder/stypewise_encoder.py">the pinned feature encoder</a>. Trace one numeric column all the way to its slice of the token tensor. For general API orientation, use the <a href="https://pytorch-frame.readthedocs.io/en/latest/get_started/introduction.html">official introduction</a>, checking version differences against the local source ledger.</p>
+<p>Tomorrow, reconstruct the four stages from memory before reopening this page. In the next lesson, keep the row encoder fixed and add explicit relationships between two tables. Predict which row vectors should change after one message-passing step and which should remain untouched.</p>
+<div id="teachback"></div></article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/frame-encoder-viz.js"></script><script src="../assets/l075-lesson.js"></script></body></html>

@@ -23,6 +23,29 @@
 
   global.RETRIEVAL_POOL = [
 {
+  "id": "l075-materialization",
+  "lesson": 75,
+  "quarter": "Q4",
+  "concept": "fit-scope",
+  "question": "In PyTorch Frame 0.3.0, how do you keep materialization statistics training-only?",
+  "options": [
+    {
+      "label": "Fit training rows; reuse their converter",
+      "value": "reuse"
+    },
+    {
+      "label": "Fit all rows; assign split metadata",
+      "value": "all"
+    },
+    {
+      "label": "Fit query rows; rebuild their vocabulary",
+      "value": "query"
+    }
+  ],
+  "correct": "reuse",
+  "explain": "The release computes statistics on the supplied DataFrame. Split metadata does not restrict fitting. Reuse training-fitted state for query conversion."
+},
+{
   "id": "l074-schema-transfer",
   "lesson": 74,
   "quarter": "Q4",
