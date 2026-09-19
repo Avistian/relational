@@ -232,7 +232,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 |---|-------|-------|-----|
 | 071 | VIME — masked tabular SSL | Yoon et al. 2020 | Masked pretraining |
 | 072 | SCARF / SubTab — contrastive & multi-view | Bahri 2021 · Ucar 2021 | Contrastive views |
-| 073 | When SSL actually helps | Survey + your homework VIME notes | SSL ablation design |
+| 073 | [When SSL actually helps](lessons/0073-when-ssl-helps.html) | Tabular SSL survey + SCARF + evaluation audit | [Paired label-budget lab](labs/0073-when-ssl-helps.ipynb) |
 | 074 | Cross-table transfer (CARTE etc.) | Literature skim | Schema-agnostic embeddings |
 | 075 | PyTorch Frame — the row encoder ★ | Hu et al. 2024 (2404.00776) | Encode mixed-type schema |
 | 076 | Encoder → predictor stack | RDL preview | Encoder → head pattern |

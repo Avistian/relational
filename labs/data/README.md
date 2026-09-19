@@ -74,3 +74,6 @@ Tier A: OpenML 44120 electricity (38474 × 7), 44125 MagicTelescope (13376 × 10
 ### L055 — TabReD released temporal tasks (Tier A)
 
 `_fetch_l055.py` downloads and verifies Ecom Offers, Homesite Insurance and Sberbank Housing against the official pinned registry. About 60 MB compressed; cache is gitignored. Local row caps1500/600/600 retain released random-0/sliding-window-0 membership, with numeric/binary features only. Shared boundary timestamps and omitted categories are disclosed. Five other benchmark tasks are skipped; this cannot reproduce the full benchmark. See `../l055-reproduction.md` and `../_data_l055.json`.
+
+## L073
+Tier A: offline sklearn Wine, Breast Cancer Wisconsin Diagnostic, and Digits. Digits is flattened image data. Full built-in datasets, stratified 70/10/20 splits; label-blind nested training subsets. Data bytes and row IDs recorded in `_verify_l073_results.json`. No original SCARF benchmark table reproduced.

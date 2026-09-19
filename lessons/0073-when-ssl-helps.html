@@ -1,0 +1,174 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 073 — When SSL actually helps</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0072-scarf-subtab-contrastive-views.html">Previous lesson</a></nav><header><p>Year 2 · Quarter 4 · Lesson 073</p><h1>When SSL actually helps</h1><p>Match the comparison → account for labels → measure the curve → audit the crossover.</p></header><aside class="lab-access"><nav><a href="../labs/html/0073-when-ssl-helps.html">Lab preview</a><a href="../labs/0073-when-ssl-helps.ipynb">Student notebook</a><a href="../reference/0073-when-ssl-helps.html">Reference</a><a href="../labs/_verify_l073_results.json">Measured evidence</a><a href="../labs/l073-reproduction.md">Reproduction contract</a></nav><p>Local package. Live Colab and deployment NOT_CHECKED.</p></aside><h2 id="Start-with-retrieval">Start with retrieval<a class="anchor-link" href="#Start-with-retrieval">&#182;</a></h2><p>Without reopening Lesson 72, write three answers: What does SCARF predict during pretraining? Which parameters move in a frozen probe? Can unlabeled test rows enter an inductive training pipeline? Then complete the spaced warm-up.</p>
+<div id="warmup"></div>
+
+<p><strong>Your tangible win:</strong> build a fair label-budget curve, compute paired gains, and explain whether the measured grid contains a crossover. Finishing the notebook is not the same as demonstrating that explanation.</p>
+<p><a href="0071-vime-masked-tabular-ssl.html">Lesson 71</a> introduced learning by repairing corrupted rows. <a href="0072-scarf-subtab-contrastive-views.html">Lesson 72</a> introduced learning by recognizing companion views. Here the question changes: when does that additional training help the prediction task? This is an experimental-design lesson; it introduces no new model.</p>
+<h2 id="1-%C2%B7-Turn-%E2%80%9Chelps%E2%80%9D-into-a-comparison">1 &#183; Turn &#8220;helps&#8221; into a comparison<a class="anchor-link" href="#1-%C2%B7-Turn-%E2%80%9Chelps%E2%80%9D-into-a-comparison">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A representation can learn something without becoming your best predictor. Name the alternative before declaring success.</p>
+</blockquote>
+<p><strong>Self-supervised learning</strong> creates training targets from features rather than human annotations. In SCARF, a clean row identifies its corrupted companion among a batch of candidates. <strong>Semi-supervised learning</strong> uses both labeled and unlabeled examples for a prediction task. Self-supervised pretraining followed by supervised learning is one way to work in that setting. The abbreviation SSL has been used for both; here it means self-supervision unless stated otherwise.</p>
+<p>The <a href="https://arxiv.org/html/2402.01204v3">tabular SSL survey, §§2–5</a> organizes predictive, contrastive, hybrid and transfer approaches. Those categories describe how a representation is learned. They do not supply a universal label fraction at which it becomes useful.</p>
+<p><strong>A frozen probe</strong> holds the encoder fixed and trains a classifier on its representations. <strong>Fine-tuning</strong> updates the encoder as well as the new classification head. <strong>Training from scratch</strong> starts the same encoder from its original random weights. The <a href="https://arxiv.org/html/2106.15147v2">SCARF paper, Figure 1 and §3</a> discards its projection head and fine-tunes the encoder and classification head. Our preceding frozen-probe lab measured a different transfer procedure.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Question</th>
+  <th>Treatment minus control</th>
+  <th>What the difference contains</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Did pretraining improve the supervised network?</td>
+  <td>SCARF fine-tuned − scratch</td>
+  <td>Pretraining, including its extra computation</td>
+</tr>
+<tr>
+  <td>Did the learned frozen representation help?</td>
+  <td>SCARF frozen − random frozen</td>
+  <td>Representation learning under a linear probe</td>
+</tr>
+<tr>
+  <td>Is it a useful prediction recipe here?</td>
+  <td>SCARF fine-tuned − raw logistic / tree</td>
+  <td>Architecture, optimization and representation differences</td>
+</tr>
+</tbody>
+</table></div>
+<p>The primary comparison is fixed before seeing results: <strong>SCARF fine-tuned minus scratch</strong>. It matches encoder architecture, head initialization, supervised batches, learning rate and epoch count. It does not match total compute: pretraining adds work. The practical controls are a raw-feature logistic classifier and a fixed histogram gradient-boosted tree model. They are useful local checks, not exhaustively tuned champions.</p>
+<p><strong>Predict.</strong> Could SCARF beat random frozen features yet lose to the raw inputs? Explain how information discarded by the encoder could produce that outcome.</p>
+<h2 id="2-%C2%B7-Draw-the-information-boundary-before-training">2 &#183; Draw the information boundary before training<a class="anchor-link" href="#2-%C2%B7-Draw-the-information-boundary-before-training">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Labels are scarce; held-out examples still stay held out.</p>
+</blockquote>
+<p>Split row IDs once into training (about 70%), validation (about 10%) and test (about 20%). A <strong>validation set</strong> supports model choices. The <strong>test set</strong> estimates the final recipe after those choices. An <strong>inductive</strong> experiment predicts future unseen rows; a <strong>transductive</strong> experiment permits using the unlabeled evaluation rows during training. This lab is inductive.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable boundary figure"><img src="../labs/figures/l073/boundary.png" alt="Illustrative access ledger at 10% labels. Trace which rows can affect fitted parameters before test scoring."></div><figcaption>Illustrative access ledger at 10% labels. Trace which rows can affect fitted parameters before test scoring. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>The feature scaler learns means and variances from the entire training pool. SCARF donors and pretraining batches come from that pool too. No validation or test feature contributes to a fitted transformation. A frozen probe fits a second scaler using only its labeled training representations. Its regularization strength is selected from C = 0.1, 1, 10 by validation accuracy, with the first candidate winning a tie. All other recipes have fixed hyperparameters and epoch counts.</p>
+<p><strong>Subtle boundary.</strong> All recipes receive the same train-pool feature scaling, including the scratch baseline. Therefore the primary difference isolates SCARF pretraining on top of shared preprocessing. It does not compare access to all unlabeled information versus access to none.</p>
+<p>The benchmark's outer splits are stratified: class proportions guide assignment, using existing benchmark labels. Within the training split, label acquisition is blind to the label values. We assume the list of possible classes is known. This is an offline benchmark simulation, not a claim that a deployed annotation system knows hidden labels.</p>
+<h2 id="3-%C2%B7-Make-the-label-budgets-nested-and-count-them-honestly">3 &#183; Make the label budgets nested and count them honestly<a class="anchor-link" href="#3-%C2%B7-Make-the-label-budgets-nested-and-count-them-honestly">&#182;</a></h2><p>A <strong>label fraction</strong> f is the fraction of training-pool rows whose target is available to the supervised learner. Our grid is 10%, 20%, 40%, 70%, 100%. The training feature pool stays fixed as f changes. At 100%, self-supervision still adds an objective, even though it adds no extra training rows beyond those with labels.</p>
+<p>A <strong>nested subset</strong> preserves every row from the smaller budget. Shuffle training IDs once without reading their labels; take successively longer prefixes. Independently sampling each budget would mix the effect of more labels with replacing the labeled examples. Nesting reduces this avoidable variation; it does not make adjacent budgets independent.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable nesting figure"><img src="../labs/figures/l073/nesting.png" alt="Illustrative IDs: the same permutation yields 2, 5 and 10 labeled rows. Larger budgets retain every earlier labeled row."></div><figcaption>Illustrative IDs: the same permutation yields 2, 5 and 10 labeled rows. Larger budgets retain every earlier labeled row. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Worked example.</strong> There are 700 training rows, 100 validation rows and 200 test rows. At f = 0.1, the learner uses 70 training labels. Model development has access to 70 + 100 = 170 labels. That is 21.25% of the 800 development rows, not 10%. The 200 test labels are evaluation annotations and must be accounted for separately if collecting this dataset costs money.</p>
+<p>The training count is floor(f × training rows). Flooring means actual fractions can differ slightly from nominal ones. A very small blind sample can omit a class. The lab does not search seeds to repair an inconvenient sample; a one-class logistic training set raises an explicit error. Missing classes should be reported as part of the regime, or addressed by an annotation policy defined before evaluation.</p>
+<p><strong>Prediction before moving the control:</strong> if validation labels remain fixed, does halving f halve the total development-label cost? Keep the original 10% case as your reference.</p>
+<div id="budget-trace" class="contrastive-widget"></div>
+
+<p><a href="https://arxiv.org/html/1804.09170v2">Oliver et al., §4.6 and §5</a> examine validation-set realism and matched baselines in semi-supervised evaluation. Their image experiments motivate this audit; they do not establish a numerical tabular crossover. Here all arms have the same available validation budget, although fixed recipes do not use it to select parameters. We report available labels rather than pretending every method consumed them in the same way.</p>
+<h2 id="4-%C2%B7-Subtract-within-a-seed-before-averaging">4 &#183; Subtract within a seed before averaging<a class="anchor-link" href="#4-%C2%B7-Subtract-within-a-seed-before-averaging">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Compare two runners on the same course before averaging their finishing times.</p>
+</blockquote>
+<p>A <strong>paired repetition</strong> uses the same outer split, labeled subset and relevant random initialization in both arms. Our seed controls a split and model initialization together. Three repetitions therefore mix split and training variation; they do not separate those sources of uncertainty.</p>
+<p><strong>Worked example.</strong> At one budget, treatment accuracy is [0.80, 0.72, 0.90] and control accuracy is [0.75, 0.74, 0.86], ordered by the same seed IDs. Pairwise differences are [+0.05, −0.02, +0.04]. Their mean is +0.0233, or +2.33 <strong>percentage points</strong>. This is not a 2.33% relative improvement.</p>
+<p>Accuracy A is the proportion of test rows classified correctly. For repetition s, define g(s,f) = A(treatment,s,f) − A(control,s,f). The mean gain is the sum of the S paired gains divided by S. Join results by seed ID; their storage order can differ.</p>
+<p><strong>Uncertainty.</strong> The sample standard deviation describes the spread of repetition results. The displayed paired t interval is mean gain ± t(0.975,S−1) × SD(g)/sqrt(S). With three gains in the worked example, SD is about 0.0379 and the interval is about [−7.07, +11.74] percentage points. A positive average can coexist with large uncertainty.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Our t intervals are descriptive sensitivity summaries over three repetitions of overlapping finite datasets. They do not provide independent-dataset evidence, account for all test-sampling uncertainty, or give simultaneous 95% coverage over the five budgets. More seeds cannot replace more independent datasets.</p>
+</blockquote>
+<h2 id="5-%C2%B7-A-crossover-is-a-result,-not-a-required-ending">5 &#183; A crossover is a result, not a required ending<a class="anchor-link" href="#5-%C2%B7-A-crossover-is-a-result,-not-a-required-ending">&#182;</a></h2><p>A <strong>crossover bracket</strong> here means adjacent tested fractions with strictly opposite mean-gain signs. This operational definition reports where the sampled recipe ordering reverses. It does not estimate an exact threshold between fractions.</p>
+<p><strong>Worked example.</strong> Gains [+3, +1, −2, −1, −3] percentage points at fractions [0.1, 0.2, 0.4, 0.7, 1.0] give a bracket [0.2, 0.4]. The reverse transition is also a sign reversal. A curve may have several; return all of them. Exact zeros are observed ties and are reported separately. All-positive or all-negative means contain no strict adjacent crossing. That does not prove the underlying population curves never cross.</p>
+<p>Do not smooth a curve until it tells the preferred story. Do not use a test-derived crossing to choose your deployment method and then claim that same test as independent confirmation. Freeze the follow-up choice and evaluate it on fresh data or within an outer evaluation protocol.</p>
+<div id="prediction"></div>
+
+<h2 id="6-%C2%B7-Run-the-fixed-experiment-and-read-what-happened">6 &#183; Run the fixed experiment and read what happened<a class="anchor-link" href="#6-%C2%B7-Run-the-fixed-experiment-and-read-what-happened">&#182;</a></h2><p><strong>Held fixed:</strong> train feature pool, split IDs, nested label order, architecture within each matched comparison, 40 SCARF pretraining epochs, 60 supervised epochs, Adam learning rate 0.001, batch size 64, corruption rate 0.6 and temperature 1. The compact encoder is d → 64 → 64 with ReLU; the pretraining projector is 64 → 64 → 32. At fine-tuning it is replaced by a 64 → number-of-classes linear head.</p>
+<p><strong>Varied:</strong> the label fraction and six prediction recipes. <strong>Measured:</strong> test accuracy, paired gains, training label counts, validation availability and strict mean-sign reversal brackets. Each dataset/seed pretrains once; each budget receives a fresh copy of that checkpoint. Fine-tuning at 40% never starts from the model trained at 20%.</p>
+<p>The three Tier-A offline datasets are sklearn's Wine, Breast Cancer Wisconsin Diagnostic and handwritten Digits. Digits is flattened image data, included to test a contrasting geometry; it is not evidence about ordinary business tables. Five budgets × six arms × three seeds × three datasets produce 270 selected test evaluations. Three probe arms each try three C values using validation only. Fixed neural and tree recipes have no validation search.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable curves figure"><img src="../labs/figures/l073/curves.png" alt="Author measurements. Curves are means; faint ribbons show sample SD over three paired split/model repetitions. All six recipes receive the same available label budget."></div><figcaption>Author measurements. Curves are means; faint ribbons show sample SD over three paired split/model repetitions. All six recipes receive the same available label budget. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Author-reference primary gains: SCARF fine-tuned minus scratch, percentage points.</strong> These are saved measurements, not your current kernel output.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Dataset</th>
+  <th>10%</th>
+  <th>20%</th>
+  <th>40%</th>
+  <th>70%</th>
+  <th>100%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>wine</td>
+  <td>+2.78</td>
+  <td>+0.93</td>
+  <td>+0.00</td>
+  <td>+0.00</td>
+  <td>+0.00</td>
+</tr>
+<tr>
+  <td>breast_cancer</td>
+  <td>+0.58</td>
+  <td>+0.00</td>
+  <td>+0.29</td>
+  <td>-0.29</td>
+  <td>-0.88</td>
+</tr>
+<tr>
+  <td>digits</td>
+  <td>+0.74</td>
+  <td>-0.65</td>
+  <td>-0.74</td>
+  <td>-0.28</td>
+  <td>-0.56</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Observed strict adjacent primary brackets:</strong> breast_cancer: [[0.4, 0.7]], ties [0.2]; digits: [[0.1, 0.2]], ties []; wine: none, ties [0.4, 0.7, 1.0].</p>
+<p>Neither these brackets nor their direction establishes a population threshold. Inspect the bars and individual gains below.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable gains figure"><img src="../labs/figures/l073/gains.png" alt="Author measurements. Small points are individual paired gains; bars are descriptive paired t95 intervals over three repetitions. They are neither simultaneous bands nor independent-dataset uncertainty."></div><figcaption>Author measurements. Small points are individual paired gains; bars are descriptive paired t95 intervals over three repetitions. They are neither simultaneous bands nor independent-dataset uncertainty. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Observed pattern.</strong> On Digits, frozen SCARF beats random features at every measured budget, yet fine-tuned SCARF has a negative mean gain over scratch from 20% onward. On Wine, the primary comparison ties at 40%, 70% and 100%. On Breast Cancer, the 40–70% bracket is built from mean differences smaller than one percentage point. These patterns make the choice of control and test-set resolution central to the conclusion.</p>
+<p>A zero-width interval can occur when all three paired gains happen to be identical. It reports zero observed repetition spread, not certainty about new samples.</p>
+<p><strong>Read in order.</strong> First inspect the primary matched neural comparison. Next ask whether the frozen representation comparison agrees. Finally inspect raw logistic and trees before recommending a recipe. A disagreement between probe and fine-tuning results is a diagnosis target, not an arithmetic contradiction: supervised updates can change what information the encoder preserves.</p>
+<figure><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable ranks figure"><img src="../labs/figures/l073/ranks.png" alt="Author rank audit at 40% labels. Average seeds before ranking datasets equally. The critical difference is exploratory; only three selected datasets are represented."></div><figcaption>Author rank audit at 40% labels. Average seeds before ranking datasets equally. The critical difference is exploratory; only three selected datasets are represented. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>The rank audit averages seeds within dataset, ranks the six methods within each dataset, and then weights the three datasets equally. Lower rank is better. The Friedman test and Nemenyi critical difference are exploratory summaries at each fraction. Five related rank tests and only three datasets do not justify a universal method ordering. Neither fractions nor seeds count as extra datasets.</p>
+<blockquote>
+<p><strong>Scope check.</strong> These are author measurements of a fixed compact protocol. They are INCOMPARABLE to the SCARF benchmark's 69 datasets, 30 trials and training/selection recipe. The paper evaluates 25% and 100% labeled conditions; our denser grid is a teaching experiment, not a reconstructed paper figure. A longer run improves convergence evidence without fixing the dataset and protocol mismatch.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Diagnose-before-adding-another-experiment">7 &#183; Diagnose before adding another experiment<a class="anchor-link" href="#7-%C2%B7-Diagnose-before-adding-another-experiment">&#182;</a></h2><div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Observation</th>
+  <th>Plausible explanation</th>
+  <th>Follow-up that separates explanations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Frozen SCARF improves, fine-tuning does not</td>
+  <td>Supervised optimization erases or cannot exploit its advantage</td>
+  <td>Log paired validation trajectories; predefine a learning-rate grid</td>
+</tr>
+<tr>
+  <td>Both neural arms lose to raw logistic</td>
+  <td>The compact encoding or optimizer harms useful coordinates</td>
+  <td>Compare representation information and longer fixed training</td>
+</tr>
+<tr>
+  <td>Benefit appears only at low f</td>
+  <td>A learned representation reduces the burden on scarce labels</td>
+  <td>Repeat with a separately sampled evaluation dataset</td>
+</tr>
+<tr>
+  <td>More pretraining data fails to help</td>
+  <td>Extra rows carry irrelevant structure or distribution mismatch</td>
+  <td>Hold labels fixed and vary only eligible unlabeled rows</td>
+</tr>
+<tr>
+  <td>A single seed determines a crossing</td>
+  <td>Split or optimization sensitivity</td>
+  <td>Report per-seed gains and run predefined additional seeds</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are hypotheses, not findings of causal mechanisms. In particular this lab does not vary unlabeled pool size, distribution shift, corruption rate or total compute. Changing them all together would make an explanation harder. Return to your VIME notes: propose a VIME arm with the same boundary and label budget, and state whether it tests an objective or an entire recipe.</p>
+<h2 id="8-%C2%B7-Lab-and-exit-ticket">8 &#183; Lab and exit ticket<a class="anchor-link" href="#8-%C2%B7-Lab-and-exit-ticket">&#182;</a></h2><p>Implement three live functions: nested label selection, seed-keyed paired gains, and all strict adjacent crossover brackets. Each has an independent arithmetic CHECK. Read the provided model and training code, then run the full experiment. Your functions must feed that execution; the notebook checks their bindings.</p>
+<p><strong>Before running</strong>, predict the direction of the primary gain at both ends of the grid for each dataset. <strong>After running</strong>, submit your actual curve, counts, paired gains and crossover report. In 150–250 words explain one failed prediction, distinguish a sign reversal from an established threshold, and design one follow-up with exactly one changed factor. Include a practical baseline and the validation-label cost.</p>
+<p>Structural EXIT checks verify the row boundary, nested subsets and saved prediction scores. Your written explanation still needs tutor review. Ask the tutor about any unclear step; bring the result and your reasoning, not just “the cell passed.”</p>
+<p><strong>Spaced follow-up:</strong> tomorrow, reconstruct the six comparisons without opening this page. In a week, audit an SSL result from a paper for validation-label cost and baseline matching.</p>
+<p><strong>Mission connection.</strong> Before attributing a future gain to relational structure, match supervision and feature access. This experiment raises the evidential bar; it provides no direct evidence that relational models outperform single-table models. Lesson 74 moves to cross-table transfer, where source-table identity and schema access introduce additional boundaries.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2106.15147v2">SCARF, Figure 1, §4 and Appendix B</a>. Read alongside <a href="https://arxiv.org/html/2402.01204v3">the tabular SSL survey</a> and <a href="https://arxiv.org/html/1804.09170v2">Oliver et al.'s evaluation recommendations</a>. Reproduce their questions about evidence before borrowing their conclusions.</p>
+<div id="teachback"></div></article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/label-budget-viz.js"></script><script src="../assets/l073-lesson.js"></script></body></html>

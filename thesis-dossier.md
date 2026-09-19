@@ -463,3 +463,5 @@ VIME provides a testable way to learn a flat-table encoder from unlabeled rows. 
 ### L072 · BAR · Views encode task assumptions
 
 Three-dataset frozen-probe experiments show SCARF improving mean accuracy over its random encoder, while raw-feature logistic regression has higher mean accuracy on all three datasets. This is a local representation audit, not a relational-versus-flat comparison or original-paper reproduction. SubTab contrastive operator outputs and gradients match a pinned author release; complete training parity is unestablished. [Evidence](labs/_verify_l072_results.json) · [Contract](labs/l072-reproduction.md).
+
+- **L073 · BAR:** label-budget gains require matched supervised controls, paired row/seed accounting and validation-label costs. The local SCARF study provides no direct evidence for relational superiority.

@@ -1883,6 +1883,29 @@
   ],
   "correct": "0",
   "explain": "Each clean anchor classifies its own corrupted companion among all corrupted candidates. The diagonal is the positive and stays in the denominator."
+},
+{
+  "id": "l073-crossover",
+  "quarter": "Q4",
+  "concept": "ssl-crossover",
+  "lesson": 73,
+  "question": "What does an adjacent mean-gain sign reversal establish?",
+  "options": [
+    {
+      "label": "A bracket on measured fractions",
+      "value": "0"
+    },
+    {
+      "label": "A threshold for future datasets",
+      "value": "1"
+    },
+    {
+      "label": "A guarantee of statistical significance",
+      "value": "2"
+    }
+  ],
+  "correct": "0",
+  "explain": "A mean-sign reversal locates a descriptive bracket on the sampled grid. Paired variability, selection effects and new-data evaluation still matter."
 }
 ];
 })(window);

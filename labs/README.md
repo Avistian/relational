@@ -143,3 +143,5 @@ Authoring sources and regeneration/check commands are recorded in the
 `_depth_delivery_results.json` records content and code/output integrity;
 `_depth_browser_results.json` records the separate browser checks. These checks do not establish
 live Colab compatibility or full paper reproduction.
+
+- L073: [When SSL actually helps](0073-when-ssl-helps.ipynb) — nested label budgets, matched fine-tuning controls and crossover audits.

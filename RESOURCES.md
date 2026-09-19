@@ -368,3 +368,8 @@ _Optional / extension (◆):_
 - Ucar et al., SubTab (NeurIPS 2021), sections 2.1–2.3: https://arxiv.org/html/2110.04361v1
 - Author SubTab implementation, pinned aa3ab1b97231fc37229ef3e55d98ae13bdbfb4fc: https://github.com/AstraZeneca/SubTab/tree/aa3ab1b97231fc37229ef3e55d98ae13bdbfb4fc
 - Local source/operator and protocol audit: labs/_sources_l072.json and labs/l072-reproduction.md.
+
+## Lesson 073 · SSL evaluation
+- Wang et al., [A Survey on Self-Supervised Learning for Non-Sequential Tabular Data](https://arxiv.org/html/2402.01204v3), taxonomy and transfer context.
+- Bahri et al., [SCARF](https://arxiv.org/html/2106.15147v2), Figure 1 and training/evaluation sections; pretraining then fine-tuning.
+- Oliver et al., [Realistic Evaluation of Semi-Supervised Learning Algorithms](https://arxiv.org/html/1804.09170v2), §4.6 and §5; image-domain evidence used to motivate validation-label accounting, not tabular scores.
