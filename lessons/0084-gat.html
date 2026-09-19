@@ -1,0 +1,80 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GAT: learn which neighbors to weight</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/graph-attention.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0083-graphsage.html">Lesson 83</a></nav><header><p>Year 3 · Quarter 1 · Lesson 084</p><h1>GAT: learn which neighbors to weight</h1></header><aside><a href="../labs/0084-gat.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0084-gat.ipynb">Open in Colab</a> · <a href="../labs/html/0084-gat.html">Read lab</a> · <a href="../labs/l084-reproduction.md">Reproduce</a></aside><p class="eyebrow">Learned aggregation · one receiver, many senders</p>
+
+<h2 id="Your-win">Your win<a class="anchor-link" href="#Your-win">&#182;</a></h2><p>Implement a GAT attention head, explain which neighbors its softmax compares, and inspect the weights of a trained Cora model. The core lesson takes about 25 minutes; the full experiment is a separate compute session. This brings us closer to the mission: learning how related database rows contribute to predictions, with an auditable experiment behind the claim.</p>
+<h2 id="Retrieve-before-reading">Retrieve before reading<a class="anchor-link" href="#Retrieve-before-reading">&#182;</a></h2><p>Write answers first. A wrong prediction gives us something useful to repair.</p>
+<ol>
+<li>In <a href="0083-graphsage.html">GraphSAGE</a>, which operation makes the mean aggregator invariant to neighbor order?</li>
+<li>In <a href="0082-gcn.html">GCN</a>, what determines an edge's propagation weight? Can changing a feature change that weight in the same layer?</li>
+<li>Does an inductive architecture automatically make every experiment inductive?</li>
+</ol>
+<details><summary>Check after answering</summary><p>A sum divided by the neighbor count is symmetric. GCN's normalization depends on graph degrees; features do not change that support matrix. The evaluation protocol determines induction: Cora here exposes the complete graph and all node features during training, while supervising only training labels.</p></details>
+
+<h2 id="The-question-GraphSAGE-leaves-open">The question GraphSAGE leaves open<a class="anchor-link" href="#The-question-GraphSAGE-leaves-open">&#182;</a></h2><p>Sampling limits how much context we collect. Mean aggregation then treats every sampled occurrence equally. Suppose one linked document is highly relevant and another is peripheral. Can the aggregator learn different coefficients from their features? GAT makes that choice differentiable. It retains shared parameters and a symmetric weighted sum, so node identifiers and neighbor order are not model parameters. Its Cora experiment uses the whole one-hop neighborhood, including self; it does not inherit L083's sampler. <a href="https://arxiv.org/html/1710.10903v3#S2">Primary reading: GAT §2</a>.</p>
+<h2 id="Trace-one-receiver-before-adding-heads">Trace one receiver before adding heads<a class="anchor-link" href="#Trace-one-receiver-before-adding-heads">&#182;</a></h2><p>Let <code>i</code> be the receiver and <code>j</code> a sender. An allowed edge is stored as <code>(receiver, sender)</code>. Each head projects every node with the same matrix: <code>z_j = h_j W</code>. Then it scores an allowed pair:</p>
+<div class="highlight"><pre><span></span>e_ij = LeakyReLU(a_receiver · z_i + a_sender · z_j, slope=0.2)
+alpha_ij = exp(e_ij) / sum_{k in N(i) including i} exp(e_ik)
+out_i = sum_j alpha_ij z_j
+</pre></div>
+<p>The denominator belongs to <strong>one receiver and one head</strong>. Normalizing across the whole graph couples unrelated neighborhoods. Normalizing across heads makes the heads compete instead of making each head aggregate its neighborhood. The released implementation also has two scalar score biases and an output-vector bias; the lab preserves them. <a href="https://github.com/PetarV-/GAT/blob/5af87e7fce2b90ae1cbd621cd58059036a3c7436/utils/layers.py">Released attention head</a>.</p>
+<p>For an arithmetic example, use scalar projected values <code>[0,1,2]</code>, receiver contribution zero, sender coefficient one and zero biases. Scores are <code>[0,1,2]</code>; softmax is approximately <code>[0.090,0.245,0.665]</code>; the weighted value is <strong>1.575</strong>, while the uniform mean is <strong>1.000</strong>. A disconnected node never enters this denominator, however large its feature.</p>
+<figure class="mpnn-figure"><small>Scroll horizontally to inspect the diagram on narrow screens.</small><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l084/trace.png" alt="One receiver, three allowed senders: normalized scores multiply projected values before summation."></div><figcaption>One receiver, three allowed senders: normalized scores multiply projected values before summation.</figcaption></figure>
+
+<p><strong>Predict first:</strong> if the third sender disappears, does the second coefficient stay 0.245? Use the control, then explain the denominator change.</p>
+<div id="attention"></div>
+
+<details><summary>Feedback</summary><p>No. The remaining scores [0,1] renormalize to [0.269,0.731], so the output becomes 0.731. Removing one edge changes the remaining weights even if their own scores stay fixed. This is why an attention coefficient is contextual.</p></details>
+
+<h2 id="Model-architecture:-eight-views,-one-prediction">Model architecture: eight views, one prediction<a class="anchor-link" href="#Model-architecture:-eight-views,-one-prediction">&#182;</a></h2><figure class="mpnn-figure"><small>Scroll horizontally to inspect the diagram on narrow screens.</small><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l084/architecture.png" alt="Full Cora graph and features enter eight independent attention heads, then a class head; masks separate training, selection and testing."></div><figcaption>Full Cora graph and features enter eight independent attention heads, then a class head; masks separate training, selection and testing.</figcaption></figure>
+
+<p>Follow the colored paths: each of eight heads owns a distinct projection and scoring function; those parameters are shared across nodes and edges <strong>within</strong> that head. Each produces eight coordinates. Concatenation preserves all 64 coordinates for the next layer. ELU supplies the hidden nonlinearity. The Cora output uses one seven-coordinate head and seven class logits. With multiple output heads, average matching class logits; concatenation would incorrectly change the number of classes. The final class softmax and the earlier neighbor softmax normalize different axes. <a href="https://github.com/PetarV-/GAT/blob/5af87e7fce2b90ae1cbd621cd58059036a3c7436/models/gat.py">Model construction</a>.</p>
+<p>At training time the release drops input features separately per head, computes scores from projected features, then independently drops projected values and normalized coefficients. Coefficient dropout is <strong>after</strong> softmax, with inverted scaling; a realized training row need not sum to one. At evaluation all dropout is off. The graph mask remains fixed in both modes. Do not silently replace these operations with a different library default.</p>
+<h2 id="Implement-the-three-load-bearing-operations">Implement the three load-bearing operations<a class="anchor-link" href="#Implement-the-three-load-bearing-operations">&#182;</a></h2><p>The <a href="../labs/0084-gat.ipynb">student notebook</a> provides the complete loader, head, model, optimizer and checkpoint loop inline. You fill three functions used by that actual trainer:</p>
+<table>
+<thead>
+<tr>
+  <th>TODO</th>
+  <th>Contract</th>
+  <th>CHECK catches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>neighbor_softmax</code></td>
+  <td>Stable normalization by receiver</td>
+  <td>Global normalization; overflow</td>
+</tr>
+<tr>
+  <td><code>weighted_messages</code></td>
+  <td>Sum sender values into receivers</td>
+  <td>Reversed edges; a second mean</td>
+</tr>
+<tr>
+  <td><code>merge_heads</code></td>
+  <td>Hidden concat, output mean</td>
+  <td>Changed class count</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><span class="c1"># Stable segment softmax, with receiver maxima detached as numerical shifts.</span>
+<span class="n">maximum</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">new_full</span><span class="p">((</span><span class="n">nodes</span><span class="p">,),</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="n">maximum</span><span class="o">.</span><span class="n">scatter_reduce_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">receiver</span><span class="p">,</span> <span class="n">scores</span><span class="o">.</span><span class="n">detach</span><span class="p">(),</span> <span class="n">reduce</span><span class="o">=</span><span class="s1">&#39;amax&#39;</span><span class="p">)</span>
+<span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">scores</span> <span class="o">-</span> <span class="n">maximum</span><span class="p">[</span><span class="n">receiver</span><span class="p">])</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>
+<span class="n">denominator</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">new_zeros</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span><span class="o">.</span><span class="n">index_add</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">receiver</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">/</span> <span class="n">denominator</span><span class="p">[</span><span class="n">receiver</span><span class="p">]</span>
+</pre></div>
+<p>The lab compares this implementation with a dense masked-softmax oracle and checks gradients. Predict a failure, swap receiver and sender, observe the failed check, then restore the code. Passing shape checks alone would not catch a reversed directed message.</p>
+<h2 id="Reproduce-a-named-experiment">Reproduce a named experiment<a class="anchor-link" href="#Reproduce-a-named-experiment">&#182;</a></h2><p>Target: <strong>GAT, Table 2, Cora: 83.0 ± 0.7% test accuracy across 100 runs</strong>. This is one fixed split, not 100 independent datasets. Our full port uses all 2,708 nodes, 1,433 row-normalized input features and seven classes; 140 labels train, 500 select, 1,000 test. Both directions of each citation and one self-loop per node form 13,264 directed message entries. <a href="https://arxiv.org/html/1710.10903v3#S3">Experiment and reported result</a>.</p>
+<p>The released Adam loop uses learning rate 0.005 and L2 coefficient 0.0005 multiplying half the squared parameter norm. Its name filter includes scoped biases in the penalty. Validation uses cross-entropy without that penalty. Patience resets if <strong>either</strong> validation accuracy or loss improves or ties its best; weights are saved when <strong>both</strong> do so. Restore that saved state before testing. Selecting a maximum test score over seeds would change the experiment. <a href="https://github.com/PetarV-/GAT/blob/5af87e7fce2b90ae1cbd621cd58059036a3c7436/execute_cora.py">Trainer</a> · <a href="https://github.com/PetarV-/GAT/blob/5af87e7fce2b90ae1cbd621cd58059036a3c7436/models/base_gattn.py">Objective</a>.</p>
+<p><strong>Fresh author execution:</strong> 100 complete runs; mean <strong>83.193%</strong>, sample SD <strong>0.821 percentage points</strong>. The paper reports 83.0 ± 0.7%. All runs use validation-only checkpoint selection. <a href="../labs/_paper_l084_results.json">Every epoch and seed</a>.</p>
+<figure class="mpnn-figure"><small>Scroll horizontally to inspect the diagram on narrow screens.</small><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l084/results.png" alt="Accuracy across all declared seeds"></div></figure>
+
+<p>Read the <a href="../labs/l084-reproduction.md">reproduction contract</a> before comparing numbers. This is a full-data, full-architecture modern port with an explicit deviation ledger: PyTorch rather than TensorFlow 1, edge-only reductions, sparse input dropout and locally declared seeds. Numerical closeness does not establish historical parity. Other datasets and baselines are not included in the Cora experiment.</p>
+<h2 id="Interpret-what-the-model-actually-learned">Interpret what the model actually learned<a class="anchor-link" href="#Interpret-what-the-model-actually-learned">&#182;</a></h2><figure class="mpnn-figure"><small>Scroll horizontally to inspect the diagram on narrow screens.</small><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l084/attention.png" alt="Actual learned coefficients at receiver 0 from seed 0, hidden head 1; evaluation mode, self included."></div><figcaption>Actual learned coefficients at receiver 0 from seed 0, hidden head 1; evaluation mode, self included.</figcaption></figure>
+
+<p>This is a selected checkpoint's first head at receiver 0, chosen by node ID before looking at test performance. Each bar belongs to an actual allowed sender; self is included. The weights describe this head's routing with dropout disabled. A large coefficient is not itself a large contribution: multiply it by the transformed value, and remember that other heads and the output layer remain. Removing an edge also renormalizes other coefficients. A causal explanation requires a specified intervention and output comparison.</p>
+<p><strong>Inspect the measurement:</strong> this head's coefficients range from 0.2488 to 0.2525, close to uniform 0.2500. Having learned attention does not guarantee sharply differentiated routing. Compare this trained head with the deliberately stronger arithmetic example above.</p>
+<p><strong>A limitation you can derive:</strong> original GAT scores have the form <code>LeakyReLU(q_i + k_j)</code>. For a fixed head and two fixed sender representations, adding the same receiver term and applying a monotone function cannot reverse their ranking. Receiver changes can alter coefficient magnitudes but cannot arbitrarily reorder shared senders. Prove this from the equation; do not assume every architecture called “attention” computes dot-product query–key interactions.</p>
+<h2 id="Exit-ticket-and-next-step">Exit ticket and next step<a class="anchor-link" href="#Exit-ticket-and-next-step">&#182;</a></h2><p>Submit your result JSON plus a short explanation. Name the receiver axis, explain hidden concat versus output mean, trace all dropout sites, and distinguish transductive access to features from forbidden test-label training. Include the failed-and-repaired CHECK and explain why the measured attention plot is not a causal feature-importance chart.</p>
+<p>For spaced retrieval tomorrow, derive the <code>[0,1,2]</code> trace without reopening the lesson. Ask the agent follow-up questions or request a hint on your first failing CHECK. <a href="../reference/0084-gat.html">Contract card</a> · <a href="../labs/solutions/0084-gat.ipynb">Solution notebook</a>.</p>
+<p>Learned coefficients answer “how much from each neighbor?” They do not remove repeated local mixing or make depth free. Lesson 85 studies over-smoothing: what happens to distinguishability when propagation repeats?</p>
+</article><script src="../assets/l084-gat.js"></script></body></html>

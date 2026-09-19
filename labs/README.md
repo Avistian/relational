@@ -165,3 +165,5 @@ live Colab compatibility or full paper reproduction.
 - L082: [GCN](0082-gcn.ipynb) — exact normalization, sparse propagation, masked gradients and [full Cora experiment](l082-reproduction.md).
 
 - L083: [GraphSAGE](0083-graphsage.ipynb) — three live TODOs, inductive audit and [full PPI reproduction contract](l083-reproduction.md).
+
+- L084: [GAT](0084-gat.ipynb) — visible multi-head attention, three live TODOs and [full Cora reproduction contract](l084-reproduction.md).

@@ -1335,3 +1335,7 @@ Full Cora Table2 experiment port: 100 fresh runs, mean81.401%, sample SD0.658pp;
 ## Lesson 083 created · GraphSAGE · 2026-09-19
 
 Full supervised PPI mean port, three seeds × three learning rates × ten epochs; mean micro-F1 .59093, sample SD .00606 versus paper .598. Full inline sampler, aggregator, loader and trainer. Released-code/pseudocode differences, historical selection/seed gaps and PyTorch differences explicit; historical parity INCOMPARABLE. Held-out-feature/label training intervention passes. No learner completion inferred.
+
+## Lesson 084 created · GAT · 2026-09-19
+
+User requested full reproducibility. Complete visible Cora GAT release port, three live TODOs, full100-seed command, learned attention visualization and source/data hashes. Release biases, three dropout sites and OR-reset/AND-save checkpoint rule preserved. Modern-framework and historical-seed deviations explicit. See _paper_l084_results.json for actual execution and l084-reproduction.md for the evidence boundary. No learner completion inferred.

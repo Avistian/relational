@@ -1,0 +1,6 @@
+/* Numerical neighborhood intervention; uses the same scalar example as the lab. */
+(()=>{const host=document.getElementById('attention');if(!host)return;host.classList.add('graph-attention-controls');
+host.innerHTML='<label>Third sender value <input aria-label="Third sender value" type="range" min="-2" max="4" step="0.1" value="2"></label><label><input type="checkbox" checked> Include third sender</label><button type="button">Reset</button><pre><output aria-live="polite"></output></pre>';
+const slider=host.querySelector('input[type=range]'),include=host.querySelector('input[type=checkbox]'),output=host.querySelector('output');
+function update(){const values=include.checked?[0,1,Number(slider.value)]:[0,1];const scores=values.map(v=>v>=0?v:.2*v),m=Math.max(...scores),w=scores.map(v=>Math.exp(v-m)),sum=w.reduce((a,b)=>a+b,0),a=w.map(v=>v/sum),z=a.reduce((s,v,i)=>s+v*values[i],0);output.textContent='Values: ['+values.join(', ')+']\nScores: ['+scores.map(v=>v.toFixed(2)).join(', ')+']\nWeights: ['+a.map(v=>v.toFixed(3)).join(', ')+']\nWeighted output: '+z.toFixed(3)+'\nUniform mean: '+(values.reduce((a,b)=>a+b,0)/values.length).toFixed(3);}
+slider.addEventListener('input',update);include.addEventListener('change',update);host.querySelector('button').addEventListener('click',()=>{slider.value='2';include.checked=true;update();});update();})();

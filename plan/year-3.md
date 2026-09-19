@@ -402,3 +402,7 @@ Graphormer `2106.05234`, GraphGPS `2205.12454` (conceptual parents of RelGT).
 ## L083 delivery evidence
 
 Prepared [lesson](../lessons/0083-graphsage.html), [lab](../labs/0083-graphsage.ipynb) and [contract](../labs/l083-reproduction.md). Native PyTorch mini-batches deliberately expose the released padded-table sampler instead of substituting modern NeighborLoader semantics. Full PPI release port executed; paper-result parity remains INCOMPARABLE. Creation does not assert mastery.
+
+## L084 delivery evidence
+
+Prepared [lesson](../lessons/0084-gat.html), [lab](../labs/0084-gat.ipynb) and [contract](../labs/l084-reproduction.md). Native visible attention exposes receiver normalization and original release semantics; full100-run Cora operator, fixed source/data identities, independent dense oracle and learned attention visualization. Historical parity remains separate. Creation does not assert mastery.

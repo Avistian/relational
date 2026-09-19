@@ -113,3 +113,7 @@ Tier C toy graph for routing; Tier B real molecular graphs for named-target reco
 ## L083 PPI
 
 Tier B, original complete Stanford GraphSAGE PPI archive. Download on demand into data/l083/ppi.zip; SHA-256 checked before reading.56,944 nodes,50 features,121 labels; split44,906/6,514/5,524. Standardization fits training nodes only. Original graph split, full ten-epoch schedule; see l083-reproduction.md for historical gaps.
+
+## L084 Cora attention
+
+Tier B: reuses pinned Planetoid Cora bytes in data/l078, independently checked against all eight files in the original GAT release. Duplicate adjacency entries coalesce to5278 unique undirected citation pairs; self-loops yield13264 directed messages. Fixed140/500/1000 label splits. The complete graph/features are visible under the transductive protocol. See ../l084-reproduction.md.

@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GAT contract card</title><link rel="stylesheet" href="../assets/lesson.css"><article><h1 id="GAT-contract-card">GAT contract card<a class="anchor-link" href="#GAT-contract-card">&#182;</a></h1><table>
+<thead>
+<tr>
+  <th>Object</th>
+  <th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Edge <code>(i,j)</code></td>
+  <td>Receiver i receives sender j</td>
+</tr>
+<tr>
+  <td>Score</td>
+  <td>LeakyReLU(q_i + k_j), slope .2; release includes biases</td>
+</tr>
+<tr>
+  <td>Neighbor softmax</td>
+  <td>Normalize only allowed senders of one receiver, one head</td>
+</tr>
+<tr>
+  <td>Message</td>
+  <td>alpha_ij times projected sender value</td>
+</tr>
+<tr>
+  <td>Hidden merge</td>
+  <td>Concatenate 8 heads × 8 features = 64</td>
+</tr>
+<tr>
+  <td>Cora output</td>
+  <td>One head, 7 class logits; multiple output heads average</td>
+</tr>
+<tr>
+  <td>Dropout</td>
+  <td>Input, projected values, coefficients; .6, independent per head</td>
+</tr>
+<tr>
+  <td>Eval coefficients</td>
+  <td>Sum to 1 per receiver; training dropout breaks that sum</td>
+</tr>
+<tr>
+  <td>Mask</td>
+  <td>Citation neighbors plus exactly one self-loop</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>Full graph/features, 140 labels; CE plus L2 on all parameters</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>500 labels; OR-reset and AND-save, equality counts; patience100</td>
+</tr>
+<tr>
+  <td>Test</td>
+  <td>1000 nodes after checkpoint restore</td>
+</tr>
+<tr>
+  <td>Paper target</td>
+  <td>Table2 Cora 83.0 ± .7%, 100 runs</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretation:</strong> weight is not contribution or causal importance. Compare alpha times values and specify an intervention. Original additive GAT cannot reverse shared sender rankings by changing only the receiver term.</p>
+<p><strong>Evidence:</strong> modern PyTorch release port; historical TensorFlow/RNG parity INCOMPARABLE. Read the deviation ledger before comparing scores.</p>
+<p><a href="../lessons/0084-gat.html">Lesson</a> · <a href="../labs/0084-gat.ipynb">Lab</a> · <a href="../labs/l084-reproduction.md">Reproduction</a> · <a href="https://arxiv.org/html/1710.10903v3">Paper</a></p>
+</article></html>
