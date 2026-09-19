@@ -434,3 +434,8 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 - [Veličković et al.2018](https://arxiv.org/html/1710.10903v3): attention equations, Table2 Cora target and100-run evaluation.
 - [Pinned official implementation](https://github.com/PetarV-/GAT/tree/5af87e7fce2b90ae1cbd621cd58059036a3c7436): inspect head biases/dropout, parameter regularization and checkpoint decisions.
 - [Lesson reproduction contract](labs/l084-reproduction.md): full protocol audit, local run evidence and historical gaps.
+
+## L085 · Over-smoothing
+
+- Li, Han & Wu (AAAI2018), [Deeper Insights](https://arxiv.org/abs/1801.07606), §3 and Figure2. Primary source for fixed-propagation analysis and untrained karate experiment.
+- [Authors’ source, pinned AAAI-18 branch](https://github.com/liqimai/gcn/tree/3b30a2d35ca2b144bf0f36337f233d407a7e2dd6): hidden ReLU, final identity, Glorot initialization. Figure2 seed/driver not identified.

@@ -2077,6 +2077,29 @@
   ],
   "correct": "correct",
   "explain": "Add self-loops first, then use 1/sqrt(d_source*d_destination). This is not ordinary row averaging."
+},
+{
+  "id": "l085-degree-scaled-limit",
+  "lesson": 85,
+  "quarter": "Q1",
+  "concept": "over-smoothing",
+  "question": "On a connected graph, repeated fixed symmetric GCN propagation preserves which node direction?",
+  "options": [
+    {
+      "label": "Square root of degree",
+      "value": "correct"
+    },
+    {
+      "label": "Inverse root of degree",
+      "value": "inverse"
+    },
+    {
+      "label": "Equal value for everyone",
+      "value": "equal"
+    }
+  ],
+  "correct": "correct",
+  "explain": "S sqrt(d) = sqrt(d). Divide representations by sqrt(d) to inspect constant-within-component limits."
 }
 ];
 })(window);

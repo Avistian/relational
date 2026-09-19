@@ -1339,3 +1339,7 @@ Full supervised PPI mean port, three seeds × three learning rates × ten epochs
 ## Lesson 084 created · GAT · 2026-09-19
 
 User requested full reproducibility. Complete visible Cora GAT release port, three live TODOs, full100-seed command, learned attention visualization and source/data hashes. Release biases, three dropout sites and OR-reset/AND-save checkpoint rule preserved. Modern-framework and historical-seed deviations explicit. See _paper_l084_results.json for actual execution and l084-reproduction.md for the evidence boundary. No learner completion inferred.
+
+## Lesson085 created · Over-smoothing · 2026-09-19
+
+Full reproducibility requested. Full karate Figure2 setup reconstructed:34 nodes,78 binary edges, depths1–5,100 declared seeds. Historical seed/weights unavailable; exact picture parity INCOMPARABLE. Full Cora depth extension:5 depths ×10 seeds, separate from Li classification tables. Three live TODOs, visible model/loader/trainer, component and degree-scaling checks, portable figures. No learner completion inferred.

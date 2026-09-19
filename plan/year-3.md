@@ -55,7 +55,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `mask-viz.js` (edge-attention heatmap) + `message-passing-viz.js`.
 - **Bridge** — attention on graphs → HGT (L093), Graph Transformers (Y4 RelGT); callback Y2 attention lessons.
 
-### 085 · Over-smoothing — *Li et al. 2018, ◆ `1801.07606`*
+### 085 · [Over-smoothing](../lessons/0085-over-smoothing.html) — *Li et al. 2018, ◆ `1801.07606`*
+- **Prepared package** — [lab](../labs/0085-over-smoothing.ipynb), [protocol](../labs/l085-reproduction.md): full34-node Figure2 setup across100 seeds; separate full Cora depth diagnostic across10 seeds. Historical picture parity INCOMPARABLE; no learner completion inferred.
 - **Skill** — demonstrate that stacking many GNN layers collapses node representations toward
   indistinguishability, and state the depth/performance trade-off.
 - **Teach** — repeated averaging → low-pass filter → node features converge; why GNNs are shallow; remedies

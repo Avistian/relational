@@ -117,3 +117,7 @@ Tier B, original complete Stanford GraphSAGE PPI archive. Download on demand int
 ## L084 Cora attention
 
 Tier B: reuses pinned Planetoid Cora bytes in data/l078, independently checked against all eight files in the original GAT release. Duplicate adjacency entries coalesce to5278 unique undirected citation pairs; self-loops yield13264 directed messages. Fixed140/500/1000 label splits. The complete graph/features are visible under the transductive protocol. See ../l084-reproduction.md.
+
+## L085 · over-smoothing
+
+Karate graph: full34 nodes and78 binary undirected edges, identity features; serialized in `../sources/l085/karate.json`, pinned in `../_sources_l085.json`. Li et al. Figure2 setup, untrained, labels only color points. Cora: reuse L078/L082 full pinned data and fixed label masks for a separate depth extension; not Li et al. classification-table protocol.

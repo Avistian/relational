@@ -481,3 +481,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 | L081 | BAR | Executable learned graph aggregation and invariant molecular readout, with honest QM9 reconstruction boundaries. Mechanism tests and smoke training do not establish relational advantage, historical paper parity, or learner mastery. |
 
 | L082 | BAR | Full Cora fixed-split GCN port,100 initializations; measured81.401% versus81.5% target. Supports reproducible static graph aggregation, not temporal RDL advantage or cross-framework identity. |
+
+| L085 | BAR | Full karate untrained setup reconstruction and separate Cora depth sweep expose information loss from repeated mixing. Degree scaling, components, optimization and feature magnitude constrain the diagnosis. Greater relational depth alone is not evidence of better predictions; no database benchmark superiority follows. |
