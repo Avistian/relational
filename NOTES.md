@@ -1343,3 +1343,7 @@ User requested full reproducibility. Complete visible Cora GAT release port, thr
 ## Lesson085 created · Over-smoothing · 2026-09-19
 
 Full reproducibility requested. Full karate Figure2 setup reconstructed:34 nodes,78 binary edges, depths1–5,100 declared seeds. Historical seed/weights unavailable; exact picture parity INCOMPARABLE. Full Cora depth extension:5 depths ×10 seeds, separate from Li classification tables. Three live TODOs, visible model/loader/trainer, component and degree-scaling checks, portable figures. No learner completion inferred.
+
+## Lesson086 created · PyG fundamentals · 2026-09-19
+
+Full reproducibility requested. Full100-seed PyG1.2.0 fixed-Cora protocol reconstruction:81.305% mean,0.714pp sampleSD. Exact paper-run revision and historical seeds unavailable; historical parity INCOMPARABLE. Real compiled NeighborLoader, output/gradient oracles, typed IDs, three live TODOs and complete inline model/loader/trainer. Source build of pyg-lib pinned. No learner completion inferred.

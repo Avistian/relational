@@ -439,3 +439,9 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 
 - Li, Han & Wu (AAAI2018), [Deeper Insights](https://arxiv.org/abs/1801.07606), §3 and Figure2. Primary source for fixed-propagation analysis and untrained karate experiment.
 - [Authors’ source, pinned AAAI-18 branch](https://github.com/liqimai/gcn/tree/3b30a2d35ca2b144bf0f36337f233d407a7e2dd6): hidden ReLU, final identity, Glorot initialization. Figure2 seed/driver not identified.
+
+## L086 · PyG fundamentals
+
+- [Fey & Lenssen2019](https://arxiv.org/abs/1903.02428): primary framework paper; Table1 fixed-Cora target and100-run protocol.
+- [Archived PyG1.2.0](https://github.com/pyg-team/pytorch_geometric/tree/d5aff37604c8e3247f5e807f2ba0ec6eeb4c661b/benchmark/citation): audited release proxy, model and selection details differ from original Kipf trainer.
+- [MessagePassing](https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.conv.MessagePassing.html) and [NeighborLoader](https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/loader/neighbor_loader.html): source/destination lifting, seed ordering and ID contracts. Executed against PyG2.8.0.post1.

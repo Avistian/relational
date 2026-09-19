@@ -67,7 +67,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Bridge** — the depth failure mode that predicts where deep REG message passing breaks (Y4); ◆ DropEdge/
   PNA/over-squashing read here.
 
-### 086 · PyG fundamentals — *Fey & Lenssen 2019*
+### 086 · [PyG fundamentals](../lessons/0086-pyg-fundamentals.html) — *Fey & Lenssen 2019*
+- **Prepared package** — [lab](../labs/0086-pyg-fundamentals.ipynb), [protocol](../labs/l086-reproduction.md): real NeighborLoader checks and full100-seed fixed-Cora PyG release reconstruction. Historical parity INCOMPARABLE; no learner completion inferred.
 - **Skill** — use PyG's `Data`/`HeteroData`, `NeighborLoader`, and message-passing base class fluently.
 - **Teach** — the `MessagePassing` class (`propagate`/`message`/`aggregate`/`update`), data objects, mini-
   batch loaders; the library the rest of the curriculum runs on.

@@ -167,3 +167,5 @@ live Colab compatibility or full paper reproduction.
 - L083: [GraphSAGE](0083-graphsage.ipynb) — three live TODOs, inductive audit and [full PPI reproduction contract](l083-reproduction.md).
 
 - L084: [GAT](0084-gat.ipynb) — visible multi-head attention, three live TODOs and [full Cora reproduction contract](l084-reproduction.md).
+
+- L086: [PyG fundamentals](0086-pyg-fundamentals.ipynb) — [full reproduction guide](l086-reproduction.md), real sampling and operator/gradient parity.
