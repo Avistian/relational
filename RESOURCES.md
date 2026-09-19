@@ -411,3 +411,9 @@ Primary historical sources for mechanism-based shortlists: [trees](https://arxiv
 ## L080 exit exam
 
 Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature TabPFN v2, TabICL 2025 and TabReD. Pinned sources: `labs/_sources_l080.json`. FT uses the released architecture (including ReGLU and first-layer normalization exception). Local cross-paper comparison has no matching published target; original benchmarks remain NOT_RUN.
+
+## L081 · Gilmer MPNN framework
+
+- [Primary paper](https://proceedings.mlr.press/v70/gilmer17a.html): framework §2, features §6, training §7.
+- [Supplement](https://proceedings.mlr.press/v70/gilmer17a/gilmer17a-supp.pdf): GCN mapping §1.1; sparse GG-NN Table3 and chemical accuracy Table1.
+- [Official source](https://github.com/brain-research/mpnn/tree/4a1f0ddea3cd7de5eebc96e509da2161624aaacd): model-only release with missing reader/trainer; pin and hashes in labs/_sources_l081.json.

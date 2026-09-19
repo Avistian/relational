@@ -477,3 +477,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 | L078 | BAR | Full Cora GCN release-protocol port,100 initializations:81.401% mean versus published81.5%; implementation makes learned neighbor aggregation concrete. Single static transductive graph, modern-framework deviations and no tabular baseline comparison: neither temporal safety nor relational-database superiority follows. |
 
 | L080 | BAR | Prepared reproducible four-family random/temporal comparison and an assessed information-ceiling argument. Two capped datasets cannot establish population superiority or relational benefit; no learner pass inferred. |
+
+| L081 | BAR | Executable learned graph aggregation and invariant molecular readout, with honest QM9 reconstruction boundaries. Mechanism tests and smoke training do not establish relational advantage, historical paper parity, or learner mastery. |

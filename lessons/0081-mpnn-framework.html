@@ -1,0 +1,221 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MPNNs: message, aggregate, update, readout</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/message-passing-viz.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0080-year-2-exit-exam.html">Lesson 80</a></nav><header><p>Year 3 · Quarter 1 · Lesson 081</p><h1>MPNNs: message, aggregate, update, readout</h1></header><aside><a href="../labs/0081-mpnn-framework.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0081-mpnn-framework.ipynb">Open in Colab</a> · <a href="../labs/html/0081-mpnn-framework.html">Read lab</a> · <a href="../labs/l081-reproduction.md">Reproduce</a></aside><h2 id="Start-cold-%C2%B7-what-must-move-when-a-node-is-renamed?">Start cold &#183; what must move when a node is renamed?<a class="anchor-link" href="#Start-cold-%C2%B7-what-must-move-when-a-node-is-renamed?">&#182;</a></h2><div id="warmup"></div>
+
+<p>Close your notes. In the chain A—B—C, can changing C affect A after one synchronous neighbor update? If rows are reordered, what else must be reordered? Why is validation allowed to choose a model while the test set is not? Write answers before continuing.</p>
+<p><strong>Your tangible win:</strong> implement message → aggregate → update → readout, and show that renaming nodes changes their positions rather than the graph prediction. The core takes about 30 minutes; reserve another session for the molecular model and reproduction audit.</p>
+<p><a href="0078-message-passing-preview.html">Lesson 78</a> made one neighbor calculation concrete. <a href="0080-year-2-exit-exam.html">Lesson 80</a> demanded a defensible experiment. Year 3 combines these skills: make graph operations explicit, then test what the resulting model actually learns. This is the foundation for learning over entity relationships in a database.</p>
+<p><strong>Primary reading:</strong> Gilmer et al., <a href="https://proceedings.mlr.press/v70/gilmer17a.html">Neural Message Passing for Quantum Chemistry</a>, §2 for the framework and §§6–8 for the experiment. Read the <a href="https://proceedings.mlr.press/v70/gilmer17a/gilmer17a-supp.pdf">supplement</a>, Table 3, after the core lab.</p>
+<h2 id="1-%C2%B7-Four-operations,-one-contract">1 &#183; Four operations, one contract<a class="anchor-link" href="#1-%C2%B7-Four-operations,-one-contract">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A node asks its neighbors for information, combines their replies, and revises its state. A final readout combines node states when the prediction belongs to the whole graph.</p>
+</blockquote>
+<p><strong>State.</strong> A node state hᵗᵥ is a vector describing node v after t rounds. Initially it contains or encodes the node's observed features. N nodes with D coordinates form a matrix H of shape [N,D].</p>
+<p><strong>Message.</strong> For a directed edge w → v, Mₜ(hᵗᵥ, hᵗ𝑤, eᵥ𝑤) constructs the information sent from source w to destination v. The edge feature e can encode a bond type, a transaction amount, or a relation type. Do not swap source and destination merely because an example graph is undirected.</p>
+<p><strong>Aggregate.</strong> Combine all incoming messages at a destination. The paper's basic definition uses a sum:</p>
+<div class="highlight"><pre><span></span>mᵗ⁺¹ᵥ = Σ over w in N(v) Mₜ(hᵗᵥ, hᵗ𝑤, eᵥ𝑤)
+</pre></div>
+<p>Sum ignores the order of incoming edges. Mean also ignores order, but divides away neighborhood size. For example, messages [2,2] and [2,2,2] have the same mean; their sums are 4 and 6. Neither reducer identifies every possible multiset: [1,3] and [2,2] have equal sums. The choice encodes what information survives.</p>
+<p><strong>Update.</strong> Set hᵗ⁺¹ᵥ = Uₜ(hᵗᵥ, mᵗ⁺¹ᵥ). Every message in round t+1 uses the old state Hᵗ. Updating a Python list in place while traversing nodes would let later nodes see newer information and make the result depend on iteration order.</p>
+<p><strong>Readout.</strong> For a graph target, ŷ = R({hᵀᵥ}). A sum or an invariant learned readout discards arbitrary node order. For a node target, keep one output per node. Pooling all nodes would destroy the distinction between their predictions. These are the message-passing and readout phases of <a href="https://proceedings.mlr.press/v70/gilmer17a/gilmer17a.pdf">Gilmer §2</a>.</p>
+<h2 id="2-%C2%B7-Trace-the-operation-before-coding-it">2 &#183; Trace the operation before coding it<a class="anchor-link" href="#2-%C2%B7-Trace-the-operation-before-coding-it">&#182;</a></h2><p><strong>Worked example.</strong> Use A—B—C plus isolated node D. Start with [2,4,8,10]. Send the old scalar state along each direction of each bond. Take the mean of incoming messages, then average it with the destination's old state. Define an empty neighborhood's aggregate as zero.</p>
+<div id="predict"></div>
+
+<figure class="mpnn-figure"><small>Scroll horizontally on narrow screens to inspect the full figure.</small><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l081/trace.png" alt="Exact teaching trace; messages use old states and the isolated node receives a zero aggregate."></div><figcaption>Exact teaching trace; messages use old states and the isolated node receives a zero aggregate.</figcaption></figure>
+
+<p>At B, incoming messages are 2 and 8. Their mean is 5, so B becomes ½×4 + ½×5 = <strong>4.5</strong>. D receives zero and becomes <strong>5</strong>. This is an explicit empty-neighborhood convention, not a universal GNN rule; a residual-only update could instead preserve D.</p>
+<div id="messages"></div>
+
+<p>Change C to 20. B should become 7.5; A should remain 3 after one round. Then inspect two rounds:</p>
+<div id="reach"></div>
+
+<p>Information can traverse at most one edge per local synchronous round. Global virtual nodes or all-pairs edges change that graph-distance statement. The learned molecular model below uses different messages and updates; this arithmetic example isolates routing.</p>
+<p><strong>Implementation contract.</strong> <code>edge_index[0]</code> contains sources and <code>edge_index[1]</code> destinations. <code>messages[E,D]</code> is reduced into <code>incoming[N,D]</code>. <code>index_add_</code> adds rows at destination indices, including repeated destinations. Here duplicate edges count as repeated messages; deduplicate upstream if your graph is intended to be simple.</p>
+<div class="highlight"><pre><span></span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="o">=</span> <span class="n">edge_index</span>
+<span class="n">messages</span> <span class="o">=</span> <span class="n">message</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="n">dst</span><span class="p">],</span> <span class="n">h</span><span class="p">[</span><span class="n">src</span><span class="p">],</span> <span class="n">edge_attr</span><span class="p">)</span>
+<span class="n">incoming</span> <span class="o">=</span> <span class="n">aggregate</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h</span><span class="p">),</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">)</span>
+<span class="n">h_next</span> <span class="o">=</span> <span class="n">update</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">incoming</span><span class="p">)</span>
+</pre></div>
+<p>In the notebook, implement the reducer, the synchronous mean update, and the graph readout. The checks include empty edges and node relabeling, so hard-coding this four-node answer cannot pass.</p>
+<h2 id="3-%C2%B7-Equivariance-inside,-invariance-at-the-end">3 &#183; Equivariance inside, invariance at the end<a class="anchor-link" href="#3-%C2%B7-Equivariance-inside,-invariance-at-the-end">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> If C becomes row zero, its output must become row zero too. The whole molecule has not changed, so its predicted property should stay the same.</p>
+</blockquote>
+<p><strong>Permutation equivariance</strong> means that relabeling the input nodes relabels the node outputs in the same way. <strong>Permutation invariance</strong> means that the graph output is unchanged. A shared message function, a symmetric reducer, and a shared update preserve equivariance. An invariant readout then produces an invariant graph prediction.</p>
+<figure class="mpnn-figure"><small>Scroll horizontally on narrow screens to inspect the full figure.</small><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l081/symmetry.png" alt="Move features, endpoints and graph IDs together. Node outputs permute; graph sums stay fixed."></div><figcaption>Move features, endpoints and graph IDs together. Node outputs permute; graph sums stay fixed.</figcaption></figure>
+
+<p><strong>Worked example.</strong> Store rows as [C,A,D,B] instead of [A,B,C,D]. The correct output becomes [6,3,5,4.5]. Its sum remains 18.5. Moving feature rows without remapping edge endpoints changes the actual graph and is not a symmetry test.</p>
+<div class="highlight"><pre><span></span><span class="n">permutation</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>  <span class="c1"># new rows contain these old rows</span>
+<span class="n">inverse</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">permutation</span><span class="p">)</span>     <span class="c1"># old index -&gt; new index</span>
+<span class="n">x_new</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">permutation</span><span class="p">]</span>
+<span class="n">edges_new</span> <span class="o">=</span> <span class="n">inverse</span><span class="p">[</span><span class="n">edge_index</span><span class="p">]</span>
+<span class="c1"># Also carry graph IDs with their nodes: batch_new = batch[permutation]</span>
+</pre></div>
+<p><strong>Break it deliberately.</strong> Remap the features but leave the edges fixed. Predict which check will fail. Then restore the endpoints, permute only edge order, and verify agreement within floating-point tolerance. Floating-point sums need not be bit-identical under a different addition order.</p>
+<h2 id="4-%C2%B7-GCN-and-GAT-fit-the-same-structure">4 &#183; GCN and GAT fit the same structure<a class="anchor-link" href="#4-%C2%B7-GCN-and-GAT-fit-the-same-structure">&#182;</a></h2><p>The framework is a way to separate decisions, not a single architecture. The <a href="https://proceedings.mlr.press/v70/gilmer17a/gilmer17a-supp.pdf">MPNN supplement §1.1</a> explicitly derives GCN as a special case. GAT arrived later; mapping it here is a retrospective application of the framework.</p>
+<table>
+<thead>
+<tr>
+  <th>Variant</th>
+  <th>Message from w to v</th>
+  <th>Aggregate</th>
+  <th>Update / output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Teaching mean</td>
+  <td>h𝑤</td>
+  <td>incoming mean</td>
+  <td>½hᵥ + ½mᵥ</td>
+</tr>
+<tr>
+  <td>GCN</td>
+  <td>(W h𝑤)/√(d̃ᵥd̃𝑤)</td>
+  <td>incoming sum, self-loops included</td>
+  <td>activation(mᵥ)</td>
+</tr>
+<tr>
+  <td>One-head GAT</td>
+  <td>αᵥ𝑤 W h𝑤</td>
+  <td>incoming sum, self-loops included</td>
+  <td>activation(mᵥ)</td>
+</tr>
+<tr>
+  <td>Sparse GG-NN</td>
+  <td>two bond-specific matrix products</td>
+  <td>two sums, concatenated</td>
+  <td>recurrent gated update</td>
+</tr>
+</tbody>
+</table>
+<p>For GCN, d̃ counts neighbors after adding a self-loop exactly once. This is <strong>not generally an ordinary mean</strong>. In our chain with a self-loop, B receives 2/√6 + 4/3 + 8/√6 = 5.415816 when W=1. The ordinary self-inclusive mean is 14/3 = 4.666667. <a href="https://arxiv.org/abs/1609.02907">Kipf &amp; Welling</a>.</p>
+<div id="normalized"></div>
+
+<p>For GAT, α is a learned attention weight normalized over the destination's neighborhood. Scores are computed per edge, but the softmax denominator depends on all incoming edges for that destination. <strong>This requires an additional neighborhood reduction before the weighted-message sum.</strong> It is not a function of one isolated edge alone. A multi-head layer repeats this operation and combines heads. <a href="https://arxiv.org/abs/1710.10903">Veličković et al.</a>.</p>
+<p><strong>CHECK your mapping.</strong> Identify the reducer and self-loop convention before calling a layer “GCN.” Identify the softmax group before calling it “GAT.” The notebook instantiates the generic interface and checks a GCN layer against a dense normalized adjacency calculation.</p>
+<h2 id="5-%C2%B7-Model-architecture-%C2%B7-the-sparse-molecular-GG-NN">5 &#183; Model architecture &#183; the sparse molecular GG-NN<a class="anchor-link" href="#5-%C2%B7-Model-architecture-%C2%B7-the-sparse-molecular-GG-NN">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A double bond can transform its neighbor's state differently from a single bond. Gates decide how much of the old atom state to retain. Finally, each atom contributes to one molecular prediction.</p>
+</blockquote>
+<figure class="mpnn-figure"><small>Scroll horizontally on narrow screens to inspect the full figure.</small><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l081/architecture.png" alt="Complete sparse GG-NN reconstruction: bond matrices, shared recurrent updates and gated graph readout. This is not the edge-network/set2set variant."></div><figcaption>Complete sparse GG-NN reconstruction: bond matrices, shared recurrent updates and gated graph readout. This is not the edge-network/set2set variant.</figcaption></figure>
+
+<p><strong>Inputs.</strong> Each molecule is a graph of heavy atoms. Hydrogen count is a feature; hydrogens are not separate nodes in this reconstruction. Each atom has 13 features: five atom-type indicators, atomic number, acceptor and donor flags, aromaticity, three hybridization indicators, and hydrogen count. Each chemical bond becomes two directed edges. Bond labels are single, double, triple, or aromatic. There are no distances, self-loops, or nonbonded edges in this lane. The paper explores other input choices; see <a href="https://proceedings.mlr.press/v70/gilmer17a/gilmer17a.pdf">§6 and Table 1</a>.</p>
+<p><strong>Initialization.</strong> Pad the 13 observed coordinates with zeros to width 50. No pretrained checkpoint is loaded. Each run trains from initialized weights.</p>
+<p><strong>Messages.</strong> The <a href="https://github.com/brain-research/mpnn/blob/4a1f0ddea3cd7de5eebc96e509da2161624aaacd/mpnn.py">released GGNNMsgPass</a> has separate incoming and outgoing matrix banks. A bond selects a 50×50 matrix in each bank. Each bank transforms the source state; two destination sums are concatenated into a 100-dimensional message. On this undirected molecular graph both banks see the same neighbors, but learn different transformations. On a directed graph the outgoing branch would require reversed routing; this molecular class is not a generic directed implementation.</p>
+<p><strong>Update.</strong> A sigmoid maps each gate coordinate into [0,1]. The reset gate filters the old state before candidate construction. The update gate interpolates between the old and candidate states:</p>
+<div class="highlight"><pre><span></span>z = sigmoid(m Wz + h Uz)
+r = sigmoid(m Wr + h Ur)
+candidate = tanh(m W + (r ⊙ h) U)
+h_new = (1 − z) ⊙ h + z ⊙ candidate
+</pre></div>
+<p>The source has no gate biases. We implement these equations directly: PyTorch's standard GRU cell uses a different reset placement in its candidate calculation. The same message and update weights are reused for six rounds in the smoke recipe. In the search, the number of rounds varies from three through eight.</p>
+<p><strong>Readout.</strong> Concatenate each final state with its original 13 features. Feed this 63-dimensional vector into two separate 63→200→1 networks with ReLU hidden activations. Multiply a sigmoid gate from one by the unrestricted scalar value from the other. Sum those contributions <strong>within each molecule</strong>, not across the batch. Original features remain available even after repeated updates.</p>
+<p><strong>Training and inference.</strong> Standardize the dipole targets using only training molecules. Minimize mean squared error in standardized units using Adam. Validation MAE chooses the checkpoint and trial. At inference undo target scaling; report mean absolute error in Debye, a unit of dipole moment. Loss uses training targets only. No training dropout is used. All model weights are trainable; the graph structure and atom features remain fixed.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This is the sparse GG-NN variant, not the paper's strongest edge-network + set2set model. The framework is shared, but messages, readout, and input information differ. The notebook exposes every forward-pass component and the entire reconstruction trainer.</p>
+</blockquote>
+<h2 id="6-%C2%B7-A-named-result-and-a-reproducible-attempt">6 &#183; A named result and a reproducible attempt<a class="anchor-link" href="#6-%C2%B7-A-named-result-and-a-reproducible-attempt">&#182;</a></h2><p>The target is <strong>Supplementary Table 3, GG-NN, μ</strong>. Its reported error ratio is 3.94. The supplement gives a chemical-accuracy denominator of 0.1 Debye, so the corresponding MAE is <strong>3.94 × 0.1 = 0.394 Debye</strong>. That row is a sparse-graph baseline without spatial distances, not the best headline result.</p>
+<p>The authors' <a href="https://github.com/brain-research/mpnn/tree/4a1f0ddea3cd7de5eebc96e509da2161624aaacd">release README</a> supplies model definitions but no data reader or trainer. It says paper results used separate 50-trial searches. Therefore “run the defaults” cannot recover the historical experiment.</p>
+<table>
+<thead>
+<tr>
+  <th>Component</th>
+  <th>Published / released</th>
+  <th>This package</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Data</td>
+  <td>130,462 molecules in the paper</td>
+  <td>Modern QM9 archive, public exclusions, sanitization failures logged</td>
+</tr>
+<tr>
+  <td>Split</td>
+  <td>10,000 validation; 10,000 test; remainder train</td>
+  <td>Fresh seeded molecule IDs saved explicitly; historical membership unavailable</td>
+</tr>
+<tr>
+  <td>Model</td>
+  <td>Sparse bond matrices, GRU, gated graph output</td>
+  <td>Complete visible reconstruction; NumPy equations and dense message checks</td>
+</tr>
+<tr>
+  <td>Objective</td>
+  <td>Standardized-target MSE, evaluate MAE</td>
+  <td>Train-only scaling, native-unit MAE</td>
+</tr>
+<tr>
+  <td>Search</td>
+  <td>50 trials per model/target</td>
+  <td><code>paper-budget</code>: 50 trials, fixed width 50; unreleased winning configurations remain a gap</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>Batch 20, up to 3 million updates, Adam, linear LR decay</td>
+  <td>Same declared cap/schedule ranges in <code>paper-budget</code>; explicit modern optimizer/init and validation cadence</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Validation early stopping and model selection</td>
+  <td>Best validation checkpoint under fixed cap; no patience-based termination</td>
+</tr>
+<tr>
+  <td>Evidence</td>
+  <td>0.394 Debye for the named row</td>
+  <td>Smoke measurements below; full historical reproduction NOT_RUN</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Author-reference smoke evidence; not student output or paper-result reproduction.</strong></p>
+<table>
+<thead>
+<tr>
+  <th>Split + initialization seed</th>
+  <th style="text-align:right">Test MAE (Debye)</th>
+  <th style="text-align:right">Updates</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>81</td>
+  <td style="text-align:right">1.038806</td>
+  <td style="text-align:right">40</td>
+  <td>INCOMPARABLE</td>
+</tr>
+<tr>
+  <td>82</td>
+  <td style="text-align:right">1.115341</td>
+  <td style="text-align:right">40</td>
+  <td>INCOMPARABLE</td>
+</tr>
+<tr>
+  <td>83</td>
+  <td style="text-align:right">1.112676</td>
+  <td style="text-align:right">40</td>
+  <td>INCOMPARABLE</td>
+</tr>
+</tbody>
+</table>
+<p>Across these three smoke splits/runs: mean 1.088941, sample SD 0.043439 Debye. This is descriptive run variability, not dataset-level uncertainty.</p>
+<p>The smoke uses the first 512 valid molecules in file order, then seeded splits. That cap is convenient for execution checks and is not representative sampling. Its three runs change both split and initialization seeds. Their spread is not a confidence interval for performance over datasets. Do not infer that this model beats a flat-table baseline: no such comparison was run.</p>
+<p><strong>Reproduce from the repository root:</strong></p>
+<div class="highlight"><pre><span></span>python<span class="w"> </span>labs/_verify_l081.py
+python<span class="w"> </span>labs/_run_l081.py<span class="w"> </span>--preset<span class="w"> </span>smoke<span class="w"> </span>--seed<span class="w"> </span><span class="m">81</span><span class="w"> </span>--output<span class="w"> </span>/tmp/l081-new-smoke
+python<span class="w"> </span>labs/_run_l081.py<span class="w"> </span>--preset<span class="w"> </span>closer<span class="w"> </span>--device<span class="w"> </span>cuda<span class="w"> </span>--output<span class="w"> </span>/tmp/l081-closer
+<span class="c1"># Full search/update budget; still a reconstruction with documented source gaps:</span>
+python<span class="w"> </span>labs/_run_l081.py<span class="w"> </span>--preset<span class="w"> </span>paper-budget<span class="w"> </span>--device<span class="w"> </span>cuda<span class="w"> </span>--output<span class="w"> </span>/tmp/l081-paper-budget
+</pre></div>
+<p>Use the pinned <a href="../labs/l081-reproduction.md">environment and protocol</a>. A run saves molecule IDs, trial configurations, validation histories, a selected checkpoint, test predictions, input hashes, and software versions. The code opens the test evaluation only after choosing the winning trial. Existing completed output directories are rejected.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Smoke execution is verified local evidence. The closer and paper-budget searches are NOT_RUN. Missing historical split/search/data-preparation details mean every reconstruction score remains INCOMPARABLE to the published row, even if numerically close. The independent equation tests do not establish full TensorFlow runtime or training parity.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Lab-and-exit-ticket">7 &#183; Lab and exit ticket<a class="anchor-link" href="#7-%C2%B7-Lab-and-exit-ticket">&#182;</a></h2><p><a href="../labs/0081-mpnn-framework.ipynb">Open the student notebook</a> · <a href="../labs/html/0081-mpnn-framework.html">Read the prepared lab</a> · <a href="../reference/0081-mpnn-framework.html">Quick reference</a>.</p>
+<ol>
+<li>Implement aggregation, synchronous mean update, and graph readout. Pass the routing and symmetry checks using your live functions.</li>
+<li>Instantiate the generic interface; recover the hand trace. Instantiate GCN with normalized weights and compare with a dense operator. Explain why GAT needs destination-wise softmax.</li>
+<li>Read and execute the full sparse GG-NN. Trace a forward pass and a backward pass; verify that your reducer is called by the model.</li>
+<li>Submit the JSON exit artifact with the trace, relabeling error, graph outputs, and an interpretation of the source gaps. For a QM9 run, attach the run's split IDs, configurations, predictions and result ledger.</li>
+</ol>
+<p><strong>Teach back:</strong> explain why order-independent aggregation is necessary but does not by itself guarantee an order-independent graph prediction. Then explain why a scalar near 0.394 is insufficient proof of reproduction.</p>
+<div id="teachback"></div>
+
+<p>Tomorrow, reconstruct the four operations from memory before opening the reference. After a week, rerun the relabeling test on a different graph with an isolated node. Next, lesson 82 studies GCN's normalization and node-classification protocol in detail. Ask the agent follow-up questions or paste your exit artifact for feedback; authoring this lesson does not mark your mastery complete.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/message-passing-viz.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l081-mpnn.js"></script></body></html>

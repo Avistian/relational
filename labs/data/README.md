@@ -105,3 +105,7 @@ Full raw released Cora files from tkipf/gcn revision39a4089fe72ad9f055ed6fdb9746
 ## L080 raw subsets
 
 `l080/{smoke,exam}.npz` stores complete float32 numeric/binary raw subsets and int64 targets from hash-pinned TabReD Ecom Offers/Homesite release archives. Matching JSON contains exact original IDs, full split boundaries, omitted categorical counts and archive/NPZ hashes. No preprocessing is fitted before packaging. `_prepare_l080.py` rebuilds the extraction.
+
+## L081 QM9
+
+Tier C toy graph for routing; Tier B real molecular graphs for named-target reconstruction. Hash-pinned QM9 SDF/CSV and public uncharacterized list download into ignored data/cache/l081. RDKit sanitization failures and molecule IDs are retained. Smoke takes first512 valid molecules, then seeded splits; the file-order cap is not representative. Full historical population/IDs unavailable.

@@ -1,0 +1,7 @@
+/* Expected traces: C=8 -> B=4.5; C=20 -> B=7.5; A after two rounds=5.25. */
+RetrievalBank.mount(document.getElementById('warmup'),{upTo:81,count:3});
+Predict.mount(document.getElementById('predict'),{prompt:'After one synchronous mean update, what is B?',options:[{label:'B becomes four',value:'four'},{label:'B becomes 4.5',value:'half'},{label:'B becomes five',value:'five'}],correct:'half',reveal:'Incoming states 2 and 8 average to 5; average that with B=4 to obtain 4.5.'});
+MessagePassingViz.mount(document.getElementById('messages'),{mode:'messages'});
+MessagePassingViz.mount(document.getElementById('reach'),{mode:'reach'});
+MessagePassingViz.mount(document.getElementById('normalized'),{mode:'gcn'});
+Teachback.mount(document.getElementById('teachback'),{prompt:'Why must edge endpoints move with relabeled node rows? Why does a close QM9 score not establish reproduction?',points:['Node relabeling transports features, edges and graph membership together.','Shared message/update functions and symmetric reducers preserve equivariance.','An invariant readout removes arbitrary node order.','Paper-result comparison requires matched data, split, model, training, search and metric.'],model:'A node ID is an address. Reordering rows changes those addresses, so edges must follow the same nodes. Equivariant node operations plus invariant readout preserve the graph prediction. A similar score on a different split or tuning protocol is numerical proximity, not a reproduction.'});

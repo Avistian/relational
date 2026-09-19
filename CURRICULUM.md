@@ -258,7 +258,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 ### Q1 · Message passing foundations (081–090)
 **Papers (chronological):** Gilmer 2017 · Kipf & Welling 2017 · Hamilton 2017 · Veličković 2018
 
-| 081 | MPNN framework | Gilmer 2017 | Implement generic MPNN |
+| 081 | [MPNN framework](lessons/0081-mpnn-framework.html) | Gilmer 2017 | [Generic MPNN + auditable QM9 reconstruction](labs/0081-mpnn-framework.ipynb) |
 | 082 | GCN | Kipf 2017 | Cora node classification |
 | 083 | GraphSAGE | Hamilton 2017 | Inductive mini-batch training |
 | 084 | GAT | Veličković 2018 | Attention aggregation |

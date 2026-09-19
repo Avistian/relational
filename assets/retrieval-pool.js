@@ -2031,6 +2031,29 @@
   "options":[{"label":"Select A using validation evidence","value":"0"},{"label":"Select B using test evidence","value":"1"},{"label":"Select both using combined evidence","value":"2"}],
   "correct":"0",
   "explain":"Validation selects the recipe before test evaluation. Using the test winner makes test another selection set."
+},
+{
+  "id": "l081-equivariance",
+  "lesson": 81,
+  "quarter": "Q1",
+  "concept": "graph-permutation",
+  "question": "After consistently relabeling a graph, what happens to node and graph predictions?",
+  "options": [
+    {
+      "label": "Node outputs permute; graph output remains",
+      "value": "correct"
+    },
+    {
+      "label": "Node outputs remain; graph output permutes",
+      "value": "wrong1"
+    },
+    {
+      "label": "Node outputs change; graph output changes",
+      "value": "wrong2"
+    }
+  ],
+  "correct": "correct",
+  "explain": "Equivariance transports node outputs with their nodes; invariant readout preserves the whole-graph prediction."
 }
 ];
 })(window);

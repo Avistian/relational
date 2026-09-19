@@ -1323,3 +1323,7 @@ Writing capstone with a one-page template/rubric, source-grounded historical fam
 ## Lesson 080 created · Year 2 exit exam · 2026-09-19
 
 Full reproducibility requested. Prepared cross-paper exam with four required arms, two real TabReD classification tasks, both split regimes and three seeds. Full local 48-record comparison and complete visible notebook implementations; historical v2 weights with disclosed simple wrapper. Small caps are local evidence, not original paper benchmark parity. Includes cold teach-back, fail-closed audits, rubric and submission template. Authorship does not advance learner completion.
+
+## Lesson 081 created · MPNN framework · 2026-09-19
+
+User explicitly requested full reproducibility. Generic routing lab plus full sparse GG-NN QM9 model, loader, trainer and budgeted search are visible. Named target: Gilmer supplementary Table3 GG-NN mu (.394 Debye). Official source lacks reader/trainer/search configurations; fresh IDs and modern features are documented gaps. Three fresh 512-molecule/40-update smoke runs execute; full historical result NOT_RUN, reconstruction scores INCOMPARABLE. No learner completion inferred.
