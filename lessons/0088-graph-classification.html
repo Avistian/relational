@@ -1,0 +1,170 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Graph classification: what can GIN distinguish?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/wl-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0087-link-prediction.html">Lesson 87</a> · <a href="../reference/graph-classification.html">Reference</a></nav><header><p>Year 3 · Quarter 1 · Lesson 088</p><h1>Graph classification: what can GIN distinguish?</h1></header><aside><a href="../labs/0088-graph-classification.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0088-graph-classification.ipynb">Open in Colab</a> · <a href="../labs/html/0088-graph-classification.html">Read lab</a> · <a href="../labs/solutions/0088-graph-classification.ipynb">Solution</a></aside><h2 id="Start-with-retrieval">Start with retrieval<a class="anchor-link" href="#Start-with-retrieval">&#182;</a></h2><div id="warmup"></div>
+
+<p>Before reading, write three answers from memory: What makes a message-passing layer invariant to the order of a node's neighbors? What does the <code>batch</code> vector identify in a disjoint union? Why can a validation score used to select a model be optimistic?</p>
+<p><strong>Your tangible win.</strong> Implement a GIN update and whole-graph readout, then explain a pair of graphs the model cannot separate. The core reading takes about 25 minutes. The notebook adds three live implementation tasks; the full reproduction is a separate, much longer run.</p>
+<p><a href="0087-link-prediction.html">Lesson 87</a> ended by turning a candidate link into an enclosing subgraph. Now the prediction target is the entire graph. One molecule yields one class label, even though molecules have different numbers of atoms. Our mission needs this step: relational models must compress variable-size neighborhoods without silently discarding the distinctions a task needs.</p>
+<h2 id="1-%C2%B7-From-node-rows-to-one-graph-prediction">1 &#183; From node rows to one graph prediction<a class="anchor-link" href="#1-%C2%B7-From-node-rows-to-one-graph-prediction">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A graph classifier must ignore how we number the nodes while preserving the information that distinguishes graphs.</p>
+</blockquote>
+<p>A graph is a set of nodes and their edges. A node feature is a vector describing a node. <strong>Graph classification</strong> assigns one category to each graph; it is different from assigning a category to each node. In MUTAG, nodes represent atoms, the input provides categorical atom tags, and the binary target describes a molecular mutagenicity assay. The released GIN input does not use bond labels. Read the dataset description in <a href="https://arxiv.org/html/1810.00826v3#A9">Xu et al., Appendix I</a>.</p>
+<p>A <strong>readout</strong> reduces all node representations of one graph to a fixed-length vector. If node representations have width <em>d</em>, sum, mean, and coordinate-wise maximum each return <em>d</em> numbers, regardless of graph size. A final classifier maps those numbers to class scores, called <strong>logits</strong>. Softmax converts logits into probabilities; cross-entropy trains the correct class to receive higher probability.</p>
+<p><strong>Two different reductions.</strong> Neighbor aggregation combines adjacent nodes to update one node. Graph readout combines all nodes to predict one graph. Changing graph readout does not change the neighbor aggregator. The experiment later changes readout only.</p>
+<p>In a mini-batch, we concatenate node rows from several graphs and offset their edge indices. The <code>batch</code> vector records which graph owns each row. Edges never cross graph boundaries. <code>graph_readout(h, batch, B)</code> returns a <code>[B, d]</code> matrix for <em>B</em> graphs. A sum over every row without grouping would merge unrelated molecules.</p>
+<h2 id="2-%C2%B7-Counting-is-information">2 &#183; Counting is information<a class="anchor-link" href="#2-%C2%B7-Counting-is-information">&#182;</a></h2><p><strong>Predict first.</strong> Duplicate every node representation in a readout input. Which reduction must retain that change when the sum is nonzero?</p>
+<div id="prediction"></div>
+
+<p><strong>Worked example.</strong> Encode atom type A as <code>[1,0]</code> and type B as <code>[0,1]</code>. The multiset <code>{A,A,B}</code> has sum <code>[2,1]</code>; <code>{A,A,A,A,B,B}</code> has sum <code>[4,2]</code>. A <strong>multiset</strong> retains repetition. A set would retain only which distinct types occur.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l088/pooling.png" alt="Synthetic categorical encodings expose counts, proportions and presence."></div><figcaption>Synthetic categorical encodings expose counts, proportions and presence.</figcaption></figure>
+
+<p>Mean divides by the number of rows. Both multisets become <code>[2/3,1/3]</code>, so this representation describes proportions and loses total multiplicity. Coordinate-wise max returns <code>[1,1]</code> for both, describing presence. These collisions cannot be repaired by a classifier that sees only the collided vector. But mean can be a useful inductive bias when size should not matter. Greater expressive capacity is not a guarantee of better generalization.</p>
+<p><strong>Sum is not magically injective.</strong> An <strong>injective</strong> function maps distinct inputs to distinct outputs. Raw scalar sums collide too: <code>{1,3}</code> and <code>{2,2}</code> both sum to 4. The paper's result concerns sums of suitable encodings of elements from a countable domain with bounded multiset size. It establishes that an injective encoding exists; it does not prove arbitrary features or learned finite-width networks never collide. See <a href="https://arxiv.org/html/1810.00826v3#S4.SS1">Lemma 5 and Corollary 6</a>.</p>
+<h2 id="3-%C2%B7-WL:-refine-colors,-then-compare-counts">3 &#183; WL: refine colors, then compare counts<a class="anchor-link" href="#3-%C2%B7-WL:-refine-colors,-then-compare-counts">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Two nodes should keep the same structural description only while their own descriptions and their neighborhoods remain indistinguishable.</p>
+</blockquote>
+<p>The <strong>one-dimensional Weisfeiler–Lehman test</strong>, abbreviated <strong>1-WL</strong>, starts with node labels, represented here by colors. One round builds a signature for each node: its current color and the sorted multiset of neighbor colors. Each distinct signature gets a distinct new color. All nodes update simultaneously from the previous round. When comparing graphs, they must share the signature-to-color dictionary; independent arbitrary color numbers cannot be compared.</p>
+<p>Count each color within each graph after every round. Different color histograms certify that the graphs are not isomorphic. <strong>Isomorphic</strong> means equal after a relabeling of nodes that preserves edges and initial labels. Equal histograms are inconclusive: WL is not a complete graph-isomorphism test. See <a href="https://arxiv.org/html/1810.00826v3#S3">§2 and Theorem 3</a>.</p>
+<p><strong>Worked example.</strong> Give every node the same initial color. A four-node path has degrees <code>[1,2,2,1]</code>; a four-node star has degrees <code>[3,1,1,1]</code>. The first WL round encodes these different neighborhood counts, so the graph histograms separate immediately. With identical scalar features, neighbor means would instead give 1 wherever a neighbor exists.</p>
+<div id="wl-refinement"></div>
+
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l088/wl.png" alt="With identical initial labels, path/star separate in one round; cycle/triangles remain indistinguishable."></div><figcaption>With identical initial labels, path/star separate in one round; cycle/triangles remain indistinguishable.</figcaption></figure>
+
+<p><strong>A permanent collision.</strong> Compare a six-cycle with two disjoint triangles. Both have six nodes, every node has two neighbors, and all initial labels match. Every node therefore receives the same signature within each round, in both graphs, forever. A standard message-passing GNN with the same initial features cannot separate them either. Giving nodes informative extra features or using a stronger architecture changes the problem; extra depth alone does not.</p>
+<h2 id="4-%C2%B7-Model-architecture:-GIN-turns-multiset-counts-into-learned-features">4 &#183; Model architecture: GIN turns multiset counts into learned features<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-GIN-turns-multiset-counts-into-learned-features">&#182;</a></h2><p>The <strong>Graph Isomorphism Network (GIN)</strong> uses a sum and a multilayer perceptron, or <strong>MLP</strong>, to learn a neighborhood update. An MLP composes affine maps with nonlinear functions. The nonlinear transformation is needed because one linear map cannot represent every useful multiset distinction. The precise argument and architecture appear in <a href="https://arxiv.org/html/1810.00826v3#S4">§4–5 of the primary paper</a>.</p>
+<p>For node <em>v</em> at depth <em>k</em>:</p>
+<div class="highlight"><pre><span></span>h_v^(k) = MLP_k((1 + ε_k) h_v^(k−1) + Σ_{u in N(v)} h_u^(k−1))
+</pre></div>
+<p>Here <code>h</code> is a node vector, <code>N(v)</code> is the set of its neighbors, and <code>ε</code> weights the center relative to those neighbors. Every node at a given depth uses the same MLP; different depths have separate parameters. <strong>GIN-ε</strong> learns epsilon. <strong>GIN-0</strong>, our paper target, fixes it to zero. At zero, center and neighbors have equal weight. GIN-0 is a practical variant: do not transfer every sufficient injectivity condition for the center–multiset pair to it automatically.</p>
+<p><strong>Worked example.</strong> A center <code>[1,0]</code> receives neighbors <code>[1,0]</code> and <code>[0,1]</code>. Their sum is <code>[1,1]</code>; adding the center produces <code>[2,1]</code>. This <code>[2,1]</code>, not the mean <code>[2/3,1/3]</code>, enters the MLP. With epsilon .5 the input would be <code>[2.5,1]</code>.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l088/architecture.png" alt="Complete released GIN-0 path: four node updates, five graph readouts, per-depth heads, logit dropout and graph loss."></div><figcaption>Complete released GIN-0 path: four node updates, five graph readouts, per-depth heads, logit dropout and graph loss.</figcaption></figure>
+
+<p>The released model contains <strong>four message-passing updates plus the input representation</strong>, described as five layers in the paper. Each update uses a two-layer MLP: linear → batch normalization → ReLU → linear, followed by another batch normalization and ReLU. <strong>Batch normalization</strong> standardizes hidden coordinates using training mini-batch statistics and maintains running statistics for evaluation. <strong>ReLU</strong> keeps positive values and replaces negative values with zero.</p>
+<p>GIN keeps information from every depth. It sums node representations separately at depths 0 through 4. The paper describes concatenating these five graph vectors. The release applies a separate affine classification head to each and adds the resulting logits. Without dropout these are equivalent to a single affine map on the concatenation: partition that map by depth and sum its bias terms.</p>
+<p><strong>Release detail.</strong> During training, the code drops individual class logits independently at each depth before summing them. This is not dropout on node embeddings. The dropout rate is tuned over <code>{0,.5}</code>. At inference dropout is off and batch normalization uses stored statistics. The same trained weights serve new graphs; graph labels never enter the forward pass. <a href="https://github.com/weihua916/powerful-gnns/blob/9a2ce8ac3e99278307093a464a95caf0fb04b602/models/graphcnn.py">Pinned model source</a>.</p>
+<div class="highlight"><pre><span></span><span class="c1"># The notebook exposes the complete model, not just this fragment.</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">neighbor_sum</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">edges</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">relu</span><span class="p">(</span><span class="n">outer_batch_norm</span><span class="p">(</span><span class="n">mlp</span><span class="p">(</span><span class="n">h</span><span class="p">)))</span>
+<span class="n">pooled</span> <span class="o">=</span> <span class="n">graph_readout</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">num_graphs</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">)</span>
+<span class="c1"># Repeat at each depth; include the input-depth prediction head.</span>
+</pre></div>
+<p><strong>Capacity, not certainty.</strong> Under injective aggregation and readout conditions, a sufficiently expressive GNN can match the distinctions 1-WL makes. Ordinary message-passing GNNs cannot exceed that bound under matching initial labels. Training may learn less discriminative functions. Neither the theorem nor a training accuracy proves better performance on new molecules.</p>
+<h2 id="5-%C2%B7-Reproduce-a-named-published-experiment">5 &#183; Reproduce a named published experiment<a class="anchor-link" href="#5-%C2%B7-Reproduce-a-named-published-experiment">&#182;</a></h2><p><strong>Target:</strong> Xu et al. (2019), Table 1, MUTAG, Sum–MLP (GIN-0): <strong>89.4 ± 5.6%</strong>. This is one specific cell, not all nine datasets or all model families. Primary reading: <a href="https://arxiv.org/html/1810.00826v3#S7">paper §7 and Table 1</a>. The <a href="https://github.com/weihua916/powerful-gnns/tree/9a2ce8ac3e99278307093a464a95caf0fb04b602#cross-validation-strategy-in-the-paper">authors' README</a> clarifies the selection procedure.</p>
+<table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>Executable reconstruction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Data</td>
+  <td>All 188 released MUTAG graphs; SHA-256 verified bytes; seven one-hot node tags</td>
+</tr>
+<tr>
+  <td>Model</td>
+  <td>Four GIN-0 updates, two-layer MLPs, inner/outer batch normalization; sum readouts at five depths</td>
+</tr>
+<tr>
+  <td>Grid</td>
+  <td>Hidden width <code>{16,32}</code> × batch size <code>{32,128}</code> × dropout <code>{0,.5}</code>: eight configurations</td>
+</tr>
+<tr>
+  <td>Optimization</td>
+  <td>Adam, initial learning rate .01; halve after each 50 epochs; no weight decay</td>
+</tr>
+<tr>
+  <td>Epoch</td>
+  <td>50 updates; each uses a fresh permutation's first batch, not a full pass through the dataset</td>
+</tr>
+<tr>
+  <td>Budget</td>
+  <td>350 epochs, the release default; 17,500 updates per fold/configuration</td>
+</tr>
+<tr>
+  <td>Splits</td>
+  <td>Ten stratified graph folds, split seed 0; training RNG reset to 0 for each fold, as in the release</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Average ten validation curves, choose one common epoch; then choose the highest-scoring configuration</td>
+</tr>
+<tr>
+  <td>Reporting</td>
+  <td>Equal-fold mean and fold SD at that configuration/epoch; report both SD denominator conventions</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why not take each fold's best epoch?</strong> That would choose ten different models using ten separate maxima and then average the maxima. The release instead selects one epoch after averaging the curves. With fold curves <code>[.9,.8]</code> and <code>[.5,.8]</code>, its choice is epoch 2 and mean .8. Averaging separate fold maxima gives .85, a different and more optimistic statistic.</p>
+<p><strong>Why no test accuracy claim?</strong> Although Table 1 uses that heading, the clarified procedure has training and validation folds, with no untouched test set. We reproduce that historical selection rule and call our measurements selected cross-validation accuracy. A prospective performance estimate would require an outer test split or nested cross-validation; that would be a separate experiment.</p>
+<p><strong>Author execution: FULL_FOLDS_FIXED_CONFIG_EXECUTED.</strong></p>
+<table>
+<thead>
+<tr>
+  <th>Width</th>
+  <th>Batch</th>
+  <th>Dropout</th>
+  <th>Common epoch</th>
+  <th>Mean ± sample SD (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>16</td>
+  <td>32</td>
+  <td>0.0</td>
+  <td>13</td>
+  <td>87.25 ± 7.89</td>
+</tr>
+</tbody>
+</table>
+<p>Reported candidate mean <strong>87.25%</strong>, sample SD <strong>7.89 percentage points</strong> (population SD 7.49). The published cell is 89.4 ± 5.6%. Fold SD is not a confidence interval; overlapping training sets make folds dependent. These are author results, separate from your kernel output.</p>
+<p><strong>Full hyperparameter search: INCOMPLETE.</strong> Only the listed complete configurations were executed. The remaining grid is runnable but not completed; this is not full reproduction of the selected paper cell.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l088/results.png" alt="Fresh MUTAG reconstruction: fold scores at a common selected epoch for each configuration. Historical parity INCOMPARABLE."></div><figcaption>Fresh MUTAG reconstruction: fold scores at a common selected epoch for each configuration. Historical parity INCOMPARABLE.</figcaption></figure>
+
+<blockquote>
+<p><strong>Scope check.</strong> Modern PyTorch, NumPy and scikit-learn replace the historical runtime. Exact historical fold indices and selected configurations are unavailable. We publish current fold IDs and all curves. The release supplies 350 epochs as a default, not a per-dataset search log. Graph edge ordering and floating-point reductions can change optimization. Only completed candidates are reported above; the full search remains incomplete. Historical numerical parity is <strong>INCOMPARABLE</strong>, even when a score lies near the paper target. Other datasets, GIN-ε training, and a historical-runtime replay are <strong>NOT_RUN</strong>.</p>
+</blockquote>
+<p>Use the <a href="../labs/l088-reproduction.md">reproduction guide</a> for exact commands, environment pins, source hashes, protocol differences and independent checks. Download <a href="../labs/_paper_l088_results.json">recorded paper-track results</a> and <a href="../labs/_verify_l088_results.json">verification evidence</a>. Do not silently substitute a 30-epoch teaching run for this search.</p>
+<h2 id="6-%C2%B7-Lab:-which-graph-readout-wins-here?">6 &#183; Lab: which graph readout wins here?<a class="anchor-link" href="#6-%C2%B7-Lab:-which-graph-readout-wins-here?">&#182;</a></h2><p><strong>Held fixed:</strong> the full MUTAG dataset, ten fold assignments, seed, GIN neighbor sum, width 16, batch size 32, no dropout, and a small budget of 30 epochs × 10 updates. <strong>Varied:</strong> only graph readout — sum, mean or max — at every depth. <strong>Measured:</strong> cross-validation accuracy, selecting one common epoch for each readout. This isolates a particular readout intervention under a limited budget, not an intrinsic ranking of architectures.</p>
+<table>
+<thead>
+<tr>
+  <th>Readout</th>
+  <th>Common epoch</th>
+  <th>Mean ± sample SD (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>sum</td>
+  <td>9</td>
+  <td>85.12 ± 7.34</td>
+</tr>
+<tr>
+  <td>mean</td>
+  <td>9</td>
+  <td>84.53 ± 8.22</td>
+</tr>
+<tr>
+  <td>max</td>
+  <td>26</td>
+  <td>86.64 ± 8.37</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Max has the highest selected mean in this declared teaching run.</strong> This is descriptive; no significance or universal superiority claim follows.</p>
+<p>A max-readout win under this small budget would not contradict the counting argument. The theorem describes which distinctions a representation can preserve; this experiment measures what a particular optimizer learns from a small labeled dataset. Fold differences and model selection both matter.</p>
+<p>The published Sum/Mean/Max–MLP rows vary neighborhood aggregation; this lab varies graph readout. They are not the same comparison. A sum readout can exploit graph size, including at the input layer; a size-only baseline would be a useful next diagnostic. A selected CV winner here needs a fresh outer evaluation before a generalization claim.</p>
+<p>Open the <a href="../labs/0088-graph-classification.ipynb">student notebook</a>. Its three TODOs are live in the training path:</p>
+<ol>
+<li><strong>TODO / CHECK — neighbor sum.</strong> Route each sender to the correct receiver. Check exact sums and gradients; add the center once in the GIN update.</li>
+<li><strong>TODO / CHECK — graph readout.</strong> Return one vector per graph for sum, mean and max. Check unequal graph sizes and ensure graphs remain separate.</li>
+<li><strong>TODO / CHECK — common epoch.</strong> Select the earliest maximum of the mean validation curve. The counterexample above must pass.</li>
+</ol>
+<p>The complete loader, disjoint-union batcher, GIN model, trainer and paper grid are visible in both notebooks. The solution's short execution demonstrates that the learner-facing code runs; the command-line paper track executes the full search. Embedded figures work without repository-relative image paths.</p>
+<p><strong>EXIT artifact.</strong> Save <code>l088-exit.json</code> with your three readout results, selected epochs, fold values, and answers to: Why can raw sums collide? Why does a six-cycle collide with two triangles? What makes the selected CV score optimistic? Explain a result that would make you choose mean readout despite its weaker counting ability. Send the artifact and your explanation to the agent for feedback.</p>
+<div id="teachback"></div>
+
+<p><strong>Spaced return.</strong> Tomorrow, draw the four-node path/star refinement without looking. In a week, implement grouped sum and recover the common-epoch counterexample from memory. <a href="../reference/graph-classification.html#next">Lesson 89's planned topic</a> asks how to preserve useful graph computation when the whole graph cannot fit in memory.</p>
+<p>Ask the agent about any unclear step; especially challenge the distinction between an expressiveness theorem and a measured predictive advantage. Prepared material does not establish your mastery.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/wl-viz.js"></script><script src="../assets/l088-lesson.js"></script></body></html>

@@ -265,7 +265,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 085 | [Over-smoothing](lessons/0085-over-smoothing.html) | Li et al. 2018 | [Full karate figure setup + Cora depth diagnostic](labs/0085-over-smoothing.ipynb) |
 | 086 | [PyG fundamentals](lessons/0086-pyg-fundamentals.html) | Fey & Lenssen 2019 | [MessagePassing parity, NeighborLoader, full100-seed Cora reconstruction](labs/0086-pyg-fundamentals.ipynb) |
 | 087 | [Link prediction](lessons/0087-link-prediction.html) | Zhang & Chen 2018 (skim) | [Edge splits, decoder, ranking; full baseline reconstruction](labs/0087-link-prediction.ipynb) |
-| 088 | Graph classification | Xu et al. 2019 (GIN) | Whole-graph readout |
+| 088 | [Graph classification](lessons/0088-graph-classification.html) | Xu et al. 2019 (GIN) | [GIN, WL and whole-graph readout; MUTAG reproduction track](labs/0088-graph-classification.ipynb) |
 | 089 | Sampling at scale | Chiang et al. 2019 (Cluster-GCN) | Large-graph training |
 | 090 | **Q1 checkpoint** | Kipf + Hamilton | GNN from scratch on one benchmark |
 

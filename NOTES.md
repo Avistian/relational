@@ -1351,3 +1351,7 @@ Full reproducibility requested. Full100-seed PyG1.2.0 fixed-Cora protocol recons
 ## Lesson087 created · Link prediction · 2026-09-19
 
 Full reproducibility requested. Prepared split/decoder/ranking lesson with three live TODOs; full Table1 CN/AA/RA reconstruction on all eight released graphs and ten splits (240 evaluations), plus separate three-seed USAir GCN teaching runs. Hash-pinned data/source, raw split/score artifacts, independent audits and native MATLAB replay provided. Historical parity INCOMPARABLE (permutation/source-era gap); MATLAB replay and full SEAL classifier NOT_RUN. No learner completion inferred.
+
+## Lesson088 created · Graph classification / GIN · 2026-09-19
+
+User requested full reproducibility. Complete visible GIN-0, hash-pinned MUTAG loader, release-aligned training/grid and common-epoch CV selection. Separate readout intervention, three live TODOs, WL counterexample widget and portable architecture figures. Executed the first full 10-fold/350-epoch configuration:87.25% mean,7.89pp sample SD. Full8-configuration search INCOMPLETE; remaining jobs stopped without retaining partial-fold evidence. Thirty separate teaching runs compare readouts. Exact execution coverage is in labs/_paper_l088_results.json; runnable search is not a completion claim. Historical parity INCOMPARABLE; no learner completion inferred.

@@ -485,3 +485,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 | L085 | BAR | Full karate untrained setup reconstruction and separate Cora depth sweep expose information loss from repeated mixing. Degree scaling, components, optimization and feature magnitude constrain the diagnosis. Greater relational depth alone is not evidence of better predictions; no database benchmark superiority follows. |
 
 | L087 | BAR | Full8-graph,10-split CN/AA/RA baseline reconstruction and separate GCN decoder/ranking lab expose how graph visibility and candidate selection define the task. Static edge recovery is not temporal recommendation evidence; historical numerical parity INCOMPARABLE, full SEAL training NOT_RUN. |
+
+| L088 | BAR | GIN makes multiset counting and the 1-WL ceiling explicit. A six-cycle and two triangles remain indistinguishable under identical initial labels; empirical graph classification cannot establish universal relational expressiveness. MUTAG execution coverage and historical protocol gaps are reported separately. |

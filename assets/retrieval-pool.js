@@ -2123,6 +2123,29 @@
   ],
   "correct": "both",
   "explain": "Canonicalize unordered pairs before splitting; add both message directions only for context pairs."
+},
+{
+  "id": "l088-wl-limit",
+  "lesson": 88,
+  "quarter": "Q1",
+  "concept": "gin-expressiveness",
+  "question": "With identical initial node labels, which pair remains indistinguishable to 1-WL?",
+  "options": [
+    {
+      "label": "Six-cycle versus two triangles",
+      "value": "cycle"
+    },
+    {
+      "label": "Four-path versus four-star graphs",
+      "value": "path"
+    },
+    {
+      "label": "Four-cycle versus four-clique graphs",
+      "value": "clique"
+    }
+  ],
+  "correct": "cycle",
+  "explain": "Each graph has six nodes with two neighbors per node. Joint WL refinement preserves identical color histograms forever."
 }
 ];
 })(window);

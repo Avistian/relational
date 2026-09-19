@@ -87,7 +87,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `split-viz.js` (edge-level split) + `leakage-viz.js`.
 - **Bridge** — link prediction *is* RelBench recommendation (Y4 L144 ContextGNN); callback Y1 split hygiene.
 
-### 088 · Graph classification — *Xu 2019 (GIN), `1810.00826`*
+### 088 · [Graph classification](../lessons/0088-graph-classification.html) — *Xu 2019 (GIN), `1810.00826`*
+- **Prepared package** — [lab](../labs/0088-graph-classification.ipynb), [full reproduction contract](../labs/l088-reproduction.md). Complete inline GIN and MUTAG grid, separate readout intervention, WL refinement visual. Full10-fold/350-epoch fixed configuration executed (87.25%); full8-configuration search INCOMPLETE. Consult execution JSON; historical parity INCOMPARABLE. No learner completion inferred.
 - **Skill** — implement GIN and explain the Weisfeiler-Lehman expressiveness bound (why sum-aggregation is
   maximally expressive among MPNNs).
 - **Teach** — WL test, injective aggregation, sum vs mean vs max readout, expressiveness hierarchy.
