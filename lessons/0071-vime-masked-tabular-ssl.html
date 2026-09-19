@@ -1,0 +1,213 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>071 · VIME: learn from unlabeled tabular rows</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/vime-lesson.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0070-foundation-model-checkpoint.html">Previous lesson</a></nav><header><p>Year 2 · Quarter 4 · Lesson 071</p><h1>VIME: learn from unlabeled tabular rows</h1></header><aside class="lab-access"><strong>Lesson package · implement three live operations</strong><nav>
+ <a href="../labs/html/0071-vime-masked-tabular-ssl.html">Read-only lab preview</a>
+ <a href="../labs/0071-vime-masked-tabular-ssl.ipynb">Download student notebook</a>
+ <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0071-vime-masked-tabular-ssl.ipynb">Run in Colab after publication</a>
+ <a href="../labs/html/0071-vime-masked-tabular-ssl.html#lab-exercises">Jump to exercises</a>
+ <a href="../reference/0071-vime-masked-tabular-ssl.html">Printable reference</a>
+ <a href="../labs/_verify_l071_results.json">Measured evidence</a>
+ <a href="../labs/l071-reproduction.md">Reproduction instructions</a></nav>
+ <p>The preview is read-only. Run the downloaded notebook in Jupyter from labs/. Colab requires this revision to be published; live Colab is NOT_CHECKED.</p></aside><h2 id="Start-with-retrieval">Start with retrieval<a class="anchor-link" href="#Start-with-retrieval">&#182;</a></h2><p>Before reading, write three short answers: What information may a validation set influence? How does fitting a model differ from running a pretrained model? What is held fixed in a paired comparison? Then attempt the spaced questions below.</p>
+<div id="warmup"></div>
+
+<p><strong>Today's skill.</strong> Train a row encoder from unlabeled features, attach a predictor, and measure how its test accuracy changes as the number of available labels grows. Your deliverable is a label-efficiency curve with a defensible comparison.</p>
+<p><strong>Connection to the mission.</strong> Relational pretraining also learns from information available before a target is observed. First learn exactly what single-table pretraining can extract, which supervision it receives, and how to test its benefit. This provides a stronger flat-table baseline for later relational experiments.</p>
+<p><strong>Route.</strong> Read the corruption and architecture sections, trace the losses, then implement the three notebook operations. Treat the experiment and its written interpretation as a second sitting if needed. Recall <a href="0070-foundation-model-checkpoint.html">L070's evaluation contract</a> as you design the comparison; <a href="0045-tabtransformer.html">L045</a> introduced a related pretraining idea.</p>
+<h2 id="1.-Learn-from-features-before-asking-for-labels">1. Learn from features before asking for labels<a class="anchor-link" href="#1.-Learn-from-features-before-asking-for-labels">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Hide some information in a row and ask a network to recover it. The original row supplies the training answer, so this stage needs no task labels.</p>
+</blockquote>
+<p><strong>A feature</strong> is one input measurement, such as a balance or pixel intensity. A row contains d features. <strong>A label</strong> is the outcome we want to predict. In the local lab the label is a digit class, from 0 to 9.</p>
+<p><strong>Self-supervised learning</strong> constructs targets from the inputs themselves. A <strong>pretext task</strong> is this constructed learning problem. An <strong>encoder</strong> is a learned function e that maps a row x to a vector z of hidden features. A <strong>head</strong> maps z to a particular output. The encoder can serve a later task with a new head.</p>
+<p>VIME stands for <strong>Value Imputation and Mask Estimation</strong>. Its pretraining stage has two heads: one reconstructs the original values, and one estimates which values were corrupted. Both heads train the same encoder. See <a href="https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Paper.pdf">Yoon et al., §4.1 and Figure 1</a>.</p>
+<p><strong>Semi-supervised learning</strong> uses labeled and unlabeled rows while training the downstream predictor. VIME's semi-supervised extension asks the predictor to agree across several corrupted versions of an unlabeled row. It adds a distinct objective after encoder pretraining.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Successful reconstruction does not establish that the representation helps the task label. Pretraining can emphasize frequent feature patterns that are irrelevant to the target. A downstream comparison is required.</p>
+</blockquote>
+<h2 id="2.-Corrupt-a-value-with-another-value-from-its-column">2. Corrupt a value with another value from its column<a class="anchor-link" href="#2.-Corrupt-a-value-with-another-value-from-its-column">&#182;</a></h2><h3 id="Preserve-each-column's-range-while-breaking-relationships">Preserve each column's range while breaking relationships<a class="anchor-link" href="#Preserve-each-column's-range-while-breaking-relationships">&#182;</a></h3><p>A <strong>marginal distribution</strong> describes one column without conditioning on the others. An <strong>empirical marginal</strong> is the distribution of that column's observed values. VIME draws replacements from the same column. A donor for one column can come from a different row than the donor for the next column.</p>
+<p>For each coordinate j, draw m_j from a Bernoulli distribution: it equals 1 with probability p and 0 otherwise. Draw a donor value x̄_j from column j. Construct</p>
+<p><code>x̃_j = (1 − m_j) x_j + m_j x̄_j</code>.</p>
+<p>The tilde marks a corrupted row; the bar marks donor values. Multiplication is coordinate by coordinate. The encoder sees x̃ alone. The original x and the mask target supervise its outputs; they are not extra encoder inputs.</p>
+<p>The released implementation constructs donors with <strong>independent column permutations</strong>. A permutation rearranges existing row indices. This allows self-donors and repeated values. It preserves the donor column's exact multiset of values; the final partially replaced column need not preserve its exact empirical counts in one draw. Across draws, replacement follows the empirical marginal. See the <a href="https://github.com/jsyoon0823/VIME/blob/996c58cf4c570061b30c38ecf2a754a9af85aafd/vime_utils.py">pinned corruption function</a>.</p>
+<h3 id="Worked-example:-selected-and-changed-are-different">Worked example: selected and changed are different<a class="anchor-link" href="#Worked-example:-selected-and-changed-are-different">&#182;</a></h3><p>Take x = [0.2, 0.8, 0.8], donors [0.9, 0.8, 0.1], and selected mask m = [1, 1, 0]. The corrupted row is [0.9, 0.8, 0.8]. Column 2 was selected but received 0.8 again. Its value did not change.</p>
+<p>The paper's equations use the sampled mask m. The release recomputes its supervised target as <code>m_changed = (x != x̃)</code>, giving [1, 0, 0]. This lesson's implementation follows the release and names the target explicitly. Predict the result before toggling a coordinate below.</p>
+<div id="mask-trace" class="vime-widget"></div>
+
+<figure><div class="figure-scroll" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="Scrollable computation figure"><img src="../labs/figures/l071/corruption.png" alt="Computed illustrative trace: sampled mask [1,1,0] produces actual-change target [1,0,0]. The second donor repeats the original value." style="width:100%;min-width:600px;height:auto"></div><figcaption>Computed illustrative trace: sampled mask [1,1,0] produces actual-change target [1,0,0]. The second donor repeats the original value. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<p><strong>How often can this happen?</strong> Suppose a categorical column has proportions q₁, …, q_r. For a randomly drawn row and an independently sampled donor from the empirical marginal, the collision probability is the sum of q_c². The expected changed fraction is therefore <code>p × (1 − Σ q_c²)</code>. A constant column has zero actual changes, even at p = 1. A balanced binary column changes at expected rate p/2. A finite permutation creates dependence across rows, but each donor index is marginally uniform, so this expectation still applies to the average over rows.</p>
+<p><strong>Why this can teach structure.</strong> If two columns usually agree, replacing one can create a mismatch. The encoder can use the other column to detect and repair it. When independent columns carry no such predictive relationship, detecting a replacement from a matching marginal is intrinsically difficult. Detection becomes uncertain; a perfect mask predictor is not always possible.</p>
+<p><strong>Failure case.</strong> Valid individual values can still make an implausible row together. Marginal replacement preserves column-level support, not joint constraints or the true label. This matters especially when using corrupted rows for downstream consistency.</p>
+<h2 id="3.-Model-architecture:-follow-one-row-end-to-end">3. Model architecture: follow one row end to end<a class="anchor-link" href="#3.-Model-architecture:-follow-one-row-end-to-end">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> One shared hidden vector feeds two training heads. After pretraining, keep the encoder and replace those heads with a task predictor.</p>
+</blockquote>
+<figure><div class="figure-scroll" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="Scrollable computation figure"><img src="../labs/figures/l071/architecture.png" alt="Numeric released-example architecture. Pretraining updates the encoder and two heads. At prediction time, clean rows pass through the retained encoder and a task head; local fine-tuning is explicitly separate from frozen transfer." style="width:100%;min-width:600px;height:auto"></div><figcaption>Numeric released-example architecture. Pretraining updates the encoder and two heads. At prediction time, clean rows pass through the retained encoder and a task head; local fine-tuning is explicitly separate from frozen transfer. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<p><strong>Pictured variant.</strong> The numeric-data encoder and pretext heads follow the released MNIST example. The local lab uses d = 64 features from sklearn's 8×8 digits, scaled by the known maximum intensity 16. This is a smaller, different dataset from 28×28 MNIST. B denotes the number of rows in a batch. C = 10 is the number of task classes. The saved encoder expects the same d columns in the same order and with the same preprocessing. This experiment trains a separate encoder for this fixed schema.</p>
+<ol>
+<li>Corrupt a normalized matrix X of shape B×d. Produce X̃ of the same shape.</li>
+<li>Compute <code>Z = ReLU(X̃ W_e + b_e)</code>, with W_e of shape d×d and b_e of length d. ReLU replaces each negative number by zero. Z has shape B×d. The PyTorch linear layer stores the transposed weight convention.</li>
+<li>The mask head produces d <strong>logits</strong> per row. A logit is an unbounded score converted to a probability by <code>sigmoid(a) = 1/(1+exp(−a))</code>. The loss combines this transformation with binary cross-entropy for numerical stability.</li>
+<li>The feature head maps Z to d sigmoid outputs, one reconstructed numeric value per column. The sigmoid restricts these outputs to [0,1], matching the lab's scaled inputs.</li>
+<li>Backpropagation computes loss derivatives through both heads into the shared encoder. An optimizer uses these derivatives to change its weights. The two heads can favor different representations; the loss weights control their relative influence.</li>
+<li>For downstream prediction, send the clean row through the encoder, then two 100-unit ReLU layers and a C-logit output layer. Softmax converts the C logits to class probabilities whose sum is one. Only this encoder-plus-predictor path is needed at inference. For class c with logit a_c, softmax assigns <code>exp(a_c) / Σ_k exp(a_k)</code>. Task cross-entropy is the negative logarithm of the probability assigned to the observed class, averaged over labeled rows.</li>
+</ol>
+<p>The released <code>vime_self.py</code> uses a single hidden encoder layer of width d. The paper's <a href="https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Supplemental.pdf">supplement §5</a> explores broader architectures and tuning. A checked small network does not cover that search.</p>
+<h3 id="Frozen-transfer-and-fine-tuning-answer-different-questions">Frozen transfer and fine-tuning answer different questions<a class="anchor-link" href="#Frozen-transfer-and-fine-tuning-answer-different-questions">&#182;</a></h3><p>A <strong>frozen encoder</strong> keeps all pretrained encoder parameters fixed. Only the new task head learns. This is how the released downstream pipeline uses <code>encoder.predict</code>.</p>
+<p><strong>Fine-tuning</strong> also updates encoder parameters with the task loss. It asks whether pretraining supplies a useful initialization. The curriculum calls for this comparison, so the lab includes it as an explicit extension. It records encoder parameter changes to verify that frozen and fine-tuned paths behave as declared.</p>
+<p><strong>The scratch control</strong> uses the same encoder-plus-head architecture, but starts with random encoder weights and learns only from task labels. Its task head, supervised batch sequence, validation rows and epoch budget match the fine-tuning arm. Pretraining adds computation and unlabeled-data access; the experiment matches labeled resources, not total compute.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The paper lists a two-layer perceptron as its supervised-only baseline. Our scratch control retains the additional randomly initialized encoder layer to match the pretrained arm's capacity. It is a controlled initialization comparison, not a reimplementation of that baseline row.</p>
+</blockquote>
+<h2 id="4.-Derive-the-two-pretext-losses">4. Derive the two pretext losses<a class="anchor-link" href="#4.-Derive-the-two-pretext-losses">&#182;</a></h2><h3 id="Mask-estimation:-assign-probability-to-each-actual-change-target">Mask estimation: assign probability to each actual-change target<a class="anchor-link" href="#Mask-estimation:-assign-probability-to-each-actual-change-target">&#182;</a></h3><blockquote>
+<p><strong>In plain terms.</strong> Penalize a confident mask prediction when it assigns low probability to the correct target bit.</p>
+</blockquote>
+<p>Let t_j be the actual-change target and q_j the predicted change probability. For one row,</p>
+<p><code>L_mask = −(1/d) Σ_j [t_j log(q_j) + (1−t_j) log(1−q_j)]</code>.</p>
+<p>Here log is the natural logarithm and Σ adds the d coordinate terms. If t_j = 1, only −log(q_j) remains. If t_j = 0, only −log(1−q_j) remains. Average again over B rows in a batch. Each coordinate contributes equally.</p>
+<p><strong>Worked example.</strong> Target [1,0,0] and predicted probabilities [0.7,0.2,0.1] give terms [0.3567,0.2231,0.1054]. Their mean is approximately 0.2284. These are illustrative predictions, not trained-model outputs.</p>
+<h3 id="Value-reconstruction:-recover-the-entire-original-row">Value reconstruction: recover the entire original row<a class="anchor-link" href="#Value-reconstruction:-recover-the-entire-original-row">&#182;</a></h3><p>Let r_j be the reconstruction. The numeric reconstruction objective is</p>
+<p><code>L_value = (1/d) Σ_j (r_j − x_j)²</code>.</p>
+<p>For x = [0.2,0.8,0.8] and r = [0.3,0.7,0.6], squared errors are [0.01,0.01,0.04]. Their mean is 0.02. <strong>Every coordinate contributes</strong>, including both unchanged coordinates. Multiplying the loss by the mask would define a different objective.</p>
+<p>Combine the losses as <code>L_pretrain = L_mask + α L_value</code>. The scalar α controls the reconstruction weight; α = 2 gives <code>0.2284 + 2×0.02 = 0.2684</code> in the worked example. The implementation uses mean reductions in both terms, so changing d does not by itself multiply one term's weight.</p>
+<figure><div class="figure-scroll" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="Scrollable computation figure"><img src="../labs/figures/l071/loss.png" alt="Computed illustrative loss contributions. BCE mean 0.2284 + 2 × full-coordinate MSE mean 0.0200 = 0.2684. These are hand-chosen predictions, not model scores." style="width:100%;min-width:600px;height:auto"></div><figcaption>Computed illustrative loss contributions. BCE mean 0.2284 + 2 × full-coordinate MSE mean 0.0200 = 0.2684. These are hand-chosen predictions, not model scores. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<p><strong>A misleading diagnostic.</strong> If only 15% of cells actually change, always predicting unchanged gives 85% mask accuracy. Compare the loss and predictions with this constant baseline before claiming mask detection is good. The training loss alone also cannot establish generalization because it uses the fixed corruption bank.</p>
+<p><strong>Why two heads?</strong> Reconstruction encourages recovery of original content. Mask estimation encourages recognizing inconsistent combinations. Removing mask loss creates the lab's reconstruction-only ablation. Comparing it with dual-task pretraining tests whether the extra objective helps under this particular protocol.</p>
+<p><strong>Categorical features.</strong> A category is a discrete alternative with no meaningful numerical distance between its arbitrary ID codes. The paper describes categorical reconstruction with cross-entropy. A mixed-type extension needs an appropriate categorical output distribution and masking convention per feature. The supplied lab handles scaled numeric inputs only; applying its MSE directly to category IDs would impose an arbitrary geometry.</p>
+<p><strong>Boundary predictions.</strong> At p = 0, reconstruction becomes ordinary autoencoding and every mask target is zero. At p = 1, selected replacements can still collide, and little original information may remain. The lab fixes p = 0.3 in advance. Tuning p against the test curve would spend test information.</p>
+<h2 id="5.-Add-semi-supervised-consistency-carefully">5. Add semi-supervised consistency carefully<a class="anchor-link" href="#5.-Add-semi-supervised-consistency-carefully">&#182;</a></h2><p>Create K independently corrupted views of the same unlabeled batch. Each has shape B×d. Pass each through the frozen encoder and trainable predictor to obtain logits A with shape K×B×C. A <strong>view</strong> is one such corruption of the original examples; row i must refer to the same original row across all K views.</p>
+<p>The released <a href="https://github.com/jsyoon0823/VIME/blob/996c58cf4c570061b30c38ecf2a754a9af85aafd/vime_semi.py">vime_semi.py</a> computes</p>
+<p><code>L_consistency = mean_(i,c) [ (1/K) Σ_k (A_kic − mean_k A_kic)² ]</code>.</p>
+<p>The divisor is K, not K−1: this is population variance over generated views. With K = 1 it is zero. Compute variance across the <strong>view axis</strong>, then average rows and classes. Variance across rows would instead push different examples toward a common answer.</p>
+<p>The predictor objective is <code>L_task + β L_consistency</code>. The task term is cross-entropy on labeled clean rows. β controls consistency strength. The release measures consistency on logits, before softmax; replacing them with probabilities changes the objective and its scale.</p>
+<h3 id="Worked-example:-clean-reference-loss-and-view-variance">Worked example: clean-reference loss and view variance<a class="anchor-link" href="#Worked-example:-clean-reference-loss-and-view-variance">&#182;</a></h3><p>For one output coordinate, take augmented logits 0.2 and 0.6. Their mean is 0.4. View variance is <code>[(0.2−0.4)²+(0.6−0.4)²]/2 = 0.04</code>.</p>
+<p>The paper's Eqs. 9–10 write squared difference from the clean prediction. If its value is 0.8, that loss is <code>[(0.2−0.8)²+(0.6−0.8)²]/2 = 0.20</code>. For any fixed clean value c,</p>
+<p><code>mean_k (a_k−c)² = variance_k(a_k) + (mean_k(a_k)−c)²</code>.</p>
+<p>Expand each difference as <code>(a_k−mean(a)) + (mean(a)−c)</code>. The cross-term sums to zero because deviations from the mean sum to zero. The two objectives coincide only when the clean value equals the mean of the augmented predictions. This algebra applies to the same output coordinate and representation; switching between logits and probabilities introduces a further difference.</p>
+<div id="consistency-trace" class="vime-widget"></div>
+
+<p><strong>Failure case.</strong> If corruption removes the feature that determines the true class, demanding unchanged predictions can suppress useful task information. Small consistency loss alone is weak evidence: a constant predictor has zero view variance. Always measure supervised task performance too.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The lab implements the release's frozen-encoder, logit-variance path. It does not silently identify that objective with the paper's clean-reference equation.</p>
+</blockquote>
+<h2 id="6.-Measure-label-efficiency-with-an-information-budget">6. Measure label efficiency with an information budget<a class="anchor-link" href="#6.-Measure-label-efficiency-with-an-information-budget">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Give paired models the same labels and test examples. Let only the declared pretraining procedure change.</p>
+</blockquote>
+<p>A <strong>label-efficiency curve</strong> plots downstream performance against the number of labels made available for fitting and choosing the model. The x-axis here counts both gradient-training labels and validation labels. An <strong>epoch</strong> is one pass over the designated training rows. <strong>Validation</strong> chooses the best epoch by cross-entropy. <strong>Test accuracy</strong> is the fraction of held-out rows whose largest-probability class equals their label.</p>
+<p>The offline dataset has 1,797 rows and 64 numeric features. Each seed reserves 25% (450 rows) for testing. Of the remaining 1,347, 60% (809 rows) form the fixed unlabeled pool; 538 form the label reserve. No test or validation row enters self-supervised training. Unused reserve rows remain unused.</p>
+<p>We choose nested, class-balanced labeled subsets of 50, 150 and 500 rows. Each budget uses 80% for gradient updates and 20% for validation: 40/10, 120/30 and 400/100. The selected sets are nested; the train/validation assignment is resampled within each budget. Thus cross-budget differences include that reassignment. Benchmark labels are used to stratify splits; the learner receives labels only for its designated labeled subset.</p>
+<figure><div class="figure-scroll" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="Scrollable computation figure"><img src="../labs/figures/l071/split.png" alt="Local digits protocol per seed. Test rows are excluded from pretraining, validation, and donor pools. Validation labels count toward each labeled budget." style="width:100%;min-width:600px;height:auto"></div><figcaption>Local digits protocol per seed. Test rows are excluded from pretraining, validation, and donor pools. Validation labels count toward each labeled budget. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>Encoder initialization</th>
+  <th>Downstream encoder</th>
+  <th>Unlabeled task loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>scratch</td>
+  <td>Random</td>
+  <td>Updated</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>vime_finetune</td>
+  <td>Mask + value pretraining</td>
+  <td>Updated</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>vime_frozen</td>
+  <td>Mask + value pretraining</td>
+  <td>Frozen</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>recon_finetune</td>
+  <td>Value pretraining only</td>
+  <td>Updated</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>vime_semi</td>
+  <td>Mask + value pretraining</td>
+  <td>Frozen</td>
+  <td>Logit view variance</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Held fixed.</strong> Paired arms share labels, validation rows, test rows, encoder/head dimensions, head initialization, supervised batch order, and 60 downstream epochs. Self-supervised arms use 30 epochs on the same unlabeled pool. Pretraining uses one fixed corrupted bank, matching the source; semi-supervised views are regenerated. Learning rates and loss weights are declared in advance. There is no hyperparameter search.</p>
+<p><strong>Varied.</strong> Whether the encoder is pretrained, whether mask estimation contributes, whether the encoder is frozen, and whether downstream consistency is present. Use the specific arm pair that isolates your question: dual versus reconstruction-only fine-tuning isolates mask loss; frozen versus fine-tuned VIME changes adaptation; frozen VIME-self versus VIME-semi adds consistency.</p>
+<div id="prediction"></div>
+
+<h3 id="Author-run-evidence">Author-run evidence<a class="anchor-link" href="#Author-run-evidence">&#182;</a></h3><p><strong>Measured test accuracy, mean ± sample SD over three seeds (%).</strong> These are author-reference outputs, not your current notebook run.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Total labels</th>
+  <th>Scratch</th>
+  <th>VIME fine-tune</th>
+  <th>VIME frozen</th>
+  <th>Reconstruction fine-tune</th>
+  <th>VIME semi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>50</td>
+  <td>77.70 ± 4.17</td>
+  <td>76.07 ± 2.96</td>
+  <td>74.00 ± 1.11</td>
+  <td>77.41 ± 1.22</td>
+  <td>76.44 ± 2.62</td>
+</tr>
+<tr>
+  <td>150</td>
+  <td>87.48 ± 2.81</td>
+  <td>85.19 ± 2.48</td>
+  <td>82.74 ± 2.90</td>
+  <td>85.11 ± 2.73</td>
+  <td>84.74 ± 2.38</td>
+</tr>
+<tr>
+  <td>500</td>
+  <td>93.56 ± 0.80</td>
+  <td>92.44 ± 1.90</td>
+  <td>89.19 ± 1.22</td>
+  <td>93.04 ± 1.86</td>
+  <td>91.04 ± 1.56</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Paired fine-tuning gains (percentage points).</strong></p>
+<ul>
+<li>50 total labels: -2.89, -0.44, -1.56; mean -1.63.</li>
+<li>150 total labels: -2.00, -3.78, -1.11; mean -2.30.</li>
+<li>500 total labels: +0.00, -1.11, -2.22; mean -1.11.</li>
+</ul>
+<p><strong>Observed conclusion.</strong> Under this fixed digits recipe, fine-tuned VIME has lower mean accuracy than scratch at all three budgets. The paired gains above show the size and seed variability. This does not establish that VIME cannot help other datasets or protocols.</p>
+<figure><div class="figure-scroll" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="Scrollable computation figure"><img src="../labs/figures/l071/results.png" alt="Author-run evidence on offline digits. Every point is a fresh fit; bars show sample SD over three paired split/initialization seeds. The lower plot preserves each paired fine-tuning gain. No original-paper score is plotted." style="width:100%;min-width:600px;height:auto"></div><figcaption>Author-run evidence on offline digits. Every point is a fresh fit; bars show sample SD over three paired split/initialization seeds. The lower plot preserves each paired fine-tuning gain. No original-paper score is plotted. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<p>The figure shows each seed and means with sample standard-deviation bars. For each budget, the <strong>paired gain</strong> is fine-tuned accuracy minus scratch accuracy on that seed's shared test rows. Report all three differences, even when their signs disagree. Standard deviation summarizes this small set of split/initialization repetitions; it is not a confidence interval over new datasets.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This is one small image-derived table, with a fixed limited training recipe. Seeds do not create independent datasets. No general tabular winner, clinical claim, or relational benefit follows from this curve. The data, architecture search, labeled/unlabeled ratios, optimizer implementation and repetitions differ from the paper; paper-table comparability is <strong>INCOMPARABLE</strong>.</p>
+</blockquote>
+<h3 id="Paper-claim,-checked-code,-local-measurement">Paper claim, checked code, local measurement<a class="anchor-link" href="#Paper-claim,-checked-code,-local-measurement">&#182;</a></h3><p>The paper evaluates label efficiency and downstream prediction across several domains (§5). Its public-data experiments include MNIST treated as 784 tabular features, Income and Blog. The supplement specifies a 10% labeled / 90% unlabeled split of the public training sets and retains their separate test sets.</p>
+<p><strong>A concrete paper target.</strong> Table 2 reports the following MNIST accuracies (mean ± standard deviation over ten runs): supervised-only 93.87 ± 0.14%, self-supervised-only 94.06 ± 0.19%, and full VIME 95.77 ± 0.22%. The reported self-only improvement is 0.19 percentage points; full VIME adds 1.90 points over supervised-only. These are published results on 784-feature MNIST, not measurements from this lab. <a href="https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Paper.pdf">Source: Table 2</a>.</p>
+<blockquote>
+<p><strong>Scope check.</strong> A digits accuracy near one of these numbers is still INCOMPARABLE. The follow-up must align data, labeled/unlabeled allocation, selection, architecture and baseline definitions before numerical agreement is evidence of reproduction.</p>
+</blockquote>
+<p>The source audit pins commit <code>996c58cf4c570061b30c38ecf2a754a9af85aafd</code>. It checks exact corruption outputs against the original NumPy function on a fixture containing donor collisions. This establishes that tested operation. It does not establish historical training parity: the release uses Keras/TensorFlow, while this lab uses PyTorch and different initialization/optimizer defaults.</p>
+<p>See <a href="../labs/_sources_l071.json">source identities</a>, <a href="../labs/_verify_l071_results.json">local evidence</a>, and the <a href="../labs/l071-reproduction.md">reproduction contract</a>. The <a href="../labs/_mnist_access_l071_results.json">MNIST access check</a> verifies the public archive against Keras's official SHA-256 and checks its shapes and scaling. Public MNIST follow-up training is <strong>NOT_RUN</strong> at package creation. Restricted genomic/clinical data, the full baseline set, and original tuning remain outside this artifact's demonstrated evidence.</p>
+<h2 id="7.-Lab:-implement,-check,-explain">7. Lab: implement, check, explain<a class="anchor-link" href="#7.-Lab:-implement,-check,-explain">&#182;</a></h2><p>The companion notebook exposes the full encoder, both heads, pretraining loop and downstream trainer. You implement three operations used by the actual training loop: columnwise corruption with actual-change targets, full-coordinate pretext loss, and view-axis consistency loss. Each has a numeric CHECK that catches a plausible wrong implementation.</p>
+<p><strong>Before running:</strong> predict which coordinate in the collision fixture gets a zero mask target, whether untouched coordinates affect reconstruction loss, and what K = 1 does to consistency.</p>
+<p><strong>EXIT submission:</strong> produce the complete five-arm × three-budget curve; list the three paired fine-tuning gains at each budget; defend whether pretraining helps under the local recipe. Identify validation-label cost, one source/paper discrepancy, and one experiment needed before transferring the conclusion to relational data. A valid result can show no gain.</p>
+<p><strong>Next step after EXIT.</strong> Run the same visible code on public MNIST through the gated Colab cell or the Modal operator. The reproduction contract lists every remaining protocol gap; choosing a larger preset does not remove those gaps. Compare measured results with a specifically named paper experiment only after aligning its dataset, split, metric, model selection and baselines.</p>
+<div id="teachback"></div>
+
+<p>Ask the tutor to review your code and your interpretation. Reading or executing the author solution does not establish mastery. Return tomorrow and derive the collision example without notes; next week, reconstruct the split diagram and explain the label budget. Lesson 072 will compare reconstruction-based learning with contrastive and multi-view objectives.</p>
+<h2 id="Primary-reading">Primary reading<a class="anchor-link" href="#Primary-reading">&#182;</a></h2><p>Read <a href="https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Paper.pdf">VIME, §4.1–4.2, Eqs. 3–10 and Figures 1–2</a>, then inspect <a href="https://github.com/jsyoon0823/VIME/tree/996c58cf4c570061b30c38ecf2a754a9af85aafd">the pinned released implementation</a>. Use <a href="https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Supplemental.pdf">supplement §§2, 5–6</a> to distinguish the example architecture from the paper's experimental search. The <a href="../reference/0071-vime-masked-tabular-ssl.html">printable reference</a> collects the equations and evidence boundaries.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/mask-pretrain-viz.js"></script></body></html>

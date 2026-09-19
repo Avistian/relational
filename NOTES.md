@@ -1275,3 +1275,8 @@ notebook builder. Apply this to future new-model lessons; retrofit L047 (SAINT) 
 ## Lesson package access correction — 2026-09-10
 
 The user rejected the 058–070 delivery as not ready and asked where the labs and other materials were. The notebooks were published, but their lesson links were buried below the reading; the gallery depended on JavaScript and there was no single package directory. Put lab/run/download links before the lesson body, distinguish a read-only preview from a runnable notebook, provide an exercises shortcut, and expose references, measured evidence, and reproduction instructions together. Check the actual click path and the no-JavaScript/failed-fetch cases; file existence and HTTP success alone do not establish a usable teaching package. This is a delivery correction, not a learner misconception or a completion record.
+
+
+## Lesson 071 prepared — 2026-09-19
+
+VIME package follows Year 2 Q4: collision-aware marginal corruption, full-coordinate reconstruction plus mask estimation, explicit frozen/fine-tuned variants and released logit-variance consistency. Five matched arms, three label budgets and three seeds on offline digits. Source pinned to 996c58cf4c570061b30c38ecf2a754a9af85aafd. Fine-tuned VIME did not improve mean accuracy over scratch in the local recipe; retain the negative finding and protocol limits. Student lab, source-visible solution, reference, evidence and MNIST follow-up operators accompany the lesson. Authorship does not advance learner completion. Live Colab, Modal follow-up and publication are separate unperformed checks.

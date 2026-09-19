@@ -1837,6 +1837,29 @@
   ],
   "correct": "2",
   "explain": "No, version identity is part of the model and the missing arm must stay visible."
+},
+{
+  "id": "l071-donor-collision",
+  "lesson": 71,
+  "quarter": "Q4",
+  "concept": "mask-target",
+  "question": "A selected donor equals the original value. What target does the VIME release use?",
+  "options": [
+    {
+      "label": "Actual change zero",
+      "value": "0"
+    },
+    {
+      "label": "Selected mask one",
+      "value": "1"
+    },
+    {
+      "label": "Missing target value",
+      "value": "2"
+    }
+  ],
+  "correct": "0",
+  "explain": "The released pretext_generator recomputes the mask as original != corrupted. The sampled replacement can leave a value unchanged."
 }
 ];
 })(window);

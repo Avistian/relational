@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VIME reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/vime-lesson.css"></head><body><article><h1 id="VIME-reference-%C2%B7-Lesson-071">VIME reference &#183; Lesson 071<a class="anchor-link" href="#VIME-reference-%C2%B7-Lesson-071">&#182;</a></h1><ul>
+<li><strong>Corruption:</strong> x̃ = (1−m)x + m x̄. Each donor coordinate comes from its own column permutation. The encoder sees only x̃.</li>
+<li><strong>Released mask target:</strong> 1[x̃ ≠ x]. Selection can leave a value unchanged. Example: x=[.2,.8,.8], donor=[.9,.8,.1], m=[1,1,0] → target=[1,0,0].</li>
+<li><strong>Encoder:</strong> d→d ReLU. Mask head: d logits. Value head: d sigmoid outputs. Prediction uses a new head on clean-row encodings.</li>
+<li><strong>Pretext loss:</strong> mean BCE(mask logits, actual changes) + α mean((reconstruction−original)²). Reconstruct all coordinates; α=2 in the lab.</li>
+<li><strong>Frozen transfer:</strong> train only the new predictor. <strong>Fine-tuning:</strong> update the retained encoder too; an extension to the released pipeline.</li>
+<li><strong>Released semi-supervision:</strong> task cross-entropy + β mean population variance of K augmented-view logits. Variance axis is K, not rows or classes.</li>
+<li><strong>Clean-anchor identity:</strong> mean((a−c)²)=variance(a)+(mean(a)−c)². The paper equation and released variance differ in general.</li>
+<li><strong>Budget:</strong> training labels + validation labels. Hold paired rows, head initialization and supervised budget fixed. Exclude test rows from all fitting and donors.</li>
+<li><strong>Local evidence:</strong> digits, five arms, three budgets, three seeds. SD is seed variability, not a cross-dataset interval. Original paper comparison: INCOMPARABLE.</li>
+</ul>
+<p><strong>Measured test accuracy, mean ± sample SD over three seeds (%).</strong> These are author-reference outputs, not your current notebook run.</p>
+<div style="overflow-x:auto"><table>
+<thead>
+<tr>
+  <th>Total labels</th>
+  <th>Scratch</th>
+  <th>VIME fine-tune</th>
+  <th>VIME frozen</th>
+  <th>Reconstruction fine-tune</th>
+  <th>VIME semi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>50</td>
+  <td>77.70 ± 4.17</td>
+  <td>76.07 ± 2.96</td>
+  <td>74.00 ± 1.11</td>
+  <td>77.41 ± 1.22</td>
+  <td>76.44 ± 2.62</td>
+</tr>
+<tr>
+  <td>150</td>
+  <td>87.48 ± 2.81</td>
+  <td>85.19 ± 2.48</td>
+  <td>82.74 ± 2.90</td>
+  <td>85.11 ± 2.73</td>
+  <td>84.74 ± 2.38</td>
+</tr>
+<tr>
+  <td>500</td>
+  <td>93.56 ± 0.80</td>
+  <td>92.44 ± 1.90</td>
+  <td>89.19 ± 1.22</td>
+  <td>93.04 ± 1.86</td>
+  <td>91.04 ± 1.56</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Paired fine-tuning gains (percentage points).</strong></p>
+<ul>
+<li>50 total labels: -2.89, -0.44, -1.56; mean -1.63.</li>
+<li>150 total labels: -2.00, -3.78, -1.11; mean -2.30.</li>
+<li>500 total labels: +0.00, -1.11, -2.22; mean -1.11.</li>
+</ul>
+<p><strong>Observed conclusion.</strong> Under this fixed digits recipe, fine-tuned VIME has lower mean accuracy than scratch at all three budgets. The paired gains above show the size and seed variability. This does not establish that VIME cannot help other datasets or protocols.</p>
+<p><a href="../lessons/0071-vime-masked-tabular-ssl.html">Lesson</a> · <a href="../labs/0071-vime-masked-tabular-ssl.ipynb">Notebook</a> · <a href="../labs/l071-reproduction.md">Reproduction contract</a> · <a href="../labs/_sources_l071.json">Pinned source audit</a>.</p>
+</article></body></html>

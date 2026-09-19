@@ -453,3 +453,8 @@ No, dropping them changes the evaluated population and hides coverage failures. 
 
 No, version identity is part of the model and the missing arm must stay visible. The executed local experiment or frozen-result audit sharpens the single-table baseline or information contract; it is not relational-versus-flat evidence or full paper reproduction. [Lesson](lessons/0070-foundation-model-checkpoint.html) · [measured evidence](labs/_verify_l070_results.json) · [scope](labs/l070-reproduction.md).
 <!-- FOUNDATION-058-070:end -->
+
+
+### L071 — BAR: unlabeled single-table structure is a baseline resource
+
+VIME provides a testable way to learn a flat-table encoder from unlabeled rows. The local five-arm label-efficiency curve uses paired splits and counts validation labels. Its conclusions are restricted to sklearn digits and the declared training recipe; it supplies no relational-versus-flat result. [Lesson](lessons/0071-vime-masked-tabular-ssl.html) · [Evidence](labs/_verify_l071_results.json) · [Scope](labs/l071-reproduction.md).

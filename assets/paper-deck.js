@@ -360,6 +360,10 @@
   "lesson": 67,
   "front": "Why does approximate local training share a context instead of merely speeding up nearest-neighbor search?",
   "back": "Exact per-query neighborhoods require separate transformer context computations. LoCalPFN samples an anchor neighborhood and splits it into disjoint context and query sets, allowing several queries to reuse one context. This trades neighborhood accuracy for shared forward/backward work. The lesson separately measures frozen retrieval and local gradient adaptation; nearest-neighbor lookup alone does not update weights."
-}
+},
+    {id: "yoon2020-vime", paper: "Yoon et al. — VIME", year: 2020, lesson: 71,
+     front: "What are VIME's two self-supervised tasks, and what must a label-efficiency comparison control?",
+     back: "Reconstruct the original row and estimate its corruption mask with a shared encoder. The release targets actual changed values. Compare downstream performance at equal labeled budgets including validation, with paired splits and test rows excluded from pretraining. Useful pretext representations do not guarantee a task gain."}
+
 ];
 })(window);

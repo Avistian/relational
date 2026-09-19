@@ -353,3 +353,10 @@ _Optional / extension (◆):_
 - **L069:** [Realistic Evaluation of TabPFN v2 in Open Environments](https://arxiv.org/html/2505.16226v1). [Local scope and regeneration](labs/l069-reproduction.md).
 - **L070:** [TabPFN-3 technical report and historical controls](https://arxiv.org/abs/2605.13986). [Local scope and regeneration](labs/l070-reproduction.md).
 <!-- FOUNDATION-058-070:end -->
+
+
+## Lesson 071 · VIME source bundle
+
+- Yoon et al., NeurIPS 2020, [VIME paper](https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Paper.pdf), §4, Eqs. 3–10: corruption, dual pretext tasks and downstream consistency.
+- [Supplement](https://proceedings.neurips.cc/paper/2020/file/7d97667a3e056acab9aaf653807b4a03-Supplemental.pdf), §§2, 5–6: data splits and model selection.
+- [Author code, pinned commit](https://github.com/jsyoon0823/VIME/tree/996c58cf4c570061b30c38ecf2a754a9af85aafd): collision-aware targets, fixed corruption, frozen encoder and logit variance; checked in labs/_sources_l071.json.
