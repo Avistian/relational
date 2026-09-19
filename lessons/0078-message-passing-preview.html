@@ -1,0 +1,154 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 078 — Message passing: from a join to a GCN</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/message-passing-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0077-single-table-ceiling.html">Lesson 77</a></nav><header><p>Year 2 · Quarter 4 · Lesson 078</p><h1>Message passing: from a join to a GCN</h1></header><aside><a href="../labs/html/0078-message-passing-preview.html">Read lab</a> · <a href="../labs/0078-message-passing-preview.ipynb">Notebook</a> · <a href="../reference/0078-message-passing-preview.html">Reference card</a></aside><h2 id="Start-cold-%C2%B7-retrieve-before-reading">Start cold &#183; retrieve before reading<a class="anchor-link" href="#Start-cold-%C2%B7-retrieve-before-reading">&#182;</a></h2><div id="warmup"></div>
+
+<p>Without opening Lesson 77, explain why a deeper model cannot recover information missing from its input. Then draw a customer → order → merchant path. How many edges separate the customer from a merchant attribute? Write your answer before continuing.</p>
+<p><strong>Today’s win:</strong> compute every node’s new vector after one synchronous round of message passing, then explain precisely what makes a GCN layer different from a plain mean. The core route is sections 1–5 plus the three lab TODOs. The complete Cora experiment is a separate research route.</p>
+<h2 id="1-%C2%B7-A-join-becomes-a-message">1 &#183; A join becomes a message<a class="anchor-link" href="#1-%C2%B7-A-join-becomes-a-message">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Each node reads its neighbors’ old vectors, combines what it receives, and updates its own vector. Every node does this from the same snapshot.</p>
+</blockquote>
+<p>A <strong>node</strong> is an entity represented by a row. An <strong>edge</strong> is a permitted connection between entities. A <strong>node feature vector</strong> is a list of numeric measurements for that entity. A <strong>hidden state</strong>, also called an embedding here, is the vector carried between layers. It need not be learned in a hand calculation.</p>
+<p><strong>Routing convention.</strong> An edge <code>(source, destination)</code> sends information from source to destination. A database foreign key tells us how rows connect; we must still choose the direction in which information flows. Order → customer sends order information to its customer. Bidirectional flow requires both directions.</p>
+<p><strong>Worked example.</strong> Nodes A, B, C and D start with scalar states <code>[2,4,8,10]</code>. The graph is the undirected chain A—B—C plus isolated D. Store each chain edge in both directions. There are no self-edges in this first example.</p>
+<p>For B, incoming messages are A’s 2 and C’s 8. Their mean is <code>(2+8)/2 = 5</code>. Our illustrative update takes half the old self-state and half the neighbor mean: <code>B_new = max(0, .5×4 + .5×5) = 4.5</code>. The maximum with zero is <strong>ReLU</strong>, a function that keeps positive values and replaces negative ones with zero. These coefficients are fixed teaching choices, not trained parameters.</p>
+<div id="prediction"></div>
+<div id="message-viz"></div>
+
+<figure class="mp-figure"><div tabindex="0"><img src="../labs/figures/l078/trace.png" alt="Synchronous hand fixture: old states, incoming messages, means and updated outputs. D has no incoming messages; its declared empty mean is zero."></div><figcaption>Synchronous hand fixture: old states, incoming messages, means and updated outputs. D has no incoming messages; its declared empty mean is zero.</figcaption></figure>
+
+<p><strong>All nodes.</strong> Incoming means are <code>[4,5,4,0]</code>; updated states are <code>[3,4.5,6,5]</code>. D’s neighbor mean is defined as zero, so its update is 5. An isolated node does not necessarily retain its state: that depends on the update rule. A self-loop would change this calculation.</p>
+<p><strong>Synchronous means one shared old snapshot.</strong> Updating A in place before B would make B read A=3, producing 4.75 instead of 4.5. That error makes node storage order affect the result. Keep input and output arrays separate.</p>
+<h2 id="2-%C2%B7-The-MPNN-abstraction">2 &#183; The MPNN abstraction<a class="anchor-link" href="#2-%C2%B7-The-MPNN-abstraction">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A learned message function decides what to send. A reduction combines incoming messages. A learned update decides what to keep.</p>
+</blockquote>
+<p>Gilmer and colleagues organize message passing around these equations:</p>
+<div class="highlight"><pre><span></span>m_v^(t+1) = SUM over w in N(v) of M_t(h_v^t, h_w^t, e_vw)
+h_v^(t+1) = U_t(h_v^t, m_v^(t+1))
+graph_prediction = R({h_v^T : v in graph})
+</pre></div>
+<p>Here <code>v</code> is the receiving node, <code>w</code> is a neighbor, and <code>N(v)</code> is its neighbor collection. <code>t</code> numbers rounds; <code>T</code> is the final round. <code>h</code> is a node state; <code>e</code> is an edge feature such as relation type. <code>M</code> produces a message, <code>SUM</code> reduces messages, and <code>U</code> updates the state. <code>R</code> is a <strong>readout</strong> that combines final states when the target belongs to the whole graph, as with a molecule. Node classification instead predicts separately from each final node state. See <a href="https://proceedings.mlr.press/v70/gilmer17a.html">Gilmer et al., §2</a>.</p>
+<p>Our mean fixture is a simple message-passing variant: send <code>h_w</code>, sum the messages and divide by incoming count, then apply the stated self/neighbor update. It is not the paper’s full molecular architecture. The paper’s abstract sum formulation and this explicit mean must not be conflated.</p>
+<p><strong>What becomes learned?</strong> Replace fixed scalar coefficients with matrices, for example <code>ReLU(h_v W_self + m_v W_neighbor + b)</code>. With states of width <code>d</code> and output width <code>k</code>, both matrices have shape <code>d×k</code>, the bias has <code>k</code> entries, and every node shares these parameters. A supervised loss changes the shared parameters through gradients. It does not change the identity of eligible neighbors unless graph construction is itself part of a separately specified model.</p>
+<p><strong>Order and identity.</strong> Summation or mean is invariant to neighbor enumeration. Renaming all nodes and reindexing their features and edges together merely renames the outputs: this is <strong>permutation equivariance</strong>. The node outputs move with the nodes; they are not one invariant graph vector. An invariant graph readout would remain unchanged under that relabeling.</p>
+<p><strong>A reduction still loses information.</strong> <code>[2]</code> and <code>[2,2]</code> have the same mean. More graph access does not guarantee that a reducer preserves the target signal. This is the same information-interface issue as <a href="0077-single-table-ceiling.html">Lesson 77</a>.</p>
+<h2 id="3-%C2%B7-Reach-and-point-in-time-safety">3 &#183; Reach and point-in-time safety<a class="anchor-link" href="#3-%C2%B7-Reach-and-point-in-time-safety">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> One layer carries a neighbor’s current information one edge. A second layer can carry information that neighbor received from farther away.</p>
+</blockquote>
+<p>On A—B—C, changing C from 8 to 20 leaves A’s first update at 3. But B’s first update rises from 4.5 to 7.5, so A’s second update rises from 3.75 to 5.25. These numbers follow the same synchronous rule. A <strong>receptive field</strong> is the set of input nodes that can influence an output. With this fixed graph and local updates, after two layers A can depend on C.</p>
+<div id="reach-viz"></div>
+
+<p><strong>Relational connection.</strong> A manual <code>GROUP BY customer_id</code> with <code>AVG(amount)</code> performs identity routing and reduction. A graph layer generalizes the message and update functions so supervised training can learn which combinations matter. It does not automatically generalize eligibility rules.</p>
+<p><strong>Time boundary.</strong> Before every hop, restrict nodes, edges and attributes to information available at the prediction cutoff. An event dated before the cutoff but ingested later is unavailable. A two-hop merchant feature computed from future transactions can leak even when the direct order edge is old. Recompute degree normalization on the eligible graph; future edges can otherwise change today’s weights without sending their feature values.</p>
+<p><strong>Cora is a different protocol.</strong> The research lane is transductive: all graph structure and node features are supplied during training, while only training-node labels enter the loss. Validation labels determine stopping. Test labels are used only after stopping. This is the declared benchmark; it is not evidence of temporal database safety.</p>
+<h2 id="4-%C2%B7-GCN:-a-weighted-sum,-not-an-ordinary-mean">4 &#183; GCN: a weighted sum, not an ordinary mean<a class="anchor-link" href="#4-%C2%B7-GCN:-a-weighted-sum,-not-an-ordinary-mean">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> GCN adds each node to its own neighborhood and weights a message using both endpoint degrees.</p>
+</blockquote>
+<p>Let <code>A[v,w]=1</code> when w sends to v. For the undirected GCN graph, A is symmetric. Add the identity matrix <code>I</code>, whose diagonal is one: <code>A_tilde=A+I</code>. Let <code>d_v</code> count node v’s neighbors including that self-loop. The normalized support matrix has entries <code>S[v,w]=A_tilde[v,w]/sqrt(d_v d_w)</code>. A layer is <code>H_new = ReLU(S H W)</code>. <code>H</code> has shape <code>N×d</code>, <code>W</code> has shape <code>d×k</code>, and <code>S</code> is <code>N×N</code>. Thus outputs have shape <code>N×k</code>. These are <a href="https://arxiv.org/html/1609.02907v4#S2">Kipf and Welling’s Eq. 2</a>.</p>
+<p><strong>Worked example, same chain.</strong> Augmented degrees are <code>[2,3,2,1]</code>. Set W=1 to isolate normalization. B receives <code>2/sqrt(6)</code> from A, <code>4/3</code> from itself, and <code>8/sqrt(6)</code> from C. Total: approximately <strong>5.415816</strong>. A receives <code>2/2 + 4/sqrt(6)</code> ≈ <strong>2.632993</strong>. C receives <code>8/2 + 4/sqrt(6)</code> ≈ <strong>5.632993</strong>. D retains 10 through its sole self-loop.</p>
+<div id="normalization-viz"></div>
+
+<figure class="mp-figure"><div tabindex="0"><img src="../labs/figures/l078/normalization.png" alt="Same graph, different operator: symmetric GCN contributions to B, with W=1. Self-loop included; weights do not sum to one."></div><figcaption>Same graph, different operator: symmetric GCN contributions to B, with W=1. Self-loop included; weights do not sum to one.</figcaption></figure>
+
+<p><strong>Why not call this a mean?</strong> B’s weights sum to <code>2/sqrt(6)+1/3</code> ≈ 1.149830, not 1. A mean including self would be <code>(2+4+8)/3</code> ≈ 4.666667. Symmetric normalization and a row-normalized mean are different operators. The paper motivates this support through an approximation to spectral graph filtering and a renormalization step; that derivation belongs to the deeper GCN lesson. Here you must reproduce the actual local operator.</p>
+<h2 id="5-%C2%B7-Model-architecture:-the-complete-Cora-GCN">5 &#183; Model architecture: the complete Cora GCN<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-the-complete-Cora-GCN">&#182;</a></h2><figure class="mp-figure"><div tabindex="0"><img src="../labs/figures/l078/architecture.png" alt="Full Cora GCN: feature normalization, two graph layers and node prediction/loss. Dropout is active during training only."></div><figcaption>Full Cora GCN: feature normalization, two graph layers and node prediction/loss. Dropout is active during training only.</figcaption></figure>
+
+<p><strong>Input.</strong> Cora supplies 2,708 document nodes, 1,433 bag-of-words features and seven target classes. Row normalization divides each document’s feature vector by its feature sum; zero rows remain zero. Citation links are treated as undirected, binary edges. Self-loops and symmetric normalization produce S. The raw graph has no self-edges (verified). The reproduction binarizes duplicate links, follows the released adjacency construction and adds identity exactly once.</p>
+<p><strong>First layer.</strong> During training, feature dropout randomly zeroes entries and scales retained entries by <code>1/(1−p)</code> with p=.5. Multiply by <code>W0[1433,16]</code>, route through S, and apply ReLU. The hidden matrix is <code>[2708,16]</code>.</p>
+<p><strong>Second layer.</strong> Apply hidden dropout, multiply by <code>W1[16,7]</code>, then route through S again. Output logits have shape <code>[2708,7]</code>. A <strong>logit</strong> is an unnormalized class score. Softmax turns each row into class probabilities. Cross-entropy rewards the true class; the implementation consumes logits directly for numerical stability. Neither layer has a bias. There is no pretrained checkpoint: both weights start from Glorot uniform initialization, with bounds determined by input and output widths.</p>
+<p><strong>Training boundary.</strong> Full-graph forward passes expose all permitted features. The loss averages cross-entropy over only 140 training nodes and adds <code>.0005 × .5 × sum(W0²)</code>. The first-layer penalty matches TensorFlow’s half-squared-norm convention. Adam updates both matrices. At inference, dropout is disabled; the graph operations and learned matrices stay the same. There is no graph-level pooling head.</p>
+<h2 id="6-%C2%B7-Full-reproduction,-with-the-remaining-differences-visible">6 &#183; Full reproduction, with the remaining differences visible<a class="anchor-link" href="#6-%C2%B7-Full-reproduction,-with-the-remaining-differences-visible">&#182;</a></h2><p>The named target is <strong>GCN, Cora, fixed split, Table 2</strong>: paper accuracy <strong>81.5%</strong>, averaged across 100 random initializations. This is one complete experiment, not the whole paper. The <a href="https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81">released implementation</a> fixes the data split and configuration. We pin its source and raw dataset bytes with SHA-256 hashes.</p>
+<div class="mp-table"><table>
+<thead>
+<tr>
+  <th>Item</th>
+  <th>Executed contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Data</td>
+  <td>Full released Cora, all 2,708 nodes; no subsampling</td>
+</tr>
+<tr>
+  <td>Labels</td>
+  <td>140 train (20 per class), 500 validation, 1,000 test</td>
+</tr>
+<tr>
+  <td>Architecture</td>
+  <td>Two bias-free GCN layers, 16 hidden units, ReLU</td>
+</tr>
+<tr>
+  <td>Optimizer</td>
+  <td>Adam, learning rate .01, betas .9/.999, epsilon 1e-8</td>
+</tr>
+<tr>
+  <td>Regularization</td>
+  <td>Dropout .5 at both layer inputs; first-weight L2 only</td>
+</tr>
+<tr>
+  <td>Schedule</td>
+  <td>At most 200 epochs; current validation loss vs prior-ten mean</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Released stopping rule; last weights, no best-checkpoint restore</td>
+</tr>
+<tr>
+  <td>Replication</td>
+  <td>Seeds 0–99; fixed split; mean, sample SD and standard error</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>A source mismatch you should notice.</strong> The paper says ten consecutive epochs without validation improvement. The release compares current validation loss against the mean of the preceding ten losses once the zero-based epoch exceeds ten. We reproduce the released rule and name it explicitly. Validation loss includes the regularization term. Never quietly replace this with modern patience/best-checkpoint training and call it identical.</p>
+<p><strong>Author-reference results — executed locally, not your current kernel output.</strong></p>
+<div class="mp-table"><table>
+<thead>
+<tr>
+  <th>Experiment</th>
+  <th style="text-align:right">Seeds</th>
+  <th style="text-align:right">Mean accuracy</th>
+  <th style="text-align:right">Sample SD</th>
+  <th style="text-align:right">Standard error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Full Cora release-protocol port</td>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">81.401%</td>
+  <td style="text-align:right">0.658 percentage points</td>
+  <td style="text-align:right">0.066 percentage points</td>
+</tr>
+<tr>
+  <td>Paper Table 2 target</td>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">81.5%</td>
+  <td style="text-align:right">Not stated in this row</td>
+  <td style="text-align:right">Not stated in this row</td>
+</tr>
+</tbody>
+</table></div>
+<p>Local minus paper: -0.099 percentage points. No hyperparameters were changed after reading the test results. <a href="../labs/_paper_l078_results.json">All seed results</a>.</p>
+<figure class="mp-figure"><div tabindex="0"><img src="../labs/figures/l078/results.png" alt="Author-reference measurement: 100 initializations on one fixed Cora split. Each dot is a measured port run, not a new dataset. Dashed line is the cited paper target."></div><figcaption>Author-reference measurement: 100 initializations on one fixed Cora split. Each dot is a measured port run, not a new dataset. Dashed line is the cited paper target.</figcaption></figure>
+
+<blockquote>
+<p><strong>Scope check.</strong> This is a full-data, full-schedule PyTorch port of the released Cora experiment. TensorFlow 1 and PyTorch differ in random-number streams and Adam’s numerical details; the paper does not publish the identities of its 100 seeds. Similar accuracy does not establish bitwise or original-framework parity. The other datasets, baselines and Gilmer QM9 molecular experiments are <strong>NOT_RUN</strong> here. The hand mean example is not a molecular-result reproduction.</p>
+</blockquote>
+<p><strong>Re-run from the repository root:</strong></p>
+<div class="highlight"><pre><span></span>.venv/bin/python<span class="w"> </span>labs/_verify_l078.py
+.venv/bin/python<span class="w"> </span>labs/_run_l078.py<span class="w"> </span>--seeds<span class="w"> </span><span class="m">100</span>
+.venv/bin/python<span class="w"> </span>labs/_build_l078.py
+</pre></div>
+<p>Use <a href="../labs/l078-reproduction.md">the reproduction contract</a> for a fresh environment and the <a href="../labs/_sources_l078.json">source manifest</a> for file identities. The notebook exposes every part of preprocessing, the model and the training loop. The post-EXIT cell runs this same complete protocol from the functions visible in your kernel.</p>
+<h2 id="7-%C2%B7-Lab:-derive,-implement,-intervene">7 &#183; Lab: derive, implement, intervene<a class="anchor-link" href="#7-%C2%B7-Lab:-derive,-implement,-intervene">&#182;</a></h2><p><a href="../labs/html/0078-message-passing-preview.html">Open the lab</a> · <a href="../labs/0078-message-passing-preview.ipynb">Download notebook</a> · <a href="../reference/0078-message-passing-preview.html">Reference card</a>.</p>
+<ol>
+<li><strong>TODO:</strong> implement mean incoming messages, including an empty neighborhood. CHECK the four-node fixture and reversed edge order.</li>
+<li><strong>TODO:</strong> implement the synchronous self/neighbor update. CHECK all four outputs and node-permutation equivariance.</li>
+<li><strong>TODO:</strong> implement symmetric GCN normalization. CHECK the hand weights and isolate why it differs from row mean.</li>
+<li><strong>Intervene:</strong> change only C. Predict which first- and second-round outputs change before running the supplied experiment.</li>
+<li><strong>EXIT:</strong> explain message, reduction, update and readout in your own words. Give one temporal leakage path and show the boundary that blocks it. Explain why the Cora test graph is visible but its labels are not training inputs.</li>
+</ol>
+<div id="teachback"></div>
+
+<p><strong>Research-route interpretation.</strong> Read the per-seed table and plot, compare the local mean to 81.5%, and identify two differences that prevent an exact parity claim. The standard error describes initialization variability on one fixed graph/split. It does not measure generalization across new graphs or temporal deployments. Do not tune on this comparison; a new protocol is a separate experiment.</p>
+<p><strong>Tomorrow:</strong> compute B’s mean and GCN outputs without notes. <strong>One week later:</strong> derive why node relabeling reorders outputs, then construct a graph where mean loses multiplicity. Ask your tutor follow-up questions or send your hand calculation and notebook outputs for review. Lesson creation does not imply learner completion.</p>
+<p><strong>Primary reading:</strong> <a href="https://proceedings.mlr.press/v70/gilmer17a.html">Gilmer et al., §2</a> for the organizing abstraction; <a href="https://arxiv.org/html/1609.02907v4">Kipf and Welling, §2–3 and §5–6</a> for the layer and the Cora experiment. Return to <a href="0076-encoder-predictor-stack.html">Lesson 76’s encoder–predictor stack</a> to locate these layers; L081 develops MPNNs further.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/message-passing-viz.js"></script><script src="../assets/l078-lesson.js"></script></body></html>

@@ -1311,3 +1311,7 @@ Complete Frame0.3.0 two-table composition with three live TODOs, exact mean/grad
 ## Lesson 077 created · single-table ceiling · 2026-09-19
 
 User reiterated full reproduction. L077 is the planned synthesis construction, not a new paper architecture. Full 1000-pair × five-seed experiment reproduced locally: deterministic flat stump accuracy/ceiling .5; same learner with eligible last-minus-first accuracy/ceiling1. Complete visible generator/split/aggregation/trainer and three live TODOs, SQL and library-tree controls, interventions, four portable figures and browser-checked controls. This proves a specified information ceiling, not real-data RDL superiority. L076 historical benchmark remains separate and NOT_RUN. No learner completion inferred.
+
+## Lesson 078 created · message passing · 2026-09-19
+
+Full reproducibility requested. Added manual mean-message bridge and complete inline Cora GCN port of the pinned release. Executed100 initializations on the full fixed split:81.401% mean,0.658 percentage-point sample SD. Paper target81.5%; modern-framework/original-seed differences remain explicit. Gilmer QM9 and original TensorFlow parity NOT_RUN. Student/solution notebooks, portable architecture and arithmetic figures, reusable Y3 widget, source/data hashes and full commands included. No learner completion inferred.

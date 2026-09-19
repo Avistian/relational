@@ -153,3 +153,5 @@ live Colab compatibility or full paper reproduction.
 - L076: [Encoder → predictor stack](0076-encoder-predictor-stack.ipynb) — full two-table teaching composition; separate historical RelBench replay and explicit NOT_RUN ledger.
 
 - L077: [Single-table ceiling](0077-single-table-ceiling.ipynb) — complete five-seed synthetic reproduction, exact information bound and tabular feature-repair control.
+
+- L078: [Message passing](0078-message-passing-preview.ipynb) — hand aggregation plus the full100-seed Cora GCN experiment with visible code and pinned bytes.

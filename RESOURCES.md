@@ -397,3 +397,9 @@ _Optional / extension (◆):_
 - [Fey et al., ICML2024 position paper](https://proceedings.mlr.press/v235/fey24a.html): primary motivation for graph learning over databases.
 - [Zaheer et al., Deep Sets](https://arxiv.org/abs/1703.06114): permutation-invariant set functions; supporting reading, no paper experiment claimed.
 - [RelBench v1](https://arxiv.org/html/2407.20060v1): real-data evaluation and feature-engineering comparison, distinct from the authored collision construction.
+
+## L078 message passing
+
+- [Gilmer et al., ICML2017, §2](https://proceedings.mlr.press/v70/gilmer17a.html): message, sum, update and graph readout.
+- [Kipf & Welling, ICLR2017](https://arxiv.org/html/1609.02907v4): Eq2/9 and Table2 Cora fixed-split experiment.
+- [Pinned GCN release](https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81): preprocessing, architecture, loss, initialization and exact stopping code; paper/code stopping mismatch documented.

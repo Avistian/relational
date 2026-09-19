@@ -23,6 +23,29 @@
 
   global.RETRIEVAL_POOL = [
 {
+  "id": "l078-synchronous",
+  "lesson": 78,
+  "quarter": "Q4",
+  "concept": "synchronous-message-passing",
+  "question": "On A\u2014B\u2014C, change only C\u2019s initial feature. Under the lesson\u2019s local synchronous update, when can A first change?",
+  "options": [
+    {
+      "label": "After two message rounds",
+      "value": "two"
+    },
+    {
+      "label": "After one message round",
+      "value": "one"
+    },
+    {
+      "label": "Before any message rounds",
+      "value": "zero"
+    }
+  ],
+  "correct": "two",
+  "explain": "The first round changes B; the second can carry that changed state to A. All messages within one round read old states."
+},
+{
   "id": "l077-ceiling",
   "lesson": 77,
   "quarter": "Q4",
