@@ -6,6 +6,34 @@ Close lesson 86. For an undirected graph stored as directed messages, how many c
 
 <details><summary>Check after writing your answers</summary><p>Usually two directed columns, one in each direction. Training observations fit parameters; validation labels select a state. A row split alone does not isolate a graph: held-out relationships may still appear among the encoder's input edges.</p></details>
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 087</p><p><strong>Build on what you know.</strong> <a href="0086-pyg-fundamentals.html">Lesson 86</a> made routing explicit. Link prediction introduces a new boundary: the relationship being predicted must not reveal itself through the message graph. <a href="0055-tabred-temporal-splits.html">Lesson 55</a>'s temporal discipline becomes especially important for future interactions.</p><p><strong>The next question.</strong> <a href="0088-graph-classification.html">Lesson 88</a> treats graph classification directly. SEAL provides the bridge by converting each candidate link into a labeled enclosing graph, while the simpler dot-product model predicts from two node embeddings.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## A link label is not an input edge
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/087-link.svg" alt="LINK architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/087-seal.svg" alt="SEAL architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the target construction before the classifier
+
+Read [Zhang & Chen §4](https://arxiv.org/abs/1802.09691) for SEAL's subgraphs and structural labels, and the [OGB link-task specifications](https://ogb.stanford.edu/docs/linkprop/) for examples of dataset-specific ranking contracts. The neural teaching path, SEAL overview and executed heuristic reconstruction below have different evidence scopes.
+
+### Follow one candidate pair through both routes
+
+1. **Separate two edge collections.** The observed graph supplies messages. Supervision pairs supply questions and labels. A held-out positive must be removed in both directions from an undirected observed graph; otherwise its reverse direction leaks existence.
+2. **Define a negative.** In the local static task it is a sampled absent pair under the declared filtering rule. In a future recommendation task it may instead be an eligible item not interacted with during a time window. These conventions imply different difficulty and meaning.
+3. **Encode then decode.** If z_u=[1,2] and z_v=[3,−1], a dot product gives score 1. Swapping endpoints gives the same score, so this decoder cannot distinguish u→v from v→u. A directed task needs a suitable asymmetric decoder or role-specific representation.
+4. **Turn the score into a training objective.** A positive example with logit 1 has binary cross-entropy log(1+exp(−1))≈0.3133. A sampled negative with the same score incurs log(1+exp(1))≈1.3133. Use a stable logits loss; the model's task depends on which negative pairs you supply.
+5. **For SEAL, change the representation unit.** Extract a neighborhood around the candidate, remove the target edge, and label node roles relative to both endpoints. DGCNN then classifies that whole subgraph. One global embedding per node is no longer the complete input to the predictor.
+6. **Rank within a declared candidate set.** A score is not intrinsically a rank. Adding harder candidates can lower MRR without changing any model parameter. Record candidates and tie handling beside the final metric.
+
+<details><summary>Predict: can test-positive edges remain in the graph if their labels are hidden?</summary><p>Not under this held-out-link protocol. Edge presence itself is the answer being hidden. This differs from transductive node classification, where known edges may be permitted and only node labels are held out.</p></details>
+
+**Your intermediate artifact:** save the observed edge set, supervision pairs, negative rule and evaluation candidates for a four-node example. Show which single edge would leak the answer if restored. The full SEAL classifier remains unrun here; its overview does not change that status.
+
+<!-- depth-walkthrough:end -->
+
 ## One win: specify exactly what a predicted link means
 
 In [lesson 86](0086-pyg-fundamentals.html), you made message passing preserve a known graph computation. Now part of that graph becomes the target. Your deliverable is an edge split that survives a leakage audit, a live dot-product decoder, and a ranking report whose candidate set is explicit. Allow 30 minutes for the core and a separate lab session for the implementation.

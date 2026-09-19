@@ -1,4 +1,6 @@
 """Build lesson, portable source-visible notebooks and compact reference."""
+from _walkthrough_delivery import snapshot, finalize
+snapshot(86)
 import ast,base64,json,re
 from pathlib import Path
 import nbformat as nbf
@@ -94,3 +96,4 @@ For an implementation port compare outputs and input/weight gradients with ident
 '''
 (ROOT/'reference/pyg-fundamentals.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PyG reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>'+render(ref)+'</article></body></html>')
 print('Built L086 lesson, student, solution, reference and figure')
+finalize(86)

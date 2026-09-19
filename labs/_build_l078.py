@@ -88,6 +88,8 @@ print('Paper target: 81.5%. Framework and original-seed differences remain.')
     return nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python'}})
 
 def build():
+    from _walkthrough_delivery import snapshot, finalize
+    snapshot(78)
     figures()
     head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 078 — '+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/message-passing-viz.css"></head><body><article>'
     nav=f'<nav><a href="../index.html">Course</a> · <a href="0077-single-table-ceiling.html">Lesson 77</a></nav><header><p>Year 2 · Quarter 4 · Lesson 078</p><h1>{TITLE}</h1></header><aside><a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/{SLUG}.ipynb">Notebook</a> · <a href="../reference/{SLUG}.html">Reference card</a></aside>'
@@ -129,4 +131,5 @@ def build():
 '''
     (ROOT/'reference'/f'{SLUG}.html').write_text(head+render(ref+f'\n[Lesson](../lessons/{SLUG}.html) · [Lab](../labs/html/{SLUG}.html)')+'</article></body></html>')
     print('Built L078 lesson, both notebooks, preview, reference and portable figures')
+    finalize(78)
 if __name__=='__main__':build()

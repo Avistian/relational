@@ -10,6 +10,31 @@ Before reading, write three short answers: What information may a validation set
 
 **Route.** Read the corruption and architecture sections, trace the losses, then implement the three notebook operations. Treat the experiment and its written interpretation as a second sitting if needed. Recall [L070's evaluation contract](0070-foundation-model-checkpoint.html) as you design the comparison; [L045](0045-tabtransformer.html) introduced a related pretraining idea.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 071</p><p><strong>Build on what you know.</strong> <a href="0045-tabtransformer.html">Lesson 45</a> introduced pretraining for categorical tokens; <a href="0047-saint.html">Lesson 47</a> used two views in SAINT. <a href="0070-foundation-model-checkpoint.html">Lesson 70</a> compared whole prediction systems. We now isolate the training signal that produces a reusable row representation.</p><p><strong>The next question.</strong> <a href="0072-scarf-subtab-contrastive-views.html">Lesson 72</a> changes the pretext question from “what was changed?” to “which observation belongs to this row?” Keep the encoder/temporary-head distinction when making that change.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Why unlabeled values can train an encoder
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/071-vime.svg" alt="VIME architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the paper with a concrete question
+
+Read the VIME paper's self-supervised and semi-supervised method sections, then compare its equations with the pinned implementation linked below. On your sketch, put a box around **what the model is allowed to observe**. The encoder receives the corrupted row; the original row and corruption target are available to the loss. If the original row were also supplied to the encoder, reconstruction could become a trivial copy operation. [VIME, primary paper](https://proceedings.neurips.cc/paper/2020/hash/7d97667a3e056acab9aaf653807b4a03-Abstract.html).
+
+### Trace one example through both objectives
+
+1. **Choose a row and a donor.** Let x=[0.2,0.8,0.8], donor=[0.9,0.8,0.1], and selected positions m=[1,1,0]. Replacement produces x̃=[0.9,0.8,0.8]. Position 1 was selected but did not change. The released utility's actual-change target is [1,0,0].
+2. **Encode once.** The same h=f(x̃) feeds two different learned heads. A gradient from either head can change f. Two heads do not mean two independent encoders.
+3. **Score the change detector.** If its probabilities are [0.8,0.2,0.1], binary cross-entropy averages −log(0.8), −log(0.8), and −log(0.9), giving about 0.1839. This objective rewards detecting corruption, not predicting the downstream class.
+4. **Score value recovery.** If the reconstruction is [0.3,0.7,0.8], mean squared error across all three coordinates is (0.01+0.01+0)/3=0.006667. With α=2, the total pretext loss is about 0.1972. Writing the reduction explicitly prevents an accidental factor-of-three change.
+5. **Transfer the useful part.** Keep f, discard both pretext heads, and attach the task predictor. The released pipeline freezes f; updating it is a different fine-tuning condition. At prediction time the input is a clean row and neither pretext target is needed.
+
+<details><summary>Before revealing: can pretext loss fall while classification gets worse?</summary><p>Yes. The representation may become better at reconstructing high-variance nuisance features or detecting corruption artifacts without retaining the features needed for the class. Measure target performance against the same supervised architecture and label budget; pretext loss alone cannot establish transfer.</p></details>
+
+**Your intermediate artifact:** draw three arrows leaving h: the two temporary training heads and the later task route. Label which parameters each loss updates. Then change the donor's second coordinate to 0.4 and recompute the mask target before starting the notebook.
+
+<!-- depth-walkthrough:end -->
+
 ## 1. Learn from features before asking for labels
 
 > **In plain terms.** Hide some information in a row and ask a network to recover it. The original row supplies the training answer, so this stage needs no task labels.

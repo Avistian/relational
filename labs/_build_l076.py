@@ -125,6 +125,8 @@ else:
  nb=nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python'}});return nb
 
 def build():
+ from _walkthrough_delivery import snapshot, finalize
+ snapshot(76)
  figures();head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson076 — '+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"></head><body><article>'
  nav=f'<nav><a href="../index.html">Course</a> · <a href="0075-pytorch-frame-row-encoder.html">Lesson75</a></nav><header><p>Year2 · Quarter4 · Lesson076</p><h1>{TITLE}</h1><p>Encode records → route eligible messages → predict → differentiate.</p></header><aside><a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/{SLUG}.ipynb" download>Download notebook</a> · <a href="../reference/{SLUG}.html">Reference</a> · <a href="../labs/l076-reproduction.md">Reproduction contract</a> · <a href="../labs/_verify_l076_results.json">Measured evidence</a></aside>'
  body=render(manuscript()).replace('<table>','<div class="result-scroll"><table>').replace('</table>','</table></div>')
@@ -161,4 +163,5 @@ def build():
 '''
  (ROOT/'reference'/f'{SLUG}.html').write_text(head+render(ref+f'\n[Full lesson](../lessons/{SLUG}.html) · [Lab](../labs/html/{SLUG}.html)')+'</article></body></html>')
  print('Built L076 lesson, student/solution, preview, reference and four portable figures')
+ finalize(76)
 if __name__=='__main__':build()

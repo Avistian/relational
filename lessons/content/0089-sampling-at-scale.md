@@ -10,6 +10,32 @@ Close the previous lesson. Write answers before opening the explanations: (1) In
 
 **Primary reading:** Chiang et al., [Cluster-GCN, KDD 2019, §§3.1–3.3 and Algorithm 1](https://arxiv.org/html/1905.07953v2#S3). Read §4.3 and Table 10 for our named reproduction target. The [2019 release](https://github.com/google-research/google-research/tree/89c16e403d42015c3133634788ed0b7965f56395/cluster_gcn) supplies concrete settings that the algorithm alone does not.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 089</p><p><strong>Build on what you know.</strong> <a href="0083-graphsage.html">Lesson 83</a> bounded neighborhood expansion by sampling at each hop. <a href="0088-graph-classification.html">Lesson 88</a> made graph membership explicit. Cluster-GCN instead reuses a chosen induced node set at every depth, changing both cost and the approximation.</p><p><strong>The next question.</strong> <a href="0090-gnn-checkpoint.html">Lesson 90</a> asks you to defend the actual experiment. Carry the sampler, normalization and first-layer cache into that defense; the model name alone omits all three.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## A batch changes which messages exist
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/089-cluster.svg" alt="CLUSTER architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the sampler and the released model separately
+
+Read [Cluster-GCN §§3.1–3.3 and Algorithm 1](https://arxiv.org/html/1905.07953v2#S3), then the Table 10 PPI recipe linked below. Partition-based training is a sampling strategy. The released deep model additionally chooses concatenated self paths, diagonal enhancement and a cached first input. Reproducing a score requires both the sampler and that computation.
+
+### Build a two-cluster thought experiment
+
+1. **Partition eligible training nodes.** Put A,B in one cluster and C,D in another. An edge B—C crosses the partition. Selecting only the first cluster removes that edge from later batch propagation, even though it exists in the full training graph.
+2. **Combine clusters before inducing edges.** If both groups are selected, build adjacency from the original eligible graph on their union. Merely concatenating two separately sliced cluster adjacencies would still omit B—C, defeating multi-cluster batching.
+3. **Recompute the declared support.** With raw degree d, adding self gives row-normalized weight 1/(d+1). Diagonal enhancement adds another copy of the self coefficient. For a node with two neighbors and λ=1, coefficients are [1/3,2/3,1/3], whose sum is 4/3, not one.
+4. **Expose the operator change.** With neighbor/self/neighbor values [1,2,4], the result is 3. Remove the last neighbor through batching and coefficients become [1/2,1], giving 2.5. Missing a neighbor changes both the available sum and its normalization.
+5. **Keep the first-layer exception visible.** This PPI release precomputes [A_train X,X] before partitioning. Thus its first input can carry a message across training-cluster boundaries even when later hidden layers cannot. Replacing this cache with a per-batch GCN layer changes the recipe.
+6. **Separate cost evidence from accuracy evidence.** A full-width update can verify dimensions, gradients and some memory needs. It cannot establish the final score of a 400-epoch training run. Changing q also changes updates per epoch, so compare optimization budgets explicitly.
+
+<details><summary>Predict: choose every cluster—does this automatically recover the same training trajectory?</summary><p>No. The eligible adjacency can become the full graph, but batch size and the number of optimizer updates per epoch change. Equal forward support is not equal optimization history. Match the intended training procedure before claiming equivalence.</p></details>
+
+**Your intermediate artifact:** draw the crossing edge, compute the two support rows, and mark where the cached first input still uses it. The full named target remains NOT_RUN in the saved evidence; the runnable recipe and smaller teaching experiments are separate achievements.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · Why a mini-batch can grow outside its targets
 
 > **In plain terms.** To update one node, a deep GNN needs intermediate representations of other nodes. A batch of labels is not the same as a batch of computation.

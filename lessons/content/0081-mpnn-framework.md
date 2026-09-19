@@ -10,6 +10,32 @@ Close your notes. In the chain A—B—C, can changing C affect A after one sync
 
 **Primary reading:** Gilmer et al., [Neural Message Passing for Quantum Chemistry](https://proceedings.mlr.press/v70/gilmer17a.html), §2 for the framework and §§6–8 for the experiment. Read the [supplement](https://proceedings.mlr.press/v70/gilmer17a/gilmer17a-supp.pdf), Table 3, after the core lab.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 081</p><p><strong>Build on what you know.</strong> <a href="0078-message-passing-preview.html">Lesson 78</a> introduced routing and weighted aggregation. Lessons 42 and 46 already separated transformations from their training recipe. Here we use one interface to say exactly where different graph models disagree.</p><p><strong>The next question.</strong> <a href="0082-gcn.html">Lesson 82</a> fixes the message coefficient using graph degrees. <a href="0084-gat.html">Lesson 84</a> learns it using attention. Before comparing those models, keep message, aggregation, update and readout as distinct operations.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## An MPNN is a set of choices, not one layer
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/081-ggnn.svg" alt="GGNN architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the framework before the molecular result
+
+Read [Gilmer et al. §2](https://proceedings.mlr.press/v70/gilmer17a.html) and write M, U and R beside the diagram. The displayed molecular GG-NN is one released instantiation, not a definition of every MPNN. The paper's broader experiment space includes different messages, inputs and readouts; the notebook contract names the attempted target.
+
+### Follow a molecule through the four operations
+
+1. **Initialize node state.** The local sparse molecular model starts from 13 atom features and pads to width 50. Padding creates computational capacity, not new chemical observations. Bond types remain edge information rather than extra atom labels.
+2. **Construct messages.** A bond type selects matrices that transform the sender's current state. The released model uses two matrix banks and two sums, concatenated into a 100-coordinate message. The reducer is a sum, so adding a second equal neighbor can change its magnitude.
+3. **Update with gates.** For a scalar illustration, old state h=2, candidate c=6, and update gate z=0.25 give h_new=(1−z)h+zc=3. The gate interpolates between old and proposed information. A gate near zero retains the old state; one near one uses the candidate. The real cell performs this coordinatewise with learned gates.
+4. **Repeat with shared recurrent parameters.** Reusing parameters over rounds differs from learning a separate matrix at every depth. Both architectures can expand their receptive field, but their parameter counts and optimization behavior differ.
+5. **Read out within each graph.** Suppose two atoms contribute gated scalar values 0.2 and 0.5. Their molecular output is 0.7. If another molecule is batched alongside it, its atoms must enter a different sum. The graph-membership vector is as important as the edge tensor.
+6. **Attach the task objective.** A molecular target supervises the final graph prediction, and gradients reach the atom updates through the readout. Individual atoms need no independent target label for this end-to-end learning path.
+
+<details><summary>Predict: permuting atom storage order changes the readout?</summary><p>It should not, provided features, endpoints and graph membership are remapped together. Node states should permute with the atoms; a graph-level sum should stay unchanged. Moving features alone changes the molecule's represented facts and is not a valid equivariance test.</p></details>
+
+**Your intermediate artifact:** annotate one bond's message, its destination's update, and its graph's readout. Then explain which operation would need to change to use bond distances or a different graph-level target.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · Four operations, one contract
 
 > **In plain terms.** A node asks its neighbors for information, combines their replies, and revises its state. A final readout combines node states when the prediction belongs to the whole graph.

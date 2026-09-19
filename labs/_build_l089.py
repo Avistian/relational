@@ -1,4 +1,6 @@
 """Build L089 HTML, portable notebooks and prepared student preview from shared sources."""
+from _walkthrough_delivery import snapshot, finalize
+snapshot(89)
 import ast,base64,json,re
 from pathlib import Path
 import nbformat as nbf
@@ -82,3 +84,4 @@ for solution in [False,True]:
  if not solution:
   html,_=HTMLExporter().from_notebook_node(nb);(LAB/'html'/f'{SLUG}.html').write_text(html)
 print('Built lesson, student, solution and portable preview')
+finalize(89)

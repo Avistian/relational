@@ -14,6 +14,33 @@ Before reading on, answer from memory: what are VIME’s two targets? Can replac
 
 <details><summary>Check the bridge from Lesson 71</summary><p>VIME trains reconstruction and mask estimation; the implementation studied in L071 targets actual changes, so donor collisions matter. Unlabeled test features still reveal the test distribution. Using them changes the experiment to a transductive one. This lesson uses an inductive boundary: training rows alone define preprocessing, donors and pretraining.</p></details>
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 072</p><p><strong>Build on what you know.</strong> VIME in <a href="0071-vime-masked-tabular-ssl.html">Lesson 71</a> made the original feature values a target. SCARF and SubTab ask what should stay stable across views; this revisits SAINT in <a href="0047-saint.html">Lesson 47</a> at the level of the actual positive pairs and loss denominator.</p><p><strong>The next question.</strong> <a href="0073-when-ssl-helps.html">Lesson 73</a> holds these mechanisms fixed and asks when their extra training buys label efficiency. An attractive representation objective is the hypothesis to test, not the result.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Two kinds of partial observation
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/072-scarf.svg" alt="SCARF architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/072-subtab.svg" alt="SUBTAB architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read two figures as competing design choices
+
+Read [SCARF Figure 1 and Algorithm 1](https://arxiv.org/html/2106.15147v2#S3) beside [SubTab Figures 1–2 and §2](https://arxiv.org/html/2110.04361v1#S2). Annotate three differences: how views are constructed, what the loss compares, and which operation produces the representation used after pretraining. Our diagrams describe the shared computation; the body below distinguishes paper fine-tuning from the local frozen probes.
+
+### Derive the axes before implementing the loss
+
+1. **Keep identities attached.** Start with B rows. For SCARF, clean row i and corrupted row i remain a pair even if several values changed. Randomly shuffling only the corrupted rows while keeping diagonal targets silently makes the wrong pairs positive.
+2. **Separate h from z.** h is the reusable encoder output. z is its projection for contrastive training. A good separation in z need not imply that every dimension of h has a direct semantic meaning. At transfer, follow the diagram to h rather than leaving the temporary projector attached by accident.
+3. **Identify each softmax row.** In the SCARF layout a clean anchor compares with B corrupted candidates. With three identical candidates, the correct probability is 1/3 and cross-entropy is log(3), regardless of their absolute similarity. Thus “positive similarity is large” is not a sufficient training diagnostic.
+4. **Change the view definition for SubTab.** Stack latent vectors as [V,B,H], where V counts feature subsets. Mean over axis 0 returns [B,H]. Mean over axis 1 returns [V,H] and mixes people or records together. Both calculations run successfully, but only the first preserves one representation per row.
+5. **Name the pressure from each loss.** Reconstruction preserves information about the full row. Contrastive recognition separates row identities. Projection distance pulls same-row views together. They can disagree when an augmentation erases target-relevant information, and their numerical scales depend on how coordinates are reduced.
+
+<details><summary>Predict the failure: two rows have the same class but are contrastive negatives</summary><p>The objective still pushes their projected representations apart because its target is row identity. Downstream supervision may later recover a shared class direction. This is why a contrastive objective and a classification objective should not be treated as interchangeable.</p></details>
+
+**Your intermediate artifact:** produce a 3×3 candidate matrix with the positives marked, then a [3,2,2] SubTab tensor with the correct averaging axis marked. Explain why the two diagrams have different inference paths before running their probes.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · From repairing values to identifying a companion
 
 Imagine a customer row containing tenure, balance, visits, region and purchases. We create a second row by replacing three entries with values observed in the corresponding training columns. We still know which original produced it. That known relationship supplies a **positive pair** without a class label. Other rows’ corrupted companions become **negative candidates**. Here, “negative” means a different row identity; it does not mean a different class.

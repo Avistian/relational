@@ -47,6 +47,8 @@ def inline(source,solution,selected=None):
     return cells
 
 def build(keep_execution=False):
+    from _walkthrough_delivery import snapshot, finalize
+    snapshot(85)
     head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{TITLE}</title>'+''.join(f'<link rel="stylesheet" href="../assets/{s}.css">' for s in ['lesson','mpnn-lesson','oversmoothing-viz'])+'</head><body><article>'
     head+=f'<nav><a href="../index.html">Course</a> · <a href="0084-gat.html">Lesson 84</a></nav><header><p>Year 3 · Quarter 1 · Lesson 085</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/solutions/{SLUG}.ipynb">Solution</a> · <a href="../labs/l085-reproduction.md">Reproduce</a></aside>'
     scripts=''.join(f'<script src="../assets/{s}.js"></script>' for s in ['retrieval-pool','retrieval-bank','teachback','oversmoothing-viz','l085-over-smoothing'])
@@ -97,6 +99,7 @@ Figure 2 uses 34 karate nodes, 78 binary edges, one-hot features, untrained Glor
 [Return to lesson](../lessons/0085-over-smoothing.html) · [Primary source](https://arxiv.org/abs/1801.07606) · [Protocol](../labs/l085-reproduction.md)
 '''
     (ROOT/'reference/over-smoothing.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Over-smoothing reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>'+render(card)+'</article></body></html>')
+    finalize(85)
 
 if __name__=='__main__':
     import sys

@@ -6,6 +6,32 @@ Before reading, explain these three things without looking them up: what state a
 
 **Your tangible win.** Build a complete two-table predictor and account for every input coordinate, edge and gradient. You will connect the row encoder from [Lesson 75](0075-pytorch-frame-row-encoder.html) to another table, rather than treating relational learning as an unexplained box. This is the architecture preview specified by the curriculum. The core lab takes about an hour; the historical benchmark replay is a separate, longer track.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 076</p><p><strong>Build on what you know.</strong> <a href="0075-pytorch-frame-row-encoder.html">Lesson 75</a> ended at one vector per record. <a href="0055-tabred-temporal-splits.html">Lesson 55</a> supplied point-in-time discipline. Combining these requires two explicit operations: connect identities correctly and remove information that was not available at prediction time.</p><p><strong>The next question.</strong> <a href="0077-single-table-ceiling.html">Lesson 77</a> asks what the relational route can preserve that a chosen flattened summary loses. <a href="0078-message-passing-preview.html">Lesson 78</a> turns this concrete one-hop stack into the message-passing vocabulary.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Follow one customer from rows to loss
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/076-rdl.svg" alt="RDL architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read for the boundary between modules
+
+Revisit [PyTorch Frame Figure 1](https://arxiv.org/html/2404.00776v2), then the task and graph setup in [RelBench](https://arxiv.org/html/2407.20060v1). The small stack here is a teaching construction. Its purpose is to make the row-encoder → relation-aggregation → prediction interface visible before inspecting the larger historical model later in the lesson.
+
+### Work a complete one-hop prediction
+
+1. **Encode each table independently.** A customer vector and an event vector can both have width D=4 while using different statistics, vocabularies and weights. Equal width makes messages composable; it does not make the two schemas equivalent.
+2. **Resolve keys to positions.** If customers are stored as [42,7,99,105], an event with FK=7 routes to tensor position 1. Keep this mapping beside the tensors. A valid tensor shape cannot detect a mistaken identity mapping.
+3. **Apply the availability rule.** An event dated before prediction time can still be unavailable if it was recorded later. Test the event and availability clocks against the declared cutoff before aggregating. The exact inequality belongs to the task contract.
+4. **Reduce only eligible messages.** In a two-coordinate hand example, customer 7 receives [2,4] and [6,0]. Its mean neighbor message is [4,2]. If the second event is unavailable, the message becomes [2,4], not [1,2]; the denominator counts eligible events only.
+5. **Join representations and predict.** If its own state is [1,3], concatenate [1,3,4,2]. For a toy head w=[1,0,−0.5,0] with zero bias, the logit is −1 and sigmoid is about 0.269. This illustrative head is smaller than the actual nonlinear notebook head, but exposes the same alignment requirement.
+6. **Trace the gradient backward.** Customer supervision changes the prediction head, then both the own-row path and eligible event path. An event need not have its own target to receive a learning signal through a supervised customer's prediction.
+
+<details><summary>Predict: what changes if an unrelated customer's event is modified?</summary><p>In this one-hop model it must not change the first customer's prediction, provided fitted preprocessing is held fixed. A change would suggest incorrect routing, reduction across the whole batch, or unintended shared query statistics.</p></details>
+
+**Your intermediate artifact:** record one prediction's customer ID, eligible event IDs, encoded messages, reducer denominator and logit. This trace is a stronger debugging artifact than a training-loss plot alone.
+
+<!-- depth-walkthrough:end -->
+
 ## 1. Why the row encoder needs a neighbor
 
 > **In plain terms.** A customer row describes the customer. Purchase rows describe what the customer did. A relational predictor needs a controlled way to bring those descriptions together.

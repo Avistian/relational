@@ -469,3 +469,7 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 - Kipf & Welling, [GCN](https://arxiv.org/html/1609.02907v4), §§3,5.2, Table2; primary benchmark source.
 - [Pinned GCN release](https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81): implementation resolves normalization, objective and stopping.
 - Hamilton et al., [GraphSAGE](https://arxiv.org/html/1706.02216v4), Algorithm1 and §3.1: inductive sample/aggregate principle; Cora extension does not reproduce its tables.
+
+## Lessons 071–090 · architecture reading route · 2026-09-19
+
+The [model and learning map](reference/0071-0090-model-map.html) connects self-supervision, schema transfer, row encoding, graph operators, pair/graph prediction and sampling. Each revised lesson pairs a primary-paper reading prompt with an original arithmetic trace and an architecture diagram. Read the cited method section before interpreting benchmark results; the existing reproduction contracts remain the authority for execution coverage and deviations.

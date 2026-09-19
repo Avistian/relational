@@ -10,6 +10,31 @@ This strengthens the mission by making the relational thesis falsifiable. You mu
 
 > **Scope check.** This curriculum unit is an original synthesis experiment, with no newly introduced model or assigned published table. Its complete experiment is reproduced below. The construction establishes a possibility and an information bound; it does not measure the prevalence of this problem in real databases.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 077</p><p><strong>Build on what you know.</strong> Lessons 51 and 60 warned against claiming that one model family always wins. <a href="0076-encoder-predictor-stack.html">Lesson 76</a> exposed the records a relational model can receive. Here we locate a precise representation bottleneck before making any architecture claim.</p><p><strong>The next question.</strong> <a href="0078-message-passing-preview.html">Lesson 78</a> introduces learned message passing as one way to consume relationships. Carry the counterexample forward: a GNN with an order-insensitive reducer and no time features can lose the same distinction.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Prove what the input cannot tell you
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/077-ceiling.svg" alt="CEILING architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the motivation without turning it into a theorem
+
+The [relational deep learning position paper](https://proceedings.mlr.press/v235/fey24a.html) motivates learning from connected records. Our ceiling certificate is a separate finite construction. It proves a limitation of a named representation F, not of all single-table systems or all feature engineering.
+
+### Derive the certificate in five steps
+
+1. **Fix the allowed input.** Let z contain own-row attributes plus count, sum, mean and maximum of historical amounts. Exclude identifiers that might allow memorization. Without this restriction the impossibility claim describes a different prediction problem.
+2. **Construct two histories.** A has amounts [10,30,50] in chronological order; B has [50,30,10]. Both yield count 3, sum 90, mean 30 and maximum 50. Their order-free summaries are exactly equal.
+3. **Choose a target that needs the lost information.** Let y=1 when the final eligible amount exceeds the first. A needs 1 and B needs 0. Any deterministic classifier using z alone must give them the same prediction, so it can classify at most one correctly.
+4. **Generalize beyond a balanced pair.** If a collision group has three zeros and one one, the optimal constant decision gets 3/4 correct. Compute the majority count separately in every group, sum those counts, and divide by N. The ceiling depends on group composition; “a collision exists” is not enough to claim a 50% bound.
+5. **Repair the representation before changing the learner.** Add last-minus-first. A receives +40 and B −40. The same simple classifier can now separate them. This isolates information access as the cause; changing both the features and architecture would confound that diagnosis.
+
+<details><summary>Check: can randomizing predictions beat the balanced-pair bound in expectation?</summary><p>No. If the classifier sees the same z for both cases and predicts 1 with probability p, its expected number correct is p+(1−p)=1. Randomization changes individual outcomes, not the information available.</p></details>
+
+**Your intermediate artifact:** submit the two histories, identical z, incompatible targets, empirical ceiling and one eligible repair feature. Then explain whether the one-hop mean model from Lesson 76 would preserve that feature. Database structure helps only when the model can access and represent the distinction needed by the task.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · Two histories become the same row
 
 **A representation** is the information passed to a predictor. A predictor maps that information to a label or probability. In this lesson it receives one fixed vector for each customer. Customer IDs, input positions, pair IDs and other customers' records are excluded from that vector.

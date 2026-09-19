@@ -14,6 +14,32 @@ Without opening earlier lessons, write down the GCN propagation rule, explain wh
 
 <details><summary>Check your recall</summary><p>A GCN layer computes H′ = σ(SHW), with S determined by the graph and augmented degrees. GAT normalizes scores over one receiver’s allowed senders within one head. Validation labels may control stopping; test labels score the frozen result. See <a href="0082-gcn.html">L082</a> and <a href="0084-gat.html">L084</a>.</p></details>
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 085</p><p><strong>Build on what you know.</strong> Lessons 82–84 expanded a node’s receptive field through graph mixing. <a href="0077-single-table-ceiling.html">Lesson 77</a> taught us to look for representation collisions. Over-smoothing asks whether repeated propagation makes initially different node signals difficult to distinguish.</p><p><strong>The next question.</strong> <a href="0086-pyg-fundamentals.html">Lesson 86</a> implements the operator in PyG. Preserve this diagnostic when changing tooling: an implementation can be numerically correct and still embody a poor depth choice for a task.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## More reach can leave less distinction
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/085-depth.svg" alt="DEPTH architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the claim at its mathematical scope
+
+Read [Li et al. §3 and Figure 2](https://arxiv.org/abs/1801.07606). Separate three objects: repeated multiplication by a fixed support S, an untrained nonlinear GCN of finite depth, and a trained model with a task metric. A statement about one is a motivation for checking the others, not automatic empirical proof.
+
+### Use a two-node calculation to see the mechanism
+
+1. **Choose a graph where the arithmetic is exact.** Two connected nodes, each with a self-loop, have S=[[1/2,1/2],[1/2,1/2]]. Let their scalar states be [2,8].
+2. **Apply one step.** Both new states are 5. The common component is preserved while their difference is erased. Repeating this particular S cannot restore the lost distinction.
+3. **Distinguish this example from an unequal-degree graph.** Under symmetric normalization, the stationary direction within a connected component is proportional to √degree. Raw node states can remain numerically different due to degree even when non-stationary information has vanished. The lesson's degree-adjusted diagnostic accounts for this.
+4. **Keep components separate.** Disconnected components do not exchange messages. A graph with two components can retain different stationary signals in each. Claiming every node in every graph must converge to one identical vector is too strong.
+5. **Add learned transformations cautiously.** ReLU, layer-specific W and finite training change the dynamics. The linear calculation explains one pressure from repeated mixing; it does not determine the accuracy curve of every nonlinear GNN.
+6. **Compare geometry with task performance.** Record both a collapse diagnostic and held-out performance for the trained extension. Poor accuracy without measured collapse may be an optimization or information-access issue. A low-rank representation can still retain exactly what a simple target needs.
+
+<details><summary>Predict: is multiplying all states by 0.001 proof of over-smoothing?</summary><p>No. It reduces absolute distances while preserving relative directions and distinctions. A useful diagnostic must distinguish shrinking scale from losing node-specific information. Inspect normalization and the stationary subspace rather than relying only on raw pairwise distance.</p></details>
+
+**Your intermediate artifact:** compute the two-node example, then write a sentence identifying which features of it fail on an unequal-degree disconnected graph. For the paper Figure 2 route, remember that the networks are untrained: colored output geometry is not a reported classification score.
+
+<!-- depth-walkthrough:end -->
+
 ## Why another layer can remove information
 
 In L084, attention let a node weight its neighbors differently. Depth asks a separate question: what happens when we repeatedly mix already-mixed representations? Attention does not, by itself, guarantee that distinctions survive arbitrary depth. This lesson analyzes a **fixed GCN propagation matrix**. It does not prove a limit for every feature-dependent attention network.

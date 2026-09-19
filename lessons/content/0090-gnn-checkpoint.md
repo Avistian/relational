@@ -14,6 +14,32 @@ Before reading further, answer from memory:
 
 **Primary reading:** revisit [Kipf & Welling, §3, §5.2 and Table 2](https://arxiv.org/html/1609.02907v4) and [Hamilton et al., Algorithm 1 and §3.1](https://arxiv.org/html/1706.02216v4). The [pinned GCN release](https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81) resolves concrete implementation choices. [Lesson 82](0082-gcn.html) and [Lesson 83](0083-graphsage.html) are repair references; attempt retrieval first.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 090</p><p><strong>Build on what you know.</strong> Lessons 81–89 supplied message functions, support rules, readouts and samplers. Lessons 60 and 70 supplied evidence discipline. This checkpoint combines those skills: reconstruct a model and explain exactly what its measured result establishes.</p><p><strong>The next question.</strong> The next graph units can add heterogeneity and relational tasks only after these boundaries are secure. Keep the tabular comparator from <a href="0080-year-2-exit-exam.html">Lesson 80</a> and this explicit graph contract as reusable research tools.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Defend the computation and the claim together
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/090-checkpoint.svg" alt="CHECKPOINT architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the two protocols before comparing their numbers
+
+Revisit [Kipf & Welling §§3 and 5.2](https://arxiv.org/html/1609.02907v4) and [Hamilton et al. Algorithm 1](https://arxiv.org/html/1706.02216v4). The fixed-Cora reconstruction and the local inductive extension differ in access and computation. They are complementary checkpoints, not two scores on an automatically common leaderboard.
+
+### Assemble the proof in an order that catches mistakes early
+
+1. **State what exists at training time.** For transductive Cora, the feature graph is visible but held-out targets do not supervise. For the inductive extension, held-out nodes and incident edges are absent from training. Save the node and edge identities, not only mask sizes.
+2. **Verify a primitive numerically.** Recalculate B=2/√6+4/3+8/√6 on the three-node path. A passing full training run cannot rescue a layer that implements an ordinary mean while claiming symmetric GCN normalization.
+3. **Verify access by intervention.** Changing a held-out label must not change training loss or gradients. Under the inductive contract, changing held-out features must also leave training unchanged. Under a declared transductive contract those features may influence messages; the appropriate check is different.
+4. **Verify the composed program.** Follow input features through both layers and the masked objective. Confirm that only the first weight matrix receives the released L2 penalty. Confirm the actual validation stop rule rather than importing a familiar best-checkpoint policy from another lesson.
+5. **Preserve the unit of repetition.** One hundred initializations on the same split quantify initialization variability. They do not quantify performance variation across new graphs or independent datasets. Keep this distinction when reporting a mean and SD.
+6. **Classify the evidence.** An operator check supports arithmetic correctness; a full-size run supports measured behavior under the port; a close paper score supports numerical proximity. None alone proves that the historical framework, random state or source-era protocol is identical.
+
+<details><summary>Check: a reproduced mean is close but one protocol detail differs—what can you claim?</summary><p>Report the measured port result, its difference from the named target, and the protocol deviation. Numerical closeness does not erase the deviation. Conversely, a larger gap is useful evidence to diagnose rather than a reason to silently retune on the test set.</p></details>
+
+**Your intermediate artifact:** write a one-page defense containing the equation, tensor shapes, access sets, objective, selection rule, repetition unit and evidence status. Attach the actual predictions and run identity. Ask the tutor to challenge one boundary before treating this checkpoint as mastered.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · Freeze the claim before training
 
 > **In plain terms.** A score has meaning only together with the rules that produced it.

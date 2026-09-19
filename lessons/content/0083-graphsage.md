@@ -6,6 +6,32 @@ Close lesson 82. Write three answers: (1) What could a test node contribute duri
 
 **Today's win:** trace a sampled two-layer GraphSAGE computation, implement its mean aggregator, and demonstrate that training cannot access held-out graphs. The core route takes about 40 minutes; the full experiment is a separate executable lab. This serves our relational mission: new database rows need usable representations before we have labels for them.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 083</p><p><strong>Build on what you know.</strong> <a href="0082-gcn.html">Lesson 82</a> performed a full-graph forward pass. GraphSAGE moves attention to a reusable neighborhood function and the dependencies of a root mini-batch. The inductive split must be stated separately from the layer formula.</p><p><strong>The next question.</strong> <a href="0084-gat.html">Lesson 84</a> replaces equal neighbor weighting with attention; <a href="0089-sampling-at-scale.html">Lesson 89</a> changes the sampling unit from nested neighborhoods to clusters. Both inherit the need to account for support nodes.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Sampling decides the computation you can afford
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/083-sage.svg" alt="SAGE architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read pseudocode and release as separate specifications
+
+Read [Hamilton et al. Algorithm 1 and §3.1](https://arxiv.org/html/1706.02216v4), then the pinned mean-aggregator code linked below. The body of this lesson documents differences in concatenation, normalization and sampling order. A modern library class called “SAGE” is not sufficient evidence of historical recipe identity.
+
+### Build one two-layer root computation
+
+1. **Choose roots first.** These are the nodes whose predictions and targets define the mini-batch loss. A support node is present because a root depends on its features; it does not automatically become a supervised example.
+2. **Sample outward.** In the released recipe used here, each root has 10 immediate sampled neighbors and each of those has 25 more occurrences. With B=2, the materialized levels contain 2,20 and 500 occurrences. Duplicate node IDs are allowed, so 522 occurrences need not mean 522 unique nodes.
+3. **Compute inward.** Use raw second-hop features to construct first-hop states. Also construct the roots' first-layer states with the same first-layer weights. Only then apply the second layer to roots. Skipping a layer for support states changes the function even if final dimensions still match.
+4. **Keep the two branches visible.** With root [2,4] and neighbors [1,3],[5,1], the mean is [3,2]. Identity branch transforms yield [2,4,3,2] after concatenation. Adding the branches instead gives [5,6]; it is another architecture with another width and information bottleneck.
+5. **Normalize at the documented stage.** The example concatenation has norm √33. Dividing by this produces a unit vector. The released path normalizes at the final embedding; reproducing the paper pseudocode's per-layer normalization instead is an explicit variant.
+6. **Score the roots.** For PPI, each root can have multiple positive labels. Use independent label logits and binary cross-entropy, not a class softmax that forces all label probabilities to sum to one.
+
+<details><summary>Predict: an unbiased sampled mean guarantees an unbiased network prediction?</summary><p>No. Even when a sample mean is unbiased under a stated sampling scheme, nonlinear transformations generally satisfy E[f(m)]≠f(E[m]). The fixed capped/padded adjacency table in this release adds another distinction from uniform sampling over the original neighbor list.</p></details>
+
+**Your intermediate artifact:** draw the sampled dependency tree with occurrences and label which tensors share first-layer weights. On a second drawing, mark the training-induced graph boundary. Sampling limits cost; it does not itself enforce induction.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · From a fixed graph to a function for new nodes
 
 [Lesson 82](0082-gcn.html) used the whole Cora graph during training and masked its labels. That experiment did not demonstrate generalization to absent nodes. GraphSAGE asks us to learn a shared function of a node's features and neighborhood, and then apply it to previously unseen nodes or entirely new graphs. No learned table of one vector per training ID is necessary. In a database, the corresponding move is to encode a new customer using attributes and eligible neighboring records.

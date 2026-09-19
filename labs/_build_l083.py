@@ -26,6 +26,8 @@ def prose(portable=False):
  return s
 
 def build():
+ from _walkthrough_delivery import snapshot, finalize
+ snapshot(83)
  head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{TITLE}</title>'+''.join(f'<link rel="stylesheet" href="../assets/{n}.css">' for n in ['lesson','mpnn-lesson'])+'</head><body><article>'
  head+=f'<nav><a href="../index.html">Course</a> · <a href="0082-gcn.html">Lesson 82</a></nav><header><p>Year 3 · Quarter 1 · Lesson 083</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/l083-reproduction.md">Reproduce</a></aside>'
  scripts=''.join(f'<script src="../assets/{n}.js"></script>' for n in ['retrieval-pool','retrieval-bank','predict','teachback','l083-graphsage'])
@@ -69,4 +71,5 @@ def build():
 '''
  (ROOT/'reference'/f'{SLUG}.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GraphSAGE contract card</title><link rel="stylesheet" href="../assets/lesson.css"><article>'+render(ref)+'</article></html>')
  print('Built lesson, reference, student and solution notebooks')
+ finalize(83)
 if __name__=='__main__':build()

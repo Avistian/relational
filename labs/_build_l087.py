@@ -1,4 +1,6 @@
 """Build L087 from canonical prose, visible implementation and recorded evidence."""
+from _walkthrough_delivery import snapshot, finalize
+snapshot(87)
 import ast,base64,json,re,importlib.metadata as md
 from pathlib import Path
 import nbformat as nbf
@@ -110,3 +112,4 @@ Paper target here: Zhang & Chen2018 Table1 CN/AA/RA, 8 datasets ×10 splits. Com
 '''
 (ROOT/'reference/link-prediction.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link prediction reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article>'+render(ref)+'</article></body></html>')
 print('Built L087 lesson, student/solution notebooks, prepared HTML and reference')
+finalize(87)

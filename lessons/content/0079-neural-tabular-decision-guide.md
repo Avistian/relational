@@ -6,6 +6,32 @@ A fraud table has 6,000 labeled transactions, merchant IDs, a text description a
 
 **Today's win:** write a one-page decision guide that another researcher can execute and challenge. Spend about 20 minutes on sections 1–4, then 20 minutes on the writing task. The optional audit notebook rebuilds every displayed rank from the complete corrected Lesson 60 predictions. It does not train new models.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 079</p><p><strong>Build on what you know.</strong> Lessons 40 and 70 ended with defensible baseline decisions. Lessons 71–78 added pretraining, schema transfer, and relations. The extra mechanisms create more choices, so model selection now needs a written rule.</p><p><strong>The next question.</strong> <a href="0080-year-2-exit-exam.html">Lesson 80</a> asks you to execute and defend that rule. A recommendation becomes useful when another person can reconstruct what result would change your mind.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Choose a model by naming the missing capability
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/079-decision.svg" alt="DECISION architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read benchmark claims as conditional evidence
+
+Compare the questions asked by [Grinsztajn et al.](https://arxiv.org/abs/2207.08815), [TabM](https://arxiv.org/abs/2410.24210v3), and the [TabPFN v2 paper](https://www.nature.com/articles/s41586-024-08328-6). Dataset regimes, selection effort and prediction costs belong to the claim. This lesson synthesizes a decision procedure; it does not introduce another model or establish a universal ordering among these families.
+
+### Turn one scenario into an executable choice
+
+1. **State the prediction contract.** For a future fraud decision, name the entity, prediction time, label horizon and metric. “Classification” alone leaves the allowed information and operational cost undefined.
+2. **List actual constraints.** Count labels, training rows, categorical cardinality and available relationships. State whether query batches can share context and whether inference must be fast. A method's published advantage is irrelevant if the task cannot supply its inputs or meet its runtime needs.
+3. **Choose a credible first comparator.** Reuse the strong tabular baselines from Lessons 53–60. If you propose SSL, compare against the same supervised architecture. If you propose a relational model, also compare against a time-valid feature-engineered baseline with comparable selection effort.
+4. **Name one expected benefit.** “The challenger can use recent event order omitted from the current summary” is testable. “Deep models understand structure” is not specific enough to determine which intervention or measurement would support it.
+5. **Freeze a rejection rule.** For example, reject a challenger if its measured quality gain fails the predeclared practical tolerance or if inference exceeds the latency budget. A tolerance is a project decision, not a value to choose after inspecting test scores.
+6. **Record the scope of the answer.** A win on one temporal split says something about that data and protocol. It does not settle all datasets, future shifts or a model's best achievable performance under unlimited tuning.
+
+<details><summary>Check: a model is best on average but loses on your task—contradiction?</summary><p>No. An average over benchmark datasets and a score on one deployment task answer different questions. Use the benchmark to choose plausible candidates, then evaluate them under the local contract without repeatedly selecting on the test set.</p></details>
+
+**Your intermediate artifact:** write a decision card with the task, baseline, challenger, expected mechanism, budget, metric and falsifier. Every field must be specific enough that Lesson 80 can turn it into a runnable comparison.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · The missing step between knowing models and choosing one
 
 [Lesson 77](0077-single-table-ceiling.html) showed an information ceiling: a better learner cannot recover information discarded by its input. [Lesson 78](0078-message-passing-preview.html) supplied a mechanism for bringing in neighboring information. Neither result says that a GNN should be your first baseline. You still need to establish that the extra information is available at prediction time, useful beyond simple aggregates, and worth its cost.

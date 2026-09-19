@@ -127,6 +127,8 @@ else:
     return nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python'}})
 
 def build():
+    from _walkthrough_delivery import snapshot, finalize
+    snapshot(80)
     figures();body=(ROOT/'lessons/content'/f'{SLUG}.md').read_text().replace('{{RESULTS}}',results_table())
     body=re.sub(r'\{\{FIG:(\w+)\}\}',lambda m:image_markup(m[1]),body)
     head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/decision-guide.css"><link rel="stylesheet" href="../assets/exit-exam.css"></head><body><article>'
@@ -170,4 +172,5 @@ Pass requires ≥13/16, no zero, full protocol and evidence credit. No winning-m
             preview=preview.replace('href="../labs/','href="../').replace('href="../lessons/','href="../../lessons/')
             (LAB/'html'/f'{SLUG}.html').write_text(preview)
     print('Built L080')
+    finalize(80)
 if __name__=='__main__':build()

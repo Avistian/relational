@@ -4,6 +4,32 @@ Close lesson 82. Write the shape of X, edge_index and W for a four-node graph wi
 
 <details><summary>Check after committing your answer</summary><p>X: [4,3]; edge_index: [2,E]; W: [3,2]. With source_to_target, row 0 is the sender, row 1 the receiver. Training labels supervise the objective; validation labels select the checkpoint. Add loops before measuring augmented degrees.</p></details>
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 086</p><p><strong>Build on what you know.</strong> <a href="0082-gcn.html">Lesson 82</a> derived the GCN coefficients and <a href="0083-graphsage.html">Lesson 83</a> separated roots from support. PyG changes the implementation tools; it should not silently change either mathematical operator or supervision boundary.</p><p><strong>The next question.</strong> <a href="0087-link-prediction.html">Lesson 87</a> changes the target from nodes to pairs. <a href="0088-graph-classification.html">Lesson 88</a> changes it to whole graphs. The same containers support these tasks, but their split units and readouts differ.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Translate the operator into a tensor program
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/086-pyg.svg" alt="PYG architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the abstraction and verify the index convention
+
+Read [Fey & Lenssen's PyG paper](https://arxiv.org/html/1903.02428v3) and the [MessagePassing API](https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.conv.MessagePassing.html). For the installed version, inspect the configured flow direction. This lesson uses source_to_target: j is the sender and i the receiver. Tensor suffixes encode these roles, not arbitrary variable names.
+
+### Route a tiny graph by hand
+
+1. **Write the edges explicitly.** Let edge_index=[[0,2],[1,1]]. There are two directed edges, 0→1 and 2→1. The tensor has two rows because every edge has two endpoints, not because the graph has two nodes.
+2. **Lift sender values.** With scalar x=[2,4,8], gathering x_j yields [2,8], one value per edge. Gathering x_i instead yields [4,4]; both arrays have length two but describe different programs.
+3. **Reduce by destination.** Summing messages gives node outputs [0,10,0]. A mean gives [0,5,0] under the declared empty-neighborhood convention. GCN additionally includes loops and degree coefficients before this sum; the routing primitive alone is not the complete model.
+4. **Retain isolated nodes.** Explicitly declare N=3, or another known node count when features are absent. Inferring nodes only from edge maxima can lose trailing isolated nodes, changing output alignment.
+5. **Track local and global IDs in sampled batches.** If n_id=[7,42,99], local edge 2→0 is global edge 99→7. Keep local IDs for the batch tensor operations and use n_id when joining predictions back to the original dataset.
+6. **Choose the supervised rows.** NeighborLoader places seeds first in this contract. Compute messages using the support, but apply the target loss to the first batch_size rows. For whole-graph batching, use the graph-membership vector and a graph readout instead; these are different meanings of a batch.
+
+<details><summary>Check: two graphs each have node 0—should their features be merged?</summary><p>No. Disjoint-union batching offsets edge endpoints and records graph membership. The two local node zeros are separate entities. Heterogeneous graphs additionally give IDs a node type, so author 0 and paper 0 remain distinct even inside one database graph.</p></details>
+
+**Your intermediate artifact:** annotate the source, destination, lifted messages, reduced tensor and original IDs for this example. Then compare the complete PyG layer's output and gradients with the explicit support-matrix implementation from Lesson 82.
+
+<!-- depth-walkthrough:end -->
+
 ## One win: change the implementation without changing the operator
 
 In [lesson 85](0085-over-smoothing.html), deeper propagation could erase distinctions. Before testing a remedy, we need confidence that a library port still computes our intended graph operator. Your deliverable is a PyG GCN that matches lesson 82's outputs **and gradients**, plus an audited sampled batch. Allow 25 minutes for the core; run the complete benchmark separately.

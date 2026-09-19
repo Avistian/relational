@@ -8,6 +8,31 @@ Without reopening Lesson 72, write three answers: What does SCARF predict during
 
 [Lesson 71](0071-vime-masked-tabular-ssl.html) introduced learning by repairing corrupted rows. [Lesson 72](0072-scarf-subtab-contrastive-views.html) introduced learning by recognizing companion views. Here the question changes: when does that additional training help the prediction task? This is an experimental-design lesson; it introduces no new model.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 073</p><p><strong>Build on what you know.</strong> Lessons 71–72 supplied mechanisms. Lessons 56 and 60 supplied dataset-balanced comparison discipline. Here the intervention is pretraining, so matching the supervised architecture is essential.</p><p><strong>The next question.</strong> <a href="0074-carte-cross-table-transfer.html">Lesson 74</a> changes a different assumption: the source and target can have different schemas. A label-efficiency gain within one fixed schema does not answer that transfer question.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Make “SSL helps” a measurable statement
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/073-budget.svg" alt="BUDGET architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Paper reading: distinguish the claim from its conditions
+
+Use [SCARF §4.3](https://arxiv.org/html/2106.15147v2#S4.SS3) to identify the label-limited experiment, and [Oliver et al.'s evaluation study](https://arxiv.org/html/1804.09170v2) to ask what makes an SSL comparison informative. Record the supervised baseline, access to unlabeled examples, and validation procedure. This lesson's budget sweep is a local controlled experiment; its crossover analysis is not an additional claim made by those papers.
+
+### Construct one valid point on the curve
+
+1. **Freeze the row split first.** Fit scaling on training rows, then hide training labels from the pretrainer. This makes “unlabeled” a statement about access to y, not permission to use arbitrary future or test rows.
+2. **Create a nested label ladder.** If the training budget grows from 20 to 40 labels, keep the original 20. Otherwise the curve changes both label count and which examples are available. Repeat the ladder across declared seeds to expose this dependence.
+3. **Match the comparison within a seed.** Suppose SSL accuracies are [0.80,0.75,0.85] and scratch accuracies are [0.78,0.76,0.81]. The paired gains are [+2,−1,+4] percentage points, with mean +1.67. Preserve those pairs rather than comparing each SSL run against whichever scratch run looks convenient.
+4. **Count all labels used to choose the model.** Forty training labels plus 100 validation labels means 140 development labels. Validation is necessary, but it is not free annotation. Two methods that tune with different amounts of labeled validation data have different budgets.
+5. **Interpret a crossing conservatively.** If the observed gain changes from positive at 20 labels to negative at 40, the sampled curve brackets a sign change. It does not establish that every dataset has a critical budget between 20 and 40. More seeds reduce Monte Carlo uncertainty within this experiment; more independent datasets address a different question.
+
+<details><summary>Check: does winning against a random frozen encoder establish useful SSL?</summary><p>It establishes improvement over that frozen comparator. It does not establish improvement over an equally trained supervised model, a strong tree baseline, or a cheaper end-to-end recipe. The comparator determines the scope of the conclusion.</p></details>
+
+**Your intermediate artifact:** write the five row sets—pretraining, labeled training, validation, test, and donor pool—and draw every allowed overlap. Submit this alongside the curve so its information budget can be reconstructed.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · Turn “helps” into a comparison
 
 > **In plain terms.** A representation can learn something without becoming your best predictor. Name the alternative before declaring success.

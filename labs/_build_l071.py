@@ -102,6 +102,8 @@ def make_notebook(solution=False):
  return nb
 
 def build():
+ from _walkthrough_delivery import snapshot, finalize
+ snapshot(71)
  figures()
  body=markdown2html_mistune(manuscript()).replace('<table>', '<div class="result-scroll"><table>').replace('</table>', '</table></div>')
  scripts=''.join(f'<script src="../assets/{name}.js"></script>' for name in ['retrieval-pool','retrieval-bank','predict','teachback','mask-pretrain-viz'])
@@ -142,4 +144,5 @@ def build():
 ''' + evidence()+f'\n\n[Lesson](../lessons/{SLUG}.html) · [Notebook](../labs/{SLUG}.ipynb) · [Reproduction contract](../labs/l071-reproduction.md) · [Pinned source audit](../labs/_sources_l071.json).'
  (REPO/'reference'/f'{SLUG}.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VIME reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/vime-lesson.css"></head><body><article>'+markdown2html_mistune(ref).replace('<table>', '<div style="overflow-x:auto"><table>').replace('</table>', '</table></div>')+'</article></body></html>')
  print('Built L071 lesson, reference, student/solution notebooks and read-only preview')
+ finalize(71)
 if __name__=='__main__':build()

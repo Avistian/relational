@@ -1363,3 +1363,7 @@ User requested full reproducibility. Full visible PPI release model/trainer, sou
 ## Lesson090 created · GNN checkpoint · 2026-09-19
 
 Full reproducibility requested. Full100-initialization Cora GCN reconstruction executed afresh, plus separate three-seed inductive mini-batch extension. Five live tasks, full visible implementations, data/source hashes, protocol audit and frozen tolerance. Historical identity remains INCOMPARABLE. No learner completion inferred.
+
+## Lessons 071–090 depth revision · 2026-09-19
+
+User requested more detail, step-by-step paper explanations, connections to L040–L070 and more attractive complete model architecture visuals, followed by publication to main. Added 20 guided walkthroughs, 22 editable model/protocol diagrams and a shared reference map. Student/solution explanatory cells are regenerated from the lesson sources with portable PNG diagrams. Executable cells and saved outputs are retained only after ordered code equality checks; no fresh benchmark execution or learner completion is inferred from this revision.

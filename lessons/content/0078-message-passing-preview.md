@@ -6,6 +6,31 @@ Without opening Lesson 77, explain why a deeper model cannot recover information
 
 **Today’s win:** compute every node’s new vector after one synchronous round of message passing, then explain precisely what makes a GCN layer different from a plain mean. The core route is sections 1–5 plus the three lab TODOs. The complete Cora experiment is a separate research route.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 078</p><p><strong>Build on what you know.</strong> <a href="0076-encoder-predictor-stack.html">Lesson 76</a> supplied a concrete customer–event join; <a href="0077-single-table-ceiling.html">Lesson 77</a> showed why its retained information matters. We now express the computation without tying it to a particular database schema.</p><p><strong>The next question.</strong> After the Year 2 decision and exit checkpoints, <a href="0081-mpnn-framework.html">Lesson 81</a> formalizes the MPNN interface and <a href="0082-gcn.html">Lesson 82</a> derives GCN. This preview should let you point to the inputs of each operation before learning its spectral motivation.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Separate routing from the feature transformation
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/078-preview.svg" alt="PREVIEW architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read an abstraction and an instance side by side
+
+Read [Gilmer et al. §2](https://proceedings.mlr.press/v70/gilmer17a.html) for message, update and readout, then [Kipf & Welling Eq. (2)](https://arxiv.org/html/1609.02907v4#S2) for a concrete layer. The general framework leaves choices open; GCN fixes a particular weighted aggregation.
+
+### Trace a layer without matrix shorthand
+
+1. **Declare edge direction.** On A—B—C, represent both A→B and B→A, and likewise for B—C. Otherwise an apparently undirected drawing and the executable graph describe different information flows.
+2. **Read from one old snapshot.** With states [2,4,8], every incoming message in this layer uses those values. Updating A before calculating B creates an order-dependent program instead of a synchronous graph layer.
+3. **Choose the coefficient rule.** Ordinary neighbor mean gives B=(2+8)/2=5. A self-inclusive ordinary mean gives 14/3. GCN adds self-loops, obtains augmented degrees [2,3,2], and gives B=2/√6+4/3+8/√6≈5.4158 for identity feature weights. These are three different operators.
+4. **Separate the axes.** XW mixes the coordinates inside each node. SXW mixes transformed states across nodes according to graph support S. W has no node-specific row, so it can be reused at another node with the same feature schema. S changes when the graph changes.
+5. **Compose layers.** One layer reads one-hop inputs. A second layer reads neighbors' one-hop states and can depend on two-hop inputs. The graph may be reused, but each layer can have different feature weights. A larger receptive field is access to information, not a guarantee that useful distinctions survive aggregation.
+
+<details><summary>Check: does an unlabeled node necessarily have zero influence on training?</summary><p>No. In the declared transductive setting its features can contribute to a labeled node's state, so gradients can flow through that computation. Its held-out target must still be excluded from the objective and model selection. Feature visibility and label visibility are separate rules.</p></details>
+
+**Your intermediate artifact:** draw two computation layers around B and label each edge with its coefficient. Keep a second drawing of the database relation that generated those edges. The first is a computation graph; the second is the input graph.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · A join becomes a message
 
 > **In plain terms.** Each node reads its neighbors’ old vectors, combines what it receives, and updates its own vector. Every node does this from the same snapshot.

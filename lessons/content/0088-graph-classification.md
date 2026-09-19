@@ -8,6 +8,32 @@ Before reading, write three answers from memory: What makes a message-passing la
 
 [Lesson 87](0087-link-prediction.html) ended by turning a candidate link into an enclosing subgraph. Now the prediction target is the entire graph. One molecule yields one class label, even though molecules have different numbers of atoms. Our mission needs this step: relational models must compress variable-size neighborhoods without silently discarding the distinctions a task needs.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 088</p><p><strong>Build on what you know.</strong> <a href="0081-mpnn-framework.html">Lesson 81</a> distinguished node equivariance from graph invariance. <a href="0087-link-prediction.html">Lesson 87</a> used an enclosing graph for a link. GIN now makes multiplicity and graph-level pooling central to the representation.</p><p><strong>The next question.</strong> <a href="0089-sampling-at-scale.html">Lesson 89</a> tackles computation at scale. Before changing batches, preserve the distinction between node states, per-graph pooled states and graph-level targets.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## The readout determines what one prediction describes
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/088-gin.svg" alt="GIN architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the expressivity argument with its assumptions
+
+Read [Xu et al. Lemma 5, Corollary 6 and §§4–5](https://arxiv.org/html/1810.00826v3#S4). A suitable sum of encoded elements can distinguish bounded multisets under the stated assumptions. It does not follow that an arbitrary raw sum or every trained finite network is injective. The released MUTAG architecture below is a particular realization with its own readout.
+
+### Work from neighbor multiplicity to a graph logit
+
+1. **Find a mean collision.** Neighborhoods {1,1} and {1,1,1} both have mean 1. Their sums are 2 and 3. If multiplicity matters to the label, a mean has discarded information that this sum preserves.
+2. **Find a sum collision too.** Raw neighborhoods {1,3} and {2,2} both sum to 4. This counterexample prevents the overclaim “sum distinguishes every neighborhood.” Learned encodings and nonlinear maps matter to the paper's argument.
+3. **Include the center separately.** In GIN-0, compute h_v+Σh_u before the MLP. For center 2 and neighbors 1 and 3, the scalar pre-MLP value is 6. Adding an extra self-loop to a graph whose update already includes the center would count that center twice.
+4. **Update node states before pooling.** The MLP and normalization operate at the node level. A graph readout then sums node states within each molecule. Summing across an entire batch instead would combine multiple molecules into one accidental example.
+5. **Follow every depth to the output.** The released model pools at input depth and at each hidden depth, applies separate class heads, and sums their logits. This allows predictions to use different neighborhood radii. It is not simply “take the last node layer and average.”
+6. **Compare graph labels.** Each molecule supplies one target. Split molecules, not individual atoms. At inference the same trained parameters process new graphs, with training dropout disabled and stored batch-normalization statistics.
+
+<details><summary>Check: equal 1-WL color histograms prove two graphs are isomorphic?</summary><p>No. Different histograms can certify a distinction, but equal histograms are inconclusive. An expressivity comparison to 1-WL therefore also has a limit; it is not a guarantee of distinguishing every pair of non-isomorphic graphs.</p></details>
+
+**Your intermediate artifact:** construct one mean collision and one raw-sum collision, then draw the actual per-depth readouts. Keep the experiment coverage separate: the saved first full configuration does not establish that the entire eight-configuration reproduction search completed.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · From node rows to one graph prediction
 
 > **In plain terms.** A graph classifier must ignore how we number the nodes while preserving the information that distinguishes graphs.

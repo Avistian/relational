@@ -1,4 +1,6 @@
 """Build the checkpoint from canonical prose, live code, and measured artifacts."""
+from _walkthrough_delivery import snapshot, finalize
+snapshot(90)
 import ast,base64,json,re
 from pathlib import Path
 import nbformat as nbf
@@ -127,3 +129,4 @@ Path('l090-exit.json').write_text(json.dumps(exit_ticket,indent=2));print(exit_t
  if not solution:
   body,_=HTMLExporter().from_notebook_node(nb);(LAB/'html'/f'{SLUG}.html').write_text(body)
 print('Built lesson, student notebook, solution and portable preview')
+finalize(90)

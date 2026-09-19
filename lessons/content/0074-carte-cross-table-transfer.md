@@ -8,6 +8,31 @@ Close the previous lesson. Write three short answers: What comparison isolates p
 
 The route is **row → typed messages → shared encoder → target prediction → transfer audit**. Allow one focused reading session and a separate lab session. Ask the tutor about any step you cannot reconstruct; bring your graph and intermediate values.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 074</p><p><strong>Build on what you know.</strong> <a href="0072-scarf-subtab-contrastive-views.html">Lesson 72</a> aligned views of the same row. <a href="0073-when-ssl-helps.html">Lesson 73</a> held schema fixed. CARTE changes the representation itself so a shared encoder can consume different column sets; contrast this with the fixed column token positions of Lessons 44–46.</p><p><strong>The next question.</strong> <a href="0075-pytorch-frame-row-encoder.html">Lesson 75</a> returns to explicit semantic types and fitted conversion state. CARTE makes schema flexibility visible; PyTorch Frame makes the modular row-encoding interface visible.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## Transfer a computation, not a column position
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/074-carte.svg" alt="CARTE architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Paper reading: separate three transfers
+
+Read [CARTE Figures 1–3 and §§3.1–3.3](https://arxiv.org/html/2402.16785v2). Mark background-graph pretraining, target-table prediction, and supervised source-table transfer as different stages. The pretrained object is a parameter set. The target row does not retrieve and attach its entire YAGO neighborhood during this local forward pass.
+
+### Reconstruct the target-row path
+
+1. **Create the facts.** For a text value, keep its value embedding and its column-name embedding as separate objects. For a number, use its train-transformed scalar to scale the column embedding. The value “4” is not meaningful without its role and units.
+2. **Create the structure.** Attach each observed cell to a row center. If a value is missing, omit that leaf. A present numerical zero still has an edge and column identity, so missingness and zero are distinguishable even when a leaf vector is zero.
+3. **Condition before scoring.** Multiply sender and relation vectors coordinatewise before projecting keys and values. With sender [2,3] and relation [1,0], the conditioned vector is [2,0]. Changing the relation to [0,1] gives [0,3] without changing the raw value vector. This is how the column role enters the message.
+4. **Normalize over the right neighborhood.** Each row center competes only among its own incoming messages. If another row is appended to a batch, that alone must not steal probability mass from the first row's cells. The segmented-softmax CHECK tests this independently of prediction quality.
+5. **Read out one center.** The graph encoder returns a row vector after attention and the node block. The target predictor sees that vector. A frozen ridge probe updates no encoder weights; local fine-tuning does. Comparing these arms asks whether adaptation helps, while comparing pretrained and random encoders asks whether transferred weights help.
+
+<details><summary>Predict: does permuting columns always preserve the answer?</summary><p>Reordering complete value–column pairs preserves the represented facts and should preserve the center readout up to numerical tolerance. Permuting values while holding column labels fixed changes those facts and should not be treated as a symmetry.</p></details>
+
+**Your intermediate artifact:** draw a two-cell star for an unfamiliar schema, list its node and edge tensor shapes, then label which parameters came from pretraining. Consult the code-versus-paper center-initialization audit below before calculating its center: the pinned release and paper description differ.
+
+<!-- depth-walkthrough:end -->
+
 ## 1. The unresolved question from Lesson 73
 
 [Lesson 73](0073-when-ssl-helps.html) held one table's feature representation fixed while changing the amount of supervision. Its central comparison was the same network with and without self-supervised pretraining. That experiment leaves another problem: how can parameters learned on one collection of columns accept a different collection?

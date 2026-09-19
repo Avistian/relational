@@ -10,6 +10,31 @@ Before reading, write three short answers from memory. What distinguishes a nume
 
 This advances our mission at a specific seam: the representation of each database row **before** a GNN exchanges information along relationships. L074’s [CARTE lesson](0074-carte-cross-table-transfer.html) handled schema-variable row graphs. Here we deliberately use a fixed schema and explicit type assignments. L076 will connect row vectors to relationships between records.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 075</p><p><strong>Build on what you know.</strong> Lessons 44–46 built column tokenizers inside specific architectures; <a href="0074-carte-cross-table-transfer.html">Lesson 74</a> attached semantic meaning to cells. Here we separate conversion, learned encoding and row readout so each boundary can be inspected.</p><p><strong>The next question.</strong> <a href="0076-encoder-predictor-stack.html">Lesson 76</a> uses the resulting vectors as node states. A row encoder must preserve identity as well as width, otherwise correct graph arithmetic can send the wrong record to a neighbor.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## A row representation is an interface with state
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/075-frame.svg" alt="FRAME architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the framework from left to right
+
+Read [PyTorch Frame Figure 1 and §3](https://arxiv.org/html/2404.00776v2#S3). The figure describes separable components, not a promise that one default model is appropriate for every schema. Distinguish a materialized tensor, a column token, a row embedding and a prediction. All four may be floating-point arrays, but they answer different questions.
+
+### Trace a train row and a query row together
+
+1. **Assign meaning before choosing a dtype.** A customer identifier stored as an integer is not automatically a numerical measurement. A category encoded as 17 should not imply “twice category 8.5.” Declare semantic types from the problem, then choose the corresponding conversion.
+2. **Fit conversion state on training rows.** Store vocabulary addresses, numerical statistics and missing-value policies. Transform a query using this stored state. Refitting on a query batch can move category addresses or change scaling even when no query labels are used.
+3. **Produce per-column tokens.** For one numerical column use μ=20, s=10, w=[2,−1], b=[0.5,0.5]. Values 20 and 30 become [0.5,0.5] and [2.5,−0.5]. The statistics determine the input coordinate system; learned w and b determine how the model uses that coordinate.
+4. **Retain column identity.** Two columns with equal scalar values need not produce equal tokens because their learned parameters differ. A [B,C,d] tensor therefore contains C positioned column representations, not an unordered bag unless the subsequent architecture explicitly treats it that way.
+5. **Specify the readout.** Flattening yields [B,Cd] and binds the head to a schema. Pooling yields a fixed width but can discard distinctions. Attention creates another interaction rule. The local flatten/project readout is an explicit choice, not something guaranteed by materialization itself.
+
+<details><summary>Check: a missing value becomes the numerical bias—why?</summary><p>Under the configured mean-imputation policy, x is replaced by μ. Its standardized value is zero, so the affine token is 0·w+b=b. This is a consequence of this policy; another missing-value strategy can behave differently.</p></details>
+
+**Your intermediate artifact:** save a tiny schema card with each column's semantic type, fitted state, missing-value behavior and token position. Change a held-out value and verify that the card's fitted statistics do not change.
+
+<!-- depth-walkthrough:end -->
+
 ## 1. Semantic type is a modeling decision
 
 A **data type** tells software how a value is stored: integer, floating-point number, string, datetime. A **semantic type**, abbreviated **stype**, tells the model how to interpret a column. Integer `101` might be an amount, a postal region, or a record identifier. The storage alone cannot settle that decision.

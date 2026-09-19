@@ -77,6 +77,8 @@ def notebook(solution=False):
  return nb
 
 def build():
+ from _walkthrough_delivery import snapshot, finalize
+ snapshot(73)
  figures()
  head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 073 — '+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"></head><body><article>'
  nav=f'<nav><a href="../index.html">Course</a> · <a href="0072-scarf-subtab-contrastive-views.html">Previous lesson</a></nav><header><p>Year 2 · Quarter 4 · Lesson 073</p><h1>{TITLE}</h1><p>Match the comparison → account for labels → measure the curve → audit the crossover.</p></header><aside class="lab-access"><nav><a href="../labs/html/{SLUG}.html">Lab preview</a><a href="../labs/{SLUG}.ipynb">Student notebook</a><a href="../reference/{SLUG}.html">Reference</a><a href="../labs/_verify_l073_results.json">Measured evidence</a><a href="../labs/l073-reproduction.md">Reproduction contract</a></nav><p>Local package. Live Colab and deployment NOT_CHECKED.</p></aside>'
@@ -118,4 +120,5 @@ def build():
 '''
  (REPO/'reference'/f'{SLUG}.html').write_text(head+render(ref+f'\n[Full lesson](../lessons/{SLUG}.html) · [Lab](../labs/html/{SLUG}.html)')+'</article></body></html>')
  print('Built L073 lesson, reference, notebooks, preview and five figures')
+ finalize(73)
 if __name__=='__main__':build()

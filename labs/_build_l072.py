@@ -97,6 +97,8 @@ def notebook(solution=False):
  return nb
 
 def build():
+ from _walkthrough_delivery import snapshot, finalize
+ snapshot(72)
  figures()
  body=markdown2html_mistune(manuscript()).replace('<table>','<div class="result-scroll"><table>').replace('</table>','</table></div>')
  head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 072 — {TITLE}</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"></head><body><article>'
@@ -143,4 +145,5 @@ N-way loss: mean negative log softmax diagonal of normalized clean × corrupted 
  ref+=f'\n[Full lesson](../lessons/{SLUG}.html) · [Reproduction contract](../labs/l072-reproduction.md)\n'
  (REPO/'reference'/f'{SLUG}.html').write_text(head+markdown2html_mistune(ref)+'</article></body></html>')
  print('Built lesson, reference, student/solution notebooks, preview and four figures')
+ finalize(72)
 if __name__=='__main__':build()

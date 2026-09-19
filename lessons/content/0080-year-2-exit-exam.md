@@ -8,6 +8,32 @@ Close the notes. In six short explanations, answer: **Why can trees benefit from
 
 [Lesson 79](0079-neural-tabular-decision-guide.html) asked you to choose a model conditionally. This exam tests whether you can turn that choice into evidence another person can reproduce. [Lesson 77](0077-single-table-ceiling.html) then helps you explain what even the winning row model cannot recover; [Lesson 78](0078-message-passing-preview.html) supplies the next mechanism to investigate.
 
+<!-- depth-walkthrough:start -->
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 080</p><p><strong>Build on what you know.</strong> <a href="0040-year-1-exit-exam.html">Lesson 40</a> tested the foundations; <a href="0060-broad-model-comparison.html">Lesson 60</a> standardized comparison and <a href="0070-foundation-model-checkpoint.html">Lesson 70</a> audited foundation-model choices. <a href="0079-neural-tabular-decision-guide.html">Lesson 79</a> turned those into a recommendation. This exit checks whether the recommendation survives implementation and intervention.</p><p><strong>The next question.</strong> <a href="0081-mpnn-framework.html">Lesson 81</a> begins graph learning. Keep the strongest justified tabular system as the comparator: a more elaborate relational architecture must earn its added complexity on a declared task.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+
+## A reproducible decision is the Year 2 deliverable
+
+<figure class="model-map"><div class="model-map-scroll" tabindex="0" role="region" aria-label="Architecture diagram; scroll horizontally on narrow screens"><img src="../assets/architectures/080-exam.svg" alt="EXAM architecture: follow the labeled data, model, loss and prediction paths. A step-by-step text explanation follows." loading="lazy"></div><figcaption>Read the arrows as data dependencies. Teal: learned computation; amber: training objective; violet: readout or prediction. This is a computation overview; exact settings and paper/release differences are specified below.</figcaption></figure>
+
+### Read the methods before running the contest
+
+Revisit the [FT-Transformer study](https://arxiv.org/abs/2106.11959), [TabM](https://arxiv.org/abs/2410.24210v3), and [TabPFN v2](https://www.nature.com/articles/s41586-024-08328-6) to identify which components each arm fits locally. The exam compares named implementations under a common local protocol; it does not reproduce every paper's benchmark. Keep the pinned checkpoint identity as part of the TabPFN arm.
+
+### Build a submission that can be audited
+
+1. **Write the prediction before opening results.** Choose the regime in which you expect each mechanism to help and explain why. Save that paragraph. Its purpose is to expose whether your mental model predicts behavior, not to reward a lucky guess.
+2. **Save the split as row identities.** A seed alone does not establish which rows were used after a dataset or preprocessing change. Retain train, validation and test IDs, target definition and time boundary.
+3. **Check fitted state by intervention.** Change held-out values while keeping training rows fixed. Training-fitted statistics must stay unchanged. For methods that intentionally use query context, separately state which query-dependent outputs are permitted; do not confuse a declared inference mechanism with fitting the preprocessing on test data.
+4. **Fit and select under the frozen budget.** Record what was tried, what validation chose, and why fitting stopped. A final configuration without its search history conceals how much opportunity each method had to win.
+5. **Score once, then diagnose the saved evidence.** Compare paired rows or paired dataset results using the correct statistical unit. Repeated seeds measure variation under this split; they do not create new independent datasets.
+6. **Write a decision with a boundary.** Name the selected model, observed tradeoff, unresolved uncertainty and a future condition that would justify revisiting the choice. An unsuccessful challenger can still produce a high-quality submission if the experiment and reasoning are sound.
+
+<details><summary>Check: all notebook assertions pass—has the learner passed?</summary><p>Not yet. Assertions establish specified properties of the artifact. The exit also requires a cold explanation of the mechanisms, a correct interpretation of the comparison, and a written account of information access. The rubric below makes those requirements explicit.</p></details>
+
+**Your intermediate artifact:** assemble a folder containing the frozen contract, code/runtime identity, row IDs, selected configurations, predictions and written decision. A prepared HTML preview documents the lab; it does not establish that your own experiment ran.
+
+<!-- depth-walkthrough:end -->
+
 ## 1 · Freeze the comparison before opening the test
 
 A **prediction-time contract** states what is known when a prediction is made. A **candidate** is one declared model recipe. A **validation split** selects that recipe; a **test split** estimates the selected recipe's performance. An **initialization seed** controls downstream randomness without creating another independent dataset.

@@ -29,6 +29,8 @@ def prose(portable=False):
  return s
 
 def build():
+ from _walkthrough_delivery import snapshot, finalize
+ snapshot(84)
  head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{TITLE}</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/graph-attention.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0083-graphsage.html">Lesson 83</a></nav><header><p>Year 3 · Quarter 1 · Lesson 084</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/l084-reproduction.md">Reproduce</a></aside>'
  (ROOT/'lessons'/f'{SLUG}.html').write_text(head+render(prose())+'</article><script src="../assets/l084-gat.js"></script></body></html>')
  source=(LAB/'relkit/gat_l084.py').read_text();manifest=json.loads((LAB/'_sources_l084.json').read_text())
@@ -90,4 +92,5 @@ def build():
 '''
  (ROOT/'reference'/f'{SLUG}.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GAT contract card</title><link rel="stylesheet" href="../assets/lesson.css"><article>'+render(ref)+'</article></html>')
  print('Built L084 lesson, notebooks, reference')
+ finalize(84)
 if __name__=='__main__':build()

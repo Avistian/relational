@@ -116,6 +116,8 @@ def inline_cells(file,solution=False):
 
 
 def build():
+    from _walkthrough_delivery import snapshot, finalize
+    snapshot(81)
     figures();s=prose()
     head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{TITLE}</title>'+''.join(f'<link rel="stylesheet" href="../assets/{x}.css">' for x in ['lesson','message-passing-viz','mpnn-lesson'])+'</head><body><article>'
     head+=f'<nav><a href="../index.html">Course</a> · <a href="0080-year-2-exit-exam.html">Lesson 80</a></nav><header><p>Year 3 · Quarter 1 · Lesson 081</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/l081-reproduction.md">Reproduce</a></aside>'
@@ -153,4 +155,5 @@ Paper target: supplement Table 3 GG-NN μ, 3.94 × 0.1 = 0.394 Debye MAE. A matc
 '''
     (ROOT/'reference'/f'{SLUG}.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MPNN contract card</title><link rel="stylesheet" href="../assets/lesson.css"><article>'+render(ref)+'</article></html>')
     print('Built lesson, student, solution, prepared HTML and reference')
+    finalize(81)
 if __name__=='__main__':build()

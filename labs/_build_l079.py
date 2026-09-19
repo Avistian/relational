@@ -86,6 +86,8 @@ print('Saved l079-student-results.json')""")
     return nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python'}})
 
 def build():
+    from _walkthrough_delivery import snapshot, finalize
+    snapshot(79)
     figures()
     head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/decision-guide.css"></head><body><article>'
     nav=f'<nav><a href="../index.html">Course</a> · <a href="0078-message-passing-preview.html">Lesson 78</a></nav><header><p>Year 2 · Quarter 4 · Lesson 079</p><h1>{TITLE}</h1><p>From model familiarity to a falsifiable recommendation.</p></header><aside><a href="../labs/l079-decision-template.md">Essay template</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/{SLUG}.ipynb">Notebook</a> · <a href="../reference/{SLUG}.html">Reference</a></aside>'
@@ -126,5 +128,6 @@ def build():
     js="RetrievalBank.mount(document.getElementById('warmup'),{upTo:79,count:3});\nDecisionGuideViz.budget(document.getElementById('budget-viz'));\nDecisionGuideViz.cohort(document.getElementById('cohort-viz'),"+json.dumps(data)+");\nTeachback.mount(document.getElementById('teachback'),{prompt:'Why can the best-ranked model be the wrong deployment choice?',points:['Deployment split and available information come first','The published or local population may differ','Task support and full-path serving cost constrain candidates','Validation selects; test remains locked'],model:'A mean rank applies only to its benchmark population and protocol. I first match information availability and the deployment split, then compare supported candidates within measured resource limits. Validation selects the feasible model; a frozen test evaluates it.'});\n"
     (ROOT/'assets/l079-lesson.js').write_text(js)
     print('Built L079 lesson, reference, student/solution notebooks, preview and figures')
+    finalize(79)
 
 if __name__=='__main__':build()

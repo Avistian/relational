@@ -1,4 +1,6 @@
 """Build synchronized lesson HTML, student/solution notebooks and lab preview."""
+from _walkthrough_delivery import snapshot, finalize
+snapshot(88)
 import ast,base64,json,re,importlib.metadata as md
 from pathlib import Path
 import nbformat as nbf
@@ -87,3 +89,4 @@ for solution in [False,True]:
  if not solution:
   exporter=HTMLExporter(template_name='lab');body,_=exporter.from_notebook_node(nb);(LAB/'html'/f'{SLUG}.html').write_text(body)
 print('Built L088 HTML, notebooks, preview and runtime pins')
+finalize(88)

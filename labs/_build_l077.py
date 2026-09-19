@@ -103,6 +103,8 @@ print('MATCH: complete declared synthetic experiment; no published benchmark rep
     return nbf.v4.new_notebook(cells=cells,metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'},'language_info':{'name':'python'}})
 
 def build():
+    from _walkthrough_delivery import snapshot, finalize
+    snapshot(77)
     figures()
     head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson077 — '+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/ceiling-viz.css"><link rel="stylesheet" href="../assets/flatten-loss-viz.css"></head><body><article>'
     nav=f'<nav><a href="../index.html">Course</a> · <a href="0076-encoder-predictor-stack.html">Lesson76</a></nav><header><p>Year2 · Quarter4 · Lesson077</p><h1>{TITLE}</h1><p>Exhibit a collision. Prove its bound. Restore the missing information.</p></header><aside><a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/{SLUG}.ipynb" download>Download notebook</a> · <a href="../reference/{SLUG}.html">Reference</a> · <a href="../labs/l077-reproduction.md">Reproduction contract</a></aside>'
@@ -146,4 +148,5 @@ def build():
 '''
     (ROOT/'reference'/f'{SLUG}.html').write_text(head+render(ref+f'\n[Full lesson](../lessons/{SLUG}.html) · [Lab](../labs/html/{SLUG}.html)')+'</article></body></html>')
     print('Built lesson, student/solution notebooks, preview, reference and four portable figures')
+    finalize(77)
 if __name__=='__main__':build()
