@@ -77,7 +77,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `message-passing-viz.js`.
 - **Bridge** — tooling backbone for Y3–Y5; callback L081; forward to L098 HeteroData, Y4 RelBench.
 
-### 087 · Link prediction — *Zhang & Chen 2018 (skim)*
+### 087 · [Link prediction](../lessons/0087-link-prediction.html) — *Zhang & Chen 2018 (skim)*
+- **Prepared package** — [lab](../labs/0087-link-prediction.ipynb), [reproduction guide](../labs/l087-reproduction.md): all8 datasets ×10 splits ×3 Table1 heuristics executed; separate live GCN decoder/ranking lab. Historical parity INCOMPARABLE; full SEAL classifier NOT_RUN. No learner completion inferred.
 - **Skill** — set up link prediction (edge scoring, negative sampling, edge-level train/val/test split) and
   evaluate with ranking metrics.
 - **Teach** — encoder→edge-decoder, why edge splits leak differently than node splits, MRR/Hits@k.

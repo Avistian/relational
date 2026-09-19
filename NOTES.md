@@ -1347,3 +1347,7 @@ Full reproducibility requested. Full karate Figure2 setup reconstructed:34 nodes
 ## Lesson086 created · PyG fundamentals · 2026-09-19
 
 Full reproducibility requested. Full100-seed PyG1.2.0 fixed-Cora protocol reconstruction:81.305% mean,0.714pp sampleSD. Exact paper-run revision and historical seeds unavailable; historical parity INCOMPARABLE. Real compiled NeighborLoader, output/gradient oracles, typed IDs, three live TODOs and complete inline model/loader/trainer. Source build of pyg-lib pinned. No learner completion inferred.
+
+## Lesson087 created · Link prediction · 2026-09-19
+
+Full reproducibility requested. Prepared split/decoder/ranking lesson with three live TODOs; full Table1 CN/AA/RA reconstruction on all eight released graphs and ten splits (240 evaluations), plus separate three-seed USAir GCN teaching runs. Hash-pinned data/source, raw split/score artifacts, independent audits and native MATLAB replay provided. Historical parity INCOMPARABLE (permutation/source-era gap); MATLAB replay and full SEAL classifier NOT_RUN. No learner completion inferred.

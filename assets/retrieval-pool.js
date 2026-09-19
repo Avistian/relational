@@ -2100,6 +2100,29 @@
   ],
   "correct": "correct",
   "explain": "S sqrt(d) = sqrt(d). Divide representations by sqrt(d) to inspect constant-within-component limits."
+},
+{
+  "id": "l087-reverse-edge",
+  "lesson": 87,
+  "quarter": "Q1",
+  "concept": "edge-leakage",
+  "question": "For an undirected held-out link, what must be removed from the encoder context?",
+  "options": [
+    {
+      "label": "Both directed edge copies",
+      "value": "both"
+    },
+    {
+      "label": "Only forward edge copies",
+      "value": "forward"
+    },
+    {
+      "label": "Only reverse edge copies",
+      "value": "reverse"
+    }
+  ],
+  "correct": "both",
+  "explain": "Canonicalize unordered pairs before splitting; add both message directions only for context pairs."
 }
 ];
 })(window);

@@ -1,0 +1,175 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link prediction: hide the edge, define the candidates</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/link-prediction-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0086-pyg-fundamentals.html">Lesson 86</a></nav><header><p>Year 3 · Quarter 1 · Lesson 087</p><h1>Link prediction: hide the edge, define the candidates</h1></header><aside><a href="../labs/0087-link-prediction.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0087-link-prediction.ipynb">Open in Colab</a> · <a href="../labs/html/0087-link-prediction.html">Read lab</a> · <a href="../labs/solutions/0087-link-prediction.ipynb">Solution</a></aside><h2 id="Retrieval-before-reading-%C2%B7-3-minutes">Retrieval before reading &#183; 3 minutes<a class="anchor-link" href="#Retrieval-before-reading-%C2%B7-3-minutes">&#182;</a></h2><p>Close lesson 86. For an undirected graph stored as directed messages, how many columns represent one edge? Which data may enter a validation-selected model before test scoring? If every example shares one graph, does splitting example rows necessarily isolate their information?</p>
+<div id="warmup"></div>
+
+<details><summary>Check after writing your answers</summary><p>Usually two directed columns, one in each direction. Training observations fit parameters; validation labels select a state. A row split alone does not isolate a graph: held-out relationships may still appear among the encoder's input edges.</p></details>
+
+<h2 id="One-win:-specify-exactly-what-a-predicted-link-means">One win: specify exactly what a predicted link means<a class="anchor-link" href="#One-win:-specify-exactly-what-a-predicted-link-means">&#182;</a></h2><p>In <a href="0086-pyg-fundamentals.html">lesson 86</a>, you made message passing preserve a known graph computation. Now part of that graph becomes the target. Your deliverable is an edge split that survives a leakage audit, a live dot-product decoder, and a ranking report whose candidate set is explicit. Allow 30 minutes for the core and a separate lab session for the implementation.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> We hide some relationships and ask whether a model can recover them from the remaining information. The hidden relationship must not remain visible through another copy of the same edge.</p>
+</blockquote>
+<p>An <strong>edge</strong> is an ordered or unordered pair of node IDs, depending on the task. A <strong>positive</strong> is a relationship recorded as present. A <strong>negative sample</strong> is a candidate treated as absent under a declared observation rule. Absence in a database is not necessarily evidence that a relationship is impossible.</p>
+<p>This lesson uses small, static, undirected networks. Its later relational counterpart is “which eligible item will this user interact with after time t?” That question requires directed user–item pairs, a time-valid history, and a candidate-eligibility rule. Randomly hiding static edges cannot establish performance on that future task. The <a href="https://ogb.stanford.edu/docs/linkprop/">OGB task specifications</a> illustrate why split and metric conventions belong to each dataset.</p>
+<h2 id="Split-the-relation-before-building-messages">Split the relation before building messages<a class="anchor-link" href="#Split-the-relation-before-building-messages">&#182;</a></h2><p><strong>Canonical pair.</strong> Store each undirected edge once as <code>(min(u,v), max(u,v))</code>. Remove self-loops and duplicates. Shuffle and partition these pairs, then add both directions only to the context graph. Splitting the two directed copies independently lets <code>(v,u)</code> reveal a held-out <code>(u,v)</code>.</p>
+<p><strong>Context versus supervision.</strong> Context edges are visible to the encoder. Supervision pairs contribute labels to the loss. Many graph autoencoders reconstruct edges they also use as context. That is an intentional training setup, but it differs from scoring genuinely absent edges. Here, half the training positives supply context and the other half supply supervision. Neither validation nor test positives enters context.</p>
+<p><strong>Worked example.</strong> The observed graph is A—B—C. We want to score A—C. With scalar input X=[1,0,0], one unnormalized neighbor-sum step gives H=[0,1,0]. If the hidden reverse copy C←A is added, H becomes [0,1,1]. A mask on the A—C loss cannot undo that input change. This isolated arithmetic example uses neighbor sums; the trained GCN below uses normalized sums and self-loops.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l087/split.png" alt="Synthetic neighbor-sum trace: a forbidden reverse edge changes C from 0 to 1."></div><figcaption>Synthetic neighbor-sum trace: a forbidden reverse edge changes C from 0 to 1.</figcaption></figure>
+<div id="edge-leak"></div>
+
+<p>The three-way teaching split is 80% train, 10% validation, 10% test. Because only half of train is context, the encoder observes about 40% of the original edges. Keep that budget in mind before comparing scores with a method observing 90%.</p>
+<h2 id="Negative-sampling-defines-the-question">Negative sampling defines the question<a class="anchor-link" href="#Negative-sampling-defines-the-question">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A negative sampler decides which alternatives the model must reject. Easy alternatives can make a weak system look strong.</p>
+</blockquote>
+<p>For the static lab, we enumerate unordered pairs, remove self-pairs and all known positives, and sample without replacement. Training, validation and test classification negatives are disjoint. The sampler raises an error when there are too few candidates; a retry loop must not hang on a dense graph.</p>
+<p><strong>Filtered evaluation</strong> excludes other known true edges from the negatives. We use the complete static edge set only to establish that evaluation convention. The encoder sees context edges alone. In a temporal application, future positives are unavailable at training time; reusing this static filter would change the information boundary. Also distinguish random negatives from hard negatives, such as popular items or structurally similar nodes.</p>
+<p>The released <a href="https://github.com/muhanzhang/SEAL/blob/ca1f019a15fb0c21796042165b4e6bee73981dd3/MATLAB/sample_neg.m">SEAL sampling function</a> makes its static filtering rule explicit. The lab preserves the actual pairs so “same seed” is never the only evidence that two runs used the same task.</p>
+<h2 id="Model-architecture-%C2%B7-shared-node-encoder,-pair-decoder">Model architecture &#183; shared node encoder, pair decoder<a class="anchor-link" href="#Model-architecture-%C2%B7-shared-node-encoder,-pair-decoder">&#182;</a></h2><p><strong>Encoder.</strong> Each of N node IDs has a trainable vector of width 32. This makes the demonstration transductive: it does not supply embeddings for unseen node IDs. Context adjacency A gains self-loops, giving Ã=A+I. Its row sums form the degrees D̃. Set S=D̃⁻¹ᐟ² Ã D̃⁻¹ᐟ².</p>
+<p><strong>Propagation.</strong> Compute H=ReLU(S E W₁), then Z=S H W₂, with Z shaped [N,16]. The same two layers serve every query pair. A trainable ID table and shared graph convolution are distinct kinds of parameters.</p>
+<p><strong>Decoder.</strong> For pair (u,v), compute the logit s(u,v)=Σⱼ Z[u,j]Z[v,j]. A logit is a real-valued score before a sigmoid. Its symmetry means s(u,v)=s(v,u); that is appropriate here and unsuitable for arbitrary directed relations. A sigmoid preserves ranking, so evaluation can use logits directly.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l087/architecture.png" alt="Teaching GCN encoder, shared weights, dot-product arithmetic, loss and selection boundary."></div><figcaption>Teaching GCN encoder, shared weights, dot-product arithmetic, loss and selection boundary.</figcaption></figure>
+
+<p><strong>Worked example.</strong> If z_A=[1,2] and z_C=[3,−1], the logit is 1×3+2×(−1)=1. A second candidate z_D=[0,2] scores 4 and ranks above C. Learning individual node embeddings does not automatically make every pair distinguishable: the decoder constrains which relations can be represented.</p>
+<p>The objective is binary cross-entropy on training supervision pairs, implemented with <code>binary_cross_entropy_with_logits</code> for numerical stability. It combines the sigmoid and log-loss without explicitly taking logs of saturated probabilities. <a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html">PyTorch loss definition</a>.</p>
+<div class="highlight"><pre><span></span><span class="c1"># Shapes: support [N,N], node_ids [N,32], W1 [32,32], W2 [32,16].</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">relu</span><span class="p">(</span><span class="n">support</span> <span class="o">@</span> <span class="p">(</span><span class="n">node_ids</span> <span class="o">@</span> <span class="n">W1</span><span class="p">))</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">support</span> <span class="o">@</span> <span class="p">(</span><span class="n">h</span> <span class="o">@</span> <span class="n">W2</span><span class="p">)</span>
+<span class="c1"># TODO in the lab: gather both endpoints and reduce their products per pair.</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">binary_cross_entropy_with_logits</span><span class="p">(</span><span class="n">edge_logits</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">train_pairs</span><span class="p">),</span> <span class="n">labels</span><span class="p">)</span>
+</pre></div>
+<p>We train for 150 full-batch Adam steps at learning rate .01, with no dropout, weight decay or hyperparameter search. The earliest checkpoint with the highest validation AUC wins. The context graph stays fixed through validation and test. Test labels are scored only after restoring that checkpoint. These are declared teaching choices, not the SEAL recipe.</p>
+<h2 id="Ranking:-the-score-is-not-the-rank">Ranking: the score is not the rank<a class="anchor-link" href="#Ranking:-the-score-is-not-the-rank">&#182;</a></h2><p>A <strong>query</strong> identifies a source node and a target positive. We score that positive against K alternative destinations. <strong>Reciprocal rank</strong> is 1/rank; <strong>MRR</strong> averages it over queries. <strong>Hits@k</strong> is the fraction of queries with rank at most k. These values are meaningless without the candidate policy and tie rule.</p>
+<p><strong>Worked example.</strong> Positive score .5 competes with negative scores [.6,.5,.1]. One is strictly higher and one ties. Optimistic rank is 2; pessimistic rank is 3. Our average-rank convention gives 2.5 and reciprocal rank .4. A second query at rank 1 gives MRR=(.4+1)/2=.7 and Hits@1=.5. This is reciprocal of the average rank, not the expected reciprocal under random tie-breaking. <a href="https://github.com/snap-stanford/ogb/blob/master/ogb/linkproppred/evaluate.py">OGB evaluator implementation</a>.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l087/ranking.png" alt="Synthetic tied-score example: average rank 2.5 and reciprocal rank .4."></div><figcaption>Synthetic tied-score example: average rank 2.5 and reciprocal rank .4.</figcaption></figure>
+<div id="edge-rank"></div>
+
+<div class="highlight"><pre><span></span>rank = 1 + number_of_strictly_higher_scores + 0.5 × number_of_equal_scores
+MRR = mean(1 / rank)
+Hits@k = mean(rank &lt;= k)
+</pre></div>
+<p>The lab evaluates both directions of each test pair. Each query receives 50 distinct, uniformly sampled destinations that are neither the source nor any known neighbor. Negatives may recur across different queries. We freeze the sampled candidates. Hits@10 with 50 negatives is not an all-item retrieval result; filtering and K are part of its name.</p>
+<p><strong>AUC asks another question.</strong> ROC AUC measures how often a randomly drawn positive outranks a negative, counting ties as half. It pools binary examples rather than requiring a fixed source per query. AUC and MRR can disagree because they compare different pairs. The paper reconstruction reports AUC; the teaching lab adds ranking metrics under its separate candidate protocol.</p>
+<h2 id="From-dot-products-to-SEAL-%C2%B7-the-pair-becomes-a-graph">From dot products to SEAL &#183; the pair becomes a graph<a class="anchor-link" href="#From-dot-products-to-SEAL-%C2%B7-the-pair-becomes-a-graph">&#182;</a></h2><p>A shared embedding compresses each node before knowing which other node it will be paired with. To retain pair-specific structure, SEAL builds an <strong>enclosing subgraph</strong>: the nodes within h hops of either endpoint, plus their induced edges. It removes the target edge before classification. This applies to positive training examples too.</p>
+<p><strong>Double-radius node labeling (DRNL)</strong> records each node's structural position relative to both roots. Label both roots 1. For every other node, compute distance dᵤ with v deleted and distance dᵥ with u deleted. This prevents paths through the opposite root from defining the distance. If either distance is infinite, assign 0. Otherwise, with d=dᵤ+dᵥ, q=floor(d/2), r=d mod 2, assign <code>1 + min(dᵤ,dᵥ) + q(q+r−1)</code>.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l087/seal.png" alt="SEAL enclosing subgraph and DRNL labels for roots A,C; full classifier shown as a reading bridge, not executed."></div><figcaption>SEAL enclosing subgraph and DRNL labels for roots A,C; full classifier shown as a reading bridge, not executed.</figcaption></figure>
+
+<p>In the pictured diamond, B and D each have distances (1,1), so their labels are 2. E reaches only C once A's role is separated, so one distance is infinite and its label is 0. The notebook exposes extraction and labeling, and tests them against the pinned authors' function. <a href="https://github.com/muhanzhang/SEAL/blob/ca1f019a15fb0c21796042165b4e6bee73981dd3/Python/util_functions.py">Released DRNL implementation</a>.</p>
+<p>The paper's classifier processes each labeled subgraph with DGCNN: graph convolutions, a node ordering and fixed-size SortPooling representation, then convolutional and dense layers that output link existence. Parameters are shared across subgraphs; the subgraphs and root-relative labels change with the candidate. This is the bridge to graph classification in lesson 88. Read §4 of <a href="https://arxiv.org/abs/1802.09691">Zhang &amp; Chen 2018</a> as the primary paper.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The notebook implements the GCN decoder and the DRNL primitive. It does not implement or train the full SEAL DGCNN classifier. The executable paper target below is explicitly the paper's CN/AA/RA baseline columns. Primitive parity is not SEAL reproduction.</p>
+</blockquote>
+<h2 id="Full-reproduction-track-%C2%B7-name-the-table-cells">Full reproduction track &#183; name the table cells<a class="anchor-link" href="#Full-reproduction-track-%C2%B7-name-the-table-cells">&#182;</a></h2><p>Before revealing the author results, predict whether giving common neighbors equal weight will always match weighting rare common neighbors more strongly.</p>
+<div id="prediction"></div>
+
+<p>The named target is <strong>Table 1, Common Neighbors (CN), Adamic–Adar (AA), and Resource Allocation (RA), all eight networks, ten random splits</strong>. For each graph we withhold 10% of existing edges and evaluate against an equal number of sampled nonedges. These methods have no learned parameters, optimizer, early stopping or hyperparameter selection.</p>
+<p><strong>Three related scores.</strong> CN counts common neighbors. AA gives common neighbor w weight 1/log(degree(w)); RA gives it weight 1/degree(w). Both degrees and neighborhoods come from the observed training graph. For A—B—C and A—D—C, with B and D each having degree 2, the A—C scores are CN=2, AA=2/log(2), and RA=1. The implementation computes sparse weighted two-step paths. <a href="https://github.com/muhanzhang/SEAL/blob/ca1f019a15fb0c21796042165b4e6bee73981dd3/MATLAB/utils/CN.m">CN</a>, <a href="https://github.com/muhanzhang/SEAL/blob/ca1f019a15fb0c21796042165b4e6bee73981dd3/MATLAB/utils/AA.m">AA</a>, <a href="https://github.com/muhanzhang/SEAL/blob/ca1f019a15fb0c21796042165b4e6bee73981dd3/MATLAB/utils/RA.m">RA</a>.</p>
+<table>
+<thead>
+<tr>
+  <th>Dataset</th>
+  <th>CN: ours / paper</th>
+  <th>AA: ours / paper</th>
+  <th>RA: ours / paper</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>USAir</td>
+  <td>93.88 ± 1.07 / 93.80 ± 1.22</td>
+  <td>95.14 ± 0.88 / 95.06 ± 1.03</td>
+  <td>95.85 ± 0.76 / 95.77 ± 0.92</td>
+</tr>
+<tr>
+  <td>NS</td>
+  <td>93.81 ± 1.01 / 94.42 ± 0.95</td>
+  <td>93.83 ± 1.02 / 94.45 ± 0.93</td>
+  <td>93.84 ± 1.02 / 94.45 ± 0.93</td>
+</tr>
+<tr>
+  <td>PB</td>
+  <td>91.78 ± 0.57 / 92.04 ± 0.35</td>
+  <td>92.10 ± 0.56 / 92.36 ± 0.34</td>
+  <td>92.21 ± 0.55 / 92.46 ± 0.37</td>
+</tr>
+<tr>
+  <td>Yeast</td>
+  <td>89.13 ± 0.66 / 89.37 ± 0.61</td>
+  <td>89.19 ± 0.65 / 89.43 ± 0.62</td>
+  <td>89.21 ± 0.64 / 89.45 ± 0.62</td>
+</tr>
+<tr>
+  <td>Celegans</td>
+  <td>85.03 ± 1.69 / 85.13 ± 1.61</td>
+  <td>86.60 ± 1.86 / 86.95 ± 1.40</td>
+  <td>86.96 ± 2.10 / 87.49 ± 1.41</td>
+</tr>
+<tr>
+  <td>Power</td>
+  <td>58.64 ± 0.60 / 58.80 ± 0.88</td>
+  <td>58.65 ± 0.60 / 58.79 ± 0.88</td>
+  <td>58.65 ± 0.60 / 58.79 ± 0.88</td>
+</tr>
+<tr>
+  <td>Router</td>
+  <td>55.68 ± 0.76 / 56.43 ± 0.52</td>
+  <td>55.69 ± 0.77 / 56.43 ± 0.51</td>
+  <td>55.68 ± 0.77 / 56.43 ± 0.51</td>
+</tr>
+<tr>
+  <td>Ecoli</td>
+  <td>93.51 ± 0.62 / 93.71 ± 0.39</td>
+  <td>95.29 ± 0.56 / 95.36 ± 0.34</td>
+  <td>95.94 ± 0.57 / 95.95 ± 0.35</td>
+</tr>
+</tbody>
+</table>
+<p>All entries are AUC percentages, mean ± sample SD. Paper targets are transcribed from Table 1; closeness is descriptive, not an equivalence test.</p>
+<p>Across eight equally weighted datasets, CN/AA/RA mean ranks are 3.000, 1.750, 1.250. Friedman p=0.001503; Nemenyi critical difference at .05 is 1.172. Ranks are computed from each dataset’s mean AUC; seeds are not separate units. This three-method benchmark is not evidence about GNN superiority.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l087/results.png" alt="Fresh author baseline reconstruction: ten split points per dataset, means and conditional t95% intervals; historical split identity unverified."></div><figcaption>Fresh author baseline reconstruction: ten split points per dataset, means and conditional t95% intervals; historical split identity unverified.</figcaption></figure>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l087/cd.png" alt="Equal-dataset mean ranks; the thick bar connects RA and AA, whose gap is below the Nemenyi critical difference."></div><figcaption>Equal-dataset mean ranks; the thick bar connects RA and AA, whose gap is below the Nemenyi critical difference.</figcaption></figure>
+
+<p>These are fresh author-reference results, not output from your notebook kernel. Standard deviations describe ten random splits of each fixed network. The methods share each split and candidate set. They do not provide 80 independent datasets: the cross-dataset analysis has eight units. The figure also shows conditional t intervals for each mean; their assumptions do not justify generalization to unseen application domains.</p>
+<blockquote>
+<p><strong>Scope check.</strong> All 240 evaluations ran at full graph size. This is a complete reconstruction of the selected baseline columns. Historical numerical parity remains <strong>INCOMPARABLE</strong>: NumPy negative permutations replace MATLAB <code>randperm</code>, and the archived revision is not established as the exact paper-run revision. The <a href="../labs/l087-reproduction.md">reproduction guide</a> documents the native MATLAB replay, every protocol choice and the unrun ledger. Full SEAL training and the remaining paper experiments are <strong>NOT_RUN</strong>.</p>
+</blockquote>
+<p><strong>Separate author teaching run: USAir GCN with 50 filtered negatives per query.</strong></p>
+<table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th>Selected epoch</th>
+  <th>Test AUC</th>
+  <th>MRR</th>
+  <th>Hits@10</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>87</td>
+  <td>14</td>
+  <td>0.8779</td>
+  <td>0.5041</td>
+  <td>0.7689</td>
+</tr>
+<tr>
+  <td>88</td>
+  <td>5</td>
+  <td>0.8695</td>
+  <td>0.4544</td>
+  <td>0.7264</td>
+</tr>
+<tr>
+  <td>89</td>
+  <td>4</td>
+  <td>0.8641</td>
+  <td>0.4426</td>
+  <td>0.7099</td>
+</tr>
+</tbody>
+</table>
+<p>Do not rank the teaching GCN against the paper-track heuristics: their split, context budget and test candidates differ. No relational-database superiority follows from either experiment. The useful result is an auditable chain from available edges to scores to a precisely defined metric.</p>
+<h2 id="Lab-%C2%B7-implement,-break,-explain">Lab &#183; implement, break, explain<a class="anchor-link" href="#Lab-%C2%B7-implement,-break,-explain">&#182;</a></h2><p>Open the <a href="../labs/0087-link-prediction.ipynb">student notebook</a>. Three live TODOs implement <code>split_edges</code>, <code>edge_logits</code>, and <code>ranking_metrics</code>. The trained model and evaluation call your functions. The complete loader, sampler, encoder, trainer, heuristic replay and DRNL code are visible in annotated cells. Immediate checks include reversed-edge leakage, decoder gradients and tied ranks.</p>
+<p><strong>Intervene.</strong> Keep the embeddings fixed and rerun ranking with K=10 rather than 50. Predict which comparisons change before running. This changes the task, not the model. Then deliberately return a held-out pair to context on a tiny graph and demonstrate the message change. Restore the safe graph before reporting results.</p>
+<p><strong>EXIT.</strong> Submit <code>l087-exit.json</code> and your explanations: the context/supervision boundary; the classification and ranking candidate rules; the selected epoch; AUC, MRR and Hits@10; and why your run cannot reproduce SEAL's learned-classifier score. Attach the recorded split and score artifact. In the full paper cell set <code>RUN_PAPER_REPRO=True</code>; it runs all eight graphs and ten seeds without substituting a larger teaching run.</p>
+<div id="teachback"></div>
+
+<p>Tomorrow, reconstruct the tied-rank example and undirected split rule without reading. Revisit them after lesson 88, when pair-specific subgraphs become ordinary graph-classification inputs. Keep the <a href="../reference/link-prediction.html">reference card</a>. Ask the agent follow-up questions with your smallest failing graph and your expected rank; we can trace the discrepancy together.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/link-prediction-viz.js"></script><script src="../assets/l087-lesson.js"></script></body></html>

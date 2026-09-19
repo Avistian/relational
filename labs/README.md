@@ -169,3 +169,5 @@ live Colab compatibility or full paper reproduction.
 - L084: [GAT](0084-gat.ipynb) — visible multi-head attention, three live TODOs and [full Cora reproduction contract](l084-reproduction.md).
 
 - L086: [PyG fundamentals](0086-pyg-fundamentals.ipynb) — [full reproduction guide](l086-reproduction.md), real sampling and operator/gradient parity.
+
+- L087: [Link prediction](0087-link-prediction.ipynb) — [full baseline reproduction guide](l087-reproduction.md), visible decoder, leakage checks and candidate-defined MRR/Hits.

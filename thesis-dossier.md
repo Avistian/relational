@@ -483,3 +483,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 | L082 | BAR | Full Cora fixed-split GCN port,100 initializations; measured81.401% versus81.5% target. Supports reproducible static graph aggregation, not temporal RDL advantage or cross-framework identity. |
 
 | L085 | BAR | Full karate untrained setup reconstruction and separate Cora depth sweep expose information loss from repeated mixing. Degree scaling, components, optimization and feature magnitude constrain the diagnosis. Greater relational depth alone is not evidence of better predictions; no database benchmark superiority follows. |
+
+| L087 | BAR | Full8-graph,10-split CN/AA/RA baseline reconstruction and separate GCN decoder/ranking lab expose how graph visibility and candidate selection define the task. Static edge recovery is not temporal recommendation evidence; historical numerical parity INCOMPARABLE, full SEAL training NOT_RUN. |

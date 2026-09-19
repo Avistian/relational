@@ -445,3 +445,9 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 - [Fey & Lenssen2019](https://arxiv.org/abs/1903.02428): primary framework paper; Table1 fixed-Cora target and100-run protocol.
 - [Archived PyG1.2.0](https://github.com/pyg-team/pytorch_geometric/tree/d5aff37604c8e3247f5e807f2ba0ec6eeb4c661b/benchmark/citation): audited release proxy, model and selection details differ from original Kipf trainer.
 - [MessagePassing](https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.conv.MessagePassing.html) and [NeighborLoader](https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/loader/neighbor_loader.html): source/destination lifting, seed ordering and ID contracts. Executed against PyG2.8.0.post1.
+
+## L087 · Link prediction
+
+- [Zhang & Chen2018](https://arxiv.org/abs/1802.09691): primary reading, enclosing subgraphs/DRNL; Table1 baseline target.
+- [Pinned author source](https://github.com/muhanzhang/SEAL/tree/ca1f019a15fb0c21796042165b4e6bee73981dd3): data, split/sampling, heuristic scores, metric and labeling implementation.
+- [OGB task contracts](https://ogb.stanford.edu/docs/linkprop/) and [evaluator](https://github.com/snap-stanford/ogb/blob/master/ogb/linkproppred/evaluate.py): candidate policies and average tied ranks.
