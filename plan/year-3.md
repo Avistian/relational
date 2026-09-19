@@ -398,3 +398,7 @@ The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into f
 **Optional (◆, after exit):** over-smoothing `1801.07606`, DropEdge `1907.10903`, PNA `2004.05718`,
 over-squashing `2006.05205`, curvature `2111.14522` (depth pathologies that predict Y4 REG failures);
 Graphormer `2106.05234`, GraphGPS `2205.12454` (conceptual parents of RelGT).
+
+## L083 delivery evidence
+
+Prepared [lesson](../lessons/0083-graphsage.html), [lab](../labs/0083-graphsage.ipynb) and [contract](../labs/l083-reproduction.md). Native PyTorch mini-batches deliberately expose the released padded-table sampler instead of substituting modern NeighborLoader semantics. Full PPI release port executed; paper-result parity remains INCOMPARABLE. Creation does not assert mastery.

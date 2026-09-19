@@ -260,7 +260,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 
 | 081 | [MPNN framework](lessons/0081-mpnn-framework.html) | Gilmer 2017 | [Generic MPNN + auditable QM9 reconstruction](labs/0081-mpnn-framework.ipynb) |
 | 082 | [GCN](lessons/0082-gcn.html) | Kipf 2017 | [Full Cora fixed-split reproduction port](labs/0082-gcn.ipynb) |
-| 083 | GraphSAGE | Hamilton 2017 | Inductive mini-batch training |
+| 083 | [GraphSAGE](lessons/0083-graphsage.html) | Hamilton 2017 | [Inductive sampling + full PPI experiment port](labs/0083-graphsage.ipynb) |
 | 084 | GAT | Veličković 2018 | Attention aggregation |
 | 085 | Over-smoothing | Li et al. 2018 | Depth vs performance |
 | 086 | PyG fundamentals | Fey & Lenssen 2019 | Data, NeighborLoader |

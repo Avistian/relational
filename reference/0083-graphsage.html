@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GraphSAGE contract card</title><link rel="stylesheet" href="../assets/lesson.css"><article><h1 id="GraphSAGE-contract-card">GraphSAGE contract card<a class="anchor-link" href="#GraphSAGE-contract-card">&#182;</a></h1><p><strong>Released mean block:</strong> <code>[self @ W_self | mean(neighbors) @ W_neighbor]</code>. First layer ReLU; last layer identity; normalize the final embedding once. Branch width128 produces256 coordinates. Biased121-label head; sigmoid decisions, BCE averaged over labels and roots.</p>
+<table>
+<thead>
+<tr>
+  <th>Stage</th>
+  <th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Training graph</td>
+  <td>Both endpoints belong to training split</td>
+</tr>
+<tr>
+  <td>Preprocessing</td>
+  <td>Fit standardization on training nodes</td>
+</tr>
+<tr>
+  <td>Sampling</td>
+  <td>Fixed128-entry adjacency; outward10 then25</td>
+</tr>
+<tr>
+  <td>Support sizes</td>
+  <td>B,10B,250B occurrences</td>
+</tr>
+<tr>
+  <td>Aggregation</td>
+  <td>Outside inward; first-layer weights shared across hops</td>
+</tr>
+<tr>
+  <td>Supervision</td>
+  <td>Root labels only; multilabel sigmoid loss</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Full validation micro-F1 after10 epochs selects .01/.001/.0001</td>
+</tr>
+<tr>
+  <td>Final score</td>
+  <td>Pooled micro-F1 across all test node-label pairs</td>
+</tr>
+<tr>
+  <td>Named paper target</td>
+  <td>Table1 supervised mean PPI .598</td>
+</tr>
+<tr>
+  <td>Remaining gaps</td>
+  <td>PyTorch/TF, RNG, historical seeds/configuration; no exact parity claim</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Diagnostic:</strong> flip held-out labels/features. Training weights must stay identical. Permute a sampled neighbor list: mean must stay identical. Change the sampled multiset: output may change.</p>
+<p><a href="../lessons/0083-graphsage.html">Lesson</a> · <a href="../labs/0083-graphsage.ipynb">Lab</a> · <a href="../labs/l083-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/1706.02216v4">Primary source</a></p>
+</article></html>

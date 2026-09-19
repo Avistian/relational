@@ -109,3 +109,7 @@ Full raw released Cora files from tkipf/gcn revision39a4089fe72ad9f055ed6fdb9746
 ## L081 QM9
 
 Tier C toy graph for routing; Tier B real molecular graphs for named-target reconstruction. Hash-pinned QM9 SDF/CSV and public uncharacterized list download into ignored data/cache/l081. RDKit sanitization failures and molecule IDs are retained. Smoke takes first512 valid molecules, then seeded splits; the file-order cap is not representative. Full historical population/IDs unavailable.
+
+## L083 PPI
+
+Tier B, original complete Stanford GraphSAGE PPI archive. Download on demand into data/l083/ppi.zip; SHA-256 checked before reading.56,944 nodes,50 features,121 labels; split44,906/6,514/5,524. Standardization fits training nodes only. Original graph split, full ten-epoch schedule; see l083-reproduction.md for historical gaps.

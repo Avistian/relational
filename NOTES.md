@@ -1331,3 +1331,7 @@ User explicitly requested full reproducibility. Generic routing lab plus full sp
 ## Lesson 082 created · GCN · 2026-09-19
 
 Full Cora Table2 experiment port: 100 fresh runs, mean81.401%, sample SD0.658pp; target81.5%. Inline normalization, propagation and masked-loss TODOs feed the complete trainer. Full-size release protocol, source/data hashes, four computation figures, hidden-state diagnostic and exact commands. PyTorch versus TensorFlow1 and unavailable historical seeds remain explicit. Original-framework parity NOT_RUN. Authorship does not advance learner completion.
+
+## Lesson 083 created · GraphSAGE · 2026-09-19
+
+Full supervised PPI mean port, three seeds × three learning rates × ten epochs; mean micro-F1 .59093, sample SD .00606 versus paper .598. Full inline sampler, aggregator, loader and trainer. Released-code/pseudocode differences, historical selection/seed gaps and PyTorch differences explicit; historical parity INCOMPARABLE. Held-out-feature/label training intervention passes. No learner completion inferred.

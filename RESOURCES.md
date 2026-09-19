@@ -422,3 +422,9 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 
 - [Kipf & Welling 2017](https://arxiv.org/html/1609.02907v4): spectral motivation, Eq2 propagation, Table2 Cora target.
 - [Pinned TensorFlow release](https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81): actual stopping rule, regularization, dropout and Planetoid data. Source/data provenance shared with L078 and verified again for L082.
+
+## L083 · GraphSAGE
+
+- [Hamilton, Ying & Leskovec 2017](https://arxiv.org/html/1706.02216v4): Algorithms1–2, Table1 PPI supervised mean .598, AppendixC hyperparameters.
+- [Pinned official implementation](https://github.com/williamleif/GraphSAGE/tree/a0fdef95dca7b456dab01cb35034717c8b6dd017): inspect mean concat, reversed sampling, final normalization, fixed adjacency and training access.
+- [Full PPI data](https://snap.stanford.edu/graphsage/ppi.zip): archive SHA-256 in labs/_sources_l083.json; not the tiny example_data subset.

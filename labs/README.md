@@ -163,3 +163,5 @@ live Colab compatibility or full paper reproduction.
 - L081: [MPNN framework](0081-mpnn-framework.ipynb) — routing, permutation tests, full sparse molecular GG-NN and [reconstruction protocol](l081-reproduction.md).
 
 - L082: [GCN](0082-gcn.ipynb) — exact normalization, sparse propagation, masked gradients and [full Cora experiment](l082-reproduction.md).
+
+- L083: [GraphSAGE](0083-graphsage.ipynb) — three live TODOs, inductive audit and [full PPI reproduction contract](l083-reproduction.md).
