@@ -128,3 +128,7 @@ Tier B, full real citation graph; shared hash-pinned release data with L078/L082
 ## L093 · OAG NN and CS
 
 Tier B, real heterogeneous academic graphs from the authors. Both archives acquired locally; excluded from git/Pages. `_fetch_l093.py` verifies pinned bytes. NN is the teaching subset, not a paper Table2 dataset. CS full-target loading/training has explicit resource blockers. See `../l093-reproduction.md`.
+
+## L094 · Reuse complete NN, synthetic routes separately
+
+Tier B: the entire hash-pinned L093 NN archive for Table1 statistics. Tier C: four-author matrices for route interventions only. No sampled graph is labeled as the complete NN target.

@@ -1379,3 +1379,7 @@ Full reproduction requested. Prepared full visible ACM release port, two semanti
 ## Lesson093 created · HGT · 2026-09-20
 
 Full reproduction requested and combined scope approved. Visible typed attention/RTE/HGSampling/trainer; nine real NN fits and training-frequency baseline. Perfect NN MRR is trivial because every paper has the Artificial neural network field. Modern operator outputs/gradients and sample content match pinned source; publication-era source differences are archived. Both NN and CS bytes acquired/hash-pinned. Full-width NN update passed; CS loading exceeded10GiB address-space guard and Modal GPU requires a payment method. Full CS target NOT_RUN; full-paper parity NOT_ESTABLISHED. No learner completion inferred.
+
+## Lesson094 created · HIN survey · 2026-09-20
+
+Full reproduction requested. Corrected the ambiguous Sun & Han 2020 placeholder to Dong et al. 2020. Two-axis taxonomy, route/meta-graph trace, three live tasks and full released NN statistics audit. All node counts match; edge discrepancies remain. All three printed rows receive arithmetic checks, not all three graph reconstructions. CS/OAG graph audits NOT_RUN; historical snapshot identity NOT_ESTABLISHED. Prior L091–L093 evidence is inspected without relabeling it as fresh training. WSL interrupted initial notebook execution; bounded rerun coverage is recorded in _execution_l094_results.json. No learner mastery inferred.

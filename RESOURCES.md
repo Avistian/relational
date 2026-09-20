@@ -492,3 +492,9 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [Audited modern OAG release](https://github.com/acbull/pyHGT/tree/85eaccd482bc1d1af56c2de297b6e3a88b96d5cd/OAG): executable source operator and sampler oracle.
 - [Publication-era source](https://github.com/acbull/pyHGT/tree/fd4a244db8efc72410537f3effec3b0c432892f7): historical comparison; differs from modern architecture.
 - [Authors' OAG files](https://drive.google.com/drive/folders/1a85skqsMBwnJ151QpurLFSa9o2ymc_rq): NN and CS snapshots acquired and hashed; paper-era identity unestablished.
+
+## L094 · HIN taxonomy and evidence accounting
+
+- [Dong, Hu, Wang, Sun and Tang (2020), Heterogeneous Network Representation Learning](https://web.cs.ucla.edu/~yzsun/papers/2020_IJCAI_HIN_Survey.pdf): §1 schema, §3 representations, §4 and Table1. Corrects the roadmap citation placeholder.
+- [metapath2vec author release](https://ericdongyx.github.io/metapath2vec/m2v.html): typed walks and lookup embeddings as a contrast to GNN encoders.
+- [Pinned OAG source](https://github.com/acbull/pyHGT/tree/85eaccd482bc1d1af56c2de297b6e3a88b96d5cd/OAG): relation storage and released graph provenance; historical snapshot equality remains unestablished.

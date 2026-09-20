@@ -152,7 +152,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Bridge** — the strongest classical hetero model + temporal encoding preview; direct ancestor of RelGT
   (Y4 L145); callback L091.
 
-### 094 · HIN survey — *Sun & Han 2020*
+### 094 · [HIN survey](../lessons/0094-hin-survey.html) — *Dong et al. 2020*
+- **Prepared package** — [lab](../labs/0094-hin-survey.ipynb), [reproduction contract](../labs/l094-reproduction.md). Full released NN statistics audit and all-row printed arithmetic; edge mismatches preserved. CS/OAG graph audit NOT_RUN; full-paper parity NOT_ESTABLISHED. Learner defense pending.
 - **Skill** — classify heterogeneous-information-network methods and place R-GCN/HAN/HGT in a taxonomy.
 - **Teach** — HIN taxonomy (meta-path, meta-graph, message-passing families), evaluation conventions,
   open problems.

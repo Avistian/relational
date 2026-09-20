@@ -270,12 +270,12 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 090 | [**Q1 checkpoint: build and defend a GNN**](lessons/0090-gnn-checkpoint.html) | Kipf + Hamilton | [Full 100-run Cora reconstruction + inductive mini-batch extension](labs/0090-gnn-checkpoint.ipynb) |
 
 ### Q2 · Heterogeneous graphs (091–100)
-**Papers:** Schlichtkrull 2018 · Wang 2019 (HAN) · Hu 2020 (HGT) · Sun 2020 (HIN survey)
+**Papers:** Schlichtkrull 2018 · Wang 2019 (HAN) · Hu 2020 (HGT) · Dong et al. 2020 (HIN survey)
 
 | 091 | R-GCN | Schlichtkrull 2018 | Relation-specific weights |
 | 092 | [Meta-paths / HAN](lessons/0092-meta-paths.html) | Wang 2019 HAN | [Hierarchical attention + full ACM released-protocol reconstruction](labs/0092-meta-paths.ipynb) |
 | 093 | [HGT](lessons/0093-hgt.html) | Hu2020 | [Typed attention, time, matched OAG comparison and CS reproduction track](labs/0093-hgt.ipynb) |
-| 094 | HIN survey | Sun & Han 2020 | Taxonomy of heterogeneity |
+| 094 | [HIN survey](lessons/0094-hin-survey.html) | Dong et al. 2020 | [Taxonomy and complete NN statistics audit](labs/0094-hin-survey.ipynb) |
 | 095 | Bipartite graphs | — | User-item as hetero graph |
 | 096 | Multi-relational data | — | Connect to SQL FK semantics |
 | 097 | Negative sampling | — | Link pred training |

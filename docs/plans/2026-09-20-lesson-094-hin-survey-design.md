@@ -1,0 +1,9 @@
+# Lesson 094: classify mechanisms and audit evidence
+
+Scope follows plan/year-3.md and the user's request to create lesson 94 with full reproduction. This is a taxonomy/evaluation lesson, not a new neural architecture. Use Dong, Hu, Wang, Sun and Tang, IJCAI 2020, Heterogeneous Network Representation Learning; replace the ambiguous Sun & Han 2020 placeholder. Keep Sun and Han's earlier HIN work as historical context.
+
+Compare three possibilities: a prose-only taxonomy would miss reproducibility; another three-model benchmark would repeat L091–L093 and confound their datasets; an executable taxonomy plus a full released-data statistics audit directly supports this lesson's skill. Select the third. Teach schema/path/meta-graph distinctions, lookup embeddings versus encoders, overlapping HAN categories, inductive information requirements, matched evaluation, and the database bridge.
+
+Deliver markdown/HTML, portable student and executed solution notebooks, a reference sheet, model-family mechanism map, a controllable typed-route trace, source and protocol ledgers, and navigation. Three substantive tasks: typed path composition, multi-axis method classification, and fail-closed evaluation compatibility. The statistics audit recomputes all columns of the survey's Table 1 NN row from the full acquired release, and checks arithmetic of all three printed rows. Exact historical snapshot identity remains a separate question; arithmetic checks do not constitute graph reconstruction. CS/OAG data-level audit coverage must be explicit. Reuse existing model reproduction tracks without relabeling their old measurements as fresh training.
+
+Validate behavioral failure cases, execute notebooks, check independent counting and pinned provenance, build deterministically, inspect desktop/mobile/print and copied Pages staging. No learner mastery or deployment inferred.
