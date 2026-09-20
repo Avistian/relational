@@ -1371,3 +1371,7 @@ User requested more detail, step-by-step paper explanations, connections to L040
 ## Lesson091 created · R-GCN · 2026-09-20
 
 Full reproduction requested. Full AIFB release-protocol port:10 seeds ×50 updates, complete graph and original140/36 split. Basis sharing is a separately labeled3-run extension because the released AIFB command uses unrestricted matrices. Full inline implementation, three live TODOs, relation intervention, architecture and parameter-sharing figures. RDF blank-node labels are preserved for repeatable ordering; pruning is checked against unpruned logits and gradients. Historical backend/seed identity remains INCOMPARABLE. No learner completion inferred.
+
+## Lesson092 created · Meta-paths / HAN · 2026-09-20
+
+Full reproduction requested. Prepared full visible ACM release port, two semantic modes, three live tasks, named Table3 KNN evaluation and explicit source/data/protocol audit. Paper-global attention differs from released per-node fusion. See labs/_paper_l092_results.json and labs/_execution_l092_results.json for executed coverage; ten KNN repetitions are conditional on one encoder. Historical parity INCOMPARABLE; full-paper parity NOT_ESTABLISHED. No learner completion inferred.

@@ -2217,5 +2217,6 @@
   "correct": "relation",
   "explain": "Each relation support is row-normalized independently. Sum those relation means and add self once."
 }
+,{"id":"l092-semantic-axis","lesson":92,"quarter":"Q2","concept":"han-semantic-attention","question":"In paper-global HAN, what happens before softmax across meta-paths?","options":[{"label":"Average scores across nodes","value":"scores"},{"label":"Average weights across nodes","value":"weights"},{"label":"Average labels across nodes","value":"labels"}],"correct":"scores","explain":"Equation7 averages semantic scores over nodes before Equation8 normalizes paths. The original release instead applies per-node softmax."}
 ];
 })(window);

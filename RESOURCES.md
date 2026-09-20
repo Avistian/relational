@@ -479,3 +479,9 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - Schlichtkrull et al., [Modeling Relational Data with Graph Convolutional Networks](https://arxiv.org/abs/1703.06103): equations2–4, entity classification and Table2 AIFB.
 - [Author classification implementation, pinned revision](https://github.com/tkipf/relational-gcn/tree/4bec1341dd46b72bf482f7ed26c2dca4533577f6): exact AIFB settings, sparse support construction and testing mode.
 - [Keras1.2.1 optimizer](https://github.com/keras-team/keras/blob/1.2.1/keras/optimizers.py): historical Adam equation.
+
+## Lesson 092 — HAN / meta-paths
+
+- [Wang et al. HAN, arXiv1903.07293v2](https://arxiv.org/html/1903.07293v2): §§3–4, Fig2, §5.3–5.4/Table3.
+- [Pinned authors release](https://github.com/Jhy1993/HAN/tree/71bac29a07fb8fab908d50a806a7bc38aa6c6611): `SimpleAttLayer`, `HeteGAT_multi`, `ex_acm3025.py`, `jhyexp.py`. Paper-global versus release per-node attention is a documented discrepancy.
+- [DGL ACM3025](https://data.dgl.ai/dataset/ACM3025.pkl): hash-verified mirror; original MAT byte identity unestablished.

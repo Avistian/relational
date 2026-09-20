@@ -493,3 +493,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 - **L090 · BAR · 2026-09-19:** Full100-seed Cora GCN reconstruction reaches81.401% mean versus81.5% reported; full protocol audit and a separate inductive extension support implementation fluency. One citation graph is not evidence of relational-database superiority. Historical framework identity remains INCOMPARABLE.
 
 - **L091 · BAR · 2026-09-20:** R-GCN preserves foreign-key roles through relation-specific transformations. Complete AIFB reconstruction and a separate basis-sharing extension test the implementation; a static identity-based RDF classifier is not evidence of temporal relational-database superiority. Full historical identity remains INCOMPARABLE.
+
+- **L092 · BAR · 2026-09-20:** HAN makes multi-hop relation choice explicit through meta-path endpoint graphs and two attention levels. Full ACM release reconstruction tests the implementation and its KNN probe. Attention weights alone are not causal evidence, and one static bibliographic graph does not establish temporal relational-database superiority. Paper/code discrepancies remain explicit.

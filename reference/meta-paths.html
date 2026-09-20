@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Meta-paths and HAN — reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"></head><body><article>
+<nav><a href="../index.html">Course</a> · <a href="../lessons/0092-meta-paths.html">Lesson 92</a> · <a href="glossary.html">Glossary</a></nav>
+<h1>Meta-paths and HAN</h1><p>A route defines eligible endpoints; two attention stages weight neighbors and then routes.</p>
+<table><thead><tr><th>Object</th><th>Meaning</th><th>Do not confuse with</th></tr></thead><tbody>
+<tr><td>Meta-path PAP</td><td>Paper→author→paper schema template</td><td>One concrete path instance</td></tr>
+<tr><td>Endpoint graph</td><td>A=1[BBᵀ&gt;0]; one edge per reachable pair</td><td>Walk-count matrix BBᵀ</td></tr>
+<tr><td>Node attention αᵢⱼᵖ</td><td>Softmax across sender nodes j for receiver i and route p</td><td>Softmax across routes</td></tr>
+<tr><td>Paper-global βᵖ</td><td>Softmax of node-averaged semantic scores</td><td>Mean of released per-node weights</td></tr>
+<tr><td>Released βᵢᵖ</td><td>Per-node softmax across paths; weighted sum yields64-vector</td><td>One shared coefficient for the graph</td></tr>
+</tbody></table>
+<h2>Worked semantic trace</h2><p>Scores [[2,0],[0,0]] → paper-global mean[1,0] → weights[.731,.269]. Per-node softmax gives[.881,.119] and[.5,.5]; averaging gives[.690,.310]. Nonlinear operations do not generally commute with averages.</p>
+<h2>Full ACM release recipe</h2><p>3,025 nodes,1,870 raw features; PAP and PSP (file key PLP), self included. Two branches each concatenate eight8-dimensional GAT heads. Shared64→128 semantic scorer;64→3 head. Adam.005, L2.001, dropout.6,200-epoch ceiling, patience100. Train/validation/test=600/300/2,125. OR-reset/AND-save checkpoint rule.</p>
+<p>Table3 uses KNN k5 on frozen test-node embeddings, with20/40/60/80% probe-training fractions and ten shuffles each. Direct neural accuracy is a different metric. Split SD on one encoder is not model-seed uncertainty.</p>
+<h2>Evidence sentence to practice</h2><p>“I executed the full released ACM schedule and its KNN probe. Historical parity is INCOMPARABLE and full-paper reproduction NOT_ESTABLISHED because mirror provenance, paper/code differences, historical seeds and backend identity remain unresolved.”</p>
+<p><a href="https://arxiv.org/html/1903.07293v2">Paper §§3–5</a> · <a href="https://github.com/Jhy1993/HAN/tree/71bac29a07fb8fab908d50a806a7bc38aa6c6611">Pinned release</a> · <a href="../labs/l092-reproduction.md">Full protocol ledger</a> · <a href="../labs/0092-meta-paths.ipynb">Lab</a></p>
+<p>Ask the teacher to challenge your explanation of the two softmax axes.</p></article></body></html>
