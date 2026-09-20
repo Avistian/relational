@@ -1,0 +1,192 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 91 — R-GCN: make the relation change the message</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/hetero-graph-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0090-gnn-checkpoint.html">Lesson 90</a> · <a href="../reference/r-gcn.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 091</p><h1>R-GCN: make the relation change the message</h1></header><h2 id="Start-from-memory">Start from memory<a class="anchor-link" href="#Start-from-memory">&#182;</a></h2><div id="warmup"></div>
+
+<p>Before reading, write three answers: What does a GCN share across edges? Why can held-out features participate in transductive training while held-out labels cannot? What information is lost when two foreign-key columns are merged into one unlabeled edge list?</p>
+<p><strong>Your win:</strong> implement a graph layer that changes its message when the relation changes, reconstruct relation weights from shared bases, and defend a full AIFB entity-classification run. The core lesson takes one sitting; the lab and paper audit are a separate practice block. You should finish with runnable code, a hand calculation, ten saved results and a written explanation.</p>
+<p><strong>Primary reading:</strong> Schlichtkrull et al., <a href="https://arxiv.org/abs/1703.06103">Modeling Relational Data with Graph Convolutional Networks, §§2–3 and §5.1</a>. Read equation 2 for routing, equation 3 for sharing, equation 4 for sparsity, and Table 2 for the experiment. Consult the <a href="https://github.com/tkipf/relational-gcn/tree/4bec1341dd46b72bf482f7ed26c2dca4533577f6">pinned author implementation</a> when the general paper description leaves a concrete choice unresolved.</p>
+<h2 id="1-%C2%B7-An-edge-tells-you-who%E2%80%94and-how">1 &#183; An edge tells you who&#8212;and how<a class="anchor-link" href="#1-%C2%B7-An-edge-tells-you-who%E2%80%94and-how">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A purchase, a refund and a friendship should not automatically carry the same message.</p>
+</blockquote>
+<p>In <a href="0082-gcn.html">Lesson 82</a>, a graph convolution transformed neighbors with a shared matrix. A <strong>matrix</strong> is a rectangular array that mixes input coordinates into output coordinates. Sharing that matrix across edges treats their meanings alike. This is useful for a homogeneous citation graph, but a relational database contains several kinds of connection.</p>
+<p>Imagine <code>Order.buyer_id → Person.id</code> and <code>Order.seller_id → Person.id</code>. Both relationships connect the same pair of table types. Their meanings differ. Collapsing them to one <code>Order → Person</code> relation discards the buyer/seller distinction. A <strong>relation type</strong> records the role of a connection; it is not merely the type of its endpoint. A <strong>directed multigraph</strong> permits several differently typed edges between the same nodes.</p>
+<p>R-GCN assigns a different transformation to each relation and direction. The transformation is shared across all edges of that type. It is not a separate parameter matrix for every individual edge. This is the next step from the generic message function in <a href="0081-mpnn-framework.html">Lesson 81</a> and the graph-access contract in <a href="0090-gnn-checkpoint.html">Lesson 90</a>.</p>
+<p><strong>Predict before reading the answer.</strong> Suppose two neighbors retain exactly the same features, but their buyer/seller roles exchange. Can a relation-blind sum notice? Can R-GCN notice?</p>
+<div id="prediction"></div>
+
+<details><summary>Check your reasoning</summary><p>A relation-blind sum sees the same multiset of features. R-GCN can change because the features now meet different matrices. It need not change for every parameter setting: equal relation matrices or coincidentally equal transformed sums can still give equal outputs.</p></details>
+
+<h2 id="2-%C2%B7-Trace-one-typed-update">2 &#183; Trace one typed update<a class="anchor-link" href="#2-%C2%B7-Trace-one-typed-update">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Average messages within each relation; then add the relation contributions and the node's own contribution.</p>
+</blockquote>
+<p><strong>Worked example.</strong> Node A has scalar feature 2 and node C has scalar feature 8. Target T has scalar feature 1. Both A and C send a <code>buys</code> message to T. C also sends a <code>returns</code> message. Use weights <code>W_buys=2</code>, <code>W_returns=−1</code> and <code>W_self=1</code>.</p>
+<ol>
+<li>The buys neighborhood has two members. Its mean is <code>(2+8)/2=5</code>. The transformed contribution is <code>5×2=10</code>.</li>
+<li>The returns neighborhood has one member. Its contribution is <code>8×(−1)=−8</code>.</li>
+<li>The self contribution is <code>1×1=1</code>. It is added once.</li>
+<li>Sum: <code>10−8+1=3</code>. ReLU leaves 3 unchanged. <strong>ReLU</strong>, the rectified linear unit, replaces a negative coordinate by zero.</li>
+</ol>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l091/trace.png" alt="Per-relation means produce 10 − 8 + 1 = 3. Moving one edge changes both denominators and yields 12."></div><figcaption>Per-relation means produce 10 − 8 + 1 = 3. Moving one edge changes both denominators and yields 12.</figcaption></figure>
+
+<div id="typed"></div>
+
+<p>The widget holds features and weights fixed. It moves A's edge from buys to returns. Now buys contributes <code>8×2=16</code>, returns contributes <code>((2+8)/2)×(−1)=−5</code>, and the total becomes <strong>12</strong>. The two denominators change. This is a relation intervention, not additional training.</p>
+<h3 id="Turn-the-arithmetic-into-the-general-rule">Turn the arithmetic into the general rule<a class="anchor-link" href="#Turn-the-arithmetic-into-the-general-rule">&#182;</a></h3><p>For node <code>i</code> at layer <code>l</code>, the paper writes:</p>
+<div class="highlight"><pre><span></span>h_i^(l+1) = activation( Σ_r Σ_{j ∈ N_i^r} W_r^(l) h_j^(l) / c_i,r
+                       + W_self^(l) h_i^(l) )
+</pre></div>
+<p><code>h_i</code> is the node's feature vector. The layer superscript tells you which propagation step produced it. <code>N_i^r</code> is the set of sources whose messages reach <code>i</code> under relation <code>r</code>. <code>c_i,r</code> is a normalizer. For our entity-classification experiment it is the number of neighbors of that relation. <code>Σ</code> means sum. An empty neighborhood contributes zero; we never divide by zero. These choices are from the <a href="https://arxiv.org/abs/1703.06103">paper's equation 2 and entity-classification protocol</a>.</p>
+<p>The paper uses column feature vectors. Our code stores nodes as rows: <code>H</code> has shape <code>N × d_in</code> and <code>W_r</code> has shape <code>d_in × d_out</code>. The same operation becomes <code>S_r @ H @ W_r</code>. <code>S_r</code> is a sparse, row-normalized adjacency matrix. Row <code>i</code>, column <code>j</code> contains the weight of the message <strong>from j into i</strong>. Matrix multiplication is associative here, so <code>S_r @ (H @ W_r)</code> and <code>(S_r @ H) @ W_r</code> agree, up to floating-point rounding.</p>
+<div class="highlight"><pre><span></span><span class="c1"># Self connections are already the last support; do not add them again.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">relation_sum</span><span class="p">(</span><span class="n">supports</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">features</span><span class="p">)</span> <span class="o">@</span> <span class="n">w</span>
+               <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">supports</span><span class="p">,</span> <span class="n">weights</span><span class="p">))</span>
+</pre></div>
+<p><strong>Direction needs a convention.</strong> <strong>RDF</strong>, the Resource Description Framework, stores facts as triples. An RDF triple is <code>(subject, predicate, object)</code>. The released loader puts its forward adjacency entry at <code>[subject, object]</code>. Therefore the object sends into the subject under that support. The inverse support is its transpose and carries the opposite message. Our port preserves this convention. Calling a relation “forward” without stating matrix orientation is insufficient.</p>
+<p><strong>Check:</strong> if buys has four neighbors and returns has one, do you divide all five messages by five? No. In this experiment, buys divides by four and returns by one. A global mean would be a different operator. In particular, summing relation means is not a mean across relations.</p>
+<h2 id="3-%C2%B7-Many-relations-need-a-sharing-rule">3 &#183; Many relations need a sharing rule<a class="anchor-link" href="#3-%C2%B7-Many-relations-need-a-sharing-rule">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Learn a small library of transformations, then let each relation mix that library differently.</p>
+</blockquote>
+<p>With <code>R</code> relations, independent matrices use <code>R × d_in × d_out</code> parameters. Rare relations may have few observations with which to estimate an entire matrix. A <strong>basis</strong> is one learned matrix in a shared library. A <strong>coefficient</strong> is the scalar amount of that basis used by a particular relation. The paper's <a href="https://arxiv.org/abs/1703.06103">basis decomposition</a> is:</p>
+<div class="highlight"><pre><span></span>W_r = a_r1 V_1 + a_r2 V_2 + ... + a_rB V_B
+</pre></div>
+<p>There are <code>B</code> basis matrices <code>V_b</code>, each <code>d_in × d_out</code>, and a coefficient table <code>a</code> of shape <code>R × B</code>. All are learned. Coefficients may be negative and need not sum to one. There is no softmax or activation between basis combination and message transformation. Layer one and layer two have their own bases; sharing is across relations within a layer.</p>
+<p><strong>Worked example.</strong> Let <code>V1=[[1,0],[0,1]]</code> and <code>V2=[[0,1],[1,0]]</code>. A relation with coefficients <code>[2,−1]</code> has matrix <code>[[2,−1],[−1,2]]</code>. Row feature <code>[3,1]</code> becomes <code>[5,−1]</code>. If a ReLU follows, it becomes <code>[5,0]</code>. Applying ReLU to each basis contribution separately would change the model.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l091/basis.png" alt="Two learned bases reconstruct a relation matrix before applying its message transformation. Sharing differs from block sparsity."></div><figcaption>Two learned bases reconstruct a relation matrix before applying its message transformation. Sharing differs from block sparsity.</figcaption></figure>
+
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">compose_weights</span><span class="p">(</span><span class="n">bases</span><span class="p">,</span> <span class="n">coefficients</span><span class="p">):</span>
+    <span class="c1"># Sum over b; retain relation r, input i and output o.</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;rb,bio-&gt;rio&#39;</span><span class="p">,</span> <span class="n">coefficients</span><span class="p">,</span> <span class="n">bases</span><span class="p">)</span>
+</pre></div>
+<p>The parameter count is now <code>B × d_in × d_out + R × B</code>. For <code>R=100</code>, <code>d_in=d_out=16</code>, <code>B=4</code>, independent matrices need 25,600 parameters; bases plus coefficients need 1,424. The basis dimension constrains the family of relation matrices. It does <strong>not</strong> force each matrix itself to have rank B. One full-rank basis already disproves that confusion.</p>
+<h3 id="Block-diagonal-is-a-different-restriction">Block diagonal is a different restriction<a class="anchor-link" href="#Block-diagonal-is-a-different-restriction">&#182;</a></h3><p>The paper also offers <strong>block-diagonal decomposition</strong>. Divide input and output coordinates into B groups and allow each group to interact only with its matching group. For four coordinates and two blocks:</p>
+<div class="highlight"><pre><span></span>[ a b 0 0 ]
+[ c d 0 0 ]    Two learned 2×2 blocks; cross-block entries are fixed zero.
+[ 0 0 e f ]
+[ 0 0 g h ]
+</pre></div>
+<p>This uses <code>R × d_in × d_out / B</code> parameters when both widths are divisible by B. It restricts coordinate mixing separately in each relation. Basis sharing instead couples the matrices of different relations. These are alternative regularizers, not two names for low-rank factorization. The full lab implements basis sharing; block diagonal is explained here but not used in AIFB.</p>
+<p><strong>Check:</strong> with one identity basis, every relation matrix is a scalar multiple of identity. It can still have full matrix rank. What has been restricted is the diversity of relation transformations.</p>
+<h2 id="4-%C2%B7-Model-architecture:-classify-an-entity-from-typed-context">4 &#183; Model architecture: classify an entity from typed context<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-classify-an-entity-from-typed-context">&#182;</a></h2><figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l091/architecture.png" alt="Full featureless AIFB R-GCN: typed supports, two relation-specific layers, masked supervision and transductive prediction."></div><figcaption>Full featureless AIFB R-GCN: typed supports, two relation-specific layers, masked supervision and transductive prediction.</figcaption></figure>
+
+<p><strong>Read the figure in five steps.</strong></p>
+<ol>
+<li><strong>Build supports.</strong> AIFB describes an academic institution; the supervised task predicts people’s research-group affiliations. Its graph contains 8,285 entities and 45 predicates. Each predicate contributes two directions. An identity support supplies the self path, yielding 91 supports. Remove the predicates that encode the target before message passing. Normalize each support separately.</li>
+<li><strong>Start without attributes.</strong> A one-hot node vector is zero everywhere except at that node's identity coordinate. Stacking these vectors gives the identity matrix <code>I</code>, shape <code>8285 × 8285</code>. This is called the <strong>featureless</strong> setting: it still uses node identity and structure, just no supplied attributes. Compute <code>S_r @ W_r</code> directly rather than allocating I.</li>
+<li><strong>Form hidden states.</strong> Layer one produces <code>8285 × 16</code> activations by summing the 91 transformed supports and applying ReLU. Each relation matrix is shared across receivers. In the basis extension, reconstruct each matrix from that layer's bases first.</li>
+<li><strong>Make class logits.</strong> Layer two mixes typed neighborhoods of those hidden states and produces <code>8285 × 4</code> logits. A <strong>logit</strong> is an unnormalized class score. Softmax turns four logits into probabilities summing to one; training cross-entropy computes this normalization internally. No extra dense classification head is needed.</li>
+<li><strong>Train, then infer.</strong> Cross-entropy averages the negative log probability of the correct class over only the 140 training entities. Gradients update both layers. After the fixed final epoch, argmax chooses a class for each of 36 held-out entities. Their labels never enter the loss.</li>
+</ol>
+<p>A <strong>transductive</strong> experiment allows the fixed graph's held-out entities to participate in propagation. This differs from inductive prediction on genuinely new entities. An identity-based first layer has a parameter row for each known entity; adding new nodes needs an additional design decision. Edge typing alone does not solve unseen-entity generalization or point-in-time correctness.</p>
+<h3 id="Why-the-first-layer-shortcut-is-safe">Why the first-layer shortcut is safe<a class="anchor-link" href="#Why-the-first-layer-shortcut-is-safe">&#182;</a></h3><p>For any relation, <code>S_r I W_r = S_r W_r</code>. Concatenate the supports horizontally and stack the matrices vertically. One sparse multiplication computes their sum without constructing I. The lab checks both outputs and gradients against an explicit identity on a tiny graph.</p>
+<p>The release also zeroes adjacency rows outside the labeled roots and their one-hop neighbors. With exactly two layers, root outputs only need hidden states at those neighbors. Retaining their full source columns preserves the required two-hop context. We preserve this optimization and independently compare it with the unpruned graph. The root identities include train and test entities; their target values are not used to prune.</p>
+<h2 id="5-%C2%B7-Reproduce-a-named-experiment">5 &#183; Reproduce a named experiment<a class="anchor-link" href="#5-%C2%B7-Reproduce-a-named-experiment">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Freeze the recipe, execute every declared run, then report the difference—even when it disappoints.</p>
+</blockquote>
+<p>Our target is <strong>R-GCN, AIFB, Table 2: 95.83% mean test accuracy over ten runs</strong>, from the <a href="https://arxiv.org/abs/1703.06103">paper</a>. <strong>Accuracy</strong> is correctly classified held-out entities divided by the number evaluated. With 36 test entities, one error changes a single run by about 2.78 percentage points. A mean can be more finely spaced, but ten seeds do not become ten independent datasets.</p>
+<table>
+<thead>
+<tr>
+  <th>Decision</th>
+  <th>Frozen full experiment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Data</td>
+  <td>Complete stripped AIFB graph, original 140/36 split, four classes</td>
+</tr>
+<tr>
+  <td>Target leakage</td>
+  <td>Assert <code>affiliation</code> and <code>employs</code> predicates absent</td>
+</tr>
+<tr>
+  <td>Input</td>
+  <td>Node identity, no supplied attributes</td>
+</tr>
+<tr>
+  <td>Architecture</td>
+  <td>Two R-GCN layers, hidden width 16, ReLU then class logits; no biases</td>
+</tr>
+<tr>
+  <td>Relations</td>
+  <td>Both directions plus one self support; independent row means</td>
+</tr>
+<tr>
+  <td>Weight sharing</td>
+  <td>Unrestricted matrices (<code>--bases 0</code>), as the AIFB release command specifies</td>
+</tr>
+<tr>
+  <td>Optimization</td>
+  <td>Historical Keras Adam update, learning rate .01; 50 full-batch updates</td>
+</tr>
+<tr>
+  <td>Regularization</td>
+  <td>No dropout or L2, following the AIFB command</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Fixed final epoch; no test-selected seed, checkpoint or hyperparameter</td>
+</tr>
+<tr>
+  <td>Repetition</td>
+  <td>Ten declared fresh seeds 0–9; all results retained</td>
+</tr>
+<tr>
+  <td>Measurement</td>
+  <td>Mean and sample SD of test accuracy; raw predictions and loss traces</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Adam</strong> adapts parameter updates using running averages of gradients and squared gradients. <strong>Full-batch</strong> means one update uses the entire training set; here one epoch is one update. The visible optimizer preserves the historical formula, including where its small numerical-stability constant is added.</p>
+<p>The paper describes validation-based hyperparameter tuning. We use its released final AIFB settings; we do not rerun an unspecified historical tuning search. The release's <code>--testing</code> mode uses all original training labels and reports the final epoch. It does not hold out 20% again at final evaluation. These distinctions are visible in the <a href="https://github.com/tkipf/relational-gcn/blob/4bec1341dd46b72bf482f7ed26c2dca4533577f6/README.md">release README</a> and archived training code.</p>
+<p><strong>Prediction checkpoint:</strong> before opening the results, write the difference you would expect from using fresh seeds and a different numerical backend. Would numerical closeness establish that the historical run was identical?</p>
+<p><strong>Executed author-reference evidence.</strong></p>
+<table>
+<thead>
+<tr>
+  <th>Experiment</th>
+  <th style="text-align:right">Complete runs × epochs</th>
+  <th style="text-align:right">Mean test accuracy</th>
+  <th style="text-align:right">Sample SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>AIFB unrestricted release port</td>
+  <td style="text-align:right">10 × 50</td>
+  <td style="text-align:right">95.83%</td>
+  <td style="text-align:right">1.46 pp</td>
+</tr>
+<tr>
+  <td>Four-basis teaching extension</td>
+  <td style="text-align:right">3 × 50</td>
+  <td style="text-align:right">96.30%</td>
+  <td style="text-align:right">1.60 pp</td>
+</tr>
+</tbody>
+</table>
+<p>The full port is <strong>+0.00 percentage points</strong> from the published 95.83%. Every seed's correct count and all 36 predictions are retained in the raw results. The seed SD describes initialization variability on this fixed split, not uncertainty across datasets. The basis extension is separate and untuned.</p>
+<p>The standalone solution repeated all thirteen runs from a fresh data download and exactly matched the author’s ten-run predictions and loss traces. A separate clean environment with the portable dependency pins also completed all thirteen runs and obtained the same target mean.</p>
+<p><a href="../labs/_paper_l091_results.json">Raw ten-run results</a> · <a href="../labs/_teaching_l091_results.json">Basis extension</a> · <a href="../labs/_verify_l091_results.json">Arithmetic and gradient checks</a> · <a href="../labs/_audit_l091_results.json">Data and pruning audit</a></p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l091/results.png" alt="All ten full-schedule initialization results. The paper target and modern port have explicit historical differences."></div><figcaption>All ten full-schedule initialization results. The paper target and modern port have explicit historical differences.</figcaption></figure>
+
+<blockquote>
+<p><strong>Scope check.</strong> This is a full-data, full-schedule reconstruction of the named AIFB release experiment. Historical exact parity is <strong>INCOMPARABLE</strong>: PyTorch replaces Keras/Theano; old seeds and unordered node mappings were not recorded; canonical RDF ordering changes the mapping of random initial values. Data is hash-pinned from a maintained mirror; split files match the author's bytes and graph statistics match the paper, but historical graph-byte identity is not established. The original historical runtime and the other three entity-classification datasets are <strong>NOT_RUN</strong>. Link-prediction tables are <strong>NOT_RUN</strong>.</p>
+</blockquote>
+<p><strong>A preprocessing trap we caught.</strong> RDF can contain a <strong>blank node</strong>, an entity identified only within its document. The default parser generates fresh internal IDs for these nodes. Sorting those generated IDs does not produce repeatable ordering. Our loader preserves document-local blank-node labels before sorting. Independent parses now produce identical node-order hashes, and pruned versus unpruned root outputs and training gradients agree.</p>
+<p><strong>Basis extension.</strong> Three separate full-schedule runs use four bases in each layer. They exercise the mechanism you implement. They are not the paper's AIFB recipe and are not a tuned comparison or evidence that basis sharing always helps. We report their scores separately. The <a href="../labs/l091-reproduction.md">reproduction contract</a> records provenance, exact commands and deviations.</p>
+<h2 id="6-%C2%B7-Lab:-make-your-implementation-carry-the-result">6 &#183; Lab: make your implementation carry the result<a class="anchor-link" href="#6-%C2%B7-Lab:-make-your-implementation-carry-the-result">&#182;</a></h2><p><a href="../labs/html/0091-r-gcn.html">Read lab</a> · <a href="../labs/0091-r-gcn.ipynb">Download student notebook</a> · <a href="../labs/solutions/0091-r-gcn.ipynb">Worked solution</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0091-r-gcn.ipynb">Run in Colab</a></p>
+<p>The notebook contains the complete loader, model, optimizer and training loop inline. It downloads only a hash-checked data archive. No hidden course-model import implements your work. Colab availability after publication is a separate delivery check, not implied by these local files.</p>
+<ul>
+<li><strong>TODO A:</strong> reconstruct relation matrices from bases and coefficients. CHECK compares against explicit sums and tests gradient flow.</li>
+<li><strong>TODO B:</strong> sum relation-wise messages with the given normalized supports. CHECK expects 3 in the worked scalar example and catches global normalization and double self loops.</li>
+<li><strong>TODO C:</strong> compute classification loss using only the selected training indices. CHECK changes held-out labels and verifies zero held-out logit gradients.</li>
+<li><strong>Run:</strong> first a short real-data diagnostic; then the ten-run full experiment and three-run basis extension. The latter routes gradients through TODO A as well as B and C.</li>
+<li><strong>EXIT:</strong> submit both result JSON files, a relation-swap calculation and a 150–250 word protocol defense. Explain one discrepancy and what experiment would diagnose it without selecting on test labels. A printed “PASS” is not a substitute for your defense.</li>
+</ul>
+<h2 id="7-%C2%B7-From-predicates-to-database-paths">7 &#183; From predicates to database paths<a class="anchor-link" href="#7-%C2%B7-From-predicates-to-database-paths">&#182;</a></h2><p>The mission is to show when preserving relational structure unlocks useful signal. R-GCN supplies a concrete mechanism: the same neighbor representation can mean something different along two foreign-key roles. It also exposes costs: relation-specific parameters, identity dependence, and averaging away multiplicity within each relation.</p>
+<p><strong>A useful counterexample.</strong> If all members of a relation neighborhood have the same state, repeating them leaves its mean unchanged. R-GCN with this normalizer cannot directly count those neighbors from that aggregate alone. Recall the sum-aggregation question in <a href="0088-graph-classification.html">Lesson 88</a>. Structural information can still enter through other paths, but relation typing does not automatically preserve counts.</p>
+<p>Two layers compose two relation steps. For example, a person's representation can include information from another person through a shared project. The next curriculum unit studies a <strong>meta-path</strong>: a prescribed sequence of node and relation types describing such a route. First understand what this layer averages; then ask which routes and neighbors deserve more weight. This prepares the later database graph construction work without claiming that static AIFB proves temporal RDL superiority.</p>
+<div id="teachback"></div>
+
+<p><strong>Return tomorrow:</strong> derive the scalar update cold, name the exact denominator, and reconstruct the <code>[2,−1]</code> basis example. A week later, implement the three TODOs again without the solution. Use the <a href="../reference/r-gcn.html">R-GCN reference</a> after retrieval. Ask the teacher follow-up questions about any arrow, shape, normalization or reproduction claim you cannot defend.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/hetero-graph-viz.js"></script><script src="../assets/l091-lesson.js"></script></body></html>

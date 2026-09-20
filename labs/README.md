@@ -175,3 +175,5 @@ live Colab compatibility or full paper reproduction.
 - L088: [Graph classification / GIN](0088-graph-classification.ipynb) — [MUTAG reproduction contract](l088-reproduction.md), full inline implementation, WL limit and readout intervention.
 
 - L089: [Sampling at scale / Cluster-GCN](0089-sampling-at-scale.ipynb) — [reproduction contract](l089-reproduction.md), full inline model/trainer and12-run PPI batching intervention. Full paper execution remains NOT_RUN.
+
+- L091: [R-GCN](0091-r-gcn.ipynb) — [AIFB reproduction contract](l091-reproduction.md), ten full target runs, visible basis/message/loss tasks and a separate basis-sharing extension.

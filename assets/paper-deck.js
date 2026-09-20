@@ -388,6 +388,14 @@
   "lesson": 72,
   "front": "How does SubTab turn several partial observations into one prediction representation?",
   "back": "Encode fixed overlapping feature subsets with shared weights, reconstruct the full row, and optionally apply contrastive and distance losses between projections. At inference, aggregate the same row\u2019s latent representations across subsets, then apply a predictor. Do not average different rows."
+},
+{
+  "id": "schlichtkrull2018-rgcn",
+  "paper": "Schlichtkrull et al. \u2014 R-GCN",
+  "year": 2018,
+  "lesson": 91,
+  "front": "What does basis decomposition share, and what remains relation-specific?",
+  "back": "Relations share learned basis matrices within a layer. Each relation learns coefficients that linearly combine them into its own transformation. Coefficients are unconstrained; sharing does not impose a rank-B bound on each matrix."
 }
 ];
 })(window);

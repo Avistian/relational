@@ -2193,6 +2193,29 @@
   ],
   "correct": "gap",
   "explain": "A close score cannot repair a mismatched split or information-access contract."
+},
+{
+  "id": "l091-relation-means",
+  "concept": "relation-normalization",
+  "lesson": 91,
+  "quarter": "Q2",
+  "question": "In the AIFB R-GCN recipe, which denominator scales a relation message?",
+  "options": [
+    {
+      "label": "The relation neighborhood size",
+      "value": "relation"
+    },
+    {
+      "label": "The complete neighborhood size",
+      "value": "all"
+    },
+    {
+      "label": "The global training size",
+      "value": "train"
+    }
+  ],
+  "correct": "relation",
+  "explain": "Each relation support is row-normalized independently. Sum those relation means and add self once."
 }
 ];
 })(window);

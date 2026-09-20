@@ -473,3 +473,9 @@ Historical synthesis of Grinsztajn three biases, FT-Transformer, TabM, Nature Ta
 ## Lessons 071–090 · architecture reading route · 2026-09-19
 
 The [model and learning map](reference/0071-0090-model-map.html) connects self-supervision, schema transfer, row encoding, graph operators, pair/graph prediction and sampling. Each revised lesson pairs a primary-paper reading prompt with an original arithmetic trace and an architecture diagram. Read the cited method section before interpreting benchmark results; the existing reproduction contracts remain the authority for execution coverage and deviations.
+
+## Lesson 091 · R-GCN
+
+- Schlichtkrull et al., [Modeling Relational Data with Graph Convolutional Networks](https://arxiv.org/abs/1703.06103): equations2–4, entity classification and Table2 AIFB.
+- [Author classification implementation, pinned revision](https://github.com/tkipf/relational-gcn/tree/4bec1341dd46b72bf482f7ed26c2dca4533577f6): exact AIFB settings, sparse support construction and testing mode.
+- [Keras1.2.1 optimizer](https://github.com/keras-team/keras/blob/1.2.1/keras/optimizers.py): historical Adam equation.

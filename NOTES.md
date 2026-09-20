@@ -1367,3 +1367,7 @@ Full reproducibility requested. Full100-initialization Cora GCN reconstruction e
 ## Lessons 071–090 depth revision · 2026-09-19
 
 User requested more detail, step-by-step paper explanations, connections to L040–L070 and more attractive complete model architecture visuals, followed by publication to main. Added 20 guided walkthroughs, 22 editable model/protocol diagrams and a shared reference map. Student/solution explanatory cells are regenerated from the lesson sources with portable PNG diagrams. Executable cells and saved outputs are retained only after ordered code equality checks; no fresh benchmark execution or learner completion is inferred from this revision.
+
+## Lesson091 created · R-GCN · 2026-09-20
+
+Full reproduction requested. Full AIFB release-protocol port:10 seeds ×50 updates, complete graph and original140/36 split. Basis sharing is a separately labeled3-run extension because the released AIFB command uses unrestricted matrices. Full inline implementation, three live TODOs, relation intervention, architecture and parameter-sharing figures. RDF blank-node labels are preserved for repeatable ordering; pruning is checked against unpruned logits and gradients. Historical backend/seed identity remains INCOMPARABLE. No learner completion inferred.
