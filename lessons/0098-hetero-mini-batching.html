@@ -1,0 +1,151 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 098 — Heterogeneous mini-batching: from typed queries to seed predictions</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/hetero-graph-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0097-negative-sampling.html">Lesson 97</a> · <a href="../reference/hetero-batching-contract.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 098</p><h1>Heterogeneous mini-batching: from typed queries to seed predictions</h1></header><div class="package-links"><strong>Your tangible win:</strong> train a three-type GNN with a real heterogeneous NeighborLoader, then prove which parts of its computation a mini-batch preserves.<br><a href="../labs/0098-hetero-mini-batching.ipynb">Student notebook</a> · <a href="../labs/solutions/0098-hetero-mini-batching.ipynb">Executed solution</a> · <a href="../labs/html/0098-hetero-mini-batching.html">Read the solution</a> · <a href="../labs/l098-reproduction.md">Full reproduction contract</a></div>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading-%E2%80%94-5-minutes">1 &#183; Retrieve before reading &#8212; 5 minutes<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading-%E2%80%94-5-minutes">&#182;</a></h2><div id="l098-warmup"></div>
+
+<p>Write answers before opening the feedback. (1) In L096, does local row 0 identify an entity without a table type? (2) For the edge orders → customer, whose representation changes after one message-passing layer? (3) Does L097's negative sampler choose the neighbors needed to compute an embedding? (4) Why should training exclude a future order even if its customer ID is already known?</p>
+<details><summary>Check after committing your answers</summary><p>Identity is (table type, row ID). Source orders send messages to destination customers. Negative sampling chooses contrasting targets; neighborhood sampling chooses encoder inputs. A known entity can still acquire information that was unavailable at prediction time. Filtering training labels alone does not remove that information.</p></details>
+
+<p><a href="0096-multi-relational-data.html">Lesson 96</a> gave every row and FK a typed identity. <a href="0097-negative-sampling.html">Lesson 97</a> separated training targets from evaluation candidates. Neither tells us how to compute an embedding when the graph is too large for one forward pass. This lesson supplies that missing execution mechanism. Recall the expanding neighborhoods of <a href="0083-graphsage.html">GraphSAGE</a> and the partition approach of <a href="0089-sampling-at-scale.html">Cluster-GCN</a>: here the unit of work is a set of typed seed nodes and their incoming dependencies.</p>
+<p><strong>Route:</strong> 25 minutes for sections 2–6; a separate lab session for implementation, execution and written defense. The mission connection is direct: RelBench entity models use a heterogeneous neighbor loader to turn database graphs into trainable batches. Our fixture shares that shape, but is not a RelBench dataset or benchmark reproduction. <a href="https://github.com/stanford-star/relbench/blob/584a03d518b2b655580ea8e1cfbbb26bec0a2841/examples/gnn_entity.py">Inspect the pinned RelBench entity example</a>.</p>
+<h2 id="2-%C2%B7-Define-the-query-before-defining-the-batch">2 &#183; Define the query before defining the batch<a class="anchor-link" href="#2-%C2%B7-Define-the-query-before-defining-the-batch">&#182;</a></h2><p>Our complete generated database has <strong>24 customers, 144 order events and 12 products</strong>. Every customer has six orders, on days 1 through 6. An order points to its customer and product; explicit reverse stores permit information to travel back. Each type has four features. A customer's target is the sign of the average first product feature among its orders on days 1–5. This synthetic historical target makes the useful two-hop route explicit. It is not a future churn label.</p>
+<table>
+<thead>
+<tr>
+  <th>Store</th>
+  <th>Meaning</th>
+  <th>Shape before cutoff filtering</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>customer.x</code></td>
+  <td>Static customer covariates</td>
+  <td>[24, 4]</td>
+</tr>
+<tr>
+  <td><code>orders.x</code>, <code>orders.time</code></td>
+  <td>Event covariates and availability day</td>
+  <td>[144, 4], [144]</td>
+</tr>
+<tr>
+  <td><code>product.x</code></td>
+  <td>Static product covariates</td>
+  <td>[12, 4]</td>
+</tr>
+<tr>
+  <td>orders → customer, customer → orders</td>
+  <td>Buyer FK and reverse view</td>
+  <td>each [2, 144]</td>
+</tr>
+<tr>
+  <td>orders → product, product → orders</td>
+  <td>Product FK and reverse view</td>
+  <td>each [2, 144]</td>
+</tr>
+</tbody>
+</table>
+<p>For ordinary training, remove edges touching day-6 orders in <strong>both</strong> directions. Row IDs stay stable; inaccessible orders remain isolated. There are now 480 directed edges. Customers 0–15 are fitting seeds, 16–19 validation seeds, and 20–23 test seeds. Products are shared static context. This is a transductive feature setting: an input graph need not contain only training entities, but no held-out labels enter the fitting loss. Features are generated without using labels; the target is created afterward.</p>
+<p><strong>Prediction:</strong> how many order neighbors can customer 7 have at cutoff 5? Five. Its six-order total is not the degree the legal encoder may use. Merely calling a sampler on the unfiltered graph would not enforce this boundary.</p>
+<h2 id="3-%C2%B7-Model-architecture-%E2%80%94-expand-backward,-compute-forward">3 &#183; Model architecture &#8212; expand backward, compute forward<a class="anchor-link" href="#3-%C2%B7-Model-architecture-%E2%80%94-expand-backward,-compute-forward">&#182;</a></h2><figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l098/pipeline.svg" alt="Typed database and query cutoff feed two-hop dependency sampling, batch-local tensors, a shared two-layer encoder and seed-only loss, with separate full-neighbor inference and dense-oracle audits."></div><figcaption>Sampling expands backward from seed queries; message passing computes forward toward their predictions.</figcaption></figure>
+
+<blockquote>
+<p><strong>In plain terms.</strong> Each destination receives one average message per relationship and keeps a transformed copy of its own features.</p>
+</blockquote>
+<p>For each layer and destination type τ, the visible encoder computes</p>
+<div class="highlight"><pre><span></span>m_r(v) = mean { h_u : (u, r, v) is present in this batch }
+h&#39;_v = ReLU(W_root,τ h_v + b_τ + Σ[r ends at τ] W_r m_r(v))
+logit_v = wᵀ h_v^(2) + b, for customer v
+</pre></div>
+<p>Here h is a node’s feature vector; W is a learned matrix, b a learned offset, r an edge type and τ a node type. ReLU replaces negative coordinates with zero. A logit is the real-valued score before the sigmoid converts it to a binary probability. BCE is binary cross-entropy: the loss penalizes a confident probability assigned to the wrong label.</p>
+<p>An empty relation contributes a zero mean. Each of four edge types has its own message matrix; each of three node types has its own root transform. A root term appears once per destination type, rather than once per relation. Layer widths are 4 → 16 → 16; the customer head returns one logit. The same parameters are reused across batches. This transparent mean encoder is a course model, not an R-GCN or HGT reproduction.</p>
+<p>To predict a customer, the first sampling hop follows <strong>incoming</strong> order → customer edges backward to orders. The second reaches products through product → orders and customers through customer → orders. The resulting dependency graph is evaluated in the opposite direction: product features affect order states at layer 1, which affect the customer's layer-2 state. Two sampled hops support two layers. A one-hop loader does not provide the two-hop dependency closure of this model.</p>
+<p>At training time, compute BCE on fitting seeds, backpropagate and update parameters. At validation and test time, freeze parameters and use all legal neighbors. The lab retains the checkpoint with lowest validation BCE, then evaluates the four test customers once. This keeps the inference rule fixed across training fanouts.</p>
+<h2 id="4-%C2%B7-Three-IDs-that-must-not-be-confused">4 &#183; Three IDs that must not be confused<a class="anchor-link" href="#4-%C2%B7-Three-IDs-that-must-not-be-confused">&#182;</a></h2><p>Imagine <code>batch['orders'].n_id = [42, 44, 43]</code> and <code>batch['customer'].n_id = [7]</code>. A local order → customer edge <code>(1, 0)</code> means global order 44 → global customer 7. It does not mean original order 1 → original customer 0. Node IDs are global only <strong>within their type</strong>.</p>
+<blockquote>
+<p><strong>Your implementation task:</strong> recover each endpoint through its own type’s <code>n_id</code> map, then stack the restored source and destination rows. The CHECK tests unequal local/global IDs so accidental identity mappings cannot pass.</p>
+</blockquote>
+<p><code>e_id</code> identifies the edge in the original relation store, including when the loader internally reorders adjacency. The lab checks recovered endpoints against those edge IDs for every sampled edge. <code>input_id</code> instead indexes entries in the input query list; repeated entity IDs at different times can have different input IDs. <strong>Local node index, per-type global node ID and query index are different objects.</strong> <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/loader/neighbor_loader.html">PyG loader API and source</a>.</p>
+<h2 id="5-%C2%B7-A-seed-count-is-a-loss-boundary,-not-a-node-count">5 &#183; A seed count is a loss boundary, not a node count<a class="anchor-link" href="#5-%C2%B7-A-seed-count-is-a-loss-boundary,-not-a-node-count">&#182;</a></h2><div class="highlight"><pre><span></span><span class="n">loader</span> <span class="o">=</span> <span class="n">NeighborLoader</span><span class="p">(</span>
+    <span class="n">graph</span><span class="p">,</span>
+    <span class="n">input_nodes</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;customer&#39;</span><span class="p">,</span> <span class="n">train_ids</span><span class="p">),</span>
+    <span class="n">num_neighbors</span><span class="o">=</span><span class="p">{</span><span class="n">edge</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">edge_types</span><span class="p">},</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">subgraph_type</span><span class="o">=</span><span class="s1">&#39;directional&#39;</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">loader</span><span class="p">:</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">seed_loss</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">),</span> <span class="n">batch</span><span class="p">)</span>  <span class="c1"># Your implementation in the lab</span>
+</pre></div>
+<p>PyG places the input seeds first in their type's node store. B counts those queries, while the batch also contains context nodes. Our two-hop buyer fixture does not add other customers beyond its seeds; a richer customer graph or deeper sampling can. Always use the seed prefix anyway. The adversarial CHECK gives a context customer an extreme wrong label and verifies that it produces no direct loss gradient.</p>
+<p>For an audit that compares accumulated mini-batch gradients with one full-graph <strong>mean</strong> loss, multiply each batch mean by B / total_seeds. Do not take an unweighted average of batch means when the final batch is smaller. Also, do not update parameters between audit batches: multiple optimizer steps are a different optimization trajectory from one full-batch step.</p>
+<p>A fanout of 2 is a budget <strong>per destination, per relation, per hop</strong>, not two nodes for the entire graph. Our product and customer reverse relations each supply one predecessor per order. Most approximation therefore comes from sampling only some of the five legal orders per customer. Uniform means without replacement preserve a one-hop mean in expectation, but ReLU and a second layer prevent that observation from proving unbiased final logits or gradients.</p>
+<div id="batching-intervention"></div>
+
+<p><strong>Worked route:</strong> products with scalar values 2, 8, −4 send to three separate orders, which send to a customer. Ignore root terms and nonlinearities for this calculation. All three give (2+8−4)/3 = 2; selecting the first two gives 5. The widget uses a deterministic prefix to make arithmetic inspectable. The actual lab uses random uniform native sampling, not prefix sampling.</p>
+<h2 id="6-%C2%B7-One-customer,-two-prediction-times">6 &#183; One customer, two prediction times<a class="anchor-link" href="#6-%C2%B7-One-customer,-two-prediction-times">&#182;</a></h2><p>A training mask says which targets may contribute to a loss; it does not time-filter context. For a single shared cutoff our explicit snapshot is easy to audit. For queries at different times, the lab also executes the real temporal loader:</p>
+<div class="highlight"><pre><span></span><span class="n">input_nodes</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;customer&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span>
+<span class="n">input_time</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="c1"># Other settings are the same; all neighbors are requested.</span>
+<span class="n">loader</span> <span class="o">=</span> <span class="n">NeighborLoader</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">input_nodes</span><span class="o">=</span><span class="n">input_nodes</span><span class="p">,</span>
+    <span class="n">input_time</span><span class="o">=</span><span class="n">input_time</span><span class="p">,</span> <span class="n">time_attr</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">disjoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">num_neighbors</span><span class="o">=</span><span class="p">{</span><span class="n">e</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">edge_types</span><span class="p">},</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">temporal_strategy</span><span class="o">=</span><span class="s1">&#39;uniform&#39;</span><span class="p">)</span>
+</pre></div>
+<p>The native temporal result has two customer seed entries with the same <code>n_id=0</code> but different <code>batch</code> assignments. Event IDs [0,1] belong to the first query and [0,1,2,3,4] to the second. Each copy remains in its query's component. The lab compares the two logits with independently evaluated snapshots at days 2 and 5, checks endpoint component membership, and perturbs future event features by +10,000 without changing the earlier prediction.</p>
+<p>The fixture defines availability as time ≤ cutoff and static customer/product timestamps as zero. In a real task, establish whether equality is allowed and whether a supposedly static feature was already available. Sampling does not undo a leaked aggregate, a future-updated product field or a feature normalization fitted on held-out data. Temporal query labels belong to query rows; our temporal audit checks logits only and does not reuse one entity label as ground truth at both times. <a href="https://github.com/pyg-team/pyg-lib/blob/edc9e2a88d1c5d0953b5f69c98b8365597c6b699/pyg_lib/csrc/sampler/cpu/neighbor_kernel.cpp">Native CPU sampler source</a>.</p>
+<h2 id="7-%C2%B7-Full-reproduction-of-the-declared-experiment">7 &#183; Full reproduction of the declared experiment<a class="anchor-link" href="#7-%C2%B7-Full-reproduction-of-the-declared-experiment">&#182;</a></h2><div id="l098-predict"></div>
+
+<p>No paper score is assigned to L098. <strong>Full reproduction here means every declared course configuration</strong>, with the actual native sampler, an independent oracle and complete fresh training. It does not establish RelBench benchmark performance.</p>
+<p>The correctness track runs 32 generated databases × batch sizes 1, 4 and 24. Every configuration covers all 24 customers exactly once, compares all seed logits with a separately implemented dense adjacency forward, and compares weighted accumulated gradients. Same weights, legal edges, root terms and two-hop depth are held fixed; there is no dropout or batch normalization. Frozen tolerance is 2×10⁻⁶. This establishes full-neighbor computation parity under this contract, not arbitrary sampled-GNN equivalence.</p>
+<p>The training track fixes graph seed 98, train/validation/test identities, width 16, 40 epochs, Adam learning rate .02, no weight decay and batch size 4. It runs all neighbors, fanout 2 and fanout 1, each with initialization seeds 0, 1 and 2. Validation BCE chooses the earliest strictly best epoch. Every arm uses full-neighbor validation/test evaluation. Full traces, test logits and the selected model weights are saved. The notebook restores a trained model from JSON arrays and checks its predictions. Batch nodes/edges are workload proxies, not measured peak memory or wall-clock speedups.</p>
+<p><strong>Frozen author results:</strong> 96/96 correctness configurations and 9/9 complete fits. Maximum logit error 8.94e-08; maximum gradient error 5.96e-08. Native temporal isolation passed. Your notebook recomputes everything.</p>
+<table>
+<thead>
+<tr>
+  <th>Training fanout</th>
+  <th style="text-align:right">Mean test accuracy</th>
+  <th style="text-align:right">Mean batch nodes</th>
+  <th style="text-align:right">Mean batch edges</th>
+  <th style="text-align:right">Mean absolute sampled logit gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>all</td>
+  <td style="text-align:right">0.583</td>
+  <td style="text-align:right">34.00</td>
+  <td style="text-align:right">60.00</td>
+  <td style="text-align:right">0.000000</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">0.583</td>
+  <td style="text-align:right">18.22</td>
+  <td style="text-align:right">24.00</td>
+  <td style="text-align:right">0.413738</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">0.500</td>
+  <td style="text-align:right">11.67</td>
+  <td style="text-align:right">12.00</td>
+  <td style="text-align:right">0.817283</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretation:</strong> full neighbors reproduce the seed computation; limited fanout trades context for smaller batches and changes it. Four test examples cannot support a generalization ranking. Three initializations share one graph and are not three independent datasets. The extra logit-gap diagnostic is one sampled evaluation per run, not an expectation estimated over many neighborhoods.</p>
+<p>Source hashes, actual package versions, runtime instructions, all deviations and execution records are in the <a href="../labs/l098-reproduction.md">protocol</a>, <a href="../labs/_sources_l098.json">source manifest</a> and <a href="../labs/_experiment_l098_results.json">complete results</a>. No cached reference is substituted for execution. Colab and deployment are separate delivery states.</p>
+<h2 id="8-%C2%B7-Implement,-falsify,-defend">8 &#183; Implement, falsify, defend<a class="anchor-link" href="#8-%C2%B7-Implement,-falsify,-defend">&#182;</a></h2><p>In the student notebook implement <strong>relation_mean</strong>, <strong>seed_loss</strong> and <strong>global_edges</strong>. Each function is called by the real trainer or complete audit; each has an immediate CHECK. The model, graph generator, native loader, dense oracle and training loop are visible in the notebook. Predict a CHECK's answer before running it. Then execute the entire declared experiment from a clean directory.</p>
+<p>Submit the fresh JSON result and explain, without looking up the code:</p>
+<ol>
+<li>Why product → order → customer requires two message-passing layers even though the order FK originally points toward the product.</li>
+<li>How to recover original typed endpoints from a local edge and why <code>input_id</code> is different.</li>
+<li>Why seed-only loss and a legal-time input graph enforce separate boundaries.</li>
+<li>Why full-neighbor <strong>gradient accumulation</strong> can match full-batch gradients while sequential SGD updates need not.</li>
+<li>Which evidence would be missing if someone renamed the nine toy fits “full RelBench reproduction.”</li>
+</ol>
+<div id="l098-teachback"></div>
+
+<p><strong>Status: PENDING_WRITTEN_DEFENSE.</strong> Prepared material and successful teacher runs are not learner mastery. Tomorrow, reconstruct the two-hop route and seed-loss code from memory. In three days, explain why sampled logits can be biased even when a one-hop mean is unbiased. Ask the agent to quiz you or diagnose any failed CHECK.</p>
+<p>Next, curriculum lesson 99 holds the graph and protocol fixed while comparing R-GCN with HGT. Lesson 100 requires you to defend a complete heterogeneous pipeline. Today removes a confound from both: architecture comparisons are only interpretable when batching, target identity and information availability are understood.</p>
+<p><strong>Primary reading:</strong> read the <a href="../labs/sources/l098/neighbor-loader-2.6.1.py">pinned PyG NeighborLoader source</a> beside the <a href="https://github.com/stanford-star/relbench/blob/584a03d518b2b655580ea8e1cfbbb26bec0a2841/examples/gnn_entity.py">RelBench entity training example</a>. Use the <a href="../reference/hetero-batching-contract.html">batching reference sheet</a> for review.</p>
+</article><script src="../assets/hetero-batching-viz.js"></script><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l098-lesson.js"></script></body></html>

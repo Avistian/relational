@@ -279,7 +279,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 095 | [Bipartite graphs](lessons/0095-bipartite-graphs.html) | GroupLens / PyG | [Typed graph, full five-fold recommendation](labs/0095-bipartite-graphs.ipynb) |
 | 096 | [Multi-relational data](lessons/0096-multi-relational-data.html) | SQLite / PyG · bridge | [SQL FK → graph spec, complete query audit](labs/0096-multi-relational-data.ipynb) |
 | 097 | [Negative sampling](lessons/0097-negative-sampling.html) | BPR objective · training unit | [Full ML-100K sampler ablation, 45 fits](labs/0097-negative-sampling.ipynb) |
-| 098 | Hetero mini-batching | PyG HeteroData | RelBench-shaped toy graph |
+| 098 | [Hetero mini-batching](lessons/0098-hetero-mini-batching.html) | PyG HeteroData / NeighborLoader | [Full synthetic suite: 96 audits + 9 fits](labs/0098-hetero-mini-batching.ipynb) |
 | 099 | Compare R-GCN vs HGT | — | Same graph, two architectures |
 | 100 | **Q2 checkpoint** | Schlichtkrull + Hu 2020 | Hetero GNN on 3+ node types |
 

@@ -187,3 +187,5 @@ live Colab compatibility or full paper reproduction.
 - **L096 SQL FK semantics:** `0096-multi-relational-data.ipynb`; Tier C complete four-table schema→HeteroData experiment, three live tasks, 33-database SQL oracle. See `l096-reproduction.md`.
 
 - **L097 Negative sampling:** `0097-negative-sampling.ipynb`; complete ML-100K 45-fit uniform/degree/hard ablation, typed train-only exclusion, visible BPR trainer and fixed full-catalog ranking. Three live tasks; separate sampled-candidate diagnostic. Historical BPR paper reproduction remains NOT_RUN. See `l097-reproduction.md`.
+
+- **L098 Heterogeneous mini-batching:** `0098-hetero-mini-batching.ipynb`; real native sampling on a three-type synthetic graph, 96 independent output/gradient audits, temporal isolation, nine training fits. Full protocol in `l098-reproduction.md`; RelBench benchmark NOT_RUN.

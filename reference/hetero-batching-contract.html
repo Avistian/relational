@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Heterogeneous batching contract</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"></head><body><article><h1 id="Heterogeneous-mini-batching-contract">Heterogeneous mini-batching contract<a class="anchor-link" href="#Heterogeneous-mini-batching-contract">&#182;</a></h1><p><a href="../lessons/0098-hetero-mini-batching.html">Lesson 98</a> · <a href="../labs/l098-reproduction.md">Complete protocol</a></p>
+<table>
+<thead>
+<tr>
+  <th>Object</th>
+  <th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Query</td>
+  <td>Entity type, entity ID, prediction time and query-specific target</td>
+</tr>
+<tr>
+  <td>Input graph</td>
+  <td>Only features and edges available at prediction time</td>
+</tr>
+<tr>
+  <td>Dependency</td>
+  <td>Incoming neighbors expanded once per layer</td>
+</tr>
+<tr>
+  <td>Fanout</td>
+  <td>Per relation, destination and hop; −1 means all</td>
+</tr>
+<tr>
+  <td>Local identity</td>
+  <td>edge_index endpoints index batch-local type stores</td>
+</tr>
+<tr>
+  <td>Global identity</td>
+  <td>batch[type].n_id maps local rows to original typed rows</td>
+</tr>
+<tr>
+  <td>Query identity</td>
+  <td>input_id indexes the input list; entity IDs can repeat</td>
+</tr>
+<tr>
+  <td>Edge identity</td>
+  <td>e_id indexes the original relation store</td>
+</tr>
+<tr>
+  <td>Loss</td>
+  <td>First batch[type].batch_size logits and labels only</td>
+</tr>
+<tr>
+  <td>Temporal batch</td>
+  <td>Separate components for different query histories</td>
+</tr>
+<tr>
+  <td>Full-neighbor parity</td>
+  <td>Same weights, depth and operators; compare seed outputs</td>
+</tr>
+<tr>
+  <td>Gradient parity</td>
+  <td>Accumulate B/N-weighted mean losses without optimizer steps</td>
+</tr>
+<tr>
+  <td>Sampling approximation</td>
+  <td>A one-hop unbiased mean does not imply unbiased final logits</td>
+</tr>
+<tr>
+  <td>Reproduction</td>
+  <td>Full course toy suite is not full RelBench reproduction</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Worked-trace">Worked trace<a class="anchor-link" href="#Worked-trace">&#182;</a></h2><p>orders.n_id=[42,44,43], customer.n_id=[7]: local edge (1,0) restores to (orders 44, customer 7). Three messages 2,8,−4 average to 2; choosing the first two yields 5. Empty neighborhoods yield a zero message; the root transform still acts.</p>
+<h2 id="Before-claiming-equivalence">Before claiming equivalence<a class="anchor-link" href="#Before-claiming-equivalence">&#182;</a></h2><p>Check edge direction, root contributions, hop count, reduction normalization, parameter state, dropout/batch normalization and seed coverage. For time-sensitive queries inspect both directions of every relationship and the availability of preprocessing statistics and features.</p>
+<p>Primary sources: <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/loader/neighbor_loader.html">PyG loader</a>, <a href="https://github.com/stanford-star/relbench/blob/584a03d518b2b655580ea8e1cfbbb26bec0a2841/examples/gnn_entity.py">pinned RelBench example</a>. Return tomorrow and reconstruct the loss slice without reading.</p>
+</article></body></html>

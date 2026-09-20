@@ -192,7 +192,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `hetero-graph-viz.js` (positive vs sampled-negative edges).
 - **Bridge** — evaluation hygiene for recsys (Y4); callback L087, Y1 leakage discipline.
 
-### 098 · Hetero mini-batching — *PyG HeteroData*
+### 098 · [Hetero mini-batching](../lessons/0098-hetero-mini-batching.html) — *PyG HeteroData*
+- **Prepared package** — [lab](../labs/0098-hetero-mini-batching.ipynb), [protocol](../labs/l098-reproduction.md): all 96 full-neighbor correctness configurations, native temporal isolation and nine full training fits executed. Synthetic mechanism evidence; RelBench benchmark NOT_RUN. Learner defense pending.
 - **Skill** — build a RelBench-shaped toy hetero graph and train with `HeteroData` + hetero `NeighborLoader`.
 - **Teach** — hetero neighbor sampling, per-type feature dicts, batching typed subgraphs; the exact loader
   RelBench uses.

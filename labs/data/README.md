@@ -140,3 +140,7 @@ Tier B relational interaction data: 100,000 ratings, 943 users and 1,682 items. 
 ## L096 · Complete synthetic relational fixtures
 
 Tier C: all input generation is visible in `relkit/schema_l096.py`; no download. Worked example has 13 rows across four tables, plus 32 declared generated databases. Per-input hashes and full query records are in `_experiment_l096_results.json`. No public benchmark score is claimed.
+
+## L098 · three-type synthetic batching fixture
+
+Tier C data, intentionally synthetic as specified by the roadmap: 24 customers, 144 timed orders, 12 products, four directed FK/reverse stores. `relkit/batching_l098.py:make_graph` generates all arrays from the declared seed. There is no real dataset or published-score mapping. Run the full protocol in `../l098-reproduction.md`; do not interpret the four-customer test metric as benchmark evidence.

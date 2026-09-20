@@ -521,3 +521,9 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [Krichene & Rendle, On Sampled Metrics for Item Recommendation (extended abstract)](https://www.ijcai.org/proceedings/2021/0651.pdf): sampled evaluations need not preserve model comparisons.
 - [PyG 2.6.1 negative-sampling implementation](https://raw.githubusercontent.com/pyg-team/pytorch_geometric/2.6.1/torch_geometric/utils/_negative_sampling.py): bipartite support and provided-edge exclusion.
 - [GroupLens ML-100K README](https://files.grouplens.org/datasets/movielens/ml-100k-README.txt): complete release and official five-fold split contract; byte identities in `labs/_sources_l097.json`.
+
+## Lesson 098 · Heterogeneous mini-batching
+
+- [PyG NeighborLoader API](https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/loader/neighbor_loader.html): typed fanout, seed prefix, identity and time contract.
+- [Pinned RelBench entity example](https://github.com/stanford-star/relbench/blob/584a03d518b2b655580ea8e1cfbbb26bec0a2841/examples/gnn_entity.py): real framework integration; not a benchmark replay.
+- [Full course protocol](labs/l098-reproduction.md), archived source hashes and complete executed coverage.

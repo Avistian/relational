@@ -1395,3 +1395,7 @@ Full reproduction requested. Entire declared four-table experiment executed: wor
 ## Lesson097 created · Negative sampling · 2026-09-20
 
 Full reproduction requested. Complete ML-100K release reconstruction and all 45 declared course fits executed. Typed train-only uniform/degree/hard sampler ablation, BPR objective, fixed full-catalog metrics, and separate same-score sampled-candidate diagnostic. Full NDCG means .31339/.25811/.34054. Independent 33,453-user-record audit and complete standalone notebook replay; three live tasks. Historical BPR experiments NOT_RUN; paper parity NOT_ESTABLISHED. No learner mastery or deployment inferred.
+
+## Lesson098 created · Heterogeneous mini-batching · 2026-09-20
+
+Full reproduction requested. Complete declared synthetic experiment: 32 graphs × three batch sizes, independent dense output/gradient oracle, native temporal disjoint queries, nine full training fits. Native PyG/pyg-lib required; complete inline graph/model/loader/trainer and three live tasks. No published score assigned; RelBench benchmark NOT_RUN and paper parity NOT_ESTABLISHED. No learner mastery or deployment inferred.

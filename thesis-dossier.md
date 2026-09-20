@@ -499,3 +499,5 @@ Three-dataset frozen-probe experiments show SCARF improving mean accuracy over i
 - **L094 · BAR · 2026-09-20:** Taxonomy does not rank model quality. The complete NN release matches all five node counts yet differs from printed edge statistics. Data identity and matched task protocols must precede claims that relational encoders outperform alternatives. No database-superiority or full-paper reproduction claim follows.
 
 - **L095 · BAR · 2026-09-20:** Complete ML-100K five-fold course experiment gives walk NDCG@10 .327886 versus popularity .204553. This shows useful relational structure under one declared offline protocol, not GNN superiority, temporal forecasting success or general database superiority. Published release counts and partitions match; historical model-score parity is not claimed.
+
+- **L098 · BAR · 2026-09-20:** Native full-neighbor batching matches independent dense seed outputs/gradients across 96 synthetic configurations; temporal disjoint queries preserve distinct histories. Nine toy fits establish an executable training mechanism, not relational-database superiority or RelBench reproduction.
