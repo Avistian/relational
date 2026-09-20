@@ -1,6 +1,8 @@
 """Canonical L095 builder. Student TODOs stay blank; identical solution code retains outputs."""
 import ast,base64,hashlib,json,re
 from pathlib import Path
+from _walkthrough_delivery import snapshot, finalize
+snapshot(95)
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
@@ -77,3 +79,5 @@ for solution in [False,True]:
     if solution:
         html,_=HTMLExporter().from_notebook_node(nb);(P/'html'/f'{S}.html').write_text(html)
 print('Built L095 lesson, student, solution and prepared HTML')
+
+finalize(95, preview='solution')

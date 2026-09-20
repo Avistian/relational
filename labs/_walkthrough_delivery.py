@@ -24,14 +24,15 @@ def portable(text):
         key=m.group(1)
         data=base64.b64encode((ROOT/'assets/architectures'/f'{key}.png').read_bytes()).decode()
         return 'src="data:image/png;base64,'+data+'"'
-    text=re.sub(r'src="(?:\.\./)+assets/architectures/([^"/]+)\.svg"',image,text)
+    text=re.sub(r'src="(?:(?:\.\./)+|https://avistian.github.io/relational/)assets/architectures/([^"/]+)\.svg"',image,text)
     # Bare lesson links are correct in lessons/, but not in a downloaded notebook.
     text=re.sub(r'\]\((\d{4}-[^)]+\.html(?:#[^)]*)?)\)',r'](https://avistian.github.io/relational/lessons/\1)',text)
     text=re.sub(r'href="(\d{4}-[^"]+\.html)"',r'href="https://avistian.github.io/relational/lessons/\1"',text)
     text=text.replace('href="../reference/0071-0090-model-map.html"','href="https://avistian.github.io/relational/reference/0071-0090-model-map.html"')
+    text=text.replace('href="../reference/0091-0100-model-map.html"','href="https://avistian.github.io/relational/reference/0091-0100-model-map.html"')
     return text
 
-def finalize(number):
+def finalize(number, preview='student'):
     slug=next((ROOT/'lessons/content').glob(f'{number:04}-*.md')).stem
     page=ROOT/'lessons'/f'{slug}.html'
     html=page.read_text()
@@ -62,8 +63,9 @@ def finalize(number):
             count=seen.get(digest,0);seen[digest]=count+1
             cell.id=f'l{number:03}-{digest}-{count}'
         nbformat.validate(nb);nbformat.write(nb,p)
-    # A readable student preview: outputs, if present, are preserved author records.
-    nb=nbformat.read(ROOT/'labs'/f'{slug}.ipynb',as_version=4)
+    # Preserve each package's existing student or executed-solution preview contract.
+    folder='labs/solutions' if preview=='solution' else 'labs'
+    nb=nbformat.read(ROOT/folder/f'{slug}.ipynb',as_version=4)
     html,_=HTMLExporter().from_notebook_node(nb)
     from bs4 import BeautifulSoup
     soup=BeautifulSoup(html,'html.parser')

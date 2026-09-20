@@ -1,6 +1,8 @@
 """Build HTML, portable student/solution notebooks and preview from canonical sources."""
 import ast,base64,hashlib,json,re
 from pathlib import Path
+from _walkthrough_delivery import snapshot, finalize
+snapshot(91)
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
@@ -99,3 +101,5 @@ Path('l091-exit.json').write_text(json.dumps(exit_ticket,indent=2));print(exit_t
  if not solution:
   html,_=HTMLExporter().from_notebook_node(nb);(LAB/'html'/f'{SLUG}.html').write_text(html)
 print('Built lesson, inline student/solution notebooks and portable preview')
+
+finalize(91)

@@ -1,6 +1,8 @@
 """Canonical lesson and portable notebook builder; retains outputs only for identical code."""
 import ast,base64,hashlib,json,re
 from pathlib import Path
+from _walkthrough_delivery import snapshot, finalize
+snapshot(94)
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
@@ -96,3 +98,5 @@ for solution in [False,True]:
  if solution:
   html,_=HTMLExporter().from_notebook_node(nb);(P/'html'/f'{SLUG}.html').write_text(html)
 print('Built lesson, student and solution notebooks, and lab HTML')
+
+finalize(94, preview='solution')

@@ -1,6 +1,8 @@
 """One prose source and one visible implementation build lesson and portable notebooks."""
 import ast,base64,hashlib,json,re
 from pathlib import Path
+from _walkthrough_delivery import snapshot, finalize
+snapshot(97)
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
@@ -91,3 +93,5 @@ Primary sources: [BPR §4–5](https://arxiv.org/abs/1205.2618), [sampled-metric
 '''
 (R/'reference/negative-sampling-contract.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Negative sampling contract</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"></head><body><article>'+render(reference)+'</article></body></html>')
 print('Built lesson, student, solution, HTML, reference')
+
+finalize(97, preview='solution')

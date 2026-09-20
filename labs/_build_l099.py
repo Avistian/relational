@@ -1,6 +1,8 @@
 """One prose/implementation source builds lesson, portable notebooks and reference."""
 import ast,base64,hashlib,json,re
 from pathlib import Path
+from _walkthrough_delivery import snapshot, finalize
+snapshot(99)
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
@@ -91,3 +93,5 @@ Source anchors: [R-GCN Eq2–3](https://arxiv.org/abs/1703.06103v4) · [HGT §3]
 '''
 (R/'reference/architecture-comparison-contract.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Architecture comparison contract</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/architecture-comparison.css"></head><body><article>'+render(ref)+'</article></body></html>')
 print('Built lesson, two notebooks, prepared HTML and reference')
+
+finalize(99, preview='solution')

@@ -1,6 +1,8 @@
 """Single prose/model source -> lesson, standalone notebooks, reference and solution HTML."""
 import ast,base64,hashlib,json,re
 from pathlib import Path
+from _walkthrough_delivery import snapshot, finalize
+snapshot(98)
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
@@ -95,3 +97,5 @@ Primary sources: [PyG loader](https://pytorch-geometric.readthedocs.io/en/2.6.1/
 '''
 (R/'reference/hetero-batching-contract.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Heterogeneous batching contract</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"></head><body><article>'+render(ref)+'</article></body></html>')
 print('Built lesson, notebooks, solution HTML and reference')
+
+finalize(98, preview='solution')

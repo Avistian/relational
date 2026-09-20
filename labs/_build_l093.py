@@ -1,6 +1,8 @@
 """One source for lesson HTML and standalone portable HGT notebooks."""
 import ast,base64,hashlib,json,re
 from pathlib import Path
+from _walkthrough_delivery import snapshot, finalize
+snapshot(93)
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
@@ -122,3 +124,5 @@ else:
  nbf.validate(nb);nbf.write(nb,path)
  if not solution:
   html,_=HTMLExporter().from_notebook_node(nb);(LAB/'html'/f'{SLUG}.html').write_text(html)
+
+finalize(93)

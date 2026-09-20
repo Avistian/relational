@@ -1,6 +1,8 @@
 """Build coherent checkpoint lesson, standalone notebooks, reference and measured tables."""
 import ast,base64,hashlib,json,re
 from pathlib import Path
+from _walkthrough_delivery import snapshot, finalize
+snapshot(100)
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
@@ -112,3 +114,5 @@ Defense rubric: five axes ×0–2; pass ≥8/10, no zero in correctness or repro
 '''
 (R/'reference/heterogeneous-checkpoint.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Heterogeneous checkpoint reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/hetero-checkpoint.css"></head><body><article>'+render(ref)+'</article></body></html>')
 print('Built lesson, standalone student/solution notebooks, prepared HTML and reference')
+
+finalize(100, preview='solution')

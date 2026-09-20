@@ -541,3 +541,16 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [HGT, §3 and Table2](https://arxiv.org/abs/2003.01332v1): typed attention, temporal encoding and HGSampling; source-era differences retained.
 - [Native NeighborLoader](https://pytorch-geometric.readthedocs.io/en/latest/modules/loader.html#torch_geometric.loader.NeighborLoader): typed seed prefix, local/global IDs and directional neighborhoods. Executed wrapper/source hashes archived.
 - [L100 full reproduction ledger](labs/l100-reproduction.md): frozen24-fit course protocol, complete AIFB replay and unrun CS full-setting track.
+
+## Lessons 091–100: whole-computation reading route
+
+The [sequence map](reference/0091-0100-model-map.html) connects these sources to the expanded lesson walkthroughs. Paper equations, released implementations, course experiments and historical reproduction claims remain distinct.
+
+- [R-GCN](https://arxiv.org/html/1703.06103v4), §2.1 Eq. 2 → §2.2 Eqs. 3–4 → §3: relation routing, sharing and the classification handoff. L091 derives a two-layer path and contrasts mean aggregation with count preservation.
+- [HAN](https://arxiv.org/html/1903.07293v2), §3–4 and Figure 2, alongside [pinned SimpleAttLayer](https://github.com/Jhy1993/HAN/blob/71bac29a07fb8fab908d50a806a7bc38aa6c6611/utils/layers.py): neighborhood, semantic and class softmax axes; paper-global versus released node-wise semantic fusion.
+- [HGT](https://arxiv.org/html/2003.01332v1), §3–4, alongside [pinned convolution](https://github.com/acbull/pyHGT/blob/85eaccd482bc1d1af56c2de297b6e3a88b96d5cd/OAG/pyHGT/conv.py): score/value branches, type/relation sharing, residual update, temporal inputs and sampling.
+- [metapath2vec author project](https://ericdongyx.github.io/metapath2vec/m2v.html), sections C–F: constrained walk generation → embedding objective → stored vectors → downstream labels. L094 adds a conceptual architecture map; no new training or paper reproduction is claimed.
+- [MovieLens 100K README](https://files.grouplens.org/datasets/movielens/ml-100k-README.txt): released row and split contracts; the three-hop scorer and candidate policy in L095 are course choices.
+- [Relational Deep Learning](https://arxiv.org/abs/2312.04615) and [SQLite foreign keys](https://www.sqlite.org/foreignkeys.html): database motivation and referential semantics for L096; the SQL/graph audit is a construction exercise, not a model benchmark.
+- [BPR](https://arxiv.org/abs/1205.2618), §4–5.1: pairwise ranking and factorization. L097 derives gradients and distinguishes sampling distributions from evaluation candidates; the course optimizer is not the historical LearnBPR protocol.
+- [PyG 2.6.1 NeighborLoader source](https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/loader/neighbor_loader.html): typed fanouts, local IDs, seed prefix and query timing for L098/L100. The executed native runtime remains separately pinned in each lesson's source manifest.
