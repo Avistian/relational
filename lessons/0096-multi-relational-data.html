@@ -1,0 +1,228 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 096 — Multi-relational data: SQL foreign keys become graph routes</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/hetero-graph-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0095-bipartite-graphs.html">Lesson 95</a> · <a href="../reference/schema-graph-contract.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 096</p><h1>Multi-relational data: SQL foreign keys become graph routes</h1></header><div class="package-links"><strong>Your tangible win:</strong> turn four SQL tables into a typed graph and prove that it preserves a declared join and aggregation.<br><a href="../labs/0096-multi-relational-data.ipynb">Student notebook</a> · <a href="../labs/html/0096-multi-relational-data.html">Executed solution</a> · <a href="../reference/schema-graph-contract.html">Reference sheet</a> · <a href="../labs/l096-reproduction.md">Reproduction contract</a></div>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without opening L095, write answers to these questions. Why can customer 10 and product 10 be different nodes? What information disappears when repeated interactions become one binary edge? Does reversing an edge make its information safe to use in a training graph?</p>
+<details><summary>Check after you have written</summary><p>Identity includes the node type. A binary edge discards event multiplicity and event attributes unless these are explicitly retained elsewhere. Reversing a held-out link still exposes that link. If any answer was uncertain, revisit <a href="0095-bipartite-graphs.html">L095</a> before building.</p></details>
+
+<p><strong>The bridge.</strong> In <a href="0034-relational-data-without-rdl.html">L034</a>, joins and grouped features let a flat model use relational information. <a href="0091-r-gcn.html">L091</a> gave different edge roles different transformations. Here we decide where those roles and entities come from. This prepares the database-to-graph construction in L122. Our mission is to assess relational learning rigorously; preserving the meaning of the input comes before comparing model scores.</p>
+<p><strong>Core route:</strong> read sections 2–6, then implement the three notebook tasks. Allow about 25 minutes for the explanation and 25 for the lab. Sections 7–9 define the audit and the next retrieval session. Ask the agent whenever you cannot explain a step from the data itself.</p>
+<h2 id="2-%C2%B7-Start-with-four-tables-and-one-question">2 &#183; Start with four tables and one question<a class="anchor-link" href="#2-%C2%B7-Start-with-four-tables-and-one-question">&#182;</a></h2><p>Our complete, synthetic database contains customers, products, orders and line items. This is a Tier C construction lab, not a sampled extract from a hidden larger benchmark. The question is: <strong>how many units of each product has each customer bought?</strong> First trace the answer by hand; then make SQL and the graph agree.</p>
+<table>
+<thead>
+<tr>
+  <th>Table</th>
+  <th>Primary key</th>
+  <th>Other columns</th>
+  <th style="text-align:right">Rows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>customer</td>
+  <td>customer_id</td>
+  <td>none in this fixture</td>
+  <td style="text-align:right">3</td>
+</tr>
+<tr>
+  <td>product</td>
+  <td>product_id</td>
+  <td>none in this fixture</td>
+  <td style="text-align:right">3</td>
+</tr>
+<tr>
+  <td>orders</td>
+  <td>order_id</td>
+  <td>buyer_id, nullable referrer_id</td>
+  <td style="text-align:right">3</td>
+</tr>
+<tr>
+  <td>line_item</td>
+  <td>(order_id, line_no)</td>
+  <td>product_id, quantity</td>
+  <td style="text-align:right">4</td>
+</tr>
+</tbody>
+</table>
+<p>Customers are 10, 30 and 90. Products are 10, 50 and 80. Order 100 belongs to customer 10 and was referred by customer 30; order 200 belongs to customer 30; order 300 belongs to customer 10. The last two have no referrer. Order 300 has no lines. Customer 90 and product 80 have no links.</p>
+<table>
+<thead>
+<tr>
+  <th style="text-align:right">order_id</th>
+  <th style="text-align:right">line_no</th>
+  <th style="text-align:right">product_id</th>
+  <th style="text-align:right">quantity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">2</td>
+</tr>
+<tr>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3</td>
+</tr>
+<tr>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td style="text-align:right">200</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Predict:</strong> customer 10 bought five units of product 10. The two matching rows are distinct because line numbers differ. A primary key can be a tuple; uniqueness applies to the complete tuple, not to each component separately. Foreign keys constrain a child reference to a matching parent key. They do not require every parent to have children. See <a href="https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-PRIMARY-KEYS">PostgreSQL's constraints reference</a>.</p>
+<h2 id="3-%C2%B7-Specify-the-graph-before-writing-tensors">3 &#183; Specify the graph before writing tensors<a class="anchor-link" href="#3-%C2%B7-Specify-the-graph-before-writing-tensors">&#182;</a></h2><figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l096/schema.svg" alt="Four-table schema with typed primary-key maps, FK routes, row counts, preserved line nodes, and SQL query audit."></div><figcaption>The entire course fixture. Teal links are forward child-to-parent roles; reverse stores are derived views.</figcaption></figure>
+
+<p>The course mapping is deliberately explicit: one node type per table, one node per row, and one edge role per foreign-key constraint. The relational deep learning paper introduces database graphs as the input to representation learning; here we isolate construction from learning. Read <a href="https://arxiv.org/abs/2312.04615">Fey et al., Relational Deep Learning</a> for the broader motivation; no result from that paper is a score target in this unit.</p>
+<table>
+<thead>
+<tr>
+  <th>Forward triple: source / role / destination</th>
+  <th style="text-align:right">Number of links</th>
+  <th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>orders / buyer / customer</td>
+  <td style="text-align:right">3</td>
+  <td>Order identifies its buyer</td>
+</tr>
+<tr>
+  <td>orders / referrer / customer</td>
+  <td style="text-align:right">1</td>
+  <td>Order optionally identifies its referrer</td>
+</tr>
+<tr>
+  <td>line_item / order / orders</td>
+  <td style="text-align:right">4</td>
+  <td>Line belongs to one order</td>
+</tr>
+<tr>
+  <td>line_item / product / product</td>
+  <td style="text-align:right">4</td>
+  <td>Line identifies one product</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why preserve the role?</strong> Buyer and referrer have identical source and destination types. One generic orders→customer relation would erase which customer did what. In R-GCN or HGT, that ambiguity would already be present before the first learned transformation.</p>
+<p><strong>Why this direction?</strong> Our forward convention is child→referenced parent, because the child stores the FK. To send messages the other way, create a separate reverse store. SQL does not force an encoder's message direction. A reverse is a view of the same fact, not a new observation. The lab uses names such as <code>('customer','rev_orders_buyer','orders')</code>, making both role and originating table explicit.</p>
+<p>A non-null FK gives each child exactly one parent for that role. Multiple children can point to the same parent: from the parent's perspective this is one-to-many. A UNIQUE constraint on the child's FK would impose an additional restriction; an FK alone does not. A many-to-many order–product relationship is represented through line rows and two FK roles. In this fixture even the same order–product pair can occur twice.</p>
+<h2 id="4-%C2%B7-Resolve-keys;-never-confuse-them-with-tensor-positions">4 &#183; Resolve keys; never confuse them with tensor positions<a class="anchor-link" href="#4-%C2%B7-Resolve-keys;-never-confuse-them-with-tensor-positions">&#182;</a></h2><p><code>order_id=100</code> is a database key. It is not necessarily tensor row 100. Sort each table's complete primary keys and create its own dictionary. Customer 10 and product 10 both become local index zero, but remain in separate stores. The line keys <code>(100,1)</code> and <code>(100,2)</code> become local indices zero and one.</p>
+<div class="highlight"><pre><span></span><span class="n">customer_index</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">10</span><span class="p">,):</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">30</span><span class="p">,):</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">90</span><span class="p">,):</span> <span class="mi">2</span><span class="p">}</span>
+<span class="n">order_index</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">100</span><span class="p">,):</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">200</span><span class="p">,):</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">300</span><span class="p">,):</span> <span class="mi">2</span><span class="p">}</span>
+<span class="c1"># orders --buyer--&gt; customer: three columns, one per order</span>
+<span class="n">edge_index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                           <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+</pre></div>
+<p>PyG indexes typed edge stores by <code>(source, relation, destination)</code>; <code>edge_index</code> holds local source and destination positions. Set <code>num_nodes</code> explicitly on every node store so rows without edges survive. The graph contains 13 nodes and 12 forward links, or 24 links with the four reverse stores. These are course-fixture counts, not an empirical paper result. <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/generated/torch_geometric.data.HeteroData.html">PyG 2.6.1 HeteroData</a>.</p>
+<p><strong>NULL is different from corruption.</strong> Order 200's missing referrer produces no referrer edge. Replacing it with key 999 creates a dangling reference and must fail. The child order node remains in either valid nullable case; no fake customer is invented. For a nullable composite FK, the lab adopts SQLite's MATCH SIMPLE behavior: any NULL component omits the relationship. Required FKs reject NULL. The implementation explicitly enables SQLite enforcement before inserting data. <a href="https://www.sqlite.org/foreignkeys.html">SQLite foreign-key semantics</a>.</p>
+<p><strong>Scope:</strong> the converter accepts the declared schema with integer keys, composite row identity and PK references. It does not parse arbitrary SQL, implement collations or cascades, infer identity for keyless tables, or support references to alternate UNIQUE keys. Those need additional contracts. It stores database identities as audit metadata, not predictive features.</p>
+<h2 id="5-%C2%B7-A-join-is-a-path-with-identity-and-multiplicity">5 &#183; A join is a path with identity and multiplicity<a class="anchor-link" href="#5-%C2%B7-A-join-is-a-path-with-identity-and-multiplicity">&#182;</a></h2><p>Trace line <code>(100,2)</code>. Its local node 1 points to order local node 0 and product local node 0. Order local node 0 points to customer local node 0. Recovering the audit keys gives <code>(customer=10, order=100, line=2, product=10, quantity=3)</code>.</p>
+<p>The complete query has four paths, one for every line. Grouping by customer and product produces three rows:</p>
+<table>
+<thead>
+<tr>
+  <th style="text-align:right">customer</th>
+  <th style="text-align:right">product</th>
+  <th style="text-align:right">SUM(quantity)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">5</td>
+</tr>
+<tr>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td style="text-align:right">30</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">4</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">l</span><span class="p">.</span><span class="n">quantity</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">customer</span><span class="w"> </span><span class="k">c</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">buyer_id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">line_item</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">order_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">order_id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">product_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">product_id</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">product_id</span><span class="p">;</span>
+</pre></div>
+<p>Our graph evaluator follows three forward FK lookups from each line and sums its quantity. It does not call SQL or multiply a precomputed answer. The independent oracle creates a fresh SQLite database, inserts the same input rows, and runs the query. We compare full path tuples as well as sums: incorrect paths can accidentally yield the right total.</p>
+<p>A plain join retains matching rows unless a query explicitly removes duplicates. Replacing this query with <code>DISTINCT customer,product</code> changes its result. For zero-order customers, a LEFT JOIN plus <code>COUNT(o.order_id)</code> returns zero; <code>COUNT(*)</code> counts the retained outer row. <a href="https://www.sqlite.org/lang_select.html">SQLite SELECT processing</a>.</p>
+<p><strong>Three different answers:</strong> existence of customer 10→product 10 is 1; its number of line paths is 2; its sum of quantities is 5. A binary projection, path count and weighted aggregation answer different questions. A mean message aggregator also does not automatically implement a SQL sum. No generic GNN is promised to reproduce arbitrary SQL semantics.</p>
+<div id="schema-intervention"></div>
+
+<p><strong>Before touching the control:</strong> move line <code>(100,2)</code> from product 10 to product 50. Predict both totals. Then explain why the line-node count stays four. The notebook runs this same intervention against the SQL oracle.</p>
+<h2 id="6-%C2%B7-Implement-the-three-load-bearing-steps">6 &#183; Implement the three load-bearing steps<a class="anchor-link" href="#6-%C2%B7-Implement-the-three-load-bearing-steps">&#182;</a></h2><p>All code is visible inline in both notebooks. The student notebook contains three blanks; the solution contains their implementations. Each task has an immediate CHECK, and the final 33-database audit uses those same functions.</p>
+<ol>
+<li><strong>TODO: <code>key_index</code>.</strong> Reject missing or duplicate composite keys and build stable per-table indices. <strong>CHECK:</strong> <code>(100,1)</code> and <code>(100,2)</code> are distinct; repeated <code>(100,1)</code> fails; input reordering cannot change IDs.</li>
+<li><strong>TODO: <code>fk_edges</code>.</strong> Resolve each child reference through the parent map. Retain the child's position after skipping NULL; return <code>[2,0]</code> for an empty relation. <strong>CHECK:</strong> nullable rows are skipped, orphans fail, and every remaining destination is correct.</li>
+<li><strong>TODO: <code>graph_query</code>.</strong> Follow line→order→buyer and line→product; preserve every line, sum quantities and include zero-order customers. <strong>CHECK:</strong> all path tuples, all sums and all customer counts equal the independent SQL result.</li>
+</ol>
+<p>The supplied graph builder applies the first two steps to all four FK roles, stores quantities, and creates exact reversed edge tensors. The SQL oracle and generated fixtures are also visible. The entire construction runs on CPU; there is no hidden remote trainer or saved model behind the lab.</p>
+<p><strong>Representation is not a prediction task.</strong> If predicting future purchases, you still need an as-of cutoff, allowed features and a label window. Structural validity does not prove availability at prediction time. Removing a direct customer–product target edge would not hide an order/line path that still reveals the same future purchase. L097 next studies negative sampling; L098 introduces mini-batching; L122 returns to full relational entity graph construction. Those future units are not prerequisites for this lab.</p>
+<h2 id="7-%C2%B7-Reproduce-the-whole-declared-experiment">7 &#183; Reproduce the whole declared experiment<a class="anchor-link" href="#7-%C2%B7-Reproduce-the-whole-declared-experiment">&#182;</a></h2><p><strong>Author execution: PASS.</strong> All 33 declared databases have exact equality of graph and SQL paths, totals and customer-order counts. These are frozen author results; your notebook recomputes them from scratch.</p>
+<p>The full target is the supplied 13-row database plus 32 deterministically generated databases (seeds 0–31). Every generated database has seven customers, six products and twelve orders; all its generated line rows are used. The last customer and product are deliberately unreferenced. There is no subsampling and no unexecuted larger run being substituted with this fixture suite.</p>
+<p>Reproducibility here means <strong>the same inputs, mapping, query and expected outputs</strong>, with recorded source/data hashes and environment. Separate tests cover duplicate and NULL keys, dangling references, empty relations, optional composite FKs, reverse stores, 20 row-order permutations and the product reassignment. A finite suite is evidence for the declared implementation; it is not a proof for every SQL database.</p>
+<table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>Claim boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Complete course suite</td>
+  <td>All 33 databases; paths, totals and outer counts checked against SQL</td>
+</tr>
+<tr>
+  <td>Paper-result reproduction</td>
+  <td>NOT_APPLICABLE_NO_MODEL_PAPER: curriculum specifies a bridge unit</td>
+</tr>
+<tr>
+  <td>Historical predictive-score parity</td>
+  <td>NOT_ESTABLISHED: no trained model or score target</td>
+</tr>
+<tr>
+  <td>Local standalone notebook</td>
+  <td>See execution evidence; does not imply live Colab</td>
+</tr>
+<tr>
+  <td>Live Colab / deployed site</td>
+  <td>NOT_CHECKED</td>
+</tr>
+<tr>
+  <td>Learner mastery</td>
+  <td>PENDING_WRITTEN_DEFENSE</td>
+</tr>
+</tbody>
+</table>
+<p>See the <a href="../labs/l096-reproduction.md">exact commands and deviations</a>, <a href="../labs/_verify_l096_results.json">behavioral checks</a>, <a href="../labs/_experiment_l096_results.json">full query outputs</a>, and <a href="../labs/_execution_l096_results.json">notebook execution</a>. This respects the request for full reproduction by completing the entire specified construction experiment and naming precisely what has no applicable paper target.</p>
+<h2 id="8-%C2%B7-Written-defense-and-spaced-retrieval">8 &#183; Written defense and spaced retrieval<a class="anchor-link" href="#8-%C2%B7-Written-defense-and-spaced-retrieval">&#182;</a></h2><p>Before opening the solution, submit your graph spec and these answers to the agent:</p>
+<ul>
+<li>List all node types, all forward roles and their reverses. Explain why two orders→customer roles cannot be merged.</li>
+<li>Trace line <code>(100,2)</code> from original PKs to local IDs and back. Distinguish existence, path count and quantity sum.</li>
+<li>Explain NULL versus orphan, and why customer 90 and product 80 must remain nodes.</li>
+<li>Show that your query keeps customer 90 with zero orders. Explain why COUNT(*) would differ.</li>
+<li>Report exactly what was reproduced and one limitation of the integer-key converter.</li>
+<li>Describe how a future order could leak a purchase target through an indirect path.</li>
+</ul>
+<p><strong>Pass criterion:</strong> correct identities and roles, four retained paths, totals 5/1/4, zero-order preservation, correct failure behavior, and a bounded reproduction claim. Execution alone is insufficient. Revisit tomorrow with the tables hidden; in one week, add a second nullable FK to product and explain how your spec changes before implementing it.</p>
+<h2 id="9-%C2%B7-Primary-reading">9 &#183; Primary reading<a class="anchor-link" href="#9-%C2%B7-Primary-reading">&#182;</a></h2><p>Start with <a href="https://www.sqlite.org/foreignkeys.html">SQLite foreign keys, sections 1–2</a>: reproduce the distinction between a missing parent and a NULL reference. Use <a href="https://www.postgresql.org/docs/18/ddl-constraints.html">PostgreSQL PK/FK constraints</a> for the schema terminology and <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/generated/torch_geometric.data.HeteroData.html">PyG's typed container</a> for storage. Then read <a href="https://arxiv.org/abs/2312.04615">Fey et al.</a> with one question: which information must a database graph preserve before learned aggregation begins?</p>
+</article><script src="../assets/schema-graph-viz.js"></script><script src="../assets/l096-lesson.js"></script></body></html>

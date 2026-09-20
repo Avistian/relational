@@ -505,3 +505,12 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [PyG heterogeneous tutorial](https://pytorch-geometric.readthedocs.io/en/latest/tutorial/heterogeneous.html): typed stores and bipartite identity.
 - [PyG 2.8.0 RandomLinkSplit](https://pytorch-geometric.readthedocs.io/en/2.8.0/generated/torch_geometric.transforms.RandomLinkSplit.html): paired reverse relations; is_undirected alone does not cover bipartite types.
 - [Local full-run protocol](labs/l095-reproduction.md): complete release audit plus explicitly course-defined walk and ranking experiment.
+
+## L096 · SQL foreign keys to typed graphs
+
+- [SQLite foreign keys](https://www.sqlite.org/foreignkeys.html): primary reading, NULL/reference integrity and explicit enforcement.
+- [PostgreSQL 18 constraints](https://www.postgresql.org/docs/18/ddl-constraints.html): primary/composite keys and FK constraints.
+- [SQLite SELECT](https://www.sqlite.org/lang_select.html): join rows, aggregation and outer joins.
+- [PyG 2.6.1 HeteroData](https://pytorch-geometric.readthedocs.io/en/2.6.1/generated/torch_geometric.data.HeteroData.html): typed stores and edge indices.
+- [Fey et al. 2023](https://arxiv.org/abs/2312.04615): forward reading for relational graph construction, not a reproduced model target.
+- [Full course contract](labs/l096-reproduction.md): archived source hashes and all executed coverage.

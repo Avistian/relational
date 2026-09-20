@@ -171,7 +171,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `hetero-graph-viz.js` (two-column bipartite layout).
 - **Bridge** — sets up Y4 e-commerce/recsys (L138, L144); callback L087 link prediction.
 
-### 096 · Multi-relational data → SQL FK semantics — *— (bridge unit)*
+### 096 · [Multi-relational data → SQL FK semantics](../lessons/0096-multi-relational-data.html) — *SQLite / PyG (bridge unit)*
+- **Prepared package** — [lab](../labs/0096-multi-relational-data.ipynb), [reproduction contract](../labs/l096-reproduction.md). All 33 complete course databases match independent SQL paths, totals and outer counts. No model paper is assigned; learner defense pending.
 - **Skill** — translate a relational schema (tables, PK/FK) into a heterogeneous graph specification (node
   types = tables, edge types = FK links).
 - **Teach** — the schema→graph mapping rules, one-to-many vs many-to-many FK, direction of edges; the exact

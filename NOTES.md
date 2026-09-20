@@ -1387,3 +1387,7 @@ Full reproduction requested. Corrected the ambiguous Sun & Han 2020 placeholder 
 ## Lesson095 created · Bipartite graphs · 2026-09-20
 
 Full reproduction requested. Full ML-100K release counts and five official partitions audited MATCH; complete five-fold course ranking experiment MEASURED, distinct from historical model-paper scores. Typed IDs, reverse-edge boundary, projections, three-hop walk and full-catalog evaluation; three live tasks and complete inline implementation. Mean NDCG@10 .327886 walk versus .204553 popularity. Fold SD is descriptive, not dataset-level uncertainty. No learner mastery or publication inferred.
+
+## Lesson096 created · SQL FK semantics · 2026-09-20
+
+Full reproduction requested. Entire declared four-table experiment executed: worked fixture plus 32 generated databases, exact SQL/graph path, SUM and LEFT JOIN agreement. Composite PKs, role-specific FKs, NULL/orphan distinction, reverse stores, isolated rows and three live tasks. Roadmap is a bridge unit with no model-paper score target. No learner mastery or deployment inferred.

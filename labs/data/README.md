@@ -136,3 +136,7 @@ Tier B: the entire hash-pinned L093 NN archive for Table1 statistics. Tier C: fo
 ## L095 · Full MovieLens 100K
 
 Tier B relational interaction data: 100,000 ratings, 943 users and 1,682 items. Downloader verifies the GroupLens archive and all official split members. Data are downloaded directly, not redistributed. Tier C two-user synthetic graph is used only for mechanism checks. Full five-fold ranking is a course protocol, not a claimed published-model result.
+
+## L096 · Complete synthetic relational fixtures
+
+Tier C: all input generation is visible in `relkit/schema_l096.py`; no download. Worked example has 13 rows across four tables, plus 32 declared generated databases. Per-input hashes and full query records are in `_experiment_l096_results.json`. No public benchmark score is claimed.

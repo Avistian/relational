@@ -277,7 +277,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 093 | [HGT](lessons/0093-hgt.html) | Hu2020 | [Typed attention, time, matched OAG comparison and CS reproduction track](labs/0093-hgt.ipynb) |
 | 094 | [HIN survey](lessons/0094-hin-survey.html) | Dong et al. 2020 | [Taxonomy and complete NN statistics audit](labs/0094-hin-survey.ipynb) |
 | 095 | [Bipartite graphs](lessons/0095-bipartite-graphs.html) | GroupLens / PyG | [Typed graph, full five-fold recommendation](labs/0095-bipartite-graphs.ipynb) |
-| 096 | Multi-relational data | — | Connect to SQL FK semantics |
+| 096 | [Multi-relational data](lessons/0096-multi-relational-data.html) | SQLite / PyG · bridge | [SQL FK → graph spec, complete query audit](labs/0096-multi-relational-data.ipynb) |
 | 097 | Negative sampling | — | Link pred training |
 | 098 | Hetero mini-batching | PyG HeteroData | RelBench-shaped toy graph |
 | 099 | Compare R-GCN vs HGT | — | Same graph, two architectures |
