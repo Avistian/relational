@@ -514,3 +514,10 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [PyG 2.6.1 HeteroData](https://pytorch-geometric.readthedocs.io/en/2.6.1/generated/torch_geometric.data.HeteroData.html): typed stores and edge indices.
 - [Fey et al. 2023](https://arxiv.org/abs/2312.04615): forward reading for relational graph construction, not a reproduced model target.
 - [Full course contract](labs/l096-reproduction.md): archived source hashes and all executed coverage.
+
+## Lesson 097 · Negative sampling
+
+- [Rendle et al., BPR](https://arxiv.org/abs/1205.2618), §4.1–4.3 and §5.1: pairwise preference objective and factorized scoring; historical experiment is not replayed by the course ablation.
+- [Krichene & Rendle, On Sampled Metrics for Item Recommendation (extended abstract)](https://www.ijcai.org/proceedings/2021/0651.pdf): sampled evaluations need not preserve model comparisons.
+- [PyG 2.6.1 negative-sampling implementation](https://raw.githubusercontent.com/pyg-team/pytorch_geometric/2.6.1/torch_geometric/utils/_negative_sampling.py): bipartite support and provided-edge exclusion.
+- [GroupLens ML-100K README](https://files.grouplens.org/datasets/movielens/ml-100k-README.txt): complete release and official five-fold split contract; byte identities in `labs/_sources_l097.json`.

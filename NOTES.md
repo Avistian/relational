@@ -1391,3 +1391,7 @@ Full reproduction requested. Full ML-100K release counts and five official parti
 ## Lesson096 created · SQL FK semantics · 2026-09-20
 
 Full reproduction requested. Entire declared four-table experiment executed: worked fixture plus 32 generated databases, exact SQL/graph path, SUM and LEFT JOIN agreement. Composite PKs, role-specific FKs, NULL/orphan distinction, reverse stores, isolated rows and three live tasks. Roadmap is a bridge unit with no model-paper score target. No learner mastery or deployment inferred.
+
+## Lesson097 created · Negative sampling · 2026-09-20
+
+Full reproduction requested. Complete ML-100K release reconstruction and all 45 declared course fits executed. Typed train-only uniform/degree/hard sampler ablation, BPR objective, fixed full-catalog metrics, and separate same-score sampled-candidate diagnostic. Full NDCG means .31339/.25811/.34054. Independent 33,453-user-record audit and complete standalone notebook replay; three live tasks. Historical BPR experiments NOT_RUN; paper parity NOT_ESTABLISHED. No learner mastery or deployment inferred.

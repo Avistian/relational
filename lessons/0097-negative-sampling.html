@@ -1,0 +1,181 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 097 — Negative sampling: which missing links should teach the model?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/negative-sampling.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0096-multi-relational-data.html">Lesson 96</a> · <a href="../reference/negative-sampling-contract.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 097</p><h1>Negative sampling: which missing links should teach the model?</h1></header><div class="package-links"><strong>Your tangible win:</strong> implement a typed negative sampler, then separate a training improvement from an easier evaluation.<br><a href="../labs/0097-negative-sampling.ipynb">Student notebook</a> · <a href="../labs/html/0097-negative-sampling.html">Executed solution</a> · <a href="../reference/negative-sampling-contract.html">Reference</a> · <a href="../labs/l097-reproduction.md">Full reproduction contract</a></div>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Write three answers before opening the explanation: (1) Why are customer 10 and product 10 different nodes? (2) Why does adding a held-out edge's reverse still leak its label? (3) Can a model's ranking score improve without changing a single parameter?</p>
+<details><summary>Check after writing</summary><p>Identity includes the node type. A reverse relation encodes the same held-out fact. A ranking metric can increase when the candidate set loses competitors, even with frozen scores. Revisit <a href="0095-bipartite-graphs.html">L095</a> if any answer was uncertain.</p></details>
+
+<p><strong>The bridge.</strong> <a href="0096-multi-relational-data.html">L096</a> preserved observed database facts in a typed graph. <a href="0087-link-prediction.html">L087</a> scored possible links. Training that scorer needs comparisons: what should score lower than an observed positive? The choice determines which mistakes receive gradient updates. This is part of our mission to test relational models fairly; changing the negatives can change the task while the architecture remains identical.</p>
+<p><strong>Route:</strong> sections 2–6 take about 25 minutes. Implement the three notebook TODOs, then execute the full experiment in section 7; runtime is additional. Sections 8–9 are the interpretation and written defense. Ask the agent for a hint or a slower worked trace whenever a step is unclear.</p>
+<h2 id="2-%C2%B7-Missing-means-unobserved">2 &#183; Missing means unobserved<a class="anchor-link" href="#2-%C2%B7-Missing-means-unobserved">&#182;</a></h2><p>Take the relation <strong>user → likes → item</strong>. User 0 has fitting observations for items 0 and 1. Item 2 will appear as a positive in the test file, but the training process does not know that. Items 3 and 4 have no observed interaction for this user.</p>
+<table>
+<thead>
+<tr>
+  <th>Candidate</th>
+  <th>Information available during fitting</th>
+  <th>Sampling decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>user 0 → item 0</td>
+  <td>Observed fitting interaction</td>
+  <td>Exclude</td>
+</tr>
+<tr>
+  <td>user 0 → item 1</td>
+  <td>Observed fitting interaction</td>
+  <td>Exclude</td>
+</tr>
+<tr>
+  <td>user 0 → item 2</td>
+  <td>Unobserved during fitting</td>
+  <td>Eligible; may be a false negative</td>
+</tr>
+<tr>
+  <td>user 0 → item 3 or 4</td>
+  <td>Unobserved during fitting</td>
+  <td>Eligible; truth unknown</td>
+</tr>
+<tr>
+  <td>user 0 → user 4</td>
+  <td>Wrong destination type</td>
+  <td>Reject before sampling</td>
+</tr>
+</tbody>
+</table>
+<p>A negative <strong>training example</strong> is an assumption used by an objective, not a certified dislike. In the lab, ratings ≥4 are positive likes. We exclude <strong>all</strong> fitting-rated items from the negative pool, including lower ratings, to preserve L095's unobserved-item recommendation task. Using observed low ratings as explicit negatives is a different defensible task, but not this experiment.</p>
+<p><strong>Separate three information policies.</strong> Training excludes pairs known from fitting data. An offline static graph benchmark may explicitly authorize a global positive blacklist, including held-out facts; that uses privileged label knowledge and must be stated. Temporal prediction cannot silently use future links to construct today's training pool. Evaluation may use held-out relevance to compute metrics or build a declared candidate set, but those labels must not flow back into fitting. Our <code>fit(base, strategy, seed)</code> has no test argument.</p>
+<p>Even a global blacklist cannot prove that all remaining pairs are false. Some true links have never been recorded. For an FK relation, schema constraints also matter: corrupting an order's one known buyer describes a mutually exclusive alternative; corrupting a possible future purchase makes a different kind of assumption.</p>
+<h2 id="3-%C2%B7-Define-the-candidate-universe-before-the-distribution">3 &#183; Define the candidate universe before the distribution<a class="anchor-link" href="#3-%C2%B7-Define-the-candidate-universe-before-the-distribution">&#182;</a></h2><p>For each positive <code>(u, likes, i)</code>, hold the source and relation fixed and replace the destination. Let <code>O_u</code> be items observed in fitting and let <code>C_u = all_item_IDs − O_u</code>. Typed IDs are local: user 0 → item 0 is legal if unobserved. It is not a homogeneous self-loop. A sampler must preserve the source, stay in the destination type, and exclude <code>O_u</code>.</p>
+<p>For a five-item worked example, let fitting item like-degrees be <code>[3, 1, 0, 8, 1]</code> and let user 0 have observed items <code>{0,1}</code>. Then <code>C_0 = {2,3,4}</code>:</p>
+<ul>
+<li><strong>Uniform:</strong> every candidate gets probability 1/3.</li>
+<li><strong>Degree-weighted:</strong> use weight <code>(degree + 1)^0.75</code>, then renormalize on <code>C_0</code>. The weights are <code>1, 9^0.75, 2^0.75</code>; probabilities are approximately <code>.127, .660, .214</code>. The added one gives zero-degree items nonzero support. This exponent and smoothing are explicit course choices.</li>
+<li><strong>Hard:</strong> draw four uniform candidates with replacement, score them using the current model, and keep the largest score. This searches for a mistake the model currently finds plausible. It costs extra scoring and can emphasize unknown positives.</li>
+</ul>
+<div id="negative-intervention"></div>
+
+<p><strong>Predict:</strong> raising the degree of item 3 changes the degree sampler but leaves uniform unchanged. Blocking item 3 removes it entirely and renormalizes the others. A high score does not prove an item is a good negative. In a four-draw hard pool, duplicates are allowed; it need not contain four distinct items.</p>
+<p>The visible implementation creates a dense <code>q[user,item]</code> matrix for clarity. This costs O(number of users × number of items). The full lab is small enough; a production sampler would use sparse exclusion with bounded retries or another exact conditional sampling method. If <code>C_u</code> is empty, the implementation raises an explicit error. It never loops forever or silently emits a positive.</p>
+<div class="highlight"><pre><span></span><span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.75</span>       <span class="c1"># training like-degrees only</span>
+<span class="n">mass</span> <span class="o">=</span> <span class="p">(</span><span class="o">~</span><span class="n">blocked</span><span class="p">)</span> <span class="o">*</span> <span class="n">weights</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">mass</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No valid negative for at least one source&quot;</span><span class="p">)</span>
+<span class="n">q</span> <span class="o">=</span> <span class="n">mass</span> <span class="o">/</span> <span class="n">mass</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+<p><strong>PyG is an API, not the information policy.</strong> In PyG 2.6.1, passing <code>num_nodes=(n_users, n_items)</code> selects a bipartite universe. The library excludes supplied edges; it does not discover your omitted positives. Its global <code>negative_sampling</code> does not promise one source-preserving replacement per positive, and requested counts can be approximate. The lab checks its complete tiny-graph complement but implements our conditional sampler explicitly. See the <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/utils/_negative_sampling.html">pinned implementation</a>.</p>
+<h2 id="4-%C2%B7-Trace-the-whole-computation">4 &#183; Trace the whole computation<a class="anchor-link" href="#4-%C2%B7-Trace-the-whole-computation">&#182;</a></h2><figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l097/pipeline.svg" alt="Training-only observed edges and degrees feed a typed sampler, then shared user/item embeddings, pairwise loss, and frozen full-catalog evaluation."></div><figcaption>Sampling changes the pairs that produce gradients; evaluation changes the competitors used to measure the frozen scorer.</figcaption></figure>
+
+<p>The scorer deliberately stays simple so the negative distribution is the intervention. Two separate embedding tables hold <code>U ∈ R^(943×32)</code> and <code>V ∈ R^(1682×32)</code>; items also have scalar biases. For batch size B, user and positive-item lookup tensors have shape <code>[B,32]</code>, scores have shape <code>[B]</code>, and a hard pool has shape <code>[B,4]</code>. Both score branches share the same parameter tables:</p>
+<p><code>s(u,i) = dot(U[u], V[i]) + b[i]</code></p>
+<p>This is matrix factorization on a typed relation, not a new heterogeneous GNN. A GNN encoder could supply the embeddings later, but changing the encoder here would obscure the effect of sampling. When transferring this to an R-GCN/HGT model, keep both the forward and reverse target edges out of the held-out message graph.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/abs/1205.2618">Rendle et al., BPR, §4.1–4.3 and §5.1</a>. The paper derives a pairwise preference objective and uses a score difference for matrix factorization. Our teaching loss is the negative log-sigmoid of that difference, computed stably:</p>
+<div class="highlight"><pre><span></span><span class="n">positive_score</span> <span class="o">=</span> <span class="p">(</span><span class="n">U</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">*</span> <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="n">negative_score</span> <span class="o">=</span> <span class="p">(</span><span class="n">U</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">*</span> <span class="n">V</span><span class="p">[</span><span class="n">j</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">negative_score</span> <span class="o">-</span> <span class="n">positive_score</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</pre></div>
+<p>If both scores are zero, the loss is <code>log(2) ≈ .6931</code>. If the positive is 2 and the negative is −1, the loss is <code>log(1+exp(−3)) ≈ .0486</code>. The derivative with respect to the positive score is <code>−sigmoid(s_neg−s_pos)</code> before batch averaging; the negative-score derivative has the opposite sign. Gradient descent therefore raises the positive relative to the sampled negative. The test checks both the number and the gradient signs.</p>
+<p>The trainer adds <code>.0001 × mean(||U_u||² + ||V_i||² + ||V_j||² + b_i² + b_j²)</code> and uses Adam at .01 for ten epochs. These optimizer, regularization scaling, dataset, batching and budget choices belong to our experiment. We do not claim to replay the paper's LearnBPR bootstrap-SGD protocol or tables.</p>
+<h2 id="5-%C2%B7-Changing-q-changes-what-gets-learned">5 &#183; Changing q changes what gets learned<a class="anchor-link" href="#5-%C2%B7-Changing-q-changes-what-gets-learned">&#182;</a></h2><p>For a fixed positive <code>(u,i)</code>, our expected data loss is:</p>
+<p><code>L_q(u,i) = Σ[j in C_u] q(j|u) × softplus(s(u,j) − s(u,i))</code>.</p>
+<p>Uniform and degree sampling put different weights on the same possible mistakes. Neither automatically estimates the other's objective. If the desired target distribution is <code>p</code>, an importance-weighted term <code>p(j|u)/q(j|u)</code> gives an unbiased estimate of that target expectation when <code>q</code> covers its support; large ratios can produce high variance. The lab intentionally applies <strong>no</strong> such correction: it measures the effect of changing the training distribution itself.</p>
+<p>The hard arm chooses a candidate using <strong>detached current scores</strong>. Gradients pass through the chosen pair's loss, not through the discrete selection. Because this policy depends on the evolving scorer, it is not the fixed <code>degree</code> distribution. Its four-candidate scoring budget is larger even though epochs, positive exposures and optimizer updates match.</p>
+<p><strong>Trace one step.</strong> Suppose the positive score is 1 and candidate scores for items <code>[2,3,4]</code> are <code>[.2,1.4,.7]</code>. Their pairwise losses are approximately <code>[.371, .913, .554]</code>. Uniform spreads updates evenly. Degree sampling visits item 3 most often under the worked degrees. A hard draw containing item 3 selects it. If item 3 is actually an undiscovered positive, the strongest gradient can reinforce a wrong assumption.</p>
+<h2 id="6-%C2%B7-Do-not-confuse-training-negatives-with-evaluation-candidates">6 &#183; Do not confuse training negatives with evaluation candidates<a class="anchor-link" href="#6-%C2%B7-Do-not-confuse-training-negatives-with-evaluation-candidates">&#182;</a></h2><p>Freeze a scorer with a relevant item at rank 20 in a catalog of 1,000 candidates. Full-catalog Recall@10 is zero. If you keep the relevant item and only nine distractors, it must be in the top ten: Recall@10 becomes one. No model improvement occurred. With 99 uniformly sampled distractors, its expected number of higher-scoring competitors is <code>99 × 19/999 ≈ 1.88</code>; this is an expectation of a count, not an exact expected reciprocal rank.</p>
+<p><a href="https://www.ijcai.org/proceedings/2021/0651.pdf">Krichene &amp; Rendle, On Sampled Metrics for Item Recommendation</a> establish that sampled metrics need not preserve comparisons between recommenders, even in expectation. Read the introduction and inconsistency discussion after tracing the example. Our lab demonstrates candidate sensitivity on its own protocol; it does not reproduce that paper's experiments or correction estimators.</p>
+<p>We evaluate each trained scorer twice:</p>
+<table>
+<thead>
+<tr>
+  <th>Rule</th>
+  <th>Main measurement</th>
+  <th>Separate diagnostic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Candidates</td>
+  <td>All 1,682 items except fitting-rated items</td>
+  <td>All test likes plus 99 sampled other eligible items</td>
+</tr>
+<tr>
+  <td>Relevance</td>
+  <td>Held-out ratings ≥4</td>
+  <td>Exactly the same relevance</td>
+</tr>
+<tr>
+  <td>Scores</td>
+  <td>Frozen learned scores</td>
+  <td>The same frozen scores</td>
+</tr>
+<tr>
+  <td>Metrics</td>
+  <td>Macro user Recall@10 and binary NDCG@10</td>
+  <td>Same formulas, changed candidate set</td>
+</tr>
+<tr>
+  <td>Randomness</td>
+  <td>No candidate sampling</td>
+  <td>Fixed seed per fold/user, shared across arms/seeds</td>
+</tr>
+<tr>
+  <td>Ties</td>
+  <td>Descending score, then ascending item ID</td>
+  <td>Same</td>
+</tr>
+</tbody>
+</table>
+<p>For each user, Recall@10 is hits divided by the number of relevant test items. NDCG@10 divides discounted hit gain <code>Σ hit_r/log2(r+1)</code> by the ideal gain from <code>min(10, number_relevant)</code> hits. Users with no relevant test items are excluded and counted. Unobserved items are treated as nonrelevant for scoring, not established dislikes. Keeping <strong>all</strong> test positives while removing only distractors can only improve or preserve each relevant item's rank here; this diagnostic is deliberately easier.</p>
+<h2 id="7-%C2%B7-Full-declared-experiment,-not-a-smoke-run">7 &#183; Full declared experiment, not a smoke run<a class="anchor-link" href="#7-%C2%B7-Full-declared-experiment,-not-a-smoke-run">&#182;</a></h2><p>The dataset is the complete <a href="https://files.grouplens.org/datasets/movielens/ml-100k-README.txt">GroupLens MovieLens 100K release</a>: 100,000 ratings, 943 users, 1,682 items, and all five official 80,000/20,000 base/test partitions. The loader verifies the archive SHA-256, recomputes counts, verifies each full partition, and checks that the five test sets partition the release. No row, user, item or split cap is used.</p>
+<p><strong>Protocol:</strong> five folds × seeds <code>{0,1,2}</code> × three samplers = <strong>45 complete fits</strong>, each ten epochs over every fitting like. No tuning or early stopping: epoch ten is fixed before results. Positive orders and parameter initializations match across arms for each fold/seed. The degree statistics and exclusion mask use base data only. The test file reaches the evaluator after training; it never changes q, loss or checkpoint selection. These are static offline splits, not a temporal deployment simulation.</p>
+<p><strong>Frozen author measurements; your notebook recomputes all 45 fits.</strong></p>
+<table>
+<thead>
+<tr>
+  <th>Training sampler</th>
+  <th style="text-align:right">Full Recall@10</th>
+  <th style="text-align:right">Full NDCG@10 (fold SD)</th>
+  <th style="text-align:right">Sampled NDCG@10</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>uniform</td>
+  <td style="text-align:right">0.21675</td>
+  <td style="text-align:right">0.31339 (0.04043)</td>
+  <td style="text-align:right">0.73861</td>
+</tr>
+<tr>
+  <td>degree</td>
+  <td style="text-align:right">0.18046</td>
+  <td style="text-align:right">0.25811 (0.03877)</td>
+  <td style="text-align:right">0.69444</td>
+</tr>
+<tr>
+  <td>hard</td>
+  <td style="text-align:right">0.23742</td>
+  <td style="text-align:right">0.34054 (0.03750)</td>
+  <td style="text-align:right">0.76258</td>
+</tr>
+</tbody>
+</table>
+<p>Under this fixed budget, hard mining has the highest mean full-catalog NDCG; this includes extra candidate scoring. The sampled evaluation is much easier for every arm. These are course results, not BPR-paper scores.</p>
+<p>Read the table in two directions. Compare sampler rows using <strong>full-catalog</strong> metrics to assess this training intervention. Compare full versus sampled columns within the same row to assess candidate sensitivity. Average the three seeds within each fold, then the five fold means; the reported fold SD is descriptive. The folds share data and the seeds are not independent datasets. There is no basis here for a general claim that one sampler wins across recommendation tasks.</p>
+<p><strong>Evidence boundaries:</strong> the roadmap assigns no new model paper to L097. The release reconstruction has an external target. The entire declared training ablation is fresh course evidence. Historical BPR result parity is <strong>NOT_ESTABLISHED</strong>; the BPR paper's experiments are <strong>NOT_RUN</strong>. A full run of this course protocol is not full reproduction of the BPR paper. See the <a href="../labs/l097-reproduction.md">protocol/deviation ledger</a>, <a href="../labs/_experiment_l097_results.json">execution evidence</a>, and <a href="../labs/_audit_l097_results.json">independent result audit</a>.</p>
+<h2 id="8-%C2%B7-Lab:-predict-%E2%86%92-implement-%E2%86%92-check-%E2%86%92-explain">8 &#183; Lab: predict &#8594; implement &#8594; check &#8594; explain<a class="anchor-link" href="#8-%C2%B7-Lab:-predict-%E2%86%92-implement-%E2%86%92-check-%E2%86%92-explain">&#182;</a></h2><p>The notebook contains the full loader, sampler, scorer, trainer and evaluator as visible code. It downloads the original archive from GroupLens, verifies it and runs away from this repository. The student implements three load-bearing functions:</p>
+<ol>
+<li><strong><code>proposal</code>:</strong> construct and normalize the typed, train-only distribution. CHECK masked support, degree weighting, zero-degree support and the saturated-user error.</li>
+<li><strong><code>draw_negatives</code>:</strong> preserve the source while drawing destinations. CHECK the empirical distribution, equal IDs across types, seeded replay and collision exclusion.</li>
+<li><strong><code>pairwise_loss</code>:</strong> implement a numerically stable score-difference loss. CHECK the two worked values and both derivative signs.</li>
+</ol>
+<p>Then run every declared fold, seed and arm. The notebook saves fresh results and compares deterministic evidence with labeled author references. Its live implementation, not a hidden result loader, drives the experiment. The independent repository auditor recomputes metrics from every saved ranking and independently regenerates training masks and evaluation candidates.</p>
+<p><strong>Intervention:</strong> before running, predict the effect of replacing q by an oracle distribution that excludes the held-out positives. Explain why this might remove false negatives yet invalidate our training-only information policy. Do not quietly make this change and report the result beside the original arms as if protocols were identical.</p>
+<h2 id="9-%C2%B7-EXIT-and-spaced-retrieval">9 &#183; EXIT and spaced retrieval<a class="anchor-link" href="#9-%C2%B7-EXIT-and-spaced-retrieval">&#182;</a></h2><p>Submit your three functions, full-run summary, and a written defense answering:</p>
+<ul>
+<li>Why can an unobserved link be both a legal training negative and a later test positive?</li>
+<li>What exactly differs between degree sampling and hard mining? Which has extra compute here?</li>
+<li>Why is a bipartite pair <code>(0,0)</code> not necessarily a self-loop?</li>
+<li>Did changing the sampler improve full-catalog ranking, or did changing evaluation candidates inflate the score? Cite actual values separately.</li>
+<li>What can this complete course run reproduce, and which BPR-paper results remain unrun?</li>
+</ul>
+<p>Status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until you supply this explanation. Teacher execution is not learner mastery. Tomorrow reconstruct <code>C_u</code> and the BPR gradient from memory; in a week redo the rank-20 example without notes. Bring follow-up questions to the agent. L098 will combine typed sampling with heterogeneous mini-batches; keep the negative pool, message-passing neighborhood and evaluation catalog as three separate objects.</p>
+</article><script src="../assets/negative-sampling-viz.js"></script><script src="../assets/l097-lesson.js"></script></body></html>

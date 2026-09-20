@@ -182,7 +182,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `hetero-graph-viz.js` (schema → graph overlay) + `cell-graph-viz.js`.
 - **Bridge** — the literal schema→REG bridge; callback Y1 L034 star schema; forward to Y4 L122 REG construction.
 
-### 097 · Negative sampling — *— (training unit)*
+### 097 · [Negative sampling](../lessons/0097-negative-sampling.html) — *BPR objective (training unit)*
+- **Prepared package** — [lab](../labs/0097-negative-sampling.ipynb), [full protocol](../labs/l097-reproduction.md): complete ML-100K release audit and 45/45 course fits (five folds × three seeds × uniform/degree/hard). Fixed full-catalog evaluation plus separate candidate sensitivity. Historical BPR experiments NOT_RUN; paper parity NOT_ESTABLISHED. No learner completion inferred.
 - **Skill** — implement correct negative sampling for hetero link prediction and avoid false negatives /
   train-test contamination.
 - **Teach** — uniform vs degree-based negatives, hard negatives, why bad negatives inflate metrics.

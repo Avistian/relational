@@ -185,3 +185,5 @@ live Colab compatibility or full paper reproduction.
 - **L095 Bipartite graphs:** `0095-bipartite-graphs.ipynb`; full ML-100K release audit and five-fold graph-walk recommendation, typed IDs, reverse-edge leakage checks and full-catalog ranking. See `l095-reproduction.md`.
 
 - **L096 SQL FK semantics:** `0096-multi-relational-data.ipynb`; Tier C complete four-table schema→HeteroData experiment, three live tasks, 33-database SQL oracle. See `l096-reproduction.md`.
+
+- **L097 Negative sampling:** `0097-negative-sampling.ipynb`; complete ML-100K 45-fit uniform/degree/hard ablation, typed train-only exclusion, visible BPR trainer and fixed full-catalog ranking. Three live tasks; separate sampled-candidate diagnostic. Historical BPR paper reproduction remains NOT_RUN. See `l097-reproduction.md`.
