@@ -124,3 +124,7 @@ Karate graph: full34 nodes and78 binary undirected edges, identity features; ser
 
 ### L090: Cora checkpoint
 Tier B, full real citation graph; shared hash-pinned release data with L078/L082. Full fixed-split100-initialization GCN reconstruction and separate inductive context extension. See [contract](../l090-reproduction.md).
+
+## L093 · OAG NN and CS
+
+Tier B, real heterogeneous academic graphs from the authors. Both archives acquired locally; excluded from git/Pages. `_fetch_l093.py` verifies pinned bytes. NN is the teaching subset, not a paper Table2 dataset. CS full-target loading/training has explicit resource blockers. See `../l093-reproduction.md`.

@@ -140,7 +140,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `hetero-graph-viz.js` (highlight a meta-path) + `mask-viz.js` (semantic attention).
 - **Bridge** — meta-paths = multi-hop relational routes → RelGNN atomic routes (Y4 L141); callback L084 attention.
 
-### 093 · HGT — *Hu 2020, ★ `2003.01332`*
+### 093 · [HGT](../lessons/0093-hgt.html) — *Hu2020, ★ `2003.01332`*
+- **Prepared package** — [lab](../labs/0093-hgt.ipynb), [protocol/evidence](../labs/l093-reproduction.md). Nine real OAG NN fits, source operator/sampler checks and a frequency baseline. CS bytes acquired; full CS target NOT_RUN due local memory/GPU account limits. Historical parity INCOMPARABLE; no learner completion inferred.
 - **Skill** — implement heterogeneous graph transformer (type-specific attention + relative temporal
   encoding) and contrast with R-GCN.
 - **Teach** — per-type Q/K/V projections, meta-relation attention, relative temporal encoding; scalable

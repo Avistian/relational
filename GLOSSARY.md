@@ -14,3 +14,9 @@ when you've forgotten it. Newest at the bottom.
 | Single-table assumption | Tabular learners need a design matrix and label vector — they don't consume raw tables, so relational data must be flattened first. | 2026-06-24 | 001 |
 | Design matrix | The feature matrix **X** where each row is one training example and each column is one feature. | — | 002 |
 | Label vector | The target **y** aligned row-for-row with **X** — what the model predicts. | — | 002 |
+
+## HGT additions · Lesson093
+
+- **Meta-relation:** one source-node-type, edge-relation-type, target-node-type triple.
+- **Relative temporal encoding:** a representation of the receiver/source time gap added to the source before key/value projection. It does not impose a data cutoff.
+- **HGSampling budget:** accumulated normalized neighbor scores, maintained separately per node type; squared scores determine sampling probabilities.

@@ -11,3 +11,9 @@ Named published target: Hu et al. WWW2020 Table2, CS Paper-Field L2: NDCG .403±
 Implementation sequence: (1) audit/download source/data; (2) behavioral tests before operators; (3) visible model, loaders, sampler, training and replay entrypoints; (4) run checks and affordable real-data comparison; (5) author explanation/figures/notebooks; (6) execute solution, check desktop/mobile and copied Pages build. Record every unresolved blocker without substituting scores.
 
 Full OAG work is contingent on obtaining bytes and sufficient runtime. Source archive and a complete executable recipe must remain reviewable even if the named run cannot execute. No learner completion or deployment is inferred.
+
+## Delivered evidence
+
+Lesson/standalone student and executed solution notebooks, five portable diagrams, interactive attention trace, reference sheet and manifest integration completed. Nine corrected NN fits plus nine independent inline replays; max metric difference6.19e-8. Frequency baseline exposes universal-field MRR saturation. Source layer outputs/attention match exactly on four tested variants, with gradient tolerance checks; two source sampler comparisons match complete node/feature/typed-edge content. Clean Python3.13/Torch2.8 CPU diagnostic passed. Desktop1200/mobile375, keyboard/reset, print, notebook payloads and actual copied Pages checks passed. Builder re-run is byte-identical and preserves outputs.
+
+Both CS/NN graph snapshots downloaded and hash-pinned. A full-width NN update passed; CS loader exceeded a10GiB virtual-address guard. Modal image built but GPU invocation was rejected pending an account payment method. Full CS target and historical/full-paper reproduction remain unrun/unestablished. No deployment or learner mastery is claimed.

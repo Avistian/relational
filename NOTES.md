@@ -1375,3 +1375,7 @@ Full reproduction requested. Full AIFB release-protocol port:10 seeds ×50 updat
 ## Lesson092 created · Meta-paths / HAN · 2026-09-20
 
 Full reproduction requested. Prepared full visible ACM release port, two semantic modes, three live tasks, named Table3 KNN evaluation and explicit source/data/protocol audit. Paper-global attention differs from released per-node fusion. See labs/_paper_l092_results.json and labs/_execution_l092_results.json for executed coverage; ten KNN repetitions are conditional on one encoder. Historical parity INCOMPARABLE; full-paper parity NOT_ESTABLISHED. No learner completion inferred.
+
+## Lesson093 created · HGT · 2026-09-20
+
+Full reproduction requested and combined scope approved. Visible typed attention/RTE/HGSampling/trainer; nine real NN fits and training-frequency baseline. Perfect NN MRR is trivial because every paper has the Artificial neural network field. Modern operator outputs/gradients and sample content match pinned source; publication-era source differences are archived. Both NN and CS bytes acquired/hash-pinned. Full-width NN update passed; CS loading exceeded10GiB address-space guard and Modal GPU requires a payment method. Full CS target NOT_RUN; full-paper parity NOT_ESTABLISHED. No learner completion inferred.

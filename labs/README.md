@@ -177,3 +177,5 @@ live Colab compatibility or full paper reproduction.
 - L089: [Sampling at scale / Cluster-GCN](0089-sampling-at-scale.ipynb) — [reproduction contract](l089-reproduction.md), full inline model/trainer and12-run PPI batching intervention. Full paper execution remains NOT_RUN.
 
 - L091: [R-GCN](0091-r-gcn.ipynb) — [AIFB reproduction contract](l091-reproduction.md), ten full target runs, visible basis/message/loss tasks and a separate basis-sharing extension.
+
+- **L093 HGT:** `0093-hgt.ipynb`; three live tasks, visible source-conditioned model and full OAG trainer. `_run_l093.py` provides smoke/teaching/paper/release tracks. Read `l093-reproduction.md` before interpreting scores.

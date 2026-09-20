@@ -485,3 +485,10 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [Wang et al. HAN, arXiv1903.07293v2](https://arxiv.org/html/1903.07293v2): §§3–4, Fig2, §5.3–5.4/Table3.
 - [Pinned authors release](https://github.com/Jhy1993/HAN/tree/71bac29a07fb8fab908d50a806a7bc38aa6c6611): `SimpleAttLayer`, `HeteGAT_multi`, `ex_acm3025.py`, `jhyexp.py`. Paper-global versus release per-node attention is a documented discrepancy.
 - [DGL ACM3025](https://data.dgl.ai/dataset/ACM3025.pkl): hash-verified mirror; original MAT byte identity unestablished.
+
+## L093 · Heterogeneous Graph Transformer
+
+- [Hu et al., WWW2020](https://arxiv.org/html/2003.01332v1): Figure2,§§3–4 and Table2. Typed attention, relative time, sampling and named CS Paper-Field L2 target.
+- [Audited modern OAG release](https://github.com/acbull/pyHGT/tree/85eaccd482bc1d1af56c2de297b6e3a88b96d5cd/OAG): executable source operator and sampler oracle.
+- [Publication-era source](https://github.com/acbull/pyHGT/tree/fd4a244db8efc72410537f3effec3b0c432892f7): historical comparison; differs from modern architecture.
+- [Authors' OAG files](https://drive.google.com/drive/folders/1a85skqsMBwnJ151QpurLFSa9o2ymc_rq): NN and CS snapshots acquired and hashed; paper-era identity unestablished.

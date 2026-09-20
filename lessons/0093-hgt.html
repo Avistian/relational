@@ -1,0 +1,218 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 93 — HGT: typed attention through time</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/hgt-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0092-meta-paths.html">Lesson92</a> · <a href="../reference/hgt.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 093</p><h1>HGT: typed attention through time</h1></header><h2 id="Your-win-today">Your win today<a class="anchor-link" href="#Your-win-today">&#182;</a></h2><p><strong>Trace one timestamped, typed edge all the way to a prediction—and implement its attention correctly.</strong> Heterogeneous Graph Transformer (HGT) connects the graph's schema to its learned computation. You will explain what is shared, what depends on a relation, and why the softmax boundary matters.</p>
+<p>Use three sittings: <strong>20 minutes</strong> for the edge trace, <strong>20 minutes</strong> for time and sampling, then the lab. The complete reproduction is a separate compute task. Start with retrieval; do not read the answers first.</p>
+<p>Primary reading: <a href="https://arxiv.org/html/2003.01332v1">Hu et al., Heterogeneous Graph Transformer, WWW 2020</a>, Figure 2 and §§3–4. Read the <a href="https://github.com/acbull/pyHGT/tree/85eaccd482bc1d1af56c2de297b6e3a88b96d5cd/OAG">pinned released implementation</a> beside the equations. The implementation and the paper differ in several consequential places.</p>
+<h2 id="Cold-retrieval">Cold retrieval<a class="anchor-link" href="#Cold-retrieval">&#182;</a></h2><div id="warmup"></div>
+
+<p>Before continuing, write these answers from memory:</p>
+<ol>
+<li>In <a href="0091-r-gcn.html">R-GCN, lesson 91</a>, which neighbors share a normalization denominator? Which weights depend on the relation?</li>
+<li>In <a href="0092-meta-paths.html">HAN, lesson 92</a>, what must you choose before training? What do node attention and semantic attention each normalize over?</li>
+<li>In <a href="0084-gat.html">GAT, lesson 84</a>, does an attention weight tell you the numerical content of a message?</li>
+</ol>
+<details><summary>Check after committing your answers</summary><p>R-GCN normalizes within each receiver/relation neighborhood, transforms with a relation matrix, then sums relation contributions. HAN requires predefined meta-path graphs; its node attention chooses neighbors inside one path and its semantic attention combines paths. An attention weight only scales a separately computed message. A large weight need not produce a large useful output.</p></details>
+
+<h2 id="1-%C2%B7-Why-go-beyond-HAN?">1 &#183; Why go beyond HAN?<a class="anchor-link" href="#1-%C2%B7-Why-go-beyond-HAN?">&#182;</a></h2><p><strong>Start with the limitation.</strong> Suppose the prediction target is a paper's research fields. Authors, venues, institutions and other papers can all help. HAN asks you to define useful routes such as paper–author–paper before fitting the model. A route you omit cannot acquire a HAN branch merely because training would find it useful.</p>
+<p><strong>Change the unit of computation.</strong> HGT starts with one-hop typed edges. One layer can bring an author's information to a paper. A second layer can bring that author's institution information along the same route. Stacking layers composes routes without constructing a separate adjacency matrix for every meta-path. This is the connection between <a href="https://arxiv.org/html/2003.01332v1#S3.SS4">paper Figure 1 and §3.4</a>.</p>
+<p>A <strong>node type</strong> describes the kind of entity: paper or author. A <strong>relation type</strong> describes an edge: cites or writes. A <strong>meta-relation</strong> is the triple <em>(source node type, relation type, target node type)</em>. It is one step. A <strong>meta-path</strong> is a sequence of such steps.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Let authors and papers use different ways to describe themselves, but make their resulting messages comparable at the receiving paper.</p>
+</blockquote>
+<p>HGT does not explicitly choose one discrete best path. A stack mixes many walks, with nonlinearities and residual paths between layers. Products of displayed attention weights are useful traces, not calibrated causal explanations.</p>
+<h2 id="2-%C2%B7-Model-architecture">2 &#183; Model architecture<a class="anchor-link" href="#2-%C2%B7-Model-architecture">&#182;</a></h2><figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l093/architecture.png" alt="End-to-end HGT reconstruction: typed inputs, sampled graph, separate attention/message branches, residual update and field-ranking handoff."></div><figcaption>End-to-end HGT reconstruction: typed inputs, sampled graph, separate attention/message branches, residual update and field-ranking handoff.</figcaption></figure>
+
+<p><strong>Read the picture from inputs to prediction.</strong> The graph supplies node features, node types, directed relation IDs and times. An input adapter maps each type's features to a common hidden width. This makes the tensor dimensions compatible without forcing every type to share the same projection.</p>
+<p>Inside a layer, the same edge feeds <strong>two branches</strong>. The attention branch asks how strongly the target should listen. The message branch decides what numerical vector arrives. Their outputs meet in a weighted sum at the target. A target-type projection and residual update produce the next representation.</p>
+<p>After the final layer, gather the seed papers—the papers selected for supervision in this batch. A linear classifier produces one score for each candidate level-2 field. A paper can have several valid fields. The released trainer normalizes its field indicators to sum to one and uses KL divergence against log-softmax predictions. At inference, turn those scores into a field ranking.</p>
+<p><strong>Shapes to keep on paper:</strong> input <code>X[n,F]</code>; adapted states <code>Z[n,d]</code>; queries, keys and values per edge <code>[E,H,D]</code>, where <code>D=d/H</code>; attention weights <code>[E,H]</code>; messages <code>[E,H,D]</code>; output states <code>[n,d]</code>; supervised predictions <code>[B,C]</code> for B seed papers and C candidate fields.</p>
+<p>The pictured reconstruction uses the paper's <code>d=256</code>, <code>H=8</code>, three layers. The release defaults to width 400 and four layers. The small NN teaching comparison uses width 32 and two layers. These are explicitly different experimental settings.</p>
+<h2 id="3-%C2%B7-One-edge,-three-kinds-of-sharing">3 &#183; One edge, three kinds of sharing<a class="anchor-link" href="#3-%C2%B7-One-edge,-three-kinds-of-sharing">&#182;</a></h2><h3 id="First:-project-by-node-type">First: project by node type<a class="anchor-link" href="#First:-project-by-node-type">&#182;</a></h3><p>A <strong>query</strong> describes what a receiver is looking for. A <strong>key</strong> describes what a sender offers. A <strong>value</strong> is the content to aggregate.</p>
+<p>For source <code>s</code>, target <code>t</code>, head <code>i</code>:</p>
+<div class="highlight"><pre><span></span>q = Q[target_type](z_t)[head i]   # D coordinates
+k = K[source_type](z_s)[head i]   # D coordinates
+v = V[source_type](z_s)[head i]   # D coordinates
+</pre></div>
+<p>The Q, K and V maps have separate parameters. Two author→paper relations can share the author's K/V maps and the paper's Q map. Changing writes-first to writes-last still changes the relation's matrices. A relation-specific full transform for every triple would forgo this sharing.</p>
+<h3 id="Second:-transform-by-relation">Second: transform by relation<a class="anchor-link" href="#Second:-transform-by-relation">&#182;</a></h3><p>The relation has an <strong>attention matrix</strong> and a <strong>message matrix</strong>, both <code>D×D</code> per head. They serve different purposes. The first modifies compatibility; the second transforms content. The release also learns one scalar prior per relation/head.</p>
+<div class="highlight"><pre><span></span>score(s,r,t,i) = dot(q, k @ W_attention[r,i]) * prior[r,i] / sqrt(D)
+message(s,r,t,i) = v @ W_message[r,i]
+</pre></div>
+<p><a href="https://arxiv.org/html/2003.01332v1#S3.SS2">Paper Eqs. 3–4</a> motivate this factorization. <strong>Read the notation carefully:</strong> the paper prints <code>sqrt(d)</code> and a meta-relation prior; the release uses <code>sqrt(D)</code> and relation/head priors. Our released-operator lane follows the code. Relation names in the OAG graph identify typed connections; the loader rejects ambiguous reused names rather than silently overwriting their meaning.</p>
+<h3 id="Third:-normalize-at-the-target">Third: normalize at the target<a class="anchor-link" href="#Third:-normalize-at-the-target">&#182;</a></h3><blockquote>
+<p><strong>In plain terms.</strong> An author and a cited paper competing to inform the same target must appear in the same denominator.</p>
+</blockquote>
+<p>For each receiver/head, softmax spans <strong>all incoming edges</strong>, across relation types. It does not span nodes elsewhere in the batch, and it is not applied separately to each relation. This is the live <code>receiver_softmax</code> task in the lab.</p>
+<div id="prediction"></div>
+
+<p><strong>Worked example.</strong> One head has <code>D=2</code>. After projection, the receiving paper's query is <code>[1,0]</code>. An author has key <code>[0,1]</code> and value <code>[2,0]</code>. A cited paper has key <code>[sqrt(2)·ln(2),0]</code> and value <code>[6,0]</code>. With identity relation matrices and priors of one, their scores are <code>0</code> and <code>ln(2)</code>.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l093/attention.png" alt="Synthetic worked trace: joint weights1/3 and2/3 produce14/3. Doubling the citation logit prior produces5.2."></div><figcaption>Synthetic worked trace: joint weights1/3 and2/3 produce14/3. Doubling the citation logit prior produces5.2.</figcaption></figure>
+
+<p>Their unnormalized weights are <code>1</code> and <code>2</code>. Softmax gives <code>1/3</code> and <code>2/3</code>. The aggregate is <code>[14/3,0] ≈ [4.667,0]</code>. This is the value <strong>before</strong> the output nonlinearity, type projection, gate and normalization.</p>
+<p>Now double only the citation prior. It multiplies the logit, so <code>exp(2 ln2)=4</code>. The weights become <code>.2</code> and <code>.8</code>; the first output coordinate becomes <code>5.2</code>. A prior is not an additive probability or a multiplier applied after softmax.</p>
+<div id="attention-widget"></div>
+
+<p><strong>Stop and diagnose.</strong> If you normalize separately by relation in this two-edge example, each relation receives weight one. Their sum is two, and the message is <code>[8,0]</code>. You have changed the model, even though each local softmax looks correct.</p>
+<h3 id="Finish-the-layer">Finish the layer<a class="anchor-link" href="#Finish-the-layer">&#182;</a></h3><p>Concatenate the head outputs, apply GELU, and project with the receiver's type-specific A map. The release mixes this candidate with the old state using <code>a=sigmoid(skip[type])</code>, then optionally applies LayerNorm:</p>
+<div class="highlight"><pre><span></span>candidate = dropout(A[target_type](GELU(aggregate)))
+new_state = LayerNorm(a * candidate + (1-a) * old_state)
+</pre></div>
+<p>The <a href="https://arxiv.org/html/2003.01332v1#S3.SS4">paper's Eq. 5</a> instead writes a simple additive residual. A gate initialized from <code>skip=1</code> starts at about <code>.731</code>, not one. Copying only the attention equation does not reproduce the released layer.</p>
+<h2 id="4-%C2%B7-Relative-time-changes-what-the-sender-says">4 &#183; Relative time changes what the sender says<a class="anchor-link" href="#4-%C2%B7-Relative-time-changes-what-the-sender-says">&#182;</a></h2><p>An author or venue may not have one natural timestamp. The sampler can assign it the time of the paper that brought it into the computation. A paper has an event time: its publication year. A <strong>relative time gap</strong> is the receiving node's assigned time minus the sending node's assigned time.</p>
+<p><strong>Worked example.</strong> A 2012 source paper contributes to a 2015 target with gap3, and to a 2018 target with gap6. Its original features are identical in both contexts. Its augmented source representation need not be.</p>
+<p>The release uses a sinusoidal table initialized at integer indices 0…239. The data conversion adds 120 to the signed gap. A learned linear map transforms the selected row; its output is added to the source state <strong>before both K and V</strong>. The target query does not receive this source-side addition.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l093/time.png" alt="Same2012 source, different receiving contexts: release table indices123 and126 change source keys and values."></div><figcaption>Same2012 source, different receiving contexts: release table indices123 and126 change source keys and values.</figcaption></figure>
+
+<p>For the release initialization, even/odd coordinates share a frequency, and values are scaled by <code>1/sqrt(d)</code>. The printed <a href="https://arxiv.org/html/2003.01332v1#S3.SS5">paper Eqs. 6–9</a> use distinct even/odd exponents and no such scale or index shift. The lab's <code>temporal_basis</code> supports both printed and released formulas so you can identify the difference.</p>
+<p><strong>A subtle source bug.</strong> Setting <code>embedding.requires_grad=False</code> on the module does not freeze its weight parameter. The release does this, leaving the table trainable. The reconstruction preserves that observed behavior and verifies its gradients. A fixed-table alternative would be a distinct, declared intervention.</p>
+<p><strong>Prediction:</strong> does setting every gap to zero remove time information? No. Zero gap maps to table row 120, and the learned linear map can produce a nonzero vector. The no-RTE arm bypasses the addition entirely.</p>
+<blockquote>
+<p><strong>Scope check.</strong> RTE encodes time; it does not enforce causal data access. You must separately control edge availability, feature construction, label links and prediction cutoffs. The old release limits candidate expansion by time but reconstructs induced edges without checking their timestamps again. Its provided features also need a separate point-in-time provenance audit before use in a prospective database prediction task.</p>
+</blockquote>
+<p>This distinction prepares you for temporal graph methods later in Year 3 and the time-aware database representations in Year 4.</p>
+<h2 id="5-%C2%B7-HGSampling-makes-the-graph-manageable">5 &#183; HGSampling makes the graph manageable<a class="anchor-link" href="#5-%C2%B7-HGSampling-makes-the-graph-manageable">&#182;</a></h2><p>A <strong>seed node</strong> is a prediction target selected for the batch. A <strong>budget</strong> stores candidate neighbors and their accumulated sampling scores. Heterogeneous Graph Sampling maintains a separate budget for each node type.</p>
+<p><strong>Why separate budgets?</strong> If papers vastly outnumber institutions, globally sampling candidates can nearly erase the institution type. Per-type quotas keep the computation from being dominated simply by population size. They do not guarantee identical counts when a type has too few candidates.</p>
+<p><strong>Worked example.</strong> Selected paper p0 has authors a and b; selected paper p1 has authors b and c. Each paper contributes half a unit to each of its two authors. Budgets become <code>[.5,1,.5]</code>. Squaring and normalizing gives <code>[1/6,2/3,1/6]</code>.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l093/sampling.png" alt="Illustrative per-type budget [.5,1,.5] becomes sampling probabilities [1/6,2/3,1/6]."></div><figcaption>Illustrative per-type budget [.5,1,.5] becomes sampling probabilities [1/6,2/3,1/6].</figcaption></figure>
+
+<p>Author b is favored because it connects to both sampled papers. After drawing nodes without replacement inside each type, add their neighbors to the budgets, repeat to the requested depth, and reconstruct the induced graph among selected nodes. These are <a href="https://arxiv.org/html/2003.01332v1#S4.SS1">paper Algorithms 1–2</a>.</p>
+<p>The release first caps the neighbors considered in each expansion. It can also overwrite the inherited time of a candidate reached from several contexts. Our source-parity check compares actual sampled IDs, features, typed edges and relative times, not just their counts.</p>
+<p><strong>Do not confuse two depths.</strong> Sampling depth determines the available subgraph. Neural layer count determines how many message-passing steps the model performs inside it. The release samples to depth 6 but uses four neural layers by default.</p>
+<h3 id="Remove-the-answer-from-the-graph">Remove the answer from the graph<a class="anchor-link" href="#Remove-the-answer-from-the-graph">&#182;</a></h3><p>To predict a seed paper's L2 fields, remove both its paper→L2-field links and their reverse links from the sampled graph. Leaving the reverse relation preserves a route that directly reveals the answer. Other context nodes can still carry observed field relations under this released task.</p>
+<p>The lab asserts both directions are absent for seed papers. It also records the split boundaries: training years before 2015; validation 2015–2016 inclusive; test years after 2016. The paper's prose overlaps at 2016; the code resolves the boundary explicitly. These splits do not by themselves prove that every precomputed feature was available at prediction time.</p>
+<h2 id="6-%C2%B7-Compare-models-without-comparing-different-graphs">6 &#183; Compare models without comparing different graphs<a class="anchor-link" href="#6-%C2%B7-Compare-models-without-comparing-different-graphs">&#182;</a></h2><p>The lab uses the <strong>released NN subset of OAG</strong>, containing 66,211 nodes across five types. Its L2 prediction task has 8,489 training papers, 3,439 validation papers and 6,983 test papers; rankings span 4,782 candidate fields.</p>
+<p>Three arms share source data, features, splits, seed targets, sampled subgraphs, optimizer, training budget and evaluation queries: HGT, a visible relation-mean R-GCN comparison, and HGT without RTE. All use the same width 32/two-layer budget. Equal width does not mean equal parameter counts; the table reports them. This R-GCN arm is a course comparison, not the unavailable original Table 2 baseline implementation.</p>
+<p>Each run fits40 updates across 10 epochs. Validation NDCG alone selects the saved weights. Ten test batches of 32 papers are sampled afterwards. Batches may overlap; they are not ten independent datasets. Three model seeds measure run variability on this one graph.</p>
+<p><strong>Before looking at the results:</strong> could restricting the data to neural-network papers make one target field nearly universal? What would a classifier that always ranks that field first achieve under MRR?</p>
+<p><strong>Author-reference evidence, not your current kernel output.</strong> Nine complete neural fits on the NN graph. Mean ± sample SD across3 seeds.</p>
+<table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Trainable parameters</th>
+  <th style="text-align:right">NN NDCG</th>
+  <th style="text-align:right">NN MRR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>HGT</td>
+  <td style="text-align:right">422,792</td>
+  <td style="text-align:right">0.4143 ± 0.0083</td>
+  <td style="text-align:right">1.0000 ± 0.0000</td>
+</tr>
+<tr>
+  <td>R-GCN</td>
+  <td style="text-align:right">412,654</td>
+  <td style="text-align:right">0.4170 ± 0.0048</td>
+  <td style="text-align:right">0.9976 ± 0.0023</td>
+</tr>
+<tr>
+  <td>HGT without RTE</td>
+  <td style="text-align:right">405,320</td>
+  <td style="text-align:right">0.4221 ± 0.0067</td>
+  <td style="text-align:right">1.0000 ± 0.0000</td>
+</tr>
+<tr>
+  <td>Train-frequency baseline</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.4880 ± 0.0075</td>
+  <td style="text-align:right">1.0000 ± 0.0000</td>
+</tr>
+</tbody>
+</table>
+<p>The most frequent training field is <strong>Artificial neural network</strong>, present in every training and test paper in this NN subset. A training-only frequency ranking reaches MRR 1.0 and higher NDCG than these small neural runs. That diagnosis matters more than declaring a winner among nearly tied neural arms. The baseline SD only reflects sampled queries; it has no model-initialization variability.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l093/results.png" alt="Measured NN teaching comparison over3 model seeds; one dataset, paired query streams, not CS paper reproduction."></div><figcaption>Measured NN teaching comparison over3 model seeds; one dataset, paired query streams, not CS paper reproduction.</figcaption></figure>
+
+<p><strong>Metric diagnosis.</strong> MRR measures the reciprocal rank of the first relevant field. It can saturate while many other correct fields rank poorly. NDCG reflects more of the ranking, but you must state its exact discount. The release uses DCG “method0”: ranks1 and2 both have denominator1; rank3 has denominator <code>log2(3)</code>. This differs from the common <code>log2(rank+1)</code> convention. The independent audit recomputes metrics from each query's relevant ranks.</p>
+<blockquote>
+<p><strong>Scope check.</strong> These are descriptive NN results. Neither close scores nor a winning arm establish a general HGT ranking. This lesson has one graph, one small configuration and only three model seeds. No multi-dataset statistical superiority claim is made.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Full-reproduction:-name-the-claim-before-running">7 &#183; Full reproduction: name the claim before running<a class="anchor-link" href="#7-%C2%B7-Full-reproduction:-name-the-claim-before-running">&#182;</a></h2><p>The named target is <strong>Table 2, CS Paper–Field L2, HGT with heterogeneity and RTE</strong>: NDCG <code>.403 ± .041</code>, MRR <code>.439 ± .078</code>, reported over five trainings. See <a href="https://arxiv.org/html/2003.01332v1#S5">the original table and settings</a>. Those are cited paper results, not our measurements.</p>
+<p>The CS and NN downloads are hash-pinned independently. CS bytes were acquired; identity to the exact paper-era snapshot is not established. The linked CS file was modified after publication. NN cannot substitute for CS because its selection changes the target distribution.</p>
+<table>
+<thead>
+<tr>
+  <th>Protocol element</th>
+  <th>Paper statement</th>
+  <th>Pinned release / reconstruction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Model width / layers</td>
+  <td>256 / 3</td>
+  <td>Default release400 /4; <code>paper</code> preset uses256 /3</td>
+</tr>
+<tr>
+  <td>Heads / schedule</td>
+  <td>8 /200 epochs</td>
+  <td>Preserved;32 batches ×2 reuse passes each epoch</td>
+</tr>
+<tr>
+  <td>Checkpoint choice</td>
+  <td>Lowest validation loss</td>
+  <td>Release highest validation NDCG; presets keep these separate</td>
+</tr>
+<tr>
+  <td>Attention scale</td>
+  <td>Printed sqrt(d)</td>
+  <td>Released sqrt(d/head count)</td>
+</tr>
+<tr>
+  <td>Residual update</td>
+  <td>Additive</td>
+  <td>Learned type gate and optional LayerNorm</td>
+</tr>
+<tr>
+  <td>Temporal basis</td>
+  <td>Fixed sinusoids as printed</td>
+  <td>Shifted, scaled, paired frequencies; table actually trainable</td>
+</tr>
+<tr>
+  <td>Labels / objective</td>
+  <td>Multiple field labels</td>
+  <td>Normalize indicators; batch-mean KL divergence</td>
+</tr>
+<tr>
+  <td>Sampling</td>
+  <td>HGSampling</td>
+  <td>Released capped-neighbor version, serial declared streams</td>
+</tr>
+<tr>
+  <td>Optimizer</td>
+  <td>AdamW + cosine annealing</td>
+  <td>Explicit defaults; released step counter begins at1500</td>
+</tr>
+<tr>
+  <td>Evaluation</td>
+  <td>NDCG /MRR, five trainings</td>
+  <td>Released DCG convention; ten sampled test batches per fit</td>
+</tr>
+<tr>
+  <td>Feature provenance</td>
+  <td>XLNet /metapath2vec features</td>
+  <td>Supplied release features; raw feature extraction not rerun</td>
+</tr>
+<tr>
+  <td>Historical randomness</td>
+  <td>Original seeds unavailable</td>
+  <td>Five declared fresh seeds; no historical RNG identity claim</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Source chronology matters.</strong> We also archive the publication-era2020-04-16 code. It has triplet priors, no LayerNorm, different residual dropout and a different2d temporal table. The tested modern operator is not identical to that historical implementation. The exact revision behind Table 2 is unknown; the historical runtime replay remains unrun.</p>
+<p><strong>Why two large presets?</strong> <code>release</code> follows the published code defaults. <code>paper</code> changes the dimensions and selection rule explicitly stated in the paper while retaining the audited released operators. It is a reconstruction with remaining deviations, not a switch that makes those discrepancies disappear.</p>
+<p><strong>Executed:</strong> layer output/attention/gradient parity; two source-sampler comparisons; nine small NN fits; training-frequency baseline; one paper-width update on NN. <strong>Not executed:</strong> full CS five-run target, historical runtime and full-paper suite. CS loading exceeded a declared 10 GiB virtual-memory guard; Modal rejected the GPU invocation because a payment method was required. Full-paper parity remains <strong>NOT_ESTABLISHED</strong>, historical comparison <strong>INCOMPARABLE</strong>. These are actual blockers, not successful reproduction results.</p>
+<p>The complete loader, sampler, model, objective, optimizer, checkpoint selection and evaluation are visible in the notebook. The CLI and GPU entrypoint use the same canonical implementation. The <a href="../labs/l093-reproduction.md">reproduction contract</a> contains exact commands, hashes, measured coverage and the remaining full-paper work.</p>
+<h2 id="8-%C2%B7-Lab:-three-live-tasks-and-a-defensible-report">8 &#183; Lab: three live tasks and a defensible report<a class="anchor-link" href="#8-%C2%B7-Lab:-three-live-tasks-and-a-defensible-report">&#182;</a></h2><p><a href="../labs/0093-hgt.ipynb">Student notebook</a> · <a href="../labs/html/0093-hgt.html">Prepared notebook view</a> · <a href="../labs/solutions/0093-hgt.ipynb">Teacher solution</a> · <a href="../reference/hgt.html">Compact reference</a></p>
+<ol>
+<li><strong>TODO: receiver softmax.</strong> Normalize each receiver/head over all incoming relations. CHECK distinguishes receiver grouping from global and per-relation normalization.</li>
+<li><strong>TODO: relation attention and message.</strong> Compute separate relation transforms for keys and values, and scale logits by head width. CHECK traces the <code>[4.667,0]</code> example and gradients.</li>
+<li><strong>TODO: temporal basis.</strong> Build the specified released and printed-paper bases. CHECK verifies origin, frequency, scale and distinct time responses. The initialized basis is called by the actual temporal module.</li>
+</ol>
+<p>The rest is PROVIDED, but not hidden. Read the sampler and trainer in separate annotated cells. First run the one-update NN diagnostic. Then run the matched three-seed teaching comparison. The CS reproduction cell is gated off by default and documents its memory/GPU requirements.</p>
+<p><strong>EXIT:</strong> submit the checks, per-seed results, the training-frequency baseline, and a 150–250-word defense. Explain why normalization crosses relation types, where time enters, how label edges are masked, what the NN comparison establishes, and which reproduction gaps remain. Authored or pre-executed materials do not establish your mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<div id="teachback"></div>
+
+<h2 id="Carry-this-forward">Carry this forward<a class="anchor-link" href="#Carry-this-forward">&#182;</a></h2><p>R-GCN taught relation-specific transforms. HAN taught explicitly constructed semantic routes. HGT combines node-type projections with relation transforms and composes routes through depth. The next curriculum lesson, 94, organizes these methods into a heterogeneous-information-network taxonomy. Later, RelGT will revisit type, structure and time inside a database-oriented Transformer.</p>
+<p>Tomorrow, retrieve the softmax denominator without looking. In three days, derive why zeroing the time gap differs from disabling RTE. Ask the teacher to challenge any unclear equation, sampler step or reproduction claim before moving on.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/hgt-viz.js"></script><script src="../assets/l093-lesson.js"></script></body></html>

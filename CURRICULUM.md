@@ -274,7 +274,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 
 | 091 | R-GCN | Schlichtkrull 2018 | Relation-specific weights |
 | 092 | [Meta-paths / HAN](lessons/0092-meta-paths.html) | Wang 2019 HAN | [Hierarchical attention + full ACM released-protocol reconstruction](labs/0092-meta-paths.ipynb) |
-| 093 | HGT | Hu 2020 | Transformer on heterogeneous graphs |
+| 093 | [HGT](lessons/0093-hgt.html) | Hu2020 | [Typed attention, time, matched OAG comparison and CS reproduction track](labs/0093-hgt.ipynb) |
 | 094 | HIN survey | Sun & Han 2020 | Taxonomy of heterogeneity |
 | 095 | Bipartite graphs | — | User-item as hetero graph |
 | 096 | Multi-relational data | — | Connect to SQL FK semantics |

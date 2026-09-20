@@ -2218,5 +2218,7 @@
   "explain": "Each relation support is row-normalized independently. Sum those relation means and add self once."
 }
 ,{"id":"l092-semantic-axis","lesson":92,"quarter":"Q2","concept":"han-semantic-attention","question":"In paper-global HAN, what happens before softmax across meta-paths?","options":[{"label":"Average scores across nodes","value":"scores"},{"label":"Average weights across nodes","value":"weights"},{"label":"Average labels across nodes","value":"labels"}],"correct":"scores","explain":"Equation7 averages semantic scores over nodes before Equation8 normalizes paths. The original release instead applies per-node softmax."}
+
+,{"id":"l093-hgt-softmax","lesson":93,"quarter":"Q2","concept":"heterogeneous-attention","question":"In HGT, which edges share a softmax denominator for one receiver and head?","options":[{"label":"All incoming relation types","value":"all"},{"label":"One incoming relation type","value":"one"},{"label":"All outgoing relation types","value":"out"}],"correct":"all","explain":"Type-specific projections and relation-specific transforms produce logits, then HGT normalizes jointly over the receiver's incoming edges."}
 ];
 })(window);
