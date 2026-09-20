@@ -1,0 +1,35 @@
+"""Editable computation diagram and portable notebook raster."""
+from pathlib import Path
+import cairosvg
+P=Path(__file__).resolve().parent/'figures/l099';P.mkdir(parents=True,exist_ok=True)
+svg='''<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="700" viewBox="0 0 1080 700" role="img" aria-labelledby="title desc">
+<title id="title">One ACM graph, four prediction routes</title><desc id="desc">Paper words and constant author and subject features enter a shared typed adapter. R-GCN sums relation means, HGT learns incoming-edge attention, uniform HGT removes the attention scorer, and MLP bypasses edges. Identical train and validation masks govern all fits. Test labels enter only after model selection.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#526a76"/></marker></defs>
+<rect width="1080" height="700" rx="18" fill="#f5f3ee"/>
+<style>text{font-family:Arial,sans-serif;fill:#183740;font-size:16px}.title{font-size:25px;font-weight:bold}.label{font-size:19px;font-weight:bold}.small{font-size:14px}.line{stroke:#526a76;stroke-width:2;fill:none;marker-end:url(#arrow)}.box{fill:white;stroke:#bcc9c8;stroke-width:1.5}</style>
+<text x="30" y="40" class="title">R-GCN vs HGT · hold the information fixed</text>
+<text x="30" y="65">4,025 papers · 7,167 authors · 60 subjects · 34,864 directed edges</text>
+<rect x="28" y="92" width="310" height="178" rx="12" class="box"/>
+<text x="45" y="120" class="label">Typed inputs</text>
+<text x="45" y="149">paper: [4025, 1903] word counts</text><text x="45" y="174">author: [7167, 1] constant ones</text><text x="45" y="199">subject: [60, 1] constant ones</text>
+<text x="45" y="226" class="small">paper ↔ author; paper ↔ subject</text><text x="45" y="249" class="small">Conference supplies labels only.</text>
+<path d="M340 180H375" class="line"/>
+<rect x="378" y="92" width="320" height="178" rx="12" class="box"/>
+<text x="395" y="120" class="label">Common representation</text><text x="395" y="149">Row-normalize paper words</text><text x="395" y="174">Type-specific affine → tanh</text><text x="395" y="199">h[type]: [N_type, 32]</text><text x="395" y="226" class="small">Same features, split, 2 layers, 60 epochs</text><text x="395" y="249" class="small">Different operators and parameter counts</text>
+<rect x="735" y="92" width="315" height="178" rx="12" fill="#e4eae4" stroke="#769384"/>
+<text x="752" y="120" class="label">Information boundary</text><text x="752" y="150">Train: 804 labels → cross-entropy</text><text x="752" y="176">Validation: 403 → select epoch/LR</text><text x="752" y="202">Test: 2818 → final scoring only</text><text x="752" y="232" class="small">All graph features/edges are visible.</text><text x="752" y="253" class="small">This is a transductive experiment.</text>
+<path d="M538 272V292H155V311" class="line"/><path d="M538 292H416V311" class="line"/><path d="M538 292H680V311" class="line"/><path d="M538 292H939V311" class="line"/>
+<rect x="28" y="315" width="244" height="201" rx="12" fill="#e1eef3" stroke="#70a0b4"/>
+<text x="44" y="345" class="label">R-GCN</text><text x="44" y="375">source h → W_relation</text><text x="44" y="401">mean within each relation</text><text x="44" y="427">sum + learned self path</text><text x="44" y="453">ReLU; repeat twice</text><text x="44" y="488" class="small">Four relation matrices per layer</text>
+<rect x="288" y="315" width="244" height="201" rx="12" fill="#f8e7d7" stroke="#c7905e"/>
+<text x="304" y="345" class="label">HGT</text><text x="304" y="375">typed Q/K/V · 4 heads × 8</text><text x="304" y="401">relation scores/messages</text><text x="304" y="427">softmax: all incoming edges</text><text x="304" y="453">sum → GELU → typed A</text><text x="304" y="479">gate + residual + norm</text><text x="304" y="500" class="small">Repeat twice; no time encoding</text>
+<rect x="548" y="315" width="244" height="201" rx="12" fill="#f2ead9" stroke="#b59a63"/>
+<text x="564" y="345" class="label">Uniform HGT</text><text x="564" y="375">Keep HGT message route</text><text x="564" y="401">Remove Q/K and score maps</text><text x="564" y="427">Edge weight = 1 / degree</text><text x="564" y="453">Output + residual unchanged</text><text x="564" y="479">Shared initial tensors match</text><text x="564" y="500" class="small">Retrain; fewer parameters</text>
+<rect x="808" y="315" width="244" height="201" rx="12" fill="#e9e5f2" stroke="#9a8bb7"/>
+<text x="824" y="345" class="label">Feature-only MLP</text><text x="824" y="375">Paper adapter only</text><text x="824" y="401">Linear → ReLU</text><text x="824" y="427">Linear → ReLU</text><text x="824" y="453">No neighborhood access</text><text x="824" y="479">Checks value beyond words</text><text x="824" y="500" class="small">Paper features only</text>
+<path d="M150 518V540H930V518M410 518V540M670 518V540" stroke="#526a76" stroke-width="2" fill="none"/><path d="M535 540V555" class="line"/>
+<rect x="260" y="559" width="550" height="63" rx="12" class="box"/><text x="282" y="586" class="label">Paper [4025,32] → classifier → logits [4025,3]</text><text x="282" y="610">Validation selects → freeze → score accuracy / macro F1</text>
+<text x="30" y="656" class="small">2 learning rates × 3 paired seeds × 4 arms = 24 complete fits. Equal updates do not mean equal compute.</text>
+<text x="30" y="680" class="small">Separate evidence: AIFB published-experiment replay | HGT CS unrun track | ACM course comparison</text>
+</svg>'''
+(P/'comparison.svg').write_text(svg);cairosvg.svg2png(bytestring=svg.encode(),write_to=str(P/'comparison.png'),scale=1.5)

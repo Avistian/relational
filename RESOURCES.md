@@ -527,3 +527,10 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [PyG NeighborLoader API](https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/loader/neighbor_loader.html): typed fanout, seed prefix, identity and time contract.
 - [Pinned RelBench entity example](https://github.com/stanford-star/relbench/blob/584a03d518b2b655580ea8e1cfbbb26bec0a2841/examples/gnn_entity.py): real framework integration; not a benchmark replay.
 - [Full course protocol](labs/l098-reproduction.md), archived source hashes and complete executed coverage.
+
+## Lesson 099 · Controlled architecture comparison
+
+- [R-GCN, Schlichtkrull et al.](https://arxiv.org/abs/1703.06103v4): Eq2–3, Table2 AIFB; named ten-run port replay.
+- [HGT, Hu et al.](https://arxiv.org/abs/2003.01332v1): §3 operators, Table2 CS; full-setting track remains unrun.
+- [Pinned ACM raw loader](https://github.com/dmlc/dgl/blob/3d16000b4170fa741ed9e9667f22ba84d3493026/examples/pytorch/han/utils.py): conference mapping and typed incidence; course split/trainer explicitly differ.
+- [L099 protocol and evidence](labs/l099-reproduction.md):24 complete course fits, paired attention intervention, independent checkpoint/metric audit and separate published targets.

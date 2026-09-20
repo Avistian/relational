@@ -202,7 +202,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `hetero-graph-viz.js` (sampled typed subgraph).
 - **Bridge** — the training mechanics for Y4 RelBench; callback L083/L089; forward to L100.
 
-### 099 · Compare R-GCN vs HGT — *— (analysis unit)*
+### 099 · [Compare R-GCN vs HGT](../lessons/0099-rgcn-vs-hgt.html) — *controlled analysis unit*
+- **Prepared package** — [lab](../labs/0099-rgcn-vs-hgt.ipynb), [full protocol](../labs/l099-reproduction.md): all24 ACM course fits and a fresh ten-run AIFB port. Uniform HGT slightly exceeds learned attention here; no universal winner inferred. HGT CS NOT_RUN; full-paper parity NOT_ESTABLISHED. Learner defense pending.
 - **Skill** — run R-GCN and HGT on the *same* hetero graph and attribute performance differences to
   architecture (typing vs attention).
 - **Teach** — controlled comparison discipline (same data/split/budget), where attention helps hetero,

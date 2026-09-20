@@ -189,3 +189,7 @@ live Colab compatibility or full paper reproduction.
 - **L097 Negative sampling:** `0097-negative-sampling.ipynb`; complete ML-100K 45-fit uniform/degree/hard ablation, typed train-only exclusion, visible BPR trainer and fixed full-catalog ranking. Three live tasks; separate sampled-candidate diagnostic. Historical BPR paper reproduction remains NOT_RUN. See `l097-reproduction.md`.
 
 - **L098 Heterogeneous mini-batching:** `0098-hetero-mini-batching.ipynb`; real native sampling on a three-type synthetic graph, 96 independent output/gradient audits, temporal isolation, nine training fits. Full protocol in `l098-reproduction.md`; RelBench benchmark NOT_RUN.
+
+### Lesson099 · R-GCN versus HGT
+
+[Student](0099-rgcn-vs-hgt.ipynb) · [Solution](solutions/0099-rgcn-vs-hgt.ipynb) · [Read lab](html/0099-rgcn-vs-hgt.html) · [Protocol](l099-reproduction.md). Full24-fit ACM comparison, attention ablation, fresh ten-run AIFB port; HGT CS NOT_RUN. Three live tasks and written attribution defense.

@@ -14,3 +14,13 @@ Freeze before scoring: four arms (R-GCN, HGT, uniform-attention HGT, feature-onl
 6. Execute the standalone solution, inspect desktop/mobile lesson and prepared notebook, verify deterministic rebuild and copied Pages delivery. Do not infer learner mastery.
 
 The requested writing-plans skill is not installed (skill catalog and filesystem search checked); this file supplies the implementation plan directly.
+
+Before any test scoring, tightened the ablation: HGT and uniform HGT share every common initial tensor. Preliminary validation-only partial fits discarded; full suite restarted from zero.
+
+## Delivered execution
+
+All24 ACM fits and1440 epochs completed. Independent audit restores24 checkpoints and reconstructs12 selected test prediction sets with sklearn metrics. The fresh standalone solution repeats all24 fits and exactly matches every loss trace and selected prediction. HGT87.095%, uniform HGT87.864%, R-GCN55.240%, MLP68.062% mean accuracy under the declared modest budget; no universal ranking or learned-attention benefit inferred. Fresh ten-run AIFB port95.8333% mean,1.4640pp sample SD. HGT CS NOT_RUN; full-paper parity NOT_ESTABLISHED.
+
+Initial notebook urllib acquisition stalled; the successful execution harness uses an independent bounded curl download into the temporary working directory, then the notebook verifies its hash. No repository/data-cache imports. This is a fresh notebook replay in the same author environment; clean environment install and live Colab are NOT_CHECKED.
+
+Delivery passed at1200/375px: all nine intervention states, reset/keyboard controls, print, portable figure,17 executed notebook code cells, three live student tasks, deterministic rebuild,48 copied-Pages local links and manifest navigation over HTTP. Architecture inspected and corrected for label overflow and full desktop visibility. No JavaScript errors. Deployment NOT_CHECKED; no push requested.

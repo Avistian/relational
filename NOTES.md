@@ -1399,3 +1399,7 @@ Full reproduction requested. Complete ML-100K release reconstruction and all 45 
 ## Lesson098 created · Heterogeneous mini-batching · 2026-09-20
 
 Full reproduction requested. Complete declared synthetic experiment: 32 graphs × three batch sizes, independent dense output/gradient oracle, native temporal disjoint queries, nine full training fits. Native PyG/pyg-lib required; complete inline graph/model/loader/trainer and three live tasks. No published score assigned; RelBench benchmark NOT_RUN and paper parity NOT_ESTABLISHED. No learner mastery or deployment inferred.
+
+## Lesson099 created · R-GCN vs HGT · 2026-09-20
+
+Full reproduction requested; combined scope approved. Entire24-fit ACM course comparison executed: same graph/split/features/search budget, paired common HGT/ablation initialization, full traces/checkpoints/predictions. Uniform HGT slightly exceeds HGT; architecture gap cannot be credited to learned attention. Fresh complete ten-run AIFB port executed separately (95.8333% mean). HGT CS remains NOT_RUN with prior resource findings explicitly attributed to L093. Full-paper parity NOT_ESTABLISHED; no learner mastery or deployment inferred.

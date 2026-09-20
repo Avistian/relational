@@ -1,0 +1,254 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 099 — R-GCN vs HGT: what does a controlled comparison explain?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/architecture-comparison.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0098-hetero-mini-batching.html">Lesson 98</a> · <a href="../reference/architecture-comparison-contract.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 099</p><h1>R-GCN vs HGT: what does a controlled comparison explain?</h1></header><div class="package-links"><strong>Your tangible win:</strong> produce an attribution table that distinguishes an architecture difference, an attention intervention and a budget effect.<br><a href="../labs/0099-rgcn-vs-hgt.ipynb">Student notebook</a> · <a href="../labs/solutions/0099-rgcn-vs-hgt.ipynb">Executed solution</a> · <a href="../labs/html/0099-rgcn-vs-hgt.html">Read the solution</a> · <a href="../labs/l099-reproduction.md">Full reproduction contract</a></div>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading-%E2%80%94-five-minutes">1 &#183; Retrieve before reading &#8212; five minutes<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading-%E2%80%94-five-minutes">&#182;</a></h2><div id="l099-warmup"></div>
+
+<p>Write your answers before revealing the feedback. From <a href="0091-r-gcn.html">L091</a>: if a receiver has two author neighbors and one subject neighbor, does R-GCN divide all three messages by three? From <a href="0093-hgt.html">L093</a>: which axis does HGT's softmax normalize? From <a href="0098-hetero-mini-batching.html">L098</a>: does matching sampled seed IDs guarantee matching neighborhoods? From <a href="0097-negative-sampling.html">L097</a>: can a different evaluation candidate set change a model ranking?</p>
+<details><summary>Check after committing an answer</summary><p>R-GCN takes a separate mean within each relation and then sums those relation contributions. HGT normalizes over all incoming edges for each receiver and head in the implemented release. Identical seeds do not guarantee identical sampled context. Changing evaluation candidates can change the question being scored. A comparison must align the information, selection and evaluation interfaces as well as the model names.</p></details>
+
+<p><strong>Route:</strong> about 30 minutes for the explanation, then a separate lab and written defense. This is the synthesis between typed message passing and the <a href="../plan/year-3.md">Q2 checkpoint</a>. It prepares the controlled GNN/graph-transformer comparison in L146 and the mission's demand for defensible relational-model evidence.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/abs/1703.06103v4">Schlichtkrull et al., R-GCN, Eq. 2–3 and Table 2</a>, followed by <a href="https://arxiv.org/abs/2003.01332v1">Hu et al., HGT, §3 and Table 2</a>. Read the operators first; do not compare the papers' headline scores across datasets. The <a href="../labs/sources/l099/dgl_han_utils.py">pinned DGL loader</a> defines the ACM venue mapping; our split and training protocol are new.</p>
+<h2 id="2-%C2%B7-Define-the-comparison-before-choosing-a-winner">2 &#183; Define the comparison before choosing a winner<a class="anchor-link" href="#2-%C2%B7-Define-the-comparison-before-choosing-a-winner">&#182;</a></h2><p>The previous lessons established that both families can pass messages on typed graphs. They did not establish that an HGT gain is <em>caused by attention</em>: HGT also changes projections, parameter counts, residual paths, nonlinearities and normalization. Comparing two complete systems changes all of these together.</p>
+<p>Our central question is narrower: <strong>under one declared data and training budget, how do these implemented families compare, and what changes when we remove HGT's content-dependent edge weights?</strong> A family comparison answers the first part. A within-HGT intervention gives evidence about the second.</p>
+<table>
+<thead>
+<tr>
+  <th>Comparison</th>
+  <th>What changes</th>
+  <th>What a result can support</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>HGT versus R-GCN</td>
+  <td>Whole hidden operator, capacity and compute</td>
+  <td>Conditional family performance under this protocol</td>
+</tr>
+<tr>
+  <td>HGT versus uniform HGT</td>
+  <td>Learned scoring is removed; shared message/residual parameters remain</td>
+  <td>Value of the learned scoring mechanism including its capacity and optimization effects</td>
+</tr>
+<tr>
+  <td>Graph models versus MLP</td>
+  <td>Neighborhood access and graph operators</td>
+  <td>Whether this fitted graph pipeline improves over the feature-only baseline</td>
+</tr>
+<tr>
+  <td>Same model, another LR</td>
+  <td>Optimization trajectory</td>
+  <td>Sensitivity to the declared tuning budget</td>
+</tr>
+</tbody>
+</table>
+<p>None isolates a universal architectural truth. Even the attention ablation removes parameters and changes optimization. “Attention alone caused every point of gain” would still be too strong.</p>
+<h2 id="3-%C2%B7-One-graph-and-one-information-contract">3 &#183; One graph and one information contract<a class="anchor-link" href="#3-%C2%B7-One-graph-and-one-information-contract">&#182;</a></h2><p>We download and SHA256-check the complete released <code>ACM.mat</code>, select the five conferences used by the DGL ACM raw example, and retain <strong>all 4,025 selected papers, 7,167 connected authors and 60 connected subjects</strong>. Compact auxiliary IDs preserve their original IDs in the evidence. This is <strong>not</strong> L092's 3,025-paper pickle or its historical split.</p>
+<table>
+<thead>
+<tr>
+  <th>Object</th>
+  <th>Representation</th>
+  <th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Paper</td>
+  <td>1,903 bag-of-words columns, normalized by each row's sum</td>
+  <td>Same inputs for all four arms</td>
+</tr>
+<tr>
+  <td>Author / subject</td>
+  <td>One constant feature equal to 1</td>
+  <td>Learn typed starting states; no target-derived features</td>
+</tr>
+<tr>
+  <td>Paper ↔ author</td>
+  <td>13,407 edges in each direction</td>
+  <td>Two-hop coauthor information</td>
+</tr>
+<tr>
+  <td>Paper ↔ subject</td>
+  <td>4,025 edges in each direction</td>
+  <td>Two-hop subject context</td>
+</tr>
+<tr>
+  <td>Conference</td>
+  <td>Maps papers to three class labels</td>
+  <td><strong>Excluded from graph edges and input features</strong></td>
+</tr>
+<tr>
+  <td>Split</td>
+  <td>Seed 99; class-stratified 20% / 10% / remainder</td>
+  <td>804 train / 403 validation / 2,818 test papers</td>
+</tr>
+</tbody>
+</table>
+<p>There is one subject incidence per selected paper. A subject can connect many papers: inspect degree before interpreting its influence. Subjects are a legitimate declared input in this static experiment; their relationship to venue categories can make this task easy. They do not establish useful deployment-time availability in a future temporal task.</p>
+<p><strong>Transductive access is explicit.</strong> Every selected paper's text and graph position are visible during training. Only 804 labels enter the training loss. Validation labels choose epochs and learning rates. Test labels enter final scoring after selection. Row normalization needs no corpus fitting; no labels create author or subject features. <a href="0096-multi-relational-data.html">L096's typed identity contract</a> still applies.</p>
+<h2 id="4-%C2%B7-Model-architecture:-follow-one-paper-to-its-prediction">4 &#183; Model architecture: follow one paper to its prediction<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-follow-one-paper-to-its-prediction">&#182;</a></h2><figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l099/comparison.svg" alt="One typed ACM graph feeds R-GCN, HGT, uniform HGT and a feature-only MLP; common train and validation boundaries lead to frozen test scoring."></div><figcaption>Read left to right through the inputs, then down one branch to the prediction. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p>Start with paper <em>p</em>. A type-specific affine adapter produces a 32-dimensional state followed by <code>tanh</code>. Authors and subjects have their own adapters. At layer one, an author receives information from that author's papers; at layer two, that author sends the resulting state back to <em>p</em>. This is how another paper's words can influence <em>p</em> through a shared author. The subject route works similarly. The MLP keeps only <em>p</em>'s words.</p>
+<p>Every graph model has two layers, width 32 and the same four directed input stores. An affine classifier maps the final paper state to three logits. The loss uses only the train slice. Inference evaluates all paper states, then selects the test slice. There is no temporal encoding: this graph has no declared prediction-time interface. There is no neighborhood sampling: full-graph execution removes the sampler as a confound while <a href="0098-hetero-mini-batching.html">L098</a> explains how to reintroduce it carefully.</p>
+<h3 id="Step-A-%C2%B7-R-GCN-first-decides-which-relation-produced-a-message">Step A &#183; R-GCN first decides which relation produced a message<a class="anchor-link" href="#Step-A-%C2%B7-R-GCN-first-decides-which-relation-produced-a-message">&#182;</a></h3><p>For each relation <em>r</em>, transform source states with <code>W_r</code>, average the incoming messages of that relation, sum the relation means, add one learned self transform and apply ReLU. This is the local mean-normalized Eq. 2 operator. The course model uses unrestricted relation matrices, plus biased adapters/self transforms and a classifier; it is not the featureless AIFB model from L091.</p>
+<div class="highlight"><pre><span></span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="o">=</span> <span class="n">edge</span>
+<span class="n">message</span> <span class="o">=</span> <span class="n">x_source</span><span class="p">[</span><span class="n">src</span><span class="p">]</span> <span class="o">@</span> <span class="n">W_relation</span>
+<span class="n">aggregate</span> <span class="o">=</span> <span class="n">zeros_for_receivers</span><span class="o">.</span><span class="n">index_add</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">aggregate</span> <span class="o">/</span> <span class="n">degree_for_this_relation</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mi">1</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="c1"># Sum one such mean per relation; then add the self path and apply ReLU.</span>
+</pre></div>
+<p>The implementation computes the source transform once before indexing edges. Linearity makes this equivalent. An isolated receiver gets a zero neighbor contribution, so its self path remains meaningful. Basis decomposition from Eq. 3 is unnecessary for only four relations and is not introduced silently as another experimental variable.</p>
+<h3 id="Step-B-%C2%B7-HGT-lets-the-receiver-help-determine-an-edge-weight">Step B &#183; HGT lets the receiver help determine an edge weight<a class="anchor-link" href="#Step-B-%C2%B7-HGT-lets-the-receiver-help-determine-an-edge-weight">&#182;</a></h3><p>The receiver's type selects a query projection; the source's type selects key and value projections. Each width-32 state becomes four heads of dimension eight. Relation-specific matrices transform keys and values; a per-relation/head prior scales the query–key dot product. The implementation follows the <a href="https://github.com/acbull/pyHGT/blob/85eaccd482bc1d1af56c2de297b6e3a88b96d5cd/OAG/pyHGT/conv.py">pinned modern pyHGT operator</a>, with temporal encoding disabled.</p>
+<div class="highlight"><pre><span></span>score(edge, head) = prior[r, head] * dot(Q_type(dst), K_type(src) @ A_r) / sqrt(8)
+message(edge, head) = V_type(src) @ M_r
+alpha = softmax(score over every incoming edge of this receiver and head)
+aggregate = sum(alpha * message)
+</pre></div>
+<p>Concatenate the heads, apply GELU and a destination-type output projection, blend with the old state through a learned sigmoid gate, then LayerNorm. Those operations matter: <strong>R-GCN versus HGT changes much more than a softmax.</strong> The lesson's independent check compares outputs and gradients against L093's archived modern-release port. That establishes operator agreement, not historical training-result reproduction.</p>
+<h3 id="Step-C-%C2%B7-Remove-the-scorer-without-changing-the-rest-of-HGT">Step C &#183; Remove the scorer without changing the rest of HGT<a class="anchor-link" href="#Step-C-%C2%B7-Remove-the-scorer-without-changing-the-rest-of-HGT">&#182;</a></h3><p>Uniform HGT deletes Q/K projections, attention matrices and score priors. Every incoming edge receives <code>1 / total_in_degree</code>. Value projections, relation message matrices, output projections, residual gates and LayerNorm remain. Every parameter shared with HGT starts with exactly the same tensor for a paired seed. Both models are then trained independently.</p>
+<p>R-GCN divides by <strong>relation-specific</strong> degree and sums relation means. Uniform HGT divides by <strong>total</strong> degree. They are different even before considering transforms or residuals. Removing an attention scorer does not turn HGT into R-GCN.</p>
+<h2 id="5-%C2%B7-Worked-trace:-three-messages,-three-answers">5 &#183; Worked trace: three messages, three answers<a class="anchor-link" href="#5-%C2%B7-Worked-trace:-three-messages,-three-answers">&#182;</a></h2><p>Freeze scalar messages to author A = 2, author B = 8, subject S = −4. Ignore transforms and self paths for this trace. Give attention logits <code>0, ln 3, ln 2</code>.</p>
+<ol>
+<li><strong>R-GCN:</strong> author mean <code>(2 + 8) / 2 = 5</code>; subject mean <code>−4</code>; their sum is <strong>1</strong>.</li>
+<li><strong>Uniform HGT:</strong> one mean over all three messages: <code>(2 + 8 − 4) / 3 = 2</code>.</li>
+<li><strong>Attention:</strong> exponentials are <code>1, 3, 2</code>, total 6; weights are <code>1/6, 3/6, 2/6</code>; the weighted sum is <strong>3</strong>.</li>
+</ol>
+<p>Before using the control, predict what happens when the subject score rises to <code>ln 8</code>. Then duplicate author A and explain whether either mean is invariant. Duplicating just one neighbor changes the empirical distribution; invariance to <em>all</em> neighbors being duplicated is a different claim.</p>
+<div id="architecture-comparison"></div>
+
+<div id="l099-predict"></div>
+
+<h2 id="6-%C2%B7-Freeze-the-training-and-selection-protocol">6 &#183; Freeze the training and selection protocol<a class="anchor-link" href="#6-%C2%B7-Freeze-the-training-and-selection-protocol">&#182;</a></h2><p>We run <strong>24 fits: four arms × two learning rates × three seeds</strong>, each for all 60 epochs. Learning rates are .003 and .01; Adam uses weight decay .001; dropout is zero; width is 32; depth is two. HGT uses four heads. Full-graph CPU execution uses two threads and deterministic algorithms. Every arm gets both learning rates and all three seeds. No early stopping shortens an arm's update budget.</p>
+<p>At each epoch, save a checkpoint only if validation cross-entropy strictly improves. Ties keep the earliest epoch. After all fits, choose one learning rate per arm by mean best validation CE across the three seeds; a tie chooses the smaller rate. Only then restore selected checkpoints and evaluate test accuracy and macro F1. Seeds do not get their own test-selected learning rates.</p>
+<p>The MLP allocates a paper adapter, two ReLU layers and a classifier. It has no unused auxiliary adapters. Graph models may still have allocated parameters that do not participate in the two-layer paper-only supervised path; the evidence reports both <strong>allocated</strong> and <strong>active</strong> counts. “Active” means autograd reaches the parameter, not that every entry has a nonzero derivative or that all parameters are statistically identifiable.</p>
+<p>Equal width and updates do <strong>not</strong> match parameter count, runtime, memory or FLOPs. We report those differences instead of hiding them behind “fair.” Matching parameters or wall-clock budget would answer a different question and requires a separately frozen follow-up. The two-LR search is intentionally modest; weak optimization in one family is a limit on the conclusion.</p>
+<h2 id="7-%C2%B7-Read-the-measured-evidence-before-writing-the-attribution">7 &#183; Read the measured evidence before writing the attribution<a class="anchor-link" href="#7-%C2%B7-Read-the-measured-evidence-before-writing-the-attribution">&#182;</a></h2><p><strong>Frozen author measurements: all 24 fits and all 1,440 epochs completed.</strong> Accuracy SD is in percentage points, across three seeds. Runtime is measured CPU wall time for training, validation and final gradient audit; it is not a FLOP count or a separate timing benchmark.</p>
+<table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Selected LR</th>
+  <th style="text-align:right">Test accuracy mean ± seed SD</th>
+  <th style="text-align:right">Macro F1 mean</th>
+  <th style="text-align:right">Parameters allocated / active</th>
+  <th style="text-align:right">Seconds per selected fit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rgcn</td>
+  <td style="text-align:right">0.01</td>
+  <td style="text-align:right">55.24% ± 9.75 pp</td>
+  <td style="text-align:right">0.3240</td>
+  <td style="text-align:right">71,459 / 71,459</td>
+  <td style="text-align:right">3.60</td>
+</tr>
+<tr>
+  <td>hgt</td>
+  <td style="text-align:right">0.003</td>
+  <td style="text-align:right">87.09% ± 1.01 pp</td>
+  <td style="text-align:right">0.8694</td>
+  <td style="text-align:right">91,017 / 84,553</td>
+  <td style="text-align:right">13.55</td>
+</tr>
+<tr>
+  <td>hgt_uniform</td>
+  <td style="text-align:right">0.003</td>
+  <td style="text-align:right">87.86% ± 0.97 pp</td>
+  <td style="text-align:right">0.8787</td>
+  <td style="text-align:right">76,265 / 72,969</td>
+  <td style="text-align:right">7.98</td>
+</tr>
+<tr>
+  <td>mlp</td>
+  <td style="text-align:right">0.01</td>
+  <td style="text-align:right">68.06% ± 1.55 pp</td>
+  <td style="text-align:right">0.5469</td>
+  <td style="text-align:right">63,139 / 63,139</td>
+  <td style="text-align:right">1.45</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+  <th>Paired seed</th>
+  <th style="text-align:right">HGT − R-GCN</th>
+  <th style="text-align:right">HGT − uniform HGT</th>
+  <th style="text-align:right">HGT − MLP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">+19.91 pp</td>
+  <td style="text-align:right">-0.57 pp</td>
+  <td style="text-align:right">+18.45 pp</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">+38.64 pp</td>
+  <td style="text-align:right">-0.64 pp</td>
+  <td style="text-align:right">+21.68 pp</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">+37.01 pp</td>
+  <td style="text-align:right">-1.10 pp</td>
+  <td style="text-align:right">+16.96 pp</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Observed attribution:</strong> uniform HGT has the higher mean here. The HGT family gap over this R-GCN configuration does not establish a benefit from learned attention. The R-GCN and MLP curves reveal substantial optimization limitations within the fixed 60-epoch budget. No universal family ranking follows.</p>
+<p>Read each seed pair before the mean. The differences are paired by declared seed and shared split; architecture-specific parameters are not magically identical. A sample SD across three seeds describes optimization variability on <strong>one fixed graph and split</strong>. It is not uncertainty across datasets, and 2,818 test papers are not 2,818 independent graph experiments.</p>
+<p><strong>Sanity checks:</strong> if the MLP is competitive, paper text already carries useful signal. If uniform HGT is competitive with HGT, do not claim adaptive scoring is required. If R-GCN's validation curve remains high at epoch 60, this protocol has not demonstrated its best achievable performance. Inspect both learning rates, selection epochs and loss traces before making a mechanism claim.</p>
+<p>Your attribution table must contain an observation, the actual intervention, an alternative explanation and the narrowest justified conclusion. Example: “HGT outperformed this R-GCN configuration under the fixed budget; attention, residuals, normalization and optimization all changed; a within-HGT ablation is needed before crediting scoring.” Replace the observation with the measured values, including any result that contradicts your prediction.</p>
+<h2 id="8-%C2%B7-Full-reproduction:-three-explicit-evidence-scopes">8 &#183; Full reproduction: three explicit evidence scopes<a class="anchor-link" href="#8-%C2%B7-Full-reproduction:-three-explicit-evidence-scopes">&#182;</a></h2><p>“Full” needs a target. This lesson's full <strong>course experiment</strong> means every one of the declared 24 fits, all epochs, frozen selection, saved checkpoints, raw predictions and an independent metric audit. It does not mean reproducing either paper's complete benchmark collection.</p>
+<table>
+<thead>
+<tr>
+  <th>Scope</th>
+  <th>Named target</th>
+  <th>Evidence boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>ACM controlled comparison</td>
+  <td>The complete protocol in section 6</td>
+  <td>New course experiment; no published score assigned</td>
+</tr>
+<tr>
+  <td>R-GCN published experiment</td>
+  <td>Schlichtkrull Table 2, AIFB, ten runs</td>
+  <td>Fresh complete release-protocol port; exact historical backend/RNG identity remains INCOMPARABLE</td>
+</tr>
+<tr>
+  <td>HGT published experiment</td>
+  <td>Hu Table 2, CS Paper–Field L2, five HGT trainings</td>
+  <td>Runnable full-setting port; execution NOT_RUN; source/protocol gaps remain</td>
+</tr>
+</tbody>
+</table>
+<p>The AIFB replay is separate: 50 updates per run, original 140/36 split, featureless inputs, width16 and unrestricted relation weights. The fresh mean is <strong>95.8333%</strong>, sample SD <strong>1.4640 percentage points</strong>. Agreement with the printed mean does not recover unknown historical seeds, original node ordering or Keras/Theano arithmetic. See the <a href="../labs/_paper_l099_aifb_results.json">fresh raw result</a> and <a href="../labs/l091-reproduction.md">L091 protocol audit</a>.</p>
+<p>The HGT CS archive is already available locally, but L093 recorded a decoding MemoryError under a 10 GiB address-space guard and a GPU-account execution rejection. Those are <strong>prior observations</strong>, not a new capacity test in L099. This lesson does not reclassify the smaller NN run or ACM run as CS. The full CS launcher preserves five seeds, full schedule and CS hash, and also offers the course R-GCN comparator. That extra comparator is not an exact reconstruction of the paper's R-GCN baseline. The <a href="../labs/l093-reproduction.md">L093 protocol ledger</a> explains modern/publication-era source differences. Full-paper parity remains <strong>NOT_ESTABLISHED</strong>.</p>
+<p>From the repository root:</p>
+<div class="highlight"><pre><span></span>.venv/bin/python<span class="w"> </span>labs/_verify_l099.py
+.venv/bin/python<span class="w"> </span>labs/_run_l099.py
+.venv/bin/python<span class="w"> </span>labs/_audit_l099.py
+.venv/bin/python<span class="w"> </span>labs/_paper_l099.py<span class="w"> </span>--target<span class="w"> </span>aifb
+<span class="c1"># Full CS lane requires the hash-verified graph and sufficient host/device resources:</span>
+.venv/bin/python<span class="w"> </span>labs/_paper_l099.py<span class="w"> </span>--target<span class="w"> </span>hgt-cs<span class="w"> </span>--device<span class="w"> </span>cuda
+</pre></div>
+<p>The standalone solution reruns all 24 course fits outside the repository with inline loader/model/trainer code and freshly downloaded, verified data bytes. The execution harness uses bounded curl for the download after an initial urllib connection stalled. Browser checks, notebook execution, a clean dependency install, live Colab and deployment are separate claims. Consult the <a href="../labs/_execution_l099_results.json">execution</a> and <a href="../labs/_delivery_l099_results.json">delivery</a> records. Running code is not a substitute for your written defense.</p>
+<h2 id="9-%C2%B7-Lab:-predict-%E2%86%92-implement-%E2%86%92-check-%E2%86%92-defend">9 &#183; Lab: predict &#8594; implement &#8594; check &#8594; defend<a class="anchor-link" href="#9-%C2%B7-Lab:-predict-%E2%86%92-implement-%E2%86%92-check-%E2%86%92-defend">&#182;</a></h2><p>Implement three live tasks in the student notebook:</p>
+<ol>
+<li><code>relation_mean</code>: hand-check two receivers and an isolated row; verify source gradients of 1/2, 1/2 and 1.</li>
+<li><code>receiver_softmax</code>: normalize over incoming edges across relations and heads; check stable scores, empty edges and gradient agreement with a dense oracle.</li>
+<li><code>choose_config</code>: choose by mean validation CE, not by best test score, best single seed or last epoch.</li>
+</ol>
+<p>Then execute all fits, save <code>l099-fresh.json</code>, inspect your selected rates and compare per-seed predictions with the frozen author references. Runtime can vary; do not require byte equality for timing fields or serialized checkpoint files. Numerical agreement under the recorded environment is stronger than an unexplained matching aggregate.</p>
+<p><strong>EXIT — PENDING_WRITTEN_DEFENSE:</strong> submit the three implementations, fresh result file and your attribution table. Explain (a) why conference edges are forbidden, (b) why uniform HGT differs from R-GCN, (c) what is and is not held fixed, (d) why validation-only selection matters, (e) why neither ACM nor a matching AIFB mean proves full HGT reproduction. Propose one follow-up with a frozen budget that could overturn your preferred explanation.</p>
+<div id="l099-teachback"></div>
+
+<p>Ask the agent follow-up questions about any equation, tensor, experiment record or uncertainty. Return tomorrow to reconstruct the three-message example from memory. Then use <a href="../plan/year-3.md">L100's checkpoint specification</a> to defend a graph with at least three node types and a controlled architecture comparison.</p>
+</article><script src="../assets/architecture-comparison.js"></script><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l099-lesson.js"></script></body></html>
