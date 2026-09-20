@@ -161,7 +161,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `arch-family-viz.js` (hetero branch).
 - **Bridge** — organizing map before applying to databases; callback L091–L093.
 
-### 095 · Bipartite graphs — *— (user-item as hetero graph)*
+### 095 · [Bipartite graphs](../lessons/0095-bipartite-graphs.html) — *GroupLens / PyG (user-item as hetero graph)*
+- **Prepared package** — [lab](../labs/0095-bipartite-graphs.ipynb), [reproduction contract](../labs/l095-reproduction.md). Full ML-100K release audit MATCH; all five course ranking folds MEASURED. No historical model-score reproduction claimed. Learner defense pending.
 - **Skill** — model a user–item interaction table as a bipartite hetero graph and set up recommendation as
   bipartite link prediction.
 - **Teach** — bipartite structure, why recsys is a two-node-type link-pred problem, projection pitfalls.

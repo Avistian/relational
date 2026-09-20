@@ -181,3 +181,5 @@ live Colab compatibility or full paper reproduction.
 - **L093 HGT:** `0093-hgt.ipynb`; three live tasks, visible source-conditioned model and full OAG trainer. `_run_l093.py` provides smoke/teaching/paper/release tracks. Read `l093-reproduction.md` before interpreting scores.
 
 - **L094 HIN survey:** `0094-hin-survey.ipynb`; taxonomy, route composition, protocol eligibility and complete NN statistics audit. No new model training. See `l094-reproduction.md`.
+
+- **L095 Bipartite graphs:** `0095-bipartite-graphs.ipynb`; full ML-100K release audit and five-fold graph-walk recommendation, typed IDs, reverse-edge leakage checks and full-catalog ranking. See `l095-reproduction.md`.

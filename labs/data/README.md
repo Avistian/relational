@@ -132,3 +132,7 @@ Tier B, real heterogeneous academic graphs from the authors. Both archives acqui
 ## L094 · Reuse complete NN, synthetic routes separately
 
 Tier B: the entire hash-pinned L093 NN archive for Table1 statistics. Tier C: four-author matrices for route interventions only. No sampled graph is labeled as the complete NN target.
+
+## L095 · Full MovieLens 100K
+
+Tier B relational interaction data: 100,000 ratings, 943 users and 1,682 items. Downloader verifies the GroupLens archive and all official split members. Data are downloaded directly, not redistributed. Tier C two-user synthetic graph is used only for mechanism checks. Full five-fold ranking is a course protocol, not a claimed published-model result.

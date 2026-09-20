@@ -498,3 +498,10 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [Dong, Hu, Wang, Sun and Tang (2020), Heterogeneous Network Representation Learning](https://web.cs.ucla.edu/~yzsun/papers/2020_IJCAI_HIN_Survey.pdf): §1 schema, §3 representations, §4 and Table1. Corrects the roadmap citation placeholder.
 - [metapath2vec author release](https://ericdongyx.github.io/metapath2vec/m2v.html): typed walks and lookup embeddings as a contrast to GNN encoders.
 - [Pinned OAG source](https://github.com/acbull/pyHGT/tree/85eaccd482bc1d1af56c2de297b6e3a88b96d5cd/OAG): relation storage and released graph provenance; historical snapshot equality remains unestablished.
+
+## L095 · Bipartite recommendation contract
+
+- [GroupLens ML-100K release](https://grouplens.org/datasets/movielens/100k/) and [README](https://files.grouplens.org/datasets/movielens/ml-100k-README.txt): complete counts and official five partitions. Data acknowledgment: Harper & Konstan (2015), DOI 10.1145/2827872.
+- [PyG heterogeneous tutorial](https://pytorch-geometric.readthedocs.io/en/latest/tutorial/heterogeneous.html): typed stores and bipartite identity.
+- [PyG 2.8.0 RandomLinkSplit](https://pytorch-geometric.readthedocs.io/en/2.8.0/generated/torch_geometric.transforms.RandomLinkSplit.html): paired reverse relations; is_undirected alone does not cover bipartite types.
+- [Local full-run protocol](labs/l095-reproduction.md): complete release audit plus explicitly course-defined walk and ranking experiment.

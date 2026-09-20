@@ -1,0 +1,153 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 95 — Bipartite graphs: from interactions to recommendations</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/bipartite-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0094-hin-survey.html">Lesson 94</a> · <a href="../reference/bipartite-contract.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 095</p><h1>Bipartite graphs: from interactions to recommendations</h1></header><div class="package-links"><strong>Your tangible win:</strong> turn an interaction table into a typed graph, prove its prediction targets are hidden, and produce a full-catalog recommendation baseline.<br><a href="../labs/0095-bipartite-graphs.ipynb">Student notebook</a> · <a href="../labs/html/0095-bipartite-graphs.html">Executed lab</a> · <a href="../reference/bipartite-contract.html">Reference sheet</a> · <a href="../labs/l095-reproduction.md">Reproduction contract</a></div>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><div id="warmup"></div>
+
+<p>Close the preceding lessons. Write three answers: What distinguishes an edge used for message passing from an edge used as a prediction label? Why is a reverse relation still information about the original interaction? What does an off-diagonal entry of a two-step path matrix count?</p>
+<details><summary>Check after attempting</summary><p>A message-passing edge is visible input to an encoder; a prediction label is an outcome whose availability depends on the split. A reversed rating identifies the same user–item event. In an unweighted graph, an off-diagonal two-step product counts connecting length-two walks, such as shared items. Correct recognition is not yet a written defense.</p></details>
+
+<p><strong>The bridge.</strong> <a href="0087-link-prediction.html">L087</a> separated graph input, targets and ranking candidates. <a href="0091-r-gcn.html">L091</a> made relation meaning explicit; <a href="0094-hin-survey.html">L094</a> separated routes from encoders. Here there are only two entity types, but that simplicity does not choose the target or the evaluation protocol for us. This is the foundation for database recommendation in L138 and L144.</p>
+<p><strong>Core route:</strong> sections 2–6 establish the graph and one prediction. Then complete the three notebook tasks. Sections 7–9 explain the full experiment and evidence. Ask the agent about any step that you cannot trace yourself.</p>
+<h2 id="2-%C2%B7-Begin-with-a-row,-not-a-network">2 &#183; Begin with a row, not a network<a class="anchor-link" href="#2-%C2%B7-Begin-with-a-row,-not-a-network">&#182;</a></h2><p><strong>Worked example.</strong> An interaction row is <code>(user=17, item=17, rating=5, timestamp=t)</code>. The repeated number does not identify one entity. <code>user:17</code> and <code>item:17</code> live in separate namespaces. A <strong>bipartite graph</strong> has two disjoint node sets, users U and items I, and every edge connects the sets. There are no direct user–user or item–item edges in this representation.</p>
+<p><strong>Choose edge meaning.</strong> A rating event records an observed rating. A like in this lab means a rating of at least four. Those are different relations. We keep all observed rating rows for exclusion rules, but only likes become graph edges. A rating of one is therefore absent from the likes graph and still known to the system. An unobserved pair has no observed rating; it is not a proven dislike.</p>
+<p><strong>Choose event policy.</strong> MovieLens 100K has one row per user–item pair; our full audit checks that. If a purchase log repeats pairs, decide whether you predict first purchase, repeat purchase, counts or individual events before collapsing rows. Summing repeated interactions and silently calling the result binary changes the task.</p>
+<p><strong>The tool contract.</strong> PyG <code>HeteroData</code> stores node types separately and indexes a relation with a <code>(source type, relation, destination type)</code> triple. Each <code>edge_index</code> column holds one pair of type-local IDs. Here the forward relation is <code>('user','likes','item')</code>; its reverse is <code>('item','rev_likes','user')</code>. Store node counts explicitly so isolated users and items are retained. <a href="https://pytorch-geometric.readthedocs.io/en/latest/tutorial/heterogeneous.html">PyG heterogeneous data guide</a>.</p>
+<div class="highlight"><pre><span></span><span class="c1"># Type-local IDs; zero-based after loading the release.</span>
+<span class="n">graph</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">num_nodes</span> <span class="o">=</span> <span class="mi">943</span>
+<span class="n">graph</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">num_nodes</span> <span class="o">=</span> <span class="mi">1682</span>
+<span class="c1"># edge_index has shape [2, number_of_likes].</span>
+<span class="c1"># Its first row indexes users; its second row indexes items.</span>
+</pre></div>
+<blockquote>
+<p><strong>In plain terms.</strong> A user and a movie may share the number zero without being the same thing. Adding an edge <code>(0,0)</code> connects two entities; it is not a self-loop.</p>
+</blockquote>
+<h2 id="3-%C2%B7-See-what-a-projection-keeps%E2%80%94and-throws-away">3 &#183; See what a projection keeps&#8212;and throws away<a class="anchor-link" href="#3-%C2%B7-See-what-a-projection-keeps%E2%80%94and-throws-away">&#182;</a></h2><p>Let <strong>B</strong> be the binary user–item matrix. It has one row per user, one column per item, and B[u,i]=1 exactly when fitting data contains a like. The transpose Bᵀ swaps rows and columns. In our worked graph, u0 likes i0 and i1; u1 likes i1 and i2.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l095/projection.png" alt="Synthetic binary B and both projections. The off-diagonal shared-user/item counts differ from original interactions."></div><figcaption>Synthetic binary B and both projections. The off-diagonal shared-user/item counts differ from original interactions.</figcaption></figure>
+
+<p>Multiplying B by Bᵀ gives a user–user matrix. Entry <code>(u,v)</code> sums B[u,i]B[v,i] across items i, so it counts shared liked items. In the figure, users 0 and 1 share exactly one item. The diagonal entry is two because each user likes two items. BᵀB similarly counts shared users between items. These are <strong>projections</strong>: derived same-type relations, not original user–item interactions.</p>
+<p><strong>Why keep the original graph?</strong> The count one does not say whether the shared item was i0, i1 or i2. Relabeling item columns leaves BBᵀ unchanged. A popular item also creates many user pairs: an item liked by d users connects d(d−1)/2 unordered distinct pairs in a binary user projection. This can make a sparse interaction table yield a dense derived graph. Keeping B preserves the intermediate identity and allows normalization at the item step.</p>
+<p><strong>Checkpoint.</strong> If B has shape 943×1682, what are the shapes of BBᵀ and BᵀB? Which one can directly name a recommended item? Answer: 943×943 and 1682×1682. Neither alone is a user–item score matrix; you need an explicit handoff back to items.</p>
+<h2 id="4-%C2%B7-Split-interaction-identities-before-constructing-graph-views">4 &#183; Split interaction identities before constructing graph views<a class="anchor-link" href="#4-%C2%B7-Split-interaction-identities-before-constructing-graph-views">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Hiding the answer means hiding every graph view that reveals the answer.</p>
+</blockquote>
+<p>Separate three objects:</p>
+<ol>
+<li><strong>Fitting graph:</strong> likes observed in fitting rows, plus their exact reversed copies. Degrees, transitions and popularity are computed here.</li>
+<li><strong>Target rows:</strong> held-out interactions used to assess predictions. Likes among these rows define relevant items.</li>
+<li><strong>Candidate set:</strong> items the recommender is allowed to rank. Here it is the fixed catalog minus every item this user already rated in fitting data.</li>
+</ol>
+<p>If <code>(u0,i2)</code> is held out, remove it from the forward graph <strong>and</strong> remove <code>(i2,u0)</code> from the reverse graph. Constructing both directions from an already-split fitting table is easier to audit than deleting individual columns from two independently built stores. The notebook task compares the pair sets and rejects held-out overlap.</p>
+<div id="boundary-widget"></div>
+
+<p><strong>Library trap.</strong> If you use PyG <code>RandomLinkSplit</code>, explicitly pair <code>edge_types</code> and <code>rev_edge_types</code>. Its <code>is_undirected</code> option alone is ignored for bipartite edge types. <code>disjoint_train_ratio</code> separately controls whether training supervision edges are shared with the training message graph. Our experiment uses the official release files and no learned edge classifier, so it does not replace them with this transform. <a href="https://pytorch-geometric.readthedocs.io/en/2.8.0/generated/torch_geometric.transforms.RandomLinkSplit.html">PyG 2.8.0 RandomLinkSplit</a>.</p>
+<p><strong>Time is another boundary.</strong> The official splits are offline rating-completion splits, not a forecasting simulation. Training rows can occur later than a target's timestamp. Reusing their scores as evidence for “predict the next purchase” would change the claim. A temporal experiment needs a cutoff, point-in-time features, catalog availability and an explicit repeat-event policy. IDs being known does not make future interactions admissible.</p>
+<h2 id="5-%C2%B7-Model-architecture:-a-transparent-three-hop-baseline">5 &#183; Model architecture: a transparent three-hop baseline<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-a-transparent-three-hop-baseline">&#182;</a></h2><p>This lesson introduces a deterministic graph scorer, not a neural architecture. Its fitted state consists of counts and transition probabilities. There are no learned embeddings, loss gradients, epochs or optimizer. The selection objective is validation NDCG@10, defined below. Popularity provides a baseline with no user-specific walk.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l095/pipeline.png" alt="Complete course protocol. The official test stays hidden during fitting and mixture selection."></div><figcaption>Complete course protocol. The official test stays hidden during fitting and mixture selection.</figcaption></figure>
+
+<p><strong>Step 1: normalize outgoing choices.</strong> A walk chooses uniformly among a user's liked items. If dᵤ is that user's fitting like count, P[u,i]=B[u,i]/dᵤ. An item then chooses uniformly among its liking users: Q[i,u]=B[u,i]/dᵢ, where dᵢ is its fitting like count. P has shape U×I and Q has shape I×U. Zero-degree rows initially contain zeros.</p>
+<p><strong>Step 2: compose typed steps.</strong> The product S=PQP has shape U×I. Each entry adds probabilities of all user→item→user→item walks with those endpoints. The matrix PQ is a normalized user–user intermediate, but the final multiplication returns to items. The mechanism therefore retains the bipartite route throughout the computation.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l095/walk.png" alt="Synthetic worked graph: u0→i1→u1→i2 has probability 1/8 before candidate masking."></div><figcaption>Synthetic worked graph: u0→i1→u1→i2 has probability 1/8 before candidate masking.</figcaption></figure>
+
+<p><strong>Worked trace.</strong> In the pictured graph, u0→i1 has probability 1/2. Item i1 chooses u1 with probability 1/2. User u1 chooses i2 with probability 1/2. This is the only three-step path from u0 to i2, so S[u0,i2]=1/8. Summing all paths gives S[u0]=[3/8,1/2,1/8]. Once i0 and i1 are masked as seen, i2 ranks first.</p>
+<p><strong>Cold users and zero-degree items.</strong> A user with no fitting likes gets the fitting-popularity distribution. Popularity is an item's fitting like count divided by the total fitting likes. With no likes anywhere, use a uniform catalog distribution. An item with zero fitting likes receives zero walk/popularity mass, but remains a candidate. Item-ID tie-breaking makes that behavior reproducible; it is not a useful cold-item model.</p>
+<div id="prediction"></div>
+
+<div id="walk-widget"></div>
+
+<p><strong>Visible implementation map.</strong> In the notebook, <code>build_graph</code> implements typed identity and both edge views; <code>assert_boundary</code> enforces the split; <code>walk_scores</code> implements the three transitions. These are your three live tasks. The provided <code>rank_metrics</code> and <code>run_experiment</code> call those functions directly. No imported model hides the computation.</p>
+<h2 id="6-%C2%B7-A-good-score-needs-a-defined-denominator">6 &#183; A good score needs a defined denominator<a class="anchor-link" href="#6-%C2%B7-A-good-score-needs-a-defined-denominator">&#182;</a></h2><p>A recommender produces an ordered list of eligible item IDs. Here we score all 1,682 catalog items and exclude <strong>every</strong> fitting-rated item for the user, including low ratings. We do not sample a small set of convenient negatives. Unobserved candidates count as nonrelevant for this offline metric because relevance is defined by held-out likes; that convention does not establish real-world dislike.</p>
+<p><strong>Recall@10.</strong> For a user, divide the number of relevant items in the top ten by their total number of held-out relevant items. If two relevant items exist and one is retrieved, recall is 1/2. The result rewards finding more of the user's held-out likes.</p>
+<p><strong>NDCG@10.</strong> Discount a relevant item at rank r by 1/log₂(r+1), with ranks starting at one. Sum those contributions over the top ten to get DCG. Divide by the ideal DCG, which would place up to ten relevant items first. NDCG therefore rewards placing relevant items earlier. With two relevant items and only rank one relevant in top two, DCG=1, ideal DCG=1+1/log₂(3), and NDCG≈0.613.</p>
+<p><strong>Macro averaging.</strong> Compute each eligible user's metric, then average users equally. Users with no held-out likes are excluded and counted explicitly; assigning them zero would change the question. We report each official fold and the mean across folds. Deterministic score ties prefer the smaller item ID. These choices are part of the experiment, not evaluator trivia.</p>
+<p><strong>CHECK before running.</strong> If the top-scoring item was already rated one star in training, is it eligible? No: absence from the likes graph does not erase its observed status. If the target pair already occurs in fitting data, the evaluator rejects the experiment instead of concealing the overlap with a mask.</p>
+<h2 id="7-%C2%B7-Full-reproduction:-exactly-what-was-run">7 &#183; Full reproduction: exactly what was run<a class="anchor-link" href="#7-%C2%B7-Full-reproduction:-exactly-what-was-run">&#182;</a></h2><p><strong>Primary source assignment.</strong> Read the <a href="https://files.grouplens.org/datasets/movielens/ml-100k-README.txt">GroupLens ML-100K README</a>, especially <code>u.data</code> and <code>u1.base</code> through <code>u5.test</code>, then inspect the notebook audit. The released data contain 100,000 ratings, 943 users and 1,682 items; each user has at least 20 ratings. The five supplied splits contain 80,000 fitting and 20,000 test rows each, with disjoint test sets. The audit checks those targets, uniqueness, full row content and reconstruction—not just file sizes.</p>
+<p><strong>Published target: complete data contract.</strong> All counts and all five partitions matched. The minimum observed rating count per user was exactly 20. The five test sets collectively reconstruct all 100,000 original rows. Archive and member SHA-256 fingerprints are in the <a href="../labs/_sources_l095.json">source manifest</a>.</p>
+<p><strong>Course experiment: complete recommendation protocol.</strong> Within each official base, reserve 8,000 rows for validation with declared seed 9501–9505; fit on 72,000. Select α from {0,½,1} using mean validation NDCG@10 for the score αS+(1−α)pop. Ties prefer lower α. Refit counts and transitions on all 80,000 base rows, freeze α, and evaluate the complete official test once per predeclared arm. No test tuning, reduced catalog or early stopping is used.</p>
+<table>
+<thead>
+<tr>
+  <th>Method</th>
+  <th style="text-align:right">Recall@10, mean ± fold SD</th>
+  <th style="text-align:right">NDCG@10, mean ± fold SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>popularity</td>
+  <td style="text-align:right">0.1254 ± 0.0078</td>
+  <td style="text-align:right">0.2046 ± 0.0359</td>
+</tr>
+<tr>
+  <td>walk</td>
+  <td style="text-align:right">0.2260 ± 0.0152</td>
+  <td style="text-align:right">0.3279 ± 0.0423</td>
+</tr>
+<tr>
+  <td>validation selected</td>
+  <td style="text-align:right">0.2260 ± 0.0152</td>
+  <td style="text-align:right">0.3279 ± 0.0423</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+  <th>Official fold</th>
+  <th style="text-align:right">Eligible test users</th>
+  <th style="text-align:right">Excluded: no held-out likes</th>
+  <th style="text-align:right">Selected α</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">456</td>
+  <td style="text-align:right">487</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">644</td>
+  <td style="text-align:right">299</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">849</td>
+  <td style="text-align:right">94</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">890</td>
+  <td style="text-align:right">53</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td style="text-align:right">878</td>
+  <td style="text-align:right">65</td>
+  <td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p>Frozen author-reference measurements; not output from your current notebook kernel. The official folds have different eligible user populations. We retain their released assignments; fold variation includes this composition difference.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l095/results.png" alt="Fresh author measurements on five complete official folds. Points are fold-level user averages, not independent datasets."></div><figcaption>Fresh author measurements on five complete official folds. Points are fold-level user averages, not independent datasets.</figcaption></figure>
+
+<p>All five folds selected α=1. The selected arm therefore equals the pure walk; it is not a third independent method. The source and full <a href="../labs/_experiment_l095_results.json">executed evidence</a> record every validation score, fold denominator, source hash and environment. Raw top-ten lists support independent metric reconstruction.</p>
+<blockquote>
+<p><strong>Scope check.</strong> These five folds share one dataset and overlapping training data. Their standard deviation describes fold variability; it is not a confidence interval across datasets. The walk beats popularity here, under this protocol. That does not establish that graph neural networks beat tabular models, that relational learning wins broadly, or that a historical model score was reproduced.</p>
+</blockquote>
+<p><strong>No missing model-paper claim.</strong> The roadmap assigns no model paper to L095. The release audit is <code>MATCH</code>; the complete course experiment is <code>MEASURED</code>. Historical model-score parity is <code>NOT_ESTABLISHED</code> because no corresponding published score/protocol is claimed. Reproducing a later LightGCN or other recommender paper would require that paper's actual model, datasets, split, optimization, selection and metric—not relabeling these numbers. See the <a href="../labs/l095-reproduction.md">protocol/deviation ledger</a>.</p>
+<h2 id="8-%C2%B7-Lab:-implement-the-contract,-then-break-it-deliberately">8 &#183; Lab: implement the contract, then break it deliberately<a class="anchor-link" href="#8-%C2%B7-Lab:-implement-the-contract,-then-break-it-deliberately">&#182;</a></h2><p>Open the <a href="../labs/0095-bipartite-graphs.ipynb">student notebook</a>. It contains the complete loader, scorer, evaluator and full five-fold experiment, with portable figures and frozen author-reference results labeled separately from fresh execution.</p>
+<ul>
+<li><strong>TODO 1 — typed graph.</strong> Validate local IDs, retain isolated nodes, include only fitting likes, and derive the reverse relation. CHECK includes a same-number user/item pair.</li>
+<li><strong>TODO 2 — information boundary.</strong> Compare both directed stores as user–item pairs, then reject held-out overlap. CHECK corrupts only the reverse store.</li>
+<li><strong>TODO 3 — walk.</strong> Normalize by the appropriate outgoing degree at each type, compose three steps, and supply the declared cold-user fallback. CHECK independently enumerates the tiny graph's routes.</li>
+<li><strong>Experiment.</strong> Run all official folds with your functions; inspect validation selection, full-catalog ranking, per-user denominators and result tables. Predict why removing the shared-item bridge changes the tiny walk before executing the intervention.</li>
+</ul>
+<h2 id="9-%C2%B7-EXIT:-defend-the-graph-before-claiming-the-score">9 &#183; EXIT: defend the graph before claiming the score<a class="anchor-link" href="#9-%C2%B7-EXIT:-defend-the-graph-before-claiming-the-score">&#182;</a></h2><p>Submit your complete run and a short written defense: define the two namespaces; distinguish observed ratings, likes and unknown pairs; explain why reverse edges share a split; state what a projection discards; trace the three-step probability; name the candidate and user denominators; separate the matched published data contract from the course ranking result. Then propose the time cutoff and event policy needed for next-purchase prediction.</p>
+<div id="teachback"></div>
+
+<p>Learner status remains <strong>PENDING_WRITTEN_DEFENSE</strong>. Prepared notebooks and teacher execution do not establish your mastery. Revisit the typed-ID and reverse-leakage questions tomorrow without looking, then trace a different graph one week later.</p>
+<p><strong>Next bridge.</strong> L096 generalizes two entity tables and an interaction relation into SQL primary-key/foreign-key semantics. L097 studies negative sampling, where changing candidates can change the apparent quality of a recommender. This lesson keeps the full catalog so that boundary is explicit.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/bipartite-viz.js"></script><script src="../assets/l095-lesson.js"></script></body></html>

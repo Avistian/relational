@@ -1383,3 +1383,7 @@ Full reproduction requested and combined scope approved. Visible typed attention
 ## Lesson094 created · HIN survey · 2026-09-20
 
 Full reproduction requested. Corrected the ambiguous Sun & Han 2020 placeholder to Dong et al. 2020. Two-axis taxonomy, route/meta-graph trace, three live tasks and full released NN statistics audit. All node counts match; edge discrepancies remain. All three printed rows receive arithmetic checks, not all three graph reconstructions. CS/OAG graph audits NOT_RUN; historical snapshot identity NOT_ESTABLISHED. Prior L091–L093 evidence is inspected without relabeling it as fresh training. WSL interrupted initial notebook execution; bounded rerun coverage is recorded in _execution_l094_results.json. No learner mastery inferred.
+
+## Lesson095 created · Bipartite graphs · 2026-09-20
+
+Full reproduction requested. Full ML-100K release counts and five official partitions audited MATCH; complete five-fold course ranking experiment MEASURED, distinct from historical model-paper scores. Typed IDs, reverse-edge boundary, projections, three-hop walk and full-catalog evaluation; three live tasks and complete inline implementation. Mean NDCG@10 .327886 walk versus .204553 popularity. Fold SD is descriptive, not dataset-level uncertainty. No learner mastery or publication inferred.
