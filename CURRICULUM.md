@@ -281,7 +281,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 097 | [Negative sampling](lessons/0097-negative-sampling.html) | BPR objective · training unit | [Full ML-100K sampler ablation, 45 fits](labs/0097-negative-sampling.ipynb) |
 | 098 | [Hetero mini-batching](lessons/0098-hetero-mini-batching.html) | PyG HeteroData / NeighborLoader | [Full synthetic suite: 96 audits + 9 fits](labs/0098-hetero-mini-batching.ipynb) |
 | 099 | [Compare R-GCN vs HGT](lessons/0099-rgcn-vs-hgt.html) | Controlled analysis · Schlichtkrull + Hu | [Full ACM comparison, 24 fits + attention ablation](labs/0099-rgcn-vs-hgt.ipynb) |
-| 100 | **Q2 checkpoint** | Schlichtkrull + Hu 2020 | Hetero GNN on 3+ node types |
+| 100 | [**Q2 checkpoint**](lessons/0100-heterogeneous-gnn-checkpoint.html) | Schlichtkrull + Hu 2020 | [Three-type native mini-batching, 24-fit comparison and defense](labs/0100-heterogeneous-gnn-checkpoint.ipynb) |
 
 ### Q3 · Temporal & dynamic graphs (101–110)
 **Papers:** Rossi 2020 (TGN) · Xu 2020 (TGAT) · Kazemi 2020 (RE-Net)

@@ -1,0 +1,249 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 100 — Heterogeneous GNN checkpoint: defend the whole pipeline</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/hetero-checkpoint.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0099-rgcn-vs-hgt.html">Lesson 99</a> · <a href="../reference/heterogeneous-checkpoint.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 100</p><h1>Heterogeneous GNN checkpoint: defend the whole pipeline</h1></header><div class="package-links"><strong>Your deliverable:</strong> defend one trained heterogeneous GNN pipeline from table IDs to final held-out predictions.<br><a href="../labs/0100-heterogeneous-gnn-checkpoint.ipynb">Student notebook</a> · <a href="../labs/solutions/0100-heterogeneous-gnn-checkpoint.ipynb">Executed solution</a> · <a href="../labs/html/0100-heterogeneous-gnn-checkpoint.html">Read the lab</a> · <a href="../labs/l100-reproduction.md">Reproduction contract</a></div>
+
+<h2 id="1-%C2%B7-Close-the-notes:-retrieve-before-building">1 &#183; Close the notes: retrieve before building<a class="anchor-link" href="#1-%C2%B7-Close-the-notes:-retrieve-before-building">&#182;</a></h2><div id="l100-warmup"></div>
+
+<p>Write four answers before opening the feedback. From <a href="0091-r-gcn.html">L091</a>, what is the denominator of a relation-wise mean? From <a href="0096-multi-relational-data.html">L096</a>, can author row 4 and paper row 4 be the same node? From <a href="0098-hetero-mini-batching.html">L098</a>, which sampled nodes receive supervised loss? From <a href="0099-rgcn-vs-hgt.html">L099</a>, what extra experiment is needed before attributing an HGT advantage to learned attention?</p>
+<details><summary>Feedback — open after answering</summary><p>R-GCN divides by the receiver's degree within that relation, then sums relation contributions. A node identity is (type, row ID). Only the input seed prefix receives the batch loss. A uniform-attention HGT intervention narrows the attention question; comparing two architecture families changes several operators at once.</p></details>
+
+<p>This is the Year 3 Q2 checkpoint. You already have individual operators, typed graph construction, sampling and comparison discipline. The tangible new skill is joining them into one pipeline whose result survives an audit. This supports the <a href="../MISSION.md">mission</a>: explain learned relational systems without hand-waving, and eventually evaluate them on real relational benchmarks.</p>
+<p>A suggested route is retrieval and the worked trace first; then the notebook tasks; then the complete experiment and written defense. The experiment can run while you prepare your protocol table. A prepared solution does not demonstrate your mastery.</p>
+<h2 id="2-%C2%B7-The-integration-gap">2 &#183; The integration gap<a class="anchor-link" href="#2-%C2%B7-The-integration-gap">&#182;</a></h2><p><a href="0098-hetero-mini-batching.html">L098</a> checked native sampling on a generated three-type graph. <a href="0099-rgcn-vs-hgt.html">L099</a> compared models on a real graph using full-graph updates. Neither alone establishes that the comparison remains correct after local node renumbering, seed masking and finite neighborhood sampling are combined.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> A sampler makes a small working copy of the neighborhood. Its row numbers change. Its context nodes are useful inputs, but they do not all become training targets.</p>
+</blockquote>
+<p>We use every conference-filtered ACM paper from the <a href="https://github.com/dmlc/dgl/blob/3d16000b4170fa741ed9e9667f22ba84d3493026/examples/pytorch/han/utils.py">pinned DGL loader</a>: 4,025 papers, 7,167 connected authors and 60 connected subjects. Paper features are 1,903 row-normalized word counts. Author and subject features are constant ones. Four directed edge stores represent paper→author, its reverse, paper→subject and its reverse. They contain 34,864 directed edges in total.</p>
+<p>The target is a three-class conference grouping. Conference membership supplies labels and is excluded from every input edge store and feature. Otherwise the graph would contain the answer. The fixed course split contains 804 training papers, 403 validation papers and 2,818 test papers.</p>
+<p><strong>Transductive</strong> means all graph features and edges are available when learning, including those of held-out papers. Their labels remain excluded from the training objective. This is a static information contract; it is not a future-prediction claim. <a href="../plan/year-3.md">L101 in the roadmap</a> adds the harder question of when an edge or feature becomes available.</p>
+<h2 id="3-%C2%B7-Model-architecture:-a-sampled-computation-with-a-fixed-target-boundary">3 &#183; Model architecture: a sampled computation with a fixed target boundary<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-a-sampled-computation-with-a-fixed-target-boundary">&#182;</a></h2><figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l100/architecture.svg" alt="Trace one paper seed from full typed tables through native sampling, both message-passing layers and seed-only supervision. Full-graph evaluation follows frozen validation selection."></div><figcaption>Trace one paper seed from full typed tables through native sampling, both message-passing layers and seed-only supervision. Full-graph evaluation follows frozen validation selection. On a narrow screen, scroll the figure horizontally.</figcaption></figure>
+
+<h3 id="Follow-one-seed-through-the-two-layers">Follow one seed through the two layers<a class="anchor-link" href="#Follow-one-seed-through-the-two-layers">&#182;</a></h3><p><strong>Sample backward from the target.</strong> Start with up to 256 training paper IDs. For each relation, the native loader samples at most eight incoming neighbors without replacement at each of two hops. A <strong>fanout</strong> is that per-receiver, per-relation limit. Two hops cover the dependencies of two message-passing layers. See the <a href="https://pytorch-geometric.readthedocs.io/en/latest/modules/loader.html#torch_geometric.loader.NeighborLoader">NeighborLoader contract</a>.</p>
+<p><strong>Compute forward over local rows.</strong> Each type has its own feature matrix <code>[N_type_in_batch, input_width]</code>. A type-specific affine adapter followed by tanh produces width 32. The same learned parameters are reused across batches. Edges use the batch's local row indices. They connect vectors inside this working graph, not arbitrary rows from the full tables.</p>
+<p><strong>R-GCN branch.</strong> For each receiver and relation, transform source vectors with that relation's matrix and average them. Sum the separate relation means, add the learned self transformation and apply ReLU. Repeat for layer two. This is the relation-normalized computation in <a href="https://arxiv.org/html/1703.06103v4">Schlichtkrull et al., Eq. 2</a>. The course wrapper adds feature adapters and a classifier; the named AIFB experiment has its own release architecture.</p>
+<p><strong>HGT branch.</strong> A head is one attention subspace; here four heads each have eight coordinates. Type-specific query, key and value projections produce the receiver query and source key/value. Relation-specific matrices transform keys and values. Dot-product scores, relation priors and division by √8 feed a softmax over all incoming edges for a receiver and head. The weighted message sum passes through GELU and a type-specific output map, then a learned gated residual and node-wise LayerNorm. Repeat twice. <a href="https://arxiv.org/html/2003.01332v1">Hu et al., §3</a> motivates the typed attention route; the implementation follows the explicitly pinned modern release.</p>
+<p><strong>Two controls.</strong> Uniform HGT removes the score machinery and gives every incoming edge equal weight, retaining the message/output/residual route. Every common initial tensor matches HGT. The MLP uses paper features and ignores edges. It receives the same seed batches so its target exposure and update count match.</p>
+<p><strong>Predict and train.</strong> The classifier produces three logits per local paper. A logit is an unnormalized class score. Cross-entropy is the negative log probability assigned to the correct class after softmax. Only the first <code>B</code> paper logits belong to the requested training seeds. Context papers participate in message passing but contribute no direct label loss.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Native NeighborLoader is the controlled course sampler. It is not the paper's HGSampling algorithm. Static ACM has no relative temporal encoding. The full HGT CS lane retains its distinct sampler, time encoding, task and protocol.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Worked-trace:-recover-identities-before-trusting-a-score">4 &#183; Worked trace: recover identities before trusting a score<a class="anchor-link" href="#4-%C2%B7-Worked-trace:-recover-identities-before-trusting-a-score">&#182;</a></h2><p><strong>Worked example.</strong> A batch has paper <code>n_id = [17, 4, 83]</code> and author <code>n_id = [9, 2]</code>. Here <code>n_id</code> maps local rows to global IDs within a type. Suppose there are two seed papers. The third paper, global ID 83, is context.</p>
+<table>
+<thead>
+<tr>
+  <th>Local author→paper edge</th>
+  <th>Global typed edge</th>
+  <th>Direct label loss?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>source 1 → receiver 0</td>
+  <td>author 2 → paper 17</td>
+  <td>Paper 17 is a seed</td>
+</tr>
+<tr>
+  <td>source 0 → receiver 2</td>
+  <td>author 9 → paper 83</td>
+  <td>Paper 83 is context</td>
+</tr>
+</tbody>
+</table>
+<p>The first endpoint must be looked up in the author map. The second must be looked up in the paper map. Applying the paper map to both endpoints creates plausible integers with incorrect meaning. The lab checks reconstructed endpoints against the original edge store indexed by <code>e_id</code>, the loader's original-edge map.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l100/identity.svg" alt="Illustrative typed ID trace: author local row 1 is author 2; paper local row 1 is paper 4. The type selects the correct map."></div><figcaption>Illustrative typed ID trace: author local row 1 is author 2; paper local row 1 is paper 4. The type selects the correct map. On a narrow screen, scroll the figure horizontally.</figcaption></figure>
+
+<p><strong>Your first two tasks:</strong> implement <code>global_edges</code>, then <code>seed_loss</code>. The CHECK cells use deliberately different ID maps and change context labels. Correct seed loss remains unchanged; gradients on context output rows are zero. Context <em>features</em> can still receive gradients through their messages. No-gradient-on-context-logits is not no-learning-from-context.</p>
+<h2 id="5-%C2%B7-Three-different-claims-about-mini-batching">5 &#183; Three different claims about mini-batching<a class="anchor-link" href="#5-%C2%B7-Three-different-claims-about-mini-batching">&#182;</a></h2><div id="l100-predict"></div>
+
+<h3 id="Claim-A:-the-same-seed-prediction">Claim A: the same seed prediction<a class="anchor-link" href="#Claim-A:-the-same-seed-prediction">&#182;</a></h3><p>With all neighbors retained (<code>fanout=-1</code>), two sampled hops should reproduce each seed's two-layer full-graph prediction. This relies on having the complete relevant incoming neighborhoods, the same weights, no dropout and node-wise normalization. A graph-wide normalization layer or an insufficient number of sampled hops would require a different argument.</p>
+<p>The audit compares float64 computations at a frozen absolute tolerance of <code>2e-6</code>. It checks an adversarial fixture with an isolated paper and empty relations, then 23 fixed training seeds on the full real ACM graph at batch sizes 1, 7 and 23. These probes test integration; they are not an exhaustive proof over every possible batch.</p>
+<h3 id="Claim-B:-the-same-accumulated-gradient">Claim B: the same accumulated gradient<a class="anchor-link" href="#Claim-B:-the-same-accumulated-gradient">&#182;</a></h3><p>A batch loss is a mean over its <code>B</code> seeds. An epoch objective is a mean over <code>N</code> seeds. To recover the full objective, multiply each batch mean by <code>B/N</code>, add the results, and differentiate while holding the parameters fixed.</p>
+<p><strong>Worked example.</strong> Five individual losses are <code>[0.2, 0.8, 0.5, 1.1, 0.4]</code>. A batch size of three gives means 0.50 and 0.75. Their equally weighted mean is 0.625. The correct mean is <code>(3/5)×0.50 + (2/5)×0.75 = 0.60</code>. The shorter final batch must not receive the weight of a full batch.</p>
+<div id="batch-weighting"></div>
+
+<p>Your third task implements <code>batch_weight</code>. It is used by both the gradient audit and the reported epoch loss. For the real training split, the four batches have sizes 256, 256, 256 and 36. Equal averaging would over-weight the final 36 seeds.</p>
+<h3 id="Claim-C:-the-same-optimizer-trajectory">Claim C: the same optimizer trajectory<a class="anchor-link" href="#Claim-C:-the-same-optimizer-trajectory">&#182;</a></h3><p>The audit does <strong>not</strong> step the optimizer between batches. The experiment <strong>does</strong>. Adam changes the weights and its moving state after each batch mean. Later gradients are therefore evaluated at different weights. Even all-neighbor sampling does not make those four steps identical to one full-batch step.</p>
+<p>Finite fanout introduces another difference: the model sees a sampled neighborhood. A sampled mean may estimate a linear neighborhood mean under suitable sampling, but a nonlinear multi-layer prediction or attention normalization need not be an unbiased estimate of the full-graph prediction. Neither equal sample counts nor close scores establishes that property.</p>
+<h2 id="6-%C2%B7-Freeze-the-comparison-before-seeing-test-results">6 &#183; Freeze the comparison before seeing test results<a class="anchor-link" href="#6-%C2%B7-Freeze-the-comparison-before-seeing-test-results">&#182;</a></h2><p>The experiment asks a narrow question: under this graph, split and fixed training budget, what does each complete prediction route achieve? The uniform-HGT intervention asks a narrower mechanism question inside the HGT family.</p>
+<table>
+<thead>
+<tr>
+  <th>Decision</th>
+  <th>Frozen rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Information and targets</td>
+  <td>Same complete ACM graph, features and split for all arms</td>
+</tr>
+<tr>
+  <td>Sampling</td>
+  <td>Fanout 8 at two hops; batch 256; no replacement; directional edges</td>
+</tr>
+<tr>
+  <td>Paired samples</td>
+  <td>Seed order and sampled-edge fingerprints match across arms and rates for each seed/epoch</td>
+</tr>
+<tr>
+  <td>Model</td>
+  <td>Width 32, depth 2, HGT heads 4, dropout 0</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>Adam, weight decay .001, all 40 epochs, four updates per epoch</td>
+</tr>
+<tr>
+  <td>Search</td>
+  <td>Rates .003 and .01; seeds 0, 1 and 2 for each of four arms; 24 fits</td>
+</tr>
+<tr>
+  <td>Checkpoint</td>
+  <td>Earliest strictly lowest full-graph validation cross-entropy</td>
+</tr>
+<tr>
+  <td>Rate selection</td>
+  <td>Lowest mean selected validation loss across three seeds; smaller rate breaks ties</td>
+</tr>
+<tr>
+  <td>Test</td>
+  <td>Score selected checkpoints on the same complete test set after selection is frozen</td>
+</tr>
+<tr>
+  <td>Reporting</td>
+  <td>Accuracy, macro F1, individual seeds, paired differences, parameter counts and elapsed time</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Macro F1</strong> averages per-class F1 scores with equal class weights. For each class, F1 is <code>2TP/(2TP+FP+FN)</code>, with zero for an undefined denominator. <strong>Sample SD</strong> describes variation across these three initialization/sampling seeds. It does not describe variation across datasets or unknown future populations.</p>
+<p>Sampling uses a separately reset epoch RNG: <code>100000 + 1000×seed + epoch_index</code>. Matching a seed label alone would be insufficient if different model initializations consumed different amounts of randomness. We also compare actual sample hashes across all eight fits associated with each seed. Uniform HGT copies common initial weights from HGT before training.</p>
+<p>Equal width, update count and search size do not give equal parameter counts, FLOPs or optimization quality. The MLP still pays sampler overhead in this harness, so elapsed times are pipeline measurements, not isolated model-speed benchmarks. Validation and final test inference use the full graph; this course experiment does not establish a scalable all-sampled deployment.</p>
+<h2 id="7-%C2%B7-Inspect-the-measured-evidence">7 &#183; Inspect the measured evidence<a class="anchor-link" href="#7-%C2%B7-Inspect-the-measured-evidence">&#182;</a></h2><p>Before opening the result table, predict which comparison could justify a statement about learned attention. Then explain one alternative explanation for a family-level difference.</p>
+<table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">LR</th>
+  <th style="text-align:right">Accuracy mean ± seed SD</th>
+  <th style="text-align:right">Macro F1 mean</th>
+  <th style="text-align:right">Parameters</th>
+  <th style="text-align:right">Seconds per selected fit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rgcn</td>
+  <td style="text-align:right">0.003</td>
+  <td style="text-align:right">49.54% ± 0.00 pp</td>
+  <td style="text-align:right">0.2209</td>
+  <td style="text-align:right">71,459</td>
+  <td style="text-align:right">6.58</td>
+</tr>
+<tr>
+  <td>hgt</td>
+  <td style="text-align:right">0.003</td>
+  <td style="text-align:right">88.81% ± 0.90 pp</td>
+  <td style="text-align:right">0.8878</td>
+  <td style="text-align:right">91,017</td>
+  <td style="text-align:right">18.26</td>
+</tr>
+<tr>
+  <td>hgt_uniform</td>
+  <td style="text-align:right">0.003</td>
+  <td style="text-align:right">87.11% ± 1.41 pp</td>
+  <td style="text-align:right">0.8701</td>
+  <td style="text-align:right">76,265</td>
+  <td style="text-align:right">12.04</td>
+</tr>
+<tr>
+  <td>mlp</td>
+  <td style="text-align:right">0.003</td>
+  <td style="text-align:right">70.96% ± 1.42 pp</td>
+  <td style="text-align:right">0.6305</td>
+  <td style="text-align:right">63,139</td>
+  <td style="text-align:right">3.47</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">HGT − R-GCN</th>
+  <th style="text-align:right">HGT − uniform HGT</th>
+  <th style="text-align:right">HGT − MLP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">+39.11 pp</td>
+  <td style="text-align:right">+0.64 pp</td>
+  <td style="text-align:right">+18.56 pp</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">+40.24 pp</td>
+  <td style="text-align:right">+4.29 pp</td>
+  <td style="text-align:right">+17.18 pp</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">+38.47 pp</td>
+  <td style="text-align:right">+0.18 pp</td>
+  <td style="text-align:right">+17.81 pp</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Author-reference evidence:</strong> all 24 fits, 960 epochs and 3,840 optimizer updates completed. HGT exceeds the uniform ablation by 1.70 percentage points on average here. This is conditional evidence under one fixed protocol, not a universal attention benefit. R-GCN predicts the majority class for all test papers in every selected run (49.54% accuracy); its failed learning trajectory limits the family comparison. The experiment is retained as specified.</p>
+<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l100/results.svg" alt="Measured complete course run. Each point is one seed on the same graph/split; horizontal bars are means. These are not independent datasets."></div><figcaption>Measured complete course run. Each point is one seed on the same graph/split; horizontal bars are means. These are not independent datasets. On a narrow screen, scroll the figure horizontally.</figcaption></figure>
+
+<p>A weak R-GCN result under this fixed budget does not establish that relation-specific models are intrinsically weak. Optimization, the constant auxiliary features, the split and the wrapper all matter. An attention ablation changes parameter count and training dynamics as well as the weighting rule. Carry these limitations into the attribution table, rather than deleting an inconvenient result.</p>
+<p>L099 used 60 full-batch steps; L100 uses 160 mini-batch steps and finite fanout. Comparing their scores changes several factors simultaneously. It is not a clean estimate of the causal effect of sampling. A follow-up would hold the optimizer/update schedule fixed and vary the sampler, using new validation-only decisions.</p>
+<h2 id="8-%C2%B7-Full-reproduction:-inspect-the-target,-protocol-and-executed-coverage">8 &#183; Full reproduction: inspect the target, protocol and executed coverage<a class="anchor-link" href="#8-%C2%B7-Full-reproduction:-inspect-the-target,-protocol-and-executed-coverage">&#182;</a></h2><p>The <a href="https://arxiv.org/abs/1703.06103v4">R-GCN paper</a> and <a href="https://arxiv.org/abs/2003.01332v1">HGT paper</a> introduce methods and multiple experiments. Completing our checkpoint does not reproduce all those experiments.</p>
+<table>
+<thead>
+<tr>
+  <th>Evidence lane</th>
+  <th>What is provided</th>
+  <th>What it establishes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>ACM checkpoint</td>
+  <td>All 24 fresh course fits, 960 epochs, 3,840 updates; traces/checkpoints/predictions</td>
+  <td>The complete declared course experiment, not a published table</td>
+</tr>
+<tr>
+  <td>R-GCN AIFB</td>
+  <td>Fresh ten-run full release-protocol port, original 140/36 split and full graph</td>
+  <td>A named published target comparison; historical identity remains INCOMPARABLE</td>
+</tr>
+<tr>
+  <td>HGT CS Table 2</td>
+  <td>Full-setting model/sampler/trainer, pinned 8.1 GiB data identity, five-seed local/Modal/notebook commands</td>
+  <td>Runnable reconstruction track; full training NOT_RUN</td>
+</tr>
+<tr>
+  <td>Entire original papers</td>
+  <td>Other tasks/datasets and historical tuning/backend remain outside executed coverage</td>
+  <td>Full-paper parity NOT_ESTABLISHED</td>
+</tr>
+</tbody>
+</table>
+<p>The fresh AIFB mean is <strong>95.8333%</strong>, with <strong>1.4640 percentage points</strong> sample SD across ten runs. The Table 2 target is 95.83%. Numerical closeness is a useful observation; it does not identify the historical graph bytes, RNG sequence or Keras/Theano execution. The lab appendix visibly includes the complete AIFB implementation and trainer.</p>
+<p>For HGT, CS Paper–Field L2 targets NDCG .403 ± .041 and MRR .439 ± .078 across five trainings. The course's full-setting port uses width 256, three layers and eight heads, with the source/deviation ledger linked below. The modern source differs from the archived publication-era code. L093 previously recorded a 10 GiB guarded load failure and a Modal GPU payment-method rejection. These are <strong>prior findings</strong>, not a fresh capacity experiment here. We do not relabel ACM, NN or a single update as the CS result.</p>
+<p>The <a href="../labs/l100-reproduction.md">full contract</a> records hashes, exact commands, model/optimizer/data/split/metric differences and delivery evidence. The standalone notebook contains the full visible CS implementation in a gated appendix. Turning on a flag does not upgrade a verdict; completed evidence must do that.</p>
+<h2 id="9-%C2%B7-EXIT:-defend-the-pipeline">9 &#183; EXIT: defend the pipeline<a class="anchor-link" href="#9-%C2%B7-EXIT:-defend-the-pipeline">&#182;</a></h2><p>Submit the three task implementations, your fresh JSON evidence and an attribution table with columns <strong>observation / held fixed / changed / alternative explanation / justified conclusion</strong>. Include one row for HGT versus R-GCN, one for HGT versus uniform HGT and one for the all-neighbor parity audit.</p>
+<p>Defend these five questions without reopening the solution:</p>
+<ol>
+<li>Trace one sampled edge from local indices to global typed IDs, then through both layers to a seed prediction.</li>
+<li>Explain why a context paper can send useful messages while its label remains excluded from the batch objective.</li>
+<li>Derive the <code>B/N</code> weight for an incomplete final batch. State exactly when accumulated gradients match and when optimizer trajectories can differ.</li>
+<li>Use the paired results to distinguish an architecture gap from an attention effect. Name one unresolved confound and one useful next experiment.</li>
+<li>Explain why complete ACM execution, close AIFB scores and an unrun HGT CS operator have different reproduction statuses.</li>
+</ol>
+<p>The teacher scores five axes 0–2: identity/graph contract; sampling/loss correctness; reproducible execution; comparison reasoning; reproduction defense. A checkpoint pass requires at least 8/10 and no zero in correctness or reproduction defense. Until your own artifacts and explanation are reviewed, status remains <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<div id="l100-teachback"></div>
+
+<p>Ask the agent follow-up questions about any unclear step, or paste your EXIT evidence for a strict defense. Revisit the identity trace tomorrow and the gradient-versus-update distinction in a week. Next, <a href="../plan/year-3.md">the temporal quarter</a> asks whether each input existed at prediction time—an issue this static checkpoint deliberately leaves open.</p>
+</article><script src="../assets/batch-weighting.js"></script><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l100-lesson.js"></script></body></html>

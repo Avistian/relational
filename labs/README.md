@@ -193,3 +193,7 @@ live Colab compatibility or full paper reproduction.
 ### Lesson099 · R-GCN versus HGT
 
 [Student](0099-rgcn-vs-hgt.ipynb) · [Solution](solutions/0099-rgcn-vs-hgt.ipynb) · [Read lab](html/0099-rgcn-vs-hgt.html) · [Protocol](l099-reproduction.md). Full24-fit ACM comparison, attention ablation, fresh ten-run AIFB port; HGT CS NOT_RUN. Three live tasks and written attribution defense.
+
+### Lesson100 · Heterogeneous checkpoint
+
+[Student](0100-heterogeneous-gnn-checkpoint.ipynb) · [Solution](solutions/0100-heterogeneous-gnn-checkpoint.ipynb) · [Read lab](html/0100-heterogeneous-gnn-checkpoint.html) · [Protocol](l100-reproduction.md). Native3-type ACM experiment,24fits, typed-ID and gradient audits, three live tasks and written defense. Full visible AIFB/CS appendices; CS training NOT_RUN.

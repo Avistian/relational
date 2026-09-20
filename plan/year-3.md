@@ -212,7 +212,8 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `arch-family-viz.js` + `hetero-graph-viz.js`.
 - **Bridge** — the "same graph, two paradigms" pattern reused for GNN-vs-Graph-Transformer in Y4 L146.
 
-### 100 · **Q2 checkpoint** — *Schlichtkrull + Hu 2020 · Deliverable-based*
+### 100 · [**Q2 checkpoint**](../lessons/0100-heterogeneous-gnn-checkpoint.html) — *Schlichtkrull + Hu 2020 · Deliverable-based*
+- **Prepared package** — [lab](../labs/0100-heterogeneous-gnn-checkpoint.ipynb), [protocol](../labs/l100-reproduction.md): all24 native mini-batched ACM fits, all-neighbor output/gradient audits and fresh ten-run AIFB port. HGT CS NOT_RUN; full-paper parity NOT_ESTABLISHED. Learner defense pending.
 - **Deliverable** — a heterogeneous GNN trained on a graph with **3+ node types**, with correct hetero
   mini-batching and a controlled R-GCN-vs-HGT comparison.
 - **Bridge** — heterogeneity mastered; only temporality remains before RDL; callback L091/L093.

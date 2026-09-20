@@ -534,3 +534,10 @@ The [model and learning map](reference/0071-0090-model-map.html) connects self-s
 - [HGT, Hu et al.](https://arxiv.org/abs/2003.01332v1): §3 operators, Table2 CS; full-setting track remains unrun.
 - [Pinned ACM raw loader](https://github.com/dmlc/dgl/blob/3d16000b4170fa741ed9e9667f22ba84d3493026/examples/pytorch/han/utils.py): conference mapping and typed incidence; course split/trainer explicitly differ.
 - [L099 protocol and evidence](labs/l099-reproduction.md):24 complete course fits, paired attention intervention, independent checkpoint/metric audit and separate published targets.
+
+## Lesson 100 · Integrated heterogeneous checkpoint
+
+- [R-GCN, Eq2 and Table2](https://arxiv.org/abs/1703.06103v4): relation-wise message normalization; separate full AIFB release-protocol replay.
+- [HGT, §3 and Table2](https://arxiv.org/abs/2003.01332v1): typed attention, temporal encoding and HGSampling; source-era differences retained.
+- [Native NeighborLoader](https://pytorch-geometric.readthedocs.io/en/latest/modules/loader.html#torch_geometric.loader.NeighborLoader): typed seed prefix, local/global IDs and directional neighborhoods. Executed wrapper/source hashes archived.
+- [L100 full reproduction ledger](labs/l100-reproduction.md): frozen24-fit course protocol, complete AIFB replay and unrun CS full-setting track.

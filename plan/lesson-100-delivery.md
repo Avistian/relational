@@ -1,0 +1,23 @@
+# Lesson 100 approved design and implementation plan
+
+User approved combined checkpoint/reproduction scope on 2026-09-20. Deliver a trained three-type heterogeneous graph, native mini-batching correctness evidence and a controlled R-GCN/HGT comparison, with full visible implementation and a written defense. The writing-plans skill is unavailable (catalog and filesystem checked); this document supplies the plan.
+
+Frozen course protocol, before scoring: reuse all 4,025 ACM papers, 7,167 authors and 60 subjects and the L099 stratified split (804/403/2818). Keep target-defining conference information out of inputs. Four arms: R-GCN, HGT, uniform HGT and feature-only MLP. Width32, depth2, four HGT heads, dropout0. Two learning rates .003/.01, three seeds0/1/2, 40 complete epochs, four native seed batches per epoch (256/256/256/36). Fanout8 at each of two hops for every relation; no replacement, directional subgraphs. Independent deterministic epoch sampling schedules are identical for every arm/rate at a given seed. Common HGT/ablation initial tensors match. Adam, weight decay .001. Earliest validation-CE minimum selects each checkpoint; mean best validation CE selects LR per arm; complete fixed test split scored only afterward. Equal seed/update/search budgets do not equalize capacity or FLOPs. This is a fresh course experiment; L099 is a separately labeled reference, not a causal sampling ablation.
+
+1. Test typed global endpoint reconstruction, seed-only objective, weighted gradient accumulation and native all-neighbor output/gradient equivalence before training. Cover empty relations, isolated nodes, context-label changes, held-out labels and paired sample hashes.
+2. Implement standalone model/data/sampling/training code; all model operators remain visible in both notebooks. Run all24 fits, archive losses, checkpoints, predictions, sample fingerprints and independent audit.
+3. Replay the full ten-run AIFB release-protocol port separately. Preserve exact-historical INCOMPARABLE and full-paper NOT_ESTABLISHED. Provide named HGT CS full-setting local/Modal/Colab operators, source hashes and explicit resource/deviation evidence. No substitute benchmark relabeled as historical reproduction.
+4. Create lesson, reference, portable figures and interactive weighting diagnostic; five or fewer meaningful tasks, immediate checks and EXIT defense. No learner mastery inferred.
+5. Execute standalone solution in fresh directory, reconcile numerical results, inspect browser desktop/mobile/print, verify deterministic rebuild and realistic copied Pages links. Register manifest and update course evidence. No deployment requested.
+
+## Executed evidence
+
+All24 fresh course fits and960epochs/3840updates completed. Mean test accuracy: HGT88.810%, uniform HGT87.107%, MLP70.960%, R-GCN49.539%. All selected R-GCN models predict only the majority class; no post-test tuning or universal family ranking. Sample fingerprints match across all eight arm/rate fits for each seed. Independent audit restores24checkpoints and reconstructs12selected prediction sets and sklearn metrics.
+
+Native full-neighbor audits pass on the adversarial fixture and23fixed ACM training seeds at three batch sizes. Independent dense R-GCN and softmax output/gradient checks, archived modern HGT operator parity and held-out-label interventions pass. Fresh complete ten-run AIFB port95.833333%,1.464017pp sample SD; exact historical identity INCOMPARABLE. Full CS archive SHA verified without loading; CS training NOT_RUN.
+
+The initial notebook attempt suffered a kernel-process failure and is rejected as incomplete evidence. A fresh retry executes61code cells, all24course fits and all10AIFB fits in an empty temporary working directory with independently fetched, hash-verified data. All non-timing course traces/sampling fingerprints/logits/predictions and AIFB traces/predictions match exactly. No repository imports. Clean installation and live Colab remain NOT_CHECKED.
+
+Visual improvement over L099: the complete diagram now exposes the sampler/local-ID/seed boundary and distinguishes fixed-weight correctness from sequential training. A separate typed-ID trace and unequal-batch intervention expose the new computation. Figure text is checked against its containing rectangles. Desktop and mobile browser screenshots are inspected; final delivery details reside in _delivery_l100_results.json.
+
+Final delivery PASS: all five intervention states/reset/keyboard,1200px/375px, print, four portable figures, three blank student tasks,61executed solution cells, deterministic rebuild,47copied-Pages local links and manifest navigation over HTTP. No JavaScript errors. No deployment or learner mastery inferred.

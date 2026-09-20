@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Heterogeneous checkpoint reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/hetero-checkpoint.css"></head><body><article><h1 id="Heterogeneous-checkpoint-reference">Heterogeneous checkpoint reference<a class="anchor-link" href="#Heterogeneous-checkpoint-reference">&#182;</a></h1><p><a href="../lessons/0100-heterogeneous-gnn-checkpoint.html">Lesson 100</a> · <a href="../labs/l100-reproduction.md">Full protocol</a></p>
+<table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>What to check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Identity</td>
+  <td>A node is (type, global row). Restore each edge endpoint using its own type's n_id.</td>
+</tr>
+<tr>
+  <td>Target boundary</td>
+  <td>First B seed rows receive cross-entropy; context labels never enter the loss.</td>
+</tr>
+<tr>
+  <td>Depth</td>
+  <td>Two incoming sample hops for two message-passing layers.</td>
+</tr>
+<tr>
+  <td>Full-neighbor parity</td>
+  <td>All dependencies, fixed weights, no stochastic dropout, node-wise normalization.</td>
+</tr>
+<tr>
+  <td>Gradient parity</td>
+  <td>Sum B/N times batch-mean gradients; no optimizer steps between batches.</td>
+</tr>
+<tr>
+  <td>Training trajectory</td>
+  <td>Sequential Adam updates change weights and optimizer state. Parity is not implied.</td>
+</tr>
+<tr>
+  <td>Finite fanout</td>
+  <td>Sampled nonlinear predictions need not be unbiased full-graph predictions.</td>
+</tr>
+<tr>
+  <td>Pairing</td>
+  <td>Separate sampling RNG; compare actual sample hashes and shared ablation weights.</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Validation-only epoch/LR selection, frozen before complete test scoring.</td>
+</tr>
+<tr>
+  <td>Attribution</td>
+  <td>Family gap bundles operators. Uniform attention is a narrower intervention with residual confounds.</td>
+</tr>
+<tr>
+  <td>Reproduction</td>
+  <td>Full course execution, named released replay and original-paper parity are distinct.</td>
+</tr>
+</tbody>
+</table>
+<p>Worked mean: losses [.2,.8,.5,1.1,.4], batches3/2 → means .50/.75. Weighted mean .60; naive mean .625.</p>
+<p>Paper anchors: <a href="https://arxiv.org/abs/1703.06103v4">R-GCN Eq2</a>, <a href="https://arxiv.org/abs/2003.01332v1">HGT §3</a>. Native API: <a href="https://pytorch-geometric.readthedocs.io/en/latest/modules/loader.html#torch_geometric.loader.NeighborLoader">NeighborLoader</a>.</p>
+<p>Defense rubric: five axes ×0–2; pass ≥8/10, no zero in correctness or reproduction defense. PENDING_WRITTEN_DEFENSE until reviewed.</p>
+</article></body></html>

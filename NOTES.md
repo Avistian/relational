@@ -1403,3 +1403,7 @@ Full reproduction requested. Complete declared synthetic experiment: 32 graphs �
 ## Lesson099 created · R-GCN vs HGT · 2026-09-20
 
 Full reproduction requested; combined scope approved. Entire24-fit ACM course comparison executed: same graph/split/features/search budget, paired common HGT/ablation initialization, full traces/checkpoints/predictions. Uniform HGT slightly exceeds HGT; architecture gap cannot be credited to learned attention. Fresh complete ten-run AIFB port executed separately (95.8333% mean). HGT CS remains NOT_RUN with prior resource findings explicitly attributed to L093. Full-paper parity NOT_ESTABLISHED; no learner mastery or deployment inferred.
+
+## Lesson100 created · Heterogeneous GNN checkpoint · 2026-09-20
+
+User approved integrated checkpoint and reiterated full reproduction. Complete three-type ACM native mini-batched comparison:24fits,960epochs,3840updates, identical sampled-edge schedules across arms/rates, full traces/checkpoints/predictions. All-neighbor typed-ID/output/gradient audits, seed-only loss and correct incomplete-batch weighting. HGT88.810%, uniform87.107%, MLP70.960%, R-GCN49.539% majority collapse retained. Fresh full ten-run AIFB port95.833%; HGT CS full training NOT_RUN, full-paper parity NOT_ESTABLISHED. Complete named-lane implementations visible in notebook appendices. No learner mastery or publication inferred.
