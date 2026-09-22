@@ -1,0 +1,209 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 101 — Static vs temporal: a graph query cannot read its future</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/temporal-lesson.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0100-heterogeneous-gnn-checkpoint.html">Lesson 100</a></nav><header><p>Year 3 · Quarter 3 · Lesson 101</p><h1>Static vs temporal: a graph query cannot read its future</h1></header><div class="package-links"><strong>Your deliverable:</strong> a graph query that cannot read its future, a time-respecting split, and a defensible replay of ten published baseline cells.<br><a href="../labs/0101-static-vs-temporal.ipynb">Student notebook</a> · <a href="../labs/solutions/0101-static-vs-temporal.ipynb">Executed solution</a> · <a href="../labs/html/0101-static-vs-temporal.html">Read the lab</a> · <a href="../labs/l101-reproduction.md">Reproduction contract</a></div>
+
+<h2 id="1-%C2%B7-Close-the-notes:-retrieve-the-old-boundaries">1 &#183; Close the notes: retrieve the old boundaries<a class="anchor-link" href="#1-%C2%B7-Close-the-notes:-retrieve-the-old-boundaries">&#182;</a></h2><div id="l101-warmup"></div>
+
+<p>Before reading, write three answers. In L002, why can a correct SQL join still leak? In L055, why can random rows answer a different question from future rows? In L100, why does a sampled context node not automatically receive a label loss?</p>
+<details><summary>Feedback — open after trying</summary><p>A join can attach a value learned after prediction time. Random rows can mix historical regimes and future information into training. Context supplies messages; only the chosen seeds supply supervised targets. Today we add a time boundary to all those dependencies.</p></details>
+
+<p><strong>The tangible win.</strong> Given a typed entity, a prediction time and a horizon, determine which inputs and labels are legal. Work through sections 2–5 first; then implement the three notebook tasks. The full real-data baseline replay is small enough to run in the same session.</p>
+<p>This advances the <a href="../MISSION.md">mission</a>: a relational model must earn its score using information that would exist in deployment. <a href="0100-heterogeneous-gnn-checkpoint.html">L100</a> defended identity, sampled dependencies and seed losses on a static graph. It did not test whether every dependency existed at a historical query time. This is the missing boundary before L102's temporal memory models.</p>
+<h2 id="2-%C2%B7-Static-is-a-task-assumption,-not-a-file-format">2 &#183; Static is a task assumption, not a file format<a class="anchor-link" href="#2-%C2%B7-Static-is-a-task-assumption,-not-a-file-format">&#182;</a></h2><p>A <strong>static graph task</strong> predicts with one declared graph snapshot. A <strong>temporal task</strong> predicts at a particular time using a permitted history. A file saved today can contain decades of events; reading it as one graph does not make its information historically available.</p>
+<p>A random node split can be valid for a declared static, transductive task: the model is allowed to see unlabeled graph structure at evaluation nodes. It is not automatically valid for forecasting. The mistake is using that static information contract while claiming to predict an earlier future.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Hide the answers and also hide the routes through which tomorrow's facts could reveal them.</p>
+</blockquote>
+<p><strong>Primary reading.</strong> <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al., ICML 2024, sections 3.2–3.3 and Appendix A–B</a> describe relational rows as typed nodes and construct a computation graph for a seed entity and seed time. A <strong>seed</strong> is the entity whose output we want. Its <strong>computation graph</strong> contains the dependencies needed to calculate that output. The temporal neighborhood rule admits neighbor rows whose timestamps do not exceed the seed time.</p>
+<p>The course implements that visibility mechanism transparently. We additionally separate event time from arrival time and attach availability to edges. These are explicit deployment-oriented extensions; the paper's single row timestamp does not itself supply versioned business records.</p>
+<h2 id="3-%C2%B7-Give-the-query-a-clock">3 &#183; Give the query a clock<a class="anchor-link" href="#3-%C2%B7-Give-the-query-a-clock">&#182;</a></h2><p>A query is <strong>(entity, t, Δ)</strong>: the typed entity, the prediction cutoff <code>t</code>, and a future horizon <code>Δ</code>. Its input uses history through <code>t</code>. Its target describes the interval <strong>(t, t + Δ]</strong>. The left endpoint is excluded; the right endpoint is included.</p>
+<p><strong>Worked example.</strong> At day 5, predict purchases during days greater than 5 and at most 8. A purchase at exactly day 5 can be an input under our inclusive observation convention. It is not part of that future target. If production predicts at the beginning of a day, same-day events may not be known: define a finer timestamp or use a strict boundary. Never silently swap conventions.</p>
+<p>Two clocks matter. <strong>Event time</strong> says when the event happened. <strong>Availability time</strong> says when the predictor could first access the record. A correction may refer to day 4 but arrive on day 7. A day-5 predictor cannot use it.</p>
+<div id="l101-predict"></div>
+
+<p>The row predicate is:</p>
+<div class="highlight"><pre><span></span><span class="p">(</span><span class="n">event_time</span> <span class="o">&lt;=</span> <span class="n">query_time</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">available_time</span> <span class="o">&lt;=</span> <span class="n">query_time</span><span class="p">)</span>
+</pre></div>
+<p>Changing only the cutoff should change the visible inputs, not the records themselves. Predict the legal and event-only means at day 5 before moving the control.</p>
+<div id="temporal-visibility"></div>
+
+<p><strong>Worked trace.</strong> At day 5, the legal values are 2 and 4: mean 3. Event-only filtering also includes the late correction of 8: mean 14/3. Reading all stored rows additionally includes the future outcome of 10: mean 6. These are illustrative values, not measured paper results.</p>
+<p><strong>Feature versions.</strong> An old customer row can contain a balance updated yesterday. Checking the customer's creation date does not make the current balance legal for a query last year. Use the version available at the query time. Likewise, an undated entity table is safe only for attributes genuinely treated as timeless under the task contract.</p>
+<h2 id="4-%C2%B7-Carry-the-same-clock-through-every-graph-hop">4 &#183; Carry the same clock through every graph hop<a class="anchor-link" href="#4-%C2%B7-Carry-the-same-clock-through-every-graph-hop">&#182;</a></h2><p>An edge is a directed connection from a source row to a receiving row. A <strong>hop</strong> expands one layer of incoming neighbors. Two message-passing layers can consume a fact two edges away. Filtering only direct neighbors leaves that second route open.</p>
+<figure class="temporal-figure" tabindex="0"><img src="../labs/figures/l101/query-path.svg" alt="At query day 5, two-hop inputs include A, B and E; future C and late-arriving D are excluded."><figcaption>Illustrative computation. At query day 5, two-hop inputs include A, B and E; future C and late-arriving D are excluded.</figcaption></figure>
+
+<p>The notebook's <code>incoming_subgraph</code> receives node times, edge availability times, a seed, a query cutoff and a depth. At each hop it checks both endpoint rows and the edge, then expands the admitted sources. The output retains original edge indices, including parallel edges. A depth of zero retains the seed alone.</p>
+<p><strong>Worked trace.</strong> A and B existed before day 5. C connects into B but occurs on day 8. D also connects into B, with an old event date but day-9 arrival. E connects into B and is available on day 5. A two-hop query for A at day 5 includes A, B and E. At day 9 it can include all five nodes.</p>
+<p><strong>One cutoff, several hops.</strong> Keep the original query time at every hop. Replacing it with B's creation day 1 would incorrectly discard E, although E was available when the prediction was requested. A walk with monotonically decreasing event times is a different temporal mechanism. Do not infer it from a rule that merely requires each dependency to predate the query.</p>
+<p><strong>One entity, several queries.</strong> <code>(customer A, day 5)</code> and <code>(customer A, day 9)</code> need different neighborhoods. Do not share a cached embedding keyed only by entity ID. A cache key must capture the cutoff, model state and other computation dependencies. This extends L098's distinct seed-query principle.</p>
+<p><strong>Filter before sampling.</strong> A finite neighbor budget should choose among legal neighbors. Sampling from the entire graph and then dropping future records can leave too few historical neighbors and changes the sampling distribution. Our transparent audit uses all legal neighbors; it verifies visibility rather than a specific finite-fanout distribution.</p>
+<blockquote>
+<p><strong>Source-reading check.</strong> Fey's printed Algorithm 1 filters <code>τ(v)</code> while describing candidate edges <code>(w,v)</code>; Appendix A's temporal-neighborhood equation filters the neighbor <code>τ(w)</code>. We follow the neighbor equation and the surrounding availability explanation. A literal receiver-only filter would admit future sources. The code makes this distinction testable.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Split-target-queries,-then-audit-label-maturity">5 &#183; Split target queries, then audit label maturity<a class="anchor-link" href="#5-%C2%B7-Split-target-queries,-then-audit-label-maturity">&#182;</a></h2><p>A <strong>label window</strong> is the future interval used to construct an answer. <strong>Label maturity</strong> is the time when its full answer can be known. With no reporting delay it is <code>t + Δ</code>; delayed outcomes mature later. Training may use labels that are in the future relative to their own historical query, provided they are known when the model is fitted. Inputs for that query must still stop at its query time.</p>
+<figure class="temporal-figure" tabindex="0"><img src="../labs/figures/l101/label-window.svg" alt="A label window ending at day 8 can train a day-10 model; a window ending at day 11 cannot."><figcaption>Illustrative computation. A label window ending at day 8 can train a day-10 model; a window ending at day 11 cannot.</figcaption></figure>
+
+<p><strong>Worked example.</strong> Fit a model on day 10. A day-5 query with a three-day horizon has a label by day 8 and can train it. A day-8 query ends on day 11, so it cannot train that day-10 model. Both query dates precede the split, but only one label is ready.</p>
+<p>The lab's explicit split policy is:</p>
+<div class="temporal-scroll" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Query region</th>
+  <th>Additional condition</th>
+  <th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>t &lt; validation_time</code></td>
+  <td>label ready by validation time</td>
+  <td>Train</td>
+</tr>
+<tr>
+  <td><code>validation_time ≤ t &lt; test_time</code></td>
+  <td>label ready by test time</td>
+  <td>Validation</td>
+</tr>
+<tr>
+  <td><code>t ≥ test_time</code></td>
+  <td>retained for later offline scoring</td>
+  <td>Test</td>
+</tr>
+<tr>
+  <td>Earlier region but label not ready</td>
+  <td>crosses the next boundary</td>
+  <td>Purged</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Purging</strong> removes examples whose label windows cross a fitting boundary. This is a conservative declared course policy, not a universal rule that every validation query must be purged. The important contract is that the labels used for a decision existed at that decision's time. Our test fixture has complete outcomes; a live system must also handle right-censored labels whose horizon has not finished.</p>
+<p>A random split can place day-500 labels into the fitting set of a model evaluated at day 100. The lab counts such forbidden training-label/test-query pairs separately. Random and chronological partitions contain different evaluation examples; their accuracy difference alone would not isolate leakage.</p>
+<p><strong>Four independent gates.</strong> Audit target split and label maturity; row/edge availability at every hop; feature versions and preprocessing fit scope; and model selection before test scoring. Sorting target rows repairs only the first of these. In particular, vocabulary building or imputation on future records can leak even after graph filtering passes.</p>
+<h2 id="6-%C2%B7-Make-a-leakage-failure-observable">6 &#183; Make a leakage failure observable<a class="anchor-link" href="#6-%C2%B7-Make-a-leakage-failure-observable">&#182;</a></h2><p>The synthetic experiment intentionally creates a future-answer channel. Each of 600 queries has an independent binary label. Its only legitimate historical value is zero. A late-arriving record and a future outcome record both carry that label. This is an adversarial test fixture, not a simulation of ordinary customer behavior.</p>
+<p>Three fixed feature rules feed the same one-dimensional logistic regression. Logistic regression learns a weight and intercept and turns their weighted input into a binary probability. Legal filtering sees zero. Event-only filtering sees <code>y/2</code>. Static filtering sees <code>2y/3</code>. The latter two directly encode the answer.</p>
+<p>The chronological training, validation and test sets are identical across arms. Two crossing-window queries are purged, leaving 359 training, 119 validation and 120 test examples. We run all three arms for seeds 0, 1 and 2, with fixed <code>C=1</code>, no hyperparameter search and no test-driven selection. Seeds alter the independent labels. They are not different real-world datasets.</p>
+<div class="temporal-scroll" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Legal accuracy</th>
+  <th style="text-align:right">Event-only accuracy</th>
+  <th style="text-align:right">Static accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">50.00%</td>
+  <td style="text-align:right">100.00%</td>
+  <td style="text-align:right">100.00%</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">45.00%</td>
+  <td style="text-align:right">100.00%</td>
+  <td style="text-align:right">100.00%</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">38.33%</td>
+  <td style="text-align:right">100.00%</td>
+  <td style="text-align:right">100.00%</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Measured author-reference results:</strong> all nine fits completed; synthetic diagnostic, not a paper score.</p>
+<p>The legal arm cannot infer an independent future label from a constant. Its accuracy varies with the sampled test class balance and the fitted training majority; a finite test score need not equal 50%. The perfect leaky scores diagnose a constructed answer channel. They establish no typical uplift from graph structure or temporal modeling.</p>
+<p>The separate graph audit checks 32 generated graphs at three cutoffs and four depths: <strong>384 cases</strong>. It compares the Python traversal against independently filtered SQL edges, including cycles, parallel edges, boundary timestamps and unavailable endpoints. The named two-hop fixture catches future sources behind legal first-hop nodes.</p>
+<h2 id="7-%C2%B7-Reproduce-a-complete,-named-published-result">7 &#183; Reproduce a complete, named published result<a class="anchor-link" href="#7-%C2%B7-Reproduce-a-complete,-named-published-result">&#182;</a></h2><p>The foundational temporal-graph idea comes from Fey et al. The quantitative target here comes from the later <a href="https://arxiv.org/html/2407.20060v1#S5.T4">Robinson et al. RelBench paper, version 1, Table 4</a>: <strong>all five heuristic baseline columns for <code>rel-f1 / driver-position</code>, on both validation and test</strong>. This is a complete selected baseline slice, not the full paper.</p>
+<p>The target is each driver's average finishing position over the next <strong>60 days</strong>. Lower is better for <strong>mean absolute error (MAE)</strong>: average <code>abs(prediction − target)</code>, measured in finishing-position units. We read every row of the released task: 7,453 train, 499 validation and 760 test queries. No subsampling or randomized split occurs.</p>
+<p><strong>Follow the actual source.</strong> <a href="https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/baseline_node.py">Pinned <code>baseline_node.py</code></a> uses training labels for validation predictions, then <strong>train plus validation labels for test predictions</strong>. This is permitted here because their full 60-day windows end by the test cutoff. We assert both boundaries. Reporting “train-only test fit” would misdescribe this release.</p>
+<div class="temporal-scroll" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Baseline</th>
+  <th>Computation from the permitted fitting labels</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Global zero</td>
+  <td>Predict 0 for every query</td>
+</tr>
+<tr>
+  <td>Global mean</td>
+  <td>Predict the overall label mean</td>
+</tr>
+<tr>
+  <td>Global median</td>
+  <td>Predict the overall label median</td>
+</tr>
+<tr>
+  <td>Entity mean</td>
+  <td>Predict the driver's historical label mean; unseen driver → 0</td>
+</tr>
+<tr>
+  <td>Entity median</td>
+  <td>Predict the driver's historical label median; unseen driver → 0</td>
+</tr>
+</tbody>
+</table></div>
+<p>The zero fallback is part of the released protocol, even though it is a poor finishing-position estimate. Changing it is an extension and needs a separate result. The program passes only entity ID and date to prediction functions; scoring reads labels afterward. There is no optimizer, architecture, initialization, checkpoint selection or stochastic training to reconstruct for these deterministic methods.</p>
+<div class="temporal-scroll" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Method</th>
+  <th style="text-align:right">Validation MAE / paper</th>
+  <th style="text-align:right">Test MAE / paper</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>global_zero</td>
+  <td style="text-align:right">11.083200 / 11.083</td>
+  <td style="text-align:right">11.926206 / 11.926</td>
+  <td>MATCH</td>
+</tr>
+<tr>
+  <td>global_mean</td>
+  <td style="text-align:right">4.334385 / 4.334</td>
+  <td style="text-align:right">4.512881 / 4.513</td>
+  <td>MATCH</td>
+</tr>
+<tr>
+  <td>global_median</td>
+  <td style="text-align:right">4.135571 / 4.136</td>
+  <td style="text-align:right">4.399101 / 4.399</td>
+  <td>MATCH</td>
+</tr>
+<tr>
+  <td>entity_mean</td>
+  <td style="text-align:right">7.181002 / 7.181</td>
+  <td style="text-align:right">8.501358 / 8.501</td>
+  <td>MATCH</td>
+</tr>
+<tr>
+  <td>entity_median</td>
+  <td style="text-align:right">7.114262 / 7.114</td>
+  <td style="text-align:right">8.518509 / 8.519</td>
+  <td>MATCH</td>
+</tr>
+</tbody>
+</table></div>
+<p>All ten cells match the paper's three-decimal values within a declared <strong>0.0005 rounding tolerance</strong>. Every prediction vector also agrees with the unmodified released baseline function within <code>1e-12</code>. The archive's SHA-256 matches the checksum in release v1.1.0. Saved predictions preserve query IDs, dates, targets and original order.</p>
+<blockquote>
+<p><strong>Scope check.</strong> <code>MATCH</code> describes those ten rounded score cells. Exact historical execution identity remains <code>NOT_ESTABLISHED</code>: the pinned release is a reproducible reference, not proof of the authors' exact run environment. The LightGBM and RDL columns, other tasks, and regeneration of targets from the original relational database are <strong>NOT_RUN</strong> here. Full-paper reproduction is <strong>NOT_ESTABLISHED</strong>. Matching heuristics does not establish temporal GNN correctness or superiority.</p>
+</blockquote>
+<p>This is also an instructive negative result for a simplistic relational story: the per-entity heuristics are worse than global mean/median on this task. Remember their zero fallback and distribution shift before attributing the gap. Neither this baseline slice nor our fabricated leakage experiment tests the mission's full learned-relational-model thesis.</p>
+<h2 id="8-%C2%B7-Lab,-reproduction-commands-and-defense">8 &#183; Lab, reproduction commands and defense<a class="anchor-link" href="#8-%C2%B7-Lab,-reproduction-commands-and-defense">&#182;</a></h2><p>Implement <code>available</code>, <code>split_queries</code> and <code>incoming_subgraph</code>. CHECK cells confront boundary equality, delayed availability, immature labels, second-hop leakage and repeated queries for one seed. The solution includes all visible functions, the nine-fit diagnostic and the complete real-data replay. It requires no course imports and downloads only a checksum-verified task archive.</p>
+<p>From the repository root:</p>
+<div class="highlight"><pre><span></span>.venv/bin/python<span class="w"> </span>labs/_check_l101.py
+<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>.venv/bin/python<span class="w"> </span>labs/_verify_l101.py
+.venv/bin/python<span class="w"> </span>labs/_build_l101.py
+.venv/bin/python<span class="w"> </span>labs/_execute_l101.py
+.venv/bin/python<span class="w"> </span>labs/_delivery_l101.py
+</pre></div>
+<p>The <a href="../labs/l101-reproduction.md">contract</a> pins sources, data, environment, commands and remaining gaps. The <a href="../reference/temporal-visibility.html">reference card</a> condenses the availability and split rules.</p>
+<p><strong>EXIT — hand in an argument, not just a green cell.</strong> Submit your three implementations and fresh experiment output. Trace A at day 5 and day 9. Explain why an old event can still be unavailable. Derive why the day-8/day-11 label must be purged before a day-10 fit. Identify the actual fitting rows behind the paper's test mean baseline. Finally, write two separate claims: one justified by the ten score matches, and one the evidence cannot support.</p>
+<p>Rubric: 0–2 each for clocks, multi-hop dependencies, label maturity, reproducible execution and claim boundaries; pass requires 8/10 with no zero in the first three. Prepared material is not evidence of your mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p>Ask the agent follow-up questions about any unclear step, or paste your EXIT for a strict defense. Tomorrow, reconstruct the late-arrival example from memory. In a week, distinguish query time from model-fit time again. Next, <a href="../plan/year-3.md">L102 in the roadmap</a> introduces memory updated by events; update-before-predict ordering must obey the same information boundary.</p>
+<div id="l101-teachback"></div></article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/temporal-visibility.js"></script><script src="../assets/l101-lesson.js"></script></body></html>

@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TGN memory reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article><h1 id="TGN-memory:-a-reference-card">TGN memory: a reference card<a class="anchor-link" href="#TGN-memory:-a-reference-card">&#182;</a></h1><p><strong>Memory</strong> is per-node historical state. <strong>Embedding</strong> is a query-time representation. <strong>Parameters</strong> are shared learned weights. <strong>Pending message</strong> is an observed event waiting for a later differentiable update.</p>
+<table>
+<thead>
+<tr>
+  <th>Operation</th>
+  <th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Message</td>
+  <td>Concatenate own state, other state, event features, encoded time since own last update</td>
+</tr>
+<tr>
+  <td>Aggregation</td>
+  <td>Select the last stream occurrence per node, in sorted-node order</td>
+</tr>
+<tr>
+  <td>GRU</td>
+  <td>Updated memory = (1 − keep gate) × proposed content + keep gate × old state</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>Recompute from past messages → predict current pairs → queue current positives → detach</td>
+</tr>
+<tr>
+  <td>Neighborhood</td>
+  <td>Strictly earlier edges; latest ten; mask node-zero padding</td>
+</tr>
+<tr>
+  <td>Evaluation</td>
+  <td>Freeze weights; consume real events chronologically; reset state between branches</td>
+</tr>
+<tr>
+  <td>Negative pairs</td>
+  <td>Score against current state; never write hypothetical events into history</td>
+</tr>
+<tr>
+  <td>Checkpoint</td>
+  <td>Save weights, memory, clocks, pending messages and stream/RNG/optimizer state together</td>
+</tr>
+<tr>
+  <td>Release metric</td>
+  <td>Equal mean of per-batch AP, one sampled destination per real interaction</td>
+</tr>
+<tr>
+  <td>Evidence</td>
+  <td>Source parity, numerical CLOSE, historical identity and full-paper coverage are distinct</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Shapes for Wikipedia:</strong> message 688 → GRU memory 172; query 344, key/value input 516 → attention output 344 → merged embedding 172; pair 344 → decoder 172 → logit 1.</p>
+<p><strong>Release caveats:</strong> all-event test includes new nodes; new-node negative destinations come from the subset’s destination pool; original early-stop checkpoints omit pending messages; explicit seed-per-run modern replay is not the original continuous RNG stream.</p>
+<p><a href="../lessons/0102-temporal-graph-networks.html">Full lesson</a> · <a href="../labs/l102-reproduction.md">Protocol and measured coverage</a> · <a href="https://arxiv.org/html/2006.10637v3">Rossi et al. v3</a></p>
+</article></body></html>

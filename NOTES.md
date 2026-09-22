@@ -1407,3 +1407,11 @@ Full reproduction requested; combined scope approved. Entire24-fit ACM course co
 ## Lesson100 created · Heterogeneous GNN checkpoint · 2026-09-20
 
 User approved integrated checkpoint and reiterated full reproduction. Complete three-type ACM native mini-batched comparison:24fits,960epochs,3840updates, identical sampled-edge schedules across arms/rates, full traces/checkpoints/predictions. All-neighbor typed-ID/output/gradient audits, seed-only loss and correct incomplete-batch weighting. HGT88.810%, uniform87.107%, MLP70.960%, R-GCN49.539% majority collapse retained. Fresh full ten-run AIFB port95.833%; HGT CS full training NOT_RUN, full-paper parity NOT_ESTABLISHED. Complete named-lane implementations visible in notebook appendices. No learner mastery or publication inferred.
+
+## Lesson101 created · Static vs temporal · 2026-09-22
+
+Full reproduction requested. Complete selected RelBench v1.1.0 driver-position heuristic slice: five methods × validation/test, 10/10 printed MAE cells MATCH; complete 7453/499/760 task rows. Train+validation test fit matches source and label-maturity checks. Original-source prediction parity checked independently. Nine separate synthetic fits, 384 SQL-oracle graph cases, three live tasks and standalone visible implementation. Full-paper/historical identity NOT_ESTABLISHED; GNN columns and original label regeneration NOT_RUN. No learner mastery inferred.
+
+## Lesson102 created · Temporal Graph Networks · 2026-09-22
+
+Approved combined lesson plus complete Wikipedia TGN-attn replay. Full ten-run T4 experiment: 293 epochs, all-event AP 98.5123% (sample SD 0.0679pp), new-node AP 97.8295% (SD 0.0861pp). Numerical verdicts CLOSE/CLOSE; original-source full seed-0 evaluation and independent all-run metric reconstruction pass. Complete visible model/trainer, three live tasks, 720 temporal oracle cases, preprocessing/split parity, memory checkpoint counterexample, portable architecture and interactive event trace. Explicit independent seeds, modern runtime and preserved release pending-message checkpoint behavior documented. Partial CPU runs excluded; full-paper parity NOT_ESTABLISHED, historical identity INCOMPARABLE. No learner mastery or deployment inferred.

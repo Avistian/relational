@@ -286,8 +286,8 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 ### Q3 · Temporal & dynamic graphs (101–110)
 **Papers:** Rossi 2020 (TGN) · Xu 2020 (TGAT) · Kazemi 2020 (RE-Net)
 
-| 101 | Static vs temporal | Fey 2024 temporal REG preview | Time-respecting splits |
-| 102 | Temporal Graph Networks | Rossi 2020 | Memory modules |
+| 101 | [Static vs temporal](lessons/0101-static-vs-temporal.html) | Fey 2024 temporal REG · RelBench baseline replay | [Time-respecting queries, leakage diagnosis and 10 published baseline cells](labs/0101-static-vs-temporal.ipynb) |
+| 102 | [Temporal Graph Networks](lessons/0102-temporal-graph-networks.html) | Rossi 2020 · TGN-attn Wikipedia replay | [Messages, memory updates and temporal link prediction](labs/0102-temporal-graph-networks.ipynb) |
 | 103 | TGAT | Xu 2020 | Time-encoded attention |
 | 104 | Information leakage in time | Kapoor 2022 + Fey 2024 | Time-travel bugs |
 | 105 | Continuous time | — | Event streams as graphs |

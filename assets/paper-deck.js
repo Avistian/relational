@@ -397,5 +397,6 @@
   "front": "What does basis decomposition share, and what remains relation-specific?",
   "back": "Relations share learned basis matrices within a layer. Each relation learns coefficients that linearly combine them into its own transformation. Coefficients are unconstrained; sharing does not impose a rank-B bound on each matrix."
 }
+, {"id": "rossi2020-tgn-memory", "paper": "Rossi et al. \u2014 Temporal Graph Networks", "year": 2020, "lesson": 102, "front": "How can a TGN train its memory updater without leaking the interaction it predicts?", "back": "At the next batch, recompute updates from stored messages of earlier observed events. Predictions use that differentiable candidate memory, so loss reaches updater weights. Queue current events only for later batches and detach state between optimizer steps."}
 ];
 })(window);

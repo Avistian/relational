@@ -144,3 +144,7 @@ Tier C: all input generation is visible in `relkit/schema_l096.py`; no download.
 ## L098 · three-type synthetic batching fixture
 
 Tier C data, intentionally synthetic as specified by the roadmap: 24 customers, 144 timed orders, 12 products, four directed FK/reverse stores. `relkit/batching_l098.py:make_graph` generates all arrays from the declared seed. There is no real dataset or published-score mapping. Run the full protocol in `../l098-reproduction.md`; do not interpret the four-customer test metric as benchmark evidence.
+
+## L102 · complete JODIE Wikipedia event stream
+
+Tier B: 157,474 user–page edit events, 9,227 distinct nodes and 172 event features. The loader downloads the full raw CSV, verifies SHA-256 and preserves input order. User/page ID spaces are offset; zero is padding. Paper/release mapping: Rossi et al. v3 Table 2, TGN-attn Wikipedia all-event and new-node AP. The 600-event/two-epoch teaching run is a separately labeled subset, not paper-result evidence. The scalar timeline widget is Tier C mechanism illustration. See `../l102-reproduction.md`.

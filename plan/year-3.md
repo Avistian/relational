@@ -225,6 +225,7 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 **Papers:** Rossi 2020 TGN `2006.10637` ★ · Xu 2020 TGAT `2002.07962` · Kazemi/Jin 2020 RE-Net `1904.05530`.
 
 ### 101 · Static vs temporal — *Fey 2024 temporal REG preview*
+- **Delivered:** [lesson](../lessons/0101-static-vs-temporal.html), [lab](../labs/0101-static-vs-temporal.ipynb), three live tasks, 384 SQL-oracle graph cases, nine synthetic fits, complete five-baseline/two-split RelBench driver-position replay (10 rounded MAE cells MATCH). Full-paper parity NOT_ESTABLISHED.
 - **Skill** — explain why static graph splits leak in temporal data and set up time-respecting splits.
 - **Teach** — timestamped nodes/edges, the "no future information" rule, time-respecting neighbor sampling;
   the temporal analogue of Y1 PIT correctness.
@@ -234,6 +235,7 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Bridge** — callback Y1 L021/L002, Y2 L055 temporal split; forward to Y4 temporal REG audit (L156).
 
 ### 102 · Temporal Graph Networks — *Rossi 2020, ★ `2006.10637`*
+- **Delivered:** [lesson](../lessons/0102-temporal-graph-networks.html), [lab](../labs/0102-temporal-graph-networks.ipynb), three live tasks and complete ten-run Wikipedia replay (293 epochs): all-event AP 98.512%, new-node AP 97.829%; both CLOSE. Source/gradient parity and independent metrics pass. Exact execution status: [evidence](../labs/_paper_l102_results.json). Historical identity INCOMPARABLE; full-paper parity NOT_ESTABLISHED.
 - **Skill** — implement TGN's memory module + message function and explain how per-node memory carries
   history.
 - **Teach** — node memory, message aggregation over events, memory update, embedding module; continuous-time

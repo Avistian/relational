@@ -554,3 +554,16 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [Relational Deep Learning](https://arxiv.org/abs/2312.04615) and [SQLite foreign keys](https://www.sqlite.org/foreignkeys.html): database motivation and referential semantics for L096; the SQL/graph audit is a construction exercise, not a model benchmark.
 - [BPR](https://arxiv.org/abs/1205.2618), §4–5.1: pairwise ranking and factorization. L097 derives gradients and distinguishes sampling distributions from evaluation candidates; the course optimizer is not the historical LearnBPR protocol.
 - [PyG 2.6.1 NeighborLoader source](https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/loader/neighbor_loader.html): typed fanouts, local IDs, seed prefix and query timing for L098/L100. The executed native runtime remains separately pinned in each lesson's source manifest.
+
+## L101 — temporal query boundaries
+
+- Fey et al. (ICML 2024), [position paper](https://proceedings.mlr.press/v235/fey24a.html): sections 3.2–3.3, Appendix A–B, temporal neighborhoods. Appendix A filters neighbor timestamps; Algorithm 1 prints a receiver timestamp. L101 follows the former.
+- Robinson et al., [RelBench v1 Table 4](https://arxiv.org/html/2407.20060v1#S5.T4): complete five-heuristic driver-position slice replayed.
+- [Pinned v1.1.0 baseline source](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/baseline_node.py): validation train-only, test train+validation; entity cold starts map to zero.
+
+## L102 · Temporal Graph Networks · 2026-09-22
+
+- Rossi et al. (2020), [Temporal Graph Networks, v3](https://arxiv.org/html/2006.10637v3): §§3.1–3.2, Figure 2, Appendix A.2 and Wikipedia TGN-attn Table 2. Primary reading for memory and delayed training.
+- [Publication-era source](https://github.com/twitter-research/tgn/tree/e38cdf85998c6ca077167610dc4e769a688efa95): pinned code, exact negative sampling, evaluator and checkpoint behavior.
+- [JODIE Wikipedia data](https://snap.stanford.edu/jodie/): complete raw events; SHA-256 pinned in the L102 provenance manifest.
+- [PyTorch GRUCell](https://docs.pytorch.org/docs/stable/generated/torch.nn.GRUCell.html): gate convention used by the visible implementation.

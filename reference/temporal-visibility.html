@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Temporal visibility</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article><h1 id="Temporal-visibility:-a-reference-card">Temporal visibility: a reference card<a class="anchor-link" href="#Temporal-visibility:-a-reference-card">&#182;</a></h1><p>A query is <strong>(typed entity, prediction time t, horizon Δ)</strong>. Inputs stop at t; labels describe (t,t+Δ]. All boundaries must be declared.</p>
+<table>
+<thead>
+<tr>
+  <th>Gate</th>
+  <th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Rows</td>
+  <td>Event time ≤ t and availability time ≤ t</td>
+</tr>
+<tr>
+  <td>Features</td>
+  <td>Retrieve the version available at t; creation time is insufficient</td>
+</tr>
+<tr>
+  <td>Edges</td>
+  <td>Relationship and both endpoints were available at t</td>
+</tr>
+<tr>
+  <td>Multi-hop</td>
+  <td>Apply the original query cutoff at every hop</td>
+</tr>
+<tr>
+  <td>Sampling</td>
+  <td>Filter legal neighbors before finite-fanout selection</td>
+</tr>
+<tr>
+  <td>Fitting</td>
+  <td>Every training label has matured by the model-fit time</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Validation decides; test scores never decide</td>
+</tr>
+<tr>
+  <td>Preprocessing</td>
+  <td>Vocabulary, imputation and other fitted state use legal fit data</td>
+</tr>
+<tr>
+  <td>Caches</td>
+  <td>Include query time and model state, not just entity ID</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Two different clocks:</strong> a historical training query hides its own future inputs, even though its future label is known by the later model-fit time.</p>
+<p><strong>Counterexample:</strong> an event on day 4 arriving day 7 cannot serve a day-5 query. A query on day 8 with horizon 3 cannot train a model fitted day 10.</p>
+<p><strong>Reproduction:</strong> the complete five-baseline RelBench driver-position slice matches ten rounded MAE cells. Full-paper and historical execution identity remain NOT_ESTABLISHED.</p>
+<p><a href="../lessons/0101-static-vs-temporal.html">Lesson and worked trace</a> · <a href="../labs/l101-reproduction.md">Contract</a> · <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al.</a></p>
+</article></body></html>
