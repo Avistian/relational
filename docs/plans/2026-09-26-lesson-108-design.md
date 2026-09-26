@@ -1,0 +1,11 @@
+# Lesson 108 — efficient temporal neighbor sampling
+
+User approved 2026-09-26: complete lesson and full Wikipedia evaluation replay with ten existing TGAT checkpoints, within USD10 aggregate. No new model training required. This efficiency unit extends L103/L104 and prepares L109 database timestamp semantics.
+
+Deliver strict [cutoff-window, cutoff) neighbor sampling, timestamp-sorted compressed rows, batched binary search, uniform replacement and recent policies, recursive edge-time cutoffs. Preserve source replay separately (including release omissions). Fixed model weights, event identities, negatives, and evaluation batches across four declared interventions: uniform20/full, uniform5/full, recent20/full, uniform20/86400 seconds. Both all/new populations and all ten seeds. Compare pooled AP for interventions and source batch-mean AP against Tables 1/2. Changes are inference interventions, not retrained sampler optima.
+
+Benchmark scalar strict-past oracle against optimized sampler with identical variates and full Wikipedia queries. Measure construction, array bytes, warmed repeated throughput and end-to-end inference including sampling; GPU synchronization around timing. Do not infer billion-edge scalability from Wikipedia. Same-random-stream equality applies only to same policy/fanout; changed fanout changes recursive RNG consumption.
+
+Ship HTML/source, reference, inline sampler and TGAT model/trainer, three live TODOs and mutation checks, student/executed solution, four portable figures, interactive boundaries, protocol ledger, commands, source/data/checkpoint hashes, outputs and independent metric reconstruction. Test cutoff ties, singleton, empty rows, recent padding, duplicate draws, recursive timestamps, source prediction replay. Validate browser/mobile/no-JS/print and copied Pages navigation. Mastery remains PENDING_WRITTEN_DEFENSE.
+
+Implementation: behavior tests -> sampler -> full-data benchmark -> timed GPU pilot/current price budget -> bounded ten-seed evaluation -> independent metrics -> figures/prose/notebooks -> execute and delivery checks. writing-plans skill is not installed (catalog/files searched); this document records the implementation sequence. Existing unrelated workspace changes remain intact.
