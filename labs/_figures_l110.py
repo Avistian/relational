@@ -42,7 +42,7 @@ if report.exists():
    vals=[x[arm][lane]['batch_ap_percent'] for x in r['paired']];ax.scatter([i+(j-4.5)*.025 for j in range(len(vals))],vals,color=TEAL if i==0 else RUST,label=arm)
    if vals:ax.errorbar(i,sum(vals)/len(vals),yerr=r['summary'][arm][lane]['sample_sd_pp'],fmt='s',color=INK,capsize=5)
   ax.axhline({'all':98.46,'new':97.81}[lane],ls='--',color=GRAY,label='Paper target (release only)');ax.set_xticks([0,1],['Release','Clean']);ax.set_ylabel('Batch-mean AP (%)');ax.set_title('All-event' if lane=='all' else 'New-node');ax.grid(axis='y',alpha=.15)
- axs[0].legend(fontsize=8,loc='lower right');f.suptitle('Fresh paired runs: individual seeds and mean ± seed SD',fontsize=15,color=INK);f.tight_layout(rect=(0,0,1,.93));save(f,'results')
+ handles,labels=axs[0].get_legend_handles_labels();f.legend(handles,labels,fontsize=9,loc='lower center',ncol=3,bbox_to_anchor=(.5,0),frameon=False);f.suptitle('Fresh paired runs: individual seeds and mean ± seed SD',fontsize=15,color=INK);f.tight_layout(rect=(0,.09,1,.93));save(f,'results')
 else:
  f,ax=canvas('Fresh experiment evidence is still running','This placeholder carries no measured score.',3);ax.text(.5,1.3,'Ten seeds × two protocols · full Wikipedia populations',color=INK);save(f,'results')
 print('Built four L110 SVG/PNG pairs')

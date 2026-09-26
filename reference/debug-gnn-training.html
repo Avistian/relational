@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Debug GNN training · quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/oversmoothing-viz.css"><link rel="stylesheet" href="../assets/gnn-diagnostics.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0115-graph-ml-design-patterns.html">Lesson 115</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 116</p><h1>Debug GNN training · quick reference</h1></header><h2 id="One-diagnosis-loop">One diagnosis loop<a class="anchor-link" href="#One-diagnosis-loop">&#182;</a></h2><p>Reproduce → minimize → rank falsifiable causes → change one variable → retain a regression check. Curves motivate a probe; they do not uniquely identify a cause.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Observation</th>
+  <th>Probe</th>
+  <th>Interpretation boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Flat training loss</td>
+  <td>Check loss, gradients and parameter movement on one fixed batch</td>
+  <td>Nonzero gradient + zero update narrows the update path; also check zero learning rate/frozen parameters</td>
+</tr>
+<tr>
+  <td>Huge/tiny gradients</td>
+  <td>Layerwise norms and a controlled depth comparison</td>
+  <td>Scalar gain a repeated k times has derivative aᵏ; a GNN need not share that exact rate</td>
+</tr>
+<tr>
+  <td>Similar node embeddings</td>
+  <td>Repeated fixed propagation; variance of H/√degree for symmetric normalization</td>
+  <td>Degree-shaped raw values can remain unequal after mixing; no universal accuracy conclusion</td>
+</tr>
+<tr>
+  <td>Suspicious sampled training</td>
+  <td>Map n_id[:batch_size]; supervise seed outputs only</td>
+  <td>Context may send messages without authorizing context labels</td>
+</tr>
+<tr>
+  <td>Implausible held-out score</td>
+  <td>Perturb unauthorized labels with fixed inputs/RNG; audit selection</td>
+  <td>Invariance only verifies the tested path, not every preprocessing/selection boundary</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="Correct-training-contract">Correct training contract<a class="anchor-link" href="#Correct-training-contract">&#182;</a></h2><p>Training mode → clear gradients → full forward → train-ID mean NLL → backward → optimizer step. Evaluate in eval mode with no gradient recording. Select first maximum validation accuracy; restore weights and BN buffers. Do not select on test. For the arxiv baseline, all graph/features are visible; held-out labels are not loss inputs.</p>
+<h2 id="Useful-measurements">Useful measurements<a class="anchor-link" href="#Useful-measurements">&#182;</a></h2><p>Gradient norm: ‖∂L/∂θ‖₂. Update norm: ‖θafter−θbefore‖₂. These are different, especially with Adam. Zero weight movement does not imply fixed BN buffers. Layerwise gradient norms locate contraction/amplification. Output-row supervision is distinct from context-input gradients through graph messages.</p>
+<h2 id="Selected-reproduction">Selected reproduction<a class="anchor-link" href="#Selected-reproduction">&#182;</a></h2><p>OGB v6 Table 6 GCN, complete ogbn-arxiv, ten seeds ×500epochs, hidden256, dropout.5, Adam.01, official split and evaluator. Targets valid73.00%,test71.74%; predeclared mean tolerance.5pp. Instrumentation adds observations, no clipping or schedule change. Author execution is separate from student mastery and historical identity.</p>
+<p><a href="../lessons/0116-debug-gnn-training.html">Lesson116</a> · <a href="../labs/l116-reproduction.md">Exact commands and deviations</a> · <a href="../labs/evidence/l116/summary.json">Measured evidence</a> · <a href="https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py">OGB source</a> · <a href="https://arxiv.org/abs/1801.07606">Smoothing analysis</a> · <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/tutorial/neighbor_loader.html">NeighborLoader convention</a>.</p>
+</article></body></html>

@@ -630,3 +630,43 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [Pinned original trainer](https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/train_self_supervised.py): checkpoint selection, snapshot branch resets and early stopping.
 - [Original memory object](https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/modules/memory.py): queued messages and their relationship to state_dict.
 - [L110 reproduction contract](labs/l110-reproduction.md): fresh paired full-data runs, strict-time audit, source/data identities, cost ceiling and explicit paper/course boundaries.
+
+
+### Lesson 112 · OGB GCN reproduction
+
+- [Hu et al., Open Graph Benchmark, v6 §4.3/Table 6](https://arxiv.org/html/2005.00687v6#S4.SS3): selected ogbn-arxiv GCN target and task framing.
+- [Pinned OGB implementation](https://github.com/snap-stanford/ogb/tree/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv): full model, schedule and logger selection.
+- [Dataset protocol](https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv) and [leaderboard](https://ogb.stanford.edu/docs/leader_nodeprop/#ogbn-arxiv).
+- Local [protocol/evidence](labs/l112-reproduction.md) and [reference](reference/ogb-reproduction.html).
+
+## Lesson 113 · Scaling OGB (2026-09-26)
+
+- Primary: Hu et al., [OGB v6 §4.1/Table4](https://arxiv.org/html/2005.00687v6#S4.SS1). The products ClusterGCN entry uses GraphSAGE aggregation; preserve the sales-ranking split and ten-run report.
+- Mechanism: Chiang et al., [Cluster-GCN](https://arxiv.org/abs/1905.07953); Hamilton et al., [GraphSAGE](https://arxiv.org/abs/1706.02216). Sampling and aggregation are separate choices; the original Cluster-GCN Amazon split differs from OGB's split.
+- Executable source: [OGB commit cf066f9](https://github.com/snap-stanford/ogb/blob/cf066f93311ab3099cad84d71085d1b0375dcc2e/examples/nodeproppred/products/cluster_gcn.py), source/license retained under labs/sources/l113. [PyG2.6.1 cluster implementation](https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/loader/cluster.html) supplies METIS and induced-batch infrastructure.
+- Local package: [protocol](labs/l113-reproduction.md), [lesson](lessons/0113-scaling-ogb.html), [reference](reference/scaling-ogb.html). Original partition/seeds are unavailable; historical identity is not established.
+
+## Lesson 114 · OGB error analysis (2026-09-26)
+
+- Primary task and aggregate targets: Hu et al., [OGB v6 §4.3 / Table6](https://arxiv.org/html/2005.00687v6#S4.SS3). Selected MLP reproduction; the slice study is new course analysis.
+- [Pinned MLP source](https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/mlp.py): three-layer network, train-row-only BN, full500epoch schedule, ten runs. Original seed list is unavailable.
+- [Official arxiv data contract](https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv): features, categories and time split. This does not imply a historically censored graph.
+- [Protocol and evidence](labs/l114-reproduction.md) · [Error-analysis reference](reference/ogb-error-analysis.html). Complete graph/metric reconstruction distinguishes training variation from independent-node inference.
+
+
+## L115 · Graph ML design patterns and modular GCN reproduction
+
+- [Battaglia et al., 2018, §4.3 and Figure6b](https://arxiv.org/html/1806.01261v3#S4.SS3): composable graph blocks and encode-process-decode. Primary conceptual source; our modular GCN is a course decomposition, not a reproduction of the paper's demos.
+- [Gilmer et al., ICML2017, §2](https://proceedings.mlr.press/v70/gilmer17a.html): message-passing and graph-level readout responsibilities.
+- [Hu et al., OGB v6, §4.3/Table6](https://arxiv.org/html/2005.00687v6#S4.SS3): named GCN ogbn-arxiv experiment, mean validation73.00%,test71.74%.
+- [Pinned OGB source](https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py): all three GCN layers, full-node BN, train-label loss and released defaults. MIT snapshot in labs/sources/l115.
+- [L115 protocol/evidence](labs/l115-reproduction.md): ten fresh fits, independent metrics and complete original-model replay. CLOSE is numerical proximity, not historical/whole-paper identity.
+
+## Lesson 116 — diagnose GNN training with falsifiable probes
+
+- [Pinned OGB GCN training loop](https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py): primary line-by-line reading; train-label loss, backward, optimizer update and validation selection. Fresh source-byte check in labs/_upstream_l116_results.json.
+- [OGB v6 §4.3/Table 6](https://arxiv.org/html/2005.00687v6#S4.SS3): full selected ogbn-arxiv GCN target; ten fresh fits in the L116 protocol.
+- [Li, Han and Wu, AAAI 2018](https://arxiv.org/abs/1801.07606): Laplacian smoothing interpretation and limits; used for mechanism teaching, not a claim to reproduce their co-/self-training results.
+- [PyG 2.6.1 neighbor-sampling tutorial](https://pytorch-geometric.readthedocs.io/en/2.6.1/tutorial/neighbor_loader.html): n_id mapping and seed-only loss; independently checked against a real NeighborLoader batch.
+- [PyTorch autograd and evaluation modes](https://docs.pytorch.org/docs/stable/notes/autograd.html): gradient recording and module evaluation mode are distinct.
+- [L116 protocol](labs/l116-reproduction.md): pinned source/data, diagnostic interventions, benchmark results, budget and exact commands.

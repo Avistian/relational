@@ -1,0 +1,256 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scaling OGB: preserve the computation, measure the cost</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/scaling.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0112-ogb-gcn-reproduction.html">Lesson 112</a></nav><header><p>Year 3 · Quarter 4 · Lesson 113</p><h1>Scaling OGB: preserve the computation, measure the cost</h1></header><h2 id="1-%C2%B7-The-next-bottleneck-is-computation">1 &#183; The next bottleneck is computation<a class="anchor-link" href="#1-%C2%B7-The-next-bottleneck-is-computation">&#182;</a></h2><p>In <a href="0112-ogb-gcn-reproduction.html">lesson 112</a>, you followed one full-graph GCN from citation edges to a validation-selected prediction. Every gradient step propagated through all 169,343 papers. That made the experiment easy to define: one graph, one objective, one optimizer step per epoch.</p>
+<p>Now ask a practical question: <strong>what must change when the intermediate node representations are too large to train together?</strong> This lesson's tangible win is to construct an induced mini-batch, trace exactly which messages it removes, and defend a compute-and-accuracy report. The larger experiment uses <strong>ogbn-products</strong>, with 2,449,029 nodes. These scaling skills prepare you for relational entity graphs in Year 4, where a row prediction can depend on millions of connected records.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Mini-batching decides which part of a graph participates in one update. It can reduce the amount of work held in memory. It also changes what the model sees during that update.</p>
+</blockquote>
+<div id="l113-warmup"></div>
+
+<p><strong>Cold retrieval.</strong> Before reading onward: (1) Does masking the loss remove test nodes from propagation? (2) Why must a GCN checkpoint include batch-normalization buffers? (3) What is cut when a cluster is processed alone? Write one sentence per question. Revisit <a href="0089-sampling-at-scale.html">L089</a>, <a href="0108-temporal-neighbor-sampling.html">L108</a>, and L112 after attempting the questions.</p>
+<details><summary>Check the retrieval</summary><p>Loss masking restricts label supervision; it does not remove feature paths. Batch-normalization running means and variances affect evaluation, so weights alone are insufficient. A cluster processed alone loses edges to excluded nodes; combining clusters can restore edges between those selected clusters.</p></details>
+
+<p>The primary reading is <a href="https://arxiv.org/html/2005.00687v6#S4.SS1">Hu et al., OGB §4.1 and Table 4</a>. Pair it with <a href="https://arxiv.org/abs/1905.07953">Chiang et al., Cluster-GCN</a> for the sampling mechanism. Read OGB's footnote about the aggregation architecture before interpreting the result.</p>
+<h2 id="2-%C2%B7-Separate-the-sampling-rule-from-the-model">2 &#183; Separate the sampling rule from the model<a class="anchor-link" href="#2-%C2%B7-Separate-the-sampling-rule-from-the-model">&#182;</a></h2><p><strong>A model</strong> maps features and a graph to predictions. <strong>A sampler</strong> constructs the graph or computation neighborhood used for a training update. They are separate choices. The name “ClusterGCN” in OGB Table 4 refers to a cluster-based training method; its released model uses <strong>GraphSAGE neighbor aggregation</strong>. Replacing L112's normalized GCN with that model changes more than the batch size.</p>
+<p>We therefore maintain two explicit experiments:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Experiment</th>
+  <th>Fixed elements</th>
+  <th>Changed elements</th>
+  <th>What it answers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>L112 bridge</td>
+  <td>Full arxiv data, GCN architecture, initialization, two passes over training labels</td>
+  <td>Full graph versus four random induced batches; degrees, BN populations, number of updates</td>
+  <td>What changes when we mini-batch this GCN?</td>
+</tr>
+<tr>
+  <td>Named OGB reproduction</td>
+  <td>Official products data and split, released SAGE architecture and cluster schedule</td>
+  <td>Modern recorded runtime and a newly computed fixed METIS partition</td>
+  <td>Can we replay the selected published experiment within budget?</td>
+</tr>
+</tbody>
+</table></div>
+<p>The bridge is deliberately short and uses random partitions. It demonstrates the conversion and its confounds. It is not an accuracy comparison between converged samplers. The named experiment is the place for a published score comparison.</p>
+<div id="l113-predict"></div>
+
+<p><strong>Prediction.</strong> If both arms see every training label twice, do they take the same number of optimizer steps? Commit before opening the bridge results in section 7.</p>
+<h2 id="3-%C2%B7-Model-architecture:-follow-one-product">3 &#183; Model architecture: follow one product<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-follow-one-product">&#182;</a></h2><figure tabindex="0" style="overflow-x:auto"><img src="../labs/figures/l113/architecture.svg" alt="Sampling selects an induced graph; GraphSAGE defines the messages. Follow both branches through training and complete-neighbor inference."><figcaption>Sampling selects an induced graph; GraphSAGE defines the messages. Follow both branches through training and complete-neighbor inference.</figcaption></figure>
+
+<p><strong>Inputs.</strong> Each product has 100 numeric features. The graph is an undirected co-purchasing graph. The prediction is one of 47 product categories. The official split ranks products by popularity: 196,615 training nodes, 39,323 validation nodes, and 2,213,091 test nodes. We preserve the released IDs; a random split would answer a different generalization question. See the <a href="https://ogb.stanford.edu/docs/nodeprop/#ogbn-products">OGB dataset specification</a>.</p>
+<p><strong>Visibility.</strong> This is transductive training: the full feature graph is eligible for partitioning and messages, including validation and test nodes. Only training labels enter the objective. Validation labels select a checkpoint. Test labels evaluate the selected predictor. A label mask protects supervision; it does not make an experiment inductive or point-in-time valid. Connect this distinction to <a href="0109-database-timestamp-contracts.html">L109's timestamp contract</a>.</p>
+<p><strong>Partition once.</strong> METIS is a provided graph-partitioning library. It groups nodes while trying to reduce edges crossing group boundaries. We form 15,000 disjoint groups and reuse that fixed partition across runs. The original partition was not released. The saved partition and its hash are part of our experiment identity.</p>
+<p><strong>Form a batch.</strong> Shuffle the groups and choose 32. Let B be the union of their nodes. The induced subgraph contains every original edge whose two endpoints both belong to B. It includes edges between selected groups. It excludes edges from B to unselected nodes. The average batch has approximately 2,449,029 × 32 / 15,000 ≈ 5,225 nodes, but actual sizes and edge counts vary.</p>
+<p><strong>Aggregate.</strong> For receiver i, let N_B(i) be its incoming neighbors inside that batch. Define mᵢ as their mean hidden feature vector; use the zero vector if there are no neighbors. A released SAGE layer computes:</p>
+<p><strong>zᵢ = W_neighbor mᵢ + b + W_root hᵢ.</strong></p>
+<p>Here hᵢ is the node's current feature vector. The two W matrices are learned linear maps. The bias b belongs to the neighbor branch; the root branch has no additional bias. Raw self-edges, if present, remain in the neighbor aggregation. We add no new self-loops. Duplicate raw edges retain multiplicity in the mean, matching the released edge-index operator.</p>
+<p>This differs from L112's <strong>S H Wᵀ + b</strong>, where S contains symmetric degree normalization and one self-loop per node. SAGE uses separate root and neighbor weights. The products model has no batch normalization and no L2 normalization of the hidden vector.</p>
+<p><strong>Stack layers.</strong> The widths are <strong>100 → 256 → 256 → 47</strong>, for <strong>206,895 trainable parameters</strong>. The first two layers apply ReLU, then dropout with probability 0.5. ReLU clips negative values to zero; dropout randomly zeros activations during training. The last layer produces class logits. Log-softmax converts them to log-probabilities for negative log-likelihood, or NLL. The loss averages only over training nodes present in the batch. Adam uses learning rate 0.001. These choices follow the <a href="https://github.com/snap-stanford/ogb/blob/cf066f93311ab3099cad84d71085d1b0375dcc2e/examples/nodeproppred/products/cluster_gcn.py">pinned publication-era release</a>.</p>
+<p><strong>Read the operator.</strong> In this PyTorch class, <code>lin_l</code> is the neighbor transform and <code>lin_r</code> is the root transform. Sparse matrix multiplication computes the incoming means before the learned transform. <code>root</code> permits inference chunks to use just their own receiver rows while reading a complete previous-layer feature matrix.</p>
+<div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MeanSAGE</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inputs</span><span class="p">,</span><span class="n">outputs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lin_l</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span><span class="n">outputs</span><span class="p">,</span><span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lin_r</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span><span class="n">outputs</span><span class="p">,</span><span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">adj</span><span class="p">,</span><span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span><span class="n">root</span><span class="o">=</span><span class="n">x</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lin_l</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">mm</span><span class="p">(</span><span class="n">adj</span><span class="p">,</span><span class="n">x</span><span class="p">))</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">lin_r</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+</pre></div>
+<p><strong>Task 1 · incoming means.</strong> Implement <code>mean_adjacency</code>. A sparse adjacency stores nonzero entries instead of an N-by-N dense matrix. Its rows are receivers, columns are senders. Dividing each incoming entry by its receiver's degree produces a neighbor mean. The CHECK includes a directed graph and an isolated node so an accidental transpose or added self-loop fails.</p>
+<h2 id="4-%C2%B7-Work-the-boundary-by-hand">4 &#183; Work the boundary by hand<a class="anchor-link" href="#4-%C2%B7-Work-the-boundary-by-hand">&#182;</a></h2><figure tabindex="0" style="overflow-x:auto"><img src="../labs/figures/l113/boundary.svg" alt="Synthetic scalar trace, weights1 and bias0. Removing node2 changes both the incoming sum and the degree of receiver1."><figcaption>Synthetic scalar trace, weights1 and bias0. Removing node2 changes both the incoming sum and the degree of receiver1.</figcaption></figure>
+
+<p><strong>Worked example.</strong> Consider the path 0—1—2—3, with scalar features <code>[2, 4, 8, 16]</code>. Cluster C0 contains nodes 0 and 1; C1 contains nodes 2 and 3. Set both SAGE weights to 1 and the bias to 0.</p>
+<p>On the full graph, node 1 sees neighbors 0 and 2. Its neighbor mean is (2 + 8) / 2 = 5. Its root feature is 4. Its output is <strong>5 + 4 = 9</strong>.</p>
+<p>In a C0-only batch, node 2 is absent. The neighbor mean becomes 2, so node 1 outputs <strong>2 + 4 = 6</strong>. Both the missing message and the denominator changed. When C0 and C1 enter the same induced batch, edge 1—2 returns and the output becomes 9 again.</p>
+<p><strong>Predict before moving the control:</strong> will adding a third cluster that is farther down the path change this one-layer output? Why might it change a deeper model?</p>
+<div class="repro-widget" data-scaling-trace></div><noscript><p>C0 only gives6; adding C1 restores the boundary and gives9.</p></noscript>
+
+<details><summary>Check the prediction</summary><p>A third cluster does not change node 1's immediate neighbors, so this one-layer output stays 9. At greater depth, features from farther nodes can travel along additional hops. A complete immediate neighborhood is not necessarily a complete multi-layer computation neighborhood.</p></details>
+
+<p><strong>Task 2 · preserve identities.</strong> Implement <code>induced_edges</code>. If a batch stores global nodes <code>[2, 1]</code>, its local row 0 is global node 2, and local row 1 is global node 1. Keeping global edge IDs while slicing the features connects the wrong rows or indexes out of bounds. The CHECK deliberately reverses node order and also tests a batch with no retained edges.</p>
+<p><strong>Loss weighting.</strong> A batch averages NLL over its own training nodes, then takes an optimizer step. Batches can contain different numbers of labeled nodes. This is not one globally averaged gradient accumulated at fixed weights; parameters change between steps. Recall <a href="0100-heterogeneous-gnn-checkpoint.html">L100</a> when comparing these procedures.</p>
+<p><strong>Why not just process each cluster separately?</strong> Doing so would discard even the edges between clusters that were chosen together. Multi-cluster batching restores those edges. The <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/loader/cluster.html">pinned PyG ClusterLoader implementation</a> is provided infrastructure; the lab's small induced-subgraph oracle checks the semantic contract independently.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The mean of sampled neighbors can estimate a full neighbor mean under particular sampling assumptions. That does not make an entire nonlinear multi-layer loss or gradient unbiased. Cluster inclusion is also not uniform independent neighbor sampling. This lesson makes no unbiased-gradient claim.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Budget-the-whole-computation">5 &#183; Budget the whole computation<a class="anchor-link" href="#5-%C2%B7-Budget-the-whole-computation">&#182;</a></h2><p>A <strong>hidden representation</strong> is the feature vector produced by an intermediate layer. With N nodes, H channels, and float32 storage, one dense representation requires <strong>N × H × 4 bytes</strong>. A GiB is 2³⁰ bytes.</p>
+<p><strong>Worked example.</strong> For products at width 256, one hidden buffer is 2,449,029 × 256 × 4 = 2,507,805,696 bytes, or approximately <strong>2.34 GiB</strong>. Two saved hidden layers already approach 4.67 GiB before gradients, graph storage, optimizer state, input features, activations and temporary workspaces. This arithmetic is a lower-level sizing calculation, not a measured peak-memory prediction.</p>
+<p><strong>Neighbor sampling.</strong> Starting from B target nodes, three hops with fanouts f₁, f₂, f₃ can expand to at most B × (1 + f₁ + f₁f₂ + f₁f₂f₃) node occurrences before overlap is removed. A fanout is the maximum number of neighbors drawn per receiver at a hop. Real samplers can deduplicate shared neighbors. Low-degree nodes can contribute fewer neighbors.</p>
+<figure tabindex="0" style="overflow-x:auto"><img src="../labs/figures/l113/memory.svg" alt="Sizing calculation for one hidden feature buffer, not measured GPU peak. Three hops, fanout10, before deduplication."><figcaption>Sizing calculation for one hidden feature buffer, not measured GPU peak. Three hops, fanout10, before deduplication.</figcaption></figure>
+
+<div class="repro-widget" data-scaling-memory></div><noscript><p>256 roots and fanout10 across three hops give284,416 node occurrences, or0.271GiB for one width256 float32 buffer.</p></noscript>
+
+<p><strong>Cluster sampling.</strong> Choose an induced batch first; all layers operate within its nodes. This avoids the same hop-by-hop growth, but cuts boundary context. Neither approach is universally faster: graph structure, implementation, fanouts, partition quality and CPU-to-GPU transfer matter. <a href="https://arxiv.org/abs/1706.02216">GraphSAGE</a> explains sampled neighborhoods; <a href="https://arxiv.org/abs/1905.07953">Cluster-GCN</a> motivates dense subgraph batches.</p>
+<p>A credible compute note separates <strong>download/preprocessing</strong>, <strong>partitioning</strong>, <strong>training</strong>, and <strong>evaluation</strong>. Record peak allocated GPU memory with its measurement boundary. PyTorch's allocated-memory counter excludes some non-PyTorch allocations and CPU storage. Do not describe it as the whole machine's memory use.</p>
+<p><strong>Budget rule.</strong> This lesson has a $10 aggregate allowance. Data preparation, pilots, all seeds, retries and verification share it. We use a timed pilot and a reserve before launching complete runs. The <a href="../labs/_budget_l113.json">budget ledger</a> records rates and caps. A credit balance does not raise the allowance. A faster partial run does not count as a completed published schedule.</p>
+<h2 id="6-%C2%B7-Small-batches-for-training;-complete-neighborhoods-for-inference">6 &#183; Small batches for training; complete neighborhoods for inference<a class="anchor-link" href="#6-%C2%B7-Small-batches-for-training;-complete-neighborhoods-for-inference">&#182;</a></h2><figure tabindex="0" style="overflow-x:auto"><img src="../labs/figures/l113/inference.svg" alt="Every current-layer row is written before the next layer reads it. All incoming neighbors participate, including neighbors outside the receiver chunk."><figcaption>Every current-layer row is written before the next layer reads it. All incoming neighbors participate, including neighbors outside the receiver chunk.</figcaption></figure>
+
+<p>Training on induced subgraphs does not require evaluating on those same cut graphs. At evaluation, we use the complete released graph. We can still limit memory by working <strong>one layer at a time</strong> and splitting the receivers into chunks.</p>
+<p>For layer 1, keep the input feature matrix fixed. For each receiver chunk, fetch <strong>all</strong> of its incoming neighbors and compute that chunk's outputs. Write them to their global rows. Only after every node's layer-1 output exists may layer 2 begin. Repeat for all three layers. Disable dropout. Finally choose the largest logit per node.</p>
+<p><strong>Why is this exact?</strong> Within a fixed layer, a receiver's output depends on previous-layer features, not on another receiver's newly computed current-layer output. Chunking receivers therefore changes the execution order without cutting neighbor context. Running all three layers on each isolated chunk would violate that condition and cut dependencies.</p>
+<p>The visible implementation keeps the previous feature matrix on the device and streams sparse adjacency rows into receiver chunks. It retains output features on the CPU between layers. This still requires one complete previous-layer feature matrix to fit on the GPU. It is sufficient for this products experiment; a larger graph may require gathering neighbor features from CPU memory or storage. Small training batches alone do not establish end-to-end scalability. This is a modern execution strategy; it is not a claim of historical runtime identity. The CHECK compares three chunk sizes, including one receiver at a time, against a dense full-graph calculation.</p>
+<p><strong>Read the inference loop.</strong> <code>rowptr</code> marks the start and end of each receiver’s entries in CSR storage. Each sparse block has rows for the current receivers and columns for all previous-layer nodes. The <code>out</code> matrix is completed before replacing <code>x</code>.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">layerwise_inference</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">adj</span><span class="p">,</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">65536</span><span class="p">,</span><span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All neighbors, no sampling; adjacency stays on CPU. Each layer completes first.</span>
+<span class="sd">    Only the previous full feature matrix is resident on device (2.34 GiB at width256).</span>
+<span class="sd">    Global output row order is preserved, including isolated nodes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">();</span><span class="n">rowptr</span><span class="o">=</span><span class="n">adj</span><span class="o">.</span><span class="n">crow_indices</span><span class="p">();</span><span class="n">cols</span><span class="o">=</span><span class="n">adj</span><span class="o">.</span><span class="n">col_indices</span><span class="p">();</span><span class="n">values</span><span class="o">=</span><span class="n">adj</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">conv</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">convs</span><span class="p">):</span>
+        <span class="n">previous</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="n">out</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="n">conv</span><span class="o">.</span><span class="n">lin_l</span><span class="o">.</span><span class="n">out_features</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="n">batch_size</span><span class="p">):</span>
+            <span class="n">end</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="n">start</span><span class="o">+</span><span class="n">batch_size</span><span class="p">);</span><span class="n">lo</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rowptr</span><span class="p">[</span><span class="n">start</span><span class="p">]);</span><span class="n">hi</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rowptr</span><span class="p">[</span><span class="n">end</span><span class="p">])</span>
+            <span class="n">block</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">sparse_csr_tensor</span><span class="p">((</span><span class="n">rowptr</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">lo</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span><span class="n">cols</span><span class="p">[</span><span class="n">lo</span><span class="p">:</span><span class="n">hi</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span><span class="n">values</span><span class="p">[</span><span class="n">lo</span><span class="p">:</span><span class="n">hi</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+            <span class="n">z</span><span class="o">=</span><span class="n">conv</span><span class="p">(</span><span class="n">previous</span><span class="p">,</span><span class="n">block</span><span class="p">,</span><span class="n">previous</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">&lt;</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">convs</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="n">z</span><span class="o">=</span><span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span><span class="o">=</span><span class="n">z</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">out</span><span class="p">;</span><span class="k">del</span> <span class="n">previous</span>
+    <span class="k">return</span> <span class="n">x</span>
+</pre></div>
+<p><strong>Select consistently.</strong> The released schedule trains for 50 epochs and evaluates at epochs <strong>20, 25, 30, 35, 40, 45, 50</strong>. Select the <strong>first</strong> maximum validation accuracy among those candidates. Store that model and its predictions. Report its test score. Evaluating every epoch would create additional selection opportunities and change the protocol.</p>
+<p><strong>Task 3 · checkpoint selection.</strong> Implement <code>selected_epoch</code>. The CHECK gives the best test score to a worse-validation candidate and includes a validation tie. Your function must ignore test scores and preserve the first tie.</p>
+<h2 id="7-%C2%B7-Evidence:-what-actually-ran?">7 &#183; Evidence: what actually ran?<a class="anchor-link" href="#7-%C2%B7-Evidence:-what-actually-ran?">&#182;</a></h2><h3 id="The-GCN-conversion">The GCN conversion<a class="anchor-link" href="#The-GCN-conversion">&#182;</a></h3><p><strong>Author-reference teaching run: full arxiv, two epochs, seed113.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Training</th>
+  <th style="text-align:right">Steps</th>
+  <th style="text-align:right">Largest batch</th>
+  <th style="text-align:right">Sparse entries per label pass</th>
+  <th style="text-align:right">Time incl. final evaluation</th>
+  <th style="text-align:right">Test accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>full</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">169,343</td>
+  <td style="text-align:right">2,484,941</td>
+  <td style="text-align:right">14.93 s</td>
+  <td style="text-align:right">27.21%</td>
+</tr>
+<tr>
+  <td>mini</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">42,336</td>
+  <td style="text-align:right">749,277</td>
+  <td style="text-align:right">9.48 s</td>
+  <td style="text-align:right">48.08%</td>
+</tr>
+</tbody>
+</table></div>
+<p>Preprocessing excluded from these times. One CPU thread; recorded workspace runtime. These are short teaching runs, not convergence results.</p>
+<p>These arms share initialization, data, architecture, learning rate and two label passes. The mini-batch arm takes eight optimizer steps instead of two, uses smaller batch-normalization populations and changes normalized neighborhoods. Its different accuracy cannot be attributed to memory reduction alone. At two epochs neither arm is a converged baseline. The result teaches the implementation change and identifies variables a rigorous comparison would need to control or study separately.</p>
+<h3 id="The-named-products-experiment">The named products experiment<a class="anchor-link" href="#The-named-products-experiment">&#182;</a></h3><p><strong>Named ten-run experiment: COMPLETE.</strong> 10/10 completed full schedules.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Selected epoch</th>
+  <th style="text-align:right">Validation accuracy</th>
+  <th style="text-align:right">Test accuracy</th>
+  <th style="text-align:right">Training + evaluation seconds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">40</td>
+  <td style="text-align:right">91.677%</td>
+  <td style="text-align:right">77.864%</td>
+  <td style="text-align:right">892.9</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">91.628%</td>
+  <td style="text-align:right">78.505%</td>
+  <td style="text-align:right">891.0</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">40</td>
+  <td style="text-align:right">91.677%</td>
+  <td style="text-align:right">78.380%</td>
+  <td style="text-align:right">871.5</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">91.722%</td>
+  <td style="text-align:right">78.078%</td>
+  <td style="text-align:right">887.0</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">91.778%</td>
+  <td style="text-align:right">78.098%</td>
+  <td style="text-align:right">916.1</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td style="text-align:right">45</td>
+  <td style="text-align:right">91.819%</td>
+  <td style="text-align:right">78.707%</td>
+  <td style="text-align:right">1020.5</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td style="text-align:right">45</td>
+  <td style="text-align:right">91.494%</td>
+  <td style="text-align:right">78.468%</td>
+  <td style="text-align:right">1005.5</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td style="text-align:right">40</td>
+  <td style="text-align:right">91.761%</td>
+  <td style="text-align:right">78.554%</td>
+  <td style="text-align:right">1004.4</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td style="text-align:right">40</td>
+  <td style="text-align:right">91.661%</td>
+  <td style="text-align:right">78.668%</td>
+  <td style="text-align:right">1016.7</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td style="text-align:right">40</td>
+  <td style="text-align:right">91.702%</td>
+  <td style="text-align:right">78.339%</td>
+  <td style="text-align:right">918.5</td>
+</tr>
+</tbody>
+</table></div>
+<p>valid: 91.6919% ± 0.0908pp (sample seed SD), CLOSE; test: 78.3660% ± 0.2749pp (sample seed SD), OUTSIDE_TOLERANCE. Historical identity and whole-paper parity are not established.</p>
+<p><a href="../labs/evidence/l113/summary.json">Machine-readable results</a>.</p>
+<p><strong>Measured full-data pilot:</strong> 17.05s per training epoch; 12.81s for exact inference; 2.73GiB peak PyTorch GPU allocation across training and evaluation. Throughput: 11,533 supervised nodes/s during training. This two-epoch timing run is not a score reproduction.</p>
+<figure tabindex="0" style="overflow-x:auto"><img src="../labs/figures/l113/results.svg" alt="Author evidence, separate from learner execution. Only full 50-epoch runs count toward the ten-run target."><figcaption>Author evidence, separate from learner execution. Only full 50-epoch runs count toward the ten-run target.</figcaption></figure>
+
+<p>The published target is <strong>validation 92.12 ± 0.09% and test 78.97 ± 0.33%</strong>, reported over ten runs. Our predeclared numerical rule is a mean within <strong>0.5 percentage point</strong> of the corresponding published mean. This is a descriptive tolerance, not an equivalence test. We report sample seed standard deviation without forcing it to match. A seed spread measures variability on this fixed dataset and split, not uncertainty across all possible deployment datasets.</p>
+<blockquote>
+<p><strong>Scope check.</strong> A source-parity check establishes a computation comparison under recorded conditions. A pilot establishes execution and timing. Only completed full-schedule runs support a selected-experiment score report. Even ten numerically close runs do not establish the original random seeds, historical METIS partition, bitwise identity or reproduction of the entire OGB paper.</p>
+</blockquote>
+<p><strong>Interpret the numerical miss.</strong> The completed test mean is 0.604 percentage points below the published mean, exceeding our 0.5-point tolerance. We therefore record <code>OUTSIDE_TOLERANCE</code>. Independent replay through the released model agrees on all 24,490,290 selected-checkpoint class predictions. That rules out a discrepancy in those replayed classes; it does not establish equality of the training trajectories. A new METIS partition, unspecified original random seeds and a modern sparse/runtime stack remain potential differences, but this experiment does not isolate their causal effects. We do not retune against the observed test result.</p>
+<p>The <a href="../labs/l113-reproduction.md">protocol ledger</a> separates these claims, including the released logging bug, modern runtime, partition provenance, initialization and inference execution differences. The primary source remains authoritative for its own result; local evidence is reported under its actual scope.</p>
+<h2 id="8-%C2%B7-Lab,-defense-and-spaced-return">8 &#183; Lab, defense and spaced return<a class="anchor-link" href="#8-%C2%B7-Lab,-defense-and-spaced-return">&#182;</a></h2><p>Open the <a href="../labs/0113-scaling-ogb.ipynb">student notebook</a>, <a href="../labs/html/0113-scaling-ogb.html">prepared notebook</a>, or <a href="../labs/solutions/0113-scaling-ogb.ipynb">teacher solution</a>. The notebook contains the complete visible SAGE model and trainer, independent CHECKs, the GCN bridge, and a gated full-data reproduction path. See the <a href="../reference/scaling-ogb.html">quick reference</a> and <a href="../labs/l113-reproduction.md">exact commands</a>.</p>
+<p><strong>EXIT.</strong> Submit your three functions, your bridge output, and a short compute note. Defend these four points:</p>
+<ol>
+<li>Trace node 1's output before and after cutting its boundary edge. Explain the denominator as well as the missing message.</li>
+<li>Explain why converting L112 to mini-batches changes more than GPU memory. Name the changes to degrees, batch normalization and update count.</li>
+<li>Explain why receiver-chunked, layerwise inference preserves complete-graph computation, while independent subgraph inference does not.</li>
+<li>State exactly which evidence supports the products result. If the run is partial, explain why you cannot report a ten-seed reproduction verdict.</li>
+</ol>
+<div id="l113-teachback"></div>
+
+<p><strong>Teach back.</strong> In 120 words, explain why the word “GCN” in ClusterGCN does not identify the products aggregation operator. Then connect that distinction to a future relational model: which choices determine the row encoder, which determine message passing, and which determine the sampled computation graph?</p>
+<p><strong>Return tomorrow.</strong> Reconstruct the 2.34 GiB calculation without notes. In one week, draw the two-stage inference dependency and identify where a premature layer transition breaks it. Ask the teaching agent for feedback on any unclear step and for grading of your written defense. Author execution does not establish learner mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+</article><script src="../assets/scaling-viz.js"></script><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l113-lesson.js"></script></body></html>

@@ -314,7 +314,7 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Prepared L109 package** — [Lesson](../lessons/0109-database-timestamp-contracts.html), three live history tasks, all 8,712 regenerated labels and all ten selected heuristic cells MATCH. Full 310-cutoff graph census; no real ingestion/version histories available. [Protocol](../labs/l109-reproduction.md). Learner PENDING_WRITTEN_DEFENSE.
 
 ### 110 · **Q3 checkpoint** — *Rossi 2020 · Deliverable-based*
-- **Approved scope** — [lesson](../lessons/0110-temporal-gnn-checkpoint.html), visible standalone [lab](../labs/0110-temporal-gnn-checkpoint.ipynb), fresh ten-seed released TGN-attn Wikipedia reproduction and ten clean-state fits; atomic state restoration, timestamp-group batching, leakage counterexamples and written defense. [Protocol](../labs/l110-reproduction.md).
+- **Delivered** — [lesson](../lessons/0110-temporal-gnn-checkpoint.html), visible standalone [lab](../labs/0110-temporal-gnn-checkpoint.ipynb), fresh ten-seed released TGN-attn Wikipedia reproduction and ten clean-state fits; atomic state restoration, timestamp-group batching, leakage counterexamples and written defense. [Protocol](../labs/l110-reproduction.md).
 - **Deliverable** — a temporal GNN trained with a **clean time-respecting split** on a dynamic graph,
   passing a time-travel-leak audit.
 - **Bridge** — temporality mastered; the student can now build the exact graph type a database becomes;
@@ -335,6 +335,7 @@ The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into f
 - **Bridge** — benchmark discipline transferring to RelBench (Y4); callback Y2 L056 TabArena literacy.
 
 ### 112 · OGB node/link reproduction — *Hu 2020 OGB*
+- **Implemented 2026-09-26:** selected ogbn-arxiv GCN Table 6; ten fresh 500-epoch runs. Test 71.8480% ± 0.3119 pp; validation 73.1041% ± 0.0977 pp; both mean targets CLOSE under predeclared 0.5 pp tolerance. Historical/full-paper identity NOT_ESTABLISHED. See `labs/l112-reproduction.md`; learner PENDING_WRITTEN_DEFENSE.
 - **Skill** — reproduce a published OGB node- or link-prediction number within tolerance using a Q1–Q3 model.
 - **Teach** — the reproduction workflow (config, seeds, variance), reading a paper's exact settings.
 - **Lab** — Tier B · crucial fragment (paper-repro): reproduce one OGB entry. Deliverable: matched metric +
@@ -343,6 +344,7 @@ The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into f
 - **Bridge** — the reproduction muscle Y4/Y5 depend on; callback L090/L100/L110.
 
 ### 113 · Scaling the OGB run — *Hu 2020 OGB + Cluster-GCN/SAGE*
+- **L113 delivery 2026-09-26:** valid: 91.6919% ± 0.0908pp (sample seed SD), CLOSE; test: 78.3660% ± 0.2749pp (sample seed SD), OUTSIDE_TOLERANCE. Historical identity and whole-paper parity are not established. Visible GCN bridge, full-data cluster runner and compute ledger; learner PENDING_WRITTEN_DEFENSE.
 - **Skill** — scale the L112 model to a large OGB graph with sampling and hit a compute/accuracy target.
 - **Teach** — sampling choice (neighbor vs cluster), memory budgeting, throughput; realistic-compute honesty
   (baseline vs extended sessions).
@@ -352,6 +354,7 @@ The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into f
 - **Bridge** — callback L089/L108; the scale skills for Y4 L134 (millions of REG nodes).
 
 ### 114 · OGB error analysis — *— (analysis unit)*
+- **Delivered 2026-09-26:** ten fresh500epoch MLP fits, test55.8036±0.0652pp (CLOSE); all10GCN+10MLP checkpoints independently replayed. Validation-nominated homophily<.25 yields test GCN17.28% versus MLP27.22% on8585nodes. Retrospective course analysis, historical/whole-paper parity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. See `labs/l114-reproduction.md`.
 - **Skill** — analyze where the OGB model fails (degree, homophily, class, time) and write a short error
   report.
 - **Teach** — slice-based error analysis, homophily/degree effects, when a GNN underperforms a simple baseline.
@@ -368,6 +371,7 @@ The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into f
   design table.
 - **Viz** — reuse `rdl-stack-viz.js` (from Y2 L076).
 - **Bridge** — callback Y2 L076; the direct template for Y4 L131 RDL stack.
+- **Approved L115 extension (2026-09-26):** visible modular GCN, three live task-readout exercises and ten fresh ogbn-arxiv fits ×500epochs, with original-source parity/replay and strict selected-experiment versus whole-paper boundaries. Full contract: `labs/l115-reproduction.md`.
 
 ### 116 · Debug GNN training — *— (debugging unit)*
 - **Skill** — diagnose the common GNN failure modes (over-smoothing, exploding/vanishing, bad sampling,
@@ -378,6 +382,8 @@ The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into f
   + fixed curve.
 - **Viz** — reuse `oversmoothing-viz.js` + loss-curve readout.
 - **Bridge** — callback L085; the debugging discipline for every Y4/Y5 reproduction.
+
+- **Prepared evidence (2026-09-26):** [L116](../lessons/0116-debug-gnn-training.html), three live diagnostic tasks, full-data fault/repair pair and ten fresh 500-epoch GCN fits. Test72.0200%±0.3056pp (sample seed SD), CLOSE; selected experiment complete, historical/whole-paper NOT_ESTABLISHED. [Protocol](../labs/l116-reproduction.md). Learner PENDING_WRITTEN_DEFENSE.
 
 ### 117 · RDL bridge lecture — *Fey et al. 2024 full paper (PMLR v235), ★*
 - **Skill** — read the RDL position paper end to end and walk through relational-entity-graph (REG)

@@ -1,0 +1,178 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Graph ML design patterns: encoder → message passing → head</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"><link rel="stylesheet" href="../assets/graph-patterns.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0114-ogb-error-analysis.html">Lesson 114</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 115</p><h1>Graph ML design patterns: encoder → message passing → head</h1></header><p class="stream-kicker">Synthesis · one reusable design skill · three prediction units</p>
+
+<p><strong>Your win:</strong> given a graph prediction problem, write a defensible encoder → processor → head design, name the prediction unit and information boundary, and show whether a refactor preserves the original computation.</p>
+<p>The core reading takes about 25 minutes. Then spend 25–35 minutes on the three design rows and live notebook tasks. The ten-run author experiment is separate from that study session.</p>
+<p><a href="../labs/0115-graph-ml-design-patterns.ipynb">Student notebook</a> · <a href="../labs/html/0115-graph-ml-design-patterns.html">Executed solution</a> · <a href="../reference/graph-ml-design-patterns.html">Quick reference</a> · <a href="../labs/l115-reproduction.md">Reproduction ledger</a></p>
+<div id="l115-warmup"></div><noscript><p>**Recall before reading:** What population enters the arxiv GCN forward pass? Which labels enter loss? What does validation select?</p></noscript>
+
+<h2 id="1-%C2%B7-Start-with-the-prediction-unit">1 &#183; Start with the prediction unit<a class="anchor-link" href="#1-%C2%B7-Start-with-the-prediction-unit">&#182;</a></h2><p><a href="0114-ogb-error-analysis.html">Lesson 114</a> asked where a trained GCN fails. Before choosing a replacement, we need a way to describe exactly what would change. An architecture name is insufficient: replacing a decoder, dropping an edge type, changing pooling, or exposing future events can each change the problem.</p>
+<p>Write this sentence first: <strong>“For each ___, predict ___ using information available at ___.”</strong> A paper-topic classifier predicts a class per node. A citation model scores a directed candidate pair. A molecule classifier predicts once per graph. The three cases may share message passing, but their output rows, labels and losses mean different things. <a href="https://arxiv.org/html/2005.00687v6#S3">OGB §3 and task definitions</a>.</p>
+<p>The organizing pattern is:</p>
+<ol>
+<li><strong>Encoder:</strong> turn available raw attributes into vectors with explicit type and missing-value semantics.</li>
+<li><strong>Processor:</strong> move and transform information along permitted graph connections.</li>
+<li><strong>Head/readout:</strong> select nodes, combine candidate endpoints, or pool within each graph, then produce scores with the required shape.</li>
+<li><strong>Training contract:</strong> define the supervised examples, loss, split, selection metric and saved state.</li>
+</ol>
+<p>These are responsibilities, not a rule that every model must have exactly three learned layers. An encoder can be the identity. A head may itself aggregate neighbors. A decoder can be an MLP or another graph network. This lesson's decomposition is an engineering choice informed by the compositional view in <a href="https://arxiv.org/html/1806.01261v3#S4.SS3">Battaglia et al., §4.3 and Figure 6b</a>. It does not claim to reproduce that entire paper.</p>
+<p><strong>Mission connection.</strong> In <a href="0076-encoder-predictor-stack.html">Lesson 076</a>, a database row became an embedding and joined a graph. Here we make the contract reusable: table encoders → typed relational propagation → target-row head. That becomes the explicit RDL stack in planned Lesson 131.</p>
+<h2 id="2-%C2%B7-Trace-the-complete-GCN-before-naming-its-modules">2 &#183; Trace the complete GCN before naming its modules<a class="anchor-link" href="#2-%C2%B7-Trace-the-complete-GCN-before-naming-its-modules">&#182;</a></h2><p>We use the same named experiment as Lesson 112: the released three-layer GCN on ogbn-arxiv. There are N=169,343 papers, 128 input coordinates and 40 classes. The official split has 90,941 training, 29,799 validation and 48,603 test papers. The publication supplies the benchmark; the pinned release supplies the executable model and training defaults. <a href="https://arxiv.org/html/2005.00687v6#S4.SS3">OGB §4.3/Table 6</a>, <a href="https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py">released GCN and training loop</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l115/architecture.svg" alt="The exact arxiv GCN: identity encoder, two hidden GCN blocks, a third graph convolution in the head, train-label loss and validation-selected inference."><figcaption>The exact arxiv GCN: identity encoder, two hidden GCN blocks, a third graph convolution in the head, train-label loss and validation-selected inference.</figcaption></figure>
+
+<p><strong>Step A — make the graph operator explicit.</strong> Deduplicate the citation graph after making it undirected, add one self-loop per node, then form S=D⁻¹ᐟ²(A+I)D⁻¹ᐟ². A matrix row identifies the receiving node; its nonzero columns identify senders. Degrees are measured after deduplication and loop addition. The operator stays fixed during this experiment.</p>
+<p><strong>Step B — preserve the encoder.</strong> Here E(X)=X. The input is already a numeric feature matrix. Adding a learned 128→256 projection merely to fill an “encoder” box would add parameters and change the experiment.</p>
+<p><strong>Step C — process two hidden layers.</strong> For each layer compute U=S(HWᵀ)+b, apply batch normalization, ReLU, then dropout with probability 0.5. Shapes are N×128 → N×256 → N×256. Batch normalization sees all nodes in the transductive training forward pass. Only the loss is restricted to training labels. Dropout is disabled at evaluation; saved BN statistics are restored with the selected weights.</p>
+<p><strong>Step D — keep propagation inside the head.</strong> The final layer computes N×40 class scores as S(HW₃ᵀ)+b₃, then log-softmax. An ordinary Linear(256,40) head would omit the third graph operation. Both return N×40, so shape checking alone cannot detect the mistake.</p>
+<p><strong>Step E — train and select.</strong> Mean negative log-likelihood uses training rows only. Adam uses learning rate 0.01 for 500 epochs. Each epoch is evaluated; the first maximum validation accuracy selects the state, including BN buffers. Test accuracy is reported from that selected state. Ten seeds measure variation under this fixed dataset and schedule. No test-driven tuning is performed.</p>
+<div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">GCN</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="c1"># Full definitions are visible in the notebook and canonical source.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">adj</span><span class="p">):</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>         <span class="c1"># identity: [N, 128]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">adj</span><span class="p">)</span>  <span class="c1"># two hidden GCN blocks: [N, 256]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">adj</span><span class="p">)</span>    <span class="c1"># final GCN + log-softmax: [N, 40]</span>
+</pre></div>
+<p><strong>Predict:</strong> if the last layer has no activation before log-softmax, can we remove its graph multiplication?</p>
+<details><summary>Check the dependency, not just the activation</summary><p>No. Linearity does not make the graph operator the identity. The final class score still depends on neighboring hidden vectors. Removing S reduces propagation depth and changes the scores. Even bias placement matters: S(HWᵀ)+b is generally different from S(HWᵀ+b), because symmetric normalization need not have row sums of one.</p></details>
+
+<p><strong>Task 1:</strong> implement <code>graph_forward</code>. Apply the encoder once, then processor once, then head once. Supply the same adjacency to both processor and head. The checker uses noncommuting operations; the reproduction additionally compares outputs, input and parameter gradients, BN buffers and an Adam update.</p>
+<h2 id="3-%C2%B7-Change-the-head-when-the-question-changes">3 &#183; Change the head when the question changes<a class="anchor-link" href="#3-%C2%B7-Change-the-head-when-the-question-changes">&#182;</a></h2><p>Suppose the processor has produced node vectors Z. For the following arithmetic, take z₀=[1,2], z₁=[3,5], z₂=[7,11]. These are fixed synthetic vectors, not learned explanations of the arxiv model.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l115/readouts.svg" alt="Fixed synthetic vectors illustrate node selection, endpoint composition and within-graph pooling. These are alternative heads, not sequential layers."><figcaption>Fixed synthetic vectors illustrate node selection, endpoint composition and within-graph pooling. These are alternative heads, not sequential layers.</figcaption></figure>
+
+<p><strong>Node prediction.</strong> Select the target node's vector and map its d coordinates to C class scores. For ordinary nodewise Linear heads, output shape is N×C; a seed-node mini-batch loss uses only seed outputs. Our reproduction uses a propagating node head, so its contract additionally requires adjacency. Selection does not mean deleting context nodes before message passing.</p>
+<p><strong>Undirected link prediction.</strong> Construct a vector from each candidate pair. Elementwise product gives z₀⊙z₁=[3,10], unchanged when endpoints swap. A learned linear score on that product is therefore symmetric. This is a valid deliberate constraint for an undirected relation; it is not a universal link decoder.</p>
+<p><strong>Directed link prediction.</strong> Ordered concatenation gives [z₀,z₁]=[1,2,3,5]; reversing endpoints yields [3,5,1,2]. A learned decoder can distinguish those orders. Concatenation permits asymmetry but does not guarantee it: symmetric learned weights could still yield equal scores. Heterogeneous links additionally need endpoint-type and relation semantics. A same-width tensor does not establish compatible meaning.</p>
+<p><strong>Graph prediction.</strong> For batch IDs [0,1,0], graph 0 contains nodes 0 and 2, so its mean is [4,6.5]; graph 1 contains node 1, so its mean is [3,5]. Pooling all three rows produces one vector [11/3,6] and loses the distinction between examples. Apply the graph head after per-graph pooling to produce B×C scores, where B is the number of graphs. <a href="https://proceedings.mlr.press/v70/gilmer17a.html">Gilmer et al., §2: message passing and readout</a>.</p>
+<p>Mean and sum answer different questions. Duplicating every vector in a graph leaves its mean unchanged but doubles its sum. If graph size is predictive, mean alone can discard useful information; sum or an explicit size feature is an alternative to test. This is a modeling decision, not a universally superior pooling rule.</p>
+<div data-graph-patterns></div><noscript><p>Baseline: node 0 selects [1,2]; pair 0→1 gives product [3,10] or ordered concatenation [1,2,3,5]; graph IDs [0,1,0] give means [[4,6.5],[3,5]]. Reverse the pair and recompute before checking the notebook.</p></noscript>
+
+<p><strong>Task 2:</strong> implement <code>pair_features(z,pairs,directed)</code>. Use elementwise product for undirected candidates and ordered concatenation for directed candidates. Explain the invariance being imposed, not just the resulting width.</p>
+<p><strong>Task 3:</strong> implement <code>graph_mean(z,batch,num_graphs)</code>. Accumulate per-graph sums and counts; divide within each graph. Our explicit empty-graph convention is a zero vector. A real benchmark may exclude empty graphs or require a different convention; record it instead of letting division by zero choose for you.</p>
+<details><summary>What must a link training protocol add?</summary><p>Candidate pairs and labels, an allowed message graph, a negative-sampling rule, an objective, and a ranking/evaluation population. Avoid letting held-out positive target edges enter the training message graph. A binary loss on arbitrary negatives is not automatically equivalent to a benchmark's ranking protocol. The small link exercise below supplies its pairs explicitly and makes no link-benchmark claim.</p></details>
+
+<h2 id="4-%C2%B7-Protect-the-information-boundary-across-modules">4 &#183; Protect the information boundary across modules<a class="anchor-link" href="#4-%C2%B7-Protect-the-information-boundary-across-modules">&#182;</a></h2><figure class="stream-figure" tabindex="0"><img src="../labs/figures/l115/boundaries.svg" alt="Every module preserves row identity, type, edge direction, graph membership, visibility and supervision boundaries."><figcaption>Every module preserves row identity, type, edge direction, graph membership, visibility and supervision boundaries.</figcaption></figure>
+
+<p>A module interface needs more than a shape. Write down <strong>row identity, type, graph membership, edge direction, and time visibility</strong> wherever they matter.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Situation</th>
+  <th>Encoder responsibility</th>
+  <th>Processor responsibility</th>
+  <th>Head and supervision responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Static homogeneous nodes</td>
+  <td>Use the specified feature representation</td>
+  <td>Respect declared graph visibility and normalization</td>
+  <td>Preserve target IDs; mask loss to authorized labels</td>
+</tr>
+<tr>
+  <td>Heterogeneous entities</td>
+  <td>Encode each type with its feature schema</td>
+  <td>Route each typed relation in its defined direction</td>
+  <td>Select the target type; decode endpoints with their relation semantics</td>
+</tr>
+<tr>
+  <td>Independent graphs</td>
+  <td>Encode attributes consistently across examples</td>
+  <td>Keep adjacency block-diagonal across graph IDs</td>
+  <td>Pool within each graph; one label per graph</td>
+</tr>
+<tr>
+  <td>Temporal events or rows</td>
+  <td>Use attribute versions available at the cutoff</td>
+  <td>Apply event and availability cutoffs at every hop</td>
+  <td>Predict before updating with the target event; train only on mature labels</td>
+</tr>
+</tbody>
+</table></div>
+<p>The temporal row is a point-in-time contract from <a href="0109-database-timestamp-contracts.html">Lesson 109</a>, not the arxiv reproduction protocol. A dataset split by publication year does not by itself turn a transductive full-graph GCN into a historical snapshot system. For this OGB baseline, later nodes' features and graph structure are visible according to the released transductive setup, while held-out labels never enter the loss.</p>
+<p>The reusable <a href="0076-encoder-predictor-stack.html">Lesson 076 cutoff/reduction widget</a> makes the availability boundary concrete. Moving the cutoff changes which rows reach the processor; changing mean to sum changes the meaning of their aggregation.</p>
+<div id="l115-cutoff"></div><noscript><p>At cutoff day 10, an event occurring on day 4 but available on day 11 must be excluded. Raising the cutoff to day 11 admits it, provided the event precedes the query under your declared time convention.</p></noscript>
+
+<p><strong>A debugging order:</strong> check IDs and visibility → check shapes and invariances → check forward values and gradients → check optimization and selection → compare the final metric. A close metric alone can hide offsetting errors. Lesson 116 will turn this order into a symptom-driven debugging practice.</p>
+<h2 id="5-%C2%B7-Refactoring-is-an-empirical-claim">5 &#183; Refactoring is an empirical claim<a class="anchor-link" href="#5-%C2%B7-Refactoring-is-an-empirical-claim">&#182;</a></h2><p>Our claim is narrow: the modular GCN retains the released model's computation, under matched inputs, weights, buffers and random masks. Tests cover training and evaluation, including dropout. The flat-versus-modular comparison checks an Adam update in training mode. The independent PyG source comparison checks forward and gradients in both modes; its optimizer comparison uses evaluation-mode BN to avoid amplifying tiny near-zero pre-BN bias-gradient differences. That check does not establish identical historical training trajectories.</p>
+<p>Fresh full-data training then checks the selected named experiment. The two checks answer different questions: operator parity asks whether the implementations agree under controlled conditions; benchmark reproduction asks what the complete declared protocol produces.</p>
+<p><strong>Author-reference evidence: fresh training, separate from your kernel execution.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Population</th>
+  <th style="text-align:right">Mean accuracy</th>
+  <th style="text-align:right">Sample seed SD</th>
+  <th style="text-align:right">Paper mean</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>valid</td>
+  <td style="text-align:right">73.1471%</td>
+  <td style="text-align:right">0.0878 pp</td>
+  <td style="text-align:right">73.00%</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">71.9713%</td>
+  <td style="text-align:right">0.2476 pp</td>
+  <td style="text-align:right">71.74%</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>The descriptive tolerance was declared before training: absolute mean difference ≤0.5 percentage points. Variance is reported, not required to match. Ten-run seed SD measures training variation on this graph; it is not uncertainty over independent datasets. All <strong>1,693,430 final node predictions</strong> were independently scored and replayed through the original model, with zero class mismatches.</p>
+<p>The recorded pilot-plus-ten-fit worker-resource estimate is <strong>USD0.2073</strong>, excluding unitemized startup/build/storage overhead. The conservative worker ceiling is USD1.497312, with USD8.502688 reserved under the USD10 aggregate plan. <a href="../labs/evidence/l115/summary.json">Full evidence</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l115/results.svg" alt="Ten fresh full-data modular GCN fits, 500 epochs each. Dots are seeds; diamonds and whiskers are mean and sample seed SD; dashed lines are published means."><figcaption>Ten fresh full-data modular GCN fits, 500 epochs each. Dots are seeds; diamonds and whiskers are mean and sample seed SD; dashed lines are published means.</figcaption></figure>
+
+<p>Read <a href="../labs/l115-reproduction.md">the protocol and deviation ledger</a> before calling this “full reproduction.” The completed scope is ten fresh fits for <strong>one published GCN experiment</strong>, with independent scoring and original-code checkpoint replay. Historical randomness, historical software identity and the rest of the OGB paper are not established. The link/graph runs in the notebook are synthetic course examples, not extra paper benchmarks.</p>
+<p>The student notebook includes all load-bearing code: graph construction, modular model, loss, selection, trainer, pair composition and graph pooling. Its default run executes the three live tasks on small examples; a separate full-reproduction switch uses the full dataset and ten-seed schedule. The author results do not imply that your notebook trained those models.</p>
+<h2 id="6-%C2%B7-Your-design-table-and-written-defense">6 &#183; Your design table and written defense<a class="anchor-link" href="#6-%C2%B7-Your-design-table-and-written-defense">&#182;</a></h2><p>Fill all columns <strong>before</strong> opening the solution. The three task specs are deliberately different:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task spec</th>
+  <th>Encoder</th>
+  <th>Processor + visibility</th>
+  <th>Head + output shape</th>
+  <th>Loss and selection</th>
+  <th>One invariant / failure probe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>A: classify each paper into 40 topics under the released arxiv protocol</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+</tr>
+<tr>
+  <td>B: score whether customer u buys product v in the next 7 days using records available at cutoff t</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+</tr>
+<tr>
+  <td>C: classify each independent molecular graph, using atom and bond attributes</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+  <td>Your choice</td>
+</tr>
+</tbody>
+</table></div>
+<details><summary>Design feedback — open after writing</summary><p>A: identity numeric encoder; complete released undirected normalized graph; two hidden GCN blocks and a third propagating class head; N×40 log probabilities; train-label NLL and first best validation accuracy; compare outputs/gradients and preserve BN population. B: customer/product-specific encoders; directed typed historical interactions with event and availability times no later than t at every hop; ordered pair or relation-aware decoder, one score per candidate pair; binary loss with an explicit negative population or an explicitly defined ranking objective; validate on future windows with mature labels and matching candidate populations. Probe reversed endpoints and a late-arriving event. C: atom encoder with bond-aware messages; disconnected graphs retain batch IDs; invariant per-graph readout then graph classifier; one label per graph, split/metric chosen for the actual benchmark. Probe node permutation and cross-graph contamination. B and C are defensible starting designs, not uniquely correct architectures or executed benchmark protocols.</p></details>
+
+<p><strong>EXIT:</strong> submit the three functions, your table, and a short defense explaining (1) why the GCN head needs adjacency, (2) what information each task may use, (3) why product and concatenation impose different link symmetries, (4) why pooling needs graph IDs, and (5) what the reproduced experiment does and does not establish. Passing automated checks alone leaves <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<div id="l115-teachback"></div><noscript><p>**Teach back:** Explain why a shape-preserving refactor can still alter propagation, normalization, visibility or the unit of prediction.</p></noscript>
+
+<p><strong>Spacing:</strong> tomorrow, redraw the complete GCN without looking and mark all three graph multiplications. In a week, design task B again with a late-arriving purchase and explain exactly where it must be excluded. Interleave a node task and a graph task to practice identifying the unit of supervision.</p>
+<p><strong>Primary reading:</strong> Battaglia et al., <a href="https://arxiv.org/html/1806.01261v3#S4.SS3">Relational inductive biases, deep learning, and graph networks, §4.3</a>. Pair the conceptual composition with the <a href="https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py">pinned OGB implementation</a>. Ask your tutor follow-up questions wherever a tensor boundary, source claim or experimental conclusion is unclear.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/rdl-stack-viz.js"></script><script src="../assets/graph-patterns.js"></script><script src="../assets/l115-lesson.js"></script></body></html>

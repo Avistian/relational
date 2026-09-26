@@ -107,3 +107,18 @@ Persistent volume `l110-checkpoint-evidence`, source-hash path recorded in `_sou
 ## Unrun and evidence boundaries
 
 Reddit, Twitter, dynamic node classification, all competitor training, the ablation suite, historical torch1.6 runtime and original continuously consumed RNG streams are NOT_RUN. The original data's historical identity is not established solely by hashing the present download. Close scores do not change that boundary. Real arrival histories are NOT_RECORDED. Live Colab and deployment remain NOT_CHECKED. Browser/copy checks are recorded separately from experiment results. Prepared learner status remains PENDING_WRITTEN_DEFENSE.
+
+<!-- L110 measured evidence -->
+
+## Completed fresh execution
+
+Twenty fits completed: release 293 epochs across ten seeds, clean 265 epochs across ten seeds. Complete selected release experiment COMPLETE; full-paper NOT_ESTABLISHED.
+
+| Arm | All-event batch AP | New-node batch AP | Comparison |
+|---|---:|---:|---|
+| Release | 98.5123% ± 0.0679 pp | 97.8295% ± 0.0861 pp | CLOSE / CLOSE |
+| Clean | 98.5234% ± 0.0826 pp | 97.7986% ± 0.0787 pp | COURSE_INTERVENTION |
+
+Uncertainty is sample seed SD. Independent AP reconstruction covers 706,720 positive questions and their paired negatives, with maximum AP error 1.11e-16. All forty population/checkpoint replay branches pass in the distinct CPU runtime. Original-source full release seed0 AP agrees exactly in both populations. Completed-call resource estimate including pilot: USD4.6912; other overhead is not itemized. Browser and copied-Pages delivery PASS; live Colab/deployment NOT_CHECKED.
+
+<!-- /L110 measured evidence -->

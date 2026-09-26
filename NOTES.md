@@ -1483,3 +1483,52 @@ User approved the full Wikipedia representation audit. All 157,474 raw interacti
 ## Lesson 109 prepared · 2026-09-26
 
 Approved combined scope: database timestamp contracts plus full selected rel-f1/driver-position reproduction. All 8,712 labels regenerated from nine released database tables and matched against original SQL/cached task tables; all ten heuristic cells MATCH. Actual ingestion/version histories unavailable; synthetic corrections, keys and deletions are separate evidence. Three live notebook tasks; learner PENDING_WRITTEN_DEFENSE. No cloud compute or publication. Delivery details in labs/l109-reproduction.md and dedicated check reports.
+
+
+## Lesson 110 prepared · 2026-09-26
+
+- Approved combined scope completed: twenty fresh full-data TGN-attn Wikipedia fits, ten released-protocol seeds and ten paired clean-state seeds. Release AP 98.5123% / 97.8295% (all/new); paper numerical verdicts CLOSE / CLOSE. Clean policy AP 98.5234% / 97.7986%; course intervention, not a published target.
+- Complete selected-state restoration, timestamp-group batching and best-validation selection at the cap are combined changes. Fixed-weight tied-feature counterexample, full split/source audit, original-source seed0 replay, independent metrics and fresh-checkpoint CPU replay are distinct checks. Historical identity INCOMPARABLE; full-paper NOT_ESTABLISHED; real ingestion histories absent.
+- Visible standalone model/trainer, three live TODOs, executed solution, four portable figures, reference, browser desktop/mobile/keyboard/no-JS/print and copied Pages checks. Learner PENDING_WRITTEN_DEFENSE. Live Colab and deployment NOT_CHECKED.
+- Completed-call resource estimate including pilot: USD4.6912, plus unitemized overhead under the USD10 plan. Exact commands and limitations: labs/l110-reproduction.md.
+
+
+## Lesson 112 prepared · 2026-09-26
+
+- Approved full selected ogbn-arxiv GCN reproduction completed: ten fresh runs × 500 epochs. Test 71.8480% ± 0.3119 pp; validation 73.1041% ± 0.0977 pp; both means CLOSE under predeclared 0.5 pp tolerance.
+- All 1,693,430 final node predictions independently scored and replayed through original GCN code with zero class mismatches; canonical versus original CPU log-probabilities exactly equal. Official loader arrays/splits exact. Native-CSR replay adapter double-loop error fixed and independently regression-checked; training/checkpoints unchanged. Historical identity/full-paper parity NOT_ESTABLISHED.
+- Visible model/trainer, standalone student/executed solution (13 code cells), three live tasks, four rejected mutants, three portable figures, reference and protocol ledger. Desktop/mobile/keyboard/print/no-JS and copied Pages checks PASS. Learner PENDING_WRITTEN_DEFENSE. Live Colab/deployment NOT_CHECKED.
+- Successful pilot plus ten-run resource estimate USD0.2087; failed pretraining checker attempt and overhead unitemized. Conservative resource ceiling including both pilot timeout allowances USD1.497312, within USD10 plan. See labs/l112-reproduction.md.
+
+## Lesson 113 prepared · 2026-09-26
+
+- Approved scope: full-arxiv GCN mini-batch bridge plus OGB products ClusterGCN named reproduction. GraphSAGE aggregation is explicitly separate from the sampler.
+- valid: 91.6919% ± 0.0908pp (sample seed SD), CLOSE; test: 78.3660% ± 0.2749pp (sample seed SD), OUTSIDE_TOLERANCE. Historical identity and whole-paper parity are not established.
+- 10/10 complete 50-epoch fits; 10 independent original-model checkpoint replays. Official-reader feature/edge-multiset equality, induced batches, sparse/dense gradients, duplicate edges, live student tasks and selection checks pass.
+- HTML, reference, three-task student notebook, executed solution, visible canonical model/trainer, five portable figures, pinned source and exact commands ship together. Desktop/mobile/keyboard/no-JS/print and copied Pages passed.
+- Budget USD10 aggregate; conservative authorized-resource ceiling USD8.895592. Actual recorded resource estimates are not an invoice; overhead unitemized. See labs/l113-reproduction.md.
+- Learner PENDING_WRITTEN_DEFENSE; historical partition/seeds and whole-paper identity NOT_ESTABLISHED. Live Colab/deployment NOT_CHECKED.
+
+## Lesson 114 prepared · 2026-09-26
+
+- Approved combined OGB error-analysis scope. Ten fresh full-data MLP runs ×500epochs completed: validation57.9110±0.1050pp, test55.8036±0.0652pp; both mean targets CLOSE. GCN weights reused from L112; all10GCN+10MLP states freshly replayed through original model classes,3,386,860predictions, zero class mismatches.
+- Fixed slice census covers every official validation/test node across degree, homophily, class and year. Validation nominates homophily<.25 (n5179); unchanged test rule n8585: GCN17.28%,MLP27.22%,gap−9.94pp. All-label homophily is retrospective; the association does not establish a causal effect or deployable routing rule.
+- Complete independent SQLite graph audit and1030slice-seed count checks; visible full models/trainers, three live student tasks, executed standalone solution, four portable figures and interactive slice explorer. Protocol/results: labs/l114-reproduction.md and labs/evidence/l114/summary.json. Delivery checks recorded separately.
+- Pilot+ten-fit resource estimate USD0.062947; conservative worker-resource ceiling USD1.372536, remaining USD8.627464 reserved for overhead within the USD10 plan. No automatic retries; validation ran locally.
+- Historical identity/whole-paper parity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. Live Colab/deployment NOT_CHECKED.
+
+
+## Lesson 115 prepared · 2026-09-26
+
+- Approved synthesis plus full selected GCN reproduction. Encoder → processor → head is taught as a responsibility split; the arxiv head preserves the third graph convolution. Three task specs distinguish node/link/graph predictions, types, direction, graph IDs and temporal visibility.
+- Ten fresh full-data ogbn-arxiv fits ×500epochs: validation73.1471±0.0878pp, test71.9713±0.2476pp (mean%±sample seed SD). Both means CLOSE under predeclared0.5pp tolerance. All1,693,430final node predictions independently scored and replayed through original GCN/GCNConv, zero class mismatches and zero current-CPU log-probability error.
+- Exact controlled flat/modular output-gradient-Adam parity; original-source forward/gradient checks; official-reader array identity; sparse-loop regression. Complete visible implementation,3live student tasks,17executed solution code cells,6rejected mutants,4portable figures and interactive readout/cutoff explorers. Desktop/mobile/keyboard/no-JS/print and copied Pages checks PASS.
+- Recorded pilot+ten-fit worker-resource estimate USD0.207338; conservative worker ceilingUSD1.497312 and overhead reserveUSD8.502688 withinUSD10aggregate plan. No retries. Exact commands and deviations: labs/l115-reproduction.md.
+- Historical identity/whole-paper parity NOT_ESTABLISHED; link/graph toy fits COURSE_ONLY; learner PENDING_WRITTEN_DEFENSE. Live Colab/deployment NOT_CHECKED.
+
+## Lesson 116 prepared · 2026-09-26
+
+- Approved debugging lesson plus complete selected GCN experiment. Three live tasks isolate train labels, repair an optimizer update, and align sampled seeds with global labels. Seven deliberate mutations rejected; real NeighborLoader contract checked. Fixed-operator smoothing and scalar gradient gain are separate course probes.
+- Ten fresh complete ogbn-arxiv GCN runs, 500 epochs each: validation 73.1283% ±0.0860 pp; test 72.0200% ±0.3056 pp (sample seed SD). Both CLOSE under predeclared 0.5 pp mean tolerance. All 1693430 final node classes replay exactly through the original model; historical/whole-paper identity NOT_ESTABLISHED.
+- Paired full-data 80-epoch seed-101 intervention: broken loss 4.050962→4.057399, repaired 4.050962→0.948045. Nonzero gradients with zero broken parameter movement isolate the omitted optimizer step; BN buffers can still change. These are course interventions, not paper runs.
+- Recorded pilot+ten-fit+two-diagnostic worker-resource estimate USD0.220904; thirteen workers, no retries. Aggregate USD10 budget; maximum worker ceiling USD2.49552 plus USD7.50448 overhead reserve. Exact protocol/commands in labs/l116-reproduction.md. Author execution separate from PENDING_WRITTEN_DEFENSE; live Colab/deployment NOT_CHECKED.

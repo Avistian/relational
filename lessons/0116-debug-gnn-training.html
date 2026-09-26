@@ -1,0 +1,202 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Debug GNN training: make the failure falsifiable</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/oversmoothing-viz.css"><link rel="stylesheet" href="../assets/gnn-diagnostics.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0115-graph-ml-design-patterns.html">Lesson 115</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 116</p><h1>Debug GNN training: make the failure falsifiable</h1></header><p class="stream-kicker">Debugging unit · predict → probe → repair → verify</p>
+
+<p><strong>Your win:</strong> take a broken GNN training loop, identify a cause with a failing experiment, repair it, and defend the resulting curve without using test accuracy to choose the repair.</p>
+<p>Start with the guided case in Sections 1–3 (about 20 minutes). Then work through the sampling and leakage tasks and run the small notebook (about 35 minutes). The complete author benchmark is separate from that study session.</p>
+<p><a href="../labs/0116-debug-gnn-training.ipynb">Student notebook</a> · <a href="../labs/html/0116-debug-gnn-training.html">Executed solution</a> · <a href="../reference/debug-gnn-training.html">Quick reference</a> · <a href="../labs/l116-reproduction.md">Protocol and exact commands</a></p>
+<div id="l116-warmup"></div><noscript><p>Recall without notes: which node features may the transductive GCN use? Which labels enter loss? Which metric selects a checkpoint?</p></noscript>
+
+<h2 id="1-%C2%B7-A-symptom-starts-an-investigation">1 &#183; A symptom starts an investigation<a class="anchor-link" href="#1-%C2%B7-A-symptom-starts-an-investigation">&#182;</a></h2><p><a href="0115-graph-ml-design-patterns.html">Lesson 115</a> gave each module a responsibility. Here we ask whether those responsibilities are actually fulfilled during training. A tensor can have the right shape while its rows carry the wrong identities. A backward pass can produce gradients while the optimizer never changes a parameter. A high validation score can result from reading validation labels.</p>
+<p><strong>In plain terms.</strong> Diagnose by making competing explanations predict different observable outcomes. “The GNN does not learn” is too broad to test. “The loss has a finite gradient, but no parameter changes after one training step” is narrow enough to investigate.</p>
+<p>Use this five-step discipline: reproduce, minimize, propose falsifiable hypotheses, change one cause, then keep a regression check. A <strong>regression check</strong> is an executable condition that fails when the old fault returns. You will write one that catches an absent optimizer step even if a later refactor rearranges the loop.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Observed symptom</th>
+  <th>Competing causes</th>
+  <th>First separating probe</th>
+  <th>What would support the cause?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Training loss barely moves</td>
+  <td>No optimizer step; detached computation; tiny learning rate; contradictory labels</td>
+  <td>Record loss, gradient norm and parameter-change norm on one fixed batch</td>
+  <td>Finite nonzero gradient plus exactly zero update implicates the update path</td>
+</tr>
+<tr>
+  <td>Loss becomes non-finite</td>
+  <td>Excessive step size; invalid input; unstable operator or loss</td>
+  <td>Check finiteness before propagation, after each layer, after backward and after the step</td>
+  <td>The first failing boundary narrows where the invalid value originates</td>
+</tr>
+<tr>
+  <td>Early layers learn slowly</td>
+  <td>Repeated derivative contraction; saturated activation; detached branch</td>
+  <td>Record gradient norms per layer and compare a shorter chain</td>
+  <td>A reproducible depth-dependent contraction supports a gradient-flow hypothesis</td>
+</tr>
+<tr>
+  <td>Node vectors become hard to distinguish</td>
+  <td>Repeated smoothing; constant features; collapsed initialization</td>
+  <td>Hold weights fixed and measure degree-corrected representation spread as propagation depth changes</td>
+  <td>Convergence under repeated propagation isolates the smoothing mechanism</td>
+</tr>
+<tr>
+  <td>Training/validation gap widens</td>
+  <td>Overfitting; changed population; wrong IDs; evaluation mode</td>
+  <td>Audit row identities and split first; repeat evaluation with saved state</td>
+  <td>Clean boundaries are prerequisites before changing regularization</td>
+</tr>
+<tr>
+  <td>Validation looks implausibly good</td>
+  <td>Valid signal; label leakage; test-driven selection</td>
+  <td>Perturb held-out labels with inputs, split IDs and RNG fixed</td>
+  <td>A changed training loss or update proves unauthorized label dependence</td>
+</tr>
+</tbody>
+</table></div>
+<p>These rows are hypotheses, not a symptom-to-diagnosis lookup. Nonzero gradients do not prove useful learning. Similar embeddings do not by themselves prove that smoothing caused an accuracy loss. <a href="0114-ogb-error-analysis.html">Lesson 114</a> already showed why aggregate accuracy can hide population differences.</p>
+<p><strong>Prediction.</strong> Your loss is finite, every parameter has a gradient, and the loss curve is flat. Rank: (a) no optimizer step, (b) detached loss, (c) over-smoothing. Name one measurement that would distinguish (a) from (b) before reading on.</p>
+<details><summary>Compare predictions</summary><p>An absent step can leave nonzero gradients but no parameter change. A fully detached loss normally breaks backward or disconnects model gradients. Measure both gradient norm and parameter movement; neither an accuracy curve nor a shape check separates these cases reliably. Over-smoothing remains a separate hypothesis requiring representation evidence.</p></details>
+
+<h2 id="2-%C2%B7-Trace-the-actual-GCN-and-its-training-state">2 &#183; Trace the actual GCN and its training state<a class="anchor-link" href="#2-%C2%B7-Trace-the-actual-GCN-and-its-training-state">&#182;</a></h2><p>We retain the GCN from Lesson 115. A <strong>node</strong> is one paper. Each paper has 128 numeric features and a label in one of 40 subject classes. The full graph has 169,343 nodes. The benchmark allows all node features and graph edges during message passing, while only the 90,941 training labels enter the loss. This is the released <strong>transductive</strong> setting: held-out nodes can provide unlabeled context. It is not a reconstruction of the graph as it existed at each historical date. <a href="https://arxiv.org/html/2005.00687v6#S4.SS3">OGB §4.3</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l116/trace.svg" alt="The complete GCN update: fixed graph and feature matrices, three convolutions, train-only loss, gradients, optimizer movement, and validation-selected state."><figcaption>The complete GCN update: fixed graph and feature matrices, three convolutions, train-only loss, gradients, optimizer movement, and validation-selected state.</figcaption></figure>
+
+<p><strong>Forward.</strong> First build a binary undirected adjacency, deduplicate edges, and add exactly one self-loop per node. Let A denote this adjacency and dᵢ its row degree. The normalized coefficient from node j to receiver i is Sᵢⱼ=Aᵢⱼ/√(dᵢdⱼ). A graph convolution computes S(HWᵀ)+b: transform each node's coordinates, aggregate neighboring transformed rows, then add a bias. Two hidden blocks each apply graph convolution → batch normalization → ReLU → dropout with probability 0.5. A third graph convolution produces 40 class scores; log-softmax turns them into log probabilities. The dimensions are N×128 → N×256 → N×256 → N×40. <a href="https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py">Pinned complete model and loop</a>.</p>
+<p><strong>Loss.</strong> If ℓᵢ,c is the log probability for class c at node i, mean negative log-likelihood is L=−Σᵢ∈T ℓᵢ,yᵢ / |T|. T is the set of authorized training IDs. Features from a validation node may influence this transductive forward computation; its target label may not influence this loss. A mask restricts supervision, not all message paths.</p>
+<p><strong>Backward and update.</strong> Backward calculates derivatives g=∂L/∂θ for trainable parameters θ. Calling backward does not itself change θ. The optimizer uses those derivatives and its own state to update the parameters. Adam also keeps moving averages; the norm of g does not equal the norm of the update.</p>
+<p><strong>Modes and buffers.</strong> <code>model.train()</code> enables dropout and updates batch-normalization running statistics. <code>model.eval()</code> disables dropout and uses saved statistics. <code>torch.no_grad()</code> controls gradient recording; it does not set evaluation mode. A checkpoint must include BN buffers as well as weights. These are different pieces of state. <a href="https://docs.pytorch.org/docs/stable/notes/autograd.html#evaluation-mode-nn-module-eval">PyTorch evaluation/gradient modes</a>.</p>
+<p><strong>Selection.</strong> Fit for 500 epochs; an epoch is one full-graph training update here. Evaluate each epoch. Select the first maximum validation accuracy and restore that state. The test labels are reserved for reporting after the selection rule is fixed. The pinned release computes per-epoch test accuracy too; our reproduction preserves that reporting but never uses it to select, stop, or tune.</p>
+<h2 id="3-%C2%B7-Repair-a-loop-using-a-decisive-measurement">3 &#183; Repair a loop using a decisive measurement<a class="anchor-link" href="#3-%C2%B7-Repair-a-loop-using-a-decisive-measurement">&#182;</a></h2><p><strong>Worked example.</strong> Suppose a two-coordinate parameter changes from [1,2] to [1,2]. The Euclidean parameter-change norm is √((1−1)²+(2−2)²)=0. If backward has just produced gradient [0.3,−0.4], its norm is √(0.3²+0.4²)=0.5. “Gradient present, update absent” is measurable.</p>
+<p>The provided broken code is:</p>
+<div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">training_loss</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">adj</span><span class="p">),</span> <span class="n">y</span><span class="p">,</span> <span class="n">train_idx</span><span class="p">)</span>
+<span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+</pre></div>
+<p><strong>Predict before revealing:</strong> which operation is missing? What should you measure immediately before and after it? Would inserting gradient clipping repair the omission?</p>
+<details><summary>Repair and explanation</summary><p>Call <code>optimizer.step()</code> after backward. Snapshot parameter values before the call and compare afterward. Clipping only modifies gradients; it cannot execute an absent parameter update. Retain zeroing before the next backward so unrelated batches do not accumulate gradients. Deliberate gradient accumulation is a different, explicitly scaled protocol.</p></details>
+
+<p><strong>Task 1 — authorize labels.</strong> Implement <code>training_loss(log_probs, labels, train_idx)</code>. The check changes held-out labels and verifies both unchanged loss and zero supervised gradient on held-out output rows. It does not demand zero gradient on held-out input features: message passing can use those features legitimately.</p>
+<p><strong>Task 2 — repair the update.</strong> Implement <code>train_step(model, optimizer, x, adj, y, train_idx)</code>. Restore training mode, clear old gradients, use your Task 1 loss, run backward, step, and return the detached loss. The check compares two consecutive updates to a reference loop. Two steps are necessary to catch an omitted <code>zero_grad()</code> that a first-step-only check would miss. A separate GCN check preserves dropout RNG and verifies weights, gradients and BN buffers across three updates.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l116/updates.svg" alt="Measured full-data 80-epoch course intervention, seed 101: omitting only the optimizer step preserves gradients but eliminates every parameter update."><figcaption>Measured full-data 80-epoch course intervention, seed 101: omitting only the optimizer step preserves gradients but eliminates every parameter update.</figcaption></figure>
+
+<div data-gnn-update></div><noscript><p>Scalar probe: θ=1, L=θ²/2, learning rate 0.2. After four repaired steps θ=0.4096; omitting the step leaves θ=1. At learning rate zero both paths are frozen.</p></noscript>
+
+<p><strong>Read the evidence carefully.</strong> The 80-epoch real-data pair holds architecture, data, initialization seed 101, dropout schedule and optimizer configuration fixed. Only the missing step changes. Without a step, BN running buffers still evolve and dropout still changes training observations. Therefore a changing validation score does not prove that weights changed. The trace directly records parameter movement to avoid that false inference.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Course arm</th>
+  <th style="text-align:right">Initial loss</th>
+  <th style="text-align:right">Epoch-80 loss</th>
+  <th>Parameter movement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>broken</td>
+  <td style="text-align:right">4.050962</td>
+  <td style="text-align:right">4.057399</td>
+  <td>zero at every epoch</td>
+</tr>
+<tr>
+  <td>repaired</td>
+  <td style="text-align:right">4.050962</td>
+  <td style="text-align:right">0.948045</td>
+  <td>positive at every epoch</td>
+</tr>
+</tbody>
+</table></div>
+<p>The first loss and gradient norm match exactly between arms. Later states diverge because only one arm updates parameters. No test-score comparison selects this repair.</p>
+<blockquote>
+<p><strong>Scope check.</strong> These broken/repaired 80-epoch curves are course interventions. They are not 500-epoch paper reproductions. The separate ten-run experiment below tests the repaired trainer under the full released schedule.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Separate-gradient-flow-from-representation-smoothing">4 &#183; Separate gradient flow from representation smoothing<a class="anchor-link" href="#4-%C2%B7-Separate-gradient-flow-from-representation-smoothing">&#182;</a></h2><p><strong>In plain terms.</strong> A gradient problem concerns how a small parameter change affects the loss. Over-smoothing concerns whether repeated graph propagation erases distinctions among node representations. They can coexist, but they are different measurements.</p>
+<p><strong>Worked gradient chain.</strong> Start with scalar h₀=x=1 and repeat hₖ=a·hₖ₋₁. With no nonlinearities, ∂hₖ/∂x=aᵏ. At depth 8, gain 0.5 gives derivative 1/256=0.00390625; gain 2 gives 256. This exact scalar example isolates multiplication of derivatives. A GNN replaces these scalars with matrices and activation derivatives, so this is a mechanism illustration, not a universal rate of decay.</p>
+<p>Record per-layer gradient norms instead of just one total norm. Also record activation scales, finite values and parameter-update norms. If the first invalid values appear in input features, lowering the learning rate cannot fix their origin. If gradients are finite but enormous before the step, reducing step size or justified clipping is a candidate intervention to test. Clipping cannot repair wrong labels, broken indexing, or a detached computation. It changes the training procedure, so it would be a declared deviation from our unclipped OGB baseline.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l116/gradient.svg" alt="Exact scalar-chain derivatives from autograd: changing multiplicative gain separates contraction from amplification. This is a mechanism illustration, not a trained GNN."><figcaption>Exact scalar-chain derivatives from autograd: changing multiplicative gain separates contraction from amplification. This is a mechanism illustration, not a trained GNN.</figcaption></figure>
+
+<p><strong>Worked smoothing chain.</strong> Use the three-node path A—B—C, add self-loops, and start with scalar features [2,4,8]. Degrees are [2,3,2]. The coefficient on A→B is 1/√6≈0.4082; B's self coefficient is 1/3. Its next value is 2/√6+4/3+8/√6≈5.4158. Every receiver uses the previous state simultaneously.</p>
+<p>With symmetric normalization, the stationary direction on a connected component is proportional to √d, not necessarily to an all-ones vector. Examine zᵢ=hᵢ/√dᵢ before concluding that unequal raw h values mean smoothing has stopped. Here the mean squared spread is V=(1/N)Σᵢ(zᵢ−z̄)². The fixed-operator experiment drives V toward zero while raw h values remain unequal because degrees differ. The limiting degree-corrected value is (Σᵢ√dᵢ·hᵢ)/(Σᵢdᵢ), about 3.0101 for this input. <a href="https://arxiv.org/abs/1801.07606">Li, Han and Wu: smoothing analysis</a>.</p>
+<div id="l116-smoothing"></div><noscript><p>At depth 1 on the self-looped path A—B—C, symmetric propagation maps [2,4,8] to approximately [2.6330,5.4158,5.6330]. Remove B—C to isolate C; compare symmetric and row-mean operators.</p></noscript>
+
+<p><strong>Change one assumption.</strong> Remove B—C. C is now a separate connected component and can retain a distinct value. Switch to row-mean normalization: the operator and stationary representation change. Neither modification is evidence that an arbitrary trained deep GNN will improve. The widget has no learned weights, labels, nonlinearities, or optimizer.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l116/smoothing.svg" alt="Fixed symmetric propagation on a three-node path. Raw vectors remain degree-shaped while degree-corrected variance vanishes. No weights or labels are trained."><figcaption>Fixed symmetric propagation on a three-node path. Raw vectors remain degree-shaped while degree-corrected variance vanishes. No weights or labels are trained.</figcaption></figure>
+
+<p>A diagnosis of harmful over-smoothing needs both a representation mechanism and task evidence: for example, reduced class separation and a validation comparison at matched information boundaries. Shallow propagation or residual connections are hypotheses to test, not automatic cures. Revisit <a href="0085-over-smoothing.html">Lesson 085</a> for the foundational distinction.</p>
+<h2 id="5-%C2%B7-Debug-the-identity-of-a-sampled-row">5 &#183; Debug the identity of a sampled row<a class="anchor-link" href="#5-%C2%B7-Debug-the-identity-of-a-sampled-row">&#182;</a></h2><p>Sampling creates local rows with new positions. A <strong>seed node</strong> is a requested prediction target. A <strong>context node</strong> is included to send messages. In PyG's <code>NeighborLoader</code>, <code>n_id</code> maps each local row back to its global node ID; the first <code>batch_size</code> rows are the input seeds. The caller must choose training seeds. Sampling context does not authorize its label for supervision. <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/tutorial/neighbor_loader.html">PyG neighbor-sampling tutorial</a>.</p>
+<p><strong>Worked example.</strong> Let <code>n_id=[4,1,5,0]</code>, <code>batch_size=2</code>, and global labels <code>[1,1,1,0,0,1]</code>. Local output rows 0 and 1 predict global nodes 4 and 1. Their labels are [0,1]. Using <code>global_labels[:2]</code> instead gives [1,1]. Shapes still agree, but the first target is wrong. The check also perturbs context labels so a coincidentally correct label pattern cannot conceal unauthorized label access.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l116/sampling.svg" alt="Local output row 0 belongs to global node 4. Supervise the two seed rows using mapped global labels; context labels stay outside the loss."><figcaption>Local output row 0 belongs to global node 4. Supervise the two seed rows using mapped global labels; context labels stay outside the loss.</figcaption></figure>
+
+<p><strong>Task 3 — seed-only loss.</strong> Implement <code>seed_loss(log_probs, global_labels, n_id, batch_size)</code>. Restrict output rows to the seeds and gather labels through <code>n_id</code>. The executable fixture deliberately uses an indexing trap; context-label changes must leave the loss unchanged. Context output rows must have zero direct supervised gradient, while context input features can still affect seed predictions through messages.</p>
+<p>Three separate checks prevent three separate sampling faults:</p>
+<ol>
+<li><strong>Identity:</strong> decode a local row through <code>n_id</code>. Comparing global labels to local positions is wrong even when shapes agree.</li>
+<li><strong>Supervision:</strong> use only authorized seeds in the loss. Including all sampled nodes changes the training distribution and may expose held-out labels.</li>
+<li><strong>Computation:</strong> ensure sampled hops, edge directions and normalization match the intended estimator. Correct label indexing alone does not make a sampled GCN identical to the full-graph GCN. Lesson 113's <a href="0113-scaling-ogb.html">scaling experiment</a> keeps that distinction explicit.</li>
+</ol>
+<p>The real PyG fixture samples all one-hop neighbors for two seeds and independently checks the convention. The small hand-worked graph makes the identity mapping visible. The paper reproduction remains full-batch and uses no neighbor sampler.</p>
+<h2 id="6-%C2%B7-Treat-leakage-as-an-information-flow-bug">6 &#183; Treat leakage as an information-flow bug<a class="anchor-link" href="#6-%C2%B7-Treat-leakage-as-an-information-flow-bug">&#182;</a></h2><p><strong>In plain terms.</strong> A training algorithm should not be able to tell you changed a label it is forbidden to read. This gives a stronger test than “validation looks too good.”</p>
+<p>Fix inputs, graph, split IDs, initialization and random masks. Compute loss and gradients. Change validation/test labels only, then recompute. A difference proves that those labels influenced the tested path. No difference establishes only this path's invariance; it does not rule out leakage through preprocessing, feature engineering, checkpoint selection or a different code branch.</p>
+<div data-gnn-leak></div><noscript><p>Fixed probabilities [0.9,0.1], [0.2,0.8], [0.7,0.3], [0.4,0.6]. Flip only labels 2 and 3: train-ID loss stays 0.164252; all-label loss changes from 0.612192 to 0.299001.</p></noscript>
+
+<p>For sampled training, perturb context labels as well, because “included in this mini-batch” is not the same as “authorized target.” For the temporal RDL stack, labels must also have matured before fitting, and all features and edges must satisfy the event/availability contract from <a href="0109-database-timestamp-contracts.html">Lesson 109</a>.</p>
+<p><strong>Worked counterexample.</strong> If loss uses every node label, changing labels outside the train split changes that loss. If loss uses only train IDs, it stays fixed. A train-only loss can still coexist with test-based checkpoint selection; audit selection separately. Our runner uses only validation accuracy for the first-best checkpoint. Changing test results cannot alter that index.</p>
+<p><strong>Stop rule.</strong> When a label-boundary check fails, stop interpreting accuracy. Repair the boundary, rerun from a fresh initialization, and report the contaminated result as invalid evidence. Do not present its higher score as an architectural improvement.</p>
+<h2 id="7-%C2%B7-Verify-the-repair-on-the-complete-named-experiment">7 &#183; Verify the repair on the complete named experiment<a class="anchor-link" href="#7-%C2%B7-Verify-the-repair-on-the-complete-named-experiment">&#182;</a></h2><p>This unit has no new model paper. Its named target is the existing <strong>OGB v6 Table 6 GCN on ogbn-arxiv</strong>. The full visible implementation is shipped in the notebook and <a href="../labs/relkit/debug_l116.py">canonical source</a>. The standalone <a href="../labs/_run_l116.py">runner</a> exposes the complete schedule. The diagnostic trace adds observations without clipping, scheduling, changing the architecture or altering the loss.</p>
+<p><strong>Before results, predict.</strong> Which evidence is stronger for preservation: a close test score, or matched outputs/gradients/updates plus a protocol audit and independently replayed checkpoints? Explain what neither can establish about the original authors' historical random seeds.</p>
+<p>The complete protocol has 169,343 nodes, 128 features, 40 classes and the official 90,941/29,799/48,603 train/validation/test split. Each of ten fresh seeds 0–9 trains for 500 epochs. Hidden width is 256; dropout is 0.5; Adam learning rate is 0.01. There is no early stopping. The first best validation epoch selects weights and BN state. Mean and <strong>sample seed standard deviation</strong> summarize accuracy over ten runs on this one fixed dataset; that SD is not uncertainty over new graphs or an estimate of the benefit of a repair.</p>
+<p>Published reference means are validation 73.00% and test 71.74%. We declared absolute mean distance ≤0.5 percentage points as <strong>CLOSE</strong> before running. This is a descriptive tolerance, not a statistical equivalence test. Dataset, source commit, runtime versions, costs, unrun scope and exact commands appear in the <a href="../labs/l116-reproduction.md">protocol ledger</a>.</p>
+<p><strong>Author-reference evidence: fresh training, separate from notebook execution.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Population</th>
+  <th style="text-align:right">Mean accuracy</th>
+  <th style="text-align:right">Sample seed SD</th>
+  <th style="text-align:right">Published mean</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>valid</td>
+  <td style="text-align:right">73.1283%</td>
+  <td style="text-align:right">0.0860 pp</td>
+  <td style="text-align:right">73.00%</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">72.0200%</td>
+  <td style="text-align:right">0.3056 pp</td>
+  <td style="text-align:right">71.74%</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>All ten selected checkpoints were independently rescored and replayed through the original released model on all 169,343 nodes: <strong>1,693,430 predictions</strong>, zero class mismatches. Source checks separately compare outputs, gradients and an optimizer update. The repaired loop preserves weights, gradients and BN buffers exactly against the same-runtime inline training order across three controlled updates.</p>
+<p>The recorded worker-resource estimate for the pilot, ten fits and two diagnostic runs is <strong>USD0.2209</strong>. Startup/build/storage overhead is not itemized; it is covered by the reserve. Twenty bounded worker reservations cap compute at USD2.49552 and leave USD7.50448 within the USD10 aggregate plan. Thirteen workers were used; no retries.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The complete selected executable experiment is COMPLETE. CLOSE does not establish historical random-state/environment identity or whole-paper parity; both remain NOT_ESTABLISHED. Live Colab and deployment remain NOT_CHECKED. <a href="../labs/evidence/l116/summary.json">Evidence summary</a>.</p>
+</blockquote>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l116/results.svg" alt="Ten fresh full-data 500-epoch fits. Dots are seeds, diamonds and whiskers are means and sample seed SD, dashed lines are published means."><figcaption>Ten fresh full-data 500-epoch fits. Dots are seeds, diamonds and whiskers are means and sample seed SD, dashed lines are published means.</figcaption></figure>
+
+<h2 id="8-%C2%B7-Lab-and-written-defense">8 &#183; Lab and written defense<a class="anchor-link" href="#8-%C2%B7-Lab-and-written-defense">&#182;</a></h2><p>Open the student notebook. Its normal execution downloads no dataset and uses your three functions in the small controlled experiments. The complete model, data loader, trainer and gated ten-run command are visible inline; full training defaults to OFF. The executed solution contains author-reference results and its own local diagnostic outputs, clearly separated.</p>
+<p><strong>Submit:</strong> the three functions, your diagnostic report, a before/after loss curve and a five-part defense:</p>
+<ol>
+<li>State the failure and rank at least three hypotheses before choosing a repair.</li>
+<li>Give the smallest observation that separates your leading hypothesis from the alternatives.</li>
+<li>Explain why a nonzero gradient and a changing validation score do not prove parameters moved.</li>
+<li>Trace sampled local row 0 to its global ID and explain which labels may enter its loss.</li>
+<li>State exactly what the fresh benchmark reproduces and what remains unestablished.</li>
+</ol>
+<div id="l116-teachback"></div><noscript><p>Teach back: why can validation change without parameter updates, and which two probes distinguish an absent step from label leakage?</p></noscript>
+
+<p><strong>Spacing.</strong> Tomorrow, reconstruct the update order without looking. In a week, rerun the same checks with permuted node IDs and a different label mask. Return to Lesson 114 and explain which errors would survive a purely numerical loss check.</p>
+<p><strong>Bridge to Lesson 117.</strong> A relational entity graph introduces more row types, joins, clocks and label-maturity rules. The same diagnosis loop survives: identify the prediction unit, enforce its information boundary, reproduce a failure, and verify one repair at a time. Ask the teacher follow-up questions or submit your evidence for feedback. Author execution is not learner mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><strong>Primary reading:</strong> <a href="https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py">the pinned OGB GCN training loop</a>. Trace every line into the forward/backward/update/selection diagram. Then read <a href="https://arxiv.org/abs/1801.07606">Li et al.</a> for smoothing and <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/tutorial/neighbor_loader.html">PyG's seed-node convention</a> for sampling.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/oversmoothing-viz.js"></script><script src="../assets/gnn-diagnostics.js"></script><script src="../assets/l116-lesson.js"></script></body></html>

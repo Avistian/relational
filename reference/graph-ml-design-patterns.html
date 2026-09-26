@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Graph ML design patterns · quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"><link rel="stylesheet" href="../assets/graph-patterns.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0114-ogb-error-analysis.html">Lesson 114</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 115</p><h1>Graph ML design patterns · quick reference</h1></header><h2 id="Before-choosing-a-model">Before choosing a model<a class="anchor-link" href="#Before-choosing-a-model">&#182;</a></h2><p>For each <strong>prediction unit</strong>, predict <strong>target</strong> using information available at <strong>cutoff</strong>. Record row IDs, type, graph membership, direction, availability and supervision.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Unit</th>
+  <th>Readout</th>
+  <th>Shape</th>
+  <th>Boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Node</td>
+  <td>Select target vectors; node head may itself propagate</td>
+  <td>N×C, or selected seeds×C</td>
+  <td>Context nodes are not automatically supervised</td>
+</tr>
+<tr>
+  <td>Undirected link</td>
+  <td>Symmetric endpoint product + decoder</td>
+  <td>M×d → M scores</td>
+  <td>Swapping endpoints must preserve score</td>
+</tr>
+<tr>
+  <td>Directed link</td>
+  <td>Ordered endpoint concatenation + decoder</td>
+  <td>M×2d → M scores</td>
+  <td>Swapping endpoints may change score</td>
+</tr>
+<tr>
+  <td>Graph</td>
+  <td>Pool within batch IDs + graph head</td>
+  <td>B×d → B×C</td>
+  <td>No pooling or edges across independent graphs</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="Exact-modular-arxiv-GCN">Exact modular arxiv GCN<a class="anchor-link" href="#Exact-modular-arxiv-GCN">&#182;</a></h2><p>Identity encoder → GCN128→256/BN/ReLU/dropout.5 → GCN256→256/BN/ReLU/dropout.5 → GCN256→40/log-softmax. Every GCN uses S(HWᵀ)+b. There are THREE graph multiplications. Full-node BN; train-label mean NLL; Adam.01;500epochs; first best validation checkpoint with buffers;ten seeds. A Linear head or added learned encoder changes the experiment.</p>
+<h2 id="Useful-probes">Useful probes<a class="anchor-link" href="#Useful-probes">&#182;</a></h2><p>Match outputs, gradients and an optimizer update under copied state and matched RNG. Check permutation equivariance for node representations and invariance for graph readouts. Reverse candidate endpoints. Duplicate all graph vectors to distinguish sum and mean. Insert a late-arriving record and ensure exclusion at earlier cutoffs. Change held-out labels and verify unchanged training loss.</p>
+<h2 id="Evidence-vocabulary">Evidence vocabulary<a class="anchor-link" href="#Evidence-vocabulary">&#182;</a></h2><p>Operator parity is a controlled implementation comparison. Ten fresh full-data runs reproduce the selected executable experiment. CLOSE means within the declared mean-score tolerance, not historical identity. Synthetic fits establish execution only. Seed SD is not uncertainty over new datasets. Learner mastery requires a written defense.</p>
+<p><a href="../lessons/0115-graph-ml-design-patterns.html">Lesson115</a> · <a href="../labs/l115-reproduction.md">Protocol and exact commands</a> · <a href="../labs/evidence/l115/summary.json">Measured evidence</a> · <a href="https://arxiv.org/abs/1806.01261">Battaglia et al.</a> · <a href="https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py">OGB source</a>.</p>
+</article></body></html>

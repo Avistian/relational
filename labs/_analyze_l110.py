@@ -10,9 +10,12 @@ def independent_ap(y,p):
  return float(np.sum(np.diff(np.r_[0.,rec])*prec))
 # Exercise exact ties, shuffled order and a one-positive case against the library definition.
 for y,p in [(np.array([1,0,1,0]),np.array([.5,.5,.2,.1])),(np.array([0,1,0]),np.array([.9,.1,.1]))]:assert abs(independent_ap(y,p)-average_precision_score(y,p))<1e-14
+pilot_identity=json.loads((O/'pilot/identity.json').read_text())
 paired=[];maxerr=0.;count=0;cost=0.;epochs={k:0 for k in ['release','clean']};filehash={}
 for seed in range(10):
  root=O/f'seed-{seed}';ident=json.loads((root/'identity.json').read_text());assert ident['source_sha256']==src['implementation_sha256'] and ident['seed']==seed and ident['epochs']==50 and ident['preset']=='paper';assert ident['audit']==audit
+ for key in ['torch','numpy','python','device']:assert ident[key]==pilot_identity[key],(seed,key)
+ assert ident['torch'].startswith('2.8.0') and ident['numpy']=='2.2.6'
  complete=json.loads((root/'completed.json').read_text());assert complete['status']=='COMPLETE';cost+=complete['resource_cost_usd'];record={'seed':seed}
  for arm in ['release','clean']:
   run=json.loads((root/arm/f'seed-{seed}.json').read_text());z=np.load(root/arm/f'seed-{seed}-predictions.npz');assert run['seed']==seed and run['arm']==arm;epochs[arm]+=run['epochs_completed'];record[arm]={}
