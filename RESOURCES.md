@@ -581,3 +581,52 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - Xu et al. (ICLR 2020), [Inductive Representation Learning on Temporal Graphs](https://arxiv.org/html/2002.07962v1): §§3.1–3.4 functional time encoding and recursive attention; Tables 1/2 Wikipedia AP targets; Appendix A.5 implementation details.
 - [Publication-era implementation](https://github.com/StatsDLMathsRecomSys/Inductive-representation-learning-on-temporal-graphs/tree/9293d10d1943c4bd4a186337cf38ba98e4c8bb99): original model/sampler/trainer, locally fetched by hash; no upstream license supplied.
 - [SNAP/JODIE Wikipedia](https://snap.stanford.edu/jodie/): raw interaction stream shared with L102. Exact data and protocol identities are recorded in `labs/l103-reproduction.md`.
+
+## L104 — temporal leakage audit
+
+- [Kapoor & Narayanan, 2022 preprint](https://arxiv.org/abs/2207.07048): taxonomy L2/L3.1 and model info sheets. [Patterns 2023 article](https://doi.org/10.1016/j.patter.2023.100804). L104 operationalizes the audit; no civil-war reproduction claim.
+- [Fey et al., ICML 2024](https://proceedings.mlr.press/v235/fey24a.html): §2.2 target windows, §3.3 time-consistent graphs, Appendix A temporal neighborhoods. Snapshot ≤ convention is distinguished from TGAT's strict before-event convention.
+- [Xu et al., ICLR 2020](https://arxiv.org/html/2002.07962v1): §3.2 recursion and Wikipedia Tables 1/2. L104 reuses L103-trained checkpoints for fresh inference and a separate leakage intervention; source/data identities are frozen.
+
+## Lesson 105 · continuous time / event streams versus snapshots
+
+- [TGN v3 §2: Dynamic Graphs](https://arxiv.org/html/2006.10637v3#S2): primary definitions; timed interactions versus graph snapshots.
+- [JODIE authors’ Wikipedia data](https://snap.stanford.edu/jodie/) and [format](https://github.com/claws-lab/jodie#dataset-format): complete hashed release; cite Kumar, Zhang & Leskovec, KDD 2019.
+- [Pinned TGN preprocessing](https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/utils/preprocess_data.py): executed typed-ID bijection check only; no new model-score parity claim.
+- [Lesson](lessons/0105-continuous-time.html), [student lab](labs/0105-continuous-time.ipynb), [reference](reference/event-stream-snapshots.html), [reproduction contract](labs/l105-reproduction.md). Complete three-width course audit, distinct from full-paper reproduction.
+
+
+## Lesson 106 · temporal link evaluation
+
+- Poursafaei, Huang, Pelrine & Rabbany (NeurIPS 2022), [Towards Better Evaluation for Dynamic Link Prediction](https://arxiv.org/html/2207.10128v2): §§4–6, Appendix B Wikipedia targets. Read with the [publication-era released implementation](https://github.com/fpour/DGB/tree/7793e9449f5321c7e39b24c0585e3c3de7cf9f5e/EdgeBank/link_pred).
+- [JODIE data](https://snap.stanford.edu/jodie/): complete authenticated Wikipedia event stream. Historical table-generation bytes remain unestablished.
+
+
+## Lesson 107 · Snapshot methods
+
+- Pareja et al. (AAAI 2020), [EvolveGCN](https://arxiv.org/html/1902.10191v3): §3 state evolution and §4/Table 2 SBM experiment.
+- [Publication-era IBM source](https://github.com/IBM/EvolveGCN/tree/3f4996ac2a742a69fe6ce6e378b6317518bd99bf): H/O, released configurations, full SBM data, original sampler and metric definitions. Source O uses GRU-style recurrence, not paper LSTM.
+- [TGN §3](https://arxiv.org/html/2006.10637v3#S3) and [JODIE data](https://snap.stanford.edu/jodie/): event-model baseline and shared Wikipedia raw input.
+
+
+## Lesson 108 — temporal sampling
+
+- Xu et al., *Inductive Representation Learning on Temporal Graphs*, ICLR 2020: [§3.4 and Appendix A.6](https://arxiv.org/html/2002.07962v1), [pinned released sampler](https://github.com/StatsDLMathsRecomSys/Inductive-representation-learning-on-temporal-graphs/blob/9293d10d1943c4bd4a186337cf38ba98e4c8bb99/graph.py). Used for recursive time cutoffs and uniform fanout; new strict-past/window sampler is a course extension.
+- [L108 reproduction contract](labs/l108-reproduction.md): fixed checkpoint cohort, full evaluation, source quirks, paired questions and timing boundaries.
+
+
+## Lesson 109 — database timestamp contracts
+
+- [RelBench v1 §2, §5.2/Table 4](https://arxiv.org/html/2407.20060v1): full selected driver-position heuristic slice.
+- [Pinned RelBench task SQL](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/f1.py) and [dataset clock construction](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/datasets/f1.py).
+- [Fowler, Bitemporal History](https://martinfowler.com/articles/bitemporal-history.html): separate effective and record histories.
+- [SQL Server temporal tables](https://learn.microsoft.com/en-us/sql/relational-databases/tables/temporal/overview?view=sql-server-ver17): system-managed history and its time semantics.
+- [L109 reproduction contract](labs/l109-reproduction.md): data/source hashes, complete labels/scores and explicit scope boundaries.
+
+
+## Lesson 110 — temporal GNN checkpoint
+
+- [Rossi et al., TGN v3](https://arxiv.org/abs/2006.10637v3): §3 memory/message/embedding computation; Table 2 Wikipedia TGN-attn targets.
+- [Pinned original trainer](https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/train_self_supervised.py): checkpoint selection, snapshot branch resets and early stopping.
+- [Original memory object](https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/modules/memory.py): queued messages and their relationship to state_dict.
+- [L110 reproduction contract](labs/l110-reproduction.md): fresh paired full-data runs, strict-time audit, source/data identities, cost ceiling and explicit paper/course boundaries.

@@ -1,5 +1,12 @@
 # Teaching Notes
 
+## Standing reproduction budget — user directive, 2026-09-26
+
+- When planning future lessons, budget **about US$10 total per lesson reproduction**, not per seed. The user explicitly confirmed that this includes all seeds, retries, and validation checks.
+- Estimate total paid compute before launching: current resource prices × expected runtime × all runs, plus checks and a retry margin. Available credits do not increase this per-lesson budget. Include a runtime/spend cutoff in the plan.
+- Choose a scientifically defensible named experiment that fits. If full reproduction exceeds the budget, preserve the complete runnable implementation and protocol, execute only the declared affordable scope, and label remaining work `NOT_RUN`/`INCOMPLETE`. Do not silently downgrade a paper claim or exceed the budget; a larger budget requires explicit user authorization.
+- This applies to future reproduction planning; the user did not request cancellation of the already-approved L103 run.
+
 ## Session 56 → Lesson 057 — 2026-09-09
 
 - User reports L056 done; LR-0122 records self-reported/unscored completion. L056b remains separate; mission and personal mastery log unchanged.
@@ -1433,3 +1440,46 @@ User requested deeper influential-paper coverage. See [audit](plan/research-infl
 | Fair RDB protocol; context-window failures; BeyondArena | Reveal gains caused by protocol choices, discarded aggregates or IID-only evaluation. | Diagnostic datasets do not establish prevalence; separate imputed scores and historical model versions from direct measurements. |
 
 Recent encoder limits, AutoGrable, curriculum ordering, FlexTab/GTAlign, privacy/structural attacks and RefineICL/JEPA remain focused electives. Core requires one bounded published comparison and a defended inclusion/exclusion table, not full pretraining of every family. Status: `PENDING_WRITTEN_DEFENSE`.
+
+## Lesson103 created · TGAT · 2026-09-26
+
+Approved combined scope and full reproduction requested. Complete ten-run Wikipedia release replay (154 epochs), all-event AP 95.2825% and new-node AP 93.7792%; numerical verdicts CLOSE/CLOSE. Full original-model seed-0 prediction replay and independent all-run metrics pass. Six separate matched one-layer TGAT/TGN fits, three live tasks, 1080 temporal oracle cases, exact current-runtime source output/gradient parity and independent preprocessing/split checks. Released sampler/batch omissions, finite-mask padding and shifted checkpoint index preserved and explained. Historical identity INCOMPARABLE; full-paper parity NOT_ESTABLISHED. Learner status PENDING_WRITTEN_DEFENSE; no publication or live Colab inferred.
+
+## Lesson 104 prepared — 2026-09-26
+
+- Created `0104-information-leakage-in-time`: availability versus event time, recursive TGAT cutoffs, label maturity, selection timing, and paired inference audits. This is prepared teaching material, not a learner completion claim; status **PENDING_WRITTEN_DEFENSE**.
+- Reused all ten complete L103-trained TGAT checkpoints after the existing seed-8 run finished. Fresh full released evaluation checked 353,340 positive questions with one negative each; every archived probability matched exactly. Batch-mean AP: all 95.2825% ± 0.2784 pp seed SD; new-node 93.7792% ± 0.3912 pp. Both mean targets CLOSE within the existing 0.5 pp tolerance; historical identity INCOMPARABLE, full-paper parity NOT_ESTABLISHED.
+- Separate fixed-weight intervention: all-test pooled AP strict 95.8643%; same-time access adds 0.6431 pp, one-day-per-hop lookahead adds 1.0928 pp. New-node strict 94.8299%, corresponding changes +1.2065/+1.8212 pp. Questions, negative candidates and uniform-draw schedules are paired within seed. These are course interventions, not published leakage experiments.
+- Delivered visible full model/trainer, student/solution notebooks, four portable figures, reference, exact replay/training commands and isolated new-run preparation. Executed all 26 solution code cells. Boundary/mutation/causality/witness/resume checks, independent metric reconstruction, desktop/mobile/keyboard/print/no-JS and copied Pages checks pass. Live Colab/deployment NOT_CHECKED.
+- Completed-call resource estimate including the pilot: about USD1.24, plus unitemized startup/idle/build overhead under the USD10 plan. No L104 paid retraining or retries. Full evidence: `labs/_provenance_l104_results.json`; protocol: `labs/l104-reproduction.md`.
+
+## Lesson105 created · Continuous time · 2026-09-26
+
+User approved the full Wikipedia representation audit. All 157,474 raw interactions executed at fixed hourly/daily/weekly widths; 64,991/39,804/25,695 binary snapshot edges; every weighted count sum remains 157,474. Exact SQLite aggregate and independent timestamp/release audits; 4,816 timestamp-tied pairs excluded from strict ordering. Complete-window availability uses every constituent arrival. Three live tasks, four rejected notebook mutants, standalone full-data solution, four portable figures, browser/mobile/print/no-JS and copied Pages checks. This is a deterministic course census, not a TGN/JODIE model-score reproduction. Real ingestion histories unavailable (a=t assumption); no learner mastery, live Colab, or deployment inferred.
+
+
+## Lesson 106 prepared · 2026-09-26
+
+- Full selected Wikipedia EdgeBank source replay completed: 157,474 input events, 23,621 test events, six conditions × five original iterations; 6/6 numerically CLOSE under predeclared tolerance. All batch predictions match pinned source.
+- Standalone student/executed solution notebooks, visible implementation, primary-source audit, original candidates and predictions, reference and interactive lesson delivered. See `labs/l106-reproduction.md` and machine-readable checks.
+- Preserve source deviations: quantile window, post-exclusion source replacement/collisions, node withholding, batch mean, and global/instance RNG behavior. Full-paper/historical identity not established. No learner completion inferred: PENDING_WRITTEN_DEFENSE. Live Colab/deployment NOT_CHECKED.
+
+
+## Lesson 107 prepared · 2026-09-26
+
+- Approved combined scope: complete Wikipedia comparison (nine fits, 90 epochs) and released EvolveGCN SBM H/O schedules. 3600 AP 0.9112, 86400 AP 0.8411, tgn AP 0.9680. SBM: H MAP 0.1793 (FAIL), MRR 0.0132 (CLOSE); O MAP 0.1900 (CLOSE), MRR 0.0143 (CLOSE). Full 81,029/23,621/23,621 train/val/test populations; held-out earlier interactions excluded consistently.
+- Every final SBM pair prediction replayed through original model code, 20 million scores; independently reconstructed MAP/MRR. Release O uses GRU rather than paper LSTM; fixed-length resetting removes deterministic dependence on earlier graph content. Preserve stochastic RReLU, future-aware degree schema, worker RNG and runtime deviations.
+- Six portable computation diagrams, two gate controls, three live tasks, seven rejected mutants, standalone executed solution and copied Pages/browser checks. Visible full models/trainers and exact commands in `labs/l107-reproduction.md`. Historical identity unestablished; other paper datasets and LSTM-O NOT_RUN. Learner PENDING_WRITTEN_DEFENSE; live Colab/deployment NOT_CHECKED.
+
+
+## Lesson 108 prepared · 2026-09-26
+
+- Approved full Wikipedia checkpoint evaluation completed: ten archived TGAT checkpoints, both released populations and four fixed-weight sampler interventions. Every released prediction matches exactly; batch-mean AP 95.2825% / 93.7792%, both numerically CLOSE. Fresh training NOT_RUN_IN_L108; historical identity INCOMPARABLE, full-paper parity NOT_ESTABLISHED.
+- Visible scalar and batched strict-past samplers; all 157,474 source-query samples match exactly. CPU sampling median speedup 7.82× excludes random draws and neural inference; index arrays 7,632,608 bytes. GPU uniform5 is 1.64× faster than uniform20 but loses 11.57 pp all-event pooled AP under frozen weights. Recent20 gains 0.64 pp; this is a course inference intervention, not retrained sampler superiority.
+- Standalone student/executed solution (24 code cells), three live tasks, four portable figures, native-control temporal boundary widget, reference and full provenance/protocol/commands delivered. Learner status PENDING_WRITTEN_DEFENSE. Live Colab and deployment NOT_CHECKED.
+- One T4 pilot and ten full runs; recorded experiment resource estimate approximately USD0.56 plus unitemized startup/build/storage overhead, within the declared USD10 plan. No automatic retries or L108 model training.
+
+
+## Lesson 109 prepared · 2026-09-26
+
+Approved combined scope: database timestamp contracts plus full selected rel-f1/driver-position reproduction. All 8,712 labels regenerated from nine released database tables and matched against original SQL/cached task tables; all ten heuristic cells MATCH. Actual ingestion/version histories unavailable; synthetic corrections, keys and deletions are separate evidence. Three live notebook tasks; learner PENDING_WRITTEN_DEFENSE. No cloud compute or publication. Delivery details in labs/l109-reproduction.md and dedicated check reports.

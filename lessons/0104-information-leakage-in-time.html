@@ -1,0 +1,228 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 104 — Information leakage in time: audit the prediction</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/temporal-leakage.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0103-tgat.html">Lesson 103</a></nav><header><p class="audit-kicker">Year 3 · Quarter 3 · Lesson 104</p><h1>Information leakage in time: audit the prediction</h1></header><p><strong>Your win:</strong> find a time-travel dependency, repair it, and defend the resulting metric. This is the evaluation discipline your relational-learning thesis depends on.</p>
+<p>Start with the short audit below. Then follow one prediction through its inputs. The lab uses a trained Temporal Graph Attention (TGAT) model on real Wikipedia interactions; its full model and training recipe remain visible.</p>
+<h2 id="1-%C2%B7-Retrieval-before-reading">1 &#183; Retrieval before reading<a class="anchor-link" href="#1-%C2%B7-Retrieval-before-reading">&#182;</a></h2><div id="l104-warmup"></div>
+
+<p>Without opening L103, answer these three questions:</p>
+<ol>
+<li>A query at time 8 reaches a neighbor through an interaction at time 5. At what time is that neighbor's historical representation queried?</li>
+<li>In TGN, may the current event update memory before the model predicts that same event?</li>
+<li>Does putting every test target after the training targets guarantee legal feature access?</li>
+</ol>
+<details><summary>Check after committing your answers</summary><p>In TGAT, the child is queried at 5 and its event history is strictly earlier than 5. TGN must predict before incorporating the current outcome. A chronological target split alone cannot constrain joins, feature versions, sampled neighbors, memory, or model selection.</p></details>
+
+<p><strong>Where we are.</strong> <a href="0102-temporal-graph-networks.html">L102</a> introduced persistent memory. <a href="0103-tgat.html">L103</a> recomputed embeddings from history. Both still need an explicit rule for what was knowable. A timestamp inside a neural network does not enforce that rule.</p>
+<h2 id="2-%C2%B7-First-define-the-prediction-moment">2 &#183; First define the prediction moment<a class="anchor-link" href="#2-%C2%B7-First-define-the-prediction-moment">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Imagine stopping the application immediately before it must answer. Which records could it read at that instant?</p>
+</blockquote>
+<p>A <strong>prediction query</strong> names an entity or candidate pair and a prediction time, τ. <strong>Event time</strong>, s, says when something happened. <strong>Availability time</strong>, a, says when the predictor could first read that record or feature version. A delayed report can have s &lt; τ but a &gt; τ.</p>
+<p>For this lesson's before-event prediction task, a historical record is eligible when:</p>
+<p><strong>s &lt; τ and a ≤ τ.</strong></p>
+<p>The first inequality excludes the event being predicted and all timestamp ties. The second excludes late arrivals. We assume a record stamped available at τ has been committed before the query; systems with different tie ordering need a stricter rule or an explicit sequence number. A time zone conversion cannot recover missing ordering information.</p>
+<p><strong>Worked example.</strong> Predict at day 8. An interaction occurred at day 3 and was received at day 4: legal. A correction describes day 3 but was received at day 9: illegal. An event occurring at day 8 is also excluded under this task's strict-before convention. Select the historical feature version that existed then, not today's overwritten value.</p>
+<figure class="audit-figure" tabindex="0"><img src="../labs/figures/l104/clocks.svg" alt="Same historical event, different arrival. At query day 8, the day-9 correction must be excluded even though its event date is day 3."><figcaption>Same historical event, different arrival. At query day 8, the day-9 correction must be excluded even though its event date is day 3.</figcaption></figure>
+
+<div id="l104-clock"></div>
+
+<p><strong>Predict the control.</strong> At query day 8, moving the correction's arrival from day 9 to day 7 should change its eligibility even though its event date stays day 3. The default worked state above remains the comparison baseline.</p>
+<h3 id="Different-tasks-can-have-different-boundaries">Different tasks can have different boundaries<a class="anchor-link" href="#Different-tasks-can-have-different-boundaries">&#182;</a></h3><p>Fey et al.'s relational blueprint uses query timestamps to build time-consistent computation graphs and describes entity timestamps up to the query time. TGAT reconstructs event history strictly before a query, including recursive child requests. These are task conventions, not interchangeable punctuation. A database snapshot prediction can legitimately read a committed row at its cutoff; an interaction predictor cannot read its own target event. See <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey §§2.2–3.3 and Appendix A</a> and <a href="https://arxiv.org/html/2002.07962v1#S3.S2">TGAT §3.2</a>.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Wikipedia provides event timestamps, not ingestion histories or historical feature versions. Our real-data experiment assumes availability equals event time. The delayed-arrival examples are diagnostic fixtures, not measured Wikipedia delays.</p>
+</blockquote>
+<h2 id="3-%C2%B7-A-legal-root-can-hide-an-illegal-child">3 &#183; A legal root can hide an illegal child<a class="anchor-link" href="#3-%C2%B7-A-legal-root-can-hide-an-illegal-child">&#182;</a></h2><p>A <strong>computation graph</strong> is the set of records and intermediate calculations actually used to produce one prediction. A <strong>temporal neighborhood</strong> is the eligible incident-event history retrieved for a node at its current cutoff.</p>
+<p><strong>Worked example.</strong> Query A at time 8. An A–B event at time 5 is legal. TGAT next needs B's representation at time 5. A B–C event at time 6 is earlier than the root time 8, but later than the child time 5. Filtering every hop against 8 would leak into the historical representation of B.</p>
+<figure class="audit-figure" tabindex="0"><img src="../labs/figures/l104/recursion.svg" alt="Trace 8 → 5 → 2. A record at 6 is illegal for the child requested at 5, even though it predates the root query."><figcaption>Trace 8 → 5 → 2. A record at 6 is illegal for the child requested at 5, even though it predates the root query.</figcaption></figure>
+
+<p>The rule belongs to every recursive request. TGAT sends the connecting event time to its child. For this event-recursive computation, legal times decrease along the path: 8 → 5 → 2. A 6 on the second hop violates the child boundary. Other temporal architectures may define a snapshot neighborhood at one root time; audit the model's actual contract before transferring TGAT's recursion rule to them.</p>
+<p><strong>The full path being audited:</strong> candidate endpoints and τ → sampled histories → two shared TGAT attention layers → two 172-dimensional endpoint vectors → pair decoder → a probability. Time and edge features enter attention. The graph sampler therefore controls which evidence can influence both the positive candidate and its negative comparison. The complete encoder and trainer are provided in the notebook; this lesson changes the sampler, not that architecture.</p>
+<h3 id="State-and-caches-are-also-inputs">State and caches are also inputs<a class="anchor-link" href="#State-and-caches-are-also-inputs">&#182;</a></h3><p>For TGN, a memory vector is a summary of prior observations. Audit the events that entered it, including pending messages. Predicting an event after incorporating its outcome is a dependency violation even if the input tensor carries an older timestamp. Likewise, a cached embedding (a computed vector for an entity) keyed only by node ID can accidentally serve a vector computed from later history. Include the cutoff and relevant data/model version in cache identity, or show that the cached representation is valid for every requested time.</p>
+<p><strong>Check:</strong> a model contains no recurrent memory. Is it immune? No: TGAT can leak through its retrieved neighborhood or raw feature versions.</p>
+<h2 id="4-%C2%B7-Labels-and-selection-have-their-own-clocks">4 &#183; Labels and selection have their own clocks<a class="anchor-link" href="#4-%C2%B7-Labels-and-selection-have-their-own-clocks">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A label can describe the future of an old query and still be unavailable when you fit the model.</p>
+</blockquote>
+<p>A <strong>prediction horizon</strong> is the future interval whose outcome defines the target. <strong>Label maturity</strong> is when that entire outcome, including reporting delay, can be known. For a horizon H and delay d, a simple target matures at τ + H + d. This formula assumes both are known and fixed; real tasks may require a recorded maturity timestamp.</p>
+<p><strong>Worked example.</strong> Fit on day 10. Query day 4 predicts activity over the next 5 days, with a 2-day reporting delay. Its target matures on day 11. Despite the old query date, that target is unavailable at fitting time. A query from day 2 with the same horizon and delay matures on day 9 and is eligible.</p>
+<figure class="audit-figure" tabindex="0"><img src="../labs/figures/l104/maturity.svg" alt="Targets must be complete when fitting starts. Both queries are old, but only query A has a mature target at day 10."><figcaption>Targets must be complete when fitting starts. Both queries are old, but only query A has a mature target at day 10.</figcaption></figure>
+
+<p>Our training audit requires <strong>query time &lt; fit time and label-availability time ≤ fit time</strong>. An embargo, a gap between splits, can help implement this for fixed horizons. A guessed gap does not prove every target has matured. Check the actual label clock.</p>
+<p>A <strong>checkpoint</strong> is a saved model state. <strong>Model selection</strong> chooses a state or setting using measured performance. Suppose the model will serve on day 20. Selecting it using validation outcomes that mature on day 25 uses knowledge unavailable on day 20. Sorting the test table cannot repair that choice. Record when training labels, validation outcomes, fitted preprocessors and the chosen model all became available.</p>
+<p>In a declared online evaluation, earlier observed test events may legitimately become history for later predictions. Test labels cannot silently become fitting or selection inputs. State whether the service observes interactions after they occur, whether updates happen per event or per batch, and when it is retrained.</p>
+<h2 id="5-%C2%B7-Turn-the-claim-into-an-audit">5 &#183; Turn the claim into an audit<a class="anchor-link" href="#5-%C2%B7-Turn-the-claim-into-an-audit">&#182;</a></h2><p><a href="https://arxiv.org/abs/2207.07048">Kapoor and Narayanan</a> distinguish temporal evaluation mismatch, illegitimate features, and contamination between training and test processing. Their model-info-sheet approach asks for reasons that the measured task supports the scientific claim. Here we specialize that reasoning to a temporal graph; we are not reproducing their civil-war experiments.</p>
+<div class="audit-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Inspect</th>
+  <th>Counterexample to look for</th>
+  <th>Evidence of repair</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Input versions</td>
+  <td>A backfilled attribute describes an old event but arrived later</td>
+  <td>Historical version and availability checks</td>
+</tr>
+<tr>
+  <td>Every sampled hop</td>
+  <td>Child time 5 reads event time 6</td>
+  <td>Sampled dependency log against each child cutoff</td>
+</tr>
+<tr>
+  <td>Current interaction</td>
+  <td>The candidate edge enters its own history</td>
+  <td>Equal-time fixture plus sampled-event audit</td>
+</tr>
+<tr>
+  <td>Memory and caches</td>
+  <td>State from a later query is reused earlier</td>
+  <td>Replay from legal state; cutoff-aware cache identity</td>
+</tr>
+<tr>
+  <td>Fitting targets</td>
+  <td>Old query has an unmatured target</td>
+  <td>Query and label-availability masks</td>
+</tr>
+<tr>
+  <td>Selection and preprocessing</td>
+  <td>Future outcomes select an earlier deployed model</td>
+  <td>Fit/selection timestamps and untouched test labels</td>
+</tr>
+<tr>
+  <td>Metric comparison</td>
+  <td>Repair changes candidates or evaluated rows</td>
+  <td>Paired event IDs, negatives and aggregation</td>
+</tr>
+</tbody>
+</table></div>
+<p>An <strong>assertion</strong> is a condition the program checks and refuses to violate. A <strong>counterexample</strong> is one concrete case that disproves a proposed guarantee. Use both: trace one forbidden path, then test a broader boundary set including empty histories and timestamp ties. A high AP is not such a guarantee.</p>
+<h2 id="6-%C2%B7-The-controlled-Wikipedia-experiment">6 &#183; The controlled Wikipedia experiment<a class="anchor-link" href="#6-%C2%B7-The-controlled-Wikipedia-experiment">&#182;</a></h2><h3 id="Two-experiments-with-different-purposes">Two experiments with different purposes<a class="anchor-link" href="#Two-experiments-with-different-purposes">&#182;</a></h3><p><strong>A. Released-evaluation replay.</strong> Restore each completed L103 checkpoint and its saved NumPy random state. Recompute the complete released all-test and new-node-test predictions. Check event IDs, negative destinations and every saved probability. This tests whether the published-experiment implementation and its archived output can be replayed. It reuses L103 training.</p>
+<p><strong>B. Leakage intervention.</strong> Keep that checkpoint fixed and ask the same prediction questions under three information-access rules:</p>
+<div class="audit-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>Allowed event history at each recursive cutoff c</th>
+  <th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Strict</td>
+  <td>s &lt; c</td>
+  <td>Corrected course baseline</td>
+</tr>
+<tr>
+  <td>Inclusive</td>
+  <td>s ≤ c</td>
+  <td>Illegal same-time access for this task</td>
+</tr>
+<tr>
+  <td>Lookahead</td>
+  <td>s ≤ c + 86,400 seconds</td>
+  <td>Illegal one-day lookahead at every recursive request</td>
+</tr>
+</tbody>
+</table></div>
+<p>For a true interaction (u, v, t), inclusive history can contain that very interaction while the model is trying to predict it. A sampled negative pair often has no corresponding current edge. This can reveal part of the answer through graph structure.</p>
+<p>These are inference interventions; no arm retrains the model. Negatives come from the archived evaluation, so the candidate pairs and labels stay fixed. Each sampler call draws a uniform matrix even when a node has no history. Resetting the seed for each arm then gives a common random-number schedule. The same uniforms may select different neighbors from changed eligible sets; holding neighbors identical would prevent the access intervention itself. Because the fanout (the number of samples per request) stays at 20 records, illegal records can also displace legitimate ones. That is part of this access-rule intervention and another reason the score need not rise.</p>
+<p>The release sampler drops one eligible item and consumes random numbers differently on empty histories. Its historical baseline is therefore <strong>not</strong> the causal baseline for B. We separately compare each illegal arm to the corrected strict arm. Release early stopping, omitted last events, and batch-mean AP remain documented in the <a href="../labs/l104-reproduction.md">reproduction contract</a>.</p>
+<p><strong>Read the actual sampler.</strong> <code>uniforms</code> is drawn before inspecting individual histories, so an empty row cannot shift later random draws. The audit compares each sampled timestamp to that request's cutoff; zero-padding slots do not count as historical records. The eligibility policy is the notebook's first TODO.</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">get_temporal_neighbor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">cutoffs</span><span class="p">,</span> <span class="n">num_neighbors</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">),</span><span class="n">num_neighbors</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">ids</span><span class="p">);</span> <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ids</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="c1"># Draw even for empty histories. This preserves the uniform schedule across arms.</span>
+        <span class="n">uniforms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">),</span><span class="n">num_neighbors</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">node</span><span class="p">,</span><span class="n">cutoff</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span><span class="n">cutoffs</span><span class="p">)):</span>
+            <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_before</span><span class="p">(</span><span class="n">node</span><span class="p">,</span><span class="n">cutoff</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">history</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">selected</span> <span class="o">=</span> <span class="n">history</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">uniforms</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">history</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span>
+            <span class="n">selected</span> <span class="o">=</span> <span class="n">selected</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">selected</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])]</span>
+            <span class="n">ids</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">selected</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">selected</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">selected</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">audit</span><span class="p">[</span><span class="s1">&#39;sampled_records&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">audit</span><span class="p">[</span><span class="s1">&#39;nonpast_records&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">selected</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">cutoff</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">audit</span><span class="p">[</span><span class="s1">&#39;future_records&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">selected</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">cutoff</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">audit</span><span class="p">[</span><span class="s1">&#39;queries&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ids</span><span class="p">,</span> <span class="n">edges</span><span class="p">,</span> <span class="n">times</span>
+</pre></div>
+<h3 id="What-is-measured?">What is measured?<a class="anchor-link" href="#What-is-measured?">&#182;</a></h3><p><strong>Precision</strong> is the fraction of selected candidates that are positives. <strong>Recall</strong> is the fraction of all evaluated positives that have been selected. <strong>Average precision (AP)</strong> summarizes a ranking by averaging precision at recall increases. Higher scores for positives generally improve it, but tied scores are grouped. We use the implementation in the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html">scikit-learn AP definition</a>.</p>
+<p>The released experiment reports an unweighted mean of per-batch AP. The intervention reports <strong>pooled AP</strong>, computed once over all positive and sampled-negative scores in one evaluation population. These aggregations can differ because AP is nonlinear. A <strong>percentage point (pp)</strong> is an absolute difference on the percentage scale: AP .90 to .92 is +2 pp. Our paired change is 100 × (AP_illegal − AP_strict).</p>
+<p>Each positive has one sampled negative; occasional collisions are preserved from L103. This measures sampled-candidate discrimination, not ranking against every possible page. Candidate pools are inherited from the release and can use the full graph’s node roster; the strict sampler audit does not certify that roster was known to a deployed service. The new-node subset contains events with at least one endpoint absent from training. It overlaps the all-test population, so these are not independent replications.</p>
+<div id="l104-predict"></div>
+
+<p><strong>Before revealing results:</strong> must illegal history improve AP? Write a direction for each arm and a reason. The trained model may respond poorly to inputs it never saw during training. An invalid information path stays invalid even when it reduces the metric.</p>
+<details><summary>Reveal the author measurements after making your prediction</summary>
+
+<p><strong>Fresh evaluation: COMPLETE, 10/10 checkpoints.</strong> Training was reused from L103.</p>
+<div class="audit-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Population</th>
+  <th style="text-align:right">Strict pooled AP</th>
+  <th style="text-align:right">Same-time AP change</th>
+  <th style="text-align:right">One-day AP change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>All test events</td>
+  <td style="text-align:right">95.8643%</td>
+  <td style="text-align:right">+0.6431 ± 0.2538 pp</td>
+  <td style="text-align:right">+1.0928 ± 0.1808 pp</td>
+</tr>
+<tr>
+  <td>New-node subset</td>
+  <td style="text-align:right">94.8299%</td>
+  <td style="text-align:right">+1.2065 ± 0.2717 pp</td>
+  <td style="text-align:right">+1.8212 ± 0.2765 pp</td>
+</tr>
+</tbody>
+</table></div>
+<p>± is sample SD across seeds, not a confidence interval. Released replay checked <strong>353,340 positive events</strong>, each with one negative, with maximum probability error <strong>0</strong>. Strict sampled nonpast accesses: <strong>0</strong>.</p>
+<p><strong>Paper-target check (separate aggregation):</strong></p>
+<div class="audit-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Released population</th>
+  <th style="text-align:right">Fresh batch-mean AP ± seed SD</th>
+  <th style="text-align:right">Original paper target</th>
+  <th>Numerical verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>All test events</td>
+  <td style="text-align:right">95.2825% ± 0.2784 pp</td>
+  <td style="text-align:right">95.34%</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>New-node subset</td>
+  <td style="text-align:right">93.7792% ± 0.3912 pp</td>
+  <td style="text-align:right">93.99%</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>The predeclared ±0.5 pp numerical tolerance does not establish matching historical populations or full-paper parity. <strong>Historical identity INCOMPARABLE; full-paper parity NOT_ESTABLISHED.</strong> <a href="../labs/_analysis_l104_results.json">Machine-readable evidence</a>.</p>
+<figure class="audit-figure" tabindex="0"><img src="../labs/figures/l104/results.svg" alt="Fixed weights and prediction questions; each dot is one seed’s paired pooled-AP difference from the corrected strict baseline. Both illegal arms remain invalid regardless of score direction."><figcaption>Fixed weights and prediction questions; each dot is one seed’s paired pooled-AP difference from the corrected strict baseline. Both illegal arms remain invalid regardless of score direction.</figcaption></figure>
+
+</details>
+
+<p><strong>A concrete detected bug.</strong> The instrumented seed-0 run requests node 3174 at time 2,218,300 seconds. The inclusive sampler reads edge 133854 at exactly 2,218,300. The lookahead sampler reads edge 133879 at 2,218,624—324 seconds after that request. Both violate this request's strict cutoff. Instrumentation left every checked prediction byte-identical; the <a href="../labs/_witness_l104_results.json">witness log</a> records these actual sampled dependencies. This log captures individual requests, not a reconstructed complete parent chain.</p>
+<p><strong>A causal repair check.</strong> On a small diagnostic graph, changing only future feature rows leaves strict predictions exactly unchanged. The lookahead positive control changes a probability by about 0.150. This separate <a href="../labs/_causality_l104_results.json">metamorphic test</a> validates a property of the sampler; its synthetic number is not a Wikipedia score.</p>
+<p>The audit records sampled nonpast edges relative to the cutoff of each request. Counts include repeated samples and repeated recursive requests, not unique leaked database rows. The lookahead window resets at every hop; it is not a single root-level horizon. Strict zero violations establish this sampler's timestamp invariant, not a proof that the underlying features were historically available.</p>
+<p>A <strong>random seed</strong> fixes a random generator’s starting state. Replaying its draws also requires matching the call order and runtime. Across-seed standard deviations describe checkpoint and sampling variation on this fixed graph and split. They do not measure uncertainty across future deployments or datasets. Negative examples differ across L103 seeds but are paired across arms within each seed. A result is evidence about this intervention, not a universal benefit of leakage.</p>
+<h2 id="7-%C2%B7-Lab:-repair-the-boundary-and-defend-the-number">7 &#183; Lab: repair the boundary and defend the number<a class="anchor-link" href="#7-%C2%B7-Lab:-repair-the-boundary-and-defend-the-number">&#182;</a></h2><p>Open the <a href="../labs/0104-information-leakage-in-time.ipynb">student notebook</a> or the <a href="../labs/html/0104-information-leakage-in-time.html">prepared executed walkthrough</a>. Try the three tasks before consulting the <a href="../labs/solutions/0104-information-leakage-in-time.ipynb">teacher solution</a>.</p>
+<ol>
+<li><strong>TODO — eligibility:</strong> implement event-time and availability-time filtering. CHECK empty histories, ties and late arrivals. Your function is called by the live neighborhood sampler.</li>
+<li><strong>TODO — label maturity:</strong> decide which training targets were knowable at fitting time. CHECK that an old query can still have a future target.</li>
+<li><strong>TODO — paired AP:</strong> reject mismatched event IDs, negative destinations or batches before computing the score difference. CHECK a deliberate negative-sample mismatch.</li>
+</ol>
+<p>The default notebook evaluates 120 positive questions and 120 sampled negatives from one full-data trained checkpoint under each arm. This is a small execution exercise, distinct from the complete author evaluation. It downloads checksum-pinned data and a provided checkpoint when absent. The model and complete trainer are visible inline; the checkpoint is an explicit pretrained input.</p>
+<p><strong>EXIT — submit four things:</strong> the three functions; your measured AP table; one exact forbidden dependency (event time, cutoff and path); and a written defense of the repaired result. Explain why correct timestamp filtering cannot certify unknown arrival times. Explain which training was reused and which predictions you generated yourself. Status stays <strong>PENDING_WRITTEN_DEFENSE</strong> until you supply that evidence.</p>
+<h2 id="8-%C2%B7-Reproduce-and-extend">8 &#183; Reproduce and extend<a class="anchor-link" href="#8-%C2%B7-Reproduce-and-extend">&#182;</a></h2><p>The <a href="../labs/l104-reproduction.md">reproduction contract</a> contains pinned inputs, runtime, exact local/Modal commands, the budget, and deviations. It also links the complete L103 training recipe. Keep <strong>fresh evaluation</strong>, <strong>reused training</strong>, <strong>course interventions</strong>, and <strong>unrun paper coverage</strong> separate.</p>
+<p>An adversarial extension: perturb every inaccessible future row while keeping accessible data fixed. For a strictly causal predictor, current outputs should remain unchanged when the random schedule is fixed. This is a <strong>metamorphic test</strong>: check how an output should respond to a controlled input transformation even when the exact output is unknown. It complements observed-edge audit logs; it does not replace availability provenance.</p>
+<div id="l104-teachback"></div>
+
+<p><strong>Read next:</strong> Kapoor &amp; Narayanan's taxonomy and model-info-sheet sections, then Fey §§2.2–3.3. <a href="../reference/temporal-leakage-audit.html">Reference card</a> · <a href="../reference/glossary.html#temporal-l101">Temporal glossary</a>. Ask the tutor about any unclear boundary or paste your EXIT defense for review. Lesson 105 will ask how continuous-time event streams differ from snapshots; carry the prediction-time contract into that choice.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/availability-audit-viz.js"></script><script src="../assets/l104-lesson.js"></script></body></html>

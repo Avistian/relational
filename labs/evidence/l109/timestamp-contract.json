@@ -1,0 +1,33 @@
+{
+  "scope": "Synthetic effective-step history; NOT real F1 ingestion evidence",
+  "clocks": {
+    "unit": "integer days in common clock",
+    "cutoff": "inclusive",
+    "valid_from": "effective start of state step",
+    "observed_at": "available at prediction-system boundary"
+  },
+  "row_version_key": [
+    "id",
+    "valid_from",
+    "observed_at",
+    "revision"
+  ],
+  "select": "greatest (valid_from,observed_at,revision) among versions with both clocks <= cutoff, then remove selected tombstones",
+  "relations": [
+    {
+      "child": "facts",
+      "foreign_key": "person",
+      "parent": "people",
+      "key_version": "selected child historical version",
+      "missing_parent": "keep child; omit and count edge",
+      "readiness": "maximum of both selected endpoints valid_from and observed_at"
+    }
+  ],
+  "multi_hop": "same root snapshot cutoff; not TGAT event-time recursion",
+  "label": {
+    "interval": "(query, query+horizon]",
+    "ready": "max(query+horizon, constituent arrivals)",
+    "prerequisite": "source-certified completeness; observed maximum cannot supply it"
+  },
+  "real_f1": "See schema.json; no observed_at or version histories recorded"
+}

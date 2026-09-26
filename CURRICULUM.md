@@ -290,13 +290,13 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 101 | [Static vs temporal](lessons/0101-static-vs-temporal.html) | Fey 2024 temporal REG · RelBench baseline replay | [Time-respecting queries, leakage diagnosis and 10 published baseline cells](labs/0101-static-vs-temporal.ipynb) |
 | 102 | [Temporal Graph Networks](lessons/0102-temporal-graph-networks.html) | Rossi 2020 · TGN-attn Wikipedia replay | [Messages, memory updates and temporal link prediction](labs/0102-temporal-graph-networks.ipynb) |
 | 103 | [TGAT](lessons/0103-tgat.html) | Xu 2020 · Wikipedia release replay | [Time-encoded attention and matched TGAT/TGN comparison](labs/0103-tgat.ipynb) |
-| 104 | Information leakage in time | Kapoor 2022 + Fey 2024 | Time-travel bugs |
-| 105 | Continuous time | — | Event streams as graphs |
-| 106 | Temporal link prediction | — | Future edge prediction |
-| 107 | Snapshot methods | — | Discrete time slices |
-| 108 | Scale: neighbor sampling over time | — | Efficient temporal batch |
-| 109 | Connect to databases | — | `observed_at` semantics |
-| 110 | **Q3 checkpoint** | Rossi 2020 | Temporal GNN with clean split |
+| 104 | [Information leakage in time](lessons/0104-information-leakage-in-time.html) | Kapoor 2022 + Fey 2024 · TGAT checkpoint audit | [Inject, detect and repair time-travel bugs](labs/0104-information-leakage-in-time.ipynb) |
+| 105 | [Continuous time](lessons/0105-continuous-time.html) | TGN §2 · JODIE Wikipedia representation audit | [Event streams versus snapshots: complete three-width audit](labs/0105-continuous-time.ipynb) |
+| 106 | [Temporal link prediction](lessons/0106-temporal-link-prediction.html) | Poursafaei et al. 2022 · EdgeBank | [Full Wikipedia candidate evaluation](labs/0106-temporal-link-prediction.ipynb) |
+| 107 | [Snapshot methods](lessons/0107-snapshot-methods.html) | Pareja et al. 2020 · EvolveGCN | [Snapshot/TGN comparison + SBM replay](labs/0107-snapshot-methods.ipynb) |
+| 108 | [Scale: neighbor sampling over time](lessons/0108-temporal-neighbor-sampling.html) | Xu et al. 2020 · sampling extension | [Efficient temporal batch + full checkpoint replay](labs/0108-temporal-neighbor-sampling.ipynb) |
+| 109 | [Connect to databases](lessons/0109-database-timestamp-contracts.html) | RelBench v1 · timestamp contracts | [Full label reconstruction and five-heuristic replay](labs/0109-database-timestamp-contracts.ipynb) |
+| 110 | [**Q3 checkpoint**](lessons/0110-temporal-gnn-checkpoint.html) | Rossi 2020 · TGN | [Full Wikipedia reproduction and clean-state audit](labs/0110-temporal-gnn-checkpoint.ipynb) |
 
 ### Q4 · Graph ML mastery (111–120)
 | 111–114 | OGB benchmark task | Hu 2020 OGB | Leaderboard reproduction |
@@ -323,7 +323,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 - **GraphGPS** — Rampášek et al. 2022 (`2205.12454`) — the MPNN + global-attention recipe; direct lineage to the Relational Graph Transformer.
 
 *Indexed for lessons that already name them (read with their lecture, not separately):*
-- **HAN** — Wang et al. 2019 (`1903.07293`, lecture 092) · **Cluster-GCN** — Chiang et al. 2019 (`1905.07953`, lecture 089) · **TGAT** — Xu et al. 2020 (`2002.07962`, lecture 103) · **RE-Net** — Jin et al. 2020 (`1904.05530`, lecture 110 temporal link pred).
+- **HAN** — Wang et al. 2019 (`1903.07293`, lecture 092) · **Cluster-GCN** — Chiang et al. 2019 (`1905.07953`, lecture 089) · **TGAT** — Xu et al. 2020 (`2002.07962`, lecture 103) · **RE-Net** — Jin et al. 2020 (`1904.05530`, optional temporal knowledge-graph reading; L110 checkpoints TGN).
 
 ---
 

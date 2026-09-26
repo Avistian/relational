@@ -56,7 +56,14 @@ def collect(root):
             hashes[f'seed-{seed}/{name}']=hashlib.file_digest((folder/name).open('rb'),'sha256').hexdigest()
         for name in ['result.json','identity.json','predictions.npz','source_parity.json']:
             dest=evidence/f'seed-{seed}';dest.mkdir(exist_ok=True);shutil.copy2(folder/name,dest/name)
-        if (folder/'original-replay.json').exists():source_check=json.loads((folder/'original-replay.json').read_text());shutil.copy2(folder/'original-replay.json',evidence/'original-replay.json')
+        if (folder/'original-replay.json').exists():
+            assert seed==0
+            source_check=json.loads((folder/'original-replay.json').read_text())
+            assert source_check['status']=='PASS'
+            assert source_check['source_checkpoint_sha256']==hashes[f'seed-{seed}/selected.pt']
+            for lane,key in [('all','test'),('new','new_test')]:
+                assert abs(source_check['populations'][lane]['ap']-result[key]['ap'])<1e-12
+            shutil.copy2(folder/'original-replay.json',evidence/'original-replay.json')
         records.append(result);identities.append(identity)
     for key in ['implementation_sha256','python','torch','numpy','pandas','sklearn','device']:
         assert len({x[key] for x in identities})==1, 'Mixed run identity: '+key

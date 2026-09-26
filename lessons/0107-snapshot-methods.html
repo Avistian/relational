@@ -1,0 +1,187 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Snapshot methods: decide what remembers</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0106-temporal-link-prediction.html">Lesson 106</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 107</p><h1>Snapshot methods: decide what remembers</h1></header><p class="stream-label">One skill: trace what crosses a snapshot boundary</p>
+
+<p>A database export arrives every night. You can build a graph from each export, but a graph neural network on today's export does not automatically remember yesterday. <strong>By the end, you will implement a snapshot encoder, identify its recurrent state, and defend which observations a prediction could use.</strong> That is the practical bridge from temporal graphs to periodically refreshed relational systems.</p>
+<h2 id="First-retrieve,-without-notes">First retrieve, without notes<a class="anchor-link" href="#First-retrieve,-without-notes">&#182;</a></h2><div id="warmup"></div>
+
+<ol>
+<li>An event occurs at 09:05 inside an hourly window. When can a model use the <em>completed</em> window?</li>
+<li>What must remain fixed when you compare two link-prediction scores?</li>
+<li>A GCN shares weights across graphs. Does that give a node temporal memory?</li>
+</ol>
+<details><summary>Check after writing your answers</summary>
+
+<p>At 10:00, assuming immediate arrival and a reliable completeness policy. Hold questions, candidates, legal history and metric aggregation fixed. Shared parameters learn a general rule; a separately updated state carries a particular history. Revisit <a href="0104-information-leakage-in-time.html">availability</a>, <a href="0105-continuous-time.html">aggregation loss</a> and <a href="0106-temporal-link-prediction.html">candidate evaluation</a> if any distinction was unclear.</p>
+</details>
+
+<h2 id="1-%C2%B7-Turn-a-stream-into-a-sequence-of-questions">1 &#183; Turn a stream into a sequence of questions<a class="anchor-link" href="#1-%C2%B7-Turn-a-stream-into-a-sequence-of-questions">&#182;</a></h2><p>A <strong>snapshot</strong> is a graph attached to a discrete time interval. Here snapshot k contains interactions in <code>[kΔ, (k+1)Δ)</code>, where Δ is the window width. It is an interaction graph, not a claim that every edge remains an active relationship. Repeated interactions become an edge weight. The graph becomes available at its closing boundary <code>(k+1)Δ</code>; exact event times are no longer part of its count-only adjacency.</p>
+<p><strong>Forecast contract:</strong> use a completed graph to score later events. An hourly model answering at 09:05 can use the 08:00–09:00 snapshot. Using the finished 09:00–10:00 graph would reveal the future. A final incomplete window still has its scheduled closing boundary. We assume availability equals event time in these datasets; real late arrivals require the additional policy from L104.</p>
+<p>This differs from <em>nowcasting</em> a missing edge inside a graph already observed at time k. Neither task is intrinsically wrong, but their scores answer different questions. The SBM reproduction below predicts edges in snapshot t+1 from history through t, following the <a href="https://arxiv.org/html/1902.10191v3#S4.SS2">paper's link-prediction definition, §4.2</a>.</p>
+<h2 id="2-%C2%B7-Model-architecture:-which-object-remembers?">2 &#183; Model architecture: which object remembers?<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-which-object-remembers?">&#182;</a></h2><figure class="stream-figure" tabindex="0"><img src="../labs/figures/l107/architecture.svg" alt="Two complete prediction paths: GCN-GRU carries node-indexed state; EvolveGCN carries feature-to-feature weights. Each supplies node vectors to a pair head."><figcaption>Two complete prediction paths: GCN-GRU carries node-indexed state; EvolveGCN carries feature-to-feature weights. Each supplies node vectors to a pair head.</figcaption></figure>
+
+<p>There are two separate directions of computation: <strong>across neighbors inside one graph</strong>, and <strong>across time between graphs</strong>. A graph convolutional network (GCN) supplies the first. A recurrent neural network supplies the second.</p>
+<p>Our course baseline first encodes each slice, then updates a <strong>node-state matrix</strong> S. Row u of S is node u's history summary. This row must keep the same identity across slices. Our controlled experiment preallocates the released node-ID universe and initializes all rows to zero at the beginning. It then updates every row, including isolated and not-yet-observed nodes, so absence can change a state through the recurrent rule. A node’s state need not still be zero when its first event arrives. A genuinely growing registry needs a separate policy for initializing newly added rows. Reordering IDs without also reordering S silently transfers memories between entities.</p>
+<p>EvolveGCN instead updates the <strong>GCN weight matrix</strong> W. These are feature-to-feature coefficients, not rows indexed by node identity. H consumes a summary of the current node representations when updating W. The released O update consumes W itself. This avoids a persistent per-node recurrent table in the EvolveGCN encoder; it does not recover event order lost when snapshots were built. Read <a href="https://arxiv.org/html/1902.10191v3#S3">the authors' method, §3</a> alongside the <a href="https://github.com/IBM/EvolveGCN/tree/3f4996ac2a742a69fe6ce6e378b6317518bd99bf">pinned implementation</a>.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Object</th>
+  <th>Shape</th>
+  <th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>A</td>
+  <td>N × N</td>
+  <td>Weighted adjacency of one completed graph</td>
+</tr>
+<tr>
+  <td>X</td>
+  <td>N × F</td>
+  <td>Features available for its N nodes</td>
+</tr>
+<tr>
+  <td>Z</td>
+  <td>N × d</td>
+  <td>Encoded node features after graph convolutions</td>
+</tr>
+<tr>
+  <td>S</td>
+  <td>N × d</td>
+  <td>GCN-GRU's recurrent state, indexed by node</td>
+</tr>
+<tr>
+  <td>W</td>
+  <td>F × d</td>
+  <td>One EvolveGCN layer's recurrent weight matrix</td>
+</tr>
+<tr>
+  <td>Pair logits</td>
+  <td>B × 2</td>
+  <td>Two class scores for B supplied node pairs</td>
+</tr>
+</tbody>
+</table></div>
+<p>N counts nodes, F input features, d hidden coordinates, and B candidate pairs. The pair head concatenates two node vectors and maps them through a small neural network to two logits. Softmax converts those logits to a probability for the supplied candidate distribution. Cross-entropy trains the encoder and head together. This does <strong>not</strong> identify the probability that an arbitrary real-world interaction will happen without a corresponding candidate and horizon contract.</p>
+<h2 id="3-%C2%B7-Work-one-spatial-update-before-adding-time">3 &#183; Work one spatial update before adding time<a class="anchor-link" href="#3-%C2%B7-Work-one-spatial-update-before-adding-time">&#182;</a></h2><p>Add the identity matrix I to A so each node can retain its own features. Let D be the diagonal matrix of row sums of A+I. The normalized adjacency is <code>Â = D^(-1/2) (A+I) D^(-1/2)</code>. One layer computes <code>Z = σ(Â X W)</code>: mix feature coordinates with W, mix neighboring rows with Â, then apply a nonlinear function σ. The diagonal entries of D are degrees <strong>after</strong> self-loops were added. This is symmetric normalization; it is not generally a row-stochastic neighbor average.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l107/normalization.svg" alt="Synthetic path A–B–C. Degree normalization with self-loops sends node B to 1.2247; row averaging would give 1.0000."><figcaption>Synthetic path A–B–C. Degree normalization with self-loops sends node B to 1.2247; row averaging would give 1.0000.</figcaption></figure>
+
+<p>For the path A—B—C, use one feature per node: X = [1, 0, 2]ᵀ and the scalar weight W = 1. After self-loops the degrees are [2, 3, 2]. B receives <code>1/√6 × 1 + 1/3 × 0 + 1/√6 × 2 = 1.2247</code>. A receives 0.5; C receives 1.0. ReLU, which replaces negative values with zero, leaves these positive outputs unchanged. No term in this calculation contains yesterday's state. This is why a temporal mechanism is an additional design choice. The normalization follows <a href="https://arxiv.org/html/1902.10191v3#S3.SS1">EvolveGCN Eq. 1 and §3.1</a>.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">normalized_adjacency</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add self loops, coalesce repeated edges, use row-degree normalization.&quot;&quot;&quot;</span>
+    <span class="n">pairs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">idx</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pairs</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">val</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">)])</span>
+    <span class="n">a</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">sparse_coo_tensor</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="n">val</span><span class="p">,(</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">))</span><span class="o">.</span><span class="n">coalesce</span><span class="p">()</span>
+    <span class="n">degree</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">scatter_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">a</span><span class="o">.</span><span class="n">indices</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span><span class="n">a</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">indices</span><span class="p">();</span><span class="n">v</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">/</span><span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">degree</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">degree</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sparse_coo_tensor</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">indices</span><span class="p">(),</span><span class="n">v</span><span class="p">,(</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">))</span><span class="o">.</span><span class="n">coalesce</span><span class="p">()</span>
+</pre></div>
+<p><strong>Check:</strong> If you normalize each row to sum to one, what value does B obtain? It becomes 1.0, so this substitution changes the operator even though both implementations may be called “normalized adjacency.”</p>
+<h2 id="4-%C2%B7-Let-a-node-remember-between-slices">4 &#183; Let a node remember between slices<a class="anchor-link" href="#4-%C2%B7-Let-a-node-remember-between-slices">&#182;</a></h2><p>A <strong>gated recurrent unit (GRU)</strong> combines new input with previous state. In the baseline, the input is node u's encoded vector Zₖ[u], and the previous state is Sₖ₋₁[u]. The same learned GRU is applied to every node row. Its gates can preserve earlier information or replace it with a proposed new state.</p>
+<p>Our library GRU uses an update gate z with <code>S_new = (1−z) × candidate + z × S_old</code>: z near one retains the old state. The EvolveGCN paper's matrix update uses the <em>opposite naming convention</em>: z near one selects the new candidate. Symbols alone do not establish equivalent code. Both can express a gated interpolation.</p>
+<p>A course forward pass is: completed graph → two GCN layers → rowwise GRU → concatenate candidate endpoint states → pair classifier. During training, the loss on later events differentiates through the preceding graph update. We detach the carried state at each window, so this baseline uses one-window truncated backpropagation: its values can remember farther back, but its gradients do not traverse the entire month. During evaluation, weights are frozen while states continue to update from newly available observations.</p>
+<p><strong>Predict before moving the control:</strong> if the new candidate is larger than the previous state, does increasing the retention gate increase or decrease the output?</p>
+<div id="l107-node"></div>
+
+<p>The control is a scalar gate illustration with supplied candidates, not a fitted neural network. It isolates interpolation. In the real GRU, candidate and gate values are functions of the input and previous state.</p>
+<h2 id="5-%C2%B7-Let-the-graph-convolution's-weights-remember">5 &#183; Let the graph convolution's weights remember<a class="anchor-link" href="#5-%C2%B7-Let-the-graph-convolution's-weights-remember">&#182;</a></h2><p>EvolveGCN-H has a different recurrent state. A layer needs a matrix W of shape F × d. Its N × F node representation cannot directly serve as an F × d matrix input. The release learns a scoring vector p, computes a score <code>xᵤ·p / ‖p‖</code> for each node, selects d active rows with the largest scores, weights those rows by tanh of their scores, and transposes the result. The resulting <strong>summary Q</strong> has exactly F × d entries. Top-k selects representatives; it does not average every node. If fewer than d active rows remain, the release repeats its last selected row. An all-inactive input is unsupported by that released operation.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l107/summary.svg" alt="Synthetic H top-k calculation: score four node rows, select B and D, weight by tanh, then transpose to a 2-by-2 summary matching W."><figcaption>Synthetic H top-k calculation: score four node rows, select B and D, weight by tanh, then transpose to a 2-by-2 summary matching W.</figcaption></figure>
+
+<p>In this separate summary example, p = [1,0] selects nodes B and D by their first coordinate. Multiplying their entire rows by tanh of the score and transposing gives the pictured Q. The next diagram isolates the interpolation step with supplied gate and candidate values.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l107/recurrence.svg" alt="Synthetic matrix interpolation with replacement gate 0.25. The top-left weight changes from 0.20 to 0.35 before it is used in graph convolution."><figcaption>Synthetic matrix interpolation with replacement gate 0.25. The top-left weight changes from 0.20 to 0.35 before it is used in graph convolution.</figcaption></figure>
+
+<p>The matrix gates are <code>z = sigmoid(U_z Q + V_z W_old + B_z)</code> and <code>r = sigmoid(U_r Q + V_r W_old + B_r)</code>. Each sigmoid produces values between zero and one. The candidate is <code>C = tanh(U_c Q + V_c(r ⊙ W_old) + B_c)</code>, where ⊙ denotes entrywise multiplication. Then <code>W_new = (1−z) ⊙ W_old + z ⊙ C</code>. U and V are learned F × F matrices; each B is an F × d bias. The new W is used immediately in the current graph convolution. These are the <a href="https://arxiv.org/html/1902.10191v3#S3.SS4">matrix recurrence and summary in §3.4</a>.</p>
+<div id="l107-weight"></div>
+
+<p><strong>Implementation prediction:</strong> Is setting z=1 a “remember everything” setting in this matrix recurrence? No: it discards W_old's direct interpolation contribution, although W_old can still influence the candidate through the reset path.</p>
+<p><strong>A consequential release discrepancy.</strong> Paper §3.5 specifies an LSTM for O, including a separate cell state. The released <code>egcn_o.py</code> uses the matrix-GRU-style gate code and feeds W_old as its own input. Our replay preserves the code and labels it <strong>released O</strong>. A matching released score cannot establish an LSTM reproduction.</p>
+<div id="l107-predict"></div>
+
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l107/history.svg" alt="Measured deterministic mechanism witness: changing the first snapshot changes H, but not released O. Fixed mean-slope activations isolate content dependence."><figcaption>Measured deterministic mechanism witness: changing the first snapshot changes H, but not released O. Fixed mean-slope activations isolate content dependence.</figcaption></figure>
+
+<p>There is a second, subtler boundary: the release restarts W from learned initial weights for every six-slice query. In released O, each weight update ignores observations. Six identical recurrent transformations therefore produce the same final effective weights for every window. Holding the final graph/features fixed and replacing an earlier graph's features leaves the deterministic final output unchanged. H can respond because its summary depends on those earlier features.</p>
+<p>Our witness replaces stochastic RReLU activations by their fixed mean slope to isolate this dependence; it is <strong>not</strong> a paper-score run. With stochastic activations enabled, changing earlier signs may consume different random draws and perturb later outputs. That random-stream effect is not evidence that the model learned useful historical content. Trace the data dependency, then test it.</p>
+<h2 id="6-%C2%B7-Predict,-then-inspect-the-evidence">6 &#183; Predict, then inspect the evidence<a class="anchor-link" href="#6-%C2%B7-Predict,-then-inspect-the-evidence">&#182;</a></h2><p>Before the table, write a ranking for hourly snapshots, daily snapshots and event-based TGN. Give a reason and one observation that would make you revise it.</p>
+<p><strong>Wikipedia course comparison — held fixed:</strong> the released train/validation/test populations, positive questions, negative destination arrays, raw edge features, three seeds, ten epochs, learning rate 0.001, hidden width 32, validation-AP checkpoint selection, and pooled metrics. All arms use strict-past information; graph windows are accessible only after closing. TGN keeps event timing and raw messages, whereas the snapshot model uses per-node mean incident features, counts and a completed-window graph. Thus accessible past information is intentionally represented with different delays and compression. The snapshot baseline does not receive individual event timestamps after aggregation.</p>
+<p><strong>Varied:</strong> architecture and its update schedule; snapshot width is one hour or one day. Epoch counts do not equalize optimizer-step counts or gradient horizons. Snapshot evaluation rebuilds its history under frozen weights; TGN carries the selected online training/validation memory, including pending messages. State construction is another system difference. There is one dataset and a fixed configuration, not a hyperparameter search proving which family is best. The compact TGN here is a fresh course fit, not one of L102's published-target scores. AP is precision averaged at positive-score thresholds; AUROC measures positive-versus-negative score ordering, giving half credit to ties. Both are pooled over the entire test set here, unlike some source batch averages in L106.</p>
+<p><strong>SBM released replay — a different lane:</strong> full 1,000-node, 50-snapshot dataset; H and released O, seed 1234, released configuration and up to 100 epochs with the released patience rule. The 0-based input-window end indices are 5–33 for training, 34–38 for validation and 39–48 for test; labels come from the following snapshot. <code>num_hist_steps=5</code> yields six inputs, t−5 through t. Validation and test evaluate all 1,000,000 ordered node pairs, including self-pair negatives. The paper's MAP is mean snapshot-level average precision, and its MRR averages reciprocals of <strong>all positive ranks</strong> within each source node, then across nodes and snapshots. It is not reciprocal rank of just the first correct neighbor.</p>
+<p><strong>Author-run reference evidence</strong>, not your current notebook output.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Wikipedia arm</th>
+  <th style="text-align:right">Pooled AP, mean ± sample SD</th>
+  <th style="text-align:right">Pooled AUROC, mean ± sample SD</th>
+  <th style="text-align:right">Complete fits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Hourly GCN-GRU</td>
+  <td style="text-align:right">0.9112 ± 0.0034</td>
+  <td style="text-align:right">0.9023 ± 0.0030</td>
+  <td style="text-align:right">3 × 10 epochs</td>
+</tr>
+<tr>
+  <td>Daily GCN-GRU</td>
+  <td style="text-align:right">0.8411 ± 0.0128</td>
+  <td style="text-align:right">0.8259 ± 0.0100</td>
+  <td style="text-align:right">3 × 10 epochs</td>
+</tr>
+<tr>
+  <td>Compact TGN</td>
+  <td style="text-align:right">0.9680 ± 0.0021</td>
+  <td style="text-align:right">0.9668 ± 0.0019</td>
+  <td style="text-align:right">3 × 10 epochs</td>
+</tr>
+</tbody>
+</table></div>
+<p>Each fit covers all 81,029 training, 23,621 validation and 23,621 test positive events. Predictions are matched by raw event ID and class before comparing methods. SD measures variation across these seeds, not uncertainty over datasets or future deployments.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>SBM variant</th>
+  <th style="text-align:right">Epochs / selected epoch (0-based)</th>
+  <th style="text-align:right">MAP / paper</th>
+  <th style="text-align:right">MRR / paper</th>
+  <th>Numeric verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Released H</td>
+  <td style="text-align:right">67 / 15</td>
+  <td style="text-align:right">0.1793 / 0.1947</td>
+  <td style="text-align:right">0.0132 / 0.0141</td>
+  <td>MAP FAIL; MRR CLOSE</td>
+</tr>
+<tr>
+  <td>Released O</td>
+  <td style="text-align:right">100 / 90</td>
+  <td style="text-align:right">0.1900 / 0.1989</td>
+  <td style="text-align:right">0.0143 / 0.0138</td>
+  <td>MAP CLOSE; MRR CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>H MAP misses the predeclared CLOSE threshold:</strong> absolute gap 0.015423 exceeds 0.015. The full declared run completed, but this published number was not numerically reproduced within that tolerance. Source agreement does not erase the gap; no test-driven retuning was performed.</p>
+<p><strong>Interpretation:</strong> Wikipedia ranks these configured systems on one frozen candidate population. It does not isolate the effect of discretization: encoder, update frequency and gradient horizon also change. The SBM cells test a named released configuration, with source/prose and runtime deviations retained. Neither lane establishes full-paper or historical identity.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l107/results.svg" alt="Author evidence: all three Wikipedia seeds and sample SD; full selected SBM released runs versus paper targets. Different tasks and candidate universes are not directly comparable."><figcaption>Author evidence: all three Wikipedia seeds and sample SD; full selected SBM released runs versus paper targets. Different tasks and candidate universes are not directly comparable.</figcaption></figure>
+
+<h3 id="What-would-count-as-reproduction?">What would count as reproduction?<a class="anchor-link" href="#What-would-count-as-reproduction?">&#182;</a></h3><p>The source/data audit independently checks all 50 snapshot adjacencies, degree features and normalizations. The port is checked against the original model's values and gradients; pair-head chunking is checked against one unchunked loss/gradient calculation. Saved prediction files support independent metric reconstruction. The original metric methods and independent formulas also run in the pinned environment. Tied scores expose a small runtime dependency in NumPy’s default rank ordering; a separate audit bounds all rankings within each tied group. These checks establish specific properties, not historical identity.</p>
+<p>Remaining deviations are substantive: current libraries and hardware; one explicit negative-sampler RNG stream instead of eight worker streams; chunked gradient reduction; degree-feature dimensionality scanned across future snapshots in the release; stochastic RReLU left active during validation; and the O GRU/LSTM discrepancy. The degree scan fixes a feature schema from later data, so the paper replay must not be advertised as a clean production information protocol. See the complete <a href="../labs/l107-reproduction.md">reproduction contract</a> and <a href="../labs/_sources_l107.json">source manifest</a>. All other datasets, baselines and paper ablations are <strong>NOT_RUN</strong>.</p>
+<h2 id="7-%C2%B7-Lab:-make-the-memory-contract-executable">7 &#183; Lab: make the memory contract executable<a class="anchor-link" href="#7-%C2%B7-Lab:-make-the-memory-contract-executable">&#182;</a></h2><p>Open the <a href="../labs/0107-snapshot-methods.ipynb">student notebook</a>, <a href="../labs/html/0107-snapshot-methods.html">prepared HTML</a>, or <a href="../labs/solutions/0107-snapshot-methods.ipynb">executed solution</a>. The notebook includes the readable models and training loops. Its short, full-data daily fit is teaching evidence; the longer named experiment is a separately gated replay.</p>
+<ol>
+<li><strong>TODO 1:</strong> construct a weighted, self-looped normalized adjacency. Preserve repeated-edge counts.</li>
+<li><strong>TODO 2:</strong> implement the matrix-state update with the paper's gate convention. A wrong interpolation direction must fail the gradient/value check.</li>
+<li><strong>TODO 3:</strong> return only bins whose closing boundary is available at a query. Equality at the closing time is legal; equality with an event inside the current unfinished bin is not enough.</li>
+</ol>
+<p>After each task run its CHECK. The graph layer, recurrence and full-data availability audit call your functions; the notebook never silently replaces your answers. Then predict the history-intervention outcome and run the experiment.</p>
+<h3 id="EXIT-%C2%B7-defend-a-snapshot-model">EXIT &#183; defend a snapshot model<a class="anchor-link" href="#EXIT-%C2%B7-defend-a-snapshot-model">&#182;</a></h3><p>Explain a prediction at 09:05 for an hourly model: identify the last usable graph, the recurrent object's shape, the pair head, and which observations update the state afterward. Distinguish absent nodes from unseen nodes. Explain why source parity, a nearby MAP and a large state are each insufficient to prove historical reproduction or useful temporal memory. Finally, propose one matched intervention to separate information delay from model capacity.</p>
+<div id="l107-teachback"></div>
+
+<p>Send your code and written defense to the teacher for feedback; ask follow-up questions about any unclear step. The package is <strong>PENDING_WRITTEN_DEFENSE</strong>, not a record of learner mastery.</p>
+<p><strong>Primary reading:</strong> Pareja et al., <a href="https://arxiv.org/html/1902.10191v3">EvolveGCN, §3–4</a>, especially Figures 1–2 and Table 2, then compare <code>egcn_o.py</code> and <code>splitter.py</code> in the <a href="https://github.com/IBM/EvolveGCN/tree/3f4996ac2a742a69fe6ce6e378b6317518bd99bf">publication-era source</a>. For the event-based alternative, revisit <a href="https://arxiv.org/html/2006.10637v3#S3">TGN §3</a> and <a href="0102-temporal-graph-networks.html">L102</a>. Keep the <a href="../reference/snapshot-state-contracts.html">snapshot reference</a> beside your implementation.</p>
+<p><strong>Next:</strong> L108 makes temporal neighbor sampling efficient. The question changes from “what history is legal?” to “how can we retrieve enough of that history within a batch budget?”</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/snapshot-state-viz.js"></script><script src="../assets/l107-lesson.js"></script></body></html>

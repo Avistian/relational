@@ -1,0 +1,176 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 105 — Continuous time: event streams versus snapshots</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0104-information-leakage-in-time.html">Lesson 104</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 105</p><h1>Continuous time: event streams versus snapshots</h1></header><p class="subtitle">One tangible win: build two representations of the same interactions, then defend which information your prediction needs. Core reading: 15 minutes · lab: 35–50 minutes.</p>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without opening L104, write three short answers:</p>
+<ol>
+<li>For a prediction just before time 10, can an interaction stamped 10 enter the history?</li>
+<li>An event happened at 3 but arrived at 12. Can a prediction at 8 use it?</li>
+<li>If two records have equal timestamps, does their CSV row order prove which happened first?</li>
+</ol>
+<details><summary>Check only after committing your answers</summary>
+
+<p>Under our before-event contract: <strong>no</strong>, <strong>no</strong>, and <strong>no</strong>. We require event time &lt; query time and availability time ≤ query time. A row number is a reproducible identity, not evidence of an unrecorded causal order. If you missed one, revisit <a href="0104-information-leakage-in-time.html">L104’s prediction-time boundary</a> before proceeding.</p>
+</details>
+
+<p><strong>The next problem.</strong> L102 and L103 consume timestamped interactions. L104 asks whether those interactions were knowable. Now suppose your data pipeline hands the model one graph per day. Even a perfectly causal daily graph may have discarded information the task needs. Our mission is to build defensible relational systems: representation choices belong in that argument, before choosing a neural architecture.</p>
+<h2 id="2-%C2%B7-One-stream,-two-representations">2 &#183; One stream, two representations<a class="anchor-link" href="#2-%C2%B7-One-stream,-two-representations">&#182;</a></h2><p>A <strong>continuous-time dynamic graph (CTDG)</strong> records changes at their event timestamps. “Continuous time” means updates need not lie on a fixed grid; recorded timestamps can still be rounded or tied. It does not imply continuous-valued node states or require a point-process model. A <strong>discrete-time dynamic graph (DTDG)</strong> is a sequence of graph snapshots. See <a href="https://arxiv.org/html/2006.10637v3#S2">TGN v3 §2, Dynamic Graphs</a>.</p>
+<p>Our interaction stream stores <code>(event_id, user_id, page_id, time, availability)</code>. An edge is an occurrence, so repeated edits between the same user and page remain separate records. User 0 and page 0 belong to different identity spaces. Sorting all their raw integers into one node set would merge different entities.</p>
+<p><strong>What does a snapshot mean?</strong> This lesson uses a <em>window interaction graph</em>: an edge summarizes interactions occurring in one time interval. This differs from a <em>state snapshot</em>, such as all friendships still active at a moment, and from a <em>cumulative interaction graph</em> containing all interactions so far. An edit is not a permanent relationship. Deletions would need explicit state-transition semantics; this dataset projection has no such operation.</p>
+<p>Choose an origin <strong>o</strong> and width <strong>Δ</strong>. Event time <strong>t</strong> belongs to:</p>
+<p><strong>k = floor((t − o) / Δ), with window [o + kΔ, o + (k + 1)Δ).</strong></p>
+<p>The left boundary is included; the right boundary belongs to the next window. We use origin 0 and nonnegative times. “Daily” here means fixed 86,400-second bins from that origin, not local calendar dates with daylight-saving changes.</p>
+<p><strong>Worked stream, in seconds:</strong> AX@1, AX@3, BY@3, AY@8, BX@12, AX@19. A/B are users; X/Y are pages. With Δ = 10, the first window contains four events but only three distinct endpoint pairs. A binary graph stores one edge per pair. A count-weighted graph stores weights 2, 1, 1.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l105/aggregation.svg" alt="Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six. Timestamp ties remain simultaneous."><figcaption>Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six. Timestamp ties remain simultaneous.</figcaption></figure>
+
+<p><strong>Predict before changing the control:</strong> will increasing the width from 10 to 20 reduce the number of binary edges? Will it change the sum of count weights?</p>
+<div id="l105-aggregation"></div>
+
+<p>For this stream, width 20 merges the two AX snapshot edges: 5 binary records become 4, while the total count remains 6. Wider windows need not merge anything in another stream. Nested widths make this comparison clean; changing the origin or using nonnested widths can change which events meet.</p>
+<h2 id="3-%C2%B7-Counts-cannot-restore-a-discarded-sequence">3 &#183; Counts cannot restore a discarded sequence<a class="anchor-link" href="#3-%C2%B7-Counts-cannot-restore-a-discarded-sequence">&#182;</a></h2><p>Keep the same pair counts but exchange the times of two contacts. The resulting snapshot is identical. Yet a time-respecting path—contacts traversed in increasing time order—may disappear. The following is a separate <strong>synthetic directed contact graph</strong>, not the bipartite Wikipedia graph.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l105/order.svg" alt="Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability."><figcaption>Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability.</figcaption></figure>
+
+<p>History I has A→B at 1, then B→C at 2: information starting at A can reach C. History II reverses those times: it cannot. Both weighted snapshots contain AB:1 and BC:1. A downstream model receiving only those counts cannot distinguish the histories. Adding first/last times makes a richer summary, but does not generally recover every repeated event’s timing.</p>
+<div id="l105-predict"></div>
+
+<p><strong>The right conclusion is task-dependent.</strong> If the question is “how many edits did this pair make in the completed day?”, count weights preserve the answer. If it is “which interaction preceded the complaint?”, those counts may be insufficient. This is an information argument, not evidence that one model has higher AP. A stream encoder can also discard history internally, through sampling, pooling, or memory updates.</p>
+<h2 id="4-%C2%B7-A-window-has-a-publication-time">4 &#183; A window has a publication time<a class="anchor-link" href="#4-%C2%B7-A-window-has-a-publication-time">&#182;</a></h2><p>A complete graph for [0,10) contains the event at 8. At a query just before 6, using it would expose the future. Renaming the graph’s timestamp to 0 does not make its contents legal.</p>
+<p>We choose <strong>immutable completed windows</strong>. Their earliest permitted release is:</p>
+<p><strong>release = max(window end, latest availability of any constituent event).</strong></p>
+<p>A snapshot is readable when <strong>release ≤ query</strong>. At query 10, [0,10) is legal: every event in it is strictly earlier than 10. An event at 10 belongs to [10,20), which remains unavailable. A late-arriving event can delay the release of its <em>whole</em> window.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l105/release.svg" alt="Synthetic query at 6 seconds: three eligible records are withheld by closed-window access. Reading the completed current window exposes the event at 8. Vertically separated dots at 3 represent two tied events."><figcaption>Synthetic query at 6 seconds: three eligible records are withheld by closed-window access. Reading the completed current window exposes the event at 8. Vertically separated dots at 3 represent two tied events.</figcaption></figure>
+
+<div id="l105-release"></div>
+
+<p><strong>Try the boundary.</strong> Move the query from 9 to 10. Four records become readable together. Then set query 12 and enable the delayed arrival: the earlier window must wait until 15. The stream can still use individual records that have already arrived.</p>
+<p>Completed-window access is causal but stale: it withholds eligible events in the current unfinished window. Reading the retrospectively completed current window is fresher but can expose the target, timestamp ties, and future records. A third design—an incrementally maintained partial window—is possible, but it is a different representation. It needs versioned “as of query” contents, and its count is not the final window count.</p>
+<blockquote>
+<p><strong>Operational limit.</strong> The release formula audits a known finite set of records. In a live service, you cannot infer that no more late events will arrive just by taking the maximum arrival observed so far. You need a documented completeness signal, bounded-delay policy, or revisions. The Wikipedia file supplies no ingestion history. Our measured audit assumes availability = event time; delayed arrivals are synthetic tests.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Reproduce-the-complete-representation-experiment">5 &#183; Reproduce the complete representation experiment<a class="anchor-link" href="#5-%C2%B7-Reproduce-the-complete-representation-experiment">&#182;</a></h2><p>The <a href="https://snap.stanford.edu/jodie/">JODIE authors’ Wikipedia release</a> has <strong>157,474 interactions</strong>, involving <strong>8,227 users and 1,000 pages</strong> in the authenticated bytes used here. We retain endpoint IDs, times, and row identities. The original state labels and 172-dimensional edge features are outside this projection. This audit does not claim that the reduced table reconstructs the entire raw record.</p>
+<p><strong>Declared before execution:</strong> all events; widths 3,600 / 86,400 / 604,800 seconds; origin 0; half-open windows; strict-before event queries; one query per event, including timestamp ties; completed-window release. There is no training, tuning, train/test score, or random-seed uncertainty. These are exact census statistics of this file under these rules.</p>
+<p><strong>Author execution: PASS, all 157,474 events × all three declared widths.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Window</th>
+  <th style="text-align:right">Binary edge records</th>
+  <th style="text-align:right">Binary collapse</th>
+  <th style="text-align:right">Hidden strict pairs</th>
+  <th style="text-align:right">Mean wait</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Hourly</td>
+  <td style="text-align:right">64,991</td>
+  <td style="text-align:right">58.73%</td>
+  <td style="text-align:right">17,758,336</td>
+  <td style="text-align:right">0.50 h</td>
+</tr>
+<tr>
+  <td>Daily</td>
+  <td style="text-align:right">39,804</td>
+  <td style="text-align:right">74.72%</td>
+  <td style="text-align:right">407,383,515</td>
+  <td style="text-align:right">11.42 h</td>
+</tr>
+<tr>
+  <td>Weekly</td>
+  <td style="text-align:right">25,695</td>
+  <td style="text-align:right">83.68%</td>
+  <td style="text-align:right">2,727,616,004</td>
+  <td style="text-align:right">87.42 h</td>
+</tr>
+</tbody>
+</table></div>
+<p>Weighted count sums: <strong>157,474 in every condition</strong>. All 4,816 timestamp-tied pairs are excluded from the strict-order count.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Window</th>
+  <th style="text-align:right">Mean past records withheld / query</th>
+  <th style="text-align:right">Mean nonpast exposure / query</th>
+  <th style="text-align:right">Unreleased events at final query</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Hourly</td>
+  <td style="text-align:right">112.77</td>
+  <td style="text-align:right">113.83</td>
+  <td style="text-align:right">124</td>
+</tr>
+<tr>
+  <td>Daily</td>
+  <td style="text-align:right">2,586.99</td>
+  <td style="text-align:right">2,588.05</td>
+  <td style="text-align:right">3,651</td>
+</tr>
+<tr>
+  <td>Weekly</td>
+  <td style="text-align:right">17,321.06</td>
+  <td style="text-align:right">17,322.12</td>
+  <td style="text-align:right">12,173</td>
+</tr>
+</tbody>
+</table></div>
+<p>These global counts are deterministic; no error bars or confidence intervals are warranted for this fixed-file census. They are not predictive performance estimates.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l105/results.svg" alt="Measured full Wikipedia census, not a prediction benchmark. Fixed widths from origin zero; weights preserve the event total. Wait assumes availability equals event time."><figcaption>Measured full Wikipedia census, not a prediction benchmark. Fixed widths from origin zero; weights preserve the event total. Wait assumes availability equals event time.</figcaption></figure>
+
+<p><strong>Read the measures carefully.</strong></p>
+<ul>
+<li><strong>Binary collapse</strong> = events minus distinct <code>(window,user,page)</code> keys. It measures records omitted by the binary projection, not a percentage of all information lost. Count weights preserve multiplicity.</li>
+<li><strong>Hidden strict pairs</strong> counts pairs of events with distinct times in the same window. Such ordering is not recoverable from count-only snapshots. We count pairs across the entire stream, including unrelated endpoints; this is not a causal-dependency count.</li>
+<li><strong>Past records withheld per query</strong> counts strictly earlier global-stream records excluded by closed-window access. <strong>Nonpast exposure</strong> counts records at or after the query inside the completed current window. Both are global access diagnostics, not a GNN’s actual sampled inputs.</li>
+<li><strong>Wait for release</strong> is window end minus event time under the arrival=event assumption. It includes the final partial observation window’s scheduled close; we do not release that window early merely because the file ends.</li>
+</ul>
+<p><strong>An exact identity to explain.</strong> Summed withheld-past counts equal hidden strict pairs. Each pair <code>(earlier event, later query event)</code> in one bin contributes once to both. Nonpast exposure minus withheld-past totals equals <strong>N + 2 × tied timestamp pairs</strong>: self-records and simultaneous pairs remain on the nonpast side. This catches implementations that silently order tied timestamps.</p>
+<p>The raw file has <strong>152,757 distinct timestamps</strong> and <strong>4,816 unordered pairs tied in time</strong>. We never claim their physical order. Snapshot results agree with an independent SQLite <code>GROUP BY</code>; a separate grouped-timestamp walk reconstructs pair counts. All-query release counts are checked independently as well.</p>
+<p><strong>Evidence boundary:</strong> the complete three-condition <em>course audit</em> is reproduced. This is not a new reproduction of TGN/JODIE model scores, a full-paper replication, or a measurement of ingestion delays. Source identity and deviations are in the <a href="../labs/_sources_l105.json">source manifest</a>; exact results are in the <a href="../labs/_analysis_l105_results.json">audit report</a>.</p>
+<h2 id="6-%C2%B7-Build-it-yourself">6 &#183; Build it yourself<a class="anchor-link" href="#6-%C2%B7-Build-it-yourself">&#182;</a></h2><p><a href="../labs/0105-continuous-time.ipynb">Student notebook</a> · <a href="../labs/html/0105-continuous-time.html">Executed solution view</a> · <a href="../labs/solutions/0105-continuous-time.ipynb">Solution notebook</a> · <a href="../labs/l105-reproduction.md">Complete reproduction protocol</a></p>
+<p>The notebook is standalone: it includes the canonical implementation in annotated chunks, portable diagrams, immediate checks, and all three full-data conditions. Its default full replay authenticates the original <strong>560 MB</strong> download; an existing matching raw file can be reused. No GPU is needed.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Live task</th>
+  <th>Your implementation must decide</th>
+  <th>Counterexample to pass</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>TODO 1: <code>bin_index</code></td>
+  <td>Half-open boundary and fixed origin</td>
+  <td>Time 10 moves into bin 1 at width 10</td>
+</tr>
+<tr>
+  <td>TODO 2: <code>aggregate_events</code></td>
+  <td>Typed pair grouping, counts, complete-window availability</td>
+  <td>Two late/early edges in one bin must share its delayed release</td>
+</tr>
+<tr>
+  <td>TODO 3: <code>visible_snapshot_mask</code></td>
+  <td>Whether the whole snapshot is published</td>
+  <td>Release at query is legal; release after query is not</td>
+</tr>
+</tbody>
+</table></div>
+<p>Each function is called by the full-data audit; these are live implementation tasks. Write your predictions before running. Keep the solution closed until you have attempted the checks. After a hint, close it and implement again from memory.</p>
+<p>The core release gate is short; the hard part is defining what its timestamp means:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">visible_snapshot_mask</span><span class="p">(</span><span class="n">snapshots</span><span class="p">,</span><span class="n">query</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A half-open window ending at query is legal if all its rows arrived.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Query time must be finite&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">snapshots</span><span class="p">[</span><span class="s1">&#39;release&#39;</span><span class="p">]</span><span class="o">&lt;=</span><span class="n">query</span>
+</pre></div>
+<h2 id="7-%C2%B7-EXIT:-defend-a-representation">7 &#183; EXIT: defend a representation<a class="anchor-link" href="#7-%C2%B7-EXIT:-defend-a-representation">&#182;</a></h2><p>Write 150–250 words comparing two services:</p>
+<ol>
+<li>A daily report predicts tomorrow’s edit volume after yesterday’s data is declared complete.</li>
+<li>An online service scores each new interaction immediately before it occurs.</li>
+</ol>
+<p>For each, specify the prediction clock, retained information, bin/availability policy, and one counterexample that would invalidate your choice. Explain why weighted snapshots can answer a completed-window count question yet fail a temporal-path question. Cite one measured audit quantity without turning it into an accuracy claim.</p>
+<p><strong>Pass criteria:</strong> all three TODO checks; complete three-width replay; a tie/boundary/late-arrival counterexample; and a defensible written choice. Running the notebook alone does not establish mastery. Status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until your work is reviewed.</p>
+<div id="l105-teachback"></div>
+
+<p><strong>Spacing:</strong> tomorrow, reconstruct the two histories with identical snapshots but different temporal paths without looking. In one week, repeat the argument for purchases or messages.</p>
+<p><strong>Read next:</strong> <a href="https://arxiv.org/html/2006.10637v3#S2">TGN §2</a>, then the <a href="../reference/event-stream-snapshots.html">event/snapshot reference card</a>. Ask the tutor about any unclear boundary, or paste your EXIT defense for review. L106 will define future-edge labels and temporal negatives; L107 will put models on the snapshot representation. Neither should silently change the clock contract established here.</p>
+</article><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/event-snapshot-viz.js"></script><script src="../assets/l105-lesson.js"></script></body></html>

@@ -1,0 +1,203 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Temporal neighbor sampling: spend context carefully</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0107-snapshot-methods.html">Lesson 107</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 108</p><h1>Temporal neighbor sampling: spend context carefully</h1></header><p class="stream-label">One skill: make temporal queries faster without losing their meaning</p>
+
+<p>A node has interacted a million times. A prediction needs its history, but loading all of it for every query is expensive. <strong>By the end, you will implement a bounded temporal sampler and defend a measured speed–accuracy trade-off.</strong> This is directly useful when a relational model reads linked records as they existed at a particular time.</p>
+<p>L107 compressed events into snapshots. Here we retain individual event times and reduce how much history a query reads. The key distinction is between <strong>finding the same records faster</strong> and <strong>choosing different records</strong>. Only the first should preserve predictions exactly.</p>
+<h2 id="First-retrieve,-without-notes">First retrieve, without notes<a class="anchor-link" href="#First-retrieve,-without-notes">&#182;</a></h2><div id="warmup"></div>
+
+<ol>
+<li>At time 8, can an event stamped exactly 8 enter a strict-past prediction?</li>
+<li>If two systems score the same positives against different negatives, is their accuracy difference a clean model comparison?</li>
+<li>What information does an hourly count snapshot lose?</li>
+</ol>
+<details><summary>Check after writing your answers</summary>
+
+<p>No: strict-past means event time &lt; query time. Different negative candidates change the evaluation problem. A count snapshot loses within-window event order and exact times. Revisit <a href="0104-information-leakage-in-time.html">L104</a>, <a href="0106-temporal-link-prediction.html">L106</a>, and <a href="0107-snapshot-methods.html">L107</a> if needed.</p>
+</details>
+
+<h2 id="1-%C2%B7-Find-the-legal-interval-before-sampling">1 &#183; Find the legal interval before sampling<a class="anchor-link" href="#1-%C2%B7-Find-the-legal-interval-before-sampling">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> First decide what this query is allowed to know. Only then decide which allowed records to read.</p>
+</blockquote>
+<p>A <strong>temporal query</strong> is a node together with a cutoff time, written <code>(node, cutoff)</code>. A <strong>recency window</strong> is a duration W that limits how old a record may be. Our legal interval is <code>[cutoff − W, cutoff)</code>: include the left endpoint and exclude the right. With no age limit, W is infinity. The cutoff remains strict.</p>
+<p><strong>Worked example.</strong> Node A has events at times <code>[1, 3, 3, 8, 11]</code>. At cutoff 8 with W = 5, the legal timestamps are <code>[3, 3]</code>. Both events at time 3 remain distinct records. The event at 8 is unavailable. Never resolve a timestamp tie by arbitrary file order unless your data supplies a genuine within-time ordering contract.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l108/interval.svg" alt="Synthetic boundary calculation: two left searches retain both time-3 events and exclude the cutoff tie at 8."><figcaption>Synthetic boundary calculation: two left searches retain both time-3 events and exclude the cutoff tie at 8.</figcaption></figure>
+
+<p>A sorted array makes this interval cheap to locate. <strong>Binary search</strong> repeatedly halves a candidate range. <code>searchsorted(times, boundary, side='left')</code> returns the first position whose value is at least the boundary. Two left searches give the start and end of our half-open slice. In the example they return 1 and 3; <code>times[1:3]</code> contains two records.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">window_bounds</span><span class="p">(</span><span class="n">sorted_times</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return [start,end) positions for timestamps in [cutoff-window,cutoff).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">cutoff</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">window</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Finite cutoff and positive window required&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">sorted_times</span><span class="p">,</span><span class="n">cutoff</span><span class="o">-</span><span class="n">window</span><span class="p">,</span><span class="n">side</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)),</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">sorted_times</span><span class="p">,</span><span class="n">cutoff</span><span class="p">,</span><span class="n">side</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)))</span>
+</pre></div>
+<p><strong>Predict, then change the controls:</strong> move the cutoff from 8 to 9 with W fixed at 5. Does time 3 remain eligible? Does time 8 enter?</p>
+<div id="l108-sampler"></div>
+
+<details><summary>Worked answer, including a no-JavaScript fallback</summary>
+
+<p>The new interval is [4, 9), so both time-3 events expire and time 8 enters. With recent fanout 2, the result has one real event and one padding slot. At the original [3, 8), recent fanout 1 retains the later event ID among the two time-3 records. That deterministic tie rule selects records; it does not permit equal-cutoff events.</p>
+</details>
+
+<blockquote>
+<p><strong>Scope check.</strong> Wikipedia records event time, not ingestion time. We assume availability equals event time. Late-arriving database records need L104's additional availability check; an event-time index alone cannot certify that a record was known then. A recency window also does not imply a future prediction horizon.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Bound-the-work,-and-state-the-sampling-distribution">2 &#183; Bound the work, and state the sampling distribution<a class="anchor-link" href="#2-%C2%B7-Bound-the-work,-and-state-the-sampling-distribution">&#182;</a></h2><p><strong>Fanout k</strong> is the maximum number of neighbor slots produced per query. Each sampled record carries three aligned values: neighboring node ID, event ID, and event timestamp. Edge features are retrieved by event ID later.</p>
+<p><strong>Uniform with replacement</strong> draws k independent positions from the legal records. If only two records exist and k = 4, the sample might be <code>[0, 1, 0, 1]</code>. Duplicates are intentional; k is not the number of distinct neighbors. We sort the selected records by time before returning them.</p>
+<p><strong>Recent sampling</strong> keeps the last min(k, count) eligible records. Missing slots are padded on the left. ID 0 denotes padding and has a separate mask; it is not an observed edge at time zero. The adapter preserves Wikipedia’s integer timestamps exactly in float32; larger absolute timestamps or fractional timestamps need a precision audit before reuse. A model's behavior on an entirely padded row still depends on its attention implementation. The preserved TGAT release uses a finite masking value, and an all-padding row does not automatically imply a zero embedding.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">choose_positions</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">fanout</span><span class="p">,</span> <span class="n">policy</span><span class="p">,</span> <span class="n">uniforms</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Relative positions, with -1 for padding; uniform draws use replacement.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">fanout</span><span class="o">&lt;</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">count</span><span class="o">&lt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="n">policy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;uniform&#39;</span><span class="p">,</span><span class="s1">&#39;recent&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid sampling configuration&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">count</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span><span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">fanout</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">policy</span><span class="o">==</span><span class="s1">&#39;uniform&#39;</span><span class="p">:</span>
+        <span class="n">u</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">uniforms</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="o">!=</span><span class="p">(</span><span class="n">fanout</span><span class="p">,)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">((</span><span class="n">u</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">)</span><span class="o">&amp;</span><span class="p">(</span><span class="n">u</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">():</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid variates&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">u</span><span class="o">*</span><span class="n">count</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">positions</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">count</span><span class="o">-</span><span class="n">fanout</span><span class="p">,</span><span class="n">count</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">positions</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">,</span><span class="n">positions</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+<p>The readable reference calls these two student functions directly. The optimized implementation performs the same arithmetic over arrays. The lab requires sample-for-sample agreement, including duplicate choices, tie ordering and padding. A wrong TODO cannot pass simply because the optimized code is correct.</p>
+<p>The <a href="https://arxiv.org/html/2002.07962v1#S3.SS4">TGAT authors describe temporal neighborhood sampling and subgraph batching in §3.4</a>. Their <a href="https://github.com/StatsDLMathsRecomSys/Inductive-representation-learning-on-temporal-graphs/tree/9293d10d1943c4bd4a186337cf38ba98e4c8bb99">released experiment uses uniform sampling and fanout 20</a>. Our recent/window variants are explicit course interventions.</p>
+<h2 id="3-%C2%B7-Store-once,-search-many-queries-together">3 &#183; Store once, search many queries together<a class="anchor-link" href="#3-%C2%B7-Store-once,-search-many-queries-together">&#182;</a></h2><p>A <strong>compressed adjacency index</strong> stores all neighbor records in flat arrays. An offsets array says where each node's row starts and stops. Within a row, records are sorted by <code>(timestamp, event ID)</code>. A row can be empty. This lab inserts each interaction in both endpoint rows, matching TGAT's undirected neighborhood view; the prediction question still has a source and destination.</p>
+<p>For B queries, two batched binary searches maintain B lower/upper position pairs. At each step, all unfinished searches compare their own midpoint against their own cutoff. A query never searches another node's row. After finding eligible slices, we gather at most B × k records.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l108/pipeline.svg" alt="The sampler returns aligned B-by-k identities and timestamps; frozen TGAT turns this context into positive and negative scores."><figcaption>The sampler returns aligned B-by-k identities and timestamps; frozen TGAT turns this context into positive and negative scores.</figcaption></figure>
+
+<p><strong>Shapes.</strong> Nodes and cutoffs have shape <code>[B]</code>. Each returned array has shape <code>[B, k]</code>. The model gathers <code>[B, k, F]</code> edge and node features, where F is feature width. TGAT recursively encodes neighbors, combines those vectors with elapsed-time encodings and edge features, applies masked attention, and merges the result with the source representation. A shared pair-scoring network produces positive and negative probabilities. Training minimizes positive/negative binary cross-entropy; this lesson loads frozen trained weights and changes only their context.</p>
+<p><strong>Work.</strong> For a row of d events, binary search costs O(log d) comparisons: the number grows logarithmically with history length. Gathering costs O(k) per query. Sorting sampled timestamps adds O(k log k). The implementation does not scan the full history on every query. Construction sorts the original records once and stores O(E + N) values, where E counts interactions and N counts nodes. Two endpoint rows mean approximately 2E stored records.</p>
+<p><strong>Memory boundary.</strong> A finite window reduces eligible records but this offline implementation retains the complete index. The window therefore does <strong>not</strong> reduce its persistent memory. Online expiration could reclaim old records, but then later replay of earlier queries would require another store. Report index-array bytes separately from temporary arrays, process memory and GPU tensors.</p>
+<h2 id="4-%C2%B7-The-second-hop-must-inherit-the-edge-time">4 &#183; The second hop must inherit the edge time<a class="anchor-link" href="#4-%C2%B7-The-second-hop-must-inherit-the-edge-time">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A neighbor seen yesterday must be represented using what was known yesterday, even when today's root query can see more.</p>
+</blockquote>
+<p><strong>Worked example.</strong> A query for A at 8 traverses an A–B edge at 3. When encoding B on that path, TGAT passes cutoff <strong>3</strong>, not 8. A B–C edge at 6 is therefore excluded. Reusing the root cutoff would change the path's temporal meaning.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l108/recursion.svg" alt="The A–B edge at 3 passes cutoff 3 into B’s next query. A B–C edge at 6 is excluded on this path."><figcaption>The A–B edge at 3 passes cutoff 3 into B’s next query. A B–C edge at 6 is excluded on this path.</figcaption></figure>
+
+<p>The index is queried once per <code>(node, cutoff)</code> pair. Two visits to node B at different cutoffs may have different valid histories. A cache keyed only by node ID is unsafe. Even a <code>(node, cutoff)</code> cache needs layer, sampler policy, window, model state and stochastic-sampling semantics considered; reusing a random sample can change the estimator's dependence structure. This lesson does not introduce such a cache.</p>
+<p>For neighbor expansion alone, L layers with constant fanout k can expose up to <code>1 + k + k² + … + kᴸ</code> tree slots per root before deduplication. With two layers, k = 20 gives 421; k = 5 gives 31. These are <strong>tree slot bounds</strong>, not unique nodes, exact FLOPs, or memory measurements. This TGAT implementation also recursively computes the source representation at each layer, and scores source, positive destination and negative destination. Its actual work exceeds the neighbor-tree sketch; use measured inference timing.</p>
+<p><strong>Check:</strong> two queries request B at times 3 and 8. Can they share the same latest embedding solely because their node IDs match? Explain a counterexample before opening the answer.</p>
+<details><summary>Check the cache counterexample</summary>
+
+<p>If B has an edge at 6, the time-8 query may use it and the time-3 query may not. Reusing the later representation leaks information into the earlier one. A node ID identifies an entity, not its information state.</p>
+</details>
+
+<h2 id="5-%C2%B7-Define-the-experiment-before-inspecting-accuracy">5 &#183; Define the experiment before inspecting accuracy<a class="anchor-link" href="#5-%C2%B7-Define-the-experiment-before-inspecting-accuracy">&#182;</a></h2><div id="l108-predict"></div>
+
+<p><strong>Optimization experiment.</strong> Run the scalar and batched samplers over all 157,474 Wikipedia source-node queries. Fix queries, fanout 20, unlimited history, uniform variates and output order. Check every sampled node, event ID and timestamp. Warm both implementations, alternate their order, and measure three repetitions. Timings exclude random-number generation, index construction and neural inference; construction is reported separately.</p>
+<p><strong>Full checkpoint evaluation.</strong> Load all ten completed L103 TGAT checkpoints. First replay the released Wikipedia all-event and new-node evaluations, preserving the release's boundary omission, negative sampler, random state and batch aggregation. Check every probability against the archived run. Then evaluate four strict-past interventions on the same question IDs, negative candidates and batches:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Condition</th>
+  <th style="text-align:right">Neighbor slots</th>
+  <th>Eligible history</th>
+  <th>Selection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>uniform20</td>
+  <td style="text-align:right">20</td>
+  <td>All strictly earlier records</td>
+  <td>Uniform with replacement</td>
+</tr>
+<tr>
+  <td>uniform5</td>
+  <td style="text-align:right">5</td>
+  <td>All strictly earlier records</td>
+  <td>Uniform with replacement</td>
+</tr>
+<tr>
+  <td>recent20</td>
+  <td style="text-align:right">20</td>
+  <td>All strictly earlier records</td>
+  <td>Most recent records</td>
+</tr>
+<tr>
+  <td>day20</td>
+  <td style="text-align:right">20</td>
+  <td>Previous 86,400 seconds</td>
+  <td>Uniform with replacement</td>
+</tr>
+</tbody>
+</table></div>
+<p>Weights are frozen; no test result selects a configuration. Both all-event and new-node populations are evaluated completely under the archived release question contract. Their populations overlap, so they are not independent datasets. We reset each condition's random seed, but changing fanout changes recursive draw consumption: this is paired <strong>question</strong> evaluation, not exact random-number coupling across all conditions.</p>
+<p><strong>Measure accuracy.</strong> Average precision (AP) summarizes ranking precision at observed positive retrievals. The released paper comparison averages AP over batches. The intervention table pools all predictions within each population, computes one AP per seed, then averages those ten values. These aggregations answer different questions and must not be substituted. The paper's 95.34% and 93.99% targets belong only to the released batch-mean comparison.</p>
+<p><strong>Measure speed.</strong> Synchronize the GPU before and after each measured inference pass. Include temporal sampling, feature gathering, model computation, host transfers and prediction collection. Report positive questions per second, each accompanied by one negative. Rotate condition order across seeds. This is one full timing pass per condition/checkpoint; variation includes checkpoint and hardware scheduling differences. It is not a statistical confidence interval for production latency.</p>
+<p><strong>Author-reference evidence:</strong> these numbers are not output from your current notebook kernel.</p>
+<p><strong>Measured CPU sampler:</strong> 157,474 queries; scalar median 2.025 s, batched median 0.259 s, <strong>7.82× speedup</strong>. Every sample matched. The index stores 7,632,608 array bytes (7.28 MiB); construction took 0.023 s. Three warmed repetitions on the local ARM64 CPU, batch 200; random draws were prepared before timing.</p>
+<p><strong>Released-evaluation replay:</strong> all ten checkpoints; all batch-mean AP 95.2825% ± 0.2784 pp seed SD (paper 95.34%, CLOSE); new batch-mean AP 93.7792% ± 0.3912 pp seed SD (paper 93.99%, CLOSE). Maximum absolute probability difference from archived evaluation: 0. This uses 23,620 all-event and 11,714 new-node positives per seed; the released batching omits the final event in each population.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Policy</th>
+  <th style="text-align:right">All AP (%)</th>
+  <th style="text-align:right">All Δ (pp)</th>
+  <th style="text-align:right">All questions/s</th>
+  <th style="text-align:right">New AP (%)</th>
+  <th style="text-align:right">New Δ (pp)</th>
+  <th style="text-align:right">Peak GPU MiB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>uniform20</td>
+  <td style="text-align:right">95.866 ± 0.204</td>
+  <td style="text-align:right">0.000 ± 0.000</td>
+  <td style="text-align:right">1018</td>
+  <td style="text-align:right">94.843 ± 0.306</td>
+  <td style="text-align:right">0.000 ± 0.000</td>
+  <td style="text-align:right">372.0</td>
+</tr>
+<tr>
+  <td>uniform5</td>
+  <td style="text-align:right">84.296 ± 0.352</td>
+  <td style="text-align:right">-11.570 ± 0.271</td>
+  <td style="text-align:right">1666</td>
+  <td style="text-align:right">82.780 ± 0.558</td>
+  <td style="text-align:right">-12.064 ± 0.376</td>
+  <td style="text-align:right">257.2</td>
+</tr>
+<tr>
+  <td>recent20</td>
+  <td style="text-align:right">96.501 ± 0.092</td>
+  <td style="text-align:right">0.636 ± 0.198</td>
+  <td style="text-align:right">1062</td>
+  <td style="text-align:right">96.017 ± 0.097</td>
+  <td style="text-align:right">1.174 ± 0.289</td>
+  <td style="text-align:right">372.0</td>
+</tr>
+<tr>
+  <td>day20</td>
+  <td style="text-align:right">95.738 ± 0.092</td>
+  <td style="text-align:right">-0.128 ± 0.186</td>
+  <td style="text-align:right">1048</td>
+  <td style="text-align:right">95.522 ± 0.108</td>
+  <td style="text-align:right">0.679 ± 0.323</td>
+  <td style="text-align:right">372.0</td>
+</tr>
+</tbody>
+</table></div>
+<p>AP and paired differences show mean ± sample SD over ten seeds. Throughput is mean positive questions/second, each with one negative. Peak GPU allocated bytes include the loaded model and tensors; CPU index-array bytes are separate. The GPU is an NVIDIA T4. Neither statistic measures whole-system peak resident memory.</p>
+<p>All 1,413,360 intervention positive questions were evaluated, each with one negative; all recursive access audits found zero nonpast or expired sampled records. New-node and all-event counts overlap. Independent metric reconstruction passed.</p>
+<p><strong>Read the trade-off:</strong> reducing fanout from 20 to 5 delivered 1.64× measured inference throughput, but lost 11.57 AP percentage points on all-event questions. Recent-20 gained 0.64 points. These weights were trained with fanout 20: changing context at inference can create a substantial distribution shift. This experiment does not isolate which internal attention behavior caused the loss. The 421/31 tree-slot ratio is not the measured speed ratio.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l108/results.svg" alt="Author experiment: same questions and negatives, four fixed-weight inference interventions, ten seeds. Points show seeds; bars show sample SD, not confidence intervals."><figcaption>Author experiment: same questions and negatives, four fixed-weight inference interventions, ten seeds. Points show seeds; bars show sample SD, not confidence intervals.</figcaption></figure>
+
+<p><strong>Interpret the result before choosing a policy.</strong> Compare changed-minus-uniform20 AP within each seed. A smaller fanout reduces requested context; a short window removes older records; recent selection changes which interactions receive attention. A higher AP in one frozen model is evidence for that measured intervention, not proof the policy is optimal after retraining. Wikipedia is a moderate-sized graph; synthetic expansion counts do not establish performance on a billion-edge production graph.</p>
+<h2 id="6-%C2%B7-Reproduction-boundary-and-lab">6 &#183; Reproduction boundary and lab<a class="anchor-link" href="#6-%C2%B7-Reproduction-boundary-and-lab">&#182;</a></h2><p>The <a href="../labs/l108-reproduction.md">reproduction contract</a> pins source, raw data, processed arrays, splits, ten checkpoints, configuration, runtime and output hashes. It provides local and GPU commands, the full training route inherited from L103, a budget ledger and independent reconstruction of metrics from saved predictions.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The selected Wikipedia evaluation replay is complete when all ten outputs pass the recorded checks. L108 does not retrain those checkpoints. Modern-runtime replay and close table values do not establish historical identity or reproduction of the entire TGAT paper. Reddit, node classification, fresh sampler-specific training, live Colab and deployment have separate unrun/unchecked statuses.</p>
+</blockquote>
+<p>Open the <a href="../labs/0108-temporal-neighbor-sampling.ipynb">student notebook</a>, <a href="../labs/html/0108-temporal-neighbor-sampling.html">executed solution</a>, or <a href="../labs/solutions/0108-temporal-neighbor-sampling.ipynb">downloadable solution</a>. The notebook is standalone: portable diagrams, visible sampler, complete TGAT model/trainer, three TODO/CHECK tasks, raw-data authentication and a full-data sampler benchmark. The expensive ten-checkpoint GPU evaluation is a separately executed author experiment, with an explicit rerun command.</p>
+<p><strong>TODO 1:</strong> implement half-open window boundaries, including ties and singleton histories. <strong>TODO 2:</strong> implement uniform replacement and recent padding. <strong>TODO 3:</strong> implement the neighbor-expansion budget and explain why it is not exact model cost. Then run the full-data reference-versus-batched equality check: the first two TODOs are on that executed reference path.</p>
+<h2 id="EXIT-%C2%B7-defend-one-temporal-batch">EXIT &#183; defend one temporal batch<a class="anchor-link" href="#EXIT-%C2%B7-defend-one-temporal-batch">&#182;</a></h2><p>Without opening your notes, submit:</p>
+<ol>
+<li>Your three implementations and a new boundary fixture that catches a plausible bug.</li>
+<li>A two-hop trace showing a root cutoff, selected edge time and next-hop cutoff.</li>
+<li>The measured equality check, throughput ratio, index bytes and a warning about what the timing excludes.</li>
+<li>A sampling policy recommendation supported by paired AP and measured inference time, plus one reason it may change after retraining.</li>
+<li>A sentence distinguishing source replay, inference intervention, full-paper reproduction and your own learner evidence.</li>
+</ol>
+<div id="l108-teachback"></div>
+
+<p><strong>Spacing:</strong> tomorrow, derive [cutoff − W, cutoff) and explain the cache counterexample without notes. In one week, implement the boundary test from a fresh example. Prepared material remains <strong>PENDING_WRITTEN_DEFENSE</strong> until you supply learner evidence.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2002.07962v1">Xu et al., TGAT §3.4 and Appendix A.6</a>. Read it alongside the <a href="https://github.com/StatsDLMathsRecomSys/Inductive-representation-learning-on-temporal-graphs/blob/9293d10d1943c4bd4a186337cf38ba98e4c8bb99/graph.py">pinned released sampler</a>, watching for differences between intended recency and actual slicing. Ask the teaching agent about any unclear code, boundary or measured result; bring your EXIT defense for critique.</p>
+<p><a href="../reference/temporal-sampling.html">Quick reference</a> · <a href="0107-snapshot-methods.html">Previous: snapshot methods</a> · <strong>Next: L109</strong> maps these query cutoffs to database <code>created_at</code> and <code>observed_at</code> semantics.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/temporal-sampling-viz.js"></script><script src="../assets/l108-lesson.js"></script></body></html>

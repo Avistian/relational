@@ -185,6 +185,8 @@ Document tier and rationale in the lab intro markdown.
 
 ## Compute budget (from 2026-07-25 — NOTES standard #20)
 
+**User budget update, 2026-09-26 — takes precedence over older compute allowances:** Plan future reproductions for **about US$10 total per lesson**, including all seeds, retries, and validation checks, not $10 per seed. Before launch, estimate the aggregate using current resource prices and a timed pilot where needed; reserve retry/check overhead and set a runtime/spend cutoff. Credits do not expand the budget. Select a defensible named experiment within it. If full paper reproduction is unaffordable, retain the full runnable implementation/protocol, execute the declared affordable scope, and mark the remainder `NOT_RUN`/`INCOMPLETE`. Do not silently exceed the cap or label a downscaled result full reproduction; a larger budget requires explicit user authorization. This directive is for future planning and does not cancel the already-approved L103 run.
+
 Authoring box: **12-core CPU, ~15 GB RAM, no GPU.** Two cloud paths with different operators:
 
 | Path | Operator | Use for | Limits |

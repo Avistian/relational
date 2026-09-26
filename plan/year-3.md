@@ -246,6 +246,7 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Bridge** — the canonical temporal GNN; the memory idea recurs in relational temporal modeling; callback L098.
 
 ### 103 · TGAT — *Xu 2020, ◆ `2002.07962`*
+- **Delivered:** [lesson](../lessons/0103-tgat.html), [lab](../labs/0103-tgat.ipynb), three live tasks and complete ten-run Wikipedia release replay (154 epochs): all-event AP 95.282%, new-node AP 93.779%; numerical CLOSE/CLOSE. Separate six-fit matched TGAT/TGN comparison. Exact evidence: [results](../labs/_paper_l103_results.json). Historical identity INCOMPARABLE; full-paper parity NOT_ESTABLISHED.
 - **Skill** — implement time-encoded attention (functional time encoding) and contrast with TGN's memory.
 - **Teach** — Bochner/functional time encoding, self-attention over temporal neighborhoods, memoryless vs
   memory-based temporal models.
@@ -254,36 +255,34 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `temporal-graph-viz.js` + `temporal-embed-viz.js` (from Y2 L055b).
 - **Bridge** — time encoding → RelGT's time token (Y4 L145); callback L084/L093 attention.
 
-### 104 · Information leakage in time — *Kapoor 2022 + Fey 2024*
+### 104 · [Information leakage in time](../lessons/0104-information-leakage-in-time.html) — *Kapoor 2022 + Fey 2024*
 - **Skill** — audit a temporal GNN pipeline for time-travel bugs (using an edge's future to predict its own
   past) and fix them.
 - **Teach** — common temporal leaks (label from future neighbors, non-causal features, val after test time),
   the audit checklist.
-- **Lab** — Tier B · crucial fragment: inject then detect a time-travel leak; measure the inflated metric.
+- **Lab** — Tier B · crucial fragment: inject then detect a time-travel leak; measure the paired AP change (inflation is not guaranteed).
   Deliverable: leak found + corrected number.
 - **Viz** — reuse `leakage-viz.js` (temporal edges) + `checklist.js`.
 - **Bridge** — the discipline the whole thesis rests on (temporal correctness); callback Y1 L022, Y2 L055;
   forward to Y4 L156 full REG audit.
 
-### 105 · Continuous time — *— (event streams)*
-- **Skill** — model interactions as a continuous-time event stream vs discrete snapshots and choose between
-  them.
-- **Teach** — continuous-time dynamic graphs (CTDG) vs discrete-time (DTDG), event-based vs snapshot-based
-  trade-offs.
-- **Lab** — Tier C · crucial fragment: represent the same data as a CTDG and a DTDG. Deliverable: the two
-  representations + when each is right.
-- **Viz** — reuse `temporal-graph-viz.js` (continuous vs snapshot toggle).
-- **Bridge** — informs REG design choices in Y4; callback L102/L103.
+### 105 · [Continuous time](../lessons/0105-continuous-time.html) — *TGN §2; event streams*
+- **Skill** — represent the same interactions as an event stream and window graphs, then defend a task-specific choice.
+- **Teach** — binary/count-weighted windows, irrecoverable within-window order, timestamp ties and complete-window release.
+- **Lab** — [complete Wikipedia representation audit](../labs/0105-continuous-time.ipynb): all 157,474 events at fixed hourly/daily/weekly widths, typed IDs, exact SQL and timestamp-walk checks; three live implementation tasks.
+- **Reproduction** — full course-defined census, not a published model-score replication. Pinned raw bytes, visible implementation, executed standalone solution and protocol/deviation ledger.
+- **Viz** — event aggregation, same-snapshot/different-path witness, query/release clock, full-data comparison.
+- **Bridge** — carry L104 availability rules into L106 prediction tasks and L107 snapshot models; inform Y4 REG design.
 
-### 106 · Temporal link prediction — *— (future edge prediction)*
-- **Skill** — set up and evaluate future-edge prediction with strictly causal splits and temporal negatives.
-- **Teach** — predict edges at t+1 from ≤t, temporal negative sampling, evaluation windows.
-- **Lab** — Tier B · crucial fragment: build a future-edge task + temporal negatives. Deliverable: temporal
-  link-pred metric with a causal split.
-- **Viz** — reuse `temporal-graph-viz.js` + `split-viz.js`.
-- **Bridge** — RelBench recommendation is temporal link prediction; callback L087/L097; forward to Y4 L144.
+### 106 · Temporal link prediction — *Poursafaei et al. 2022, `2207.10128`*
+- **Skill** — defend a future-edge evaluation by specifying legal history, candidate distribution and metric aggregation.
+- **Teach** — repeated/new pairs, EdgeBank membership and forgetting, random/historical/inductive negatives, AP/AUROC ties and batch means.
+- **Lab** — complete Wikipedia released-code replay: two memories × three samplers × five iterations; visible implementation, live TODO/CHECK/EXIT and authenticated standalone candidate evidence.
+- **Reproduction** — named Appendix B rows; pinned publication-era source, raw hashes, per-batch predictions, original-code parity and honest numeric/historical boundaries. Other datasets and neural models NOT_RUN.
+- **Bridge** — snapshot models in L107 must declare the same query and forecast horizon. RelBench recommendation later needs an operational candidate universe.
 
-### 107 · Snapshot methods — *— (discrete time slices)*
+### 107 · [Snapshot methods](../lessons/0107-snapshot-methods.html) — *Pareja et al. 2020, EvolveGCN*
+- **Prepared package** — [lab](../labs/0107-snapshot-methods.ipynb), [protocol](../labs/l107-reproduction.md): complete matched Wikipedia course fits and separately audited released SBM H/O lane. Source O differs from the paper LSTM; no historical identity or learner mastery inferred.
 - **Skill** — implement discrete-time snapshot GNNs (per-slice GNN + sequence model) and compare to
   continuous-time.
 - **Teach** — snapshot encoding + RNN/attention over slices, when discretization is adequate, granularity
@@ -300,6 +299,7 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
   vs accuracy at scale.
 - **Viz** — reuse `temporal-graph-viz.js` + `group-viz.js`.
 - **Bridge** — callback L089/L101; the sampler Y4 RelBench training relies on.
+- **Prepared package** — [L108](../lessons/0108-temporal-neighbor-sampling.html), visible scalar/batched sampler, full-data equality/throughput census, and full ten-checkpoint Wikipedia evaluation. Frozen-weight sampling interventions are separate from the released replay. See [protocol](../labs/l108-reproduction.md). Learner status PENDING_WRITTEN_DEFENSE.
 
 ### 109 · Connect to databases — *— (`observed_at` semantics)*
 - **Skill** — map database timestamp columns (`created_at`, `observed_at`) to node/edge times and enforce
@@ -311,7 +311,10 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 - **Viz** — reuse `hetero-graph-viz.js` (timestamped) + `leakage-viz.js`.
 - **Bridge** — the literal DB→temporal-REG hand-off; callback L096/L101; forward to Y4 L123 (timestamp every node).
 
+- **Prepared L109 package** — [Lesson](../lessons/0109-database-timestamp-contracts.html), three live history tasks, all 8,712 regenerated labels and all ten selected heuristic cells MATCH. Full 310-cutoff graph census; no real ingestion/version histories available. [Protocol](../labs/l109-reproduction.md). Learner PENDING_WRITTEN_DEFENSE.
+
 ### 110 · **Q3 checkpoint** — *Rossi 2020 · Deliverable-based*
+- **Approved scope** — [lesson](../lessons/0110-temporal-gnn-checkpoint.html), visible standalone [lab](../labs/0110-temporal-gnn-checkpoint.ipynb), fresh ten-seed released TGN-attn Wikipedia reproduction and ten clean-state fits; atomic state restoration, timestamp-group batching, leakage counterexamples and written defense. [Protocol](../labs/l110-reproduction.md).
 - **Deliverable** — a temporal GNN trained with a **clean time-respecting split** on a dynamic graph,
   passing a time-travel-leak audit.
 - **Bridge** — temporality mastered; the student can now build the exact graph type a database becomes;

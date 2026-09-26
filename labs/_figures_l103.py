@@ -54,4 +54,5 @@ for delta,color in [(1,TEAL),(2,GOLD)]:
 ax[1].plot(x,np.cos(x)*np.cos(x+1),color='#7f589b',ls='--',label='Cosine only, Δ = 1')
 ax[1].set(xlabel='Common time shift',ylabel='Feature inner product',title='A shared shift tests stationarity');ax[1].legend(fontsize=10)
 fig.tight_layout();fig.savefig(P/'kernel.svg');fig.savefig(P/'kernel.png',dpi=170);plt.close(fig)
+svg=P/'kernel.svg';svg.write_text('\n'.join(line.rstrip() for line in svg.read_text().splitlines())+'\n')
 print(P)

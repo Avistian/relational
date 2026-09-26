@@ -1,0 +1,9 @@
+/* Synthetic intervention: fixed positives [1,0], two negatives, k remembered.
+   Expected k=0: AP/AUC .75/.75; k=1: .5/.5; k=2: 5/12/.25. Reset k=0. */
+(function(g){'use strict';g.CandidateEvaluationViz={mount:function(el){
+ el.className='stream-widget candidate-evaluation';el.innerHTML='<h3>Same memory, harder candidates</h3><p>Positives stay AX:1 and BY:0. Baseline: AP 0.7500 · AUROC 0.7500.</p><label>Remembered negative pairs <select aria-label="Remembered negative pairs"><option value="0">0 of 2</option><option value="1">1 of 2</option><option value="2">2 of 2</option></select></label><div class="stream-scroll" tabindex="0"><table><thead><tr><th>Candidate</th><th>Label</th><th>Memory score</th></tr></thead><tbody></tbody></table></div><div class="stream-cards"><section><span>AP</span><strong class="ap"></strong></section><section><span>AUROC</span><strong class="auc"></strong></section><section><span>Δ AP vs baseline</span><strong class="delta"></strong></section></div><p class="stream-live" aria-live="polite"></p><button type="button">Reset example</button>';
+ const select=el.querySelector('select');function draw(){const k=Number(select.value),ap=.5/(1+k)+.25,auc=.75-.25*k;
+ el.querySelector('tbody').innerHTML=[['AX','positive',1],['BY','positive',0],[k>=1?'AY (remembered)':'AZ (unseen)','negative',k>=1?1:0],[k>=2?'BX (remembered)':'BZ (unseen)','negative',k>=2?1:0]].map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('');
+ el.querySelector('.ap').textContent=ap.toFixed(4);el.querySelector('.auc').textContent=auc.toFixed(4);el.querySelector('.delta').textContent=(ap-.75).toFixed(4);el.querySelector('.stream-live').textContent='High-score group: 1 true positive and '+k+' false positives. Its precision is 1/'+(1+k)+'. The model and positive scores have not changed.';}
+ select.addEventListener('change',draw);el.querySelector('button').addEventListener('click',()=>{select.value='0';draw();});draw();
+}};})(window);

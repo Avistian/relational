@@ -1,0 +1,241 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Q3 checkpoint: a temporal GNN you can defend</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/temporal-checkpoint.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0109-database-timestamp-contracts.html">Lesson 109</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 110</p><h1>Q3 checkpoint: a temporal GNN you can defend</h1></header><p class="stream-label">One skill: defend a trained temporal GNN from data cutoffs to restored state</p>
+
+<p>A good test score is only useful if the predictor could have known its inputs. <strong>Your Q3 checkpoint is to train a temporal graph network, reconstruct its evaluation, and demonstrate that changing the future cannot change an earlier prediction.</strong> You will submit working code and a short defense, rather than declare mastery because a notebook ran.</p>
+<p><a href="0102-temporal-graph-networks.html">L102</a> supplied the TGN computation. <a href="0104-information-leakage-in-time.html">L104</a> tested information access. <a href="0108-temporal-neighbor-sampling.html">L108</a> examined strict-past neighborhoods, and <a href="0109-database-timestamp-contracts.html">L109</a> separated event dates from actual availability. Here those pieces become one executable contract. This serves our mission: results on a relational graph must survive the same scrutiny as features built from database history.</p>
+<h2 id="1-%C2%B7-Retrieve-the-contract-before-opening-the-code">1 &#183; Retrieve the contract before opening the code<a class="anchor-link" href="#1-%C2%B7-Retrieve-the-contract-before-opening-the-code">&#182;</a></h2><div id="warmup"></div>
+
+<p>Write three answers from memory. What does a temporal model remember besides its learned weights? May one event at time 5 update the state used to score another event at time 5? What evidence would establish that an event dated yesterday was available yesterday?</p>
+<details><summary>Check after committing your answers</summary>
+
+<p>The model also has node memories, last-update clocks and queued messages. A resumable training process additionally needs optimizer state, random-generator state and a stream cursor. Under our strict-time contract, tied events cannot update each other's prediction state. Actual arrival or version history is needed to establish availability; an event date alone does not establish it.</p>
+</details>
+
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/abs/2006.10637v3">Rossi et al., Temporal Graph Networks, v3</a>, §3 for memory/messages/embeddings and Table 2 for the selected Wikipedia results. Read the <a href="https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/train_self_supervised.py">released trainer</a> alongside the paper. The two are distinct evidence sources: prose defines the method; executable code resolves many protocol details.</p>
+<h2 id="2-%C2%B7-Model-architecture:-score-the-event-before-learning-from-it">2 &#183; Model architecture: score the event before learning from it<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-score-the-event-before-learning-from-it">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> The network predicts whether a user will edit a page using earlier interactions. Only after making the prediction may it remember the edit that actually happened.</p>
+</blockquote>
+<p>An interaction is a tuple <code>(user, page, timestamp, event_features)</code>. This dataset provides 172 numeric features per interaction. A node is a user or page with a stable integer identifier. Node features are zero vectors in this experiment, so identity and history carry the relational information. <strong>Memory</strong> is a 172-number vector stored for each node. Its entries are learned summaries, not named factual fields.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l110/architecture.svg" alt="Complete Wikipedia TGN-attn path: 688-number old message → GRU state → strict history attention → score; current features enter only after scoring."><figcaption>Complete Wikipedia TGN-attn path: 688-number old message → GRU state → strict history attention → score; current features enter only after scoring.</figcaption></figure>
+
+<p><strong>First consume old messages.</strong> A queued message contains the two endpoint memories, the interaction features and an elapsed-time encoding: 172 + 172 + 172 + 172 = 688 numbers. A gated recurrent unit (GRU) combines that message with the previous 172-number memory. A GRU learns how much old state to retain and how much new information to write. The latest queued message per node is used here. See the paper's message/update equations and the <a href="https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/modules/memory_updater.py">released memory updater</a>.</p>
+<p><strong>Then gather history.</strong> For each endpoint and sampled negative page, retrieve the latest ten interactions strictly earlier than the question. The cosine time encoder maps elapsed seconds into 172 learned periodic coordinates. In the diagram, <code>t</code> is the query time and <code>τ</code> is a historical interaction time, so <code>t−τ</code> is its age. A query joins the node state and a zero-elapsed encoding, giving 344 coordinates. Each attention key/value joins a neighbor state, historical edge features and its elapsed encoding, giving 516 coordinates. Two attention heads weight those historical inputs. A merge network returns a 172-number embedding for each endpoint. Padding stands for absent history and must not become a real neighbor.</p>
+<p><strong>Then score candidates.</strong> A small neural decoder maps two endpoint embeddings to a scalar logit. A sigmoid converts that number into a score between zero and one. The training loss rewards the observed user–page pair and penalizes one uniformly sampled page. Binary cross-entropy is <code>−y log(p) − (1−y) log(1−p)</code>; <code>y=1</code> means an observed pair and <code>y=0</code> means a sampled pair. The optimizer changes parameters using gradients of this loss. Gradients pass through the current GRU update and attention computation; detaching between batches cuts the older computation graph. During evaluation, parameters stay fixed while node memory and queued observations still evolve. A sampled pair is not proof that the user will never edit that page; it defines the benchmark's prediction question.</p>
+<p><strong>Finally queue the observed interaction.</strong> Current edge features enter the message path after scoring, not the embedding used for their own score. The saved message is consumed at a later batch. The negative candidate creates no observed interaction and therefore creates no new message. The <a href="https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/model/tgn.py">released TGN implementation</a> makes this order concrete.</p>
+<p>A batch is a group scored from one pre-batch state. Earlier events inside that batch do not update later predictions in the same batch. This is delayed observation, not future access. It means batch size is part of the temporal protocol, not only a performance setting.</p>
+<h2 id="3-%C2%B7-Write-down-what-%E2%80%9Cclean%E2%80%9D-means">3 &#183; Write down what &#8220;clean&#8221; means<a class="anchor-link" href="#3-%C2%B7-Write-down-what-%E2%80%9Cclean%E2%80%9D-means">&#182;</a></h2><p>For a question at time <code>q</code>, history in this lesson requires both <code>event_time &lt; q</code> and <code>observed_time &lt; q</code>. <strong>Event time</strong> is when something happened. <strong>Observed time</strong> is when the predictor could use it. We use strict comparisons because the question asks about the state before a timestamp group; another application can choose an inclusive convention only if its ordering contract supports it.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">legal_history</span><span class="p">(</span><span class="n">event_time</span><span class="p">,</span> <span class="n">observed_time</span><span class="p">,</span> <span class="n">query_time</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Strict event history; availability also must precede the scoring group.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">event_time</span> <span class="o">&lt;</span> <span class="n">query_time</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">observed_time</span> <span class="o">&lt;</span> <span class="n">query_time</span><span class="p">)</span>
+</pre></div>
+<p>The Wikipedia release lacks actual ingestion histories. Our measured runs therefore assume <code>observed_time = event_time</code>. Late-arrival fixtures exercise the two-clock rule separately. The paper experiment cannot certify an unrecorded production ingestion history.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Boundary</th>
+  <th>Frozen choice</th>
+  <th>What to inspect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Time split</td>
+  <td>70% and 85% timestamp quantiles</td>
+  <td>Complete event ID arrays, not a random row split</td>
+</tr>
+<tr>
+  <td>Held-out nodes</td>
+  <td>922 sampled nodes withheld from training</td>
+  <td>Neither endpoint may enter the training population</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>81,029 events</td>
+  <td>Chronological order, training-only adjacency</td>
+</tr>
+<tr>
+  <td>Validation / test</td>
+  <td>23,621 events each</td>
+  <td>Validation selects; test reports once per selected checkpoint</td>
+</tr>
+<tr>
+  <td>New-node validation / test</td>
+  <td>12,016 / 11,715 events</td>
+  <td>At least one endpoint unseen in training</td>
+</tr>
+<tr>
+  <td>Negative candidates</td>
+  <td>Released destination pools and seeded random streams</td>
+  <td>Preserve pools, collisions and unused source draws</td>
+</tr>
+<tr>
+  <td>Visibility</td>
+  <td>Strict-past adjacency; release event-time assumption</td>
+  <td>Future indexing is acceptable only if retrieval excludes future records</td>
+</tr>
+</tbody>
+</table></div>
+<p>The complete stream has 157,474 interactions. Withheld-node filtering makes the training population smaller than 70% of that count. Evaluation uses the full adjacency index, which can restore historical context involving held-out nodes. “Unseen during fitting” does not mean “forbidden from all evaluation history.” This is the released benchmark contract; state that distinction when reporting inductive performance.</p>
+<p><strong>A database callback.</strong> Link prediction here scores an interaction before observing it. It is not L109's future-window supervised target. For a future-window target, fitting also requires that its outcome window and arrival/completeness conditions have matured. Do not transplant the Wikipedia event schedule into a database prediction task without writing that label contract.</p>
+<h2 id="4-%C2%B7-A-checkpoint-is-more-than-a-weight-file">4 &#183; A checkpoint is more than a weight file<a class="anchor-link" href="#4-%C2%B7-A-checkpoint-is-more-than-a-weight-file">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Loading the right recipe with the wrong remembered history gives a different predictor.</p>
+</blockquote>
+<p>Suppose validation selects epoch 12, but training stops at epoch 17. An <strong>epoch</strong> is one pass over the training events. <strong>Early stopping</strong> ends optimization after validation fails to improve for five epochs. The released trainer saves learned parameters and registered buffers in <code>state_dict</code>. Its queued messages live in a separate Python dictionary. Restoring the selected <code>state_dict</code> leaves the stopping epoch's queue in place.</p>
+<p>This is a state-consistency defect, not by itself evidence of future-test labels leaking. Both queues can come from pre-test observations. Yet the predictor combines components produced by different weights. You cannot defend it as the single selected validation state.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l110/checkpoint.svg" alt="Illustrative selected epoch 12 and stopping epoch 17: the release can combine selected weights/memory/clocks with stopping-epoch queued messages."><figcaption>Illustrative selected epoch 12 and stopping epoch 17: the release can combine selected weights/memory/clocks with stopping-epoch queued messages.</figcaption></figure>
+
+<p>The clean-arm restore is small because the important work is defining the complete state:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">restore_checkpoint</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Restore weights and all temporal state from the same selected epoch.&quot;&quot;&quot;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;weights&#39;</span><span class="p">],</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;temporal_state&#39;</span><span class="p">])</span>
+</pre></div>
+<p>The snapshot contains memory, last-update clocks and cloned queued messages. Cloning prevents later evaluation from silently changing the saved object. Each test branch restores the same selected post-validation snapshot, so running the all-event branch cannot contaminate the new-node branch.</p>
+<p><strong>Prediction replay versus optimization resume.</strong> Our saved artifacts support replaying evaluation. They are not full mid-epoch optimizer resumes: optimizer moments, random-generator state and exact stream position would also be necessary. Completed fits are durable artifacts; partially completed fits do not count as completed seeds.</p>
+<h2 id="5-%C2%B7-Equal-timestamps-expose-a-second-hidden-state-boundary">5 &#183; Equal timestamps expose a second hidden state boundary<a class="anchor-link" href="#5-%C2%B7-Equal-timestamps-expose-a-second-hidden-state-boundary">&#182;</a></h2><p>Consider event times <code>[1, 2, 2, 2, 3, 4]</code> and nominal batch size 2. Ordinary slicing produces <code>[1,2] | [2,2] | [3,4]</code>. The first batch can queue a time-2 message that the second batch consumes while answering time-2 questions. A strict-past neighborhood filter does not repair this memory path.</p>
+<p>The clean batcher extends a batch through its final timestamp group: <code>[1,2,2,2] | [3,4]</code>. The size limit is soft. Every previous batch now ends strictly before the next begins. Oversized timestamp groups consume more memory, so inspect their maximum size before scaling to another dataset.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l110/ties.svg" alt="Worked timestamp stream: fixed size-two slicing crosses a time-2 boundary; extending the batch preserves strict-past memory."><figcaption>Worked timestamp stream: fixed size-two slicing crosses a time-2 boundary; extending the batch preserves strict-past memory.</figcaption></figure>
+
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">strict_batches</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Soft size limit: extend the batch through its last timestamp group.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Batch size must be positive&#39;</span><span class="p">)</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="n">events</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">times</span><span class="p">))</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Finite chronological timestamps required&#39;</span><span class="p">)</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">):</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">))</span>
+        <span class="k">while</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="ow">and</span> <span class="n">times</span><span class="p">[</span><span class="n">end</span><span class="p">]</span> <span class="o">==</span> <span class="n">times</span><span class="p">[</span><span class="n">end</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]:</span>
+            <span class="n">end</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">yield</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">events</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">end</span>
+</pre></div>
+<div id="l110-batches"></div>
+
+<p><strong>Full-data boundary census.</strong> This counts boundaries at which equal-time memory could cross; it does not count affected predictions.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Population</th>
+  <th style="text-align:right">Events</th>
+  <th style="text-align:right">Fixed-slice tied boundaries</th>
+  <th style="text-align:right">Clean tied boundaries</th>
+  <th style="text-align:right">Largest clean batch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>train</td>
+  <td style="text-align:right">81,029</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">201</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">23,621</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">201</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">23,621</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">201</td>
+</tr>
+<tr>
+  <td>new_val</td>
+  <td style="text-align:right">12,016</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">201</td>
+</tr>
+<tr>
+  <td>new_test</td>
+  <td style="text-align:right">11,715</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">200</td>
+</tr>
+</tbody>
+</table></div>
+<details><summary>Worked answer, including a no-JavaScript fallback</summary>
+
+<p>At size 2, fixed slices cross one equal-time boundary. Extending the first slice through all three time-2 events gives two groups and zero tied boundaries. A weights-only restore still fails even with these clean groups: batching and checkpoint consistency are separate requirements. Actual late arrivals still require observed timestamps; neither change creates missing arrival evidence.</p>
+</details>
+
+<p>The clean arm also always restores its best validation epoch when the maximum epoch count is reached. The release uses the final epoch in that situation. These are three declared protocol differences: complete state restoration, tie-safe batching, and consistent best-validation selection. The comparison tests that combined policy. It does not isolate a causal accuracy effect of any one repair.</p>
+<h2 id="6-%C2%B7-Reproduce-first,-then-interpret-the-intervention">6 &#183; Reproduce first, then interpret the intervention<a class="anchor-link" href="#6-%C2%B7-Reproduce-first,-then-interpret-the-intervention">&#182;</a></h2><div id="l110-predict"></div>
+
+<p><strong>Held fixed:</strong> full Wikipedia input, model architecture, features, optimizer, maximum 50 epochs, patience 5, nominal batch size 200, learning rate 0.0001, dropout 0.1, ten explicit seeds and released split/candidate-pool definitions. <strong>Varied:</strong> the three clean-state policies above. Changes in grouping alter random-number consumption and optimization trajectories, even for the same initialization seed. Seed pairing helps compare the two systems; it does not imply identical negative arrays throughout training or evaluation.</p>
+<p><strong>Published lane:</strong> fresh release-compatible training targets the two TGN-attn Wikipedia Table 2 AP cells: 98.46% and 97.81%. The numerical criterion is an absolute mean gap at most 0.5 percentage point, fixed before the new runs. A percentage point is an absolute difference between percentages: 98.46% to 98.96% is +0.50 percentage point. This criterion is a descriptive comparison, not a statistical equivalence test. See <a href="https://arxiv.org/abs/2006.10637v3">the paper</a> and <a href="../labs/l110-reproduction.md">the exact reproduction contract</a>.</p>
+<p><strong>Course lane:</strong> ten fresh clean-state fits. No published target is assigned to this changed protocol. A cleaner contract may increase, decrease or leave the score unchanged. The reason to repair the contract is that it can be defended, not that it maximizes the reported number.</p>
+<p><strong>Average precision (AP)</strong> summarizes positive retrieval as the score threshold changes. The release calculates AP separately within each scoring batch, then takes an equally weighted mean of those batch values. <strong>Pooled AP</strong> instead ranks all predictions together. These are different metrics. A short final batch gets the same batch-mean weight as a full batch. Because the clean arm changes batching, we report both metrics and expose batch IDs in the saved predictions. Pooled results remain conditional on the actual candidates drawn by that arm.</p>
+<p><strong>Work a tiny metric example.</strong> Batch A scores its positive 0.9 and negative 0.8. Batch B scores its positive 0.2 and negative 0.1. Each batch ranks its positive first, so each AP is 1 and their mean is 1. Pooling gives the label order positive, negative, positive, negative. With no score ties, AP is the mean precision at positive ranks: <code>(1 + 2/3) / 2 = 5/6</code>, about 83.33%. Both calculations are correct; they answer differently aggregated questions. Our independent evaluator also handles tied scores by grouping equal thresholds.</p>
+<p><strong>Fresh full-data runs: RUNNING.</strong> No completed ten-seed mean is claimed.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l110/results.svg" alt="Author-reference full-data runs. Individual seeds and mean ± sample seed SD; published targets apply to the release arm only."><figcaption>Author-reference full-data runs. Individual seeds and mean ± sample seed SD; published targets apply to the release arm only.</figcaption></figure>
+
+<p>Read each seed as an initialization on one fixed data split. The displayed standard deviation is sample standard deviation across seeds, measured in percentage points. It does not measure uncertainty across different databases or independent time splits.</p>
+<blockquote>
+<p><strong>Scope check.</strong> A complete named Wikipedia reproduction is not reproduction of the entire paper. Reddit, Twitter, dynamic node classification, competitor models and the ablation suite remain outside this lesson. Modern libraries and explicit independent seeds differ from the historical environment and original continuously consumed random stream. Historical identity remains INCOMPARABLE; full-paper reproduction remains NOT_ESTABLISHED. Earlier L102 evidence is context, not a substitute for these fresh runs.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Make-the-audit-capable-of-catching-a-failure">7 &#183; Make the audit capable of catching a failure<a class="anchor-link" href="#7-%C2%B7-Make-the-audit-capable-of-catching-a-failure">&#182;</a></h2><p>A useful audit changes something the predictor is forbidden to know and asks whether an earlier prediction changes. A passing score or a timestamp assertion at only one layer cannot substitute for that test. In the six-event fixed-weight witness, changing a time-2 feature shifts a later time-2 score by about 0.1083 under fixed slicing. Grouping ties makes all time-2 scores exactly invariant, while time-3/4 predictions still respond. That is a synthetic correctness witness, not an accuracy result.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Test</th>
+  <th>Intervention</th>
+  <th>Required outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Current-event exclusion</td>
+  <td>Change the feature vector of the event being scored</td>
+  <td>Its score remains identical before the event is observed</td>
+</tr>
+<tr>
+  <td>Future exclusion</td>
+  <td>Change a strictly later edge feature</td>
+  <td>The earlier score remains identical</td>
+</tr>
+<tr>
+  <td>Complete-state recovery</td>
+  <td>Advance the model, then restore an earlier checkpoint</td>
+  <td>Recover exactly the saved next prediction</td>
+</tr>
+<tr>
+  <td>Branch isolation</td>
+  <td>Restore the selected state before each test population</td>
+  <td>Evaluation order cannot accumulate extra branch history</td>
+</tr>
+<tr>
+  <td>Timestamp boundary</td>
+  <td>Force a tied group across a nominal batch boundary</td>
+  <td>Clean batching keeps the group together</td>
+</tr>
+<tr>
+  <td>Availability</td>
+  <td>Date an event early but deliver it late</td>
+  <td>Exclude it from earlier legal history</td>
+</tr>
+</tbody>
+</table></div>
+<p>The repository suite rejects four deliberate faults; the notebook also rejects a broken solution for each of its three live tasks. We also compare the visible encoder's probabilities, gradients and state with the pinned original source; independently reconstruct preprocessing and split arrays; and recompute metrics from saved positive and negative probabilities. These checks answer different questions. Agreement with the original code alone cannot reveal a flaw shared with the original code.</p>
+<p>The author contract includes exact commands, file identities, runtime/cost accounting and unrun boundaries. If a runtime cutoff ends a fit, the ledger must say INCOMPLETE. A partial trace is not one of ten completed seeds.</p>
+<h2 id="8-%C2%B7-Your-checkpoint-submission">8 &#183; Your checkpoint submission<a class="anchor-link" href="#8-%C2%B7-Your-checkpoint-submission">&#182;</a></h2><p>Open the <a href="../labs/0110-temporal-gnn-checkpoint.ipynb">student notebook</a> or its <a href="../labs/html/0110-temporal-gnn-checkpoint.html">prepared walkthrough</a>. The notebook contains the complete readable model and trainer; its default small training exercise is labeled separately from full-data author evidence. The full experiment gate invokes the same visible training implementation on all released populations.</p>
+<ol>
+<li><strong>TODO:</strong> implement complete checkpoint restoration. <strong>CHECK:</strong> recover a prediction after the model has advanced and its weights have changed.</li>
+<li><strong>TODO:</strong> implement tie-safe batching. <strong>CHECK:</strong> preserve every input event exactly once and reject equal-time boundary leakage.</li>
+<li><strong>TODO:</strong> implement two-clock eligibility. <strong>CHECK:</strong> reject late arrivals and strict-time ties, then audit the full real-data batch frontiers under the declared arrival assumption.</li>
+<li><strong>RUN:</strong> train, select with validation, restore both evaluation branches, and independently inspect predictions. Compare full reproduction targets only for the release arm.</li>
+<li><strong>EXIT:</strong> submit your code, a fresh run report, one failing time-travel counterexample, and a 200–300 word defense of the split, candidates, state restoration and evidence limits.</li>
+</ol>
+<div id="l110-teachback"></div>
+
+<p>A strong defense explains why a strict sampler can coexist with leaking memory, why matched paper scores cannot establish actual availability, and why fixing checkpoint consistency does not guarantee a higher AP. Prepared author evidence does not complete your checkpoint: <strong>PENDING_WRITTEN_DEFENSE</strong> remains until your own explanation and code are reviewed.</p>
+<p>Tomorrow, reconstruct the four pieces of inference state without notes. Next week, invent a late-arriving event and a tied-timestamp counterexample. These spaced retrieval tasks test retention beyond today's ability to follow the notebook.</p>
+<p>The next quarter moves to OGB benchmark reproduction. Carry forward this habit: define the exact prediction question and evaluator before treating a leaderboard number as evidence. Keep the <a href="../reference/temporal-gnn-checkpoint.html">temporal checkpoint reference</a> nearby. Ask the teaching agent follow-up questions about any unclear computation or submit your EXIT for feedback.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/temporal-checkpoint-viz.js"></script><script src="../assets/l110-lesson.js"></script></body></html>

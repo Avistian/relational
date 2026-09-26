@@ -1,0 +1,169 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Temporal link prediction: test the candidates</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/candidate-evaluation.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0105-continuous-time.html">Lesson 105</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 106</p><h1>Temporal link prediction: test the candidates</h1></header><p class="subtitle">One tangible win: explain exactly what a future-edge score measures—and expose when an easy candidate set makes memorization look intelligent. Core lesson: 20–30 minutes. Lab: 40–60 minutes, plus the complete source replay.</p>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without opening your notes, answer:</p>
+<ol>
+<li>Can a prediction just before time 10 read another event timestamped 10?</li>
+<li>If a record happened at 3 but arrived at 12, can a query at 8 use it?</li>
+<li>Does a daily count-weighted graph retain the order of its interactions?</li>
+</ol>
+<details><summary>Check after writing your answers</summary>
+
+<p>No, no, and no under our strict before-event contract. Require event time &lt; query and availability ≤ query. Counts preserve multiplicity, not order. Revisit <a href="0104-information-leakage-in-time.html">L104</a> and <a href="0105-continuous-time.html">L105</a> if needed.</p>
+</details>
+
+<div id="warmup"></div>
+
+<p><strong>The next problem.</strong> L105 established what a representation retains. Now we must decide what prediction we are evaluating. A model can use legal history and still receive an unconvincing test: distinguish a familiar pair from a randomly constructed pair that almost never interacts. For our relational-learning mission, beating that test alone is weak evidence that a learned relational model adds value.</p>
+<h2 id="2-%C2%B7-Define-the-prediction-before-the-model">2 &#183; Define the prediction before the model<a class="anchor-link" href="#2-%C2%B7-Define-the-prediction-before-the-model">&#182;</a></h2><p><strong>An interaction is an occurrence.</strong> An editor can edit the same page repeatedly. Predicting its next edit differs from predicting its first-ever connection to that page. A previously observed pair may be positive again.</p>
+<p><strong>A query specifies a source, destination and time.</strong> A scorer assigns a number s(u,v,t), using permitted history. A positive is an observed interaction. A sampled negative is a comparison pair declared absent under the evaluation's observation interval and sampling rules. It does not mean the pair will never interact.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> “Which of these candidate interactions occurred?” is narrower than “which interactions will occur tomorrow?”</p>
+</blockquote>
+<p>The Wikipedia experiment supplies the positive event times and an equal number of negative examples. It tests discrimination at those times. It does not predict when the next event occurs, enumerate every possible edge, or estimate tomorrow's total edits. A deployment forecast needs a horizon, eligible node population, feature availability, observation coverage and treatment of incomplete labels.</p>
+<p><strong>Do not conflate two uses of inductive.</strong> An unseen <em>edge</em> is a new pair; both endpoints may be familiar. An unseen <em>node</em> is an entity absent from training. The paper's inductive negative sampler concerns pairs first observed after the training/validation period. The released loader also withholds some nodes' early interactions. Those are separate mechanisms. <a href="https://arxiv.org/html/2207.10128v2">Primary source: §§3,5</a>.</p>
+<h2 id="3-%C2%B7-Model-architecture:-EdgeBank-as-a-membership-test">3 &#183; Model architecture: EdgeBank as a membership test<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-EdgeBank-as-a-membership-test">&#182;</a></h2><p><strong>EdgeBank has no fitted weights.</strong> Its state is a set of remembered directed pairs. Given Q candidate pairs, it returns Q binary scores: 1 if the pair is in memory, otherwise 0. A score of 1 is a ranking signal, not a calibrated probability.</p>
+<p><strong>Worked example.</strong> Before query time 10, history contains AX@1, AY@3 and BX@8. Candidate AX receives 1; candidate BY receives 0. After an actual BY event is observed, it may enter memory for a later query. Negative candidates never enter memory merely because we scored them.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l106/architecture.svg" alt="Synthetic membership trace: score AX and BY from strictly earlier history, then update only with observed positives."><figcaption>Synthetic membership trace: score AX and BY from strictly earlier history, then update only with observed positives.</figcaption></figure>
+
+<p><strong>Unlimited memory</strong> retains every supplied historical pair. <strong>Window memory</strong> forgets older events before forming the set. Recency can remove obsolete connections, reducing false positives. It can also forget a genuinely recurring pair, reducing true positives. Neither memory discovers a first-ever edge.</p>
+<p>The paper describes a recent fixed-duration window related to test duration. The released <code>fixed</code> implementation instead computes the 0.85 quantile of the current history's event times and retains events at or above it. Its duration changes with event density and history growth. Our named replay uses that released operator, with this deviation visible. There is no optimizer, loss, epoch schedule or checkpoint to tune. <a href="https://arxiv.org/html/2207.10128v2#S4">Paper §4</a> · <a href="https://github.com/fpour/DGB/blob/7793e9449f5321c7e39b24c0585e3c3de7cf9f5e/EdgeBank/link_pred/edge_bank_baseline.py">pinned implementation</a>.</p>
+<p><strong>Trace the clock.</strong> The source evaluates batches of 200 positives using training/validation history plus earlier test batches. It then adds the observed positives for later batches. This delays within-batch updates. Equal timestamps can cross batch boundaries; row order alone cannot establish a strict before-event history. The replay reports such exposure. The lab's <code>legal_history</code> exercise implements the stricter clock as a separate contract.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">memory_scores</span><span class="p">(</span><span class="n">history</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;unlimited&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;history [N,3]=(source,destination,time); candidates [Q,2]; scores [Q].</span>
+
+<span class="sd">    window matches released fixed mode: latest 15% quantile of supplied</span>
+<span class="sd">    HISTORY EVENTS, not 15% of wall-clock time or a fixed-duration window.</span>
+<span class="sd">    Caller establishes which history is legal. No current candidates inserted.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">h</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">history</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;unlimited&#39;</span><span class="p">,</span><span class="s1">&#39;window&#39;</span><span class="p">):</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown memory mode&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">2</span> <span class="ow">or</span> <span class="n">h</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">!=</span><span class="mi">3</span> <span class="ow">or</span> <span class="n">c</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">2</span> <span class="ow">or</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">!=</span><span class="mi">2</span><span class="p">:</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Expected [N,3] and [Q,2]&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Finite inputs required&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mode</span><span class="o">==</span><span class="s1">&#39;window&#39;</span><span class="p">:</span><span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">[</span><span class="n">h</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">&gt;=</span><span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">h</span><span class="p">[:,</span><span class="mi">2</span><span class="p">],</span><span class="mf">.85</span><span class="p">)]</span>
+    <span class="n">memory</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span><span class="n">h</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">tuple</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span> <span class="ow">in</span> <span class="n">memory</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">c</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+</pre></div>
+<h2 id="4-%C2%B7-Change-the-negatives;-keep-the-scorer-fixed">4 &#183; Change the negatives; keep the scorer fixed<a class="anchor-link" href="#4-%C2%B7-Change-the-negatives;-keep-the-scorer-fixed">&#182;</a></h2><p><strong>Random negatives</strong> draw from the endpoint population. In a sparse interaction graph, many random pairs have never interacted. A memory baseline often gives them 0.</p>
+<p><strong>Historical negatives</strong> preferentially choose pairs observed before the current batch but not active in its time interval. A baseline that remembers every old pair often gives these negatives 1.</p>
+<p><strong>Inductive negatives</strong> further exclude pairs observed during training/validation. They target pairs first seen during test history and absent in the current interval. If too few eligible pairs exist, the source fills the remainder with random pairs. This is not a claim that the endpoints are unseen nodes. <a href="https://arxiv.org/html/2207.10128v2#S5">Paper §5</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l106/candidates.svg" alt="Candidate populations differ even when the scorer and positive events stay fixed. Inductive pairs need not involve unseen nodes."><figcaption>Candidate populations differ even when the scorer and positive events stay fixed. Inductive pairs need not involve unseen nodes.</figcaption></figure>
+
+<p><strong>Worked example.</strong> Keep two positive scores fixed at [1,0]. With two never-seen negative pairs, their scores are [0,0]. Replace both with remembered-but-currently-absent pairs and their scores become [1,1]. Nothing changed inside the model. Its evaluation becomes harder.</p>
+<p><strong>Predict first:</strong> as the number of remembered negatives rises from zero to two, will the score improve or deteriorate?</p>
+<div id="l106-candidates"></div>
+
+<p>The widget changes only the synthetic negative set. It is a controlled illustration, not the paper's measured Wikipedia result. A real historical sampler must also respect the observation interval, available history, exclusion set, fallback rule and reproducible random stream.</p>
+<blockquote>
+<p><strong>Source audit.</strong> The released random sampler first excludes positive pairs, then its caller replaces each sampled source with the corresponding positive source. That second operation can reintroduce a positive pair. We preserve and count these collisions in the source replay. A corrected accept/reject sampler would be a separate experiment; calling it an exact replay would hide a protocol change.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Derive-the-metrics%E2%80%94including-ties">5 &#183; Derive the metrics&#8212;including ties<a class="anchor-link" href="#5-%C2%B7-Derive-the-metrics%E2%80%94including-ties">&#182;</a></h2><p><strong>Precision</strong> is the fraction of predicted positives that are actual positives. <strong>Recall</strong> is the fraction of actual positives retrieved. <strong>Average precision (AP)</strong> sums precision weighted by each increase in recall as the score threshold falls. Equal scores enter together; do not order tied examples arbitrarily.</p>
+<p>For binary scores there are only two groups. Let P and N be the positive and negative counts. Let a be the number of positives scoring 1 and b the number of negatives scoring 1. The first group has precision a/(a+b) and recall a/P. The final group includes everything, with precision P/(P+N) and remaining recall 1−a/P:</p>
+<p><strong>AP = (a/P) × a/(a+b) + (1−a/P) × P/(P+N).</strong></p>
+<p>Use zero for the first contribution when a+b=0. Here P=N=2 and a=1. With b=0, AP = ½×1 + ½×½ = <strong>0.75</strong>. With b=2, AP = ½×⅓ + ½×½ = <strong>5/12 ≈ 0.4167</strong>.</p>
+<p><strong>AUROC</strong> is the probability that a uniformly drawn positive outranks a uniformly drawn negative, awarding half credit for a tie. The pairwise formula is:</p>
+<p><strong>AUROC = [a(N−b) + ½{ab + (P−a)(N−b)}] / (PN).</strong></p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l106/metrics.svg" alt="Pairwise AUROC credits: one for a win, half for a tie, zero for a loss. The same two positives face different negatives."><figcaption>Pairwise AUROC credits: one for a win, half for a tie, zero for a loss. The same two positives face different negatives.</figcaption></figure>
+
+<p>In the example, AUROC falls from <strong>0.75</strong> to <strong>0.25</strong>. The below-chance result is possible because the chosen negatives are more likely to be remembered than the positives. Flipping the predictions after seeing test labels would define a new, test-selected method.</p>
+<p><strong>Aggregation matters.</strong> The source averages AP and AUROC over batches, giving its last partial batch the same weight as a full batch. Computing one metric from all predictions is a different operation. Even a size-weighted batch average generally differs from pooled AP or AUROC, because pooling introduces comparisons across batches. We save both, and compare only the source's batch mean to published targets.</p>
+<p><strong>A balanced test is artificial prevalence.</strong> With P=N, an all-tied scorer has AP 0.5. Changing the negative ratio changes precision and AP; keeping the score distributions fixed leaves the population AUROC interpretation unchanged. Neither number here establishes operational precision across all possible Wikipedia pairs. The released samplers also know the endpoint universe from the full file, so this is a retrospective closed-universe test; an online service must declare which nodes are known at each query. <a href="https://scikit-learn.org/stable/modules/model_evaluation.html#precision-recall-f-measure-metrics">Metric definitions</a>.</p>
+<h2 id="6-%C2%B7-Full-Wikipedia-replay:-predict,-then-inspect">6 &#183; Full Wikipedia replay: predict, then inspect<a class="anchor-link" href="#6-%C2%B7-Full-Wikipedia-replay:-predict,-then-inspect">&#182;</a></h2><p><strong>Held fixed:</strong> the complete authenticated file, released split, 200-event batches, two memory operators and source execution order. <strong>Varied:</strong> the three negative samplers and memory choice. <strong>Measured:</strong> batch-mean AP/AUROC, pooled diagnostics, collisions, and source prediction agreement.</p>
+<div id="l106-predict"></div>
+
+<p>All <strong>157,474 raw events</strong> were authenticated. Released history: <strong>104650</strong> events; test: <strong>23621</strong> events; held-out nodes: <strong>922</strong>. Every test event was evaluated in all six conditions, five times.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Sampler</th>
+  <th>Memory</th>
+  <th style="text-align:right">Replay AP</th>
+  <th style="text-align:right">Paper AP</th>
+  <th style="text-align:right">Replay AUROC</th>
+  <th style="text-align:right">Paper AUROC</th>
+  <th>Numeric status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rnd</td>
+  <td>unlimited</td>
+  <td style="text-align:right">0.9045 ± 0.0000</td>
+  <td style="text-align:right">0.90 ± 0.000</td>
+  <td style="text-align:right">0.9082 ± 0.0000</td>
+  <td style="text-align:right">0.91 ± 0.000</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>rnd</td>
+  <td>window</td>
+  <td style="text-align:right">0.8700 ± 0.0000</td>
+  <td style="text-align:right">0.87 ± 0.000</td>
+  <td style="text-align:right">0.8713 ± 0.0000</td>
+  <td style="text-align:right">0.87 ± 0.000</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>hist_nre</td>
+  <td>unlimited</td>
+  <td style="text-align:right">0.4969 ± 0.0008</td>
+  <td style="text-align:right">0.50 ± 0.000</td>
+  <td style="text-align:right">0.4924 ± 0.0016</td>
+  <td style="text-align:right">0.49 ± 0.001</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>hist_nre</td>
+  <td>window</td>
+  <td style="text-align:right">0.7111 ± 0.0021</td>
+  <td style="text-align:right">0.71 ± 0.001</td>
+  <td style="text-align:right">0.7688 ± 0.0017</td>
+  <td style="text-align:right">0.77 ± 0.001</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>induc_nre</td>
+  <td>unlimited</td>
+  <td style="text-align:right">0.4757 ± 0.0001</td>
+  <td style="text-align:right">0.48 ± 0.000</td>
+  <td style="text-align:right">0.4334 ± 0.0001</td>
+  <td style="text-align:right">0.43 ± 0.000</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>induc_nre</td>
+  <td>window</td>
+  <td style="text-align:right">0.4645 ± 0.0002</td>
+  <td style="text-align:right">0.46 ± 0.000</td>
+  <td style="text-align:right">0.4043 ± 0.0004</td>
+  <td style="text-align:right">0.40 ± 0.001</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>Values are mean ± population SD for our replay, alongside the paper’s reported SD. CLOSE compares means only; reported variability need not match. Every batch prediction matched the pinned original memory implementation; an independent metrics library agreed with the visible tie formulas.</p>
+<ul>
+<li><strong>rnd:</strong> 1 distinct candidate arrays across five iterations; positive/negative collisions per iteration: [27, 27, 27, 27, 27].</li>
+<li><strong>hist_nre:</strong> 5 distinct candidate arrays across five iterations; positive/negative collisions per iteration: [0, 0, 0, 0, 0].</li>
+<li><strong>induc_nre:</strong> 5 distinct candidate arrays across five iterations; positive/negative collisions per iteration: [0, 0, 0, 0, 0].</li>
+</ul>
+<p><strong>Aggregation witness:</strong> inductive/window pooled AP is 0.4572, versus batch-mean AP 0.4645, from exactly the same predictions. Only the latter is the source's paper-comparison metric.</p>
+<p>Rows in history at or after a batch's first timestamp, summed across batch starts: <strong>5</strong> per iteration. This audit count is not a claim about feature ingestion times, which are unavailable.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l106/results.svg" alt="Measured full Wikipedia source replay. Points are means with population SD over five source iterations; crosses are rounded paper targets. Zero SD can mean an identical candidate stream, not certainty."><figcaption>Measured full Wikipedia source replay. Points are means with population SD over five source iterations; crosses are rounded paper targets. Zero SD can mean an identical candidate stream, not certainty.</figcaption></figure>
+
+<p><strong>How to interpret variability.</strong> The original random sampler resets an instance RNG to seed 2 each run. Historical/inductive methods draw from global NumPy state, which their reset method does not reset. Five loop iterations therefore do not mean five independent training seeds. We retain those semantics and report distinct candidate arrays. Zero variability on a repeated stream is not a confidence interval.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This is the complete declared Wikipedia source replay for six conditions and five iterations. Numerical CLOSE means both metrics fall within the predeclared 0.015 absolute tolerance of rounded paper targets. FAIL means they do not. Prediction parity with released code does not establish historical experiment identity. Other datasets and neural baselines are NOT_RUN. See the <a href="../labs/l106-reproduction.md">protocol and exact commands</a>.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Lab:-implement,-test,-defend">7 &#183; Lab: implement, test, defend<a class="anchor-link" href="#7-%C2%B7-Lab:-implement,-test,-defend">&#182;</a></h2><p>Open the <a href="../labs/0106-temporal-link-prediction.ipynb">student notebook</a>, or inspect the <a href="../labs/html/0106-temporal-link-prediction.html">executed solution</a> after attempting it. The notebook explains the mechanism, embeds portable figures and exposes the implementation. No hidden <code>relkit</code> import is needed.</p>
+<ol>
+<li><strong>TODO:</strong> implement the strict event/availability gate; test ties and late arrival.</li>
+<li><strong>TODO:</strong> implement memory membership with both retention rules; test directed identity and forgetting.</li>
+<li><strong>TODO:</strong> implement binary-score AP/AUROC with tie handling; compare with a separate metrics implementation.</li>
+<li><strong>RUN:</strong> recompute all scores for the full frozen source candidate corpus. Candidate artifacts are authenticated. An explicit source-generation cell permits a fresh full resampling replay; it is slower because the original sampler materializes millions of pairs.</li>
+</ol>
+<p><strong>EXIT:</strong> submit your three functions, all six measured rows, and a 150–250 word defense. Explain whether the evidence supports “this model forecasts future interactions”; identify the candidate distribution, query clock, batch aggregation and one source/prose discrepancy. Propose one new deployment test without selecting its design from test performance.</p>
+<div id="l106-teachback"></div>
+
+<p><strong>Next:</strong> L107 examines snapshot methods. Carry the same prediction contract into discrete time: define the forecast interval before constructing labels or releasing a completed snapshot. Ask the teaching agent follow-up questions and paste your EXIT evidence for feedback. Prepared materials remain <strong>PENDING_WRITTEN_DEFENSE</strong> until you demonstrate the skill.</p>
+<h2 id="Reference-and-primary-reading">Reference and primary reading<a class="anchor-link" href="#Reference-and-primary-reading">&#182;</a></h2><p>Read Poursafaei et al., <a href="https://arxiv.org/html/2207.10128v2"><em>Towards Better Evaluation for Dynamic Link Prediction</em>, §§4–6 and Appendix B</a>. Inspect the <a href="https://github.com/fpour/DGB/tree/7793e9449f5321c7e39b24c0585e3c3de7cf9f5e/EdgeBank/link_pred">publication-era code</a> alongside the prose. Keep the <a href="../reference/temporal-link-evaluation.html">evaluation reference card</a> beside your experiments.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/candidate-evaluation-viz.js"></script><script src="../assets/l106-lesson.js"></script></body></html>

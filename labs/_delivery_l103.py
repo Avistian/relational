@@ -34,6 +34,15 @@ with sync_playwright() as pw:
   assert page.locator('svg').evaluate("s=>{let boxes=Array.from(s.querySelectorAll('rect[rx]')).map(e=>e.getBBox());return boxes.every((x,i)=>boxes.every((y,j)=>i===j||x.x+x.width<=y.x||y.x+y.width<=x.x||x.y+x.height<=y.y||y.y+y.height<=x.y))}"),'box overlap'
  page.goto((P/'html'/f'{S}.html').as_uri());figures=page.locator('img[src^="data:image/png;base64,"]').count();assert figures>=3
  page.set_viewport_size({'width':950,'height':900});page.locator('img[src^="data:image/png;base64,"]').nth(2).screenshot(path='/tmp/l103-notebook-architecture.png')
+ static=browser.new_context(java_script_enabled=False)
+ plain=static.new_page()
+ for width in [1200,375]:
+  plain.set_viewport_size({'width':width,'height':900});plain.goto((R/'lessons'/f'{S}.html').as_uri())
+  assert plain.locator('h1').is_visible() and 'TGAT' in plain.locator('h1').inner_text()
+  assert 'PENDING_WRITTEN_DEFENSE' in plain.locator('body').inner_text()
+  assert '[[' not in plain.locator('body').inner_text()
+  assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+ static.close()
  browser.close()
 student=nbformat.read(P/f'{S}.ipynb',as_version=4);solution=nbformat.read(P/'solutions'/f'{S}.ipynb',as_version=4)
 assert sum('raise NotImplementedError' in c.source for c in student.cells if c.cell_type=='code')==3
@@ -75,4 +84,5 @@ with tempfile.TemporaryDirectory(prefix='l103-pages-') as tmp:
  finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors
 report={'status':'PASS','browser_widths':[1200,375],'widget_states':states,'independent_widget_arithmetic':'PASS','reset_and_keyboard':'PASS','print':'CHECKED','portable_figures':figures,'student_live_tasks':3,'copied_pages_local_links':checked,'deterministic_rebuild':'EXACT','manifest_navigation_over_http':'PASS','unlicensed_originals_excluded':'PASS','javascript_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+report['no_javascript_reading']='PASS at 1200 and 375 pixels'
 (P/'_delivery_l103_results.json').write_text(json.dumps(report,indent=2)+'\n');print(report)

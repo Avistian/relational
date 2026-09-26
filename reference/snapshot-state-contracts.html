@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Snapshot state contracts</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0106-temporal-link-prediction.html">Lesson 106</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 107</p><h1>Snapshot state contracts</h1></header><h2 id="Forecast-contract">Forecast contract<a class="anchor-link" href="#Forecast-contract">&#182;</a></h2><p>A window <code>[kΔ,(k+1)Δ)</code> becomes available at <code>(k+1)Δ</code> under immediate arrival. A query q may use only windows with close ≤ q. A partially observed last window is not complete just because the file ended. Snapshot interaction graphs do not imply persistent relationships.</p>
+<h2 id="State-and-update">State and update<a class="anchor-link" href="#State-and-update">&#182;</a></h2><div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Model</th>
+  <th>Recurrent object</th>
+  <th>Shape</th>
+  <th>Identity constraint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>GCN-GRU</td>
+  <td>Node state S</td>
+  <td>N × d</td>
+  <td>Align the same node across slices</td>
+</tr>
+<tr>
+  <td>EvolveGCN-H</td>
+  <td>GCN weights W</td>
+  <td>F × d</td>
+  <td>Summarize current node features before the matrix update</td>
+</tr>
+<tr>
+  <td>Released O</td>
+  <td>GCN weights W</td>
+  <td>F × d</td>
+  <td>Observation-free recurrence, reset per fixed-length query</td>
+</tr>
+</tbody>
+</table></div>
+<p>GCN: Z = σ(D^(-1/2)(A+I)D^(-1/2)XW), with D from row sums after self-loops. Pair head: concatenate endpoint representations → MLP → class logits.</p>
+<p>PyTorch GRU's z retains old state. EvolveGCN matrix z selects the new candidate. Check the equation, not the letter.</p>
+<h2 id="Protocol-traps">Protocol traps<a class="anchor-link" href="#Protocol-traps">&#182;</a></h2><p>Six inputs arise from t−5…t, despite <code>num_hist_steps=5</code>. Source O is GRU-style, while the paper describes an LSTM. Released degree-schema fitting scans later snapshots. RReLU remains stochastic during validation. All-pair evaluation includes missing diagonal pairs. Source “MRR” averages over all relevant ranks, not just the first.</p>
+<h2 id="Minimum-evidence">Minimum evidence<a class="anchor-link" href="#Minimum-evidence">&#182;</a></h2><p>Pin raw data and source; audit available history, candidates, selection and metric aggregation; inspect state reset and checkpoint state; save every selected prediction; recompute scores independently. CLOSE is a predeclared numeric diagnostic, not historical identity.</p>
+<p>Read <a href="../lessons/0107-snapshot-methods.html">the lesson</a>, <a href="../labs/l107-reproduction.md">full protocol</a> and <a href="https://arxiv.org/html/1902.10191v3">primary paper</a>.</p>
+</article></body></html>

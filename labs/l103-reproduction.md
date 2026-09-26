@@ -29,6 +29,8 @@ Source model replay after seed 0 completes:
 .venv/bin/modal run modal/l103_paper_repro.py::source_check
 ```
 
+The author run experienced two provider preemptions, affecting seeds 6 and 8 after thirteen logged epochs each. Both restarted from initialization under the same frozen implementation and seed. The [restart audit](_restart_audit_l103_results.json) records exact loss/validation equality over their repeated logged prefixes; interrupted attempts are excluded from the ten-run aggregate. To regenerate that audit from the local author log, run `.venv/bin/python labs/_restart_audit_l103.py`. This is recovery evidence, not a claim of mid-training resume.
+
 ## Protocol and deviation ledger
 
 | Dimension | Released replay |

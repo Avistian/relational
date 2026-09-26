@@ -1,0 +1,260 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Database timestamps: reconstruct what was known</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/database-history.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0108-temporal-neighbor-sampling.html">Lesson 108</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 109</p><h1>Database timestamps: reconstruct what was known</h1></header><p class="stream-label">One skill: turn database history into a defensible prediction-time graph</p>
+
+<p>You have learned to sample a temporal graph. Now someone hands you a database containing <code>created_at</code>, <code>updated_at</code>, and <code>date</code>. Which one should govern the graph? <strong>By the end, you will write a timestamp contract, reconstruct historical row versions, and prove that a join uses the information available at its query time.</strong></p>
+<p>This is the hand-off from <a href="0096-multi-relational-data.html">L096’s SQL-to-graph mapping</a>, <a href="0104-information-leakage-in-time.html">L104’s leakage audit</a>, and <a href="0108-temporal-neighbor-sampling.html">L108’s temporal sampler</a> to relational learning. A powerful sampler cannot recover a historical value that the database has overwritten. The mission requires both meaningful relational structure and an honest account of when it became usable.</p>
+<h2 id="First-retrieve,-without-notes">First retrieve, without notes<a class="anchor-link" href="#First-retrieve,-without-notes">&#182;</a></h2><div id="warmup"></div>
+
+<ol>
+<li>An event happened on day 2 and arrived on day 7. Can a day-5 prediction use it?</li>
+<li>Why can a correct foreign-key join still leak future information?</li>
+<li>What separates a target’s prediction time from the time it becomes safe to train on it?</li>
+</ol>
+<details><summary>Check after writing</summary>
+
+<p>No: it was not available by day 5. A key can link to a future row or a corrected value that was unknown at the query time. A future-window target must wait until the window has ended and the necessary outcomes are available, under a declared completeness policy.</p>
+</details>
+
+<h2 id="1-%C2%B7-Name-the-clocks-before-choosing-a-column">1 &#183; Name the clocks before choosing a column<a class="anchor-link" href="#1-%C2%B7-Name-the-clocks-before-choosing-a-column">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> “When did this happen?” and “When could our predictor know it?” are separate questions.</p>
+</blockquote>
+<p>An <strong>event time</strong> marks an occurrence: a purchase, a race result, or a payment. An <strong>availability time</strong>, called <code>observed_at</code> here, marks when that information becomes usable by the prediction system. A queue delay, batch import, or feature-processing delay can separate them.</p>
+<p>A <strong>valid time</strong> describes when a state applies in the world. For example, an address may be effective from day 2 even though its correction arrives on day 8. Valid time is useful for state histories; event time is useful for immutable occurrences. Do not give one column both meanings without a reason.</p>
+<p>A <strong>system time</strong> records when a particular storage system recorded a version. It can supply availability evidence, but only if that system is the boundary your predictor actually reads. A downstream system may learn the value later. <a href="https://martinfowler.com/articles/bitemporal-history.html">Fowler’s bitemporal history</a> explains the two historical questions; <a href="https://learn.microsoft.com/en-us/sql/relational-databases/tables/temporal/overview?view=sql-server-ver17">SQL Server’s temporal-table documentation</a> describes system-managed row histories. Neither a suggestive column name nor an old effective date establishes model availability.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Column</th>
+  <th>Question to resolve before use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>created_at</code></td>
+  <td>Creation of the entity, source row, or warehouse copy? Does this timestamp cover every field?</td>
+</tr>
+<tr>
+  <td><code>updated_at</code></td>
+  <td>Does it describe the current version only? Where are the old values?</td>
+</tr>
+<tr>
+  <td><code>date</code></td>
+  <td>Event occurrence, calendar date, planned date, or publication date?</td>
+</tr>
+<tr>
+  <td><code>observed_at</code></td>
+  <td>Observed by which system? Is the value already usable by the predictor then?</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Worked example.</strong> An immutable event has event time 2 and observed time 7. The query cutoff is 5. Checking only <code>2 &lt;= 5</code> admits it. Checking both clocks rejects it because <code>7 &lt;= 5</code> is false.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l109/clocks.svg" alt="Synthetic immutable event: occurred day 2, observed day 7; exclude from the day-5 query."><figcaption>Synthetic immutable event: occurred day 2, observed day 7; exclude from the day-5 query.</figcaption></figure>
+
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">legal_history</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return indices of immutable events both occurred and observed by cutoff.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;event_time&#39;</span><span class="p">]</span><span class="o">&lt;=</span><span class="n">cutoff</span> <span class="ow">and</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;observed_at&#39;</span><span class="p">]</span><span class="o">&lt;=</span><span class="n">cutoff</span><span class="p">]</span>
+</pre></div>
+<p><strong>Boundary contract.</strong> This lesson uses inclusive visibility: a fully available record at cutoff <code>t</code> may be used at <code>t</code>. L108’s TGAT event prediction uses strict-past history, excluding events at its cutoff. These represent different prediction orders. If a timestamp tie does not establish whether the query happened before or after publication, use a conservative boundary or an explicit sequence number. Do not let file order decide.</p>
+<p><strong>Clock units.</strong> Real-data comparisons use pandas timestamps with the release’s timezone-naive semantics. The synthetic lab uses integer days in one common clock. A production contract should declare timezone, precision, clock source and tie ordering. Converting a date without a time into midnight does not prove that all its fields were known at midnight.</p>
+<h2 id="2-%C2%B7-Reconstruct-the-value-before-joining-it">2 &#183; Reconstruct the value before joining it<a class="anchor-link" href="#2-%C2%B7-Reconstruct-the-value-before-joining-it">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A historical query needs the old answer and the old relationship.</p>
+</blockquote>
+<p>An <strong>append-only history</strong> retains each received version instead of replacing the previous one. A <strong>revision</strong> identifies a correction. A <strong>tombstone</strong> is a stored deletion marker; it must win version selection before the deleted row disappears.</p>
+<p>Our bounded state representation stores <code>id</code>, <code>valid_from</code>, <code>observed_at</code>, <code>revision</code>, <code>deleted</code>, and the row’s values. A new <code>valid_from</code> starts an effective step. Revisions with the same <code>valid_from</code> correct that step. At cutoff <code>t</code>, first keep versions with both <code>valid_from &lt;= t</code> and <code>observed_at &lt;= t</code>. Within each ID, choose the greatest <code>(valid_from, observed_at, revision)</code> tuple. Finally remove selected tombstones. Duplicate version keys are rejected, because they would make the answer ambiguous.</p>
+<p><strong>Worked example.</strong> Fact <code>r</code> became effective on day 2. Its first version arrived on day 3 and pointed to person A. A correction arrived on day 8 and pointed to B. A deletion arrived on day 10. A itself has value 1 until a retroactive correction arrives on day 9; B first becomes available on day 7.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l109/versions.svg" alt="Synthetic append-only histories: select both row versions before joining their keys. Day 10 removes the selected tombstone."><figcaption>Synthetic append-only histories: select both row versions before joining their keys. Day 10 removes the selected tombstone.</figcaption></figure>
+
+<p>At query 6, choose <code>r → A</code> and A’s value 1. At query 8, choose <code>r → B</code> and B’s value 2. At query 10, select the deletion and remove <code>r</code>. Dropping deletion records <em>before</em> version selection would incorrectly resurrect <code>r</code>.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">asof_versions</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Effective steps: latest valid_from, then latest known correction; ties inclusive.</span>
+
+<span class="sd">    Revisions correct the same effective step. A new valid_from starts a new step.</span>
+<span class="sd">    Tombstones are selected like any revision, then removed from the visible state.</span>
+<span class="sd">    This bounded representation is not a general overlapping-interval database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">validate_versions</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+    <span class="n">chosen</span><span class="o">=</span><span class="p">{}</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;valid_from&#39;</span><span class="p">]</span><span class="o">&lt;=</span><span class="n">cutoff</span> <span class="ow">and</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;observed_at&#39;</span><span class="p">]</span><span class="o">&lt;=</span><span class="n">cutoff</span><span class="p">:</span>
+            <span class="n">key</span><span class="o">=</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;valid_from&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;observed_at&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;revision&#39;</span><span class="p">])</span>
+            <span class="n">prior</span><span class="o">=</span><span class="n">chosen</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">prior</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">key</span><span class="o">&gt;</span><span class="p">(</span><span class="n">prior</span><span class="p">[</span><span class="s1">&#39;valid_from&#39;</span><span class="p">],</span><span class="n">prior</span><span class="p">[</span><span class="s1">&#39;observed_at&#39;</span><span class="p">],</span><span class="n">prior</span><span class="p">[</span><span class="s1">&#39;revision&#39;</span><span class="p">]):</span>
+                <span class="n">chosen</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]]</span><span class="o">=</span><span class="n">row</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span><span class="n">row</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">row</span> <span class="ow">in</span> <span class="n">chosen</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;deleted&#39;</span><span class="p">]}</span>
+</pre></div>
+<p>An <strong>as-of join</strong> joins the versions appropriate to a historical cutoff. Here we first reconstruct both tables, then follow the selected fact’s foreign key. Joining current rows and filtering only the fact’s original creation time would retain the corrected relationship at earlier cutoffs.</p>
+<p><strong>Predict first:</strong> move the cutoff from 6 to 8. Which parent becomes visible? Then move it to 10. Does the deleted fact regain its older parent?</p>
+<div id="l109-history"></div>
+
+<details><summary>Worked answer, including a no-JavaScript fallback</summary>
+
+<p>The default day-6 state is <code>r → A</code>, A value 1, edge ready day 3. Day 8 uses the revised key <code>r → B</code>, B value 2, edge ready day 8. Day 10 contains no fact or edge. A’s correction at day 9 changes A’s value, but does not redirect <code>r</code> back to A. All stored versions stay fixed while the control changes the query cutoff.</p>
+</details>
+
+<blockquote>
+<p><strong>Scope check.</strong> This is an explicit effective-step representation with corrections, not a general engine for overlapping valid-time intervals. A historical question can also use separate effective and knowledge cutoffs; our prediction query sets both to the same <code>t</code>. Future schedules known in advance need their own feature contract rather than being treated as already-completed events.</p>
+</blockquote>
+<h2 id="3-%C2%B7-Emit-a-graph-with-an-auditable-timestamp-contract">3 &#183; Emit a graph with an auditable timestamp contract<a class="anchor-link" href="#3-%C2%B7-Emit-a-graph-with-an-auditable-timestamp-contract">&#182;</a></h2><p>A <strong>primary key</strong> identifies a row within a table. A <strong>foreign key</strong> names a row in another table. A <strong>relational entity graph (REG)</strong> represents each row as a typed node and each selected key link as a typed edge. “Typed” means that a driver node and a result node retain their different table identities.</p>
+<p>Our graph path is: <strong>stored versions → historical rows → historical key join → typed nodes and edges</strong>. The values and relationships come from the same historical state. A two-hop message cannot bypass that state by fetching a neighbor from a current-table cache.</p>
+<p>In the synthetic implementation, an edge’s readiness is the maximum of the selected child’s valid and observed times and the selected parent’s valid and observed times. For day-6 <code>r → A</code>, this is <code>max(2,3,0,0) = 3</code>. For day-8 <code>r → B</code>, it is <code>max(2,8,0,7) = 8</code>. Readiness alone is insufficient: the edge also needs the selected versions, so an obsolete edge does not stay active forever.</p>
+<p><strong>Missing endpoint.</strong> A <strong>dangling reference</strong> points to a parent absent from the selected snapshot. We retain the child node, omit that edge, and count the omission. We do not invent a parent or silently reconnect to its newest version. Null foreign keys create no edge.</p>
+<p><strong>Multi-hop meaning.</strong> This graph represents the database as known at one root cutoff. Every hop uses that snapshot. TGAT’s recursive child cutoff in L108 answers a different question: represent a neighbor at the connecting event’s time. Do not accidentally mix these two graph semantics.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Contract field</th>
+  <th>Synthetic versioned graph</th>
+  <th>Pinned F1 release graph</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Node identity</td>
+  <td><code>(table, row ID)</code></td>
+  <td><code>(table, stable reindexed primary key)</code></td>
+</tr>
+<tr>
+  <td>Time predicate</td>
+  <td>effective and observed by query</td>
+  <td>table’s <code>time_col &lt;= query</code></td>
+</tr>
+<tr>
+  <td>State changes</td>
+  <td>append-only revisions and tombstones</td>
+  <td>historical revisions unavailable</td>
+</tr>
+<tr>
+  <td>Relationship</td>
+  <td>FK in selected child version</td>
+  <td>FK in released row</td>
+</tr>
+<tr>
+  <td>Undated table</td>
+  <td>explicit historical versions</td>
+  <td>assumed eligible at every cutoff</td>
+</tr>
+<tr>
+  <td>Missing endpoint</td>
+  <td>omit edge; count it</td>
+  <td>omit edge; count it</td>
+</tr>
+</tbody>
+</table></div>
+<p>The full implementation is visible in the lab. The real-data graph function returns node-ID arrays and one <code>[number_of_edges, 2]</code> integer array per relation. These IDs remain stable after filtering; they are not automatically dense tensor row offsets. A later model must construct an explicit ID-to-tensor-index mapping. No neural encoder or GNN training is introduced here.</p>
+<h2 id="4-%C2%B7-Keep-feature-time-separate-from-label-time">4 &#183; Keep feature time separate from label time<a class="anchor-link" href="#4-%C2%B7-Keep-feature-time-separate-from-label-time">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A future outcome is the answer you train toward. It must not become part of the earlier question.</p>
+</blockquote>
+<p>A <strong>prediction horizon</strong> specifies how far ahead the target looks. For query time <code>t</code> and horizon <code>h</code>, our target window is <code>(t, t+h]</code>: exclude the query instant, include the end. Features must satisfy the query’s information contract. Outcomes in the future window belong only on the label side.</p>
+<p><strong>Worked example.</strong> Query at 5, horizon 4, last required outcome arrives at 12. The outcome window ends at 9, but its label cannot be used for fitting at 9 if a constituent is missing until 12. Under a completeness certificate, its earliest fit time is <code>max(9,12) = 12</code>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l109/maturity.svg" alt="Synthetic label window (5,9], with final constituent arrival on 12; fit no earlier than 12 under certified completeness."><figcaption>Synthetic label window (5,9], with final constituent arrival on 12; fit no earlier than 12 under certified completeness.</figcaption></figure>
+
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">label_ready</span><span class="p">(</span><span class="n">query_time</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">arrivals</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Earliest fit time, assuming the source certifies window completeness.</span>
+
+<span class="sd">    An observed-arrival maximum alone cannot prove no unseen event remains.</span>
+<span class="sd">    The caller must obtain a completeness watermark; this function assumes it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">horizon</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Horizon must be nonnegative&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">([</span><span class="n">query_time</span><span class="o">+</span><span class="n">horizon</span><span class="p">,</span><span class="o">*</span><span class="n">arrivals</span><span class="p">])</span>
+</pre></div>
+<p>A <strong>watermark</strong> or completeness certificate states that all required events through a boundary have arrived under a defined policy. Taking the maximum arrival time of records already in memory does not prove that another record is not still missing. Even a zero-count label needs a closed window. Later corrections also require a label-version policy. The lab’s maturity function assumes certified completeness; it does not manufacture that certificate.</p>
+<p>For a validation fit at time <code>b</code>, require each fitting label’s readiness to be at most <code>b</code>. Fit preprocessing and encoders using the permitted fitting data too. Correct graph filtering cannot repair an encoder that has already learned from future rows.</p>
+<h2 id="5-%C2%B7-Reproduce-the-complete-selected-F1-experiment">5 &#183; Reproduce the complete selected F1 experiment<a class="anchor-link" href="#5-%C2%B7-Reproduce-the-complete-selected-F1-experiment">&#182;</a></h2><p>The primary reading is <a href="https://arxiv.org/html/2407.20060v1">Robinson et al., RelBench v1, §2 and §5.2/Table 4</a>. Read the split and regression definitions, then inspect the pinned <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/f1.py">task SQL</a> and <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/datasets/f1.py">dataset timestamp construction</a>. This package targets the entire five-heuristic slice for <strong>rel-f1/driver-position</strong>, on both validation and test.</p>
+<p><strong>What changes from L101?</strong> L101 read cached task labels. Here we start from all nine released database tables, rebuild the query schedules, regenerate every target, compare every query identity and target with the archive and original SQL, and only then compute predictions.</p>
+<p><strong>Follow one target.</strong> At a query date, select result rows in the next 60 days. Group them by driver. Average <code>positionOrder</code>, the finishing-order field. The column named <code>position</code> in the task table is this average; it is not a direct copy of the database’s separate <code>position</code> field. A driver with no result in that future window has no task row. This matters for interpreting the prediction population.</p>
+<p><strong>Released schedule.</strong> Training starts 60 days before 2005-01-01 and steps backward to the database’s earliest timed row. Validation steps forward from 2005-01-01 until the final complete window before 2010-01-01. Test starts at 2010-01-01 and uses at most 40 windows. Empty windows do not create examples. We generate the schedule independently and also execute the original scheduling and SQL code.</p>
+<p><strong>Released quirks.</strong> The task’s one-year “activity” subquery has a lower date bound but no upper bound. A selected future result already satisfies that predicate. We preserve it for exact comparison, then count how many task queries lack a genuinely prior-year result. This is a query-population audit, not a new paper benchmark. An alternative deployment task would define eligible drivers from known history, specify a target for no future race, and require separate evaluation.</p>
+<p><strong>Timestamp assumptions.</strong> The dataset assigns race timestamps to result and standings rows; qualifying is assigned the race timestamp minus one day. Drivers, constructors and circuits have no time column. These are release conventions, not measured ingestion times. A race start time does not certify that its final results were available then. Scheduled-race attributes and outcome fields may need different availability contracts in a deployment.</p>
+<p><strong>Estimators.</strong> Zero predicts 0. Global mean and median use all permitted fitting targets. Entity mean and median use that driver’s fitting targets, falling back to 0 for an unseen driver. Validation uses training labels; test uses training plus validation labels. These are deterministic estimators: no neural architecture, optimizer, random seeds or hyperparameter search is involved.</p>
+<p><strong>Metric.</strong> Mean absolute error (MAE) averages <code>abs(prediction − target)</code> over all query rows. Its unit is finishing positions; lower is better. A frequently appearing driver contributes more rows. We declare an absolute tolerance of 0.0005 against each paper value printed to three decimals. Repeating a deterministic calculation with different seeds would not provide uncertainty estimates.</p>
+<div id="l109-predict"></div>
+
+<p><strong>Author-reference evidence, not your current notebook output.</strong> All 8,712 regenerated labels match both the cached targets and the original source SQL exactly.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Queries</th>
+  <th style="text-align:right">Scheduled / nonempty windows</th>
+  <th style="text-align:right">No prior-year result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>train</td>
+  <td style="text-align:right">7,453</td>
+  <td style="text-align:right">332 / 254</td>
+  <td style="text-align:right">955</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">499</td>
+  <td style="text-align:right">30 / 23</td>
+  <td style="text-align:right">33</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">760</td>
+  <td style="text-align:right">40 / 33</td>
+  <td style="text-align:right">42</td>
+</tr>
+</tbody>
+</table></div>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Estimator</th>
+  <th style="text-align:right">Validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+  <th>Paper rounding verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>global zero</td>
+  <td style="text-align:right">11.083200</td>
+  <td style="text-align:right">11.926206</td>
+  <td>MATCH / MATCH</td>
+</tr>
+<tr>
+  <td>global mean</td>
+  <td style="text-align:right">4.334385</td>
+  <td style="text-align:right">4.512881</td>
+  <td>MATCH / MATCH</td>
+</tr>
+<tr>
+  <td>global median</td>
+  <td style="text-align:right">4.135571</td>
+  <td style="text-align:right">4.399101</td>
+  <td>MATCH / MATCH</td>
+</tr>
+<tr>
+  <td>entity mean</td>
+  <td style="text-align:right">7.181002</td>
+  <td style="text-align:right">8.501358</td>
+  <td>MATCH / MATCH</td>
+</tr>
+<tr>
+  <td>entity median</td>
+  <td style="text-align:right">7.114262</td>
+  <td style="text-align:right">8.518509</td>
+  <td>MATCH / MATCH</td>
+</tr>
+</tbody>
+</table></div>
+<p>All ten fresh prediction vectors match the original baseline function within 1e-12. The real graph census checks <strong>4,030 relations across 310 cutoffs</strong>; all ordered edge arrays match independent SQL joins. The synthetic suite adds 520 SQL selector comparisons, 390 SQL graph comparisons and five rejected broken implementations. These are correctness counts, not accuracy confidence intervals. Paid compute: USD0.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l109/results.svg" alt="Author-reference reconstruction: full selected validation/test populations, all five deterministic methods. Ticks show rounded paper targets; no seed uncertainty applies."><figcaption>Author-reference reconstruction: full selected validation/test populations, all five deterministic methods. Ticks show rounded paper targets; no seed uncertainty applies.</figcaption></figure>
+
+<p><strong>Interpret the evidence.</strong> The independent pandas implementation, unchanged released SQL, and cached targets agree. The original baseline function also agrees with all ten fresh prediction vectors. The graph census independently checks every relation at every distinct released query cutoff using SQL joins. These checks support the named reconstruction and stated timestamp policy; they do not establish real historical availability.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Complete selected reproduction is achieved for the database-to-label reconstruction and five-heuristic slice. Raw Kaggle-to-database processing, LightGBM/RDL columns, other tasks and the rest of the paper are not reproduced. Historical execution identity and full-paper parity remain <strong>NOT_ESTABLISHED</strong>. Real ingestion/version histories are <strong>NOT_AVAILABLE</strong>. Synthetic history tests are separate course evidence. Live Colab and deployment remain <strong>NOT_CHECKED</strong> unless separately verified.</p>
+</blockquote>
+<h2 id="6-%C2%B7-Build-and-defend-your-own-contract">6 &#183; Build and defend your own contract<a class="anchor-link" href="#6-%C2%B7-Build-and-defend-your-own-contract">&#182;</a></h2><p>Open the <a href="../labs/0109-database-timestamp-contracts.ipynb">student lab</a>, <a href="../labs/html/0109-database-timestamp-contracts.html">executed solution</a>, and <a href="../labs/l109-reproduction.md">reproduction contract</a>. The notebook includes the visible implementation, downloads hash-pinned inputs, and executes the complete selected numerical reconstruction on CPU. It has three live tasks: historical version selection, two-clock event eligibility, and label readiness. Their outputs are used by the graph and boundary checks; they are not decorative exercises.</p>
+<p><strong>Predict → implement → measure → diagnose.</strong> Predict the effect of a late correction. Implement the selectors. Run the full reconstruction. Diagnose why reproducing the released score still leaves ingestion-time assumptions unproven.</p>
+<p>For your EXIT, submit a timestamped two-table graph specification with a late record, a corrected key, and a deletion. State each clock’s origin, boundary convention, row-version rule, dangling-key policy, and label completeness assumption. Supply one failing counterexample to event-only filtering and one to joining current rows. Include your fresh label/baseline report and explain the future-conditional driver population.</p>
+<div id="l109-teachback"></div>
+
+<p>Ask the teaching agent follow-up questions or paste your contract for review. Author execution does not establish learner mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>. For spaced practice, reconstruct the day-6 join tomorrow without notes, then add a delayed parent three days later. L110’s checkpoint will require these boundaries to survive a complete temporal model pipeline; Year 4 will carry them into database graph construction.</p>
+<p><a href="../reference/database-timestamp-contracts.html">Timestamp contract reference</a> · <a href="0101-static-vs-temporal.html">L101</a> · <a href="0108-temporal-neighbor-sampling.html">L108</a></p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/database-history-viz.js"></script><script src="../assets/l109-lesson.js"></script></body></html>

@@ -26,3 +26,6 @@ if path.exists():
   ax.axhline(np.mean(vals),color=color,label='Replay mean');ax.set(title=label,xlabel='Independent initialization seed',xticks=range(10));ax.spines[['top','right']].set_visible(False);ax.legend(fontsize=8)
  axes[0].set_ylabel('Mean of batch AP (%)');fig.suptitle('Complete released-protocol Wikipedia replay · historical identity INCOMPARABLE',fontsize=11);fig.tight_layout()
  fig.savefig(out/'paper.svg');fig.savefig(out/'paper.png',dpi=170);plt.close(fig)
+for name in ['comparison','paper']:
+ svg=out/f'{name}.svg'
+ if svg.exists():svg.write_text('\n'.join(line.rstrip() for line in svg.read_text().splitlines())+'\n')
