@@ -1,0 +1,14 @@
+# Lesson 107: snapshot methods
+
+Combined scope approved in chat on 2026-09-26. Teach the distinction between recurring node states and recurring GCN weights, and defend snapshot granularity under a strict-past prediction contract. Retrieval -> worked GCN/GRU -> EvolveGCN -> prediction -> measured experiments -> lab -> written defense.
+
+Two independent lanes:
+
+1. Wikipedia course comparison: complete released training/validation/test populations; GCN-GRU at hourly and daily widths versus a compact TGN with event features, three seeds, ten epochs each, fixed learning rate and validation-only checkpoint selection. Same evaluation positives and seeded negative destinations, pooled AP/AUROC. All inputs must precede the question; completed snapshots intentionally delay availability. Different encoders and update schedules mean this is a systems comparison, not isolated proof of a discretization effect. Full raw feature information is available to both before their respective aggregation. Train/test boundaries never ingest later interactions into training snapshots. No paper target applies to this lane.
+2. Named paper lane: EvolveGCN H/O SBM Table 2, pinned November 2019 source and complete released 50-snapshot data; released seed 1234, configurations, loss, training horizon, candidate universe, validation selection, MAP/MRR definitions. Predeclare numerical CLOSE tolerance MAP .015 and MRR .003. Preserve and expose release discrepancies: O uses GRU rather than the paper LSTM; history includes t-5 through t (six slices); max-degree schema scans future snapshots; all-pairs evaluation includes diagonal negatives; modern RNG/runtime and optimized algebra need explicit audit. No historical identity or full multi-dataset-paper claim.
+
+Deliver HTML, source Markdown, model-specific portable diagrams, interactive computation, reference, visible model/trainer code, student and executed solution notebooks, primary-source/protocol/deviation ledger, prediction/checkpoint evidence, exact replay commands, manifest integration, and delivery checks. Prepared work is PENDING_WRITTEN_DEFENSE.
+
+Implementation sequence: pin source/data -> semantic tests -> readable implementations and source output/gradient checks -> CPU/GPU timed pilots -> bounded full runs -> independent metrics -> author/build/execute -> desktop/mobile/keyboard/no-JS/print/copied Pages checks. The writing-plans skill is absent from installed skill catalogs; this document carries the implementation plan.
+
+Budget: aggregate USD10 ceiling including retries/checks. Modal prices checked 2026-09-26: T4 .000164/s, A10 .000306/s, CPU .0000131/core/s, RAM .00000222/GiB/s. Reserve at least USD2 for overhead/checks. Pilot before full launches; enforce hard timeouts and no automatic retries. Local CPU work has no cloud charge. Partial or budget-limited lanes remain INCOMPLETE, never substituted with a short run labeled full reproduction.
