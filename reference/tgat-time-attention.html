@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TGAT reference</title><link rel="stylesheet" href="../assets/lesson.css"></head><body><article><h1 id="TGAT-time-attention-reference">TGAT time-attention reference<a class="anchor-link" href="#TGAT-time-attention-reference">&#182;</a></h1><p><strong>Query:</strong> a node and a time. <strong>History:</strong> timestamped interactions. <strong>Embedding:</strong> a computed vector. <strong>Persistent memory:</strong> per-node recurrent state, present in TGN and absent in TGAT. <strong>Parameters:</strong> shared learned weights.</p>
+<table>
+<thead>
+<tr>
+  <th>Operation</th>
+  <th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Temporal eligibility</td>
+  <td>Event time strictly less than this query's cutoff</td>
+</tr>
+<tr>
+  <td>Recursive request</td>
+  <td>Child cutoff is the connecting interaction time, not the root time</td>
+</tr>
+<tr>
+  <td>Paired Fourier map</td>
+  <td>[cos(ωt), sin(ωt)] per frequency; paired inner products depend on time differences</td>
+</tr>
+<tr>
+  <td>Released time map</td>
+  <td>cos(ωΔt+b); learned frequency/phase, no explicit paired features</td>
+</tr>
+<tr>
+  <td>Root token</td>
+  <td>Previous-layer node representation, zero edge, Φ(0)</td>
+</tr>
+<tr>
+  <td>Neighbor token</td>
+  <td>Child representation at event time, edge features, Φ(elapsed)</td>
+</tr>
+<tr>
+  <td>Attention</td>
+  <td>softmax(qKᵀ/√head_width + mask) V; time changes keys and values</td>
+</tr>
+<tr>
+  <td>Two-layer Wikipedia</td>
+  <td>d=172, 20 neighbors, query/key width 516, two heads of width 258</td>
+</tr>
+<tr>
+  <td>Endpoint prediction</td>
+  <td>Shared TGAT → concatenate two 172-vectors → pair MLP → sigmoid</td>
+</tr>
+<tr>
+  <td>Historical evidence</td>
+  <td>Original paper, released code and modern replay need separate identities</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Counterexamples:</strong> history [1,3,5] at cutoff 4 should return [1,3], but release returns [1]. A child at time 5 may not use an interaction at 6 even when root time is 8. All-padding finite-mask attention is uniform, not zero; fixed time-zero padding can break whole-model clock-shift invariance. Cosine time features do not enforce monotone decay.</p>
+<p><a href="../lessons/0103-tgat.html">Full lesson</a> · <a href="../labs/l103-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2002.07962v1">Paper</a></p>
+</article></body></html>

@@ -42,6 +42,7 @@ A common, correct objection: *240 lessons ÷ 365 days ≈ 0.66 years — so at o
 So the 6 years are paced by **skill acquisition (labs/reproduction) and the final research project**, not by lesson count. If you only consumed the 240 lessons at 2–3/week, you'd "finish reading" in ~2 years — and still not be able to reproduce RelBench or run a fair benchmark. The extra four years are where expertise actually forms.
 
 **Lesson numbering:** Year N → units `(N-1)*40 + 001` … `(N-1)*40 + 040` (approx.)  
+**Added frontier block:** The planned B01–B24 bridge sits between L200 and L201, with its own additional time budget; the original 240-unit spine and existing suffix units keep their identifiers. See [detailed bridge specifications](./plan/year-5-6-bridge.md).
 **Rule:** Finish each quarter checkpoint before advancing. Papers are read in publication order within each year. A unit is "done" when its lab runs and its quiz/checkpoint is passed — not when the reading is skimmed.
 
 > **Critical framing (read first).** This is a *fast-moving* field. Two truths must coexist in your head the whole way:
@@ -288,7 +289,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 
 | 101 | [Static vs temporal](lessons/0101-static-vs-temporal.html) | Fey 2024 temporal REG · RelBench baseline replay | [Time-respecting queries, leakage diagnosis and 10 published baseline cells](labs/0101-static-vs-temporal.ipynb) |
 | 102 | [Temporal Graph Networks](lessons/0102-temporal-graph-networks.html) | Rossi 2020 · TGN-attn Wikipedia replay | [Messages, memory updates and temporal link prediction](labs/0102-temporal-graph-networks.ipynb) |
-| 103 | TGAT | Xu 2020 | Time-encoded attention |
+| 103 | [TGAT](lessons/0103-tgat.html) | Xu 2020 · Wikipedia release replay | [Time-encoded attention and matched TGAT/TGN comparison](labs/0103-tgat.ipynb) |
 | 104 | Information leakage in time | Kapoor 2022 + Fey 2024 | Time-travel bugs |
 | 105 | Continuous time | — | Event streams as graphs |
 | 106 | Temporal link prediction | — | Future edge prediction |
@@ -399,10 +400,10 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 162 | The relational FM vision | Zahradník 2023 (2305.15321) | LM + GNN pre-training |
 | 163 | LM encoders for rows | Zahradník 2023 §4 | Text vs typed columns |
 | 164 | Griffin — graph-centric RDB FM ★ | Wang 2025 (2505.05568) | Unified encoder/decoder, cross-attention |
-| 165 | KumoRFM — in-context relational learner | KumoRFM tech report (2025) | Few-shot task adaptation (proprietary upper bound) |
+| 165 | KumoRFM — in-context relational learner | KumoRFM tech report (2025) | Few-shot task adaptation (proprietary comparator) |
 | 165b | OpenRFM — open relational ICL ★ | Chen et al. 2026 (2606.04320) | Dual-stage ICL; ~30% over RT; open weights |
 | 166 | RDB-PFN — synthetic-prior relational FM ★ | Wang 2026 (2603.03805) | Relational Prior Generator; reproduce (open code) |
-| 166b | RDBLearn — training-free relational ICL ★ | Zhang et al. 2026 (2602.13697) | DFS + TabICL; no RDB FM training |
+| 166b | RDBLearn — training-free relational ICL ★ | Zhang et al. 2026 (2602.18495); Xu et al. companion (2602.13697) | DFS + TabICL; no RDB FM training |
 | 167 | Tabular FM → relational FM transfer | TabPFN v2 + TabICL recap | What carries over from Year 2 |
 | 168 | Cross-database generalization | Griffin + RDB-PFN experiments | Zero-/few-shot on unseen schema |
 | 169 | Scaling laws & open questions | Survey 2025 | What's unknown |
@@ -451,6 +452,55 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 
 ---
 
+<a id="research-bridge"></a>
+
+## Year 5 → 6 bridge — Influential Architectures & Current Research (B01–B24)
+
+**Goal:** Update the Year 5 proposal against consequential architecture families and current evidence before Year 6 experiments. Which relational gains survive stronger tabular baselines, alternative representations and realistic failure modes?
+
+**Research cutoff: 2026-09-26.** The [influence audit](./plan/research-influence-audit-2026-09.md) records architectural lineage, benchmark uptake, released artifacts and coverage gaps. It distinguishes established families, current baseline updates, coverage-critical mechanisms and exploratory papers. Core status is a teaching decision, not a citation ranking. Main additions were checked against method/evaluation sections and official repositories; source-access limits are recorded in the audit.
+
+**Placement and status:** After L200, before L201. All 24 units are **planned**; no bridge HTML lessons, experiments or learner mastery are claimed. Existing 001–240 and suffix identifiers remain stable. The [detailed specifications](./plan/year-5-6-bridge.md) include primary readings, retrieval prompts, teaching mechanisms, exercises, checks and future visual designs. This topical bridge is an explicit exception to the earlier publication-order rule.
+
+**Workload:** 70–110 learner hours for core, including one bounded reproduction; 16–24 additional hours for all electives. Total 86–134 hours, roughly 12–19 weeks at one hour/day, beyond the original six-year estimate. Compute has a separate budget. Extend the calendar or reallocate optional time without cutting Year 6 research or exit gates.
+
+**Entry and method:** Pass L200. Use closed-book retrieval → primary-source input → exercise → written defense, with 1/7/30-day revisits. Earlier influential-model lessons are prerequisites; revisits require a new comparison artifact.
+
+| Unit | Lecture / detailed primary readings | Required artifact |
+|------|-------------------------------------|-------------------|
+| B01 ★ | [Architecture coverage and honest comparison](./plan/year-5-6-bridge.md#b01) | Family map and matched-information comparison contract. |
+| B02 ★ | [Numerical embeddings, TabM and TabPack](./plan/year-5-6-bridge.md#b02) | Embedding/ensemble ablation with selection and cost ledger. |
+| B03 ★ | [PFN and the TabPFN generations](./plan/year-5-6-bridge.md#b03) | Version, variant and access matrix. |
+| B04 ★ | [TabICL and scalable two-stage ICL](./plan/year-5-6-bridge.md#b04) | Row-to-context computation trace and scale stress test. |
+| B05 ★ | [TabDPT: real-data pretraining and retrieval](./plan/year-5-6-bridge.md#b05) | Real-data episode, retrieval and contamination audit. |
+| B06 ★ | [Mitra: the prior is part of the model](./plan/year-5-6-bridge.md#b06) | Prior-mixture ablation with fixed learner and budget. |
+| B07 ★ | [Semantic transfer: CARTE, ConTextTab and TabSTAR](./plan/year-5-6-bridge.md#b07) | Semantic-name ablation and adaptation comparison. |
+| B08 ◆ | [LimiX: alternative structured-data objectives](./plan/year-5-6-bridge.md#b08) | Feature/target attention and objective ablation. |
+| B09 ◆ | [Current cost frontier: TabFM, EXAONE and Nori](./plan/year-5-6-bridge.md#b09) | Matched latency, memory and quality protocol. |
+| B10 ★ | [Relational Transformer: cells, tasks and relational attention](./plan/year-5-6-bridge.md#b10) | Cell-level relational attention and visibility trace. |
+| B11 ★ | [RelGNN versus RelGT: supervised relational baselines](./plan/year-5-6-bridge.md#b11) | Matched RelGNN/RelGT computation and training comparison. |
+| B12 ★ | [Griffin, OpenRFM and KumoRFM: adaptation mechanisms](./plan/year-5-6-bridge.md#b12) | Pretraining/adaptation matrix and support reachability test. |
+| B13 ★ | [RDB-PFN and PluRel: two roles for relational synthetic data](./plan/year-5-6-bridge.md#b13) | Generator-to-prediction pipelines and held-out-schema test. |
+| B14 ★ | [RDBLearn and TabPFN-Rel: the flattening challenge](./plan/year-5-6-bridge.md#b14) | Time-safe flattening pipeline and backbone-swap ablation. |
+| B15 ◆ | [Parameter-free encoders: limits and assumptions](./plan/year-5-6-bridge.md#b15) | Encoder assumptions and label-visibility counterexample. |
+| B16 ◆ | [AutoGrable: selecting or declining a graph](./plan/year-5-6-bridge.md#b16) | Graph-construction selection including abstention. |
+| B17 ◆ | [FlexTab and GTAlign: reusable representations](./plan/year-5-6-bridge.md#b17) | Shared representation or graph-to-table transfer trace. |
+| B18 ★ | [Context-window failure and sufficient evidence](./plan/year-5-6-bridge.md#b18) | Degree-stratified truncation versus aggregation diagnostic. |
+| B19 ★ | [BeyondArena, contamination and moving benchmarks](./plan/year-5-6-bridge.md#b19) | Version-aware contamination and non-IID evidence audit. |
+| B20 ◆ | [Curriculum Matters: ordering versus scale](./plan/year-5-6-bridge.md#b20) | Order-versus-scale pretraining experiment specification. |
+| B21 ◆ | [Privacy or structural robustness](./plan/year-5-6-bridge.md#b21) | Privacy ledger or integrity-preserving structural stress test. |
+| B22 ◆ | [Newest mechanisms: RefineICL or tabular JEPA](./plan/year-5-6-bridge.md#b22) | One mechanism intervention with matched controls. |
+| B23 ★ | [Reproduce one declared comparison](./plan/year-5-6-bridge.md#b23) | One named published comparison, provenance and deviation ledger. |
+| B24 ★ | [Defend the architecture and the thesis](./plan/year-5-6-bridge.md#b24) | Defended proposal, baseline decisions and falsification tests. |
+
+**Core route:** B01–B07 → B10–B14 → B18–B19 → B23–B24 (16 units). The eight ◆ electives deepen a selected research direction. Recent exploratory methods are not promoted solely because they report a new best score.
+
+**Exit:** Submit a 3–5-page proposal, architecture coverage map, baseline inclusion/exclusion decisions, one named published comparison with a reproducibility ledger, and two falsification tests. A teaching fixture leaves the reproduction gate pending. Score protocol validity, baseline fairness, reproducibility, evidence interpretation and falsifiability 0–2 each; pass at 8/10 with no zero and no unresolved leakage. Status remains `PENDING_WRITTEN_DEFENSE` until learner evidence is assessed. B24 supplies L201–204 and L219.
+
+**Baseline inventory:** Consider tuned trees + time-safe feature engineering, numerical MLPs/ensembles, retrieval, TabPFN/TabICL/TabDPT/Mitra, semantic transfer where text matters, flattening + ICL, RelGNN/RelGT and accessible relational FMs. Audit current candidates (LimiX, TabFM, EXAONE, Nori, RT-J) even when electives are skipped. This requires justified decisions, not training every model. Pin versions, access, information and selection/inference budgets; proprietary models are comparators, not upper bounds.
+
+---
+
 ## Year 6 — Novel Research & Thesis Validation (Lessons 201–240)
 
 **Goal:** Original contribution that supports or falsifies the contrarian thesis.
@@ -459,7 +509,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 201 | Sharpen hypothesis | — | Falsifiable claim |
 | 202 | Related work deep dive | — | Position vs RelGNN/RelGT/FM |
 | 203 | Experiment protocol | — | Pre-registration style doc |
-| 204 | Baseline suite locked | — | Trees + FE + RelGNN + TabICLv2 + RDBLearn + best open FM |
+| 204 | Baseline suite locked | B24 baseline decisions | Trees + FE + RelGNN + TabICLv2 + RDBLearn + best open FM; assess TabPack and TabPFN-Rel/current accessible TFM under the same protocol and budget |
 | 205 | Implementation sprint 1 | — | Core method |
 | 206 | Implementation sprint 2 | — | Ablations |
 | 207 | Negative results log | — | What didn't work |
@@ -578,7 +628,7 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - OmniTabBench — 2026 — `2604.06814` ◆ (3030-dataset mega-benchmark)
 - TabPFN v2 — Hollmann et al. 2025 — *Nature* `s41586-024-08328-6` ★
 - Illusion of Generalization (tabular LMs) — 2026 — `2602.04031` ◆ (contamination critique)
-- _Note:_ TabDPT, CARTE, Schema-1 (`2605.06290`), and LLM-serialization methods (e.g. TabLLM) are optional skims — track via TabArena leaderboard rather than chasing each.
+- **September coverage correction:** TabDPT is core B05; CARTE (L074) is revisited with ConTextTab and TabSTAR at B07. Schema-1 (`2605.06290`) and LLM-serialization methods remain optional; compare their mechanism and task fit before adding them.
 
 ### Year 3 — Graph ML
 - Gilmer et al. 2017 — MPNN — `1704.01212` ★
@@ -611,7 +661,7 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - Zahradník et al. 2023 — Towards FMs for relational DBs — `2305.15321` ★
 - Griffin — Wang et al. 2025 — `2505.05568` ★ (graph-centric RDB FM, ICML 2025)
 - RDB-PFN — Wang et al. 2026 — `2603.03805` ★ (synthetic-prior relational FM, open code)
-- RDBLearn — Zhang et al. 2026 — `2602.13697` ★ · implementation — `2602.18495`
+- RDBLearn toolkit — Zhang et al. 2026 — `2602.18495` ★; companion *No Need to Train Your RDB Foundation Model* — Xu et al. — `2602.13697` ★
 - Relational Transformer (RT) — Ranjan et al. 2025 — `2510.06377` ★ (zero-shot relational FM, ICLR 2026)
 - OpenRFM — Chen et al. 2026 — `2606.04320` ★ (open relational ICL; ~30% over RT)
 - KumoRFM-2 — Fey et al. 2026 — `2604.12596` ★ (RelBench SOTA; proprietary)
@@ -620,7 +670,24 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - LM+GNN hybrid FM — Wu et al. 2026 — `2605.16085` ◆ (lightweight BART + GraphSAGE)
 - KumoRFM v1 — 2025 industry technical report (no arXiv; cite PDF + KumoRFM-2 for numbers)
 
-**Currency rule:** This index is a snapshot (last exhaustive merge: **July 2026**). Before each new quarter, run an arXiv search for the quarter's topic sorted by `submitted` and add any paper that (a) sets new SOTA on RelBench/TabArena/BeyondArena, (b) exposes a failure mode, or (c) is a baseline you'll be measured against. Do not add papers that merely apply an existing method.
+### September 2026 bridge supplement — verified sources and placement
+
+This supplements the July registry below. The [research audit](./plan/research-influence-audit-2026-09.md) records evidence strength and source-access limits; the [24-unit reading register](./plan/year-5-6-bridge.md) contains all retained frontier readings.
+
+- Numerical feature embeddings — `2203.05556` ★ B02; TabPack — `2607.05380` ★ B02.
+- TabPFN-3.5 — `2609.17895v2` ★ B03; TabICLv2 revisited at B04.
+- TabDPT — `2410.18164v3`; Turbo — `2608.01400v1` ★ B05.
+- Mitra — `2510.21204v1`; Mitra-v2 — `2609.04540v1` ★ B06.
+- ConTextTab — `2506.10707v1`; TabSTAR — `2505.18125v2` ★ B07, with CARTE.
+- LimiX-2 — `2609.17488v1` ◆ B08; distinct from LimiX-2M (`2606.04485`).
+- TabFM official release, EXAONE (`2608.25774v1`), Nori model card ◆ B09; source types distinguished in audit.
+- Relational Transformer — `2510.06377v1` ★ B10; RT-J update via author project (full paper access pending).
+- PluRel — `2602.04029v1` ★ B13 with RDB-PFN.
+- RDBLearn toolkit — `2602.18495v1`; encoder analysis — `2602.13697v2`; RelArena-α / TabPFN-Rel — `2608.16319v2` ★ B14.
+- Context Window Failures — `2609.00460v1` ★ B18; BeyondArena revisited at B19. Required failure studies do not imply established broad influence.
+- Other retained frontier candidates and their elective status: B15–B17 and B20–B22 in the reading register.
+
+**Currency rule:** This index is a snapshot (July 2026 registry, supplemented by the **2026-09-26 influence audit**). Before each new quarter, run an arXiv search for the quarter's topic sorted by `submitted` and add any paper that (a) sets new SOTA on RelBench/TabArena/BeyondArena, (b) exposes a failure mode, or (c) is a baseline you'll be measured against. Do not add papers that merely apply an existing method.
 
 ---
 
@@ -721,9 +788,9 @@ Canonical ★/◆ assignments live in the [verified index](#verified-paper-index
 | Relational Transformer | 2510.06377 | ★ | Zero-shot cell tokens |
 | RDB-PFN | 2603.03805 | ★ | Synthetic prior only |
 | OpenRFM | 2606.04320 | ★ | Open RT improvement |
-| RDBLearn | 2602.13697 | ★ | DFS + TabICL; no train |
+| RDBLearn toolkit / encoder analysis | 2602.18495 / 2602.13697 | ★ | Distinct toolkit and companion papers; B14 |
 | KumoRFM-2 | 2604.12596 | ★ | RelBench SOTA (closed) |
-| KumoRFM v1 | PDF only | ◆ | Proprietary upper bound |
+| KumoRFM v1 | PDF only | ◆ | Proprietary comparator |
 | LM+GNN hybrid | 2605.16085 | ◆ | Resource-efficient path |
 
 ### Graph ML prerequisites (Y3 — see verified index)

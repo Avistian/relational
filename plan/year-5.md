@@ -59,7 +59,7 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 
 ### 165 · KumoRFM — in-context relational learner — *KumoRFM v1 tech report (2025)*
 - **Skill** — describe KumoRFM's in-context, few-shot relational learning and treat it as the *proprietary
-  upper bound* (not a reproduction target).
+  comparator* (not a reproduction target).
 - **Teach** — in-context relational prediction across connected tables without flattening, few-shot task
   adaptation, why proprietary numbers set a ceiling but can't ground the thesis.
 - **Lab** — Tier C · crucial fragment: read the tech report; extract the claimed capabilities + the
@@ -93,7 +93,7 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Bridge** — the synthetic-pretraining paradigm; callback Y2 L061–L063; contrasts with L165b (real-data) and
   L166b (training-free); forward to L170b synthesis.
 
-### 166b · RDBLearn — training-free relational ICL — *RDBLearn `2602.13697`, ★ (ICML 2026)*
+### 166b · RDBLearn — training-free relational ICL — *RDBLearn toolkit `2602.18495`; companion analysis `2602.13697`, ★*
 - **Skill** — build the training-free RDB encoder: compress variable-sized RDB neighborhoods into fixed-length
   ICL samples **within high-dimensional shared-unit columns** (not across heterogeneous columns), then pair
   with an existing single-table ICL FM — no training/fine-tuning.

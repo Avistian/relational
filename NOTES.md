@@ -1415,3 +1415,21 @@ Full reproduction requested. Complete selected RelBench v1.1.0 driver-position h
 ## Lesson102 created · Temporal Graph Networks · 2026-09-22
 
 Approved combined lesson plus complete Wikipedia TGN-attn replay. Full ten-run T4 experiment: 293 epochs, all-event AP 98.5123% (sample SD 0.0679pp), new-node AP 97.8295% (SD 0.0861pp). Numerical verdicts CLOSE/CLOSE; original-source full seed-0 evaluation and independent all-run metric reconstruction pass. Complete visible model/trainer, three live tasks, 720 temporal oracle cases, preprocessing/split parity, memory checkpoint counterexample, portable architecture and interactive event trace. Explicit independent seeds, modern runtime and preserved release pending-message checkpoint behavior documented. Partial CPU runs excluded; full-paper parity NOT_ESTABLISHED, historical identity INCOMPARABLE. No learner mastery or deployment inferred.
+
+## Research bridge influence audit · 2026-09-26 · planning only
+
+User requested deeper influential-paper coverage. See [audit](plan/research-influence-audit-2026-09.md) and [B01–B24 specifications](plan/year-5-6-bridge.md). Research uses primary methods, benchmark implementations and author releases; no models were run and no learner mastery is inferred. The following are conditional paper-grounded expectations to test, not measured course results.
+
+| New required reading / family | When it may help | Where the claim can break / required check |
+|---|---|---|
+| Numerical embeddings; TabPack update | Richer scalar representations and efficient ensembles can strengthen trained baselines. | Representation, ensemble size and selection budgets confound attribution; use separate controls. |
+| TabPFN-3.5 family update | New variants may improve accessible ICL operating points. | Variant, access, context and inference budgets differ; do not transfer reported scores to a base checkpoint. |
+| TabDPT / Turbo | Real-data self-supervision and retrieval provide another route to task transfer and context efficiency. | Dataset overlap and retrieval leakage; original paper and current checkpoint need separate provenance. |
+| Mitra / Mitra-v2 | More appropriate synthetic task mixtures can improve a fixed learner. | Prior selection can overfit development datasets; fine-tuning and ICL are distinct configurations. |
+| ConTextTab / TabSTAR with CARTE | Meaningful names and text support cross-table semantic transfer. | Anonymized schemas, unequal text access and adaptation costs can change results; TabSTAR requires downstream fine-tuning. |
+| Dedicated Relational Transformer | Cell-level task and relational attention can exploit linked context across tables. | Bounded context and target visibility limit evidence; RT-J full paper remains inaccessible in this audit. |
+| PluRel with RDB-PFN | Synthetic relational diversity supports pretraining and controlled schema shifts. | Generator assumptions, scale and linearization differ; relational generation alone does not imply graph-native inference. |
+| RelArena / TabPFN-Rel comparison | Time-safe flattening plus strong tabular inference challenges the value of a learned relational representation. | Model/system entries, API text access, one release seed, backend omissions and version differences constrain rankings. |
+| Fair RDB protocol; context-window failures; BeyondArena | Reveal gains caused by protocol choices, discarded aggregates or IID-only evaluation. | Diagnostic datasets do not establish prevalence; separate imputed scores and historical model versions from direct measurements. |
+
+Recent encoder limits, AutoGrable, curriculum ordering, FlexTab/GTAlign, privacy/structural attacks and RefineICL/JEPA remain focused electives. Core requires one bounded published comparison and a defended inclusion/exclusion table, not full pretraining of every family. Status: `PENDING_WRITTEN_DEFENSE`.

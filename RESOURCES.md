@@ -234,7 +234,7 @@ _Optional / extension (◆):_
   Graph-centric RDB foundation model; unified encoder/decoder, cross-attention, pretrained on 150M+ nodes. Use for: the first serious open RDB FM.
 - [RDB-PFN — Wang et al., 2026](https://arxiv.org/abs/2603.03805)
   First relational FM trained *purely on synthetic data* (Relational Prior Generator + PFN). Use for: open, reproducible relational ICL.
-- [RDBLearn — Zhang et al., 2026](https://arxiv.org/abs/2602.13697)
+- [RDBLearn toolkit — Zhang et al., 2026](https://arxiv.org/abs/2602.18495); [companion encoder analysis — Xu et al.](https://arxiv.org/abs/2602.13697)
   DFS featurize + off-the-shelf TabICL/TabPFN; no RDB FM training. Use for: **training-free baseline** that sometimes beats supervised RDL.
 - [Relational Transformer (RT) — Ranjan et al., ICLR 2026](https://arxiv.org/abs/2510.06377)
   Cell-level tokenization + relational attention; zero-shot on unseen schemas. Use for: schema-agnostic relational FM baseline.
@@ -247,6 +247,14 @@ _Optional / extension (◆):_
 - [RelBench v2 — arXiv 2602.12606](https://arxiv.org/abs/2602.12606) · [RelGT-AC — arXiv 2606.03040](https://arxiv.org/abs/2606.03040)
   Expanded benchmark + autocomplete tasks. Use for: year-5+ experiments.
 - KumoRFM v1 (2025) — no arXiv; [PDF](https://kumo.ai/research/kumo_relational_foundation_model.pdf). Track via KumoRFM-2 for reproducible numbers.
+
+## Knowledge — Year 5 → 6 research bridge (September 2026)
+
+The [B01–B24 lecture specifications and primary readings](./plan/year-5-6-bridge.md) provide 16 core units and eight electives. The [influence audit](./plan/research-influence-audit-2026-09.md) distinguishes lineage and benchmark uptake from newly reported performance.
+
+New required families: [numerical embeddings](https://arxiv.org/abs/2203.05556), [TabDPT](https://arxiv.org/html/2410.18164v3), [Mitra](https://arxiv.org/html/2510.21204v1), [ConTextTab](https://arxiv.org/html/2506.10707v1), [TabSTAR](https://arxiv.org/html/2505.18125v2), dedicated [Relational Transformer](https://arxiv.org/html/2510.06377v1) and [PluRel](https://arxiv.org/html/2602.04029v1). Existing TabM, TabPFN, TabICL, RelGNN/RelGT and relational FM families receive comparative updates. Recent diagnostics and speculative mechanisms have explicit scope limits and elective placements.
+
+Research checked **2026-09-26** using primary papers, method/evaluation sections for major additions, official repositories and benchmark infrastructure. RT-J's full paper was inaccessible; its author page supports only the scoped update. Optional papers retained from the initial abstract-level pass still require method/code audits before lesson authoring. No experiment or learner completion is claimed.
 
 ## Wisdom (Communities)
 
@@ -567,3 +575,9 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [Publication-era source](https://github.com/twitter-research/tgn/tree/e38cdf85998c6ca077167610dc4e769a688efa95): pinned code, exact negative sampling, evaluator and checkpoint behavior.
 - [JODIE Wikipedia data](https://snap.stanford.edu/jodie/): complete raw events; SHA-256 pinned in the L102 provenance manifest.
 - [PyTorch GRUCell](https://docs.pytorch.org/docs/stable/generated/torch.nn.GRUCell.html): gate convention used by the visible implementation.
+
+## Lesson 103 — TGAT (2026-09-26)
+
+- Xu et al. (ICLR 2020), [Inductive Representation Learning on Temporal Graphs](https://arxiv.org/html/2002.07962v1): §§3.1–3.4 functional time encoding and recursive attention; Tables 1/2 Wikipedia AP targets; Appendix A.5 implementation details.
+- [Publication-era implementation](https://github.com/StatsDLMathsRecomSys/Inductive-representation-learning-on-temporal-graphs/tree/9293d10d1943c4bd4a186337cf38ba98e4c8bb99): original model/sampler/trainer, locally fetched by hash; no upstream license supplied.
+- [SNAP/JODIE Wikipedia](https://snap.stanford.edu/jodie/): raw interaction stream shared with L102. Exact data and protocol identities are recorded in `labs/l103-reproduction.md`.
