@@ -1,0 +1,216 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Error analysis on REG: where does the GNN lose?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/tuning-budget.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0136-leaderboard-literacy.html">Lesson 136</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Lesson 137</p><h1>Error analysis on REG: where does the GNN lose?</h1></header><p class="stream-lead">A model can lose on average for several different reasons. Find the rows where it loses before choosing a repair.</p>
+
+<p><strong>Your win:</strong> produce a query-aligned error report that names one validation-selected failure slice, measures its test behavior, and proposes an experiment that could falsify your explanation.</p>
+<p><a href="../labs/0137-error-analysis-reg.ipynb">Student notebook</a> · <a href="../labs/html/0137-error-analysis-reg.html">Executed reference</a> · <a href="../labs/solutions/0137-error-analysis-reg.ipynb">Solution</a> · <a href="../reference/error-analysis-reg.html">Reference card</a> · <a href="../labs/l137-reproduction.md">Reproduction protocol</a></p>
+<p>On narrow screens, scroll figures horizontally to keep their labels readable.</p>
+<h2 id="1-%C2%B7-From-a-correct-score-to-a-useful-diagnosis">1 &#183; From a correct score to a useful diagnosis<a class="anchor-link" href="#1-%C2%B7-From-a-correct-score-to-a-useful-diagnosis">&#182;</a></h2><p><a href="0136-leaderboard-literacy.html">Lesson 136</a> established whether a score could be reconstructed. It left a practical question open: what should we change when the score is poor? <a href="0129-manual-feature-engineering.html">Lesson 129</a> established a serious engineered-feature baseline. We now compare its errors with the basic relational GNN, on exactly the same questions.</p>
+<p><strong>Retrieve before reading:</strong> What identifies a temporal query? Which split may select a checkpoint? Does a missing feature prove that the underlying event never happened?</p>
+<details><summary>Check your retrieval</summary>A query contains an entity and a cutoff. Validation selects a checkpoint. Missingness describes a representation; it can arise from a window, snapshot, join, or source recording process.</details>
+
+<div id="warmup"></div>
+
+<p>A <strong>relational entity graph (REG)</strong> has database rows as nodes and primary–foreign-key links as edges. A <strong>graph neural network (GNN)</strong> learns by aggregating neighboring representations. <strong>Feature engineering (FE)</strong> explicitly constructs columns from the same database. Neither method is guaranteed to win on every query.</p>
+<p><strong>Read first:</strong> <a href="https://arxiv.org/html/2407.20060v1">RelBench v1 §5.2, Table 7, and §6</a>. The basic RDL regression baseline and expert-feature study answer related but distinct questions. Our GNN target is the basic Table 7 model; our FE replay uses the <a href="https://github.com/snap-stanford/relbench-user-study/blob/445bb7a3b1230f49f8e5890ae81754d3e365680f/f1/driver-position/feats.sql">released driver-position SQL</a>. This lesson's subgroup analysis is an original course extension.</p>
+<h2 id="2-%C2%B7-Pair-the-question-before-subtracting-the-errors">2 &#183; Pair the question before subtracting the errors<a class="anchor-link" href="#2-%C2%B7-Pair-the-question-before-subtracting-the-errors">&#182;</a></h2><p>A <strong>residual</strong> is prediction minus target. Its sign shows overprediction or underprediction. <strong>Absolute loss</strong> removes that sign: a prediction of 8 against a target of 5 has loss 3. <strong>Mean absolute error (MAE)</strong> averages those losses over queries. Lower is better.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Ask how much more wrong the GNN was on the very same driver at the very same time.</p>
+</blockquote>
+<p>For query i, define dᵢ = |gᵢ − yᵢ| − |fᵢ − yᵢ|, where g is the GNN prediction, f the FE prediction, and y the target. Positive d means the GNN lost. Negative d means it won. Average d equals GNN MAE minus FE MAE when both averages contain the same queries.</p>
+<p><strong>Worked example.</strong> Targets [5, 10], GNN predictions [8, 8], FE predictions [6, 14] give losses [3, 2] and [1, 4]. Paired differences are [+2, −2]. The mean gap is zero, although neither model ties on either query.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l137/paired.svg" alt="Synthetic two-query example: opposing paired losses cancel in the mean."><figcaption>Synthetic two-query example: opposing paired losses cancel in the mean.</figcaption></figure>
+
+<p><strong>Predict before changing the control:</strong> if FE's second prediction moves from 14 to 10 while everything else stays fixed, which model wins on average?</p>
+<div class="tuning-control" id="l137-pair"></div><noscript>Baseline FE14 → mean gap0. FE10 → mean gap2: GNN loses.</noscript>
+
+<p>An entity alone is not enough: the same driver appears at multiple dates. Require unique, complete (driver ID, cutoff) keys. Reject duplicates, missing rows, foreign keys and nonfinite predictions. Sort-by-position is not a join.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">paired_errors</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">gnn_keys</span><span class="p">,</span> <span class="n">gnn</span><span class="p">,</span> <span class="n">fe_keys</span><span class="p">,</span> <span class="n">fe</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Positive means the GNN has larger absolute error on the same query.&quot;&quot;&quot;</span>
+    <span class="n">canonical</span><span class="o">=</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">canonical</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Require finite targets and complete query keys&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">canonical</span><span class="p">))</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">canonical</span><span class="p">):</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Duplicate truth keys&#39;</span><span class="p">)</span>
+    <span class="n">aligned</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">supplied</span><span class="p">,</span><span class="n">values</span> <span class="ow">in</span> <span class="p">[(</span><span class="n">gnn_keys</span><span class="p">,</span><span class="n">gnn</span><span class="p">),(</span><span class="n">fe_keys</span><span class="p">,</span><span class="n">fe</span><span class="p">)]:</span>
+        <span class="n">supplied</span><span class="o">=</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">supplied</span><span class="p">];</span><span class="n">v</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">supplied</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid predictions&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">supplied</span><span class="p">))</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">supplied</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">(</span><span class="n">supplied</span><span class="p">)</span><span class="o">!=</span><span class="nb">set</span><span class="p">(</span><span class="n">canonical</span><span class="p">):</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Keys must be a bijection&#39;</span><span class="p">)</span>
+        <span class="n">lookup</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">supplied</span><span class="p">,</span><span class="n">v</span><span class="p">));</span><span class="n">aligned</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lookup</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">canonical</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">aligned</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">y</span><span class="p">)</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">aligned</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+<p><strong>Lab task 1:</strong> implement key alignment and paired absolute losses. CHECK permutes prediction rows and inserts identity errors. Your function must preserve valid results and reject invalid comparisons.</p>
+<h2 id="3-%C2%B7-Define-a-slice-without-seeing-its-test-errors">3 &#183; Define a slice without seeing its test errors<a class="anchor-link" href="#3-%C2%B7-Define-a-slice-without-seeing-its-test-errors">&#182;</a></h2><p>A <strong>slice</strong> is a subset of queries defined by an explicit rule. “GNN was wrong” is useful for inspecting examples, but cannot define a group you can identify before observing the target. Here we use feature-only rules:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Quantity</th>
+  <th>Definition</th>
+  <th>Frozen rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>History</td>
+  <td>Number of recorded result rows strictly before cutoff, within the released snapshot</td>
+  <td>Low ≤ training-query median; high &gt; median</td>
+</tr>
+<tr>
+  <td>Recency</td>
+  <td>Days from last recorded result to cutoff; infinity if none</td>
+  <td>Stale &gt; 180 days; recent ≤ 180</td>
+</tr>
+<tr>
+  <td>Recent-slot missingness</td>
+  <td>Fraction of 24 released SQL past-slot fields that are missing</td>
+  <td>Missing ≥ 0.5; observed &lt; 0.5</td>
+</tr>
+</tbody>
+</table></div>
+<p>The training median supplies a threshold without looking at validation/test errors. The fixed recency and missingness rules are declared before slice scoring. History is a recorded-result count, not sampled GNN degree. It does not measure whether a two-hop sampled batch actually exposed each row.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l137/snapshot.svg" alt="Illustrative frozen snapshot: recorded recency grows while newer real events are unavailable."><figcaption>Illustrative frozen snapshot: recorded recency grows while newer real events are unavailable.</figcaption></figure>
+
+<p>Both pipelines use the released database through 2010-01-01. A test query years later cannot obtain newer results from that snapshot. The SQL recent slots also use a short lookback. A missing slot therefore does not establish a driver had no recent race in the real world. The source audit reconstructs every engineered value independently.</p>
+<p><strong>Nomination rule.</strong> Average each query's loss difference over five fitted runs. On validation, retain slices with at least 30 queries and 10 distinct drivers. Nominate the supported slice with largest positive mean; break ties by name. If none is positive and supported, report no nominated failure slice. Save its name, thresholds, source hashes and prediction hashes before test slice analysis.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">nominate_slice</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="n">entities</span><span class="p">,</span> <span class="n">masks</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">min_entities</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Choose largest positive supported mean on validation; report unsupported slices.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">split</span><span class="o">!=</span><span class="s1">&#39;val&#39;</span><span class="p">:</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Only validation may nominate a slice&#39;</span><span class="p">)</span>
+    <span class="n">d</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">);</span><span class="n">e</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">e</span><span class="o">.</span><span class="n">shape</span><span class="o">!=</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid aligned losses&#39;</span><span class="p">)</span>
+    <span class="n">rows</span><span class="o">=</span><span class="p">{}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">mask</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">masks</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+        <span class="n">m</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">dtype</span><span class="o">!=</span><span class="nb">bool</span> <span class="ow">or</span> <span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="o">!=</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Require one boolean per query&#39;</span><span class="p">)</span>
+        <span class="n">n</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">sum</span><span class="p">());</span><span class="n">groups</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="n">m</span><span class="p">]));</span><span class="n">supported</span><span class="o">=</span><span class="n">n</span><span class="o">&gt;=</span><span class="n">min_rows</span> <span class="ow">and</span> <span class="n">groups</span><span class="o">&gt;=</span><span class="n">min_entities</span>
+        <span class="n">rows</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">n</span><span class="p">,</span><span class="n">entities</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span><span class="n">supported</span><span class="o">=</span><span class="n">supported</span><span class="p">,</span><span class="n">mean</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="k">if</span> <span class="n">n</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">eligible</span><span class="o">=</span><span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;supported&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">selected</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">eligible</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">name</span><span class="p">:(</span><span class="o">-</span><span class="n">rows</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s1">&#39;mean&#39;</span><span class="p">],</span><span class="n">name</span><span class="p">))</span> <span class="k">if</span> <span class="n">eligible</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">selected</span><span class="o">=</span><span class="n">selected</span><span class="p">,</span><span class="n">slices</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span><span class="n">split</span><span class="o">=</span><span class="n">split</span><span class="p">,</span><span class="n">min_rows</span><span class="o">=</span><span class="n">min_rows</span><span class="p">,</span><span class="n">min_entities</span><span class="o">=</span><span class="n">min_entities</span><span class="p">)</span>
+</pre></div>
+<p><strong>Lab task 2:</strong> implement the nomination rule. CHECK supplies a tiny high-error group and attempts nomination with <code>split='test'</code>. Unsupported groups must not win.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This dataset's test split has appeared in earlier lessons. A validation-only operator prevents direct test selection here, but does not restore a pristine holdout. Treat the analysis as descriptive. Six overlapping slices are not six independent discoveries, and validation selection makes the nominated validation gap optimistic.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Count-drivers,-not-just-rows">4 &#183; Count drivers, not just rows<a class="anchor-link" href="#4-%C2%B7-Count-drivers,-not-just-rows">&#182;</a></h2><p>Ten queries for one driver share history. They do not provide ten independent drivers. A <strong>cluster bootstrap</strong> samples driver IDs with replacement and carries every query belonging to each sampled driver into the draw. Recompute the paired mean each time. The 2.5th and 97.5th percentiles of 2,000 draws form our descriptive 95% interval.</p>
+<p><strong>Worked example.</strong> Driver A has differences [0, 0]; driver B has [6]. The query-weighted mean is 2. Resampling two drivers yields A+A → 0, A+B → 2, or B+B → 6. Averaging driver means would instead give 3 for A+B; that would change the estimand—the quantity being estimated—from the average query to the average driver.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l137/clusters.svg" alt="Synthetic driver bootstrap: duplicate whole clusters and retain pooled query weights."><figcaption>Synthetic driver bootstrap: duplicate whole clusters and retain pooled query weights.</figcaption></figure>
+
+<div class="tuning-control" id="l137-cluster"></div><noscript>Baseline A+B → 6/3=2. A+A → 0/4=0. B+B → 12/2=6.</noscript>
+
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">cluster_interval</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="n">entities</span><span class="p">,</span> <span class="n">draws</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">137</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resample whole drivers; retain row weighting inside every bootstrap draw.&quot;&quot;&quot;</span>
+    <span class="n">d</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">);</span><span class="n">e</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">e</span><span class="o">.</span><span class="n">shape</span><span class="o">!=</span><span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid aligned losses&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">draws</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">:</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Need at least two draws&#39;</span><span class="p">)</span>
+    <span class="n">groups</span><span class="p">,</span><span class="n">inverse</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span><span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">:</span><span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;INSUFFICIENT_ENTITIES&#39;</span><span class="p">,</span><span class="n">mean</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">mean</span><span class="p">()),</span><span class="n">entities</span><span class="o">=</span><span class="n">n</span><span class="p">,</span><span class="n">low</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">high</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">totals</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">inverse</span><span class="p">,</span><span class="n">weights</span><span class="o">=</span><span class="n">d</span><span class="p">);</span><span class="n">counts</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">inverse</span><span class="p">)</span>
+    <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">);</span><span class="n">samples</span><span class="o">=</span><span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">n</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">draws</span><span class="p">,</span><span class="n">n</span><span class="p">))</span>
+    <span class="n">estimates</span><span class="o">=</span><span class="n">totals</span><span class="p">[</span><span class="n">samples</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">counts</span><span class="p">[</span><span class="n">samples</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">lo</span><span class="p">,</span><span class="n">hi</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">estimates</span><span class="p">,[</span><span class="mf">.025</span><span class="p">,</span><span class="mf">.975</span><span class="p">])</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;CONDITIONAL_DESCRIPTIVE&#39;</span><span class="p">,</span><span class="n">mean</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">mean</span><span class="p">()),</span><span class="n">entities</span><span class="o">=</span><span class="n">n</span><span class="p">,</span><span class="n">low</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">lo</span><span class="p">),</span><span class="n">high</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">hi</span><span class="p">),</span><span class="n">draws</span><span class="o">=</span><span class="n">draws</span><span class="p">,</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+</pre></div>
+<p><strong>Lab task 3:</strong> implement whole-driver resampling while retaining query weights. CHECK uses repeated drivers and an insufficient-group case. Resampling individual rows would answer a different uncertainty question.</p>
+<p>We first average losses across the five runs for each query. We do <strong>not</strong> average predictions before computing loss: that would evaluate an ensemble. These intervals condition on the five fitted models and fixed temporal split. Drivers also share races and dates, so driver clustering alone does not capture every dependence. It does not describe uncertainty across databases, alternative time windows, feature searches, or model retraining. We show seed variability separately.</p>
+<h2 id="5-%C2%B7-Fresh-reproduction-and-measured-failures">5 &#183; Fresh reproduction and measured failures<a class="anchor-link" href="#5-%C2%B7-Fresh-reproduction-and-measured-failures">&#182;</a></h2><p><strong>Held fixed:</strong> task archives, full train/validation/test query identities, target definition, five run IDs, and declared source protocols. <strong>Varied:</strong> the complete GNN and FE pipelines. <strong>Measured:</strong> MAE, paired loss gaps, supported slice counts and descriptive driver-cluster intervals.</p>
+<p>The GNN runs ten complete epochs per seed, with validation checkpoint selection. FE runs ten search trials per seed with up to 2,000 trees and 50-round early stopping, then refits the chosen configuration. These are different search budgets and different preprocessing choices. Matching integer seed labels does not create common random numbers across these model families. Query pairing is the basis of the comparison.</p>
+<p><strong>Predict before revealing:</strong> will the highest-gap validation slice still contain enough test queries to support a conclusion?</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">GNN MAE ± seed SD</th>
+  <th style="text-align:right">FE MAE ± seed SD</th>
+  <th style="text-align:right">GNN − FE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.1920 ± 0.0460</td>
+  <td style="text-align:right">2.7773 ± 0.0279</td>
+  <td style="text-align:right">+0.4147</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">4.0897 ± 0.1439</td>
+  <td style="text-align:right">3.9489 ± 0.0705</td>
+  <td style="text-align:right">+0.1408</td>
+</tr>
+</tbody>
+</table></div>
+<p>These use all five fresh runs and all held-out queries. The paired scorer uses the same archived target precision for both methods. No ensemble prediction or selected best seed is substituted.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l137/seeds.svg" alt="Measured five-run MAE; matching run labels do not imply common random numbers."><figcaption>Measured five-run MAE; matching run labels do not imply common random numbers.</figcaption></figure>
+
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l137/slices.svg" alt="Measured all planned slices; intervals condition on fitted models and split. Unsupported groups receive no interval."><figcaption>Measured all planned slices; intervals condition on fitted models and split. Unsupported groups receive no interval.</figcaption></figure>
+
+<p><strong>The frozen nomination is <code>high_history</code>:</strong> more than 22 recorded prior results. Its validation gap is <strong>+0.5747</strong>, on 365 queries / 35 drivers. Test gives <strong>+0.0882</strong>, with descriptive 95% interval <strong>[-0.3701, +0.6411]</strong>, on 359 queries / 19 drivers. The interval spans zero. The observed-recent-slots slice has <strong>362 validation rows but zero test rows</strong>; it cannot validate a test-time failure claim.</p>
+<p>Read the interval around zero as limited resolution under the declared resampling scheme, not proof of equal models. An empty slice is <strong>unsupported</strong>, not zero error. A large positive gap is evidence about this pipeline on this group; it does not identify a broken GNN mechanism.</p>
+<h2 id="6-%C2%B7-Turn-an-association-into-a-testable-repair">6 &#183; Turn an association into a testable repair<a class="anchor-link" href="#6-%C2%B7-Turn-an-association-into-a-testable-repair">&#182;</a></h2><p>Suppose a slice with observed recent FE slots favors FE. One hypothesis is that explicit recent-result summaries are useful. Another is that feature selection, optimization, or the regression head differs. Inspecting that slice cannot choose among them.</p>
+<p><strong>A falsifiable next experiment:</strong> add the audited recent-result summaries to the GNN input while holding query keys, data cutoff, sampler, seeds, training budget and validation selection rule fixed. Nominate the intervention on validation and evaluate once on a new held-out temporal window where possible. If the gap does not narrow, reject the simple “missing explicit summaries explains the gap” story. That intervention is proposed, <strong>NOT_RUN</strong> here.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Observation</th>
+  <th>Defensible statement</th>
+  <th>Additional evidence needed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Positive paired gap</td>
+  <td>This pipeline loses on these queries</td>
+  <td>Controlled intervention to explain why</td>
+</tr>
+<tr>
+  <td>Recent slots disappear at test</td>
+  <td>Feature support shifted under the snapshot</td>
+  <td>A matched rolling-history experiment</td>
+</tr>
+<tr>
+  <td>Few distinct drivers</td>
+  <td>Estimate rests on narrow entity support</td>
+  <td>More drivers or another temporal window</td>
+</tr>
+<tr>
+  <td>Source replay matches</td>
+  <td>Released computation was reconstructed</td>
+  <td>Historical generating-run identity</td>
+</tr>
+</tbody>
+</table></div>
+<p>The basic GNN uses table-specific row encoders, relative-time additions, two typed GraphSAGE layers and a seed-node regression head. FE uses SQL summaries and a LightGBM tree ensemble. This is an analysis lesson, not a new architecture lesson. The notebook nevertheless exposes the complete inherited model, trainer, SQL and search implementation, with separately gated full reruns.</p>
+<h2 id="7-%C2%B7-Reproduction-contract-and-EXIT">7 &#183; Reproduction contract and EXIT<a class="anchor-link" href="#7-%C2%B7-Reproduction-contract-and-EXIT">&#182;</a></h2><p><strong>Selected GNN paper target:</strong> RelBench v1 Table 7, rel-f1/driver-position, basic RDL. Five seeds, ten full epochs each.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Fresh mean</th>
+  <th style="text-align:right">Paper target</th>
+  <th style="text-align:right">Predeclared descriptive tolerance</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.192021</td>
+  <td style="text-align:right">3.193</td>
+  <td style="text-align:right">±0.2 MAE</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">4.089695</td>
+  <td style="text-align:right">4.022</td>
+  <td style="text-align:right">±0.2 MAE</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>CLOSE is a descriptive score check, not historical identity or statistical equivalence. FE completed all 50 search trials and five selected refits. Independent checks reconstruct every SQL feature, all saved tree predictions, and all GNN query identities.</p>
+<p>The FE result is a full released-pipeline replay on pinned v1 archives. The old staging endpoint is unavailable; exact historical task scalar, search draws and models are not recovered. Therefore historical FE paper-score parity remains <strong>NOT_ESTABLISHED</strong>. Other tasks and whole-paper training remain <strong>NOT_RUN</strong>. The <a href="../labs/l137-reproduction.md">protocol</a> records commands, runtime pins, deviations and budget; the <a href="../labs/evidence/l137/errors.json">analysis ledger</a> records every slice.</p>
+<p><strong>Your EXIT:</strong> submit your three implementations and a short report that states the query key, sign convention, nominated slice, validation/test support, uncertainty unit, and one falsifiable repair. Explain why an empty test slice cannot confirm the nominated validation failure. State one source limitation that prevents an architecture-only conclusion.</p>
+<div id="l137-teachback"></div>
+
+<p>Ask the agent follow-up questions about any unclear step, and paste your EXIT report for feedback. Author execution is evidence that the artifact runs, not evidence that you have mastered the diagnosis. Return in two days and reconstruct the paired-loss and cluster-resampling rules from memory. Lesson 138 will carry this discipline into a complete e-commerce task.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/paired-reg-errors.js"></script></body></html>

@@ -183,7 +183,7 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
 - **Bridge** — callback Y3 L111; forward to Y5 RelBench v2 leaderboard, Y6 submission.
 - **Prepared package** — [notebook](../labs/0136-leaderboard-literacy.ipynb): independently replay all nine regression tasks for Kapso, GNN and RT-PluRel; fresh five-seed historical RDL selected experiment; three live scorer/coverage tasks and a configuration-difference report. Archive evaluation is distinct from top-entry training reproduction. [Protocol/evidence](../labs/l136-reproduction.md). Learner mastery pending.
 
-### 137 · Error analysis on REG — *— (analysis unit)*
+### 137 · [Error analysis on REG](../lessons/0137-error-analysis-reg.html) — *— (analysis unit)*
 - **Skill** — locate where the RDL GNN beats and loses to manual FE (task type, entity degree, temporal
   regime, cold start).
 - **Teach** — slice-based error analysis on REG (callback Y3 L114), the honest "where FE still wins" map.
@@ -191,6 +191,8 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
   win/lose map GNN vs FE.
 - **Viz** — reuse `checklist.js` + a slice bar chart.
 - **Bridge** — feeds the thesis's honest limitations; callback L129; forward to L149/L155.
+
+- **Prepared package** — [notebook](../labs/0137-error-analysis-reg.ipynb): five fresh full-data GNN fits, five complete FE searches, live paired-loss/validation-slice/driver-bootstrap tasks. High-history validation nomination attenuates on test; observed-recent-slot test support vanishes. [Protocol](../labs/l137-reproduction.md). Learner mastery pending.
 
 ### 138 · Domain: e-commerce task — *rel-amazon*
 - **Skill** — deep-dive one e-commerce task (e.g. churn / LTV / recommendation) end to end and interpret the

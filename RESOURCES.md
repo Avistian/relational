@@ -814,3 +814,10 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [Kapso submission393](https://github.com/stanford-star/relbench/issues/393), [GNN380](https://github.com/stanford-star/relbench/issues/380), [RT-PluRel397](https://github.com/stanford-star/relbench/issues/397): exact attached predictions, distinct from their generating training procedures.
 - [RelBench v1 Table7](https://arxiv.org/html/2407.20060v1): named historical full-data five-seed RDL target; raw MAE distinct from the current normalized leaderboard.
 - Frozen URLs and SHA256 values, including Kapso's temporal-regime document: `labs/_sources_l136.json`. Exact execution, provenance discrepancies and boundaries: `labs/l136-reproduction.md`.
+
+
+## Lesson 137 — Error analysis on REG
+
+- [RelBench v1, Table7 and expert-feature study](https://arxiv.org/html/2407.20060v1): selected basic RDL target plus distinct manual-FE pipeline provenance.
+- [Released user-study SQL](https://github.com/snap-stanford/relbench-user-study/blob/445bb7a3b1230f49f8e5890ae81754d3e365680f/f1/driver-position/feats.sql): strict-past standings, recent global-race slots and explicit schedule availability caveats.
+- [Pinned GNN implementation](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py). The lesson's slice protocol is an original course extension; source hashes and executed boundaries live in `labs/l137-reproduction.md`.
