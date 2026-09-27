@@ -215,3 +215,9 @@ The review retained measured scientific failures, including L113's out-of-tolera
 - `publication.json`: clean Git-index build, pushed commit, Pages workflow and live-byte verification (written after publication).
 
 Existing scientific failures/unrun lanes remain visible. No paid experiments were launched in this review. L111 is a newly executed CPU course baseline; prior experiments are reused evidence.
+
+## Published result
+
+Published commit `83b467f5e808376e8f3eff89b6fa50279986258f` to `main`. [Pages workflow](https://github.com/Avistian/relational/actions/runs/36327403721) completed successfully. All 33 lessons passed live desktop/mobile checks (66 views), with zero JavaScript or local HTTP errors and no document overflow. All 51 checked live files matched the committed bytes, including every reviewed lesson, the manifest, selected diagrams, shared styles and the L111/L135 notebooks.
+
+[Open the course](https://avistian.github.io/relational/). Publication evidence is recorded in `publication.json`; this review-only evidence commit does not require another site deployment.
