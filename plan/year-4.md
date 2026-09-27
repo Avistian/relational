@@ -174,13 +174,14 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
 - **Viz** — reuse `search-viz.js` + `checklist.js`.
 - **Bridge** — fairness discipline the thesis needs; callback Y1 L017/Y2 L060; forward to L140.
 
-### 136 · Leaderboard literacy — *relbench.stanford.edu*
+### 136 · [Leaderboard literacy](../lessons/0136-leaderboard-literacy.html) — *pinned RelBench leaderboard*
 - **Skill** — read the RelBench leaderboard and reproduce a top entry's reported setup.
 - **Teach** — the leaderboard protocol, what counts as a valid entry, reading top-entry configs.
 - **Lab** — Tier B · crucial fragment: reproduce a leaderboard entry's number. Deliverable: matched entry +
   config diff.
 - **Viz** — reuse `checklist.js`.
 - **Bridge** — callback Y3 L111; forward to Y5 RelBench v2 leaderboard, Y6 submission.
+- **Prepared package** — [notebook](../labs/0136-leaderboard-literacy.ipynb): independently replay all nine regression tasks for Kapso, GNN and RT-PluRel; fresh five-seed historical RDL selected experiment; three live scorer/coverage tasks and a configuration-difference report. Archive evaluation is distinct from top-entry training reproduction. [Protocol/evidence](../labs/l136-reproduction.md). Learner mastery pending.
 
 ### 137 · Error analysis on REG — *— (analysis unit)*
 - **Skill** — locate where the RDL GNN beats and loses to manual FE (task type, entity degree, temporal

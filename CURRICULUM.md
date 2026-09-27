@@ -352,7 +352,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 133 | [Hetero conv on REG](lessons/0133-hetero-conv-reg.html) | PyG + RelBench v1 Table7 | [Two sums, relation root terms and full selected reproduction](labs/0133-hetero-conv-reg.ipynb) |
 | 134 | [Training at scale](lessons/0134-training-at-scale.html) | RelBench sampling + v1 Table7 | [Temporal batch budgets, full selected reproduction and measured scale](labs/0134-training-at-scale.ipynb) |
 | 135 | [Hyperparameter tuning on REG](lessons/0135-tuning-on-reg.html) | — | [Fair tuning budget](labs/0135-tuning-on-reg.ipynb) |
-| 136 | Leaderboard literacy | relbench.stanford.edu | Read top entries |
+| 136 | [Leaderboard literacy](lessons/0136-leaderboard-literacy.html) | Pinned RelBench leaderboard + v1 Table 7 | [Complete archive replay, fresh training and config audit](labs/0136-leaderboard-literacy.ipynb) |
 | 137 | Error analysis on REG | — | Where GNN fails vs FE |
 | 138 | Domain: e-commerce task | rel-amazon | Full task deep dive |
 | 139 | Domain: healthcare / social | RelBench v1 tasks | Second domain |

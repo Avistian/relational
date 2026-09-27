@@ -206,3 +206,8 @@ live Colab compatibility or full paper reproduction.
 
 [Student](0134-training-at-scale.ipynb) · [Executed reference](html/0134-training-at-scale.html) · [Solution](solutions/0134-training-at-scale.ipynb) · [Reproduction contract](l134-reproduction.md).
 Three live functions govern typed frontier bounds, temporal query ownership and aggregate timing. Fresh full selected F1 reproduction and a separate full-topology rel-stack systems workload; full rel-stack benchmark and historical identity are not claimed. Default notebook independently replays recorded evidence; optional full training has a separate GPU gate.
+
+### Lesson136 · Leaderboard literacy
+
+[Student](0136-leaderboard-literacy.ipynb) · [Executed reference](html/0136-leaderboard-literacy.html) · [Solution](solutions/0136-leaderboard-literacy.ipynb) · [Reproduction contract](l136-reproduction.md).
+Three live audit functions govern query identity, normalized error and complete-board coverage. Full nine-task archive replay for three entries plus five fresh historical RDL fits. Default notebook directly rescores F1 submissions and author training evidence; separate full-evaluation and full-training gates both have executed validation. Archive replay does not establish top-entry search/training identity.

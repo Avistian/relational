@@ -806,3 +806,11 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [RelBench v1 Appendix B.2 and Table 7](https://arxiv.org/html/2407.20060v1#A2): default hyperparameters and five-run selected baseline targets; the course search is a separate extension.
 - [Pinned released node trainer](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py): actual fanout schedule, clipping and checkpoint selection.
 - [Modal resource prices](https://modal.com/pricing), checked 2026-09-27: aggregate budget calculation including CPU, memory, checks and retry reserves.
+
+## Lesson 136 — Leaderboard literacy
+
+- [Pinned RelBench submission implementation](https://github.com/stanford-star/relbench/blob/584a03d518b2b655580ea8e1cfbbb26bec0a2841/relbench/submit.py): exact query-key, finite-value, complete-board and aggregation contract.
+- [Pinned metric source](https://github.com/stanford-star/relbench/blob/584a03d518b2b655580ea8e1cfbbb26bec0a2841/relbench/metrics.py): NMAE uses the resolved train-target scale. Hosted constants audited against pinned raw train tables.
+- [Kapso submission393](https://github.com/stanford-star/relbench/issues/393), [GNN380](https://github.com/stanford-star/relbench/issues/380), [RT-PluRel397](https://github.com/stanford-star/relbench/issues/397): exact attached predictions, distinct from their generating training procedures.
+- [RelBench v1 Table7](https://arxiv.org/html/2407.20060v1): named historical full-data five-seed RDL target; raw MAE distinct from the current normalized leaderboard.
+- Frozen URLs and SHA256 values, including Kapso's temporal-regime document: `labs/_sources_l136.json`. Exact execution, provenance discrepancies and boundaries: `labs/l136-reproduction.md`.
