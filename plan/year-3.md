@@ -390,11 +390,12 @@ The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into f
   construction from a database.
 - **Teach** — the full REG blueprint (nodes=rows, edges=PK/FK, node features via row encoders, temporal +
   heterogeneous), the end-to-end learning argument vs manual FE.
-- **Lab** — Tier C · crucial fragment: construct a REG by hand from a small database (nodes, typed edges,
-  timestamps, encoder assignment). Deliverable: the complete REG spec.
-- **Viz** — reuse `hetero-graph-viz.js` + `rdl-stack-viz.js` + `flatten-loss-viz.js`.
+- **Lab** — Tier B real F1 rows plus tiny mechanism counterexamples: key mapping, query-cutoff traversal and query-label attachment. Full selected RDL companion: all nine tables, five complete ten-epoch fits.
+- **Viz** — portable schema/REG/query, identity and model diagrams; `reg-query-viz.js` cutoff control with a static fallback.
 - **Bridge** — the capstone bridge into Year 4 (everything Y3 built now targets databases); callback L096/
   L109/Y1 L035; forward to Y4 L122.
+
+- **Prepared evidence (2026-09-27):** [L117 bridge](../lessons/0117-rdl-bridge.html), three real-data REG tasks and five complete RelBench F1 RDL fits. Test MAE4.13392±.15660; CLOSE under declared .2 tolerance. Historical/whole-paper NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. [Protocol](../labs/l117-reproduction.md).
 
 ### 118 · Cvitkovic 2019 relational DL — *Cvitkovic 2019, `2002.02046`*
 - **Skill** — situate RDL historically: the pre-RelBench GNN-on-RDB approach and what it got right/missing.

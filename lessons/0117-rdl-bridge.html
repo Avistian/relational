@@ -1,0 +1,210 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RDL bridge: from database rows to predictions</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0116-debug-gnn-training.html">Lesson 116</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 117</p><h1>RDL bridge: from database rows to predictions</h1></header><p class="stream-kicker">From graph machinery to a database prediction</p>
+
+<p><strong>Your win:</strong> start with a relational schema and a prediction request, construct the right graph, and explain exactly which rows can influence the prediction. Then follow a complete RDL training run on real Formula One data.</p>
+<p><a href="../labs/0117-rdl-bridge.ipynb">Student notebook</a> · <a href="../labs/html/0117-rdl-bridge.html">Executed solution</a> · <a href="../reference/rdl-bridge.html">Quick reference</a> · <a href="../labs/l117-reproduction.md">Reproduction protocol</a></p>
+<p>Take Sections 1–4 as the first study session. Continue with the model trace and notebook in a second session. The full benchmark is an author-reference experiment; running its cells is not a substitute for defending your own construction.</p>
+<div id="l117-warmup"></div><noscript><p>Without notes: what does a row encoder produce? What is the difference between a global node ID and a sampled local position? Which timestamp bounds a two-hop temporal neighborhood?</p></noscript>
+
+<h2 id="1-%C2%B7-The-bridge:-a-prediction-request-determines-a-computation">1 &#183; The bridge: a prediction request determines a computation<a class="anchor-link" href="#1-%C2%B7-The-bridge:-a-prediction-request-determines-a-computation">&#182;</a></h2><p><a href="0115-graph-ml-design-patterns.html">Lesson 115</a> split a graph predictor into encoder, message passing, and head. <a href="0116-debug-gnn-training.html">Lesson 116</a> checked that the training loop actually updates the intended model. Both started with an existing graph. A business database supplies tables, keys, timestamps, and a question. This lesson fills that missing first step.</p>
+<p>Suppose you want to predict a driver's average finishing position over the next 60 days. The driver's own table can describe nationality and date of birth. Their previous races live elsewhere. Race results connect the driver to races and constructors; races connect to circuits. The information is distributed, but the primary–foreign key relationships already identify which rows belong together.</p>
+<p><strong>Relational deep learning (RDL)</strong> learns from that connected data by representing rows as graph nodes, key references as edges, and column values as node inputs. The model learns how to combine context for the chosen prediction task. This is the blueprint in <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al., §§2–3 and Figures 2–4</a>.</p>
+<p>It does not remove the need to define the target, decide when information becomes available, interpret table semantics, or evaluate fairly. A competent feature engineer can also use related tables. The empirical question is whether the learned pipeline improves the chosen accuracy, effort, or maintenance tradeoff under matched information access. Keep this distinction when assessing the course mission.</p>
+<p><strong>Retrieve before continuing.</strong> What does a foreign key tell you that a numeric feature does not? Why does knowing a result today fail to authorize it for a prediction made last year?</p>
+<details><summary>Check the distinction</summary><p>A foreign key identifies another entity; its numeric magnitude normally has no useful distance interpretation. A row can be present in today's archive while remaining unavailable at a historical query time. Representation and availability are separate contracts.</p></details>
+
+<h2 id="2-%C2%B7-Three-graphs,-three-different-questions">2 &#183; Three graphs, three different questions<a class="anchor-link" href="#2-%C2%B7-Three-graphs,-three-different-questions">&#182;</a></h2><p>A <strong>primary key</strong> uniquely identifies a row within its table. A <strong>foreign key</strong> references a primary key in another table. A <strong>node type</strong> records which table supplied a row; an <strong>edge type</strong> records the relationship used to connect two rows. Two columns pointing to the same table can represent different relationships, so preserve their column names in relation types.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Object</th>
+  <th>A node represents</th>
+  <th>What it tells us</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Schema graph</td>
+  <td>One table</td>
+  <td>Which kinds of entities can be related</td>
+</tr>
+<tr>
+  <td>Relational entity graph (REG)</td>
+  <td>One row</td>
+  <td>Which particular entities are related</td>
+</tr>
+<tr>
+  <td>Query computation graph</td>
+  <td>A sampled copy of a row for one query</td>
+  <td>Which permitted messages are computed for this prediction</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l117/graphs.svg" alt="Schema nodes denote tables; REG nodes denote individual rows; a query extracts eligible context using one fixed prediction time."><figcaption>Schema nodes denote tables; REG nodes denote individual rows; a query extracts eligible context using one fixed prediction time.</figcaption></figure>
+
+<p>For the schema <code>drivers ← results → races → circuits</code>, the REG has one node for every individual driver, result, race, and circuit row. A result is itself a node, not merely an edge: it has useful attributes such as finishing position. This preserves the grain of a fact table—the event represented by each row. <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey §2.1, §3.1–3.2</a>.</p>
+<p><strong>Worked key mapping.</strong> The drivers table is stored in order <code>[90, 10, 40]</code>. Four result rows contain driver keys <code>[40, null, 90, 40]</code>. Their graph connections, expressed as <code>(result row position, driver row position)</code>, are <code>(0,2), (2,0), (3,2)</code>. Key 40 maps to row position 2, not position 40. The null creates no relationship. Duplicate primary keys or unknown non-null foreign keys require an explicit policy; our teaching constructor rejects them rather than guessing.</p>
+<p>The released RelBench data has already remapped primary keys to contiguous row indices. Its loader censors rows after the test cutoff and marks references to removed rows as null. Our audit verifies the actual resulting graph; the notebook also practices arbitrary-key mapping so the release convention does not become an accidental general assumption. <a href="../labs/sources/l117/graph.py">Pinned graph constructor</a>.</p>
+<h3 id="Why-add-reverse-edges?">Why add reverse edges?<a class="anchor-link" href="#Why-add-reverse-edges?">&#182;</a></h3><p>The stored foreign key points from a result to its driver. To let a driver collect messages from results, the computation also needs the reverse relationship. The release creates separately typed directions, for example <code>results → drivers</code> and <code>drivers → results</code>. The neural transformations can differ by direction. This does not make the database constraint bidirectional or invent a causal relationship.</p>
+<p><strong>Task 1 — construct the relationships.</strong> Implement <code>foreign_key_edges(primary_keys, foreign_keys)</code>. CHECK tests noncontiguous keys, repeated references, nulls, duplicate keys, and unknown references. The complete real-data audit applies the same mapping to every foreign-key column and compares all graph edges.</p>
+<h2 id="3-%C2%B7-The-training-table-describes-questions,-not-new-entity-features">3 &#183; The training table describes questions, not new entity features<a class="anchor-link" href="#3-%C2%B7-The-training-table-describes-questions,-not-new-entity-features">&#182;</a></h2><p>A <strong>query</strong> is an entity ID paired with a prediction time. A <strong>target window</strong> is the future interval from which the answer is computed. A <strong>training table</strong> contains the query's entity ID, timestamp, and target. It supplies supervised examples; the target column is not an input feature attached to every entity node.</p>
+<p>For <code>rel-f1/driver-position</code>, each query asks for a driver's mean finishing position over the next 60 days. If two eligible future race finishes are 3 and 7, the target is <code>(3+7)/2 = 5</code>. Those results help define the label but cannot be read as predictor inputs at the earlier query time. The same driver's earlier results may be legitimate input. <a href="https://arxiv.org/html/2407.20060v1#S5">Task definition and Table 2</a>.</p>
+<p>A single driver can appear at multiple query times with different labels and different neighborhoods. A static label array indexed by driver ID cannot represent that task. During sampling, RelBench carries <code>input_id</code>, the original <strong>query-row index</strong>. <code>n_id</code> instead maps a sampled node to its global <strong>entity-row index</strong>. These two index spaces are not interchangeable. <a href="../labs/sources/l117/graph.py">Released target transform</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l117/queries.svg" alt="input_id selects a query and its target; n_id identifies a database row; batch identifies which query owns the sampled copy."><figcaption>input_id selects a query and its target; n_id identifies a database row; batch identifies which query owns the sampled copy.</figcaption></figure>
+
+<p><strong>Worked trace.</strong> Query rows 0 and 2 both refer to driver 90, but their targets are 3 and 11. Query row 1 refers to another driver and has target 7. A shuffled batch with <code>input_id=[2,0,1]</code> must receive <code>[11,3,7]</code>. Looking up a label by driver ID would collapse the two predictions for driver 90.</p>
+<p><strong>Task 3 previews the exit condition:</strong> your label attachment function must preserve those query identities even if the same entity is repeated. The notebook implements this after Task 2 so you can see why both graph history and label identity depend on the query.</p>
+<h2 id="4-%C2%B7-Freeze-the-query-time-across-the-whole-neighborhood">4 &#183; Freeze the query time across the whole neighborhood<a class="anchor-link" href="#4-%C2%B7-Freeze-the-query-time-across-the-whole-neighborhood">&#182;</a></h2><p>Let <code>t</code> be the query time and <code>τ(v)</code> the availability timestamp of row <code>v</code>. A time-consistent neighborhood may include <code>v</code> only when <code>τ(v) ≤ t</code>. A genuinely timeless dimension row can be treated as available without a finite timestamp. An undated row is not automatically timeless: that is a data contract to justify.</p>
+<p>The <strong>cutoff</strong> is this common upper bound on input availability. The <strong>hop count</strong> limits how many edges a message can cross. Both restrictions apply: two-hop reachability alone does not authorize a future result, and an old timestamp alone does not make an unrelated row reachable. <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey §3.3 and Appendix A–B</a>.</p>
+<p>Consider a small teaching schema with <code>query seed → timeless dimension → event</code>. Passing through the dimension must not reset the cutoff or disable filtering on the next event. This schematic path isolates the rule; the real F1 driver graph has its own foreign-key paths. Hold the original query time fixed at every hop. The paper's Appendix A filters the neighbor's timestamp. Algorithm 1 prints a receiver timestamp in its edge filter; this lesson follows the neighbor-filter definition and checks sampled row timestamps explicitly.</p>
+<div id="l117-cutoff"></div><noscript><p>Static trace: query at 7, two hops. Include the timeless seed and dimension plus event A at time 5. Exclude event B at 11. Move the query to 11: include both results. Bypassing filtering at 7 improperly includes one future row.</p></noscript>
+
+<p><strong>Predict first.</strong> The query is at time 7. A result at time 5 and another at time 11 share a timeless intermediate node. Which result can send a two-hop message? Change the cutoff to 11 and predict which computation changes before using the control.</p>
+<details><summary>Reveal the trace</summary><p>At 7, include the time-5 result and exclude the time-11 result. At 11, both pass the inclusive boundary. The intermediate node's lack of a timestamp changes neither rule. The widget is an exhaustive teaching neighborhood; the benchmark additionally samples a bounded number of neighbors.</p></details>
+
+<p><strong>Task 2 — preserve the cutoff.</strong> Implement <code>temporal_nodes(edges, times, seed, cutoff, hops)</code>. CHECK includes a future row behind a timeless node, an equality-boundary row, and zero-hop queries. Then apply your code to a real F1 driver neighborhood and assert that all selected dated rows satisfy the query cutoff.</p>
+<h3 id="Event-time-is-not-a-complete-availability-history">Event time is not a complete availability history<a class="anchor-link" href="#Event-time-is-not-a-complete-availability-history">&#182;</a></h3><p><a href="0109-database-timestamp-contracts.html">Lesson 109</a> distinguished the date an event happened from the date its data became usable. The public F1 archive provides event dates, not complete ingestion and revision histories. We can verify conformance to the released clocks; we cannot infer that every historical feature value was already available exactly as recorded today. Temporal sampling also does not constrain when preprocessing statistics were fitted. These are separate audit items.</p>
+<h2 id="5-%C2%B7-Model-architecture:-trace-one-sampled-RDL-prediction">5 &#183; Model architecture: trace one sampled RDL prediction<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-trace-one-sampled-RDL-prediction">&#182;</a></h2><p>Fey specifies an architectural blueprint, not a unique GraphSAGE implementation. Our empirical companion uses the <a href="https://arxiv.org/html/2407.20060v1#S3">RelBench RDL release</a>: per-table row encoders, relative-time encoding, two heterogeneous GraphSAGE layers, and a scalar regression head. The complete local model and trainer are visible in the notebook and <a href="../labs/relkit/rdl_l117.py">canonical source</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l117/architecture.svg" alt="The released regression path: query-specific sampling, per-table encoders and relative ages, two typed sum-aggregation layers, seed readout, loss and validation selection."><figcaption>The released regression path: query-specific sampling, per-table encoders and relative ages, two typed sum-aggregation layers, seed readout, loss and validation selection.</figcaption></figure>
+
+<h3 id="5.1-Encode-columns-into-row-vectors">5.1 Encode columns into row vectors<a class="anchor-link" href="#5.1-Encode-columns-into-row-vectors">&#182;</a></h3><p>For a node type <code>T</code>, collect its sampled rows into a TensorFrame: tensors grouped by semantic column type, with column identities retained. Numeric values receive numerical encodings; categories receive learned embeddings; timestamps receive time encodings. Text is first converted to frozen 300-dimensional GloVe-based sentence vectors in this release. Keys specify graph structure and are removed from predictive feature columns.</p>
+<p>Each table has its own four-block PyTorch Frame ResNet row encoder, with internal width 128, producing <code>H_T</code> of shape <code>[n_T,128]</code>. Here <code>n_T</code> is the number of sampled copies of that table's rows, not necessarily the number of unique database entities. A residual block learns a correction to its input representation. The modality encoders and row network turn unlike columns into a common-sized vector; the graph network then combines vectors across tables. Revisit <a href="0075-pytorch-frame-row-encoder.html">Lesson 75</a> for the preprocessing boundary, after following this trace.</p>
+<p>The benchmark materializes feature statistics on the database censored at the test cutoff. That reproduces the release; it is not train-only preprocessing. The declared run pins the text checkpoint and fixes the stochastic type-inference sample at seed 42, then resets each training seed. Historical inferred types and original random states were not published as a complete experiment identity.</p>
+<h3 id="5.2-Encode-how-old-a-neighboring-row-is">5.2 Encode how old a neighboring row is<a class="anchor-link" href="#5.2-Encode-how-old-a-neighboring-row-is">&#182;</a></h3><p>For a sampled copy of row <code>v</code> in query <code>q</code>, compute <code>age = (seed_time[q] − time[v]) / 86400</code>, measured in days. A sinusoidal positional encoding maps this scalar to 128 coordinates; a learned table-specific linear map transforms it. Add the result to the row embedding. <code>batch</code> identifies which query owns the sampled copy, so the same historical row can receive a different relative age for two queries.</p>
+<p>This encoding communicates age; the sampler enforces eligibility. An age vector alone does not prevent future access. In the release, dated columns can also be encoded as absolute timestamp features. Absolute dates, relative ages, and temporal filtering have different roles. <a href="../labs/sources/l117/nn.py">Temporal encoder source</a>.</p>
+<h3 id="5.3-Aggregate-typed-messages">5.3 Aggregate typed messages<a class="anchor-link" href="#5.3-Aggregate-typed-messages">&#182;</a></h3><p>For one directed relation <code>r</code> and receiving row <code>v</code>, the selected sum-aggregation GraphSAGE operator computes</p>
+<p><code>m_r(v) = W_neighbor,r Σ[u in N_r(v)] h_u + b_r + W_root,r h_v</code>.</p>
+<p><code>N_r(v)</code> is the set of sampled senders connected through relation <code>r</code>. Each <code>W</code> is a learned matrix; <code>b</code> is a bias. Sum aggregation preserves multiplicity: three related events can produce a different vector from one otherwise identical event. It does not divide by neighbor count.</p>
+<p>The heterogeneous layer sums relation outputs for each receiving node type. Notice that each relation has its own root transform; this is not necessarily equivalent to summing all neighbor messages and adding one shared root transform afterward. Then node-wise layer normalization rescales each row across its channels, and ReLU replaces negative coordinates with zero. Repeat the layer twice. Width stays 128.</p>
+<p><strong>Numeric mechanism trace.</strong> A receiver has scalar value 2, with neighbors 3 and 5. Set the neighbor weight to 2, root weight to 1, and bias to 0. The relation output is <code>2×(3+5)+1×2=18</code>. A mean-aggregation variant would give <code>2×4+2=10</code>. This is a scalar explanation of one operator, before normalization and nonlinearities; it is not a trained benchmark prediction.</p>
+<p>Two layers give at most two edges of influence in the sampled graph. They do not expose every useful relational path. For example, <code>customer → purchase → product → purchase → customer</code> needs four edge traversals in this representation. Fey §4.3 makes this limitation an architectural research opportunity.</p>
+<h3 id="5.4-Read-out-the-query-and-train">5.4 Read out the query and train<a class="anchor-link" href="#5.4-Read-out-the-query-and-train">&#182;</a></h3><p>Disjoint temporal sampling keeps each query's computation separate. The first <code>B</code> driver embeddings correspond to the <code>B</code> seed queries. A linear head maps <code>[B,128]</code> to <code>[B,1]</code>, one predicted finishing-position value per query.</p>
+<p>For targets <code>y_i</code> and predictions <code>ŷ_i</code>, mean absolute error is <code>MAE = Σ|ŷ_i−y_i| / B</code>. The training loss backpropagates through the head, graph layers, and trainable row encoders. Frozen GloVe vectors remain frozen. Adam uses learning rate 0.005. The selected schedule has 10 complete epochs and no subsampling of query rows.</p>
+<p>At evaluation, the release clips predictions to the training target's 2nd and 98th percentiles. Select the first epoch with the lowest validation MAE, restoring the complete selected model state. Uniform neighbor sampling means reevaluating that checkpoint can produce a different validation number from the selection-time estimate. Preserve and report both instead of silently treating them as identical.</p>
+<h2 id="6-%C2%B7-What-the-full-selected-reproduction-establishes">6 &#183; What the full selected reproduction establishes<a class="anchor-link" href="#6-%C2%B7-What-the-full-selected-reproduction-establishes">&#182;</a></h2><p>The empirical target is <strong>Robinson et al., RelBench v1 Table 7, <code>rel-f1/driver-position</code>, RDL column</strong>. It complements Fey's blueprint. It is not one of the older beta tables in Fey's Appendix D, which use different tasks and database versions. <a href="https://arxiv.org/html/2407.20060v1#A2">RelBench Tables 7 and 9</a>.</p>
+<p><strong>Predict before reading the measured result:</strong> if a released pipeline completes and reproduces the model outputs, what additional evidence would you need before claiming historical paper identity?</p>
+<p><strong>Five complete full-data runs. Author-reference evidence, separate from student execution.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Mean MAE</th>
+  <th style="text-align:right">Sample seed SD</th>
+  <th style="text-align:right">Paper mean</th>
+  <th>Descriptive verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.18180</td>
+  <td style="text-align:right">0.04348</td>
+  <td style="text-align:right">3.193</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">4.13392</td>
+  <td style="text-align:right">0.15660</td>
+  <td style="text-align:right">4.022</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>6,295 final query predictions</strong> were independently rescored and compared with the original released model on the same sampled inputs. Maximum raw-output discrepancy: <strong>2.86e-06</strong>, within the predeclared numerical tolerance. The complete graph has <strong>74,063 rows</strong> at the release test cutoff.</p>
+<p>Recorded pilot plus five-fit worker resource estimate: <strong>USD0.0577</strong>. Build/startup/storage overhead is not itemized; the plan reserves USD3.499264 for overhead beneath the USD10 aggregate cap. See <a href="../labs/evidence/l117/summary.json">all seeds and protocol status</a>.</p>
+<p><strong>The selected released-protocol experiment is COMPLETE. Historical identity and whole-paper parity remain NOT_ESTABLISHED.</strong> Score verdicts compare means only; they are not statistical equivalence tests. Live Colab remains NOT_CHECKED.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>Selected experiment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Data</td>
+  <td>All nine released F1 tables, censored at the release test cutoff; hash-checked archives</td>
+</tr>
+<tr>
+  <td>Queries</td>
+  <td>7,453 train; 499 validation; 760 test; original ordering and temporal splits</td>
+</tr>
+<tr>
+  <td>Fits</td>
+  <td>Five fresh seeds 0–4, each 10 complete epochs</td>
+</tr>
+<tr>
+  <td>Model</td>
+  <td>Four-block row ResNets; width 128; two heterogeneous GraphSAGE layers; sum aggregation; scalar head</td>
+</tr>
+<tr>
+  <td>Sampling</td>
+  <td>Uniform, disjoint temporal neighborhoods; batch size 512; source fanouts <code>[128,64]</code></td>
+</tr>
+<tr>
+  <td>Optimization</td>
+  <td>Adam .005; mean L1; first minimum validation checkpoint</td>
+</tr>
+<tr>
+  <td>Reporting</td>
+  <td>MAE on every query; inference clamped to train percentiles; sample seed SD</td>
+</tr>
+<tr>
+  <td>Comparison</td>
+  <td>Published means 3.193 / 4.022; predeclared descriptive CLOSE tolerance 0.2 MAE</td>
+</tr>
+</tbody>
+</table></div>
+<p>The paper's hyperparameter table says 128 neighbors; the selected release halves that at the second hop. The package preserves <code>[128,64]</code> and records the distinction. The five historical seeds are not specified as a recoverable sequence; 0–4 is our declared sequence. Current libraries and type-inference state are also recorded deviations. A close score does not erase them.</p>
+<p><strong>Interpret the scope.</strong> Independent scoring checks metric arithmetic and population identity. Original-model replay on the same sampled inputs checks the neural computation. Timestamp checks test the declared sample boundary. None proves that the public archive reconstructs real ingestion history, that the whole paper has been reproduced, or that this model beats engineered features on your database. We do not rerun a tuning search against the test result to make the number look closer.</p>
+<h2 id="7-%C2%B7-Read-the-whole-Fey-paper-with-a-claim-ledger">7 &#183; Read the whole Fey paper with a claim ledger<a class="anchor-link" href="#7-%C2%B7-Read-the-whole-Fey-paper-with-a-claim-ledger">&#182;</a></h2><p>Read the <a href="https://proceedings.mlr.press/v235/fey24a.html">final ICML paper</a>, not just the abstract. Use this sequence to connect its pieces:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Reading</th>
+  <th>Write this artifact before moving on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>§§1–2, Figures 1–3</td>
+  <td>Define one entity, prediction time, target window, and legal input set</td>
+</tr>
+<tr>
+  <td>§§3.1–3.3, Figure 4</td>
+  <td>Draw schema, entity, and query computation graphs for the same example</td>
+</tr>
+<tr>
+  <td>§3.4 and Appendix A–B</td>
+  <td>Trace one typed message and identify the timestamp checked at every hop</td>
+</tr>
+<tr>
+  <td>§4 and Figure 5</td>
+  <td>Name one unresolved limitation of sampling, graph design, architecture, or training</td>
+</tr>
+<tr>
+  <td>§5</td>
+  <td>Explain the connection to statistical relational learning, tabular ML, and earlier relational GNNs</td>
+</tr>
+<tr>
+  <td>§6 and Appendices C–D</td>
+  <td>Separate the beta benchmark's tasks and evidence from the later RelBench reproduction here</td>
+</tr>
+</tbody>
+</table></div>
+<p>Section 4 is a research agenda: scaling across databases, alternative graph constructions, SQL-inspired operators, multitask learning, and multimodal/foundation models. These possibilities are not all implemented or experimentally established by the position paper. Section 5 also makes clear that relational learning has a history; the planned Lesson 118 returns to Cvitkovic's earlier approach.</p>
+<p>For a skeptical reading, ask: what information can an engineered baseline access? What is actually learned? What preprocessing uses future distributions? How many hops reach the relevant signal? What observation would contradict the claimed advantage? This is how the bridge serves the course mission without converting the position paper's motivation into a universal performance claim.</p>
+<h2 id="8-%C2%B7-Lab,-exit-defense,-and-spaced-return">8 &#183; Lab, exit defense, and spaced return<a class="anchor-link" href="#8-%C2%B7-Lab,-exit-defense,-and-spaced-return">&#182;</a></h2><p>The default notebook downloads the small hash-checked real F1 database and applies your three functions to a real neighborhood. It also uses tiny counterexamples to expose indexing and time errors. The full model and training loop are visible afterward; the expensive reproduction gate defaults off. Three CHECK cells provide immediate feedback. Do not copy the solution before making a prediction and attempting each function.</p>
+<p>Submit your functions, generated <code>l117-task-report.json</code>, and this defense:</p>
+<ol>
+<li>Explain why a result row is a node and why both directed relationships are useful.</li>
+<li>Trace one prediction from query row through legal input rows, encoders, messages, head, and target.</li>
+<li>Explain why <code>input_id</code>, <code>n_id</code>, and <code>batch</code> mean different things.</li>
+<li>Name two temporal claims the release checks and two historical claims it cannot establish.</li>
+<li>State the reproduction result and its limits without turning a selected task into a whole-paper claim.</li>
+</ol>
+<div id="l117-teachback"></div><noscript><p>Explain why two predictions for the same driver at different dates require distinct query labels and potentially distinct computation graphs. Include the role of input_id, n_id and batch.</p></noscript>
+
+<p>Tomorrow, redraw the three graphs without notes. In a week, explain why two queries about the same driver need separate computation graphs. Interleave that exercise with the missing-update diagnosis from Lesson 116.</p>
+<p><strong>Learner status: PENDING_WRITTEN_DEFENSE.</strong> Ask the teacher follow-up questions about any step, or paste your graph and EXIT ticket for feedback. Author execution verifies the package; your explanation supplies the learning evidence.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/reg-query-viz.js"></script><script src="../assets/l117-lesson.js"></script></body></html>

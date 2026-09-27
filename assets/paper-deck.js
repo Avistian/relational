@@ -17,6 +17,7 @@
   "use strict";
 
   global.PAPER_DECK = [
+{"id": "fey2024-three-graphs", "paper": "Fey et al. \u2014 RDL blueprint \u00a73", "year": 2024, "lesson": 117, "front": "What changes between schema graph, relational entity graph, and query computation graph?", "back": "Schema nodes denote tables, REG nodes denote individual rows with typed key relationships, and the computation graph contains sampled copies eligible for one query time. Query labels belong to training-table rows, so repeated entity IDs need not share targets."},
 {
   "id": "hu2024-frame",
   "paper": "Hu et al. \u2014 PyTorch Frame",

@@ -302,7 +302,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 111–114 | OGB benchmark task | Hu 2020 OGB | Leaderboard reproduction |
 | 115 | Graph ML design patterns | — | Encoder → MP → head |
 | 116 | Debug GNN training | — | Common failure modes |
-| 117 | RDL bridge lecture | Fey 2024 full paper | REG construction walkthrough |
+| 117 | [RDL bridge](lessons/0117-rdl-bridge.html) | Fey 2024 full paper + RelBench v1 Table 7 | [REG construction and complete selected RDL reproduction](labs/0117-rdl-bridge.ipynb) |
 | 118 | Cvitkovic 2019 relational DL | Cvitkovic 2019 | Historical line to RDL |
 | 119 | Year 3 synthesis | — | Essay: graphs vs flat tables |
 | 120 | **Year 3 exit exam** | All Y3 papers | Build hetero temporal GNN |

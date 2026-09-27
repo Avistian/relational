@@ -670,3 +670,10 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [PyG 2.6.1 neighbor-sampling tutorial](https://pytorch-geometric.readthedocs.io/en/2.6.1/tutorial/neighbor_loader.html): n_id mapping and seed-only loss; independently checked against a real NeighborLoader batch.
 - [PyTorch autograd and evaluation modes](https://docs.pytorch.org/docs/stable/notes/autograd.html): gradient recording and module evaluation mode are distinct.
 - [L116 protocol](labs/l116-reproduction.md): pinned source/data, diagnostic interventions, benchmark results, budget and exact commands.
+
+## Lesson 117 — RDL bridge and selected full-data reproduction
+
+- [Fey et al., ICML 2024 final paper](https://proceedings.mlr.press/v235/fey24a.html): complete reading; §§2–3 define query tables, schema/REG/computation graphs and temporal message passing; §4 research agenda; §5 history; §6/Appendices C–D beta benchmark. Algorithm1's printed receiver-time filter is distinguished from AppendixA's neighbor-time definition.
+- [Robinson et al., RelBench v1](https://arxiv.org/html/2407.20060v1): §3 implementation; Table7 selected F1 regression result; Table9 protocol. Five fresh complete release runs: validation3.18180±.04348, test4.13392±.15660 MAE; both descriptively CLOSE. This is a companion experiment, not the Fey beta table or whole paper.
+- [Pinned released trainer](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py): actual [128,64] fanout, query labels, mean L1, train-percentile clipping and stochastic validation selection. Full sources, licenses, GloVe revision and primitive source files are in labs/sources/l117.
+- [L117 exact commands and deviations](labs/l117-reproduction.md): full released-data experiment, explicit non-train-only preprocessing and missing ingestion-history boundary; independent SQL/key/query/score audit and original-model replay.
