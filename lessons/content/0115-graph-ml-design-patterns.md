@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 114 to this lesson</p>
+<p>The error report motivates changes. Module contracts let us say precisely which computation changes and which should remain equivalent.</p>
+<details><summary>Quick prerequisite reminder</summary><p>An encoder turns inputs into vectors; a processor exchanges information; a head produces the requested outputs. Pooling reduces several node vectors to one graph vector.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-kicker">Synthesis · one reusable design skill · three prediction units</p>
 
 **Your win:** given a graph prediction problem, write a defensible encoder → processor → head design, name the prediction unit and information boundary, and show whether a refactor preserves the original computation.
@@ -30,6 +38,8 @@ These are responsibilities, not a rule that every model must have exactly three 
 We use the same named experiment as Lesson 112: the released three-layer GCN on ogbn-arxiv. There are N=169,343 papers, 128 input coordinates and 40 classes. The official split has 90,941 training, 29,799 validation and 48,603 test papers. The publication supplies the benchmark; the pinned release supplies the executable model and training defaults. [OGB §4.3/Table 6](https://arxiv.org/html/2005.00687v6#S4.SS3), [released GCN and training loop](https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py).
 
 [[FIG:architecture]]
+
+**Diagram trace.** Locate the identity encoder and the propagating head. Removing which final graph operation would change the model despite preserving output shape? On a narrow screen, scroll the figure sideways.
 
 **Step A — make the graph operator explicit.** Deduplicate the citation graph after making it undirected, add one self-loop per node, then form S=D⁻¹ᐟ²(A+I)D⁻¹ᐟ². A matrix row identifies the receiving node; its nonzero columns identify senders. Degrees are measured after deduplication and loop addition. The operator stays fixed during this experiment.
 
@@ -132,3 +142,7 @@ Fill all columns **before** opening the solution. The three task specs are delib
 **Spacing:** tomorrow, redraw the complete GCN without looking and mark all three graph multiplications. In a week, design task B again with a late-arriving purchase and explain exactly where it must be excluded. Interleave a node task and a graph task to practice identifying the unit of supervision.
 
 **Primary reading:** Battaglia et al., [Relational inductive biases, deep learning, and graph networks, §4.3](https://arxiv.org/html/1806.01261v3#S4.SS3). Pair the conceptual composition with the [pinned OGB implementation](https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py). Ask your tutor follow-up questions wherever a tensor boundary, source claim or experimental conclusion is unclear.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Probe whether the implemented modules and optimizer fulfill those contracts. [Continue to Lesson 116](0116-debug-gnn-training.html).
+<!-- sequence-next:end -->

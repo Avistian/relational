@@ -1,4 +1,5 @@
 """Verify the actual lesson/notebook, interactive arithmetic, and copied Pages site."""
+from _gallery_delivery import reveal_gallery_link
 import functools,hashlib,json,os,re,subprocess,sys,tempfile,threading
 from pathlib import Path
 from html.parser import HTMLParser
@@ -96,8 +97,8 @@ with tempfile.TemporaryDirectory(prefix='l105-pages-') as tmp:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
    base=f'http://127.0.0.1:{server.server_port}'
-   page.goto(base+'/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]');assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
-   page.goto(base+'/notebooks.html');page.wait_for_selector('a[href="labs/html/'+S+'.html"]')
+   page.goto(base+'/index.html');reveal_gallery_link(page, 'a[href="lessons/'+S+'.html"]');assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
+   page.goto(base+'/notebooks.html');reveal_gallery_link(page, 'a[href="labs/html/'+S+'.html"]')
    page.goto(base+f'/lessons/{S}.html');assert 'repeated records collapse' in page.locator('#l105-aggregation .stream-live').inner_text();browser.close()
  finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors

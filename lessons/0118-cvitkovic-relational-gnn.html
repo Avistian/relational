@@ -1,0 +1,298 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cvitkovic: relational graphs before modern RDL</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/rdb-extraction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0117-rdl-bridge.html">Lesson 117</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 118</p><h1>Cvitkovic: relational graphs before modern RDL</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 117 to this lesson</p>
+<p>The modern RDL bridge motivates a look backward. Compare extraction and readout choices rather than treating publication date as a ranking.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A target-specific graph is the context selected for one prediction. Table-specific encoders can feed a convolution whose weights are shared across all relation types.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<p class="stream-kicker">The database graph idea before modern RDL</p>
+
+<p><strong>Your win:</strong> construct Cvitkovic’s target-specific graph, trace its prediction, and explain precisely what is shared with—and different from—the relational entity graph in Lesson 117.</p>
+<p><a href="../labs/0118-cvitkovic-relational-gnn.ipynb">Student notebook</a> · <a href="../labs/html/0118-cvitkovic-relational-gnn.html">Executed solution</a> · <a href="../reference/cvitkovic-relational-gnn.html">Quick reference</a> · <a href="../labs/l118-reproduction.md">Reproduction protocol</a></p>
+<p>Study Sections 1–4 first. Then trace the model and implement the notebook tasks. The full-data experiment is a separate research exercise; executing the reference notebook does not establish that you can defend its choices.</p>
+<div id="l118-warmup"></div><noscript><p>Without notes: distinguish schema nodes from REG nodes. Why add reverse edges? What does a prediction timestamp constrain?</p></noscript>
+
+<h2 id="1-%C2%B7-What-existed-before-the-RDL-blueprint?">1 &#183; What existed before the RDL blueprint?<a class="anchor-link" href="#1-%C2%B7-What-existed-before-the-RDL-blueprint?">&#182;</a></h2><p><a href="0117-rdl-bridge.html">Lesson 117</a> began with a database and a prediction request. A <strong>relational entity graph</strong>, or REG, represents each row as a node and each foreign-key reference as a relationship. A <strong>foreign key</strong> is a value identifying a row in another table. A <strong>node feature</strong> describes a row, while a key identifies a relationship; the numerical distance between two customer IDs is generally meaningless.</p>
+<p>Cvitkovic used the same basic row-to-node interpretation before the modern RDL blueprint. This lesson looks backward to understand the lineage. The useful question is not whether one paper invented every part of the other. It is which representations, computations, and evaluation contracts are actually the same.</p>
+<p><strong>Version matters.</strong> The curriculum calls this “Cvitkovic 2019.” A <a href="https://rlgm.github.io/papers/55.pdf">2019 workshop version</a> exists. Our implementation and numerical targets follow the expanded <a href="https://arxiv.org/abs/2002.02046v1">arXiv v1 paper, February 2020</a>, and the <a href="https://github.com/mwcvitkovic/Supervised-Learning-on-Relational-Databases-with-GNNs/tree/57195ccab62d23dcbcac1a317f8a9811a9fd6cb5">released repository</a>. Do not silently combine the older paper’s experimental claims with the later code.</p>
+<p><strong>Connection to the mission.</strong> To argue that learned relational models add value, you need to know which information a model receives and how it uses that information. The paper provides an early concrete alternative to manually aggregating related tables. It also supplies counter-evidence: relational GNNs do not win on every dataset. A defensible thesis must retain both observations.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Build a small graph for the person whose outcome you want to predict. Encode the rows in that graph. Let nearby rows exchange information. Summarize the resulting graph into a prediction for that person.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Three-objects-that-must-not-be-confused">2 &#183; Three objects that must not be confused<a class="anchor-link" href="#2-%C2%B7-Three-objects-that-must-not-be-confused">&#182;</a></h2><p>A <strong>schema graph</strong> has one node per table. It describes allowed relationships. A <strong>database graph</strong> has one node per actual row. It describes particular relationships. A <strong>target-specific graph</strong> is the selected portion used for one prediction.</p>
+<p>Consider five tables: <code>Customer</code>, <code>Order</code>, <code>OrderLine</code>, <code>Country</code>, and a target column on <code>Customer</code>. A line refers to an order; an order refers to a customer; a customer refers to a country. We draw each stored edge in that foreign-key direction.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Database object</th>
+  <th>Cvitkovic graph interpretation</th>
+  <th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>One customer row</td>
+  <td>One Customer node</td>
+  <td>Two customers are two nodes, even if their features match</td>
+</tr>
+<tr>
+  <td>One table</td>
+  <td>One node type</td>
+  <td>Different tables can need different encoders</td>
+</tr>
+<tr>
+  <td>Foreign-key column</td>
+  <td>An edge type</td>
+  <td>Two columns pointing to the same table may have distinct meanings</td>
+</tr>
+<tr>
+  <td>One foreign-key value</td>
+  <td>A directed edge</td>
+  <td>Follow identity, not row position or integer magnitude</td>
+</tr>
+<tr>
+  <td>Other columns</td>
+  <td>Node features</td>
+  <td>Encode values according to their type</td>
+</tr>
+<tr>
+  <td>Target column</td>
+  <td>Supervised label</td>
+  <td>Remove it from the input features</td>
+</tr>
+</tbody>
+</table></div>
+<p>This is the correspondence in the expanded paper’s Table 1. The term <strong>directed multigraph</strong> means that edges have directions and that more than one edge can connect the same pair of nodes. Keeping two reference types separate preserves their semantics. A particular GNN variant may subsequently ignore those types; graph representation and neural parameterization are separate decisions.</p>
+<p><strong>Predict before reading on.</strong> If two customers refer to the same country, must the second customer appear in the first customer’s prediction graph? A plain undirected neighborhood might include it. The paper’s extraction algorithm need not.</p>
+<h2 id="3-%C2%B7-RDBToGraph:-two-closures,-in-a-fixed-order">3 &#183; RDBToGraph: two closures, in a fixed order<a class="anchor-link" href="#3-%C2%B7-RDBToGraph:-two-closures,-in-a-fixed-order">&#182;</a></h2><p>A <strong>closure</strong> repeats an expansion until no new nodes appear. It is not a fixed number of hops. In the paper’s Algorithm 1, edges point from the row holding the foreign key toward the referenced row.</p>
+<p><strong>First, collect incoming ancestors.</strong> Start with the target customer. Add every row that points to any selected row. Repeat. Orders pointing to the customer enter; lines pointing to those orders enter too.</p>
+<p><strong>Second, collect outgoing descendants.</strong> Starting from everything selected so far, follow outgoing references until no new nodes appear. The customer’s country enters. Other referenced products or dimensions would enter too.</p>
+<p><strong>Finally, retain induced edges.</strong> An induced graph includes every stored edge whose two endpoints are selected. Keep repeated edges; do not silently turn a multigraph into a set of pairs.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l118/extraction.svg" alt="One fixed graph, three algorithm states. Incoming closure selects orders and lines; outgoing closure adds Country but does not restart incoming expansion."><figcaption>One fixed graph, three algorithm states. Incoming closure selects orders and lines; outgoing closure adds Country but does not restart incoming expansion. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p><strong>Worked example.</strong> Let node IDs be Customer A <code>0</code>, Order A <code>1</code>, Country <code>2</code>, Customer B <code>3</code>, Order B <code>4</code>, and Line A <code>5</code>. Stored edges are <code>1→0</code>, <code>0→2</code>, <code>3→2</code>, <code>4→3</code>, <code>5→1</code>.</p>
+<ol>
+<li>Start: <code>{0}</code>.</li>
+<li>Incoming closure: <code>{0,1,5}</code>.</li>
+<li>Outgoing closure: <code>{0,1,2,5}</code>.</li>
+<li>Induced edges: <code>1→0</code>, <code>0→2</code>, <code>5→1</code>.</li>
+</ol>
+<p>Customer B is excluded. Discovering Country during the second phase does <strong>not</strong> restart the incoming phase. Alternating incoming and outgoing expansion would pull in Customer B and then Order B. That computes something else.</p>
+<div class="highlight"><pre><span></span><span class="n">selected</span> <span class="o">=</span> <span class="p">{</span><span class="n">target</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">adjacency</span> <span class="ow">in</span> <span class="p">[</span><span class="n">incoming</span><span class="p">,</span> <span class="n">outgoing</span><span class="p">]:</span>
+    <span class="n">queue</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">queue</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">adjacency</span><span class="p">[</span><span class="n">node</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">neighbor</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">selected</span><span class="p">:</span>
+                <span class="n">selected</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
+                <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
+</pre></div>
+<p>The queue is a list of nodes whose neighbors still need inspection. The selected set prevents revisiting cycles forever. With adjacency lists, each pass inspects each relevant node and edge at most a constant number of times. The resulting cost is linear in the graph size, O(V + E), where V counts nodes and E counts stored edges.</p>
+<p><strong>Task 1.</strong> Implement <code>rdb_to_graph</code>. Its CHECK includes a shared country, a cycle, parallel edges, and an isolated target. The notebook’s later graph construction calls your function, so passing a detached exercise is insufficient.</p>
+<h3 id="The-actual-Home-Credit-extractor-is-a-separate-object">The actual Home Credit extractor is a separate object<a class="anchor-link" href="#The-actual-Home-Credit-extractor-is-a-separate-object">&#182;</a></h3><p>The <a href="../labs/sources/l118/data/homecreditdefaultrisk/build_dataset_from_database.py">released Home Credit builder</a> uses an undirected Neo4j path query of length zero through two around the application. This is a dataset-specific implementation choice. Do not present Algorithm 1 and that query as universally equivalent.</p>
+<p>On our worked example, the two-hop query includes Customer B through Country. It also includes Line A through Order A. The abstract algorithm excludes Customer B. The interactive trace makes this distinction inspectable before we train anything.</p>
+<div id="l118-extraction"></div><noscript><p>Static trace: Algorithm 1 selects Customer A, Order A, Country, Line A. Two undirected hops additionally select Customer B. A course cutoff at 7 removes Line A (available at 9), leaving three versus four nodes.</p></noscript>
+
+<p>The optional cutoff in this widget is a <strong>course intervention</strong>, not a reconstruction of the original paper’s temporal protocol. Holding the database and target fixed, it changes which rows are permitted to enter the graph. “Available at time 9” means the row’s information was usable by then; a historical event date alone does not prove this.</p>
+<h2 id="4-%C2%B7-Diff-the-computation,-not-just-the-terminology">4 &#183; Diff the computation, not just the terminology<a class="anchor-link" href="#4-%C2%B7-Diff-the-computation,-not-just-the-terminology">&#182;</a></h2><p>Both Cvitkovic and Fey map rows to nodes and key references to graph relationships. Calling them fundamentally different graph representations would conceal the important continuity.</p>
+<p>The contrast becomes concrete when we ask how a prediction is assembled. <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al.</a> describe the broader RDL blueprint. Lesson 117 implements one specific RelBench model within it; its two-layer GraphSAGE architecture is not a universal definition of REG.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Question</th>
+  <th>Selected Cvitkovic Home Credit release</th>
+  <th>Lesson 117’s selected RelBench implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>What is a graph node?</td>
+  <td>A database row</td>
+  <td>A database row</td>
+</tr>
+<tr>
+  <td>What defines one supervised example?</td>
+  <td>One labeled application and its extracted graph</td>
+  <td>An entity, prediction timestamp, and future target</td>
+</tr>
+<tr>
+  <td>How is context obtained?</td>
+  <td>Preconstructed undirected two-hop graph</td>
+  <td>Query-time temporal neighbor sampling</td>
+</tr>
+<tr>
+  <td>How are tables encoded?</td>
+  <td>Separate scalar/category MLP initializers</td>
+  <td>Per-table encoders, plus relative-time encoding</td>
+</tr>
+<tr>
+  <td>What exchanges messages?</td>
+  <td>One shared GCN layer</td>
+  <td>Two typed GraphSAGE layers</td>
+</tr>
+<tr>
+  <td>What becomes the prediction input?</td>
+  <td>Attention-weighted summary of all selected nodes</td>
+  <td>The sampled seed entity representation</td>
+</tr>
+<tr>
+  <td>What is the evaluation split?</td>
+  <td>Five shuffled applicant folds</td>
+  <td>Chronological train/validation/test queries</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>The readout difference matters.</strong> A <strong>readout</strong> converts a variable-size graph representation into a fixed-size vector. In Cvitkovic’s release, an old loan row can affect the prediction through graph-level pooling even when its information has not traveled all the way to the application node. In a seed-only readout, a row must influence that seed through the available message-passing paths. Therefore “one GCN layer” does not mean “the prediction uses only one-hop information around the target.” Extraction, message passing, and readout jointly determine information access.</p>
+<p><strong>Retrieval check.</strong> Cover the table and explain why neither “both use GNNs” nor “one uses a REG” is a sufficient comparison. A good answer names the shared row representation and at least three concrete computation or evaluation differences.</p>
+<h2 id="5-%C2%B7-Model-architecture:-trace-the-released-Home-Credit-GCN">5 &#183; Model architecture: trace the released Home Credit GCN<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-trace-the-released-Home-Credit-GCN">&#182;</a></h2><p>A <strong>hidden state</strong> is a learned numerical description of a node. In this release every table eventually produces 256 numbers per node, even though the raw columns differ. If a batched collection of graphs contains N total nodes, the hidden-state matrix has shape N × 256.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l118/architecture.svg" alt="The selected Home Credit GCN: seven table-specific initializers, one shared message layer, gate/value pooling branches and a two-logit prediction. Source metadata is globally prepared."><figcaption>The selected Home Credit GCN: seven table-specific initializers, one shared message layer, gate/value pooling branches and a two-logit prediction. Source metadata is globally prepared. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Follow numeric and categorical branches into the shared GCN. Then trace the gate and value branches that pool all nodes within one applicant graph. On a narrow screen, scroll the figure sideways.</p>
+<h3 id="5.1-Encode-values-without-turning-IDs-into-measurements">5.1 Encode values without turning IDs into measurements<a class="anchor-link" href="#5.1-Encode-values-without-turning-IDs-into-measurements">&#182;</a></h3><p><strong>Scalar columns.</strong> Subtract the released median, divide by the released interquartile range, append a missing-value flag, and clip to the interval −5 through 5. The <strong>interquartile range</strong>, or IQR, is the 75th percentile minus the 25th percentile. Missing values receive numerical value zero and flag one. The source also adds <code>1e-7</code> to observed normalized values; the port preserves it.</p>
+<p><strong>Worked example.</strong> With median 10 and IQR 2, an observed value 14 becomes approximately <code>[2,0]</code>. A missing value becomes <code>[0,1]</code>. An observed value 30 clips to <code>[5,0]</code>. The second coordinate lets the model distinguish a missing entry from a genuinely typical observation near the median.</p>
+<p><strong>Categorical columns.</strong> Map categories to integer indices, reserving index zero for missing or unknown values. An <strong>embedding</strong> is a trainable lookup table that converts an index to a vector. Its width is the smaller of 32 and the released cardinality including the missing category. Embedding coordinates are learned jointly with the predictor.</p>
+<p><strong>Table-specific MLP.</strong> Concatenate a row’s scalar encodings and categorical embeddings. If the concatenated width is d, its table’s multilayer perceptron maps <code>d → 4d → 256</code>. A <strong>linear layer</strong> learns a matrix and bias; a nonlinear activation between linear maps prevents the entire network collapsing into one linear map. Here the activation is SELU, the source’s scaled exponential linear unit. The initializer also applies SELU to its final output. Dropout randomly zeros coordinates during training, with probability 0.5, and is disabled for evaluation.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The released metadata contains global category vocabularies and scaling statistics. Its metadata builder queries entire tables, rather than fitting statistics independently in each training fold. Preserving that choice reproduces the released preprocessing; it does not establish a leakage-free deployment protocol. The lesson’s modern port also changes the runtime. Both facts belong in the deviation ledger.</p>
+</blockquote>
+<h3 id="5.2-Add-computational-edges,-then-normalize-messages">5.2 Add computational edges, then normalize messages<a class="anchor-link" href="#5.2-Add-computational-edges,-then-normalize-messages">&#182;</a></h3><p>The stored graph has directed foreign-key edges. The release collator adds a reverse edge for each stored edge and a self edge for each node. A self edge permits a node’s previous state to participate in its own update. These edges are added <strong>after extraction</strong>; adding reverse edges before the two-phase closure would change the selected nodes.</p>
+<p>For a receiver v, the normalized message sum is:</p>
+<p><code>message[v] = Σ over edges u→v of h[u] / sqrt(degree[u] × degree[v])</code>.</p>
+<p>The degree counts incoming computational edges, including self edges and multiplicities. Because reverse edges are present, incoming and outgoing degrees agree. Then apply the learned matrix W, add bias b, apply SELU, and apply dropout. W has shape 256 × 256.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l118/normalization.svg" alt="Synthetic one-coordinate example, before SELU: self-loop degrees [3,2,2] yield root value 2.783; this is not the neighbor mean."><figcaption>Synthetic one-coordinate example, before SELU: self-loop degrees [3,2,2] yield root value 2.783; this is not the neighbor mean. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p><strong>Worked example.</strong> Use one hidden coordinate, a root joined to two leaves, and a self edge at every node. Degrees are <code>[3,2,2]</code>, and input values are <code>[1,2,4]</code>. The root receives <code>1/3 + 2/√6 + 4/√6 = 2.783</code> before the learned transform and activation. Taking a plain average would produce <code>7/3 = 2.333</code>, a different operator.</p>
+<p><strong>Task 2.</strong> Implement <code>normalized_sum</code>. The model calls it inside <code>forward</code>. Use additive accumulation for repeated destinations; ordinary indexed assignment can overwrite earlier messages. The CHECK uses unequal degrees to distinguish symmetric normalization from a tempting neighbor mean.</p>
+<p><strong>Which parameters are shared?</strong> The selected vanilla GCN uses the same W on all nodes. Its initial row encoders are table-specific, but the GCN matrix does not depend on edge type. The paper’s ERGCN is a different variant with type-dependent transformations. Do not describe vanilla GCN as ERGCN because both consume a typed database.</p>
+<h3 id="5.3-Pool-nodes-with-two-learned-branches">5.3 Pool nodes with two learned branches<a class="anchor-link" href="#5.3-Pool-nodes-with-two-learned-branches">&#182;</a></h3><p>After message passing, the readout has two branches. The <strong>gate branch</strong> maps each node’s 256 coordinates through two 256-wide SELU layers and a scalar output. The <strong>value branch</strong> maps them through two 256-wide SELU layers. A <strong>softmax</strong> converts gate scores to positive weights summing to one within each individual graph.</p>
+<p>For nodes belonging to graph g:</p>
+<p><code>alpha[v] = exp(gate[v]) / Σᵤ∈g exp(gate[u])</code></p>
+<p><code>representation[g] = Σᵥ∈g alpha[v] × value[v]</code>.</p>
+<p><strong>Worked example.</strong> If two gate scores are equal and the value vectors are <code>[1,2]</code> and <code>[5,6]</code>, the pooled vector is <code>[3,4]</code>. Put a third node <code>[9,10]</code> in a different applicant’s graph: that applicant’s pooled vector is <code>[9,10]</code>, and the first applicant’s vector must remain <code>[3,4]</code>. A batch-wide softmax violates this independence.</p>
+<p><strong>Task 3.</strong> Implement <code>attention_pool</code>. Its CHECK changes another graph’s scores and adds a large constant within a graph. Neither change should alter that graph’s intended softmax ratios. For numerical stability, subtract the maximum gate within each graph before exponentiation.</p>
+<p>A final linear layer maps the 256-number summary to two <strong>logits</strong>, unnormalized scores for the two outcome classes. Softmax turns them into probabilities. Training uses <strong>cross entropy</strong>, which penalizes low probability assigned to the observed class, and <strong>AdamW</strong>, an optimizer that updates parameters using running gradient statistics. This release sets weight decay to zero and learning rate to <code>0.0001</code>.</p>
+<h2 id="6-%C2%B7-What-exactly-does-%E2%80%9Creproduce-Home-Credit-GCN%E2%80%9D-mean?">6 &#183; What exactly does &#8220;reproduce Home Credit GCN&#8221; mean?<a class="anchor-link" href="#6-%C2%B7-What-exactly-does-%E2%80%9Creproduce-Home-Credit-GCN%E2%80%9D-mean?">&#182;</a></h2><p>The named target is the expanded paper’s <strong>Table 4, Home Credit GCN: AUROC 0.780 ± 0.004</strong>. AUROC measures how often a randomly chosen positive is ranked above a randomly chosen negative, counting ties as half. The reported variation is across five cross-validation folds. These are different held-out applicants, not five fresh seeds on one fixed split.</p>
+<p><strong>The population.</strong> The released metadata lists 307,511 labeled applications. Kaggle’s additional 48,744 unlabeled applications do not supply the ground truth for Table 4. Each paper fold takes 20% of labeled applications as held-out test data; 15% of the remaining 80% becomes validation data. Approximately 68% of all labeled applications train the model, 12% select the checkpoint, and 20% evaluate it.</p>
+<p><strong>The identities.</strong> Sort application IDs, use five shuffled folds with split seed 14, then split train/validation with seed 14. Reset model seed 1234 for each fold. Our checker executes the released split functions and compares every train/validation/test ID with the port.</p>
+<p><strong>The training schedule.</strong> Use all training graphs, batch size 1024, hidden width 256, one GCN layer, dropout 0.5, AdamW, at most 300 epochs, and patience 50. An <strong>epoch</strong> is one traversal of the training examples. <strong>Patience</strong> permits a fixed number of validation checks without improvement before stopping. The released loop validates <strong>before</strong> each training epoch and keeps the first strictly best validation AUROC. Its final post-loop validation does not update that selected checkpoint. The port preserves the selection order.</p>
+<p><strong>The tuning history.</strong> The paper describes manual validation-based choices and an earlier learning-rate sweep. The released GCN recipe fixes the chosen hyperparameters and disables the rate finder. Running the released configuration does not reconstruct that unarchived search history.</p>
+<p><strong>The aggregation.</strong> Save each held-out applicant ID, label, and probability. Recompute AUROC independently from those predictions. Report the arithmetic mean and sample standard deviation of the five fold scores. Pooling all predictions into one global AUROC is a different summary and must not replace the fold mean silently.</p>
+<p><strong>Paper context, not new measurements.</strong> Table 4 reports Home Credit PoolMLP 0.769, single-table GBDT 0.754, and DFS + GBDT 0.777. PoolMLP accesses selected relational rows without passing graph messages; <strong>Deep Feature Synthesis</strong>, or DFS, constructs explicit relational aggregates for a tabular model. Comparing these arms separates access to other tables from the benefit of a particular learned aggregation. Our selected GCN replay alone would not rerun all these comparisons or establish general superiority.</p>
+<h3 id="Author-evidence:-source-checks-and-real-data-pilot">Author evidence: source checks and real-data pilot<a class="anchor-link" href="#Author-evidence:-source-checks-and-real-data-pilot">&#182;</a></h3><p><strong>Full selected Home Credit experiment: NOT_RUN.</strong> The real-data timing pilot exceeded the approved aggregate cost projection; no paper AUROC has been measured here.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Check or measurement</th>
+  <th style="text-align:right">Result</th>
+  <th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Original Python-module forward discrepancy</td>
+  <td style="text-align:right">2.98e-08</td>
+  <td>Controlled inputs, modern runtime and dense adapter</td>
+</tr>
+<tr>
+  <td>Original Python-module gradient discrepancy</td>
+  <td style="text-align:right">1.19e-07</td>
+  <td>Numerical operator agreement, not full training</td>
+</tr>
+<tr>
+  <td>Algorithm 1 random target cases</td>
+  <td style="text-align:right">792</td>
+  <td>Independent closure oracle</td>
+</tr>
+<tr>
+  <td>Real pilot graphs / nodes</td>
+  <td style="text-align:right">1,024 / 130,886</td>
+  <td>One fixed batch from real Home Credit rows</td>
+</tr>
+<tr>
+  <td>Warm training-step median</td>
+  <td style="text-align:right">0.158 seconds</td>
+  <td>GPU compute after preparation</td>
+</tr>
+<tr>
+  <td>Batch preparation</td>
+  <td style="text-align:right">1.382 seconds</td>
+  <td>Dominant cost in the current port</td>
+</tr>
+<tr>
+  <td>Five-fold 300-epoch projection</td>
+  <td style="text-align:right">USD 124.83</td>
+  <td>Excludes full preparation, final tests and overhead</td>
+</tr>
+<tr>
+  <td>Approved aggregate ceiling</td>
+  <td style="text-align:right">USD 10</td>
+  <td>Includes all attempts and overhead</td>
+</tr>
+</tbody>
+</table></div>
+<p>The pilot has reconstructed CSV graphs, not verified Neo4j graph identity. It is a cost probe. Repeated updates to that batch establish neither validation quality nor a paper result. Caching could reduce the estimate, but no optimized timing has been measured. <a href="../labs/_pilot_l118_results.json">Pilot evidence</a> · <a href="../labs/_data_l118_results.json">Data audit</a> · <a href="../labs/_preflight_l118_results.json">Full preflight</a>.</p>
+<h3 id="Evidence-must-answer-the-right-question">Evidence must answer the right question<a class="anchor-link" href="#Evidence-must-answer-the-right-question">&#182;</a></h3><div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>What it can establish</th>
+  <th>What it cannot establish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Independent closure tests</td>
+  <td>Correct Algorithm 1 mechanics</td>
+  <td>Home Credit predictive quality</td>
+</tr>
+<tr>
+  <td>Original Python-module output/gradient agreement</td>
+  <td>Matching neural algebra on controlled inputs</td>
+  <td>Identical historical GPU kernels or full training</td>
+</tr>
+<tr>
+  <td>Real-data timing pilot</td>
+  <td>Approximate resource needs for the current port</td>
+  <td>Generalization performance or completed folds</td>
+</tr>
+<tr>
+  <td>Five full folds with identity/protocol audit</td>
+  <td>A selected released-protocol result</td>
+  <td>All models, all datasets, or original tuning history</td>
+</tr>
+<tr>
+  <td>Learner’s written defense</td>
+  <td>Their understanding of the computation</td>
+  <td>Performance of an unexecuted experiment</td>
+</tr>
+</tbody>
+</table></div>
+<p>The port’s source check runs pinned original row encoders, GraphConv, and gated pooling with an independent dense graph adapter on modern PyTorch. This is stronger than merely comparing two handwritten formulas, but it still does not execute the historical DGL binary. The <a href="../labs/_source_check_l118_results.json">check report</a> states that boundary.</p>
+<h2 id="7-%C2%B7-Lab:-make-the-information-path-falsifiable">7 &#183; Lab: make the information path falsifiable<a class="anchor-link" href="#7-%C2%B7-Lab:-make-the-information-path-falsifiable">&#182;</a></h2><p>Open the <a href="../labs/0118-cvitkovic-relational-gnn.ipynb">student notebook</a>. It includes the complete port’s model and trainer, split into readable sections. The default experiment is a small synthetic computation exercise; it does not download restricted data or start a paid job. The author’s real-data pilot is separately recorded.</p>
+<p><strong>Predict.</strong> Before running the checks, list the nodes selected by Algorithm 1 and by the two-hop query. Predict how reversing the phase order changes the result. Predict whether appending another graph to a batch should alter the first graph’s evaluation output.</p>
+<p><strong>Implement.</strong> Complete the three functions. Immediate CHECK cells reject wrong extraction direction, plain-mean normalization, and batch-wide attention. The RUN cell uses your functions in a graph construction and a small end-to-end fit. Compare the loss before and after optimization; a finite loss by itself is not proof that learning happened.</p>
+<p><strong>Interpret.</strong> The synthetic task makes related-node features informative by construction. It tests wiring and gradient flow. It cannot tell us how useful Home Credit’s relationships are. Even perfect toy accuracy would leave the paper reproduction question unanswered.</p>
+<p><strong>Read the full-data path.</strong> The final notebook section shows how to prepare the author-format data and run all five folds with the full release settings. The runner refuses an incomplete population and records data hashes, runtime, predictions, and status. An aggregate time allowance stops the process rather than reporting partial folds as complete. Consult the <a href="../labs/l118-reproduction.md">protocol</a> before using paid compute.</p>
+<h2 id="8-%C2%B7-Written-defense-and-spaced-return">8 &#183; Written defense and spaced return<a class="anchor-link" href="#8-%C2%B7-Written-defense-and-spaced-return">&#182;</a></h2><p>Submit your three functions, <code>l118-task-report.json</code>, and a short defense covering these points:</p>
+<ol>
+<li>Trace both extraction phases on the six-node example. Explain why Customer B stays excluded.</li>
+<li>Explain why the released Home Credit query can differ from the general algorithm.</li>
+<li>Identify every place a table type matters in vanilla GCN and where edge types are ignored.</li>
+<li>Explain how a selected node beyond one hop from the target can influence a one-layer model’s pooled prediction.</li>
+<li>Defend the split, checkpoint, preprocessing, and cost boundaries of the attempted reproduction.</li>
+<li>Describe one experiment that would separate “access to related rows helps” from “graph message passing helps.”</li>
+</ol>
+<div id="l118-teachback"></div><noscript><p>Explain why graph-level pooling lets a selected distant node affect a one-layer GCN prediction even without sending its information all the way to the target.</p></noscript>
+
+<p><strong>Tomorrow:</strong> redraw the extraction passes without notes. <strong>In one week:</strong> reconstruct the two readout branches and explain their batch boundary. <strong>In one month:</strong> compare Cvitkovic, Lesson 117’s model, and a DFS baseline under a matched information budget.</p>
+<p>Lesson 119’s planned synthesis can now ask a sharper question: when do relational rows supply useful information, and which computation best exploits it? A row-to-node mapping alone does not settle that empirical question.</p>
+<p><strong>Primary reading:</strong> expanded paper §3, Table 1, Algorithm 1, Table 4, and Appendix C. Read the released extractor and GCN recipe beside them. Ask the teaching agent about any unclear step, and bring your written defense for feedback. Learner status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until you supply that evidence.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Turn representation mechanisms and their limitations into a defensible synthesis. <a href="0119-year-3-synthesis.html">Continue to Lesson 119</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/rdb-extraction-viz.js"></script><script src="../assets/l118-lesson.js"></script></body></html>

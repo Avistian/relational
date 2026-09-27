@@ -1,0 +1,8 @@
+/* Reusable checkpoint selection exercise: test is visible only as a counterexample. */
+window.CheckpointAuditViz={mount(root){
+ if(!root)return;
+ root.innerHTML=`<section class="repro-panel"><h3>Which checkpoint survives?</h3><p>Fixed synthetic validation MAE: 3, 2, 2. The earliest minimum is epoch 2.</p><label>Selection rule <select aria-label="Selection rule"><option value="val">Validation minimum</option><option value="test">Test minimum (invalid)</option></select></label> <label>Epoch 3 test MAE <input aria-label="Epoch 3 test MAE" type="range" min="0" max="10" step="1" value="1"></label><div class="stream-scroll"><table><thead><tr><th>Epoch</th><th>Validation MAE</th><th>Test MAE</th><th>Selected</th></tr></thead><tbody></tbody></table></div><output aria-live="polite"></output><p><button type="button">Reset</button></p></section>`;
+ const select=root.querySelector('select'),slider=root.querySelector('input'),out=root.querySelector('output'),body=root.querySelector('tbody');
+ function draw(){const val=[3,2,2],test=[5,4,+slider.value],metric=select.value==='val'?val:test;const best=metric.indexOf(Math.min(...metric));body.innerHTML=val.map((x,i)=>`<tr><td>${i+1}</td><td>${x}</td><td>${test[i]}</td><td>${i===best?'Yes':'—'}</td></tr>`).join('');out.textContent=`Epoch ${best+1} selected. `+(select.value==='val'?'Valid: changing test values cannot change selection.':'Invalid: test labels now influence model selection.');}
+ select.addEventListener('change',draw);slider.addEventListener('input',draw);root.querySelector('button').addEventListener('click',()=>{select.value='val';slider.value='1';draw();});draw();
+}};

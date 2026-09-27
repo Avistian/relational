@@ -327,6 +327,7 @@ Xu 2019 GIN `1810.00826` · Chiang 2019 Cluster-GCN `1905.07953` · Li 2018 over
 The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into four lessons below.
 
 ### 111 · OGB setup & leaderboard literacy — *Hu 2020 OGB `2005.00687`*
+- **Delivered 2026-09-27:** official full-data loader/split/evaluator contract and training-majority baseline; two live implementation tasks. The GCN paper reproduction remains L112.
 - **Skill** — load an OGB dataset with the official splits/evaluator and read the leaderboard protocol.
 - **Teach** — OGB datasets/tasks, standardized evaluators, why fixed splits matter for honest comparison.
 - **Lab** — Tier B · crucial fragment: load `ogbn-*` with the official evaluator; run a provided baseline.
@@ -416,6 +417,7 @@ The `CURRICULUM.md` range `111–114 · OGB benchmark task` is decomposed into f
 - **Bridge** — connects Year 1's thesis seed to Year 4's payoff; exit-exam rehearsal.
 
 ### 120 · **Year 3 exit exam** — *all Y3 papers · Deliverable-based*
+- **Prepared:** [lesson](../lessons/0120-year-3-exit-exam.html), [lab](../labs/0120-year-3-exit-exam.ipynb), [submission](../labs/l120-submission.md), [protocol](../labs/l120-reproduction.md). Five fresh full-data F1 runs COMPLETE; validation3.18446/test4.07197 MAE, both descriptive CLOSE. Learner PENDING_WRITTEN_DEFENSE.
 - **Deliverable** — build a **heterogeneous + temporal GNN pipeline in PyG** (correct hetero mini-batching,
   time-respecting splits, leak audit) and construct a toy REG by hand; read Fey 2024 completely.
 - **Exit criterion (from CURRICULUM)** — working hetero+temporal GNN pipeline; Fey 2024 read fully.
@@ -432,3 +434,7 @@ Prepared [lesson](../lessons/0083-graphsage.html), [lab](../labs/0083-graphsage.
 ## L084 delivery evidence
 
 Prepared [lesson](../lessons/0084-gat.html), [lab](../labs/0084-gat.ipynb) and [contract](../labs/l084-reproduction.md). Native visible attention exposes receiver normalization and original release semantics; full100-run Cora operator, fixed source/data identities, independent dense oracle and learned attention visualization. Historical parity remains separate. Creation does not assert mastery.
+
+## L119 delivery evidence
+
+[Lesson](../lessons/0119-year-3-synthesis.html), [lab](../labs/0119-year-3-synthesis.ipynb), [writing template](../labs/l119-writing-template.md), and [contract](../labs/l119-reproduction.md). The synthesis distinguishes information access, model expressiveness and empirical evidence. Four live checks accompany a500–700-word argument. Five fresh full-data RelBench v1 F1 RDL runs completed; full-paper parity and learner mastery remain unestablished.

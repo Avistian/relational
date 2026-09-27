@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 108 to this lesson</p>
+<p>A fast temporal sampler assumes that timestamps mean what its predicates say. A database column name does not establish that meaning.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A primary key identifies a row; a foreign key names a related row. An as-of join reconstructs the versions usable at a historical cutoff before following those keys.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-label">One skill: turn database history into a defensible prediction-time graph</p>
 
 You have learned to sample a temporal graph. Now someone hands you a database containing `created_at`, `updated_at`, and `date`. Which one should govern the graph? **By the end, you will write a timestamp contract, reconstruct historical row versions, and prove that a join uses the information available at its query time.**
@@ -155,3 +163,7 @@ For your EXIT, submit a timestamped two-table graph specification with a late re
 Ask the teaching agent follow-up questions or paste your contract for review. Author execution does not establish learner mastery: **PENDING_WRITTEN_DEFENSE**. For spaced practice, reconstruct the day-6 join tomorrow without notes, then add a delayed parent three days later. L110’s checkpoint will require these boundaries to survive a complete temporal model pipeline; Year 4 will carry them into database graph construction.
 
 [Timestamp contract reference](../reference/database-timestamp-contracts.html) · [L101](0101-static-vs-temporal.html) · [L108](0108-temporal-neighbor-sampling.html)
+
+<!-- sequence-next:start -->
+**Carry this forward.** Carry the information contract through training and checkpoint restoration. [Continue to Lesson 110](0110-temporal-gnn-checkpoint.html).
+<!-- sequence-next:end -->

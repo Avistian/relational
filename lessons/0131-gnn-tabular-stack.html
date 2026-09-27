@@ -1,0 +1,234 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GNN + tabular encoder stack: trace the forward and backward pass</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0130-rdl-checkpoint.html">Lesson 130</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Lesson 131</p><h1>GNN + tabular encoder stack: trace the forward and backward pass</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 130 to this lesson</p>
+<p>A working pipeline still leaves its internal computation hidden. Follow one real batch through row encoding, time addition, messages, root readout and gradients.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A tensor shape counts rows and coordinates. Autograd records differentiable operations. Detaching a tensor preserves its current values but cuts its gradient path.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<h2 id="The-question-this-lesson-answers">The question this lesson answers<a class="anchor-link" href="#The-question-this-lesson-answers">&#182;</a></h2><p><strong>Can you follow one prediction through the actual network, and show how its loss changes the row encoders?</strong> Lesson 130 established ownership of the experiment. This lesson opens the computation inside that experiment. Your deliverable is an annotated forward/backward trace with real tensor shapes, a checked gradient path and a defensible reproduction verdict.</p>
+<p><a href="../labs/0131-gnn-tabular-stack.ipynb">Student notebook</a> · <a href="../labs/html/0131-gnn-tabular-stack.html">Executed solution</a> · <a href="../reference/gnn-tabular-stack.html">Reference card</a> · <a href="../labs/l131-reproduction.md">Reproduction contract</a></p>
+<div id="warmup"></div><noscript>Recall query roots, context occurrences and table parameters.</noscript>
+
+<p>Before reading: which rows receive labels? Why can one driver appear several times in a minibatch? Does freezing a row encoder necessarily change today's prediction?</p>
+<p>Read <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al., §5, relational deep learning blueprint</a> for the decomposition. Use <a href="https://arxiv.org/html/2407.20060v1">Robinson et al., RelBench v1 §3, Appendix B and Table 7</a> for the implemented baseline and numerical target. These are different sources with different jobs: the blueprint motivates the stack; the benchmark specifies the selected experiment.</p>
+<p><strong>Route.</strong> First predict shapes on paper. Then trace the measured batch and complete the three functions. Run the short standalone notebook to inspect the author evidence and a small neural parity fixture. Finally use the explicit full-training gate for five fresh fits. The default replay, small fixture and full reproduction have separate evidence labels.</p>
+<h2 id="1-%C2%B7-Model-architecture:-a-batch-is-a-collection-of-questions">1 &#183; Model architecture: a batch is a collection of questions<a class="anchor-link" href="#1-%C2%B7-Model-architecture:-a-batch-is-a-collection-of-questions">&#182;</a></h2><p>A query is <code>(driverId, cutoff)</code>. Its label is mean finishing position in the next 60 days. The full experiment contains 7,453 training, 499 validation and 760 test queries. A context node is a permitted database row that helps answer a query. It is not another supervised example.</p>
+<p>The loader builds disjoint contexts for 512 queries at a time. A database row reused by two queries becomes two <strong>node occurrences</strong>, each with its own query owner and time cutoff. <code>n_id</code> maps an occurrence back to its database row; <code>batch</code> maps it to a query; <code>input_id</code> maps a supervised query back to the task table. These indices answer different questions.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l131/architecture.svg" alt="Measured seed-0 first-batch counts, typed row encoders, time addition, two graph layers and root loss. The backward arrow reaches connected context encoders."><figcaption>Measured seed-0 first-batch counts, typed row encoders, time addition, two graph layers and root loss. The backward arrow reaches connected context encoders.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Trace the forward values and backward gradient path separately. Where would detaching preserve the current prediction but stop encoder learning? On a narrow screen, scroll the figure sideways.</p>
+<p>The graph has nine table types. Each table owns a separate four-block Frame ResNet. Its output width is 128 regardless of how many raw columns that table has. Parameters are shared across occurrences of rows from the same table, but not across different table encoders. A row encoder can therefore process drivers and results with different input schemas while delivering compatible vectors to the graph network.</p>
+<p>Time encodings are added to dated rows. Two heterogeneous GraphSAGE layers exchange information along foreign-key and reverse edges. Each relation uses neighbor <strong>sum</strong> aggregation in this experiment; relation outputs are also summed for each destination type. Node-wise LayerNorm and ReLU follow each layer. The scalar head reads only the first B driver vectors.</p>
+<p><strong>Predict.</strong> If the sampled batch contains 512 query roots and thousands of context occurrences, how many predictions and loss terms should it produce? Write the answer before inspecting the trace.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Table</th>
+  <th style="text-align:right">Actual row occurrences</th>
+  <th>Encoded shape</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>races</td>
+  <td style="text-align:right">21,939</td>
+  <td>[21939, 128]</td>
+</tr>
+<tr>
+  <td>drivers</td>
+  <td style="text-align:right">512</td>
+  <td>[512, 128]</td>
+</tr>
+<tr>
+  <td>constructor_standings</td>
+  <td style="text-align:right">0</td>
+  <td>[0, 128]</td>
+</tr>
+<tr>
+  <td>standings</td>
+  <td style="text-align:right">21,059</td>
+  <td>[21059, 128]</td>
+</tr>
+<tr>
+  <td>constructors</td>
+  <td style="text-align:right">1,380</td>
+  <td>[1380, 128]</td>
+</tr>
+<tr>
+  <td>constructor_results</td>
+  <td style="text-align:right">0</td>
+  <td>[0, 128]</td>
+</tr>
+<tr>
+  <td>circuits</td>
+  <td style="text-align:right">0</td>
+  <td>[0, 128]</td>
+</tr>
+<tr>
+  <td>qualifying</td>
+  <td style="text-align:right">2,025</td>
+  <td>[2025, 128]</td>
+</tr>
+<tr>
+  <td>results</td>
+  <td style="text-align:right">18,924</td>
+  <td>[18924, 128]</td>
+</tr>
+</tbody>
+</table></div>
+<p>The root head returns <strong>[512, 1]</strong>; this first-batch raw L1 loss is <strong>13.797042</strong>. First three predictions: 0.1245, -0.1279, 0.0334.</p>
+<p>These are observed shapes from the first real training minibatch before any optimizer update. They are not the 99-node exhaustive single-query neighborhood used in Lesson 130. Sampling, query multiplicity and node type all affect the counts.</p>
+<h2 id="2-%C2%B7-From-typed-columns-to-row-vectors">2 &#183; From typed columns to row vectors<a class="anchor-link" href="#2-%C2%B7-From-typed-columns-to-row-vectors">&#182;</a></h2><p>A TensorFrame groups columns by semantic type. Numerical values receive learned linear encodings; categorical values use embedding lookups; timestamps have their own encoding; precomputed text embeddings receive a learned projection. The ResNet combines those column representations into a row vector. Primary and foreign keys define identity and connectivity and are removed from feature columns by the released graph builder.</p>
+<p><a href="0125-pytorch-frame-deep-dive.html">Lesson 125</a> opened the row encoder. Here its output becomes the GNN's input. The question changes from “how is this row represented?” to “how can a root's loss train a representation of a neighboring row?”</p>
+<p><strong>TODO 1 — <code>activation_summary</code>.</strong> Report shape, mean, maximum absolute value, zero fraction and a small coordinate sample. Detach only the copy used for logging. Replacing the live activation with its detached copy changes training. Reject nonfinite forward activations explicitly; an empty tensor has no numerical mean.</p>
+<p>The canonical code is visible in the notebook, including the typed encoders and ResNets. Read-only primitive source is included alongside its license and pinned provenance. No opaque model import is the sole explanation of the computation.</p>
+<h2 id="3-%C2%B7-A-node-occurrence-carries-its-owner's-clock">3 &#183; A node occurrence carries its owner's clock<a class="anchor-link" href="#3-%C2%B7-A-node-occurrence-carries-its-owner's-clock">&#182;</a></h2><p>For node occurrence i owned by query q, its age in days is <code>(cutoff[q] − node_time[i]) / 86400</code>. The index q is <code>batch_index[i]</code>, not the table row ID. Looking up the first query's cutoff for all rows silently misrepresents a disjoint batch.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l131/time.svg" alt="Recorded occurrence owners gather their own query cutoffs. Integer seconds become days; no shared first-query clock."><figcaption>Recorded occurrence owners gather their own query cutoffs. Integer seconds become days; no shared first-query clock.</figcaption></figure>
+
+<p><strong>TODO 2 — <code>relative_days</code>.</strong> Validate the owner indices and tensor lengths, gather the correct root cutoff, reject a future row and convert seconds to days. The real trace replay calls your function on recorded timestamps. Static tables without timestamps receive no invented age.</p>
+<p><strong>Predict before changing the control.</strong> In the synthetic example, query cutoffs are days 10 and 20; node times are days 9 and 18; owners are 0 and 1. Correct ages are 1 and 2. What happens if both occurrences use query 0's clock?</p>
+<div class="rdl-viz" id="l131-time"></div><noscript>Static arithmetic: ages [1,2]; wrong owner yields [1,-8], rejected.</noscript>
+
+<p>The model applies a positional encoding to each age, followed by a table-specific linear layer, and adds the resulting 128-vector to the row representation. This addition does not enforce eligibility; the sampler and temporal audit do. A learned time vector cannot repair a future row that was incorrectly admitted.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l131/activations.svg" alt="The first three results occurrences and six of 128 channels. Check H + T coordinate by coordinate; later layers mix channels."><figcaption>The first three results occurrences and six of 128 channels. Check H + T coordinate by coordinate; later layers mix channels.</figcaption></figure>
+
+<p>Read the first row as an arithmetic check: the same occurrence's encoded features plus its time vector must equal the vector passed into message passing. Later channels mix through learned matrices, so channel 0 is not a conserved semantic feature.</p>
+<h2 id="4-%C2%B7-Message-passing-changes-representations;-the-head-selects-roots">4 &#183; Message passing changes representations; the head selects roots<a class="anchor-link" href="#4-%C2%B7-Message-passing-changes-representations;-the-head-selects-roots">&#182;</a></h2><p>For relation r from source type s to destination type t, the released sum-GraphSAGE operator computes a learned transform of the summed neighbor features plus a learned transform of the destination's own features. HeteroConv sums these relation outputs for destination t. Because each relation has its own root transform, the root contribution is also repeated across incoming relation types. This is the pinned implementation, not an assumed generic GNN equation.</p>
+<p>After relation summation, node-wise LayerNorm normalizes each row across its channels and ReLU sets negative coordinates to zero. The next layer repeats this process. Two rounds make two-hop input information available to a root. The released wrapper accepts sampled-size metadata but its forward implementation processes the supplied node and edge dictionaries without trimming them layer by layer.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">traced_forward</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">entity_table</span><span class="p">,</span> <span class="n">detach_encoder</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">trace</span><span class="o">=</span><span class="p">{};</span><span class="n">seed_time</span><span class="o">=</span><span class="n">batch</span><span class="p">[</span><span class="n">entity_table</span><span class="p">]</span><span class="o">.</span><span class="n">seed_time</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">record</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span><span class="n">values</span><span class="p">):</span>
+        <span class="n">trace</span><span class="p">[</span><span class="n">stage</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">activation_summary</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="n">x</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">tf_dict</span><span class="p">)</span>
+    <span class="n">record</span><span class="p">(</span><span class="s1">&#39;row_encoder&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">detach_encoder</span><span class="p">:</span><span class="n">x</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="n">times</span><span class="o">=</span><span class="p">{};</span><span class="n">days</span><span class="o">=</span><span class="p">{}</span>
+    <span class="k">for</span> <span class="n">kind</span><span class="p">,</span><span class="n">node_time</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">time_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">days</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span><span class="o">=</span><span class="n">relative_days</span><span class="p">(</span><span class="n">seed_time</span><span class="p">,</span><span class="n">node_time</span><span class="p">,</span><span class="n">batch</span><span class="o">.</span><span class="n">batch_dict</span><span class="p">[</span><span class="n">kind</span><span class="p">])</span>
+        <span class="n">times</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">temporal_encoder</span><span class="o">.</span><span class="n">lin_dict</span><span class="p">[</span><span class="n">kind</span><span class="p">](</span><span class="n">model</span><span class="o">.</span><span class="n">temporal_encoder</span><span class="o">.</span><span class="n">encoder_dict</span><span class="p">[</span><span class="n">kind</span><span class="p">](</span><span class="n">days</span><span class="p">[</span><span class="n">kind</span><span class="p">]))</span>
+    <span class="n">record</span><span class="p">(</span><span class="s1">&#39;relative_days&#39;</span><span class="p">,</span><span class="n">days</span><span class="p">);</span><span class="n">record</span><span class="p">(</span><span class="s1">&#39;time_encoder&#39;</span><span class="p">,</span><span class="n">times</span><span class="p">)</span>
+    <span class="n">x</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span><span class="o">+</span><span class="n">times</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">times</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">for</span> <span class="n">kind</span><span class="p">,</span><span class="n">embedding</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">embedding_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span><span class="n">x</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span><span class="o">+</span><span class="n">embedding</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span><span class="o">.</span><span class="n">n_id</span><span class="p">)</span>
+    <span class="n">record</span><span class="p">(</span><span class="s1">&#39;time_added&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">layer</span><span class="p">,(</span><span class="n">conv</span><span class="p">,</span><span class="n">norms</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">gnn</span><span class="o">.</span><span class="n">convs</span><span class="p">,</span><span class="n">model</span><span class="o">.</span><span class="n">gnn</span><span class="o">.</span><span class="n">norms</span><span class="p">),</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">batch</span><span class="o">.</span><span class="n">edge_index_dict</span><span class="p">)</span>
+        <span class="n">record</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;layer_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s1">_relation_sum&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">norms</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">record</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;layer_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s1">_normalized&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span><span class="o">.</span><span class="n">relu</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">record</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;layer_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s1">_relu&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">roots</span><span class="o">=</span><span class="n">seed_readout</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">entity_table</span><span class="p">],</span><span class="nb">int</span><span class="p">(</span><span class="n">seed_time</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+    <span class="n">prediction</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">roots</span><span class="p">)</span>
+    <span class="n">record</span><span class="p">(</span><span class="s1">&#39;root_readout&#39;</span><span class="p">,{</span><span class="n">entity_table</span><span class="p">:</span><span class="n">roots</span><span class="p">});</span><span class="n">record</span><span class="p">(</span><span class="s1">&#39;prediction&#39;</span><span class="p">,{</span><span class="n">entity_table</span><span class="p">:</span><span class="n">prediction</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">prediction</span><span class="p">,</span><span class="n">trace</span>
+</pre></div>
+<p><strong>TODO 3 — <code>seed_readout</code>.</strong> Return <code>hidden[:B]</code>, reject invalid B, and preserve autograd. This works because this loader places the query roots first in their entity type. It is a loader contract, not a rule that any arbitrary graph tensor satisfies. Context driver rows after the roots must not receive the task's root labels.</p>
+<p>In the recorded first batch, all 512 driver occurrences are roots, so an incorrect “all driver rows” readout could pass that example accidentally. The CHECK deliberately supplies five driver rows but only two roots; it verifies both output count and which rows receive gradients.</p>
+<p>The head maps <code>[B,128]</code> to <code>[B,1]</code>. Training uses mean L1 over B query labels. Evaluation additionally clips predictions to training-label percentiles. Do not put evaluation clipping into the training-loss trace: it would describe a different gradient.</p>
+<h2 id="5-%C2%B7-The-backward-pass-explains-what-is-learned">5 &#183; The backward pass explains what is learned<a class="anchor-link" href="#5-%C2%B7-The-backward-pass-explains-what-is-learned">&#182;</a></h2><p>Backpropagation applies the chain rule from the root loss through the head, graph layers, time addition and row encoders. A context row can receive a gradient even though it has no direct task label: its representation contributed to a supervised root. Shared table parameters accumulate contributions from all their occurrences.</p>
+<p>The trace uses three isolated copies of the same model on the same real batch and random state: the original forward, the explicitly instrumented forward, and a version that detaches encoded rows. It compares outputs, loss, gradient presence, nonfinite masks and finite gradient values. The original fit's parameters, buffers and random state are preserved.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l131/gradients.svg" alt="Finite-entry gradient norms for the same batch, weights and random state. Nonfinite entries are counted separately; detach removes row-encoder gradients."><figcaption>Finite-entry gradient norms for the same batch, weights and random state. Nonfinite entries are counted separately; detach removes row-encoder gradients.</figcaption></figure>
+
+<p><strong>Predict.</strong> Detach the row vectors immediately after encoding. Will the current prediction change? Will the row encoder receive gradients? Will the GNN still receive gradients?</p>
+<div class="rdl-viz" id="l131-gradient"></div><script type="application/json" id="l131-gradient-data">{"gradients": {"encoder": {"parameters": 388, "with_gradient": 259, "nonfinite": 640, "finite_l2": 6.596298213652027}, "time": {"parameters": 12, "with_gradient": 8, "nonfinite": 0, "finite_l2": 1.965524190241049}, "gnn": {"parameters": 192, "with_gradient": 52, "nonfinite": 0, "finite_l2": 6.73858600604623}, "head": {"parameters": 2, "with_gradient": 2, "nonfinite": 0, "finite_l2": 6.897496975227442}, "row:races": {"parameters": 45, "with_gradient": 45, "nonfinite": 0, "finite_l2": 1.9935836261091628}, "row:drivers": {"parameters": 46, "with_gradient": 46, "nonfinite": 0, "finite_l2": 2.650780617260128}, "row:constructor_standings": {"parameters": 42, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:standings": {"parameters": 42, "with_gradient": 42, "nonfinite": 0, "finite_l2": 3.6537377270476417}, "row:constructors": {"parameters": 42, "with_gradient": 42, "nonfinite": 0, "finite_l2": 1.835168730879123}, "row:constructor_results": {"parameters": 42, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:circuits": {"parameters": 45, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:qualifying": {"parameters": 42, "with_gradient": 42, "nonfinite": 0, "finite_l2": 0.3075656369199848}, "row:results": {"parameters": 42, "with_gradient": 42, "nonfinite": 640, "finite_l2": 3.9620570791489897}}, "detached_gradients": {"encoder": {"parameters": 388, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "time": {"parameters": 12, "with_gradient": 8, "nonfinite": 0, "finite_l2": 1.965524201781515}, "gnn": {"parameters": 192, "with_gradient": 52, "nonfinite": 0, "finite_l2": 6.7385860326082865}, "head": {"parameters": 2, "with_gradient": 2, "nonfinite": 0, "finite_l2": 6.897496982879782}, "row:races": {"parameters": 45, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:drivers": {"parameters": 46, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:constructor_standings": {"parameters": 42, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:standings": {"parameters": 42, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:constructors": {"parameters": 42, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:constructor_results": {"parameters": 42, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:circuits": {"parameters": 45, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:qualifying": {"parameters": 42, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}, "row:results": {"parameters": 42, "with_gradient": 0, "nonfinite": 0, "finite_l2": 0.0}}, "parity": {"max_output_error": 1.7881393432617188e-07, "max_gradient_error": 1.1920928955078125e-07, "nonfinite_gradient_parameters": ["encoder.encoders.results.encoder.encoder_dict.numerical.weight"], "nonfinite_masks": "MATCH", "detached_output_error": 2.086162567138672e-07}}</script><noscript>Static intervention: detaching encoded rows preserves the forward values and removes encoder gradients.</noscript>
+
+<p><strong>Measured caveat.</strong> The seed-0 original and traced models both contain <strong>640 nonfinite gradient entries</strong>, in <code>encoder.encoders.results.encoder.encoder_dict.numerical.weight</code>. Nonfinite masks match; the maximum finite gradient discrepancy is <strong>1.19e-07</strong>. The initial pilot checker stopped on these NaNs. The corrected audit checks mask equality and finite values separately, and retains the original algorithm. This is source parity with an exposed pathology, not a claim of healthy gradients.</p>
+<p>The pinned <code>StypeEncoder.forward</code> applies <code>nan_to_num</code> <strong>after</strong> feature encoding. A separately executed minimal example, <code>nan_to_num(w * NaN)</code>, produces zero forward output but a NaN gradient for w. This explains how finite activations can coexist with nonfinite gradients; the <a href="../labs/_missing_gradient_l131_results.json">diagnostic</a> is separate from the five-seed benchmark. Repairing the encoder would be a new experimental variant.</p>
+<p>A gradient norm describes local sensitivity under this batch and parameter state. It is not a causal feature attribution or a universal importance ranking. A missing gradient, a zero finite gradient and a nonfinite gradient are different observations; the trace keeps them separate.</p>
+<p><strong>Failure diagnosis.</strong> Explain why each bug is caught by a different check: (1) all context rows reach the head; (2) all nodes use the first root cutoff; (3) an activation logger replaces live tensors with detached values. A passing shape check alone does not catch all three.</p>
+<h2 id="6-%C2%B7-Reproduce-the-complete-selected-experiment">6 &#183; Reproduce the complete selected experiment<a class="anchor-link" href="#6-%C2%B7-Reproduce-the-complete-selected-experiment">&#182;</a></h2><p>The named target is RelBench v1 Table 7, basic RDL on <code>rel-f1/driver-position</code>: five fresh seeds, ten complete epochs each, full graph and official query splits. The pinned model uses width128, two layers, fanouts <code>[128,64]</code>, uniform temporal sampling, batch512, Adam0.005 and mean L1. Choose the first strictly improved validation MAE checkpoint. Evaluate the frozen checkpoint and independently rescore every prediction by exact query identity.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l131/scores.svg" alt="Five fresh ten-epoch full-data fits. Points are seeds; diamonds show mean and sample seed SD; dashed lines are published means. Detail scales differ by split."><figcaption>Five fresh ten-epoch full-data fits. Points are seeds; diamonds show mean and sample seed SD; dashed lines are published means. Detail scales differ by split.</figcaption></figure>
+
+<p><strong>Fresh selected released-protocol experiment: COMPLETE.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Mean MAE</th>
+  <th style="text-align:right">Sample seed SD</th>
+  <th style="text-align:right">Paper mean</th>
+  <th>Descriptive verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.187860</td>
+  <td style="text-align:right">0.020249</td>
+  <td style="text-align:right">3.193</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">4.119595</td>
+  <td style="text-align:right">0.228565</td>
+  <td style="text-align:right">4.022</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Selected epoch</th>
+  <th style="text-align:right">Final validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.174941</td>
+  <td style="text-align:right">3.963691</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.165964</td>
+  <td style="text-align:right">4.049560</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.216836</td>
+  <td style="text-align:right">4.517951</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.182499</td>
+  <td style="text-align:right">3.977688</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">3.199059</td>
+  <td style="text-align:right">4.089087</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>6,295</strong> final predictions independently scored and compared with the original model. <strong>403,895</strong> sampled query occurrences audited. Successful pilot plus five-fit worker resource estimate <strong>USD 0.061831</strong>; failed pilot and notebook validation are accounted separately within the aggregate budget, with unitemized overhead. <a href="../labs/evidence/l131/summary.json">Measured summary</a>.</p>
+<p><strong>Portable full-training gate: PASS.</strong> All 24 notebook code cells executed in a separate pinned GPU environment, including five fresh fits and five stack traces. Its predictions were independently rescored; these validation runs are separate from the primary results above. The preempted attempt is preserved. <a href="../labs/_notebook_gpu_l131_results.json">Gate verification</a>. Live Colab remains NOT_CHECKED.</p>
+<p>The reported closeness uses a predeclared absolute mean tolerance of 0.2 MAE. Seed SD is descriptive variability, not a confidence interval or a proof of equivalence. Final validation scores can differ from checkpoint-selection scores because evaluation resamples neighborhoods.</p>
+<p><strong>What “full” covers here.</strong> Every prescribed run, epoch, database row and final task query in this selected released-protocol experiment. It does not cover the paper's other 29 tasks. Exact historical training commit, seeds and runtime are not established. Released <code>[128,64]</code> fanouts differ from the paper table's <code>128</code>; feature statistics use the database through the test cap; original arrival and mutable-feature histories are unavailable. Numerical agreement does not erase these gaps.</p>
+<p>The <a href="../labs/l131-reproduction.md">protocol ledger</a> contains exact commands, archive hashes, source revision, budget reservations, the failed pilot and successful recovery, and the distinction between paper, local fixture, instrumented batch and full-data evidence. Instrumentation findings do not silently change the released algorithm.</p>
+<h2 id="7-%C2%B7-Your-annotated-trace-and-written-defense">7 &#183; Your annotated trace and written defense<a class="anchor-link" href="#7-%C2%B7-Your-annotated-trace-and-written-defense">&#182;</a></h2><p>Submit the three working functions and an annotated trace that:</p>
+<ol>
+<li>Maps a database row ID, occurrence index and query owner to their separate meanings.</li>
+<li>Derives one recorded age and one coordinate of the time-vector addition.</li>
+<li>Explains the observed <code>[B,128] → [B,1]</code> readout and which rows receive loss.</li>
+<li>Predicts and explains the detach intervention, including the finite/nonfinite gradient distinction.</li>
+<li>States the strongest reproduction claim supported by the seed artifacts and lists unresolved protocol gaps.</li>
+</ol>
+<p>Return tomorrow and redraw the stack without opening the notebook. Explain why gradients can reach an unlabeled neighbor. Then compare with <a href="0076-encoder-predictor-stack.html">Lesson 076</a> and <a href="0115-graph-ml-design-patterns.html">Lesson 115</a>; Lesson 132 will ask what identity-aware message passing adds to this baseline.</p>
+<p>Author execution does not establish learner mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>. Ask your tutor about any tensor, index, gradient or evidence claim that you cannot yet explain. Live Colab and deployment remain <strong>NOT_CHECKED</strong> unless separately verified.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Ask how representations can depend on which entity is the current query root. <a href="0132-identity-aware-message-passing.html">Continue to Lesson 132</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/stack-trace-viz.js"></script><script src="../assets/l131-lesson.js"></script></body></html>

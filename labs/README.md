@@ -197,3 +197,12 @@ live Colab compatibility or full paper reproduction.
 ### Lesson100 · Heterogeneous checkpoint
 
 [Student](0100-heterogeneous-gnn-checkpoint.ipynb) · [Solution](solutions/0100-heterogeneous-gnn-checkpoint.ipynb) · [Read lab](html/0100-heterogeneous-gnn-checkpoint.html) · [Protocol](l100-reproduction.md). Native3-type ACM experiment,24fits, typed-ID and gradient audits, three live tasks and written defense. Full visible AIFB/CS appendices; CS training NOT_RUN.
+
+### Lesson133 · Heterogeneous convolution on REG
+
+[Student](0133-hetero-conv-reg.ipynb) · [Executed solution](html/0133-hetero-conv-reg.html) · [Protocol](l133-reproduction.md). Three live layer tasks, two sums, per-relation root terms, empty/absent semantics and fresh five-seed full-data F1 reproduction. Complete visible model/trainer and separate source/score evidence. Whole-paper parity remains NOT_ESTABLISHED.
+
+### Lesson134 · Training at scale
+
+[Student](0134-training-at-scale.ipynb) · [Executed reference](html/0134-training-at-scale.html) · [Solution](solutions/0134-training-at-scale.ipynb) · [Reproduction contract](l134-reproduction.md).
+Three live functions govern typed frontier bounds, temporal query ownership and aggregate timing. Fresh full selected F1 reproduction and a separate full-topology rel-stack systems workload; full rel-stack benchmark and historical identity are not claimed. Default notebook independently replays recorded evidence; optional full training has a separate GPU gate.

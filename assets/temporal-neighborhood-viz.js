@@ -1,0 +1,10 @@
+/* Query-time trace. Baseline t8: 3 nodes/2 edges; t10:4/3; t12:6/5.
+   Event-only t8:4/3 because Transfer2 arrived on day11. */
+window.TemporalNeighborhoodViz={mount(root){
+ root.classList.add('stream-widget','temporal-neighborhood');
+ root.innerHTML='<p><strong>Predict:</strong> will Transfer2 become visible if you ignore arrival time?</p><p><label>Query day <select aria-label="Query day"><option>8</option><option>10</option><option>12</option></select></label> <label><input type="checkbox" checked> Enforce availability</label> <button type="button">Reset</button></p><p>Fixed baseline: day 8 with availability → <strong>3 nodes, 2 edges</strong>.</p><div class="stream-scroll" tabindex="0"><table><thead><tr><th>Path toward seed</th><th>Event / available</th><th>Query decision</th></tr></thead><tbody></tbody></table></div><output aria-live="polite"></output>';
+ const select=root.querySelector('select'),check=root.querySelector('input'),body=root.querySelector('tbody'),out=root.querySelector('output');
+ const rows=[['Transfer0 → Person0',4,4],['Transfer1 → Person0',9,9],['Transfer2 → Person0',5,11],['Memo0 → Transfer0 → Person0',12,12],['Memo1 → Transfer0 → Person0',7,7]];
+ function draw(){const t=Number(select.value);let n=1,e=0;body.replaceChildren();for(const [path,event,available] of rows){const visible=event<=t&&(!check.checked||available<=t);if(visible){n++;e++;}const tr=document.createElement('tr');for(const value of [path,event+' / '+available,visible?'INCLUDED':event>t?'EXCLUDED: future event':'EXCLUDED: late arrival']){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);}out.textContent=`Day ${t}: ${n} nodes, ${e} edges. `+(!check.checked&&t<11?'Transfer2 leaks: availability day 11 exceeds this query.':'All included fixture rows meet the two-clock cutoff.');}
+ select.addEventListener('change',draw);check.addEventListener('change',draw);root.querySelector('button').addEventListener('click',()=>{select.value='8';check.checked=true;draw();});draw();return {draw};
+}};

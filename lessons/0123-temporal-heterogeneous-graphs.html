@@ -1,0 +1,315 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Temporal heterogeneous graphs: what may this query see?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/temporal-neighborhood.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0122-reg-construction.html">Lesson 122</a></nav><header><p class="stream-kicker">Year 4 · Quarter 1 · Lesson 123</p><h1>Temporal heterogeneous graphs: what may this query see?</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 122 to this lesson</p>
+<p>Correct key mapping does not prevent future context. Construct a separate legal neighborhood for each entity-time question.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A seed is the entity being predicted. A node occurrence is its copy inside one sampled query graph. Here every hop uses the root cutoff; TGAT in L103 used decreasing child cutoffs.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<div id="warmup"></div><noscript><p>Recall without notes: what does a primary key identify?</p></noscript>
+
+<h2 id="1-%C2%B7-A-correct-graph-can-still-answer-with-tomorrow's-information">1 &#183; A correct graph can still answer with tomorrow's information<a class="anchor-link" href="#1-%C2%B7-A-correct-graph-can-still-answer-with-tomorrow's-information">&#182;</a></h2><p><a href="0122-reg-construction.html">Lesson 122</a> established which rows and foreign keys belong in the relational entity graph (REG). A REG represents each table as a node type, each row as a node, and each foreign-key role as an edge type. Now fix a <strong>query</strong>: predict something about one entity using information available at time <strong>t</strong>. The graph can contain many dates, but this query may see only its eligible neighborhood. Our skill is to construct that neighborhood and defend every included row and relationship.</p>
+<p>Read <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al., Sections 3–4</a> for the RDL blueprint, then <a href="https://arxiv.org/html/2407.20060v1">RelBench v1, Sections 2–3</a> for the released temporal sampling setting. Our real-data experiment uses RelBench; our delayed-arrival example adds an explicit availability contract that the F1 release cannot establish.</p>
+<p><strong>Your tangible deliverable:</strong> a two-hop, typed neighborhood for a seed entity at time t, plus an audit. A <strong>seed</strong> is the entity whose prediction we request. A <strong>hop</strong> expands one relation into the rows that can send information toward the seed. Three live notebook functions implement visibility, sampling, and auditing. They also run on the complete released F1 topology.</p>
+<p>This connects the mission directly to evidence: if a relational model sees future race results, its lower prediction error cannot establish useful predictive advantage. Temporal splits and a correct static graph do not by themselves settle what each individual prediction saw.</p>
+<h2 id="2-%C2%B7-Which-clock-controls-visibility?">2 &#183; Which clock controls visibility?<a class="anchor-link" href="#2-%C2%B7-Which-clock-controls-visibility?">&#182;</a></h2><p>A timestamp needs a meaning. Distinguish these before assigning tensors:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Quantity</th>
+  <th>Meaning</th>
+  <th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Entity creation time</td>
+  <td>When this entity first exists</td>
+  <td>Account opened on day 2</td>
+</tr>
+<tr>
+  <td>Event time</td>
+  <td>When an observation occurs</td>
+  <td>Transfer happened on day 5</td>
+</tr>
+<tr>
+  <td>Availability time</td>
+  <td>When the system can use that observation</td>
+  <td>Transfer imported on day 11</td>
+</tr>
+<tr>
+  <td>Query / seed time t</td>
+  <td>When the prediction is made</td>
+  <td>Predict at day 8</td>
+</tr>
+<tr>
+  <td>Label maturity time</td>
+  <td>When the future outcome is fully observed</td>
+  <td>A 7-day target becomes known after its window</td>
+</tr>
+</tbody>
+</table></div>
+<p>A transfer that happened on day 5 but arrived on day 11 is invisible to a query on day 8. Our teaching contract is <strong>event ≤ t AND availability ≤ t</strong>. All quantities in the worked example are integer days on one common clock. In F1, tensors use integer Unix seconds; task artifacts also retain original timestamps for query identity. Never compare seconds with nanoseconds.</p>
+<div class="highlight"><pre><span></span><span class="c1"># An explicit two-clock record, not a fabricated real ingestion history:</span>
+<span class="n">stamp</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>  <span class="c1"># (event day, availability day)</span>
+<span class="c1"># eligible(stamp, 8) must be False</span>
+</pre></div>
+<p>We use an inclusive boundary: an observation at exactly t is eligible. This matches the pinned native sampler's upper-bound search. It is a declared convention, not a universal guarantee about simultaneous events: if order within a timestamp is unknown, the application needs a stricter cutoff or sequence key. <a href="https://github.com/pyg-team/pyg-lib/blob/0.4.0/pyg_lib/csrc/sampler/cpu/neighbor_kernel.cpp">Pinned pyg-lib 0.4.0 temporal kernel</a>.</p>
+<p><strong>Task 1:</strong> implement <code>eligible(stamp, cutoff)</code>. Reject unknown/nonfinite timestamp values and availability before event time. In this exercise, <code>None</code> means <strong>explicitly assumed timeless</strong>; it never means “a missing timestamp is safe.” That sentinel is an assumption you must defend.</p>
+<p>Feature histories matter too. An account may have existed yesterday, while its current balance includes today's payment. Filtering entity creation times cannot restore the historical balance. The same is true of a corrected result, a changed foreign key, and a label that has not yet matured. These are separate data contracts; timestamped sampling cannot recover missing histories.</p>
+<h2 id="3-%C2%B7-Keep-the-original-query-cutoff-at-every-hop">3 &#183; Keep the original query cutoff at every hop<a class="anchor-link" href="#3-%C2%B7-Keep-the-original-query-cutoff-at-every-hop">&#182;</a></h2><p>Use this small graph throughout. Person0 is assumed timeless. Transfers point to their receiver, Person0. Memos point to the transfer they describe. Arrows indicate message direction toward the seed; sampling walks incoming arrows backwards to gather context.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Node</th>
+  <th style="text-align:right">Event day</th>
+  <th style="text-align:right">Available day</th>
+  <th>Incoming message destination</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Transfer0</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">4</td>
+  <td>Person0</td>
+</tr>
+<tr>
+  <td>Transfer1</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">9</td>
+  <td>Person0</td>
+</tr>
+<tr>
+  <td>Transfer2</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">11</td>
+  <td>Person0</td>
+</tr>
+<tr>
+  <td>Memo0</td>
+  <td style="text-align:right">12</td>
+  <td style="text-align:right">12</td>
+  <td>Transfer0</td>
+</tr>
+<tr>
+  <td>Memo1</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">7</td>
+  <td>Transfer0</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Predict before looking:</strong> for Person0 at t=8, which transfer and which memo can contribute? Is Memo1 excluded because it is newer than Transfer0?</p>
+<figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l123/cutoff.svg" alt="Synthetic day8 snapshot: Memo1 at day7 may inform Transfer0 at day4. Every hop uses root day8. Transfer2 occurred on day5 but arrived on day11."><figcaption>Synthetic day8 snapshot: Memo1 at day7 may inform Transfer0 at day4. Every hop uses root day8. Transfer2 occurred on day5 but arrived on day11.</figcaption></figure>
+
+<p>At hop 1, only Transfer0 is eligible. Transfer1 is in the future; Transfer2 arrived late. At hop 2, Memo1 is eligible because day 7 ≤ the <strong>root query's day 8</strong>. Memo0 is excluded. The result has three nodes and two edges: Memo1 → Transfer0 → Person0.</p>
+<p>Do not replace the root cutoff with the intermediate node's day 4. That would incorrectly remove a memo already known at query time. Conversely, filtering only hop 1 lets day-12 Memo0 enter at hop 2. This is a neighborhood representing a database snapshot at t; it is not a chronological event walk requiring decreasing event times along every path.</p>
+<p><strong>Task 2:</strong> implement <code>sample_temporal(nodes, edges, root, cutoff, hops)</code>. Build an incoming-edge index, expand eligible predecessors, keep the original cutoff, and retain node types and original edge identities. A frontier is the newly discovered set to expand next. A seen set prevents repeatedly expanding the same node in this exhaustive breadth-first traversal. With zero hops, return only the eligible root. Reject a future root or unknown endpoint.</p>
+<p>Our reference sampler returns <strong>all</strong> eligible incoming neighbors and is deterministic. The full released trainer bounds cost by sampling fanouts <code>[128,64]</code>: at most 128 neighbors per relation/target at the first expansion and 64 at the second. Uniform sampling is a separate stochastic choice after temporal eligibility. Exact selected neighbors need not match across random engines; our native parity test therefore uses fanout <code>[-1,-1]</code>, meaning all neighbors. <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py">Released loader</a>.</p>
+<h2 id="4-%C2%B7-Edges-and-reverse-relations-also-need-a-visibility-contract">4 &#183; Edges and reverse relations also need a visibility contract<a class="anchor-link" href="#4-%C2%B7-Edges-and-reverse-relations-also-need-a-visibility-contract">&#182;</a></h2><p>In our main fixture, each FK relation is assumed to be known when its row is known. We still test a separate relationship that becomes available on day 9 although both endpoint rows existed on day 4. At t=8 its endpoints may be present, but the link must be excluded. <strong>Both endpoints and the relationship must be eligible.</strong></p>
+<p>A reverse edge changes the direction in which information can flow; it does not change when the underlying relationship became available. If you explicitly timestamp forward edges, the reverse store must preserve the same relationship time. Do not give reverse edges an artificial ancient timestamp to make sampling convenient.</p>
+<p>The released F1 graph stores timestamps on dated <strong>nodes</strong>, not separately observed relationship-availability times. The source constructor attaches <code>table.time_col</code> to the node store and constructs PK/FK links plus reverse relations. This lesson therefore audits real endpoint timestamps and edge identity, while leaving unobserved relationship updates unverified. <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/graph.py">Pinned constructor</a>.</p>
+<p><strong>Task 3:</strong> implement <code>audit_sample</code>. Verify the root is present, every included node is visible, every edge identity exists, both endpoints belong to this sample, and any explicit relationship timestamp is eligible. This audit proves visibility and endpoint closure. It does <strong>not</strong> prove that all eligible nodes were included or that every node lies within the requested hop distance. Independent SQL and native-loader comparisons supply those additional checks for our tested queries.</p>
+<h2 id="5-%C2%B7-One-entity,-two-prediction-times">5 &#183; One entity, two prediction times<a class="anchor-link" href="#5-%C2%B7-One-entity,-two-prediction-times">&#182;</a></h2><p>Person0 at day 8 and Person0 at day 12 are two queries. They share the same global entity identity but need different local neighborhoods. At day 12, all six nodes and five edges in the fixture are visible. A batch that merges them into one shared neighborhood can let the earlier prediction receive later information.</p>
+<p>The released temporal loader uses <strong>disjoint query components</strong>: a row may appear twice, once per seed query. A component is one query's local graph. <code>n_id</code> maps a local row to its global row; <code>batch</code> maps it to its query index; <code>seed_time[batch]</code> supplies that query's cutoff. An edge must connect rows with the same query index. <a href="https://github.com/pyg-team/pytorch_geometric/blob/2.6.1/torch_geometric/sampler/neighbor_sampler.py">Pinned PyG sampler</a>.</p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">times</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">time_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span><span class="o">.</span><span class="n">batch</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="n">times</span> <span class="o">&lt;=</span> <span class="n">batch</span><span class="p">[</span><span class="s1">&#39;drivers&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">seed_time</span><span class="p">[</span><span class="n">query</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="c1"># Also verify edges stay inside one query and retain original global endpoints.</span>
+</pre></div>
+<p><strong>Predict an intervention:</strong> leave the graph and event days fixed, then ignore availability. At t=8, how many extra nodes and edges enter? Restore the rule, then move the cutoff to day 12.</p>
+<div id="l123-temporal"></div><noscript><p>Static trace: at day8, Memo1 → Transfer0 → Person0 gives3 nodes/2 edges. Ignoring availability adds Transfer2:4 nodes/3 edges. At day12 all6 nodes/5 edges are visible.</p></noscript>
+
+<p>The first intervention incorrectly adds Transfer2: four nodes and three edges instead of three and two. The second intentionally changes the information set by changing prediction time. These are different causal changes. The fixed day-8 baseline remains visible beside the control.</p>
+<h2 id="6-%C2%B7-Audit-the-complete-real-F1-graph">6 &#183; Audit the complete real F1 graph<a class="anchor-link" href="#6-%C2%B7-Audit-the-complete-real-F1-graph">&#182;</a></h2><p>The real-data lane retains all <strong>74,063 released rows and 338,842 directed edges</strong> from Lesson 122's graph. Six dated table types contain <strong>72,918 rows</strong>. Circuits, drivers and constructors have no released table timestamp; our checks report that assumption rather than inventing creation dates. The portable notebook embeds the complete topology and node-time arrays with hashes; it contains no fitted row-feature payloads.</p>
+<p><strong>Real temporal audit: PASS.</strong> Exact SQL node sets and PyG typed node/edge sets for nine specified queries.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Driver row</th>
+  <th style="text-align:right">Unix cutoff (seconds)</th>
+  <th style="text-align:right">Nodes</th>
+  <th style="text-align:right">Edges</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>train</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">1088985600</td>
+  <td style="text-align:right">99</td>
+  <td style="text-align:right">245</td>
+</tr>
+<tr>
+  <td>train</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">1083801600</td>
+  <td style="text-align:right">75</td>
+  <td style="text-align:right">179</td>
+</tr>
+<tr>
+  <td>train</td>
+  <td style="text-align:right">677</td>
+  <td style="text-align:right">-492134400</td>
+  <td style="text-align:right">47</td>
+  <td style="text-align:right">72</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">1249689600</td>
+  <td style="text-align:right">570</td>
+  <td style="text-align:right">1517</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">1208217600</td>
+  <td style="text-align:right">420</td>
+  <td style="text-align:right">1124</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">14</td>
+  <td style="text-align:right">1140825600</td>
+  <td style="text-align:right">530</td>
+  <td style="text-align:right">1341</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">835</td>
+  <td style="text-align:right">1464480000</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">817</td>
+  <td style="text-align:right">1376352000</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">16</td>
+  <td style="text-align:right">1283040000</td>
+  <td style="text-align:right">545</td>
+  <td style="text-align:right">1465</td>
+</tr>
+</tbody>
+</table></div>
+<p><a href="../labs/_temporal_audit_l123_results.json">Full temporal report</a>. Equal-time, future-second-hop and mixed-query mutation checks are separate.</p>
+<p>The audit selects first/middle/last queries from each of train, validation and test. For all nine queries, the learner's exhaustive two-hop node set agrees with an independent recursive SQL query, and its typed nodes/edges agree with PyG. A further two-query check uses the <strong>same driver at different times</strong>. This is exact parity on these specified queries, not exhaustive equivalence for every possible root.</p>
+<p>Two selected test drivers have no historical neighbors in the released graph and therefore yield only the root. That is a meaningful cold-start case. The release's database is censored at its test cutoff; a later test query does not automatically obtain newly occurring test-period rows. Do not silently append them and call the changed information set a source replay. <a href="https://arxiv.org/html/2407.20060v1">RelBench v1 data split contract</a>.</p>
+<p>The real notebook harness calls <strong>your</strong> sampler and auditor on all nine queries. Synthetic delayed-arrival tasks and the real event-time checks answer different questions. F1 ingestion timestamps, mutable-feature histories and historical static-table membership remain unavailable.</p>
+<h2 id="7-%C2%B7-Follow-the-sampled-graph-through-the-full-model">7 &#183; Follow the sampled graph through the full model<a class="anchor-link" href="#7-%C2%B7-Follow-the-sampled-graph-through-the-full-model">&#182;</a></h2><p>This is the same released RDL model introduced in L117 and used in L122; the new mechanism is the visibility audit surrounding every batch. Trace one driver query all the way to its prediction:</p>
+<figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l123/paper.svg" alt="Released RelBench RDL pipeline reused from L117: typed row encoders, query-relative time, two GraphSAGE rounds and seed prediction. L123 audits each sampled batch."><figcaption>Released RelBench RDL pipeline reused from L117: typed row encoders, query-relative time, two GraphSAGE rounds and seed prediction. L123 audits each sampled batch.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Find the query cutoff at sampling. Can the neural encoder repair a future row admitted before it? On a narrow screen, scroll the figure sideways.</p>
+<ol>
+<li>The graph stores each table's typed columns in a <code>TensorFrame</code>, a container for numerical, categorical, timestamp and text features. Released per-table feature encoders and a four-block row ResNet map each sampled row to 128 learned coordinates.</li>
+<li>The model subtracts a row timestamp from its <strong>own seed query time</strong>, converts the difference to days, and adds a learned encoding of that relative age. This tells the model how old an eligible observation is; it does not make a future observation eligible.</li>
+<li>Two heterogeneous GraphSAGE rounds aggregate messages with relation-specific transforms and sum aggregation, then normalization/ReLU. The seed driver's scalar head predicts finishing position. Shapes contract from sampled context to seed outputs: the final loss uses <code>[number of seed queries, 1]</code>, not one supervised target for every context row.</li>
+<li>Adam minimizes mean absolute error (MAE), the average absolute difference between predicted and target position. Validation MAE selects the first best epoch; the test labels do not choose checkpoints.</li>
+</ol>
+<p>The complete visible model, graph materializer, temporal encoding, training loop and primitive source excerpts are in both notebooks. The training gate uses those same definitions. Our standalone teaching sampler is an exhaustive pedagogical implementation; full reproduction uses the native bounded loader with transparent audits. We do not replace the released sampling algorithm with the small reference implementation.</p>
+<h2 id="8-%C2%B7-Full-selected-reproduction-and-its-evidence-boundary">8 &#183; Full selected reproduction and its evidence boundary<a class="anchor-link" href="#8-%C2%B7-Full-selected-reproduction-and-its-evidence-boundary">&#182;</a></h2><p><strong>Named experiment:</strong> Robinson et al., RelBench v1 <strong>Table 7, F1 <code>driver-position</code>, RDL</strong>. Five fresh full-data fits use ten epochs each, all 7,453 training queries each epoch, batch size 512, width 128, two layers, fanouts <code>[128,64]</code>, uniform temporal sampling, and Adam with learning rate .005. Seeds are 0–4 after preprocessing seed 42. Predictions are clipped to training-label 2nd/98th percentiles as in the released path. Published validation/test targets are 3.193/4.022 MAE. <a href="https://arxiv.org/html/2407.20060v1">Paper, Table 7 and Appendix B</a>.</p>
+<p>Source is pinned at <code>9aa346267c2e1c560bd92da07d6f4ad1ca2f0639</code>; database, task archive, text model and runtime are pinned too. The wrapper audits every training and evaluation batch without consuming random numbers: original node timestamps, each row's query cutoff, original edge identities and query isolation. The budgeted pilot gates five fresh runs. <a href="../labs/l123-reproduction.md">Protocol and exact commands</a>.</p>
+<p><strong>Predict before reading:</strong> if no timestamp violations occur but the score differs from the paper, does that establish a sampling bug? No: a temporal invariant and a predictive score test different claims. Our predeclared “CLOSE” threshold is an absolute mean difference of 0.2 MAE; it is descriptive, not a statistical equivalence test.</p>
+<p><strong>Fresh author-reference execution: COMPLETE selected released-protocol experiment.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Mean MAE</th>
+  <th style="text-align:right">Sample seed SD</th>
+  <th style="text-align:right">Published mean</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.171187</td>
+  <td style="text-align:right">0.050901</td>
+  <td style="text-align:right">3.193</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">4.064913</td>
+  <td style="text-align:right">0.069904</td>
+  <td style="text-align:right">4.022</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Selected epoch</th>
+  <th style="text-align:right">Validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">3.144878</td>
+  <td style="text-align:right">3.971446</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">3.124080</td>
+  <td style="text-align:right">4.010469</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.191524</td>
+  <td style="text-align:right">4.132490</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.144670</td>
+  <td style="text-align:right">4.110226</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">3.250785</td>
+  <td style="text-align:right">4.099933</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>6,295</strong> final predictions were independently scored. Maximum original-model output discrepancy: <strong>3.81e-06</strong>. Measured pilot plus full-fit worker resource estimate: <strong>USD 0.0596</strong>, excluding unitemized overhead. The aggregate plan caps reservations plus overhead reserve at USD 10. <a href="../labs/evidence/l123/summary.json">Evidence</a>.</p>
+<p>Every training/evaluation batch passed timestamp, original-edge and query-isolation audits across <strong>403,895 query occurrences</strong> (repeated across epochs). <a href="../labs/evidence/l123/paper/seed-0/temporal-audit.json">Audit example</a>.</p>
+<figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l123/scores.svg" alt="Fresh five-seed author results. Each point is one complete fit; diamond/error bar is mean plus or minus sample seed SD. Separate detail scales; dashed lines are published targets."><figcaption>Fresh five-seed author results. Each point is one complete fit; diamond/error bar is mean plus or minus sample seed SD. Separate detail scales; dashed lines are published targets.</figcaption></figure>
+
+<p><strong>Deviation ledger:</strong> the release uses <code>[128,64]</code> fanouts versus the paper table's 128; historical seed identities are unavailable; preprocessing type inference is fixed at seed 42; the pinned modern runtime/text revision does not reconstruct historical binaries. The release computes preprocessing statistics from the database up to the test cutoff rather than fitting them solely on training-visible rows. We preserve and disclose that behavior for source replay. A per-query node cutoff therefore does not establish an entirely point-in-time-clean feature pipeline.</p>
+<p>A completed selected experiment is evidence about this named release protocol. It does not establish the entire RelBench paper, Fey's beta experiments, historical bitwise identity, unseen ingestion histories, or your own mastery. The author predictions can be rescored offline; this is not a new fit in your notebook. Your status remains <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<h2 id="9-%C2%B7-EXIT:-defend-what-the-query-could-know">9 &#183; EXIT: defend what the query could know<a class="anchor-link" href="#9-%C2%B7-EXIT:-defend-what-the-query-could-know">&#182;</a></h2><p>Submit your three functions, the nine real query audit results, and a written defense:</p>
+<ol>
+<li>At t=8, explain each accepted and rejected row in the worked graph. Why is Memo1 valid despite being newer than Transfer0?</li>
+<li>Explain the exact-time boundary, delayed arrival, and a mutable feature that node filtering cannot repair.</li>
+<li>Trace local index → global identity → query index → cutoff for the same driver at two times. What must hold for every edge?</li>
+<li>Give a sample that passes the visibility audit but is incomplete. Which independent comparison detects it?</li>
+<li>Separate the full selected replay, real event-time checks, unavailable availability histories, and whole-paper parity.</li>
+</ol>
+<div id="l123-teachback"></div>
+
+<p><a href="../labs/0123-temporal-heterogeneous-graphs.ipynb">Student lab</a> · <a href="../labs/html/0123-temporal-heterogeneous-graphs.html">Executed solution</a> · <a href="../reference/temporal-heterogeneous-graphs.html">Reference</a> · <a href="../labs/relkit/temporal_l123.py">Visible implementation</a>.</p>
+<p>In 1, 7 and 30 days, reconstruct the day-8 neighborhood without notes and invent a second-hop leakage counterexample. L124 will formalize the entity/time/label query table; L156 returns to the full leakage audit. Ask the agent follow-up questions about any timestamp, sampling step or evidence claim you cannot yet defend.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Specify the future target and identify each question in a task table. <a href="0124-entity-task-tables.html">Continue to Lesson 124</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/temporal-neighborhood-viz.js"></script><script src="../assets/l123-lesson.js"></script></body></html>

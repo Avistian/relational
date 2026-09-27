@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 112 to this lesson</p>
+<p>The full-graph GCN provides a reference computation. Scaling requires separating the sampling rule from the model that consumes the sampled graph.</p>
+<details><summary>Quick prerequisite reminder</summary><p>An induced subgraph retains all edges whose endpoints are selected. GraphSAGE combines root and neighbor transforms; it is not the same operator as symmetrically normalized GCN.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 ## 1 · The next bottleneck is computation
 
 In [lesson 112](0112-ogb-gcn-reproduction.html), you followed one full-graph GCN from citation edges to a validation-selected prediction. Every gradient step propagated through all 169,343 papers. That made the experiment easy to define: one graph, one objective, one optimizer step per epoch.
@@ -34,6 +42,8 @@ The bridge is deliberately short and uses random partitions. It demonstrates the
 ## 3 · Model architecture: follow one product
 
 [[FIG:architecture]]
+
+**Diagram trace.** Separate the cluster sampler from GraphSAGE. Which edges disappear during training, and which return during full-neighbor inference? On a narrow screen, scroll the figure sideways.
 
 **Inputs.** Each product has 100 numeric features. The graph is an undirected co-purchasing graph. The prediction is one of 47 product categories. The official split ranks products by popularity: 196,615 training nodes, 39,323 validation nodes, and 2,213,091 test nodes. We preserve the released IDs; a random split would answer a different generalization question. See the [OGB dataset specification](https://ogb.stanford.edu/docs/nodeprop/#ogbn-products).
 
@@ -159,3 +169,7 @@ Open the [student notebook](../labs/0113-scaling-ogb.ipynb), [prepared notebook]
 **Teach back.** In 120 words, explain why the word “GCN” in ClusterGCN does not identify the products aggregation operator. Then connect that distinction to a future relational model: which choices determine the row encoder, which determine message passing, and which determine the sampled computation graph?
 
 **Return tomorrow.** Reconstruct the 2.34 GiB calculation without notes. In one week, draw the two-stage inference dependency and identify where a premature layer transition breaks it. Ask the teaching agent for feedback on any unclear step and for grading of your written defense. Author execution does not establish learner mastery: **PENDING_WRITTEN_DEFENSE**.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Return to arxiv and identify which populations the trained model gets wrong. [Continue to Lesson 114](0114-ogb-error-analysis.html).
+<!-- sequence-next:end -->

@@ -17,12 +17,11 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
 ★ · Peleška & Šír 2026 Universal Row Encoder `2606.21434` ★.
 
 ### 121 · History of relational ML — *Cvitkovic 2019, `2002.02046`*
-- **Skill** — draw the prior-art map from ILP / propositionalization / AutoFE to GNN-on-RDB, and state what
-  each era got wrong.
+- **Skill** — draw the prior-art map from ILP / propositionalization / AutoFE to GNN-on-RDB, and explain what
+  each approach preserves, learns, and leaves unresolved.
 - **Teach** — classical relational learning, Deep Feature Synthesis / Featuretools, Cvitkovic's GNN-on-RDB
   result (beat AutoFE on 2/3 datasets), the gaps (no benchmark, no temporal standard).
-- **Lab** — Tier C · crucial fragment: build the timeline map + locate the thesis on it. Deliverable: the
-  prior-art map.
+- **Lab** — Prepared L121: prior-art map plus three live rule/aggregate/path tasks; full visible Cvitkovic model/trainer; raw-key and Neo4j sample audits; cached T4 pilot. Five-fold projection USD15.70 before overhead exceeds USD10 cap; selected full experiment NOT_RUN.
 - **Viz** — reuse `arch-family-viz.js` (relational branch, historical).
 - **Bridge** — callback Y3 L118; grounds the thesis historically; forward to L122 (Fey's modern REG).
 
@@ -31,12 +30,12 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
   node features from row encoders.
 - **Teach** — the REG definition, node/edge typing from schema, the mapping rules (callback Y3 L096/L117);
   building it in PyG `HeteroData`.
-- **Lab** — Tier B · crucial fragment (paper-repro): build a RelBench database's REG from schema.
-  Deliverable: the constructed `HeteroData` REG + node/edge-type counts.
-- **Viz** — reuse `hetero-graph-viz.js` + `rdl-stack-viz.js`.
+- **Lab** — Prepared L122: three live constructors, all74,063 F1 rows/338,842 directed edges checked against SQL and upstream; full key-table construction in the portable notebook; five fresh full-data Table7 F1 RDL runs. Validation3.18870±.02246/test4.05511±.15171 MAE, descriptive CLOSE/CLOSE. Whole-paper parity NOT_ESTABLISHED.
+- **Viz** — explicit key-to-coordinate diagram, receiver-sum routing, and `reg-construction-viz.js` key intervention.
 - **Bridge** — the central construction of the year; callback Y3 L117; forward to L123 (add time).
 
-### 123 · Temporal heterogeneous graphs — *Fey 2024 §3–4, ★*
+### 123 · [Temporal heterogeneous graphs](../lessons/0123-temporal-heterogeneous-graphs.html) — *Fey 2024 §3–4, ★*
+- **Prepared evidence (2026-09-27):** full temporal F1 graph, nine SQL/PyG neighborhood comparisons,403895 audited training/evaluation query occurrences and five fresh selected RDL fits; see `labs/l123-reproduction.md`. Learner PENDING_WRITTEN_DEFENSE.
 - **Skill** — timestamp every node and edge in a REG and enforce time-respecting neighbor sampling for a
   prediction time.
 - **Teach** — entity time vs event time, seed-time subgraph sampling, the "no future" guarantee (callback
@@ -46,7 +45,8 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
 - **Viz** — reuse `temporal-graph-viz.js` + `hetero-graph-viz.js`.
 - **Bridge** — the temporal correctness the thesis lives or dies on; callback Y3 L104; forward to L156 audit.
 
-### 124 · Entity vs task table — *Fey 2024, ★*
+### 124 · [Entity vs task table](../lessons/0124-entity-task-tables.html) — *Fey 2024, ★*
+- **Prepared** — all8,712task rows reconstructed; five fresh full-data RDL fits; source cohort caveat explicit. Learner PENDING_WRITTEN_DEFENSE.
 - **Skill** — distinguish entity tables from task tables and select the prediction node + label + seed time
   for a task.
 - **Teach** — task tables as (entity, time, label) triples, how a task defines the training signal on top of
@@ -56,14 +56,15 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
 - **Viz** — reuse `rdl-stack-viz.js` (task node highlighted).
 - **Bridge** — separates the reusable REG from the per-task signal; callback Y3 L087 link setup; forward to L128.
 
-### 125 · PyTorch Frame deep dive — *Hu 2024, ★ `2404.00776`*
+### 125 · [PyTorch Frame deep dive](../lessons/0125-pytorch-frame-deep-dive.html) — *Hu 2024, ★ `2404.00776`*
 - **Skill** — configure PyTorch Frame stype encoders for every column type in a RelBench database and
   materialize node features for the REG.
 - **Teach** — stype system, per-stype encoders (numeric/categorical/text/timestamp/embedding), the
   encoder→GNN interface RelBench uses (deepens Y2 L075).
 - **Lab** — Tier B · crucial fragment (paper-repro): materialize a RelBench table's `TensorFrame`, attach
   encoders, feed the L122 REG. Deliverable: encoded REG node features.
-- **Viz** — reuse `tokenizer-viz.js` + `cell-graph-viz.js`.
+- **Prepared evidence (2026-09-27)** — all 74,063 F1 node features, original Frame parity, four live tasks, and a 23-query gradient audit. Historical Frame Table 2 `rel-stackex-engage` NOT_RUN: six archive probes returned 404; protocol identity unresolved.
+- **Viz** — typed-column routes, executed ResNet-to-GraphSAGE computation, ID gathering, and an interactive fitted-statistics intervention.
 - **Bridge** — callback Y2 L075; the row-encoder half of the RDL stack; forward to L125b (make it modular).
 
 ### 125b · Universal Row Encoder — *Peleška & Šír 2026, ★ `2606.21434`*
@@ -79,7 +80,8 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
 - **Bridge** — the encoder pillar of the *foundation* relational model (Y5); callback Y2 L076 decoupling;
   forward to Y5 L163/L167.
 
-### 126 · RelBench beta paper — *RelBench beta `2312.04615`*
+### 126 · RelBench beta paper — *RelBench beta `2312.04615v1`*
+- **Prepared (2026-09-27)** — [lesson](../lessons/0126-relbench-beta.html) and standalone notebook: complete 74,063-row F1 API tour, beta task/source/SQL/AP checks, recovery operator. Historical full beta reconstruction NOT_RUN (missing archives); numerical beta score target NOT_APPLICABLE. Learner PENDING_WRITTEN_DEFENSE.
 - **Skill** — navigate the RelBench package (datasets, tasks, loaders, evaluators) and run its tour.
 - **Teach** — package layout, the RDL lineage from the beta to v1, how tasks/DBs are exposed in code.
 - **Lab** — Tier B · crucial fragment: load a RelBench DB + task via the API; inspect the schema.
@@ -88,62 +90,59 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
 - **Bridge** — tooling for the whole year; callback Y3 L111 OGB literacy; forward to L127.
 
 ### 127 · RelBench v1 — *Robinson 2024, ★ `2407.20060`*
+- **Prepared (2026-09-27)** — [lesson](../lessons/0127-relbench-v1.html), portable notebooks and full selected five-seed F1 replay. Test3.967165±.093906MAE, descriptive CLOSE. Three live experiment-ledger tasks; source, batch, scoring and delivery checks. Whole-paper/historical parity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.
 - **Skill** — describe RelBench v1's 7 databases / diverse tasks and the standardized RDL evaluation, and
   run one task end to end.
 - **Teach** — the databases/domains/scales, the RDL pipeline (row encoder + GNN), the standardized splits/
   metrics; the "first comprehensive RDL study."
 - **Lab** — Tier B · crucial fragment (paper-repro): run the provided RDL baseline on one task.
-  Deliverable: matched baseline metric.
-- **Viz** — reuse `rdl-stack-viz.js`.
+  Deliverable: complete run artifacts, independent scores and a written evidence defense.
+- **Viz** — model-specific architecture, real-query typed shapes, selection boundary and measured seed plots; reusable `checkpoint-audit-viz.js`.
 - **Bridge** — the benchmark the thesis is measured on; callback Y2 L056 benchmark literacy; forward to L130.
 
-### 128 · Task taxonomy — *RelBench docs*
+### 128 · [Task taxonomy](../lessons/0128-task-taxonomy.html) — *RelBench docs + v1 Table 6*
 - **Skill** — classify RelBench tasks (entity classification/regression, recommendation/link, temporal) and
   pick the right head + metric for each.
 - **Teach** — the task-type taxonomy, per-type heads and metrics (AUROC, MAE, MAP/Hits@k), how the seed time
   shapes each.
 - **Lab** — Tier B · crucial fragment: for three tasks, specify head + metric + split. Deliverable: the
-  task-type table.
+  task-type table. Full selected experiment: five fresh full-data driver-dnf fits with source-reconstructed historical labels; original archive/order unavailable.
 - **Viz** — reuse `rdl-stack-viz.js` (head variants).
 - **Bridge** — callback L124 task tables, Y3 L087/L106 link/temporal; forward to the multi-task portfolio (Q4).
 
-### 129 · Manual FE study — *Robinson 2024 user study, ★*
-- **Skill** — replicate the manual-feature-engineering baseline mindset and quantify the human effort RDL
-  is competing against.
-- **Teach** — the user-study protocol (expert hand-features per task), the ">order-of-magnitude less human
-  work" result, why FE is the gold standard to beat.
-- **Lab** — Tier B · crucial fragment: hand-engineer FE features for one task (as the study's data scientist
-  would) + train a tuned tree. Deliverable: the FE baseline + effort log (time spent).
-- **Viz** — reuse `feature-viz.js` + `flatten-loss-viz.js`.
-- **Bridge** — the human-effort ratio at the heart of the thesis; callback Y1 L009/L033; forward to L155.
+### 129 · [Manual FE study](../lessons/0129-manual-feature-engineering.html) — *Robinson2024 §6/Figure3*
+- **Skill** — build and defend a relational-feature baseline; distinguish human effort from replay runtime.
+- **Teach** — feature hypotheses, strict ASOF joins, race slots, schedule availability, train-fitted mappings, additive tree computation, validation-only selection and keyed scoring.
+- **Lab** — three live functions; all8712 queries through learner features and a course tree; all6295 author predictions replayed. Full released50-feature+driverId SQL/LightGBM pipeline, five complete ten-trial searches with2000-tree cap and50-round early stopping. Historical paper identity NOT_ESTABLISHED; original human effort NOT_RUN.
+- **Viz** — actual SQL feature row and complete tree-ensemble prediction trace, cutoff/arrival intervention, search-vs-RDL comparison and three effort clocks.
+- **Bridge** — callback L009/L033 manual features, L124 query contracts, L127 matched evaluation, L128 task taxonomy; forward L130 checkpoint and L155 fair comparison.
 
-### 130 · **Q1 checkpoint** — *Fey 2024 + Robinson 2024 · Deliverable-based*
-- **Deliverable** — run **one RelBench task end to end** (build REG → encode rows → train RDL GNN →
-  evaluate with the official evaluator), matching the published baseline within tolerance.
-- **Bridge** — proves the full RDL pipeline works before optimizing it; callback L122–L127.
+### 130 · [**Q1 checkpoint**](../lessons/0130-rdl-checkpoint.html) — *Fey 2024 + Robinson 2024 · Deliverable-based*
+- **Deliverable** — full fresh F1 driver-position reproduction, five ten-epoch seeds, official evaluation plus independent keyed scoring; predeclared0.2MAE mean tolerance.
+- **Lab** — [portable checkpoint](../labs/0130-rdl-checkpoint.ipynb): three live functions for query identity, keyed MAE and complete-run verdict; full visible model/trainer and gated fresh training.
+- **Evidence** — exact source/data/runtime, epoch/query/batch audits, selected checkpoints and predictions; L129 manual-FE comparison is explicitly reused and task-specific.
+- **Mastery** — five written defenses and a reproducible packet; author execution leaves PENDING_WRITTEN_DEFENSE.
+- **Bridge** — integrates L122–L129 before L131 instruments intermediate activations; numerical closeness is distinct from historical/full-paper identity.
 
 ---
 
 ## Q2 · RDL architectures & baselines (131–140)
 
-### 131 · GNN + tabular encoder stack — *Fey 2024 §5, ★*
-- **Skill** — trace a full RDL forward pass: row encoder → hetero temporal message passing → task head, with
-  shapes at each stage.
-- **Teach** — the complete stack (deepens Y2 L076 / Y3 L115), where encoder gradients meet GNN gradients,
-  end-to-end training.
-- **Lab** — Tier B · crucial fragment: instrument the L130 model to print shapes/activations per stage.
-  Deliverable: annotated forward-pass trace.
-- **Viz** — reuse `rdl-stack-viz.js` (shape annotations).
-- **Bridge** — the mental model for every later architecture; callback Y2 L076, Y3 L115.
+### 131 · [GNN + tabular encoder stack](../lessons/0131-gnn-tabular-stack.html) — *Fey 2024 §5 + RelBench v1 Table7*
+- **Skill** — trace typed row encoders, per-query time additions, two heterogeneous GraphSAGE layers, root head, L1 loss and gradients.
+- **Lab** — three live functions summarize activations, align query-relative ages and select roots without detaching. Actual first-batch traces and independent original/instrumented parity; detachable-encoder intervention.
+- **Reproduction** — five fresh full-data ten-epoch F1 fits, complete selected released-protocol experiment. Mean validation3.187860/test4.119595MAE, both descriptive CLOSE. Whole-paper/historical identity NOT_ESTABLISHED.
+- **Finding** — original and instrumented numerical encoder have matching nonfinite gradient masks; finite-gradient parity is distinct from healthy optimization.
+- **Viz** — measured shape architecture, per-occurrence clock table, activation arithmetic, gradient intervention and seed variability; portable notebook figures and interactive controls.
+- **Bridge** — deepens L076/L115/L125 and instruments L130; forward to identity awareness in L132. Learner PENDING_WRITTEN_DEFENSE.
 
-### 132 · ID-GNN / IDMP variants — *RelBench baselines*
-- **Skill** — compare the RelBench baseline message-passing variants (e.g. ID-aware GNN) and explain what
-  identity-awareness adds.
-- **Teach** — why vanilla message passing can't distinguish some structures (expressiveness, callback Y3
-  L088), ID-GNN's fix, the RelBench baseline family.
-- **Lab** — Tier B · crucial fragment: run 2 baseline variants on one task. Deliverable: variant comparison.
-- **Viz** — reuse `message-passing-viz.js` + `wl-viz.js`.
-- **Bridge** — expressiveness limits that RelGNN later attacks (L141); callback Y3 L088.
+### 132 · [Identity-aware message passing](../lessons/0132-identity-aware-message-passing.html) — *ID-GNN + RelBench v1 Table8*
+- **Skill** — distinguish root role, table type and global identity; trace query-owned candidate labels.
+- **Teach** — an unmarked counting collision motivates root conditioning; compare the complete two-tower and candidate-readout models, objectives and temporal sampling.
+- **Lab** — three live functions, paired tiny neural fits, exact source output/gradient parity, and independent replay of 8276 real pilot rankings.
+- **Reproduction** — full condition-sponsor-run five-seed comparison INCOMPLETE: two one-epoch feasibility pilots completed; projected aggregate USD10.64 exceeds approved USD10. Full code and protocol remain visible; no paper-parity claim.
+- **Viz** — five portable model-specific figures; interactive rooted walks and query ownership.
+- **Bridge** — L088/L131 to typed convolution in L133 and RelGNN in L141; learner PENDING_WRITTEN_DEFENSE.
 
 ### 133 · Hetero conv on REG — *PyG + RelBench*
 - **Skill** — design the per-edge-type convolution and aggregation across node types for a REG.
@@ -151,10 +150,10 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
   layer design choices.
 - **Lab** — Tier B · crucial fragment: build a `HeteroConv` layer for the REG's relation set. Deliverable:
   the hetero conv + its effect on the metric.
-- **Viz** — reuse `hetero-graph-viz.js` + `rdl-stack-viz.js`.
+- **Viz** — explicit key-to-coordinate diagram, receiver-sum routing, and `reg-construction-viz.js` key intervention.
 - **Bridge** — callback Y3 L091/L098; the layer the whole portfolio uses.
 
-### 134 · Training at scale — *RelBench sampling*
+### 134 · [Training at scale](../lessons/0134-training-at-scale.html) — *RelBench sampling*
 - **Skill** — train an RDL model over millions of nodes with time-respecting hetero neighbor sampling and a
   realistic compute budget.
 - **Teach** — subgraph sampling per seed, batch construction, memory/throughput at RelBench scale, the
@@ -163,6 +162,7 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
   Deliverable: a scaled training run + compute note.
 - **Viz** — reuse `temporal-graph-viz.js` + `group-viz.js`.
 - **Bridge** — callback Y3 L108/L113; scale is a first-class thesis constraint; forward to Y5 FM scale.
+- **Prepared package** — [notebook](../labs/0134-training-at-scale.ipynb), three live sampling/measurement tasks, fresh full selected F1 experiment and separately scoped rel-stack systems workload. Exact source/data/cohort differences, failed attempts and budget: [contract](../labs/l134-reproduction.md). Learner mastery remains pending.
 
 ### 135 · Hyperparameter tuning on REG — *— (fair-tuning unit)*
 - **Skill** — tune an RDL model under a **fixed, documented budget** equal to the tree baseline's, so

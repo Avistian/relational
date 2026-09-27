@@ -1,0 +1,343 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RelBench v1: run and audit the RDL baseline</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/task-table.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0126-relbench-beta.html">Lesson 126</a></nav><header><p class="stream-kicker">Year 4 · Quarter 1 · Lesson 127</p><h1>RelBench v1: run and audit the RDL baseline</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 126 to this lesson</p>
+<p>The API can score answers. A reproducible neural experiment also fixes architecture, fitting, checkpoint selection and aggregation across runs.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Validation chooses a checkpoint. Test evaluates that frozen choice. Seed standard deviation describes variation among fits on this fixed task; it is not variation across databases.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<blockquote>
+<p><strong>The win.</strong> Run a complete RelBench baseline and explain exactly what its result establishes. You will freeze a configuration, trace a real prediction through the model, select a checkpoint using validation alone, and aggregate five independent runs without hiding missing evidence.</p>
+</blockquote>
+<p><a href="../labs/0127-relbench-v1.ipynb">Student lab</a> · <a href="../labs/html/0127-relbench-v1.html">Executed solution</a> · <a href="../reference/relbench-v1.html">Reference</a> · <a href="../labs/l127-reproduction.md">Reproduction contract and commands</a></p>
+<h2 id="1-%C2%B7-From-an-API-tour-to-a-defensible-experiment">1 &#183; From an API tour to a defensible experiment<a class="anchor-link" href="#1-%C2%B7-From-an-API-tour-to-a-defensible-experiment">&#182;</a></h2><p>In <a href="0126-relbench-beta.html">Lesson 126</a>, a <strong>Dataset</strong> exposed tables and cutoffs, and a <strong>Task</strong> exposed questions and an evaluator. That is enough to score a constant predictor. It does not determine which neural model to train, how to select it, or whether a score can be compared with a paper. Lesson 127 connects these choices into one experiment.</p>
+<p>Recall the pieces you can now assemble: <a href="0122-reg-construction.html">L122</a> maps rows and foreign keys to a graph; <a href="0123-temporal-heterogeneous-graphs.html">L123</a> attaches the query cutoff to every hop; <a href="0124-entity-task-tables.html">L124</a> separates entity rows from supervised questions; <a href="0125-pytorch-frame-deep-dive.html">L125</a> turns typed columns into vectors. Here the tangible skill is <strong>keeping those contracts fixed while training and evaluating</strong>.</p>
+<div id="warmup"></div><noscript><p>Recall the distinction between context rows, queries and selection metrics.</p></noscript>
+
+<p><strong>Before reading:</strong> can a low test MAE prove the correct temporal cutoff was used? What additional artifact would you inspect? Write one sentence; return to it after the batch audit.</p>
+<h2 id="2-%C2%B7-What-the-original-benchmark-standardizes">2 &#183; What the original benchmark standardizes<a class="anchor-link" href="#2-%C2%B7-What-the-original-benchmark-standardizes">&#182;</a></h2><p>Read Robinson et al., <a href="https://arxiv.org/html/2407.20060v1">RelBench, arXiv:2407.20060v1</a>, §2–3, Table 1, Table 7 and Appendix B. This lesson pins the July 2024 paper version; “RelBench v1” here names the original benchmark, not whatever package is newest. The benchmark supplies databases, prediction tasks, temporal splits and evaluation rules. A model and its training choices remain part of the experiment.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Original database</th>
+  <th>Domain</th>
+  <th style="text-align:right">Tasks</th>
+  <th style="text-align:right">Tables</th>
+  <th style="text-align:right">Rows available by test cutoff</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-amazon</td>
+  <td>E-commerce</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">15,000,713</td>
+</tr>
+<tr>
+  <td>rel-avito</td>
+  <td>E-commerce</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">20,679,117</td>
+</tr>
+<tr>
+  <td>rel-event</td>
+  <td>Social</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">41,328,337</td>
+</tr>
+<tr>
+  <td>rel-f1</td>
+  <td>Sports</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">74,063</td>
+</tr>
+<tr>
+  <td>rel-hm</td>
+  <td>E-commerce</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">16,664,809</td>
+</tr>
+<tr>
+  <td>rel-stack</td>
+  <td>Social</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">4,247,264</td>
+</tr>
+<tr>
+  <td>rel-trial</td>
+  <td>Medical</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">15</td>
+  <td style="text-align:right">5,434,924</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are <strong>paper Table 1 counts</strong>, after its test cutoff, not contemporary repository counts or counts of labeled examples. Thirty tasks share seven databases; a row can provide context without carrying a training label. Our executed experiment uses all nine F1 tables and its complete selected task. The other six databases are overview material and <strong>NOT_RUN in this lesson</strong>.</p>
+<p>The three benchmark task families need different prediction objects: a scalar probability for entity classification, a real value for entity regression, or a ranked target list for recommendation. Their metrics cannot be averaged in raw units. <a href="../reference/curriculum.html">Lesson 128</a> will develop the head/metric taxonomy; today use regression and MAE so the whole experiment stays inspectable.</p>
+<p><strong>CHECK:</strong> F1 has 74,063 graph rows but 7,453 training queries. Which number belongs in the loss denominator? Answer: the supervised seed queries in the current batch, not every context row in the database.</p>
+<h2 id="3-%C2%B7-Freeze-the-question-before-fitting">3 &#183; Freeze the question before fitting<a class="anchor-link" href="#3-%C2%B7-Freeze-the-question-before-fitting">&#182;</a></h2><p>Our target is <strong>Table 7, <code>rel-f1 / driver-position</code>, RDL</strong>. At each task cutoff the model predicts a driver's mean finishing position over the next 60 days under the released task's eligibility rule. Lower MAE is better. Full task reconstruction and outcome-conditioned cohort caveats are explained in L124; we preserve that task definition rather than silently invent a new one.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Component</th>
+  <th>Frozen released-protocol experiment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Database</td>
+  <td>All 74,063 exposed F1 rows, nine tables; test cap 2010-01-01</td>
+</tr>
+<tr>
+  <td>Supervision</td>
+  <td>7,453 train / 499 validation / 760 test queries</td>
+</tr>
+<tr>
+  <td>Initialization</td>
+  <td>Five fresh seeds 0–4; preprocessing seed 42</td>
+</tr>
+<tr>
+  <td>Features</td>
+  <td>Released stype inference, pinned text encoder, per-table Frame ResNets</td>
+</tr>
+<tr>
+  <td>GNN</td>
+  <td>Two heterogeneous GraphSAGE layers; sum aggregation; width 128</td>
+</tr>
+<tr>
+  <td>Sampling</td>
+  <td>Uniform temporal neighbors, fanouts [128, 64], root cutoff retained</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>Adam, learning rate .005, batch 512, ten complete epochs, mean L1 loss</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>First epoch attaining the lowest validation MAE</td>
+</tr>
+<tr>
+  <td>Evaluation</td>
+  <td>Released output clipping at training-label percentiles 2 and 98; all final queries</td>
+</tr>
+</tbody>
+</table></div>
+<p>The data archives, source commit and environment have recorded checksums. The original paper's neighbor table says 128, while this released script uses [128,64]; released feature statistics use the database through its test cap. <strong>Those are disclosed protocol boundaries</strong>, not evidence of train-only preprocessing. Historical seeds, binary versions and exact training commit are unestablished. <a href="../labs/l127-reproduction.md">Protocol ledger</a> · <a href="../labs/_sources_l127.json">Source pins</a>.</p>
+<p><strong>TODO 1 — <code>experiment_contract</code>.</strong> Return a fresh configuration on every call. Reject unknown keys and changes to the frozen values. A ten-epoch experiment changed to one epoch is a pilot and must receive a different label. <strong>CHECK:</strong> mutating one returned fanout list must not affect a later call; requesting test-based selection must fail. The notebook uses your returned epoch count and seed identities to check real run artifacts.</p>
+<h2 id="4-%C2%B7-Model-architecture:-follow-one-question-through-the-computation">4 &#183; Model architecture: follow one question through the computation<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-follow-one-question-through-the-computation">&#182;</a></h2><figure class="stream-figure" tabindex="0"><img src="../labs/figures/l127/architecture.svg" alt="Queries drive disjoint temporal sampling and table-specific Frame ResNets. Relative-time vectors, two sum-GraphSAGE layers and a scalar seed head connect to separate training and evaluation branches."><figcaption>Queries drive disjoint temporal sampling and table-specific Frame ResNets. Relative-time vectors, two sum-GraphSAGE layers and a scalar seed head connect to separate training and evaluation branches.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Trace one driver-time query through sampling and the two graph layers. Which rows contribute labels and which only contribute messages? On a narrow screen, scroll the figure sideways.</p>
+<p>Start with a task row <code>(driver_id, cutoff, target)</code>. Only identity and cutoff enter the input path. The future target takes a separate path to the loss. Temporal sampling builds a <strong>disjoint neighborhood per query</strong>: the same database row may occur twice when two queries have different cutoffs, but messages must not cross between their copies.</p>
+<p>For each table type τ, its TensorFrame contains typed column tensors for the sampled rows. Numerical and categorical encoders, timestamp features and the pinned text representation feed a table-specific ResNet. Its four blocks produce <code>Hτ ∈ R^(Nτ × 128)</code>. These encoders learn separately for each table because a driver and a result row have different feature schemas. For dated tables, the model adds an encoding of the difference between seed time and row time. Undated tables have no equivalent timestamp check; their missing creation histories remain an assumption.</p>
+<p>For a relation <code>r: source → destination</code>, sum-GraphSAGE forms a transformed neighbor sum plus a transformed destination vector. The relation outputs are summed at each destination type, then normalized and rectified. Repeat for two layers. A two-hop result can therefore convey information through an intermediate entity. It can also be excluded at either hop by the same root cutoff. The source includes reverse FK edges, so direction and relation type are part of this computation, not interchangeable decorations. <a href="../labs/sources/l117/nn.py">Pinned operators</a> · <a href="../labs/relkit/rdl_l117.py">Visible model</a>.</p>
+<p>The final readout keeps the first <code>B</code> <strong>seed</strong> vectors for the driver type. The scalar head returns <code>B × 1</code> outputs. <code>L1 = sum_i |prediction_i − target_i| / B</code> supplies gradients through the head, message-passing layers and row encoders. Context rows help construct those predictions but receive no separate task loss. At evaluation the released code clips predictions using training-label quantiles; validation then determines which checkpoint survives.</p>
+<p><strong>Read the executed forward path.</strong> The released model first encodes rows, adds relative time, applies the typed GNN, and slices the seed vectors for the head. Optional shallow/ID-aware branches in the source are inactive in this experiment.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">batch</span><span class="p">:</span> <span class="n">HeteroData</span><span class="p">,</span>
+    <span class="n">entity_table</span><span class="p">:</span> <span class="n">NodeType</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+    <span class="n">seed_time</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="n">entity_table</span><span class="p">]</span><span class="o">.</span><span class="n">seed_time</span>
+    <span class="n">x_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">tf_dict</span><span class="p">)</span>
+
+    <span class="n">rel_time_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporal_encoder</span><span class="p">(</span>
+        <span class="n">seed_time</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">time_dict</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">batch_dict</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">rel_time</span> <span class="ow">in</span> <span class="n">rel_time_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">x_dict</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_dict</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span> <span class="o">+</span> <span class="n">rel_time</span>
+
+    <span class="k">for</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">embedding</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">x_dict</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_dict</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span> <span class="o">+</span> <span class="n">embedding</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span><span class="o">.</span><span class="n">n_id</span><span class="p">)</span>
+
+    <span class="n">x_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gnn</span><span class="p">(</span>
+        <span class="n">x_dict</span><span class="p">,</span>
+        <span class="n">batch</span><span class="o">.</span><span class="n">edge_index_dict</span><span class="p">,</span>
+        <span class="n">batch</span><span class="o">.</span><span class="n">num_sampled_nodes_dict</span><span class="p">,</span>
+        <span class="n">batch</span><span class="o">.</span><span class="n">num_sampled_edges_dict</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">x_dict</span><span class="p">[</span><span class="n">entity_table</span><span class="p">][:</span> <span class="n">seed_time</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)])</span>
+</pre></div>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l127/trace.svg" alt="Real driver10 query at 2004-07-05: 99 nodes and 245 edges in the exhaustive neighborhood, one supervised output. Typed row counts determine encoder shapes; bounded training samples can differ."><figcaption>Real driver10 query at 2004-07-05: 99 nodes and 245 edges in the exhaustive neighborhood, one supervised output. Typed row counts determine encoder shapes; bounded training samples can differ.</figcaption></figure>
+
+<p><strong>Trace task.</strong> The notebook embeds a real L124 query and its independently reconstructed <strong>99-node / 245-edge exhaustive two-hop neighborhood</strong>. Identify the seed and explain why the output has one scalar, not 99. This is an input-structure trace; the training sampler uses bounded fanouts and stochastic selection, so this exhaustive graph is not advertised as the exact sampled training batch. Fresh training separately audits every actual batch.</p>
+<p><strong>Predict:</strong> if a result's event date changes from before the root cutoff to after it, where should it disappear? At sampling, before row encoding and message passing. Masking only its direct connection after two-hop aggregation is too late.</p>
+<h2 id="5-%C2%B7-Training-is-a-sequence-of-decisions,-not-one-score">5 &#183; Training is a sequence of decisions, not one score<a class="anchor-link" href="#5-%C2%B7-Training-is-a-sequence-of-decisions,-not-one-score">&#182;</a></h2><p>Each epoch visits every training query once, computes losses on seed predictions and updates parameters. Validation visits its own queries without gradient updates. Store the first checkpoint that improves the validation MAE; a tie retains the earlier epoch. Repeat for all ten epochs even when the earliest checkpoint remains best. Only then evaluate the selected model on the test queries.</p>
+<p>A sampled neighborhood adds randomness even in evaluation. Our ledger preserves both the epoch's selection MAE and the final validation replay MAE; they need not be bit-identical. The selected epoch is justified by the <strong>epoch trace</strong>, not retroactively by the later replay or the test result. Fresh final batches are also passed to the pinned original model with the same weights, separating model parity from sampling differences.</p>
+<p><strong>Inspect the load-bearing training decision.</strong> Notice where gradients stop for validation and where the strict comparison preserves the first tie. The loop records every epoch before the selected state is restored.</p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">epochs</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">();</span><span class="n">loss_sum</span><span class="o">=</span><span class="mf">0.</span><span class="p">;</span><span class="n">count</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">loaders</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]:</span>
+        <span class="n">batch</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="n">pred</span><span class="o">=</span><span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span><span class="n">task</span><span class="o">.</span><span class="n">entity_table</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">loss</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">l1_loss</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span><span class="n">batch</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">entity_table</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">float</span><span class="p">())</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">count</span><span class="o">+=</span><span class="nb">len</span><span class="p">(</span><span class="n">pred</span><span class="p">);</span><span class="n">loss_sum</span><span class="o">+=</span><span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">count</span><span class="o">==</span><span class="mi">7453</span>
+    <span class="n">val</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="o">=</span><span class="n">predict</span><span class="p">(</span><span class="n">loaders</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">])</span>
+    <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="o">-</span><span class="n">tables</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">target_col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())))</span>
+    <span class="n">trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">epoch</span><span class="o">=</span><span class="n">epoch</span><span class="p">,</span><span class="n">train_mae</span><span class="o">=</span><span class="n">loss_sum</span><span class="o">/</span><span class="n">count</span><span class="p">,</span><span class="n">val_mae</span><span class="o">=</span><span class="n">score</span><span class="p">,</span><span class="n">train_queries</span><span class="o">=</span><span class="n">count</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">score</span><span class="o">&lt;</span><span class="n">best</span><span class="p">:</span><span class="n">best</span><span class="o">=</span><span class="n">score</span><span class="p">;</span><span class="n">state</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">());</span><span class="n">selected</span><span class="o">=</span><span class="n">epoch</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span><span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state</span><span class="p">);</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+</pre></div>
+<div id="l127-checkpoint"></div><noscript><p>Static trace: validation MAE [3,2,2] selects epoch2, the first minimum. Test MAE [5,4,1] would select epoch3 if misused. Changing test scores must not change the valid selection.</p></noscript>
+
+<p><strong>TODO 2 — <code>select_checkpoint</code>.</strong> Verify exactly the expected number of consecutive epochs, complete training-query coverage and finite validation errors. Return the first validation minimum. Do not read test values. <strong>CHECK:</strong> for validation errors <code>[3, 2, 2]</code>, choose epoch 2 even when epoch 3 has the lowest test error. Reverse the trace, omit an epoch or inject NaN: reject the record. In the notebook your function selects all five real author checkpoints.</p>
+<p>This is the smallest local decision with a large experimental consequence. Looking at ten test values and choosing the best turns test into another validation set. The reported score then answers a different question from “how did a validation-selected model generalize?”</p>
+<h2 id="6-%C2%B7-Five-runs:-verify-membership-before-taking-a-mean">6 &#183; Five runs: verify membership before taking a mean<a class="anchor-link" href="#6-%C2%B7-Five-runs:-verify-membership-before-taking-a-mean">&#182;</a></h2><p>Suppose seed 4 failed. Averaging seeds 0–3 and labeling the result “five seeds” is incorrect. So is copying seed 0's artifact into a seed-4 directory. Require the expected seed set, distinct run identities, completion markers, ten epochs and finite metrics before computing anything.</p>
+<p><strong>TODO 3 — <code>summarize_seeds</code>.</strong> Compute arithmetic means and <strong>sample</strong> standard deviations only after checking that contract. For values <code>[1,2,3,4,5]</code>, the mean is 3 and sample SD is <code>sqrt(10/4)</code>, about 1.5811. Population SD divides by five and answers a different descriptive question. <strong>CHECK:</strong> reject a missing seed, duplicate identity, unfinished status, partial epoch count or nonfinite result. The real-data harness independently rescores every prediction before calling your function.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l127/selection.svg" alt="Training, validation-only checkpoint selection, frozen test scoring and complete-seed aggregation are separate decisions."><figcaption>Training, validation-only checkpoint selection, frozen test scoring and complete-seed aggregation are separate decisions.</figcaption></figure>
+
+<p>A seed SD describes variation among these fits. It is not a confidence interval, and overlap with a published SD does not establish equivalence. We predeclare <strong>0.2 MAE</strong> as a descriptive closeness tolerance for the mean; <code>CLOSE</code> means only that this threshold was met. A close score cannot repair a protocol mismatch.</p>
+<h2 id="7-%C2%B7-Fresh-measured-evidence">7 &#183; Fresh measured evidence<a class="anchor-link" href="#7-%C2%B7-Fresh-measured-evidence">&#182;</a></h2><p><strong>Fresh author execution: COMPLETE selected released-protocol experiment.</strong> Five new seeds, ten complete epochs each.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Mean MAE</th>
+  <th style="text-align:right">Sample seed SD</th>
+  <th style="text-align:right">Paper mean</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.178174</td>
+  <td style="text-align:right">0.022776</td>
+  <td style="text-align:right">3.193</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">3.967165</td>
+  <td style="text-align:right">0.093906</td>
+  <td style="text-align:right">4.022</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Selected epoch</th>
+  <th style="text-align:right">Selection MAE</th>
+  <th style="text-align:right">Final validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.162397</td>
+  <td style="text-align:right">3.158234</td>
+  <td style="text-align:right">4.019688</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">3.149294</td>
+  <td style="text-align:right">3.152550</td>
+  <td style="text-align:right">3.955867</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">3.190597</td>
+  <td style="text-align:right">3.189320</td>
+  <td style="text-align:right">3.958788</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.186572</td>
+  <td style="text-align:right">3.183047</td>
+  <td style="text-align:right">3.824692</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">3.208308</td>
+  <td style="text-align:right">3.207717</td>
+  <td style="text-align:right">4.076791</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>6,295</strong> final predictions independently rescored; <strong>403,895</strong> training/evaluation query occurrences audited. Maximum original-model output discrepancy <strong>2.86e-06</strong>. Pilot plus five-fit worker resource estimate <strong>USD 0.063399</strong>, excluding unitemized overhead; six bounded worker reservations consumed within the USD10 plan, no retries. <a href="../labs/evidence/l127/summary.json">Evidence</a> · <a href="../labs/_audit_l127_results.json">Independent archive/SQL audit</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l127/scores.svg" alt="Five fresh complete fits. Diamonds and error bars show mean and sample seed SD; dashed lines mark paper means. Each panel uses its own detail scale."><figcaption>Five fresh complete fits. Diamonds and error bars show mean and sample seed SD; dashed lines mark paper means. Each panel uses its own detail scale.</figcaption></figure>
+
+<p>The reproduction uses complete data and full epochs for <strong>this selected experiment</strong>. The artifacts contain epoch traces, selected checkpoint hashes, prediction identities, original-model replay discrepancies, fresh run UUIDs and per-batch temporal audit counts. The scalar scoring audit uses saved predictions, rather than trusting the trainer's printed metric.</p>
+<p>Evidence answers separate questions:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>What it establishes</th>
+  <th>What remains open</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Source checks and fixture gradients</td>
+  <td>Included model equations agree with pinned implementation</td>
+  <td>Historical executable identity</td>
+</tr>
+<tr>
+  <td>Archive hashes and full query counts</td>
+  <td>Same pinned released data, complete selected split coverage</td>
+  <td>Historical paper archive identity</td>
+</tr>
+<tr>
+  <td>Batch audit</td>
+  <td>Node time ≤ own root cutoff; original edge identity; query isolation</td>
+  <td>Missing ingestion times and feature histories</td>
+</tr>
+<tr>
+  <td>Saved predictions and independent MAE</td>
+  <td>Complete final scoring and consistent query keys</td>
+  <td>Generalization beyond this task</td>
+</tr>
+<tr>
+  <td>Five fresh complete runs</td>
+  <td>Observed released-protocol seed variation</td>
+  <td>All 30 tasks or the user study</td>
+</tr>
+<tr>
+  <td>Notebook/browser checks</td>
+  <td>Tested local teaching package</td>
+  <td>Learner mastery, live Colab or deployment</td>
+</tr>
+</tbody>
+</table></div>
+<p>Author execution is <strong>not learner completion</strong>. Your status remains <code>PENDING_WRITTEN_DEFENSE</code>. Whole-paper and historical parity remain <code>NOT_ESTABLISHED</code>; the other benchmark tasks are <code>NOT_RUN</code> here.</p>
+<h2 id="8-%C2%B7-Run,-inspect,-then-defend">8 &#183; Run, inspect, then defend<a class="anchor-link" href="#8-%C2%B7-Run,-inspect,-then-defend">&#182;</a></h2><p>The default standalone lab executes your three functions against synthetic counterexamples and the complete five-seed author evidence, independently scores <strong>6,295 predictions</strong>, and traces the real query. It includes the visible model, graph construction, feature encoders, loss, training loop and important library primitives. An explicitly gated full-training cell and the checkout commands allow new fits. Rescoring embedded artifacts is labeled <strong>replay</strong>, not fresh training.</p>
+<p>The author GPU lane uses a separate one-epoch pilot, then five ten-epoch fits. At most eight one-hour worker reservations plus overhead fit the <strong>US$10 aggregate plan</strong>; no automatic retry is enabled. Exact commands and resource accounting are in the <a href="../labs/l127-reproduction.md">reproduction contract</a>. The notebook's optional local/Colab training gate does not itself enforce a dollar budget.</p>
+<p><strong>EXIT — submit evidence and a short written defense:</strong></p>
+<ol>
+<li>Your three implemented functions and passing unchanged checks.</li>
+<li>For one real seed, identify its lowest epoch-validation MAE, selected epoch and final test MAE; explain why final validation replay can differ.</li>
+<li>Trace the example query through the input graph, row vectors, two message-passing layers and scalar head, with shapes and cutoff checks.</li>
+<li>Name two source/paper differences and one unobservable temporal assumption. Explain why <code>CLOSE</code> does not remove them.</li>
+<li>State the strongest claim the five fresh runs justify, and one claim they do not justify.</li>
+</ol>
+<p>For spaced retrieval tomorrow, reconstruct the sequence “pin → train → select → score → aggregate” without notes. After Lesson 128, interleave this regression example with a classification and a recommendation task, changing the head/loss/metric while preserving the experimental discipline. Lesson 129 will examine the manual-feature comparison; we have not rerun that user study here.</p>
+<div id="l127-teachback"></div>
+
+<p>Ask the agent follow-up questions about any unclear step, or bring your EXIT artifacts for a review. A successful run becomes understanding when you can explain both the computation and the limits of the comparison.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Change head, loss and metric when the prediction request changes. <a href="0128-task-taxonomy.html">Continue to Lesson 128</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/checkpoint-audit-viz.js"></script><script src="../assets/l127-lesson.js"></script></body></html>

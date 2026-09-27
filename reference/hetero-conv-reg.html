@@ -1,0 +1,44 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Heterogeneous convolution · computation reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0132-identity-aware-message-passing.html">Lesson132</a></nav><header><p class="stream-kicker">Year4 · Quarter2 · Lesson133</p><h1>Heterogeneous convolution · computation reference</h1></header><h2 id="Reconstruct-one-layer">Reconstruct one layer<a class="anchor-link" href="#Reconstruct-one-layer">&#182;</a></h2><ol>
+<li>Gather source features using edge row0; scatter-add using edge row1 into all destination rows.</li>
+<li>Per relation: <code>lin_l(neighbor_sum) + lin_r(destination)</code>. Neighbor transform includes bias; root transform is relation-specific.</li>
+<li>Sum complete relation outputs by destination table.</li>
+<li>Apply node-wise LayerNorm and ReLU. Repeat for the next layer.</li>
+</ol>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Input change</th>
+  <th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Empty edge tensor</td>
+  <td>Zero neighbor sum; bias and root term remain</td>
+</tr>
+<tr>
+  <td>Absent relation key</td>
+  <td>Entire relation skipped</td>
+</tr>
+<tr>
+  <td>Reverse relation</td>
+  <td>Separate parameters; reverse local endpoints</td>
+</tr>
+<tr>
+  <td>Duplicate edge</td>
+  <td>Additional message; preserve input multiplicity</td>
+</tr>
+<tr>
+  <td>Table-row permutation</td>
+  <td>Remap both endpoints; output follows the same permutation</td>
+</tr>
+<tr>
+  <td>Inner mean instead of sum</td>
+  <td>Changes degree dependence; not the selected experiment</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="Two-sums,-two-kinds-of-evidence">Two sums, two kinds of evidence<a class="anchor-link" href="#Two-sums,-two-kinds-of-evidence">&#182;</a></h2><p>Neighbor sum reduces incoming edges within a relation. Relation sum reduces outputs entering one destination type. Both sums preserve gradients. Source parity validates the computation; a completed full-data selected experiment validates only its declared protocol. Neither establishes historical identity, all-paper results or learner mastery.</p>
+<h2 id="Audit-boundaries">Audit boundaries<a class="anchor-link" href="#Audit-boundaries">&#182;</a></h2><p>First real minibatch: CPU float64 clones compare layer outputs and convolution/input gradients. Original GPU training remains unchanged. Three semantic mutants, permutation checks and an Adam update are tested locally. Full row-encoder gradient health is outside the layer check.</p>
+<p><a href="../lessons/0133-hetero-conv-reg.html">Lesson</a> · <a href="../labs/0133-hetero-conv-reg.ipynb">Student lab</a> · <a href="../labs/l133-reproduction.md">Reproduction protocol</a> · <a href="https://pytorch-geometric.readthedocs.io/en/2.6.1/generated/torch_geometric.nn.conv.HeteroConv.html">PyG HeteroConv</a>.</p>
+</article></body></html>

@@ -677,3 +677,132 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [Robinson et al., RelBench v1](https://arxiv.org/html/2407.20060v1): §3 implementation; Table7 selected F1 regression result; Table9 protocol. Five fresh complete release runs: validation3.18180±.04348, test4.13392±.15660 MAE; both descriptively CLOSE. This is a companion experiment, not the Fey beta table or whole paper.
 - [Pinned released trainer](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py): actual [128,64] fanout, query labels, mean L1, train-percentile clipping and stochastic validation selection. Full sources, licenses, GloVe revision and primitive source files are in labs/sources/l117.
 - [L117 exact commands and deviations](labs/l117-reproduction.md): full released-data experiment, explicit non-train-only preprocessing and missing ingestion-history boundary; independent SQL/key/query/score audit and original-model replay.
+
+
+## Lesson 118 — Cvitkovic relational GNN
+
+- [2019 workshop paper](https://rlgm.github.io/papers/55.pdf) and [expanded 2020 arXiv v1](https://arxiv.org/abs/2002.02046v1): version distinction, Table1, Algorithm1, Table4 and AppendixC.
+- [Author code at 57195cc](https://github.com/mwcvitkovic/Supervised-Learning-on-Relational-Databases-with-GNNs/tree/57195ccab62d23dcbcac1a317f8a9811a9fd6cb5): actual Home Credit query, encoders, GCN, graph pooling, split and training schedule.
+- [DGL v0.3.1](https://github.com/dmlc/dgl/tree/v0.3.1/python/dgl/nn/pytorch): GraphConv and GlobalAttentionPooling original Python source; checked with an independent dense adapter, not the historical binary.
+- [Home Credit competition](https://www.kaggle.com/competitions/home-credit-default-risk/data): authenticated raw download, locally retained.
+- [Protocol and cost boundary](labs/l118-reproduction.md): source checks and real-data pilot completed; full five-fold experiment NOT_RUN.
+
+## Lesson 119 · Year 3 synthesis (2026-09-27)
+
+- [Fey et al., ICML2024 relational deep learning blueprint](https://proceedings.mlr.press/v235/fey24a.html): primary synthesis reading.
+- [Xu et al., How Powerful are Graph Neural Networks?](https://arxiv.org/abs/1810.00826): aggregation expressiveness and local-message-passing limits; the lesson's cycle/triangles and order examples are course constructions.
+- [RelBench v1 Table7 and AppendixB](https://arxiv.org/html/2407.20060v1): complete selected F1 RDL replay; five NEW runs, test4.01457±.12673 MAE, historical identity and whole-paper parity NOT_ESTABLISHED.
+- [Pinned RelBench release](https://github.com/snap-stanford/relbench/tree/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639): reused L117 model/trainer, separate L119 evidence and budget.
+
+## Lesson 120 · Year 3 exit exam
+
+- Fey et al. ICML2024 final paper, https://proceedings.mlr.press/v235/fey24a.html — complete reading/claim ledger, including appendices.
+- RelBench v1, https://arxiv.org/html/2407.20060v1 — selected Table7 F1 RDL and AppendixB protocol; five fresh runs.
+- PyG batching, https://pytorch-geometric.readthedocs.io/en/latest/advanced/batching.html — disjoint batches and type-specific offsets.
+
+### Lesson 121 · history and representation choices
+
+- [Muggleton1991, Inductive Logic Programming](https://www.doc.ic.ac.uk/~shm/Papers/ilp.pdf), §§1–2: distinguish learning relational rules from executing supplied ones.
+- [Lavrač and Flach2001, An extended transformation approach to ILP](https://research-information.bris.ac.uk/en/publications/an-extended-transformation-approach-to-inductive-logic-programmin/): authors' institutional abstract grounds propositionalization as relational-to-attribute transformation.
+- [Kanter and Veeramachaneni2015, Deep Feature Synthesis](https://www.jmaxkanter.com/papers/DSAA_DSM_2015.pdf), §II/Algorithm1: composed feature primitives. [Official Featuretools guide](https://featuretools.alteryx.com/en/stable/getting_started/afe.html) supplies nested aggregation examples. A course feature recipe is not full DFS search reproduction.
+- [Lam et al.2018, Neural Feature Learning From Relational Database](https://arxiv.org/abs/1801.05372): earlier neural relational work, included as a historical branch rather than reproduced here.
+- Cvitkovic [workshop2019](https://rlgm.github.io/papers/55.pdf) versus [expanded2020](https://arxiv.org/html/2002.02046v1): use the latter's Table4 for Home Credit GCN .780±.004. Selected full experiment remains NOT_RUN under the compute cap; local extraction/timing evidence is separate.
+
+
+## Lesson 122 · construct and verify a REG
+
+- [Fey et al., ICML2024, §3.1–3.2/Figure4](https://proceedings.mlr.press/v235/fey24a.html): schema graph versus entity graph versus query computation; row-to-node representation.
+- [Pinned RelBench graph constructor](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/graph.py): consecutive-key requirement, FK-column relation names, reverse edges, key removal and constant feature fallback.
+- [PyG2.6.1 HeteroData](https://pytorch-geometric.readthedocs.io/en/2.6.1/generated/torch_geometric.data.HeteroData.html): typed stores, explicit node counts and edge-index coordinates.
+- [RelBench v1 Table7/AppendixB](https://arxiv.org/html/2407.20060v1): separate full selected F1 RDL replay, five fresh runs. Protocol and actual evidence: [L122](labs/l122-reproduction.md).
+
+
+## Lesson 123 · Temporal heterogeneous graphs (2026-09-27)
+
+- Fey et al., ICML2024, Sections3–4: https://proceedings.mlr.press/v235/fey24a.html — primary blueprint for temporal REG neighborhoods.
+- Robinson et al., RelBench v1 Sections2–3 / Table7 / AppendixB: https://arxiv.org/html/2407.20060v1 — selected F1 driver-position RDL target and release deviations.
+- RelBench pinned constructor/loader: https://github.com/snap-stanford/relbench/tree/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639 — node timestamps, reverse stores, input_time and released fanouts.
+- PyG2.6.1 neighbor sampler: https://github.com/pyg-team/pytorch_geometric/blob/2.6.1/torch_geometric/sampler/neighbor_sampler.py — disjoint temporal components.
+- pyg-lib0.4.0 CPU neighbor kernel: https://github.com/pyg-team/pyg-lib/blob/0.4.0/pyg_lib/csrc/sampler/cpu/neighbor_kernel.cpp — inclusive timestamp upper bound and root query identity.
+- Executed protocol: labs/l123-reproduction.md. Availability-time fixture is an explicit course extension; F1 ingestion histories are unavailable.
+
+## Lesson 124 · Entity vs task table
+
+- Fey et al. (2024), RDL blueprint: https://proceedings.mlr.press/v235/fey24a.html — reusable REG versus prediction task.
+- Robinson et al., RelBench v1: https://arxiv.org/html/2407.20060v1 — named F1 Table7 target; not the Fey beta benchmark.
+- RelBench commit9aa346267c2e1c560bd92da07d6f4ad1ca2f0639, task SQL and BaseTask split grid: labs/sources/l124/; hashes in labs/_sources_l124.json. The released one-year cohort condition has no upper bound; independent full-table reconstruction and past-only intervention are documented separately.
+
+## Lesson 125 · PyTorch Frame and the row-to-graph contract · 2026-09-27
+
+- Hu et al., [PyTorch Frame](https://arxiv.org/html/2404.00776v2), §§3–4: materialization, semantic-type encoding, column interaction and decoding. §5.3/Table2 names the historical rel-stackex-engage target (ROC-AUC .854).
+- [Frame 0.3.0 source](https://github.com/pyg-team/pytorch-frame/tree/d998aae368db6a4e36139ccc56bd54579a70874b): pinned operator/model reference, not historical runtime identity. Local source manifest: `labs/_sources_l125.json`.
+- Contemporaneous RelBench source preserved in `labs/sources/l125/relbench/`; original archive hashes and six HTTP404 probes in `labs/_paper_audit_l125_results.json`. No matching original data recovered; exact Table2 protocol unestablished; full target NOT_RUN.
+- [Lesson](lessons/0125-pytorch-frame-deep-dive.html), [reference](reference/pytorch-frame-deep-dive.html), [contract](labs/l125-reproduction.md). Complete F1 feature path is separate mechanism evidence.
+
+## Lesson 126 — RelBench beta package and historical contract (2026-09-27)
+
+- [Fey et al., arXiv:2312.04615v1](https://arxiv.org/html/2312.04615v1), §4/Figure5: two databases, four tasks, standardized loading/splits/evaluation. Read the complete paper with the lesson reading ledger. No numerical results table in this version.
+- [Beta source0433616e](https://github.com/stanford-star/relbench/tree/0433616ee94003fb15a4ac4d633e499d0f129077): package0.1.1, pre-publication snapshot. Task horizon730days; AP; separate masked/full test tables. Source files and license preserved.
+- [Average precision definition](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html): recall-increment weighting without trapezoidal interpolation.
+- [Protocol](labs/l126-reproduction.md): original archives missing; synthetic source checks and complete modernF1 API tour are separate evidence.
+
+## Lesson 127 · RelBench v1 baseline and experiment audit
+
+- Robinson et al., [RelBench v1](https://arxiv.org/html/2407.20060v1), §2–3, Table1, Table7 and AppendixB: seven-database overview and complete selected F1 RDL replay. Five fresh ten-epoch runs, test3.967165±.093906MAE; whole-paper/historical identity NOT_ESTABLISHED.
+- [Pinned released implementation](https://github.com/snap-stanford/relbench/tree/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639): source/AST/gradient/update parity, full query scoring and temporal batch checks. [L127 protocol](labs/l127-reproduction.md) records fanout/preprocessing differences and exact commands.
+- [Modal pricing](https://modal.com/pricing), checked2026-09-27: USD10 aggregate plan; bounded pilot plus five fits, no automatic retries. Worker time estimates exclude unitemized billing.
+
+
+## Lesson 128 · Task contracts and label provenance
+- Robinson et al., RelBench v1 https://arxiv.org/html/2407.20060v1 — §5, Tables2/6/8/13; classification/regression/recommendation contracts and five-run target.
+- Pinned RelBench API and examples, commit9aa346267c2e1c560bd92da07d6f4ad1ca2f0639: labs/sources/l128/manifest.json. Includes task enum, entity/recommendation evaluators, metrics and two-tower BPR training.
+- Upstream label-flip commit https://github.com/snap-stanford/relbench/commit/c348273a8e66 and pre-flip parent e416c3d208cb8a6d8bd31a68c46ca9090ecb334a. Every recovered historical key/label matches original SQL; archive bytes/order unestablished.
+
+## Lesson129 · Manual feature engineering and the expert study
+
+- [RelBench v1§6 and AppendixC](https://arxiv.org/html/2407.20060v1#S6): expert protocol, marginal human work, exclusions and normalized Figure3 comparison. Do not substitute Table7 raw-entity LightGBM.
+- [Released manualFE repository](https://github.com/snap-stanford/relbench-user-study/tree/445bb7a3b1230f49f8e5890ae81754d3e365680f): complete F1 SQL, schemas, trainer and worked notebook.
+- [PyTorch Frame0.2.2 LightGBM](https://github.com/pyg-team/pytorch-frame/blob/56f687ddf4bf1c4a7d7b72ab0ef4117493256199/torch_frame/gbdt/tuned_lightgbm.py): input conversion, eight tuning dimensions, L1 objective, early stopping and refit. Local source-parity pilot matches exactly.
+- Local protocol: labs/l129-reproduction.md; full evidence: labs/evidence/l129/summary.json. Historical staging404; pinned v1 archives substituted with independent full SQL/label audit.
+
+
+## Lesson 130 · Q1 full RDL checkpoint
+
+- [Fey et al., RDL blueprint](https://proceedings.mlr.press/v235/fey24a.html): table rows, foreign-key graph, temporal sampling and learned prediction chain.
+- [Robinson et al., RelBench v1](https://arxiv.org/html/2407.20060v1), §3/Table7/AppendixB: full selected F1 driver-position basic-RDL target; five fresh ten-epoch runs, validation3.164116±.038287/test4.070921±.075000MAE, descriptive CLOSE under0.2 tolerance.
+- [Pinned source and protocol](labs/l130-reproduction.md), [fresh evidence](labs/evidence/l130/summary.json), and [reused manual-FE comparison](labs/evidence/l130/comparison.json). Complete selected released-protocol replay does not establish historical or whole-paper identity.
+
+## Lesson 131 — measured GNN + tabular stack
+
+- [Fey et al.2024, RDL blueprint](https://proceedings.mlr.press/v235/fey24a.html), §5: row representation, temporal heterogeneous message passing and task prediction.
+- [Robinson et al.2024, RelBench v1](https://arxiv.org/html/2407.20060v1), §3,Table7,AppendixB: selected full F1 driver-position reproduction.
+- [Pinned released model](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/model.py) and [typed encoders/GNN](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/nn.py): exact instrumented computation; historical training identity unestablished.
+- Local [protocol](labs/l131-reproduction.md), [trace audit](labs/_trace_audit_l131_results.json) and [missing-value diagnostic](labs/_missing_gradient_l131_results.json). Matched nonfinite gradients are not hidden by a parity claim.
+
+
+## Lesson132 · Identity-aware message passing
+
+- [You et al., Identity-aware Graph Neural Networks](https://proceedings.aaai.org/index.php/AAAI/article/view/17283): root-aware message functions and expressiveness.
+- [RelBench v1, Table8 and AppendixB](https://arxiv.org/html/2407.20060v1): condition-sponsor-run comparison and protocol.
+- [Pinned released models](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/model.py): distinguish additive root marking from original ID-GNN.
+- [Local protocol and evidence boundaries](labs/l132-reproduction.md): two feasibility pilots completed; full selected reproduction INCOMPLETE under the USD10 cap.
+
+## Lesson133 · Heterogeneous convolution on REG
+
+- [Pinned RelBench HeteroGraphSAGE](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/nn.py): separate per-relation SAGE modules, outer sum and node LayerNorm.
+- [PyG2.6.1 HeteroConv](https://pytorch-geometric.readthedocs.io/en/2.6.1/generated/torch_geometric.nn.conv.HeteroConv.html) and [SAGE source](https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/nn/conv/sage_conv.html): bipartite indices, relation grouping, root transform and bias.
+- [RelBench v1 paper](https://arxiv.org/html/2407.20060v1), implementation section and Table7: named full-data F1 driver-position target. Protocol/deviations and fresh evidence in labs/l133-reproduction.md.
+
+## Lesson134 · Training at scale
+
+- RelBench v1: https://arxiv.org/html/2407.20060v1 — selected Table7 F1 reproduction plus a separately scoped full-topology systems workload.
+- Released temporal loader: https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py — uniform sampling, decreasing fanouts and query transforms.
+- PyG2.6.1 sampler: https://github.com/pyg-team/pytorch_geometric/blob/2.6.1/torch_geometric/sampler/neighbor_sampler.py — temporal disjoint sampling, local/global coordinates and query ownership.
+- CUDA timing semantics: https://pytorch.org/docs/stable/notes/cuda.html#asynchronous-execution — synchronization is required for meaningful device wall time.
+- Exact scope/source/deviations: labs/l134-reproduction.md; pinned scale sources labs/sources/l134/scale/manifest.json.
+
+## Lesson 135 — Tuning on the REG
+
+- [RelBench v1 Appendix B.2 and Table 7](https://arxiv.org/html/2407.20060v1#A2): default hyperparameters and five-run selected baseline targets; the course search is a separate extension.
+- [Pinned released node trainer](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py): actual fanout schedule, clipping and checkpoint selection.
+- [Modal resource prices](https://modal.com/pricing), checked 2026-09-27: aggregate budget calculation including CPU, memory, checks and retry reserves.

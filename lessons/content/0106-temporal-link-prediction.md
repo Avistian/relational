@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 105 to this lesson</p>
+<p>The representation alone does not define the test. Fix the positive questions and sampled negative candidates before judging a scorer.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A positive is an observed interaction. A negative is a comparison under a declared sampling rule. Precision measures how many selected candidates are positive; recall measures how many positives were selected.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="subtitle">One tangible win: explain exactly what a future-edge score measures—and expose when an easy candidate set makes memorization look intelligent. Core lesson: 20–30 minutes. Lab: 40–60 minutes, plus the complete source replay.</p>
 
 ## 1 · Retrieve before reading
@@ -37,6 +45,8 @@ The Wikipedia experiment supplies the positive event times and an equal number o
 **Worked example.** Before query time 10, history contains AX@1, AY@3 and BX@8. Candidate AX receives 1; candidate BY receives 0. After an actual BY event is observed, it may enter memory for a later query. Negative candidates never enter memory merely because we scored them.
 
 [[FIG:architecture]]
+
+**Read the diagram:** trace the inputs to the prediction first, then locate the operation taught in this section. The adjacent text explains the symbols; on a narrow screen, scroll the figure sideways.
 
 **Unlimited memory** retains every supplied historical pair. **Window memory** forgets older events before forming the set. Recency can remove obsolete connections, reducing false positives. It can also forget a genuinely recurring pair, reducing true positives. Neither memory discovers a first-ever edge.
 
@@ -120,3 +130,7 @@ Open the [student notebook](../labs/0106-temporal-link-prediction.ipynb), or ins
 ## Reference and primary reading
 
 Read Poursafaei et al., [*Towards Better Evaluation for Dynamic Link Prediction*, §§4–6 and Appendix B](https://arxiv.org/html/2207.10128v2). Inspect the [publication-era code](https://github.com/fpour/DGB/tree/7793e9449f5321c7e39b24c0585e3c3de7cf9f5e/EdgeBank/link_pred) alongside the prose. Keep the [evaluation reference card](../reference/temporal-link-evaluation.html) beside your experiments.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Choose which state a model carries between completed snapshots. [Continue to Lesson 107](0107-snapshot-methods.html).
+<!-- sequence-next:end -->

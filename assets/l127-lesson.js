@@ -1,0 +1,5 @@
+(()=>{
+ CheckpointAuditViz.mount(document.getElementById('l127-checkpoint'));
+ if(window.RetrievalBank)RetrievalBank.mount(document.getElementById('warmup'),{upTo:127,count:3});
+ if(window.Teachback)Teachback.mount(document.getElementById('l127-teachback'),{prompt:'What evidence turns five printed MAEs into a defensible selected-experiment reproduction?',points:['Pin the data, source, task, runtime and complete training protocol.','Keep test scores out of checkpoint selection.','Verify complete distinct runs and rescore all query-keyed predictions.','Separate model parity, temporal audits and score closeness.','Preserve protocol deviations and the whole-paper evidence boundary.'],model:'I freeze the experiment before fitting, preserve every epoch and select by validation alone. I verify distinct completed seeds, data and checkpoint hashes, query identity and independently computed MAE. Source parity and timestamp checks answer separate questions. Five complete released-protocol runs support this selected experiment; they do not establish historical or whole-paper parity.'});
+})();

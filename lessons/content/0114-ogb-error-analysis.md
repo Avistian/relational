@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 113 to this lesson</p>
+<p>Scaling answered how to run a model. Error analysis asks where its predictions fail, using explicit denominators and fixed comparison questions.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A slice is a subset selected by a stated rule. Degree counts neighbors. Homophily measures neighbor-label agreement; using true labels for diagnosis does not make them available at prediction time.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 ## The question behind one accuracy number
 
 A model can win overall and lose on an identifiable part of the graph. Your task is to turn that statement into a reproducible **error report**: name the population, count its nodes, compare the same questions, explain what the result does and does not establish, and propose the next experiment.
@@ -35,6 +43,8 @@ The MLP receives a matrix X with one row per paper and 128 columns. A **linear l
 **Objective.** Negative log-likelihood penalizes the log probability of the correct class: a correct-class probability of 0.8 incurs −log(0.8)≈0.223, while 0.2 incurs ≈1.609. Average this loss over training nodes. Adam adjusts weights using gradients, at learning rate 0.01. No label from validation or test participates in that objective.
 
 [[FIG:architecture]]
+
+**Diagram trace.** Compare the MLP and GCN training populations. Which rows affect batch normalization in each? On a narrow screen, scroll the figure sideways.
 
 **The easy-to-miss distinction.** The released MLP calls `model(x[train_idx])` during training. Its batch normalization sees 90,941 training rows. The released GCN calls its model on the complete graph and masks the loss afterward; its normalization sees all 169,343 rows. Changing the MLP to process all nodes before masking the loss changes the released experiment, even if the labels remain correctly masked.
 
@@ -127,3 +137,7 @@ Produce five connected sentences, backed by the saved table:
 [Student notebook](../labs/0114-ogb-error-analysis.ipynb) · [Executed solution](../labs/html/0114-ogb-error-analysis.html) · [Quick reference](../reference/ogb-error-analysis.html) · [Protocol and exact commands](../labs/l114-reproduction.md).
 
 Ask the teaching agent about any unclear step, or paste your error report for feedback. Revisit the report after a few days and reconstruct its denominator and information boundary without looking.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Describe a proposed change in terms of encoder, processor and prediction head. [Continue to Lesson 115](0115-graph-ml-design-patterns.html).
+<!-- sequence-next:end -->

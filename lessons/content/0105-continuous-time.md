@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 104 to this lesson</p>
+<p>Legal history still needs a representation. Compare individual events with completed windows before selecting a model.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A snapshot summarizes one interval. Two repeated interactions are two events, even if a binary adjacency stores only one edge. Half-open [a,b) includes a but excludes b.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="subtitle">One tangible win: build two representations of the same interactions, then defend which information your prediction needs. Core reading: 15 minutes · lab: 35–50 minutes.</p>
 
 ## 1 · Retrieve before reading
@@ -129,3 +137,7 @@ For each, specify the prediction clock, retained information, bin/availability p
 **Spacing:** tomorrow, reconstruct the two histories with identical snapshots but different temporal paths without looking. In one week, repeat the argument for purchases or messages.
 
 **Read next:** [TGN §2](https://arxiv.org/html/2006.10637v3#S2), then the [event/snapshot reference card](../reference/event-stream-snapshots.html). Ask the tutor about any unclear boundary, or paste your EXIT defense for review. L106 will define future-edge labels and temporal negatives; L107 will put models on the snapshot representation. Neither should silently change the clock contract established here.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Define the candidate interactions against which a prediction will be scored. [Continue to Lesson 106](0106-temporal-link-prediction.html).
+<!-- sequence-next:end -->

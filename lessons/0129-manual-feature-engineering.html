@@ -1,0 +1,237 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Manual feature engineering: what RDL must beat</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/task-table.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0128-task-taxonomy.html">Lesson128</a></nav><header><p class="stream-kicker">Year4 · Quarter1 · Lesson129</p><h1>Manual feature engineering: what RDL must beat</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 128 to this lesson</p>
+<p>The task taxonomy fixes what to predict. Manual feature engineering is a serious competing way to expose the same relational information.</p>
+<details><summary>Quick prerequisite reminder</summary><p>An as-of feature uses only permitted history at the query cutoff. A boosted tree adds successive fitted corrections. Feature design time and machine training time are different costs.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<blockquote>
+<p><strong>The win.</strong> Build and defend a manual-feature baseline that answers the same relational prediction question as a GNN. Trace its inputs, train it without test-guided decisions, and account honestly for the human work behind its features.</p>
+</blockquote>
+<p><a href="../labs/0129-manual-feature-engineering.ipynb">Student lab</a> · <a href="../labs/html/0129-manual-feature-engineering.html">Executed solution</a> · <a href="../reference/manual-feature-engineering.html">Reference</a> · <a href="../labs/l129-reproduction.md">Reproduction contract</a> · <a href="../labs/l129-effort-log.md">Your effort log</a></p>
+<h2 id="1-%C2%B7-The-baseline-must-get-access-to-the-relationships">1 &#183; The baseline must get access to the relationships<a class="anchor-link" href="#1-%C2%B7-The-baseline-must-get-access-to-the-relationships">&#182;</a></h2><p><a href="0128-task-taxonomy.html">Lesson 128</a> established the query, target, head, loss and metric. That makes the <em>question</em> comparable. It does not make the <em>information available to competing methods</em> comparable. A tree trained only on a driver's biographical row cannot exploit race history that a relational GNN receives through its edges.</p>
+<div id="warmup"></div>
+
+<p><strong>Recall first.</strong> What uniquely identifies a task row? Why can the same driver have many labels? When may an event influence a prediction? Which split chooses a model?</p>
+<p>Our mission is to test whether relational learning earns its complexity. Its meaningful competitor is a capable practitioner who joins useful related information into a flat table and trains a strong tabular model. The skill from <a href="0009-feature-engineering.html">Lesson 009</a> now spans multiple tables; the comparative discipline from <a href="0127-relbench-v1.html">Lesson 127</a> still applies.</p>
+<p>The primary reading is <a href="https://arxiv.org/html/2407.20060v1#S6">Robinson et al., RelBench v1, §6 and Appendix C</a>. Read those alongside the <a href="../labs/sources/l129/f1/driver-position/feats.sql">released F1 SQL</a> and <a href="../labs/sources/l129/train_gbdt.py">training script</a>. <strong>Table 7's LightGBM baseline uses raw entity features. Figure 3's data scientist uses engineered relational features. They are different experiments.</strong> Do not use the Table 7 number as a manual-FE reproduction target.</p>
+<p><strong>Study evidence.</strong> One experienced data scientist explored databases, proposed features, implemented SQL, and supplied feature tables to a standardized tuned LightGBM pipeline. Exploration was capped at four hours and ideation at one hour; SQL implementation time was uncapped and recorded. The paper reports 96% less marginal human work for RDL on average. Reusable infrastructure was excluded, as was the brief optional post-hoc analysis. This is a result under that study's conditions, not a universal multiplier for every practitioner, task or modern assisted workflow. <a href="https://arxiv.org/html/2407.20060v1#S6">§6 protocol and results</a>.</p>
+<h2 id="2-%C2%B7-Start-from-a-feature-hypothesis,-not-a-join">2 &#183; Start from a feature hypothesis, not a join<a class="anchor-link" href="#2-%C2%B7-Start-from-a-feature-hypothesis,-not-a-join">&#182;</a></h2><p>The selected task is <code>rel-f1/driver-position</code>: for a driver at cutoff <strong>t</strong>, predict mean finishing position over <strong>(t, t + 60 days]</strong>. Smaller MAE is better. We retain all <strong>7,453 training, 499 validation and 760 test queries</strong>. The released cohort conditions on future participation; a driver with no recorded future race does not receive a zero position. That limitation from <a href="0124-entity-task-tables.html">Lesson 124</a> remains.</p>
+<p>Ask what could be predictive before touching SQL:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Hypothesis</th>
+  <th>Candidate feature</th>
+  <th>Required relation</th>
+  <th>Failure to guard against</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Recent form persists</td>
+  <td>Positions in recent races</td>
+  <td>driver → results → races</td>
+  <td>Using a result after t</td>
+</tr>
+<tr>
+  <td>Team strength matters</td>
+  <td>Latest constructor standings</td>
+  <td>driver → results → constructor standings</td>
+  <td>Joining the wrong season or constructor</td>
+</tr>
+<tr>
+  <td>Current standing captures accumulated performance</td>
+  <td>Driver points and position</td>
+  <td>driver → standings</td>
+  <td>Selecting the final season standing</td>
+</tr>
+<tr>
+  <td>Race context matters</td>
+  <td>Upcoming circuit and round</td>
+  <td>races → circuits</td>
+  <td>Assuming the future schedule was already published</td>
+</tr>
+<tr>
+  <td>Experience or identity helps</td>
+  <td>Age, nationality, driver identity</td>
+  <td>driver row</td>
+  <td>Treating an arbitrary numeric ID as a measured quantity</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Predict.</strong> Which hypothesis needs event history, and which needs evidence of publication time? A future race date can be legitimate input if its schedule was known at t. A future result cannot be used merely because its date appears in the same race row. Availability belongs to a <em>fact</em>, not automatically to its entire table.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l129/workflow.svg" alt="The target stays outside features. Explicit relational SQL yields 50 features plus retained numeric driverId; train-fitted mappings feed ten-trial selection and keyed test scoring."><figcaption>The target stays outside features. Explicit relational SQL yields 50 features plus retained numeric driverId; train-fitted mappings feed ten-trial selection and keyed test scoring.</figcaption></figure>
+
+<p><strong>Before opening the solution</strong>, propose one feature and record why it might help. Start your <a href="../labs/l129-effort-log.md">effort log</a>. Record active human minutes separately from machine seconds and identify reused setup. A log with unknown time is incomplete; an empty entry is not zero.</p>
+<h2 id="3-%C2%B7-Trace-the-released-SQL-into-one-feature-row">3 &#183; Trace the released SQL into one feature row<a class="anchor-link" href="#3-%C2%B7-Trace-the-released-SQL-into-one-feature-row">&#182;</a></h2><p>The SQL first identifies the last observed driver standing, using an <strong>ASOF left join</strong>: among matching driver rows, select the closest date <strong>strictly before</strong> the query cutoff. A left join retains queries with no matching history and leaves their feature values missing. An inner join would silently change the evaluated cohort.</p>
+<div class="highlight"><pre><span></span><span class="n">ASOF</span><span class="w"> </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">standings2</span>
+<span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">labels</span><span class="p">.</span><span class="n">driverId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">standings2</span><span class="p">.</span><span class="n">driverId</span>
+<span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">labels</span><span class="p">.</span><span class="nb">date</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">standings2</span><span class="p">.</span><span class="nb">date</span>
+</pre></div>
+<p>The last standing identifies a race; that race and driver identify a result; the result identifies the constructor. The constructor's standing at that same race supplies team strength. For example, <code>points_ratio = driver_points / NULLIF(constructor_points, 0)</code> returns missing when division by zero would otherwise occur. Missing history and a genuinely zero number of points express different facts.</p>
+<p>The released pipeline also uses three past race slots and three upcoming race slots. <strong>These are positions in race-ID arithmetic, not the driver's last three participations.</strong> Past slot i has ID <code>last_race_id − i + 1</code> and must lie within the previous two calendar months. If the driver skipped that race, the slot is missing. Upcoming slots have IDs <code>last_race_id + i</code> and are restricted to the next calendar month. Calendar months here differ from the target's fixed 60 days.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l129/features.svg" alt="Actual driver7 at2009-08-08: points ratio18/40=.45, standing difference9−3=6. Recent race slots use global race IDs."><figcaption>Actual driver7 at2009-08-08: points ratio18/40=.45, standing difference9−3=6. Recent race slots use global race IDs.</figcaption></figure>
+
+<p>For driver <strong>7</strong> at <strong>2009-08-08</strong>, driver points <strong>18</strong> and constructor points <strong>40</strong> give <strong>0.45</strong>. Driver standing <strong>9</strong> minus constructor standing <strong>3</strong> gives <strong>6</strong>. Past slot 2 has a recorded grid but missing finishing position: missing values need not mean the whole row is absent.</p>
+<p><strong>A subtle aggregate.</strong> <code>pct_laps_completed</code> divides a driver's laps by the maximum laps among eligible joined result rows for that race, within the split's feature-generation query. It is not explicitly the maximum over every driver in the raw race. The release also calls <code>position − grid</code> a position gain: a <strong>negative</strong> value indicates moving up. Read computations instead of trusting feature names.</p>
+<p><strong>Audit result.</strong> An independent Python/pandas reconstruction matches <strong>all 443,552 SQL output values checked</strong>: 50 engineered values per query plus train/validation targets. It also independently reconstructs all 8,712 targets from raw future race results. The audit verifies all 11,892 past-result links precede their query. It finds 12,773 upcoming-schedule links, whose publication times are unavailable. <a href="../labs/evidence/l129/sql-audit.json">Complete audit</a>.</p>
+<p>The released database loader caps dated rows at <strong>2010-01-01</strong>. Even later test queries receive this frozen database. As a result, this replay has <strong>no recent past-slot or upcoming-slot features for the 760 test queries</strong>, although older cumulative standings remain. That is a material distribution change, not something to quietly repair in a reproduction. Static attributes and actual arrival histories are also unavailable. Matching the SQL does not establish full point-in-time validity.</p>
+<h2 id="4-%C2%B7-Implement-a-feature-you-can-reason-about">4 &#183; Implement a feature you can reason about<a class="anchor-link" href="#4-%C2%B7-Implement-a-feature-you-can-reason-about">&#182;</a></h2><p>The student function <code>past_summary</code> is a deliberately simpler, separate feature hypothesis: count, mean position, and recency in a fixed lookback window. It requires both event time and arrival time. In the illustration, cutoff t = 10 and lookback = 8 select event days in <strong>(2,10)</strong> whose arrival is no later than 10.</p>
+<ul>
+<li>A value 4 at event day 5, arrival day 5 is eligible.</li>
+<li>A value 2 at event day 9, arrival day 10 is eligible.</li>
+<li>A value 99 at event day 8, arrival day 11 is unavailable.</li>
+<li>A value 88 at event day 10 is excluded by the strict-past contract.</li>
+</ul>
+<p>Therefore count = 2, mean = (4 + 2)/2 = <strong>3</strong>, and recency = 10 − 9 = <strong>1 day</strong>. If no history exists, return missing, not a fabricated zero finishing position.</p>
+<div id="l129-cutoff"></div><noscript><p>Static cutoff trace: at day10 with an8-day lookback, event/arrival pairs(5,5) and(9,10) yield values4 and2: count2,mean3,recency1. Ignoring arrival admits99 and changes mean to35. Including the event at cutoff admits88 and changes mean to31.333.</p></noscript>
+
+<p><strong>TODO 1.</strong> Implement this filter and aggregation. In the notebook, your function constructs features for <strong>every real query</strong>, and a small depth-three tree trains on those features. That is a course experiment, separate from the released 50-feature baseline. For the real data we can only assume arrival equals event time; the notebook labels this assumption explicitly. The synthetic late-arrival case tests a guarantee the archival database cannot verify.</p>
+<p><strong>CHECK.</strong> Future rows must not change a past summary; changing an arrival from day 10 to day 11 can. Defend each boundary before running the checker.</p>
+<h2 id="5-%C2%B7-Model-architecture:-an-additive-tree-ensemble">5 &#183; Model architecture: an additive tree ensemble<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-an-additive-tree-ensemble">&#182;</a></h2><p>The SQL produces 53 train/validation columns: two query keys, one target and 50 engineered features. The training script creates a variable listing identifier columns but never actually removes them. Numeric <code>driverId</code> enters the model. The timestamp is materialized by PyTorch Frame but ignored by its LightGBM input adapter. The final matrices are <strong>7,453 × 51</strong>, <strong>499 × 51</strong> and <strong>760 × 51</strong>: 14 categorical columns followed by 37 numerical columns.</p>
+<p>Preprocessing learns categories from training rows, then uses the same mappings on validation and test. Unknown categorical values use the mapping's missing/unknown representation; numerical NaNs stay missing. Tree nodes can route missing values along a learned default branch. Test rows do not fit these mappings. Inspect the visible <a href="../labs/sources/l129/frame/tuned_lightgbm.py">input adapter</a>, not just a declaration of the feature schema.</p>
+<p>A boosted tree model predicts an additive sum:</p>
+<p><strong>prediction(x) = leaf₁(x) + leaf₂(x) + … + leafₘ(x)</strong>.</p>
+<p>Each tree routes a row through threshold or category tests and returns a leaf contribution. In the saved LightGBM representation, leaf values already include the relevant scaling; the first tree also carries the initial prediction. Do not multiply them by the learning rate again. Later contributions can be negative. The regression objective is <strong>L1 / absolute error</strong>, matching validation MAE. This is not a neural network trained by the GNN optimizer.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l129/trees.svg" alt="Actual seed0 first-tree decisions and full ensemble sum. Leaf contributions already include scaling; do not multiply by the learning rate again."><figcaption>Actual seed0 first-tree decisions and full ensemble sum. Leaf contributions already include scaling; do not multiply by the learning rate again.</figcaption></figure>
+
+<p>In seed 0, this row follows <strong>6</strong> tests in the first tree and reaches leaf <strong>13.274967</strong>. The first ten trees sum to <strong>13.079163</strong>; the remaining <strong>587</strong> contribute <strong>-4.067791</strong>. Total prediction <strong>9.011373</strong>, target <strong>4.2</strong>, absolute error <strong>4.811373</strong>. The error is large on this row even though the model's aggregate MAE is lower. <a href="../labs/evidence/l129/prediction-trace.json">Machine-readable trace</a>.</p>
+<p><strong>Predict.</strong> Can the leaf of the first tree alone be interpreted as the final finishing-position prediction? No: every selected tree contributes. Can a low error on this one row establish a strong model? No: the reported score averages the complete held-out cohort.</p>
+<h2 id="6-%C2%B7-Tune-on-validation,-then-align-by-query-identity">6 &#183; Tune on validation, then align by query identity<a class="anchor-link" href="#6-%C2%B7-Tune-on-validation,-then-align-by-query-identity">&#182;</a></h2><p>The release searches <strong>10 configurations</strong>, using Optuna's default TPE sampler. Its first ten startup trials sample the parameter space before adaptive TPE proposals. Each configuration allows up to <strong>2,000 trees</strong>, with <strong>50-round validation early stopping</strong>. Search dimensions include depth, learning rate, leaves, row and column subsampling, L1/L2 regularization and minimum leaf size. The selected configuration is fitted again on the training set using validation early stopping; validation rows are not added to the training labels. <a href="../labs/sources/l129/frame/tuned_lightgbm.py">Pinned trainer</a>.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">tune_fe</span><span class="p">(</span><span class="n">matrices</span><span class="p">,</span><span class="n">seed</span><span class="p">,</span><span class="n">num_trials</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">rounds</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span><span class="n">threads</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lgb</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">optuna</span>
+    <span class="n">train_x</span><span class="p">,</span><span class="n">train_y</span><span class="p">,</span><span class="n">cats</span><span class="o">=</span><span class="n">matrices</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">];</span><span class="n">val_x</span><span class="p">,</span><span class="n">val_y</span><span class="p">,</span><span class="n">_</span><span class="o">=</span><span class="n">matrices</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">]</span>
+    <span class="n">train</span><span class="o">=</span><span class="n">lgb</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">train_x</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">train_y</span><span class="p">,</span><span class="n">free_raw_data</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">val</span><span class="o">=</span><span class="n">lgb</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">val_x</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">val_y</span><span class="p">,</span><span class="n">free_raw_data</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">trace</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">study</span><span class="o">=</span><span class="n">optuna</span><span class="o">.</span><span class="n">create_study</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="s1">&#39;minimize&#39;</span><span class="p">,</span><span class="n">sampler</span><span class="o">=</span><span class="n">optuna</span><span class="o">.</span><span class="n">samplers</span><span class="o">.</span><span class="n">TPESampler</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">lgb</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="n">num_threads</span><span class="o">=</span><span class="n">threads</span><span class="p">),</span><span class="n">train</span><span class="p">,</span><span class="n">num_boost_round</span><span class="o">=</span><span class="n">rounds</span><span class="p">,</span>
+            <span class="n">categorical_feature</span><span class="o">=</span><span class="n">cats</span><span class="p">,</span><span class="n">valid_sets</span><span class="o">=</span><span class="p">[</span><span class="n">val</span><span class="p">],</span><span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">lgb</span><span class="o">.</span><span class="n">early_stopping</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span><span class="n">lgb</span><span class="o">.</span><span class="n">log_evaluation</span><span class="p">(</span><span class="mi">0</span><span class="p">)])</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">objective</span><span class="p">(</span><span class="n">trial</span><span class="p">):</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">();</span><span class="n">params</span><span class="o">=</span><span class="n">sample_parameters</span><span class="p">(</span><span class="n">trial</span><span class="p">);</span><span class="n">model</span><span class="o">=</span><span class="n">fit</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">pred</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">val_x</span><span class="p">);</span><span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pred</span><span class="o">-</span><span class="n">val_y</span><span class="p">)))</span>
+        <span class="n">trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">number</span><span class="o">=</span><span class="n">trial</span><span class="o">.</span><span class="n">number</span><span class="p">,</span><span class="n">val_mae</span><span class="o">=</span><span class="n">score</span><span class="p">,</span><span class="n">best_iteration</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">best_iteration</span><span class="p">,</span><span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span><span class="n">seconds</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span><span class="o">-</span><span class="n">start</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">score</span>
+    <span class="n">study</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span><span class="n">n_trials</span><span class="o">=</span><span class="n">num_trials</span><span class="p">)</span>
+    <span class="n">selected</span><span class="o">=</span><span class="n">choose_trial</span><span class="p">(</span><span class="n">trace</span><span class="p">);</span><span class="k">assert</span> <span class="n">selected</span><span class="o">==</span><span class="n">study</span><span class="o">.</span><span class="n">best_trial</span><span class="o">.</span><span class="n">number</span>
+    <span class="n">best</span><span class="o">=</span><span class="nb">next</span><span class="p">(</span><span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">trace</span> <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;number&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">selected</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">fit</span><span class="p">(</span><span class="n">best</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">])</span> <span class="c1"># upstream refits the selected configuration</span>
+    <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">val_x</span><span class="p">)</span><span class="o">-</span><span class="n">val_y</span><span class="p">)))</span><span class="o">-</span><span class="n">best</span><span class="p">[</span><span class="s1">&#39;val_mae&#39;</span><span class="p">])</span><span class="o">&lt;</span><span class="mf">1e-10</span>
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span><span class="n">trace</span><span class="p">,</span><span class="n">selected</span>
+</pre></div>
+<p>The original SQL also leaves output order unspecified. We freeze rows to the archived task-query order before fitting: row-subsampling depends on order even when a random seed is fixed. A failing order check exposed this during the full notebook rerun; both one-thread and four-thread SQL extraction now produce identical ordered feature tables. <a href="../labs/_order_check_l129_results.json">Order check</a>.</p>
+<p>The original script does not seed that search. We explicitly use seeds <strong>0–4</strong> for five fresh searches, fix the input row order, and retain the boosting library's other defaults. The resulting standard deviation measures variation across searches. It is not a confidence interval, and the runs are not five trials from one larger 50-configuration contest. Each run gets its own fixed ten-trial budget.</p>
+<p><strong>TODO 2.</strong> Implement <code>choose_trial</code>: select minimum validation MAE, break ties by earliest trial number, reject missing/nonfinite evidence. Changing a test score must not change the selection.</p>
+<p>SQL can reorder rows. A correct numerical prediction paired with the wrong target is still wrong. The key is <strong>(driverId, cutoff)</strong>, not driver ID alone. Reject duplicate keys, missing queries and nonfinite predictions before scoring.</p>
+<p><strong>TODO 3.</strong> Implement <code>align_predictions</code>. The notebook uses your function to align and rescore all five author runs. Its fixture deliberately queries one driver twice to expose entity-only lookup. Independent checks must not merely compare array lengths.</p>
+<p><strong>CHECK.</strong> Six deliberate mistakes are rejected: admitting cutoff-time events, ignoring arrival times, admitting the lower-window endpoint, assuming positional alignment, selecting on test, and breaking validation ties with the last trial. <a href="../labs/_mutation_l129_results.json">Mutation evidence</a>.</p>
+<h2 id="7-%C2%B7-What-the-completed-reproduction-establishes">7 &#183; What the completed reproduction establishes<a class="anchor-link" href="#7-%C2%B7-What-the-completed-reproduction-establishes">&#182;</a></h2><p><strong>Five complete fresh searches, ten trials each.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Manual FE mean MAE</th>
+  <th style="text-align:right">Sample SD</th>
+  <th style="text-align:right">L127 RDL mean MAE</th>
+  <th style="text-align:right">FE − RDL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">2.777330</td>
+  <td style="text-align:right">0.027905</td>
+  <td style="text-align:right">3.178174</td>
+  <td style="text-align:right">-0.400844</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">3.948917</td>
+  <td style="text-align:right">0.070469</td>
+  <td style="text-align:right">3.967165</td>
+  <td style="text-align:right">-0.018248</td>
+</tr>
+</tbody>
+</table></div>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Search seed</th>
+  <th style="text-align:right">Selected trial</th>
+  <th style="text-align:right">Trees</th>
+  <th style="text-align:right">Validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">597</td>
+  <td style="text-align:right">2.744086</td>
+  <td style="text-align:right">3.921045</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">158</td>
+  <td style="text-align:right">2.816721</td>
+  <td style="text-align:right">4.042601</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">476</td>
+  <td style="text-align:right">2.773399</td>
+  <td style="text-align:right">3.852457</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">459</td>
+  <td style="text-align:right">2.791052</td>
+  <td style="text-align:right">3.980605</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">317</td>
+  <td style="text-align:right">2.761390</td>
+  <td style="text-align:right">3.947876</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>6,295 predictions</strong> independently checked. Five searches and their selected refits took <strong>37.60 seconds</strong> inside the local worker processes; pilot, startup, preparation and audits are separate. <strong>Paid cloud spend: USD 0.</strong> Seed SD is descriptive, not a confidence interval.</p>
+<p>All five searches use the full task and released feature set. The standalone full-training notebook gate was also executed in the pinned runtime: it rebuilt SQL and preprocessing, repeated all50 trials and five refits, and matched all6,295 final predictions exactly. <a href="../labs/_gate_l129_results.json">Full-gate verification</a>. Independent tree traversal reproduces every final validation/test prediction; a separate SQLite calculation recomputes all MAEs. The source-parity pilot used the <strong>original, byte-matched PyTorch Frame 0.2.2 trainer</strong>, with seeded search and four threads, and produced exactly matching predictions. <a href="../labs/_source_check_l129_results.json">Source check</a> · <a href="../labs/evidence/l129/summary.json">Full evidence</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l129/scores.svg" alt="Five complete FE searches compared descriptively with existing L127 RDL. Detail scales; bars show sample seed SD, not confidence intervals."><figcaption>Five complete FE searches compared descriptively with existing L127 RDL. Detail scales; bars show sample seed SD, not confidence intervals.</figcaption></figure>
+
+<p>The L127 comparison uses the same query keys and labels, with only the recorded float32 rounding difference. Nevertheless, it is a <strong>descriptive course comparison</strong>: FE uses train-fitted preprocessing, while the released RDL preprocessing fits through the test cutoff; FE also uses schedule fields whose historical availability is unverified. L127 is the basic RDL model, whereas the user-study regression comparison discusses an improved/boosted head in Appendix C. Do not equate the two comparators.</p>
+<p>The selected released computational pipeline is complete. <strong>Historical paper-score parity remains NOT_ESTABLISHED.</strong> The old <code>relbench==0.2.0</code> staging endpoint returns 404, so we use pinned v1 archives whose split dimensions agree with the released notebook. Exact historical archive identity, original unseeded search draws and saved model are unavailable. Figure 3 supplies normalized bars rather than the exact task scalar used here. We do not infer an exact target from a plotted bar or substitute Table 7's unrelated LightGBM score.</p>
+<p><strong>Full human-study reproduction is NOT_RUN.</strong> All other tasks and new human participants are outside this selected experiment. These are boundaries on the claim, not reasons to hide an executable full-data result. <a href="../labs/l129-reproduction.md">Protocol, source versions, deviations and commands</a>.</p>
+<h2 id="8-%C2%B7-Measure-effort-without-changing-its-meaning">8 &#183; Measure effort without changing its meaning<a class="anchor-link" href="#8-%C2%B7-Measure-effort-without-changing-its-meaning">&#182;</a></h2><p>The important distinction is between <em>inventing and implementing features</em> and <em>executing features that already exist</em>. This replay begins after someone supplied the SQL. Its machine runtime cannot estimate how long discovery took. An assistant's authoring time is not an unassisted expert's work, either.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l129/effort.svg" alt="Original human work, automated replay runtime and a new learner effort log measure different activities."><figcaption>Original human work, automated replay runtime and a new learner effort log measure different activities.</figcaption></figure>
+
+<p>In your log, keep exploration, ideation, SQL/debugging, input preparation and evaluation visible. Record whether each component is reusable or task-specific. Include failed ideas and assistance. Compare performance only after fixing a validation-based workflow and a feature-development budget. A new learner observation contributes evidence about that new setting; it cannot recreate the original participant.</p>
+<p><strong>Wisdom exercise.</strong> Ask a practitioner to review one feature's availability assumption and one excluded effort category. Bring the precise query and SQL to the <a href="https://github.com/snap-stanford/relbench">RelBench repository</a>, rather than arguing from the headline percentage alone. No message is sent by this lesson.</p>
+<div id="l129-teachback"></div>
+
+<h2 id="9-%C2%B7-EXIT:-defend-the-competitor">9 &#183; EXIT: defend the competitor<a class="anchor-link" href="#9-%C2%B7-EXIT:-defend-the-competitor">&#182;</a></h2><p>Submit the three implementations, your notebook report and your actual effort log. Then answer without copying the solution:</p>
+<ol>
+<li>Trace one query through standings, constructor joins, recent race slots, categorical encoding and the ensemble sum. Identify where information is compressed.</li>
+<li>Explain why a future schedule can be valid while a future result leaks, and what historical metadata is missing here.</li>
+<li>Explain why the released trainer has 51 input columns, and why the test cohort has no recent race-slot features in this replay.</li>
+<li>Show how you prevented test-guided selection and keyed predictions by both entity and cutoff.</li>
+<li>State exactly which reproduction is complete, which identities remain unestablished, and why runtime does not reproduce human effort.</li>
+</ol>
+<p>Passing the author's notebook is not evidence of your mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>. Tomorrow, reconstruct the cutoff test and query key from memory; next week, design one different feature before rereading the SQL. Lesson 130 will use this defensible baseline in an end-to-end checkpoint. Ask your teaching agent about any join, tree branch, experiment result or evidence boundary that remains unclear.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Assemble the complete RDL pipeline and defend it against this comparison. <a href="0130-rdl-checkpoint.html">Continue to Lesson 130</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/fe-cutoff-viz.js"></script><script src="../assets/l129-lesson.js"></script></body></html>

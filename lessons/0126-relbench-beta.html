@@ -1,0 +1,261 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RelBench beta: from database to evaluated predictions</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/task-table.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0125-pytorch-frame-deep-dive.html">Lesson 125</a></nav><header><p class="stream-kicker">Year4 · Quarter1 · Lesson126</p><h1>RelBench beta: from database to evaluated predictions</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 125 to this lesson</p>
+<p>The individual data transformations now need a shared evaluation interface. Keep the database, prediction task and evaluator separate.</p>
+<details><summary>Quick prerequisite reminder</summary><p>An evaluator compares aligned predictions and labels. Matching array lengths is insufficient: entity IDs and cutoffs must refer to the same questions in the same order.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<blockquote>
+<p><strong>The win.</strong> Load a relational database and a prediction task, explain what each object contains, and deliver predictions that the evaluator can score without losing entity or time identity. You will also reconstruct the beta engagement rule and implement its average-precision metric.</p>
+</blockquote>
+<p><a href="../labs/0126-relbench-beta.ipynb">Student notebook</a> · <a href="../labs/html/0126-relbench-beta.html">Executed reference</a> · <a href="../reference/relbench-beta.html">Reference card</a> · <a href="../labs/l126-reproduction.md">Reproduction contract</a></p>
+<h2 id="1-%C2%B7-Why-a-benchmark-needs-more-than-a-database">1 &#183; Why a benchmark needs more than a database<a class="anchor-link" href="#1-%C2%B7-Why-a-benchmark-needs-more-than-a-database">&#182;</a></h2><p><a href="0122-reg-construction.html">Lesson 122</a> turned primary and foreign keys into graph structure. <a href="0123-temporal-heterogeneous-graphs.html">Lesson 123</a> restricted each query's neighborhood to its cutoff. <a href="0124-entity-task-tables.html">Lesson 124</a> attached future outcomes to entity–time pairs. <a href="0125-pytorch-frame-deep-dive.html">Lesson 125</a> encoded typed columns. Those mechanisms now need a common interface: which rows are inputs, which rows are questions, and who is allowed to see the answers?</p>
+<p>A <strong>benchmark</strong> fixes a collection of prediction problems and their evaluation rules. A database alone cannot do that. Two researchers could use the same tables while predicting different outcomes, selecting different users, or measuring different metrics. Their scores would answer different questions.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> The database is the world we observe. The task tells us which questions to ask about that world. The evaluator tells us how answers are judged.</p>
+</blockquote>
+<p>This directly serves the course mission: evidence that relational learning helps is credible only when the relational model and its baselines face the same task. Today's narrow skill is making that task contract inspectable. This is an API and evaluation lesson; it introduces no new neural architecture. The next planned integer lesson, L127, studies the later RelBench v1 benchmark and its baseline.</p>
+<div id="warmup"></div><noscript><p>Recall the difference between entity identity, prediction time and label horizon.</p></noscript>
+
+<p>Before reading on, write three short answers: What identifies a graph node? Why does a prediction need a time? Can an event after that time be used to construct the label?</p>
+<h2 id="2-%C2%B7-Freeze-the-version-before-interpreting-the-API">2 &#183; Freeze the version before interpreting the API<a class="anchor-link" href="#2-%C2%B7-Freeze-the-version-before-interpreting-the-API">&#182;</a></h2><p>Our primary source is <strong>Fey et al., December 2023, arXiv:2312.04615v1</strong>, especially <a href="https://arxiv.org/html/2312.04615v1#S4">§4 and Figure 5</a>. The curriculum calls this the “RelBench beta paper.” The same arXiv lineage later became the RDL position paper studied in L117. The separate <a href="https://arxiv.org/abs/2407.20060">Robinson et al. benchmark paper</a> belongs to L127.</p>
+<p>The beta describes two databases: Amazon books and Stack Exchange, with two tasks each. A <strong>release snapshot</strong> is a specific code revision, as opposed to whatever a repository's default branch contains today. Our historical code snapshot is <code>0433616ee94003fb15a4ac4d633e499d0f129077</code>, dated November 27, 2023. It identifies itself as version 0.1.1. This is the last reachable pre-publication commit in the inspected history, not an author-attested experiment commit. <a href="../labs/_sources_l126.json">Pinned source manifest</a>.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Operation</th>
+  <th>Beta source in this lesson</th>
+  <th>Executable F1 course tour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Package version</td>
+  <td>Historical 0.1.1 snapshot</td>
+  <td><code>relbench==1.1.0</code></td>
+</tr>
+<tr>
+  <td>Load database</td>
+  <td><code>get_dataset(name=&quot;rel-stackex&quot;)</code></td>
+  <td><code>F1Dataset(cache_dir=...)</code></td>
+</tr>
+<tr>
+  <td>Read database</td>
+  <td><code>dataset.db</code></td>
+  <td><code>dataset.get_db()</code></td>
+</tr>
+<tr>
+  <td>Load task</td>
+  <td><code>dataset.get_task(&quot;rel-stackex-engage&quot;)</code></td>
+  <td><code>DriverPositionTask(dataset, cache_dir=...)</code></td>
+</tr>
+<tr>
+  <td>Read splits</td>
+  <td><code>task.train_table</code>, <code>val_table</code>, <code>test_table</code></td>
+  <td><code>task.get_table(&quot;train&quot;/&quot;val&quot;/&quot;test&quot;)</code></td>
+</tr>
+<tr>
+  <td>Evaluate</td>
+  <td><code>task.evaluate(pred)</code></td>
+  <td><code>task.evaluate(pred, metrics=[mae])</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>The executable tour uses constructors to point at checksum-verified embedded archives. The registry alternative in <strong>1.1.0</strong> is <code>get_dataset(&quot;rel-f1&quot;, download=True)</code> followed by <code>get_task(&quot;rel-f1&quot;, &quot;driver-position&quot;, download=True)</code>. That alternative needs working remote archives. Neither spelling is advertised here as a version-independent API.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This paper version contains no numerical predictive-results table. Reproduction means recovering and verifying its data/task/evaluation contract. It would be misleading to invent a beta score target, borrow L125's ROC-AUC target, or call a modern F1 score a beta result.</p>
+</blockquote>
+<h2 id="3-%C2%B7-Open-the-objects;-do-not-stop-at-their-names">3 &#183; Open the objects; do not stop at their names<a class="anchor-link" href="#3-%C2%B7-Open-the-objects;-do-not-stop-at-their-names">&#182;</a></h2><p>A <strong>Table</strong> pairs a dataframe with metadata: its primary key, foreign-key destinations and optional time column. A <strong>Database</strong> contains a mapping from table names to these Table objects. A <strong>Dataset</strong> adds processing/loading behavior and validation/test cutoffs. A <strong>Task</strong> adds the entity being predicted, its target, prediction horizon, task tables and metric functions. <a href="../labs/sources/l126/beta/relbench/data/table.py">Beta Table</a> · <a href="../labs/sources/l126/beta/relbench/data/dataset.py">Dataset</a> · <a href="../labs/sources/l126/beta/relbench/data/task.py">Task</a>.</p>
+<p><strong>Worked example.</strong> A users table contains IDs 10, 20 and 30. An events table refers to user 20, a missing user ID, and user 99. All three foreign-key cells are syntactically possible, but only one resolves to a row. A <strong>null</strong> key means no recorded reference. A <strong>dangling</strong> key is non-null but has no matching target. Neither should silently become a valid edge.</p>
+<p><strong>TODO 1 — <code>schema_audit</code>.</strong> Count every row and column, validate primary-key uniqueness, and count resolved, null and dangling references separately. <strong>CHECK:</strong> the example must report one of each; duplicate primary keys must fail. The same function then examines every table in the real F1 database.</p>
+<p>A primary key identifies a row within its table. The number of rows is not a safe upper bound on an arbitrary raw key. The released graph conversion may reindex keys; keep the mapping explicit. The schema audit operates on declared key values, not guessed positional indices.</p>
+<h2 id="4-%C2%B7-A-database-cap-and-a-query-cutoff-solve-different-problems">4 &#183; A database cap and a query cutoff solve different problems<a class="anchor-link" href="#4-%C2%B7-A-database-cap-and-a-query-cutoff-solve-different-problems">&#182;</a></h2><p>The beta Dataset constructor retains a full database for task generation and exposes a copy capped at the test timestamp. This prevents ordinary model code from reading dated rows beyond the final test cutoff. It does <strong>not</strong> make every earlier training query safe. <a href="../labs/sources/l126/beta/relbench/data/dataset.py">Beta Dataset implementation</a> · <a href="https://arxiv.org/html/2312.04615v1#S4.SS2">paper §4.2</a>.</p>
+<p><strong>Worked example.</strong> The database contains events at days 5, 10, 15, 25 and 30. The test cap is day 30. All five survive that cap. A training query at day 10 may use only days 5 and 10. Days 15 and 25 still leak if they enter that query's features or graph neighborhood.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l126/boundaries.svg" alt="Synthetic timeline: the dataset cap at day 30 admits five events, but the query at day 10 may use only days 5 and 10. Labels have a separate future window."><figcaption>Synthetic timeline: the dataset cap at day 30 admits five events, but the query at day 10 may use only days 5 and 10. Labels have a separate future window.</figcaption></figure>
+
+<p>The <strong>prediction horizon</strong> is the future interval whose outcome becomes the label. For a cutoff <code>t</code> and duration <code>Δ</code>, the beta helper uses the right-closed interval <code>(t, t+Δ]</code>: exclude the cutoff itself; include the endpoint. Inputs use history through <code>t</code>. The offline label builder needs future events, while the model must not receive them.</p>
+<p><strong>Predict:</strong> an event lands exactly at <code>t</code>. Does it establish prior activity? Does it make the future contribution label positive? Answer before checking the code. In the pinned release it establishes activity but does not enter the future label.</p>
+<p>Training timestamps walk backward from <code>validation − Δ</code> in steps of <code>Δ</code>, until the database's earliest timestamp. This lets every training label window finish no later than validation. Do not replace this with an arbitrary random split.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Timestamp filtering is not proof of historical availability. The beta interface does not supply ingestion histories or versions of mutable fields. Undated tables also need an explicit availability assumption. These limitations remain visible even if every cutoff comparison passes.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Reconstruct-the-beta-engagement-task">5 &#183; Reconstruct the beta engagement task<a class="anchor-link" href="#5-%C2%B7-Reconstruct-the-beta-engagement-task">&#182;</a></h2><p>The selected task is <strong><code>rel-stackex-engage</code></strong>. It asks whether an eligible user contributes a post, comment or vote in the next two years. The paper calls the metric average precision. <a href="https://arxiv.org/html/2312.04615v1#S4.SS4.SSS1">Paper §4.4.1</a> · <a href="../labs/sources/l126/beta/relbench/tasks/stackex.py">original task implementation</a>.</p>
+<p><strong>Existence.</strong> The released implementation keeps users whose creation date is no later than the cutoff.</p>
+<p><strong>Eligibility.</strong> It keeps users with at least one contribution at or before the cutoff. Whether they contribute in the future must not affect whether they enter the task.</p>
+<p><strong>Outcome.</strong> For each eligible user, the label is 1 if any qualifying future contribution exists, otherwise 0. Three source tables are normalized to <code>(user, time)</code> events. Event IDs need not be unique across tables: this task asks about existence, not a cross-table event count.</p>
+<p><strong>Duration.</strong> The code specifies <code>pd.Timedelta(days=365 * 2)</code>, exactly <strong>730 days</strong>. From January 1, 2019, its upper endpoint is December 31, 2020. Two calendar years would end January 1, 2021. A leap year exposes the difference. The beta task's docstring says “3 years”; the executable constant and paper say two. We record that inconsistency rather than trusting the docstring.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>User at cutoff</th>
+  <th>Past activity</th>
+  <th>Future activity in <code>(t,t+730d]</code></th>
+  <th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Existing user A</td>
+  <td>At <code>t</code></td>
+  <td>At <code>t+1d</code></td>
+  <td>Eligible, label 1</td>
+</tr>
+<tr>
+  <td>Existing user B</td>
+  <td>Before <code>t</code></td>
+  <td>Exactly at endpoint</td>
+  <td>Eligible, label 1</td>
+</tr>
+<tr>
+  <td>Existing user C</td>
+  <td>None</td>
+  <td>At <code>t+2d</code></td>
+  <td>Ineligible</td>
+</tr>
+<tr>
+  <td>Existing user D</td>
+  <td>Before <code>t</code></td>
+  <td>One second after endpoint</td>
+  <td>Eligible, label 0</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>TODO 2 — <code>engagement_table</code>.</strong> Implement eligibility and labels separately. <strong>CHECK:</strong> deleting all future events must preserve the eligible entity–time keys, while changing the labels. Permuting input rows must preserve the task. The standalone checker additionally compares the function with the unmodified beta class and an independent SQL query.</p>
+<p>Our normalized helper excludes null users and the raw community sentinel −1 from all activity sources. The historical source filters that sentinel in posts/comments, but only nulls in votes. The source-parity fixtures use real-user vote IDs; the full recovery operator compares all rows and rejects a mismatch instead of hiding this defensive difference. Reindexed artifacts may represent such references differently, which is another reason to verify archive identity.</p>
+<h2 id="6-%C2%B7-Hidden-targets-are-only-one-half-of-evaluation-integrity">6 &#183; Hidden targets are only one half of evaluation integrity<a class="anchor-link" href="#6-%C2%B7-Hidden-targets-are-only-one-half-of-evaluation-integrity">&#182;</a></h2><p>A public test table contains the query identity but hides its target. The beta task retains a separate full test table for evaluation; accessing <code>task.test_table</code> initializes that reference in the historical API. The modern tour uses <code>get_table(&quot;test&quot;)</code>. This is an API convention for separating model inputs from scoring, not a security boundary against an author who possesses the files.</p>
+<p>A <strong>query key</strong> combines the target entity and prediction time. Driver A on one date and driver A on another date are different questions. Sampling or batching may rearrange them. An evaluator receiving an ordinary array cannot infer that rearrangement.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l126/identity.svg" alt="Worked keyed-score example: positions 1,2,0 restore evaluator order; entity A alone cannot distinguish two query times."><figcaption>Worked keyed-score example: positions 1,2,0 restore evaluator order; entity A alone cannot distinguish two query times.</figcaption></figure>
+
+<p><strong>Worked example.</strong> The evaluator expects <code>(A,10), (B,10), (A,20)</code>. A batch returns <code>(A,20):0.8, (A,10):0.2, (B,10):0.4</code>. The correct score array is <code>[0.2,0.4,0.8]</code>. Returning the batch's <code>[0.8,0.2,0.4]</code> has the right length and the wrong meaning.</p>
+<p><strong>TODO 3 — <code>align_predictions</code>.</strong> Require an exact one-to-one match between query keys and prediction keys; gather scores in query order. <strong>CHECK:</strong> reject duplicates, missing keys, extra keys and non-finite scores. Joining only on entity must not accidentally merge different times. This contract concerns unique task queries; repeated sampled neighbor IDs inside a GNN batch are a different object.</p>
+<p>The F1 tour freezes a predictor using only the median training label, attaches its predictions to keys, shuffles the keyed output and aligns it again. A constant predictor alone cannot expose an ordering error, so the separate nonconstant CHECK fixture is essential.</p>
+<h2 id="7-%C2%B7-Average-precision-is-a-threshold-calculation">7 &#183; Average precision is a threshold calculation<a class="anchor-link" href="#7-%C2%B7-Average-precision-is-a-threshold-calculation">&#182;</a></h2><p>A binary label is 0 or 1. A <strong>score</strong> ranks examples from more likely positive to less likely positive; AP does not require calibrated probabilities. At a threshold, <strong>precision</strong> is the number of positives retrieved divided by all retrieved rows. <strong>Recall</strong> is positives retrieved divided by all positives in the evaluation set.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Lower the threshold. Each time you recover more positives, record how precise the retrieved set is. Weight that precision by how much recall you gained.</p>
+</blockquote>
+<p>For distinct descending score thresholds indexed by <code>k</code>,</p>
+<p><code>AP = Σ_k (recall_k − recall_(k−1)) × precision_k</code>, with initial recall 0.</p>
+<p>This is non-interpolated average precision. It is not ROC-AUC and not the trapezoidal area under a precision–recall curve. The pinned beta metric calls scikit-learn's <code>average_precision_score</code>; the library documents this weighting explicitly. <a href="../labs/sources/l126/beta/relbench/metrics.py">Beta metrics</a> · <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html">scikit-learn definition</a>.</p>
+<p><strong>Worked example.</strong> Labels <code>[1,0,1,0,1]</code> have three positives. Scores <code>[0.9,0.5,0.5,0.1,0.1]</code> create three thresholds. At 0.9, precision is 1 and recall increases by 1/3. At 0.5, precision is 2/3 and recall increases by another 1/3. At 0.1, precision is 3/5 and the final recall gain is 1/3. Thus AP is <code>1/3 + 2/9 + 1/5 = 0.755556</code>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l126/average-precision.svg" alt="Synthetic five-row example: three tied-score thresholds contribute 1/3, 2/9 and 1/5 to AP 0.755556."><figcaption>Synthetic five-row example: three tied-score thresholds contribute 1/3, 2/9 and 1/5 to AP 0.755556.</figcaption></figure>
+
+<p><strong>Ties.</strong> A score of 0.5 cannot admit one tied row while excluding another. Process the whole tie at once. Otherwise an arbitrary ordering of equal scores can change the reported score.</p>
+<div id="l126-ap"></div><noscript><p>Static AP trace: labels[1,0,1,0,1], scores[0.9,0.5,0.5,0.1,0.1]. Grouped AP=0.755556. Reordering within ties leaves it unchanged. Giving every row score0.5 yields prevalence3/5=0.6.</p></noscript>
+
+<p><strong>TODO 4 — <code>average_precision</code>.</strong> Sort descending, locate the ends of equal-score groups, compute cumulative positives and weight precision by recall increments. <strong>CHECK:</strong> equal scores for every row give AP equal to positive prevalence. Our explicit convention returns 0 when no positives exist, matching the reference's result; that degenerate split still deserves a warning in an experiment report. Reject nonbinary labels and non-finite scores.</p>
+<h2 id="8-%C2%B7-Execute-the-complete-available-data-package-tour">8 &#183; Execute the complete available-data package tour<a class="anchor-link" href="#8-%C2%B7-Execute-the-complete-available-data-package-tour">&#182;</a></h2><p>The notebook embeds checksum-verified F1 database and driver-position task archives. There is no row cap or remote data dependency in its default execution. The complete course run exercises actual RelBench 1.1.0 objects, calls your schema/alignment functions and scores the fixed training-median predictor. <strong>MAE</strong>, mean absolute error, averages <code>abs(prediction − target)</code> in position units. It is appropriate for this regression task, whereas the beta engagement task is binary and uses AP.</p>
+<p><strong>Author-reference execution · complete F1 API tour · COURSE_ONLY.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Table</th>
+  <th style="text-align:right">Rows exposed after the test cap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>constructor_results</td>
+  <td style="text-align:right">9,408</td>
+</tr>
+<tr>
+  <td>constructor_standings</td>
+  <td style="text-align:right">10,170</td>
+</tr>
+<tr>
+  <td>circuits</td>
+  <td style="text-align:right">77</td>
+</tr>
+<tr>
+  <td>qualifying</td>
+  <td style="text-align:right">4,082</td>
+</tr>
+<tr>
+  <td>drivers</td>
+  <td style="text-align:right">857</td>
+</tr>
+<tr>
+  <td>results</td>
+  <td style="text-align:right">20,323</td>
+</tr>
+<tr>
+  <td>races</td>
+  <td style="text-align:right">820</td>
+</tr>
+<tr>
+  <td>standings</td>
+  <td style="text-align:right">28,115</td>
+</tr>
+<tr>
+  <td>constructors</td>
+  <td style="text-align:right">211</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>74,063 rows</strong>, nine tables, 13 declared foreign-key relations. All <strong>7,453 train / 499 validation / 760 test</strong> task rows are loaded. The training median is <strong>13.333333</strong>; validation MAE <strong>4.135571</strong>, test MAE <strong>4.444671</strong>. All test predictions were independently rescored in SQL. <a href="../labs/evidence/l126/summary.json">Measured report</a> · <a href="../labs/_audit_l126_results.json">Independent audit</a>.</p>
+<p>The predictor has no hyperparameter search, stochastic training, checkpoint selection or seed ensemble. Its fixed shuffle seed changes only presentation order. Repeating an identical deterministic evaluation over “seeds” would not create meaningful uncertainty. The measured scores show that the API path works; they do not establish model superiority or reproduce an RDL result.</p>
+<p><strong>Compatibility note.</strong> We request only <code>metrics=[mae]</code>. RelBench 1.1.0's additional RMSE helper calls a scikit-learn argument removed from the installed version. The first unrestricted evaluator call failed for that reason. Selecting the declared MAE metric preserves its calculation and makes this dependency boundary explicit. The author environment is recorded separately from the proposed Colab setup.</p>
+<h2 id="9-%C2%B7-What-has%E2%80%94and-has-not%E2%80%94been-reproduced">9 &#183; What has&#8212;and has not&#8212;been reproduced<a class="anchor-link" href="#9-%C2%B7-What-has%E2%80%94and-has-not%E2%80%94been-reproduced">&#182;</a></h2><p>The fresh source audit runs the original beta task class, Dataset and test-mask/evaluator path. It checks 82 synthetic task/cutoff cases against both our implementation and independent SQL, and 200 AP cases against the released metric. These cases establish tested semantics, not original-data identity. The recovery operator's complete reconstruction path also passes a synthetic archive-table test and rejects a corrupted label.</p>
+<p>All seven original/alternate database, task and raw-data endpoint probes returned 404 on September 27, 2026. A web-archive query timed out. No matching historical archive was recovered. The beta database hash starts <code>dfb84faa</code>; the later L125 database hash starts <code>deb00ccd</code>. They are not interchangeable. <a href="../labs/_paper_audit_l126_results.json">Availability audit</a>.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>Status</th>
+  <th>Permitted conclusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Pinned beta source + synthetic task/evaluator audit</td>
+  <td>PASS</td>
+  <td>Tested source semantics agree</td>
+</tr>
+<tr>
+  <td>Complete v1 F1 database/task API tour</td>
+  <td>PASS · COURSE_ONLY</td>
+  <td>All available rows and predictions audited</td>
+</tr>
+<tr>
+  <td>Full historical beta archive reconstruction</td>
+  <td>NOT_RUN · BLOCKED_DATA</td>
+  <td>Required bytes not recovered</td>
+</tr>
+<tr>
+  <td>Numerical beta paper-score reproduction</td>
+  <td>NOT_APPLICABLE</td>
+  <td>This version has no score table</td>
+</tr>
+<tr>
+  <td>Whole-paper/historical identity</td>
+  <td>NOT_ESTABLISHED</td>
+  <td>Cannot infer identity from passing fixtures</td>
+</tr>
+<tr>
+  <td>Learner mastery</td>
+  <td>PENDING_WRITTEN_DEFENSE</td>
+  <td>Author execution does not score your work</td>
+</tr>
+</tbody>
+</table></div>
+<p>The <a href="../labs/_recover_l126.py">recovery operator</a> requires the exact database and engagement archives, reconstructs every split, compares both original-source and archived labels, and verifies public test masking. Its full historical-data path remains unexecuted. Original beta training/model code is preserved in the notebook's source appendix; it contains stale <code>rtb</code> imports and is not presented as a validated trainer. No cloud training was launched; spending is <strong>$0</strong>.</p>
+<h2 id="10-%C2%B7-Lab,-written-exit-and-return-visits">10 &#183; Lab, written exit and return visits<a class="anchor-link" href="#10-%C2%B7-Lab,-written-exit-and-return-visits">&#182;</a></h2><p>Run the four TODO/CHECK pairs, then execute the full F1 tour. Submit <code>l126-report.json</code>, keyed predictions, your implementations, and this written defense:</p>
+<ol>
+<li>Explain the difference between a database's final test cap and a training query's cutoff. Name one leak that survives the first.</li>
+<li>Trace one beta engagement label, including user existence, eligibility and both interval endpoints. Explain the leap-year effect.</li>
+<li>Explain why correct array length cannot establish correct evaluation. State the key you would carry through batches.</li>
+<li>Derive the worked AP value without running code. Explain why a tie must enter together.</li>
+<li>Separate source parity, complete modern-data execution and historical reproduction. Identify the missing artifacts precisely.</li>
+</ol>
+<p><strong>Exit rubric.</strong> Each item earns 0 (missing/incorrect), 1 (correct but incomplete), or 2 (correct with a concrete example). Passing requires all four live functions, a successful complete tour, at least 8/10, and no unresolved temporal, identity or reproduction-scope error. Paste your explanation to the teacher for feedback; ask follow-up questions wherever the source and implementation seem to disagree.</p>
+<p><strong>Spaced retrieval.</strong> Tomorrow, redraw the object boundaries and AP thresholds from memory. In seven days, diagnose a shuffled prediction file without opening this lesson. In thirty days, inspect another benchmark's dataset/task/evaluator interface and identify which historical claims its artifacts actually support.</p>
+<div id="l126-teachback"></div>
+
+<h2 id="Primary-source-reading-ledger">Primary-source reading ledger<a class="anchor-link" href="#Primary-source-reading-ledger">&#182;</a></h2><p>Read <a href="https://arxiv.org/html/2312.04615v1">the full beta paper</a>, with §4 as today's close reading. For §§1–2, state the problem and task-table idea in your own words. For §3, trace the schema → entity graph → temporal computation graph → head route already developed in L117 and L122–125. For §4, map each package promise to a checked API operation. For §§5–7, choose one proposed research direction and explain why this lesson's evidence does not establish that claim. Then inspect the pinned task, dataset and metric source linked above.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Freeze the entire neural training and selection protocol for RelBench v1. <a href="0127-relbench-v1.html">Continue to Lesson 127</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/average-precision-viz.js"></script><script src="../assets/l126-lesson.js"></script></body></html>

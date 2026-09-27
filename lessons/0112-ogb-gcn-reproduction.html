@@ -1,4 +1,13 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OGB reproduction: defend a full GCN experiment</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0110-temporal-gnn-checkpoint.html">Lesson 110</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 112</p><h1>OGB reproduction: defend a full GCN experiment</h1></header><p class="stream-kicker">One claim · one frozen protocol · ten fresh fits</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OGB reproduction: defend a full GCN experiment</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0110-temporal-gnn-checkpoint.html">Lesson 110</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 112</p><h1>OGB reproduction: defend a full GCN experiment</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 111 to this lesson</p>
+<p>Lesson 111 fixes the official questions and evaluator. Now replace its simple baseline with the complete published GCN training procedure.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Transductive means held-out feature rows and graph structure can participate while held-out labels are excluded from loss. A percentage point is an absolute difference between percentages.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<p class="stream-kicker">One claim · one frozen protocol · ten fresh fits</p>
 
 <p>Your tangible win is to <strong>reproduce and defend one published OGB result</strong>: a full-batch GCN on <code>ogbn-arxiv</code>. By the end you should be able to trace one prediction, explain which information entered training, and decide whether the resulting ten-run mean supports a bounded reproduction claim.</p>
 <p>Read sections 1–5 in about 25 minutes; then work through the three live notebook tasks. Full training is a separate compute session. Author execution does not establish your mastery: <strong>PENDING_WRITTEN_DEFENSE</strong> until you submit the EXIT explanation.</p>
@@ -15,6 +24,7 @@
 <p><strong>Predict:</strong> if you change a test label, should the next training gradient change? No. If you change a test node's features, can a training node's representation change? Yes: there may be a message-passing path, and batch normalization couples node activations. Label masking protects the objective; it does not remove held-out nodes from the computation.</p>
 <h2 id="3-%C2%B7-Model-architecture:-follow-a-paper-to-its-prediction">3 &#183; Model architecture: follow a paper to its prediction<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-follow-a-paper-to-its-prediction">&#182;</a></h2><figure class="stream-figure" tabindex="0"><img src="../labs/figures/l112/architecture.svg" alt="Every layer and shape in the complete 110,120-parameter GCN. Training masks the labels, not the feature graph."><figcaption>Every layer and shape in the complete 110,120-parameter GCN. Training masks the labels, not the feature graph.</figcaption></figure>
 
+<p><strong>Diagram trace.</strong> Count all three graph multiplications. Where do training labels enter, and which normalization buffers must be saved? On a narrow screen, scroll the figure sideways.</p>
 <p>Start with the feature matrix <strong>X ∈ R^(169343×128)</strong>. Turn the directed citations into a binary undirected adjacency, remove duplicate relations, and add one self-loop per node. This operation changes the information flow: a cited paper and a citing paper can now both send messages. It is part of the released baseline's definition.</p>
 <p>Let Ã = A + I after deduplication, dᵢ = Σⱼ Ãᵢⱼ, and Sᵢⱼ = Ãᵢⱼ / √(dᵢdⱼ). One convolution is:</p>
 <p><strong>Z = S H Wᵀ + b</strong>.</p>
@@ -107,4 +117,9 @@
 </ol>
 <p>Tomorrow, reconstruct the propagation equation and selection rule without opening the notebook. A week later, inspect another OGB entry and list which parts of this protocol transfer. Planned lesson 113 asks how sampling changes the memory/computation budget; lesson 114 asks where this fitted model fails. Neither a faster run nor a higher aggregate score substitutes for those analyses.</p>
 <p>This work supports the course mission by practicing a defensible graph baseline before making relational-learning claims. An arXiv citation result alone does not show that relational learning beats strong tabular models on business databases. Bring your EXIT answer or any confusing computation back to the agent for feedback; we can trace it together.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Determine what changes when a full graph no longer fits one training step. <a href="0113-scaling-ogb.html">Continue to Lesson 113</a>.</p>
+<!-- sequence-next:end -->
+
 </article><script src="../assets/checkpoint-selection.js"></script></body></html>

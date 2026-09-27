@@ -1,0 +1,5 @@
+(function(){'use strict';
+if(window.RetrievalBank)RetrievalBank.mount(document.getElementById('l118-warmup'),{upTo:118,count:3});
+RDBExtractionViz.mount(document.getElementById('l118-extraction'));
+if(window.Teachback)Teachback.mount(document.getElementById('l118-teachback'),{prompt:'How can a selected row two hops from the target affect Cvitkovic’s one-layer GCN prediction?',points:['Extraction chooses the input graph independently of GCN depth.','Every selected node gets an encoded hidden state.','One GCN layer updates every selected node.','Gated pooling reads all selected nodes, not only the target.','Seed-only readout would impose a different information path.'],model:'The row is already present in the extracted graph. Its encoded state is updated by the GCN and then enters graph-level gated pooling. It does not need to send its information all the way to the target node before the prediction is formed. Extraction range, message-passing depth and readout support jointly determine access.'});
+})();

@@ -303,8 +303,8 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 115 | Graph ML design patterns | — | Encoder → MP → head |
 | 116 | Debug GNN training | — | Common failure modes |
 | 117 | [RDL bridge](lessons/0117-rdl-bridge.html) | Fey 2024 full paper + RelBench v1 Table 7 | [REG construction and complete selected RDL reproduction](labs/0117-rdl-bridge.ipynb) |
-| 118 | Cvitkovic 2019 relational DL | Cvitkovic 2019 | Historical line to RDL |
-| 119 | Year 3 synthesis | — | Essay: graphs vs flat tables |
+| 118 | [Cvitkovic relational GNN](lessons/0118-cvitkovic-relational-gnn.html) | 2019 lineage; expanded 2020 paper and source | [Graph extraction, model trace, and full reproduction contract](labs/0118-cvitkovic-relational-gnn.ipynb) |
+| 119 | [Year 3 synthesis](lessons/0119-year-3-synthesis.html) | Year 3 synthesis + RelBench v1 Table 7 | [Evidence checks, full selected replay, and graphs-vs-tables essay](labs/0119-year-3-synthesis.ipynb) |
 | 120 | **Year 3 exit exam** | All Y3 papers | Build hetero temporal GNN |
 
 **Year 3 exit criterion:** Working hetero + temporal GNN pipeline in PyG; read Fey 2024 completely.
@@ -334,24 +334,24 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 ### Q1 · RDL foundations (121–130)
 **Papers (chronological):** Cvitkovic 2019 · Šír 2021 · Zahradník 2023 · Fey 2024 · Robinson 2023/2024
 
-| 121 | History of relational ML | Cvitkovic 2019 | Prior art map |
-| 122 | REG construction | Fey 2024 §3 | Build toy REG |
-| 123 | Temporal heterogeneous graphs | Fey 2024 §3–4 | Timestamp every node/edge |
-| 124 | Entity vs task table | Fey 2024 | Prediction node selection |
-| 125 | PyTorch Frame deep dive | Hu 2024 (2404.00776) | Row encoders in PyG Frame |
+| 121 | [History of relational ML](lessons/0121-history-relational-ml.html) | Cvitkovic 2019 / 2020 + historical primary sources | [Prior-art map + executable lab](labs/0121-history-relational-ml.ipynb); full Home Credit NOT_RUN |
+| 122 | [REG construction](lessons/0122-reg-construction.html) | Fey 2024 §3 | [Full graph audit + five fresh F1 RDL fits](labs/0122-reg-construction.ipynb) |
+| 123 | [Temporal heterogeneous graphs](lessons/0123-temporal-heterogeneous-graphs.html) | Fey 2024 §3–4 | Timestamp every node/edge |
+| 124 | [Entity vs task table](lessons/0124-entity-task-tables.html) | Fey 2024 / RelBench v1 | Complete task audit + five fresh RDL fits |
+| 125 | [PyTorch Frame deep dive](lessons/0125-pytorch-frame-deep-dive.html) | Hu 2024 (2404.00776) | [Complete F1 feature export + encoder lab](labs/0125-pytorch-frame-deep-dive.ipynb); historical Table 2 NOT_RUN |
 | 125b | Universal Row Encoder ★ | Peleška & Šír 2026 (2606.21434) | Modular encoder decoupled from GNN |
-| 126 | RelBench beta paper | arXiv 2312.04615 | Package tour |
-| 127 | RelBench v1 | Robinson 2024 NeurIPS | 7 databases overview |
-| 128 | Task taxonomy | RelBench docs | Entity / link / autoregressive |
-| 129 | Manual FE study | Robinson 2024 user study | Replicate FE baseline mindset |
-| 130 | **Q1 checkpoint** | Fey 2024 + Robinson 2024 | Run one RelBench task end-to-end |
+| 126 | [RelBench beta paper](lessons/0126-relbench-beta.html) | Fey 2023, arXiv 2312.04615v1 | [Complete F1 API tour + beta contract audit](labs/0126-relbench-beta.ipynb); historical archives NOT_RUN |
+| 127 | [RelBench v1](lessons/0127-relbench-v1.html) | Robinson 2024, paper v1 Table7 | [Run and audit the complete selected five-seed F1 baseline](labs/0127-relbench-v1.ipynb) |
+| 128 | [Task taxonomy](lessons/0128-task-taxonomy.html) | RelBench task API + Table 6 | [Entity / recommendation; temporal versus autoregressive; full selected DNF reproduction](labs/0128-task-taxonomy.ipynb) |
+| 129 | [Manual FE study](lessons/0129-manual-feature-engineering.html) | Robinson 2024 user study | [Full selected SQL + tuned LightGBM replay; effort and availability audit](labs/0129-manual-feature-engineering.ipynb) |
+| 130 | [**Q1 checkpoint**](lessons/0130-rdl-checkpoint.html) | Fey 2024 + Robinson 2024 | [Fresh full F1 RDL reproduction and written defense](labs/0130-rdl-checkpoint.ipynb) |
 
 ### Q2 · RDL architectures & baselines (131–140)
-| 131 | GNN + tabular encoder stack | Fey 2024 §5 | Full forward pass trace |
-| 132 | ID-GNN / IDMP variants | RelBench baselines | Compare message passing |
-| 133 | Hetero conv on REG | PyG + RelBench | Layer design |
-| 134 | Training at scale | RelBench sampling | Mini-batch over millions of nodes |
-| 135 | Hyperparameter tuning on REG | — | Fair tuning budget |
+| 131 | [GNN + tabular encoder stack](lessons/0131-gnn-tabular-stack.html) | Fey 2024 §5 + RelBench v1 Table7 | [Measured forward/backward trace and full selected reproduction](labs/0131-gnn-tabular-stack.ipynb) |
+| 132 | [ID-GNN / IDMP variants](lessons/0132-identity-aware-message-passing.html) | You 2021 + RelBench v1 Table8 | [Root markers, query ownership and two recommendation systems](labs/0132-identity-aware-message-passing.ipynb) |
+| 133 | [Hetero conv on REG](lessons/0133-hetero-conv-reg.html) | PyG + RelBench v1 Table7 | [Two sums, relation root terms and full selected reproduction](labs/0133-hetero-conv-reg.ipynb) |
+| 134 | [Training at scale](lessons/0134-training-at-scale.html) | RelBench sampling + v1 Table7 | [Temporal batch budgets, full selected reproduction and measured scale](labs/0134-training-at-scale.ipynb) |
+| 135 | [Hyperparameter tuning on REG](lessons/0135-tuning-on-reg.html) | — | [Fair tuning budget](labs/0135-tuning-on-reg.ipynb) |
 | 136 | Leaderboard literacy | relbench.stanford.edu | Read top entries |
 | 137 | Error analysis on REG | — | Where GNN fails vs FE |
 | 138 | Domain: e-commerce task | rel-amazon | Full task deep dive |

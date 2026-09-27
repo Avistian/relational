@@ -1,0 +1,9 @@
+/* Reusable event/arrival cutoff experiment; illustrative times are days. */
+window.FECutoffViz={mount(root){
+ if(!root)return;
+ root.className='rdl-viz task-table-widget';
+ root.innerHTML='<h3>Which rows become a feature?</h3><p>Illustrative driver 7; lookback 8 days. Frozen baseline: cutoff 10, strict past, respect arrivals → mean 3.</p><label>Prediction cutoff <input aria-label="Prediction cutoff" type="range" min="7" max="12" step="1" value="10"></label><label><input type="checkbox" data-kind="late"> Ignore arrival time</label><label><input type="checkbox" data-kind="equal"> Include events at cutoff</label><button type="button">Reset</button><div class="stream-scroll" tabindex="0"><table><thead><tr><th>Event day</th><th>Arrival day</th><th>Position</th><th>Included?</th></tr></thead><tbody></tbody></table></div><output aria-live="polite"></output>';
+ const rows=[[2,2,6],[5,5,4],[9,10,2],[8,11,99],[10,10,88]],slider=root.querySelector('input[type=range]'),late=root.querySelector('[data-kind=late]'),equal=root.querySelector('[data-kind=equal]'),out=root.querySelector('output');
+ function draw(){const t=Number(slider.value),ok=rows.map(r=>r[0]>t-8&&(equal.checked?r[0]<=t:r[0]<t)&&(late.checked||r[1]<=t)),values=rows.filter((r,i)=>ok[i]).map(r=>r[2]);root.querySelector('tbody').innerHTML=rows.map((r,i)=>'<tr>'+r.map(v=>'<td>'+v+'</td>').join('')+'<td>'+(ok[i]?'Yes':'No')+'</td></tr>').join('');out.textContent='Cutoff '+t+' · '+values.length+' rows · mean '+(values.length?(values.reduce((a,b)=>a+b,0)/values.length).toFixed(3):'undefined')+' · frozen baseline mean 3.000. '+(late.checked?'Late-arriving facts may leak. ':'')+(equal.checked?'Same-cutoff events change the strict-past contract.':'');}
+ root.querySelectorAll('input').forEach(x=>x.addEventListener('input',draw));root.querySelector('button').addEventListener('click',()=>{slider.value='10';late.checked=false;equal.checked=false;draw();});draw();
+}};

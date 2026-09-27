@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GNN + tabular stack · computation reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0130-rdl-checkpoint.html">Lesson 130</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Lesson 131</p><h1>GNN + tabular stack · computation reference</h1></header><h2 id="Forward-computation">Forward computation<a class="anchor-link" href="#Forward-computation">&#182;</a></h2><div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Stage</th>
+  <th>Input → output</th>
+  <th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Row encoding</td>
+  <td>typed columns → N_type × 128</td>
+  <td>Separate encoder per table; shared across row occurrences</td>
+</tr>
+<tr>
+  <td>Relative time</td>
+  <td>cutoff[owner] − node time → days → 128-vector</td>
+  <td>Correct query owner; no future rows</td>
+</tr>
+<tr>
+  <td>Message passing × 2</td>
+  <td>sum neighbors → sum relations → LayerNorm → ReLU</td>
+  <td>Directed typed edges and root query isolation</td>
+</tr>
+<tr>
+  <td>Root readout</td>
+  <td>N_drivers × 128 → B × 128</td>
+  <td>Loader places roots first</td>
+</tr>
+<tr>
+  <td>Head and loss</td>
+  <td>B × 128 → B × 1 → mean L1</td>
+  <td>One label per query; evaluation clipping separate</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="Gradient-diagnosis">Gradient diagnosis<a class="anchor-link" href="#Gradient-diagnosis">&#182;</a></h2><p>Detach a logging copy, not the live row representation. Detaching row vectors can preserve the current output while removing row-encoder gradients. A missing gradient, a zero finite gradient and a nonfinite gradient are distinct. The released first-batch numerical encoder has matched nonfinite gradients: source parity is not proof of healthy optimization. Report finite norms and nonfinite counts separately.</p>
+<h2 id="Instrumentation-contract">Instrumentation contract<a class="anchor-link" href="#Instrumentation-contract">&#182;</a></h2><p>Compare original and instrumented paths on the same batch, state and RNG; check outputs, losses, finite gradients and nonfinite masks. Use isolated copies and restore RNG so observation does not alter training. Gradients are local sensitivity, not causal attribution.</p>
+<h2 id="Reproduction-boundary">Reproduction boundary<a class="anchor-link" href="#Reproduction-boundary">&#182;</a></h2><p>Five fresh full-data ten-epoch runs complete the selected RelBench v1 Table7 F1 released-protocol experiment. Whole-paper/historical parity NOT_ESTABLISHED. Original arrival and mutable-feature histories unavailable. Author execution leaves learner PENDING_WRITTEN_DEFENSE.</p>
+<p><a href="../lessons/0131-gnn-tabular-stack.html">Lesson</a> · <a href="../labs/0131-gnn-tabular-stack.ipynb">Notebook</a> · <a href="../labs/l131-reproduction.md">Protocol and exact commands</a> · <a href="https://arxiv.org/html/2407.20060v1">Primary benchmark paper</a>.</p>
+</article></body></html>

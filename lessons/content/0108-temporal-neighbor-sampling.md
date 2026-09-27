@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 107 to this lesson</p>
+<p>Snapshot aggregation saved work by discarding timing. Temporal sampling keeps event records but limits how many a query reads.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Fanout counts sampled neighbor slots per hop. A hop follows one relationship. Padding fills missing slots and must not be mistaken for a real historical event.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-label">One skill: make temporal queries faster without losing their meaning</p>
 
 A node has interacted a million times. A prediction needs its history, but loading all of it for every query is expensive. **By the end, you will implement a bounded temporal sampler and defend a measured speed–accuracy trade-off.** This is directly useful when a relational model reads linked records as they existed at a particular time.
@@ -146,3 +154,7 @@ Without opening your notes, submit:
 **Primary reading:** [Xu et al., TGAT §3.4 and Appendix A.6](https://arxiv.org/html/2002.07962v1). Read it alongside the [pinned released sampler](https://github.com/StatsDLMathsRecomSys/Inductive-representation-learning-on-temporal-graphs/blob/9293d10d1943c4bd4a186337cf38ba98e4c8bb99/graph.py), watching for differences between intended recency and actual slicing. Ask the teaching agent about any unclear code, boundary or measured result; bring your EXIT defense for critique.
 
 [Quick reference](../reference/temporal-sampling.html) · [Previous: snapshot methods](0107-snapshot-methods.html) · **Next: L109** maps these query cutoffs to database `created_at` and `observed_at` semantics.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Decide which database timestamps can actually support those cutoffs. [Continue to Lesson 109](0109-database-timestamp-contracts.html).
+<!-- sequence-next:end -->

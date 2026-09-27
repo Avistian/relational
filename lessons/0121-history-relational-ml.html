@@ -1,0 +1,193 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>History of relational ML: rules, features, and graphs</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0120-year-3-exit-exam.html">Lesson 120</a></nav><header><p class="stream-kicker">Year 4 · Quarter 1 · Lesson 121</p><h1>History of relational ML: rules, features, and graphs</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 120 to this lesson</p>
+<p>After assembling the pipeline, locate its choices among rules, engineered aggregates and learned message passing. The historical detour explains alternatives you must compare fairly.</p>
+<details><summary>Quick prerequisite reminder</summary><p>An aggregate reduces a group of values, such as a sum per order. Changing the grouping can change the answer even when all original values remain present.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<h2 id="The-question-that-connects-the-history">The question that connects the history<a class="anchor-link" href="#The-question-that-connects-the-history">&#182;</a></h2><p><strong>Your tangible win:</strong> draw a defensible prior-art map and explain, with numbers and code, where each method puts the work of discovering useful relational information. The map is a history of different choices, not a ranking in which every newer method wins.</p>
+<p><a href="0118-cvitkovic-relational-gnn.html">Lesson 118</a> built Cvitkovic's model. <a href="0120-year-3-exit-exam.html">Lesson 120</a> asked you to defend a complete pipeline. We now ask why that pipeline exists. This grounds the mission: a claim that relational deep learning adds value needs to survive comparison with earlier ways of using the same relationships. Preparing this lesson does not certify that you passed the Year 3 exam.</p>
+<p><strong>Route:</strong> understand the historical map; trace one small database; implement three computations; audit what the reproduction establishes; write your own map. Work through one section at a time. The research and reproduction appendix can take a separate session.</p>
+<div id="l121-warmup"></div><noscript><p>Without notes: what does a foreign key preserve? Why can a flat feature vector lose a distinction? Why is author execution not learner mastery?</p></noscript>
+
+<p>Open the <a href="../labs/0121-history-relational-ml.ipynb">student notebook</a>, <a href="../labs/html/0121-history-relational-ml.html">executed reference notebook</a>, and <a href="../reference/history-relational-ml.html">quick reference</a>. The notebook contains the visible mechanism code and full Cvitkovic model/trainer. It runs without the private competition data.</p>
+<h2 id="1-%C2%B7-Read-the-map-as-a-set-of-design-choices">1 &#183; Read the map as a set of design choices<a class="anchor-link" href="#1-%C2%B7-Read-the-map-as-a-set-of-design-choices">&#182;</a></h2><p>A <strong>relational database</strong> stores rows in several tables. A <strong>primary key</strong> identifies a row. A <strong>foreign key</strong> names a related row in another table. A model must turn that variable-sized neighborhood into a prediction for a particular entity or query.</p>
+<figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l121/lineage.svg" alt="Historical anchors and representation choices; reading order does not establish replacement."><figcaption>Historical anchors and representation choices; reading order does not establish replacement. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Historical anchor</th>
+  <th>What is constructed or learned?</th>
+  <th>Useful capability</th>
+  <th>Burden that remains</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>ILP, 1991 anchor</td>
+  <td>Logical rules over relations and background knowledge</td>
+  <td>Express explicit relational conditions</td>
+  <td>Choose vocabulary and constrain the rule search</td>
+</tr>
+<tr>
+  <td>Propositionalization, 2001 anchor</td>
+  <td>A fixed feature vector from relational descriptions</td>
+  <td>Reuse ordinary attribute-value learners</td>
+  <td>Decide which relational distinctions become features</td>
+</tr>
+<tr>
+  <td>Deep Feature Synthesis, 2015</td>
+  <td>Compositions of feature primitives along relationships</td>
+  <td>Automate a large set of candidate features</td>
+  <td>Select primitives, depth, and a downstream estimator</td>
+</tr>
+<tr>
+  <td>Neural relational feature learning, 2018</td>
+  <td>Learned representations from relational data</td>
+  <td>An earlier neural route in this history</td>
+  <td>Audit its own architecture and evaluation scope</td>
+</tr>
+<tr>
+  <td>Cvitkovic, 2019 / expanded 2020</td>
+  <td>Row encoders, graph computation, pooled prediction</td>
+  <td>Train representation and predictor together</td>
+  <td>Extraction, scale, and experimental comparability</td>
+</tr>
+<tr>
+  <td>Fey and RelBench, 2024</td>
+  <td>Temporal heterogeneous graph blueprint and shared tasks</td>
+  <td>Make pipelines and evaluation more systematic</td>
+  <td>Preserve query-time validity and compare strong baselines</td>
+</tr>
+</tbody>
+</table></div>
+<p>The dates are anchors for the readings, not claims that an entire family began that year. ILP and feature engineering remain useful. Neural relational learning also predates the selected GNN paper: <a href="https://arxiv.org/abs/1801.05372">Lam et al. 2018</a> is a necessary branch on the map. Do not write “relational learning began with GNNs.”</p>
+<p><strong>Primary readings:</strong> <a href="https://www.doc.ic.ac.uk/~shm/Papers/ilp.pdf">Muggleton 1991, §§1–2</a>, <a href="https://research-information.bris.ac.uk/en/publications/an-extended-transformation-approach-to-inductive-logic-programmin/">Lavrač and Flach 2001</a>, and <a href="https://www.jmaxkanter.com/papers/DSAA_DSM_2015.pdf">Kanter and Veeramachaneni 2015, §II and Algorithm 1</a>. For the selected neural experiment, read <a href="https://arxiv.org/html/2002.02046v1">Cvitkovic 2020, §§3–5 and Appendix B</a>.</p>
+<h2 id="2-%C2%B7-Start-with-a-rule-you-can-execute">2 &#183; Start with a rule you can execute<a class="anchor-link" href="#2-%C2%B7-Start-with-a-rule-you-can-execute">&#182;</a></h2><p><strong>In plain terms.</strong> A relational rule can ask whether a related row with a particular property exists. It need not flatten every possible child into a separate input column.</p>
+<p><strong>Worked example.</strong> Customer 7 has orders 11 and 12. Order 11 is on time; order 12 is late. Customer 8 has late order 13. Customer 9 has no orders. Write the condition “a customer has a late order” as:</p>
+<div class="highlight"><pre><span></span>has_late_order(customer) ← owns(customer, order) AND late(order)
+</pre></div>
+<p>The arrow means the condition on the right is sufficient for the statement on the left. <code>order</code> is an existential variable: at least one matching order is enough. The outputs for customers <code>[7,8,9]</code> are <code>[True,True,False]</code>.</p>
+<p><strong>Inductive logic programming (ILP)</strong> learns logical programs using examples and background knowledge. Executing the rule above is deduction: apply an already supplied rule to facts. Learning which rule to use is induction. Our first exercise executes a rule; it does not implement an ILP search engine. This distinction follows the setting introduced by <a href="https://www.doc.ic.ac.uk/~shm/Papers/ilp.pdf">Muggleton</a>.</p>
+<p><strong>TODO 1 — <code>exists_late</code>:</strong> return one Boolean per requested customer, in query order. Check empty neighborhoods, row permutations, and the difference between “has an order” and “has a late order.” Duplicate matching orders must not change an existential answer.</p>
+<p><strong>Pause and retrieve.</strong> Which part would an ILP system have to discover that this exercise receives as an input? Answer before moving on: the rule itself, rather than only its truth value on the database.</p>
+<h2 id="3-%C2%B7-Turn-relations-into-columns,-then-automate-the-construction">3 &#183; Turn relations into columns, then automate the construction<a class="anchor-link" href="#3-%C2%B7-Turn-relations-into-columns,-then-automate-the-construction">&#182;</a></h2><p><strong>Propositionalization</strong> turns relational information into a fixed set of attributes for each prediction example. A Boolean <code>has_late_order</code> can itself be one such attribute. The transformation makes existing tabular learners usable; its usefulness depends on what the attributes preserve. <a href="https://research-information.bris.ac.uk/en/publications/an-extended-transformation-approach-to-inductive-logic-programmin/">Lavrač and Flach</a>.</p>
+<p><strong>Worked example.</strong> Suppose customer 7 has transaction amounts 2 and 4 available by day 5. The vector <code>[COUNT, SUM, MAX]</code> is <code>[2,6,4]</code>. A third amount 8 happened on day 4 but arrived on day 7. At day 5, including it would use information that had not arrived. At day 7 the vector becomes <code>[3,14,8]</code>.</p>
+<p><strong>TODO 2 — <code>aggregate_at</code>:</strong> filter each row using both <code>event_time &lt;= cutoff</code> and <code>available_time &lt;= cutoff</code>, then compute count, sum and maximum. Use <code>[0,0,0]</code> for an empty group in this authored example. Preserve query order. The CHECK compares your result with an independent SQL query. In real features, an empty maximum needs an explicit missing-value convention; zero is a teaching choice here.</p>
+<p><strong>Deep Feature Synthesis (DFS)</strong> automates candidate feature construction by composing operations along table relationships. A <strong>primitive</strong> is a basic operation such as sum or a date transformation. The word “deep” refers to composing these operations; it does not imply a neural network. The original <a href="https://www.jmaxkanter.com/papers/DSAA_DSM_2015.pdf">DFS paper, §II</a> explains the construction. Current <a href="https://featuretools.alteryx.com/en/stable/getting_started/afe.html">Featuretools documentation</a> illustrates stacked aggregates.</p>
+<p>Our hand-written aggregate is one feature recipe. It does not enumerate a DFS feature space or reproduce the Data Science Machine's tuning. Distinguish the algorithm that proposes features from the estimator fitted on their resulting values.</p>
+<h3 id="Preserve-the-intermediate-grouping">Preserve the intermediate grouping<a class="anchor-link" href="#Preserve-the-intermediate-grouping">&#182;</a></h3><p><strong>Predict first:</strong> can two customers have the same transaction count, sum, and maximum, but different distributions of spending across orders?</p>
+<div id="l121-group"></div><noscript><p>Static trace: A has two order totals [2,8], B has one [10]. Flat vectors agree at [2,10,8]. Nested sum of squares gives 68 versus 100. Splitting B into two orders changes its nested result to 68.</p></noscript>
+
+<figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l121/grouping.svg" alt="Same line values [2,8], different order ownership. Flat [count,sum,max] agrees; nested sums of squares yield 68 and 100."><figcaption>Same line values [2,8], different order ownership. Flat [count,sum,max] agrees; nested sums of squares yield 68 and 100. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p><strong>Worked example.</strong> Both customers have line amounts <code>[2,8]</code>, so both have <code>[COUNT,SUM,MAX] = [2,10,8]</code>. Customer A places them in two orders: order totals <code>[2,8]</code>. Customer B places both in one order: total <code>[10]</code>. Now compute the sum of squared order totals. For A, <code>2² + 8² = 68</code>. For B, <code>10² = 100</code>.</p>
+<p>The two-stage recipe is: group lines by order; sum their amounts; square each order total; group orders by customer; sum again. Squaring before the second grouping retains a distinction that a single global sum would erase.</p>
+<p><strong>A repair is available to both families.</strong> An engineered nested feature can explicitly compute this recipe. A suitable graph computation can also preserve the intermediate order states. This example establishes a limitation of the three selected flat features, not a universal advantage of GNNs over feature engineering.</p>
+<h2 id="4-%C2%B7-Follow-the-same-path-as-a-differentiable-computation">4 &#183; Follow the same path as a differentiable computation<a class="anchor-link" href="#4-%C2%B7-Follow-the-same-path-as-a-differentiable-computation">&#182;</a></h2><p>A <strong>message</strong> is a value passed from one node to another along an edge. An <strong>aggregation</strong> combines the messages received by a node. A <strong>differentiable</strong> computation allows derivatives of an output with respect to its inputs or parameters to be calculated through the operations.</p>
+<p><strong>TODO 3 — <code>path_signal</code>:</strong> implement the exact numerical recipe from the figure using tensor accumulation. First create an <code>[n_orders,1]</code> array of zeros. Sum each line amount into its order. Square the order totals. Sum these into an <code>[n_customers,1]</code> array. The code must use the ownership indices supplied to it, not a global mean or the order of the input rows.</p>
+<div class="highlight"><pre><span></span><span class="n">order_values</span><span class="o">.</span><span class="n">index_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">leaf_order</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+<span class="n">root_values</span><span class="o">.</span><span class="n">index_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">order_root</span><span class="p">,</span> <span class="n">order_values</span><span class="o">.</span><span class="n">square</span><span class="p">())</span>
+</pre></div>
+<p><code>index_add_</code> accumulates every source row into its indexed destination. Repeated destination indices mean addition, not replacement. The first operation follows Line→Order. The second follows Order→Customer. The completed function runs directly in the notebook experiment and its gradient check.</p>
+<p><strong>Trace the gradient.</strong> Customer A's output is <code>x₁²+x₂²</code>. At inputs 2 and 8, its derivatives are 4 and 16. Customer B's lines receive zero derivative from A's output because no ownership path connects them to A. The CHECK tests that separation and invariance to line-row permutations.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This fixed square operator has no learned parameters. It exposes a path that a learned message-passing model can use; it is not Cvitkovic's GCN. Adding learnable weights does not automatically guarantee that training will discover a useful representation.</p>
+</blockquote>
+<h2 id="5-%C2%B7-What-changed-with-the-selected-Cvitkovic-model?">5 &#183; What changed with the selected Cvitkovic model?<a class="anchor-link" href="#5-%C2%B7-What-changed-with-the-selected-Cvitkovic-model?">&#182;</a></h2><p>The <a href="https://rlgm.github.io/papers/55.pdf">2019 workshop version</a> and <a href="https://arxiv.org/abs/2002.02046v1">expanded February 2020 version</a> are separate source objects. The latter supplies our Home Credit experiment. Its Table 4 reports GCN AUROC <strong>0.780 ± 0.004</strong> and DFS+GBDT <strong>0.777 ± 0.004</strong> on Home Credit. AUROC measures ranking of positive versus negative cases; larger is better. These are published values, not results of this lesson.</p>
+<p>The paper reports an advantage over automated feature engineering on two of three datasets. Its KDD Cup result is counter-evidence to a universal-win story. Small mean differences and fold variation alone do not establish statistical superiority. <a href="https://arxiv.org/html/2002.02046v1">Expanded paper, Table 4</a>.</p>
+<h3 id="Model-architecture:-read-the-actual-prediction-path">Model architecture: read the actual prediction path<a class="anchor-link" href="#Model-architecture:-read-the-actual-prediction-path">&#182;</a></h3><figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l118/architecture.svg" alt="Selected Home Credit GCN: table-specific encoders, one shared GCN, graph-local gate/value pooling, and two logits. Reused from Lesson 118."><figcaption>Selected Home Credit GCN: table-specific encoders, one shared GCN, graph-local gate/value pooling, and two logits. Reused from Lesson 118. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Locate the shared graph convolution and the graph-specific pooling. Which computation is inherited from Lesson 118? On a narrow screen, scroll the figure sideways.</p>
+<p>Read the diagram from the applicant graph downward. Table-specific encoders turn categorical and numerical row values into 256-dimensional vectors. Reverse edges and self-loops support a shared GCN computation. A gate branch assigns graph-local weights; a value branch transforms node states. Their weighted sum produces one graph representation and a two-logit classifier output. A <strong>logit</strong> is a score before conversion to a class probability. The pooling reads all selected nodes.</p>
+<p><strong>Decode the computation.</strong> In the diagram, <code>N</code> is the number of selected rows and <code>H</code> is their <code>N×256</code> state matrix. <code>A</code> records incoming computation edges, including added reverse edges and self-loops. <code>D</code> is the diagonal matrix of node degrees. Multiplying by <code>D⁻½ A D⁻½</code> sums neighbors with a weight of <code>1/sqrt(degree_source × degree_receiver)</code> on each edge. <code>W</code> and <code>b</code> are learned weights and a bias. SELU is a nonlinear activation, applied coordinate by coordinate. Dropout randomly suppresses coordinates during training and is disabled for evaluation.</p>
+<p><strong>Follow the readout.</strong> The gate branch produces one scalar per node. Softmax exponentiates these scalars and divides by their sum within that applicant graph, yielding weights <code>αᵥ</code> that sum to one. The value branch produces a 256-coordinate vector per node. The sum <code>r = Σᵥ αᵥ value(H′ᵥ)</code> is therefore one 256-coordinate applicant representation. The classifier maps it to two scores. Cross-entropy penalizes low probability on the true class; AdamW uses gradients to update model parameters. Validation AUROC chooses a checkpoint, while test-fold AUROC evaluates the chosen checkpoint. The normalization operation and full forward code are visible in the notebook.</p>
+<p>The notebook inlines the complete selected model and trainer from the <a href="../labs/relkit/cvitkovic_l118.py">pinned released-code port</a>, in annotated sections. Follow <code>RowEncoder</code>, <code>CvitkovicGCN</code>, <code>attention_pool</code>, and <code>fit_fold</code>. The exact released choices and modern-runtime differences are in the <a href="../labs/l118-reproduction.md">L118 protocol</a>. There is no need to infer an implementation from a generic GNN box.</p>
+<h3 id="Extraction-is-part-of-the-model's-input-contract">Extraction is part of the model's input contract<a class="anchor-link" href="#Extraction-is-part-of-the-model's-input-contract">&#182;</a></h3><p>The paper's general two-phase RDBToGraph procedure and the released Home Credit query are different procedures. Home Credit uses undirected paths of length zero through two around an applicant. The returned graph contains the nodes and relationships visited by those paths. Do not silently replace that with arbitrary closure or assume every induced edge was returned. <a href="https://github.com/mwcvitkovic/Supervised-Learning-on-Relational-Databases-with-GNNs/blob/57195ccab62d23dcbcac1a317f8a9811a9fd6cb5/data/homecreditdefaultrisk/build_dataset_from_database.py">Released extraction code</a>.</p>
+<p>A reproducible model result needs the right graph, feature conversion, folds, training schedule, selection rule, and scoring. The original source even creates a payment's applicant edge before attempting to match its previous application. A missing previous key does not undo the already-created edge. That detail motivates our fresh extraction audit.</p>
+<h2 id="6-%C2%B7-Read-the-reproduction-evidence-without-upgrading-it">6 &#183; Read the reproduction evidence without upgrading it<a class="anchor-link" href="#6-%C2%B7-Read-the-reproduction-evidence-without-upgrading-it">&#182;</a></h2><p><strong>Full five-fold Home Credit experiment: NOT_RUN.</strong> No fresh held-out AUROC is claimed.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>Measured result</th>
+  <th>Boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Original course grouping computation</td>
+  <td>68 versus 100</td>
+  <td>Fixed operator, not trained GCN accuracy</td>
+</tr>
+<tr>
+  <td>Raw previous-application key universe</td>
+  <td>1,670,214 keys scanned</td>
+  <td>32 selected applicants</td>
+</tr>
+<tr>
+  <td>Missing previous references in that sample</td>
+  <td>14 globally absent; 0 cross-owner</td>
+  <td>Missing relation is not a dropped applicant edge</td>
+</tr>
+<tr>
+  <td>Original Neo4j extraction comparison</td>
+  <td>PASS after empty→null correction</td>
+  <td>32 applicants; full-population equivalence NOT_CHECKED</td>
+</tr>
+<tr>
+  <td>Raw categorical cells corrected</td>
+  <td>123</td>
+  <td>Encoded tensors unchanged; original raw mismatch preserved in audit</td>
+</tr>
+<tr>
+  <td>Cached tensor/output/gradient check</td>
+  <td>EXACT on eight real graphs</td>
+  <td>Controlled computation, current runtime</td>
+</tr>
+<tr>
+  <td>Fresh cached timing pilot</td>
+  <td>1,024 graphs; 130,886 nodes</td>
+  <td>Fixed reconstructed batch, no score evaluation</td>
+</tr>
+<tr>
+  <td>Cached batch collation median</td>
+  <td>0.0434 seconds</td>
+  <td>Original preparation 1.490 seconds</td>
+</tr>
+<tr>
+  <td>Five-fold maximum-schedule projection</td>
+  <td>USD 15.70</td>
+  <td>Excludes full cache construction, disk IO and overhead</td>
+</tr>
+<tr>
+  <td>Aggregate cap / overhead reserve</td>
+  <td>USD 10 / USD 2</td>
+  <td>Pilot worker reservation USD 0.406296</td>
+</tr>
+</tbody>
+</table></div>
+<p>The improved projection still exceeds the cap. <strong>Decision: do not launch five folds.</strong> Pilot function-body resource estimate: USD 0.002409; unitemized startup/build costs are separate. Historical training identity and whole-paper parity remain NOT_ESTABLISHED. Live Colab and deployment remain NOT_CHECKED.</p>
+<p><a href="../labs/_neo4j_l121_results.json">Extraction audit</a> · <a href="../labs/_data_l121_results.json">Raw-key audit</a> · <a href="../labs/_cache_check_l121_results.json">Cache check</a> · <a href="../labs/_pilot_l121_results.json">Timing evidence</a> · <a href="../labs/_budget_l121.json">Budget</a>.</p>
+<p><strong>Selected target:</strong> all 307,511 labeled applications, five released cross-validation folds, model seed 1234 reset per fold, maximum 300 epochs with patience 50, first-best validation AUROC, full test-fold scoring. The five folds are different held-out partitions, not five independent random-seed runs. The predeclared mean comparison tolerance is 0.01 AUROC; it is descriptive, not a statistical equivalence test.</p>
+<p><strong>Optimization boundary.</strong> We cache deterministic scalar/category conversion and graph indices. We do not cache learned embeddings, dropout masks, or model outputs. A controlled check requires identical tensors, training outputs, and gradients under the same random state. This supports the cache transformation, not full training parity.</p>
+<p><strong>Budget boundary.</strong> One bounded pilot is reserved before dispatch. The all-fold projection includes the maximum schedule and final tests, with separate startup/retry reserve. Early stopping might reduce runtime, but we do not launch on an optimistic assumption. The <a href="../labs/l121-reproduction.md">reproduction contract</a> contains exact commands, source hashes, runtime pins, and remaining gaps. It also explains how the full-data runner refuses missing inputs or insufficient budget.</p>
+<p><strong>Exercise.</strong> Classify each statement as paper claim, measured source/implementation evidence, course mechanism result, or unestablished claim: “68 versus 100,” “the cached tensors agree,” “Home Credit AUROC is .780,” and “we reproduced all five folds.” Give the supporting artifact for each valid statement. The last statement is not supported here.</p>
+<h2 id="7-%C2%B7-Why-Year-4-needs-a-temporal-evaluation-standard">7 &#183; Why Year 4 needs a temporal evaluation standard<a class="anchor-link" href="#7-%C2%B7-Why-Year-4-needs-a-temporal-evaluation-standard">&#182;</a></h2><p>The <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey 2024 blueprint</a> describes relational data as a temporal heterogeneous graph: nodes represent rows, and typed links follow key relationships. <strong>Heterogeneous</strong> means node or edge types have different meanings. This provides a common modeling vocabulary. <a href="https://arxiv.org/abs/2407.20060">RelBench v1</a> supplies shared datasets, tasks, and evaluation protocols.</p>
+<p>This is a shift in infrastructure and evaluation, not proof that earlier approaches never handled time. Feature engineering can respect cutoffs too. Our both-clock exercise illustrates a stricter availability contract; missing historical ingestion logs still limit what any retrospective audit can establish.</p>
+<p>Lesson 122 will ask you to construct the relational entity graph from a schema. Carry forward three questions: which rows are visible for this query, which relationships are retained, and which computation can use them? The answer must be explicit before training starts.</p>
+<div id="l121-teachback"></div><noscript><p>Explain why a nested engineered feature can repair this flat collision, and why relational learning predates this GNN. Compare your explanation with the historical map.</p></noscript>
+
+<h2 id="8-%C2%B7-EXIT:-build-your-own-prior-art-map">8 &#183; EXIT: build your own prior-art map<a class="anchor-link" href="#8-%C2%B7-EXIT:-build-your-own-prior-art-map">&#182;</a></h2><p>Complete the <a href="../labs/l121-prior-art-map.md">map and defense template</a>. For each historical anchor, record the input representation, what is learned, where human choices enter, one primary source, and one limitation. Add a separate branch for the 2018 neural work. Attach your three implemented functions and notebook report.</p>
+<p>Explain the 68-versus-100 example without notes. Then give an engineered feature that repairs the flat collision. Finally, explain why neither an extraction check nor a fast pilot establishes a reproduced AUROC. Cite one result that supports the mission and one that limits it.</p>
+<p><strong>Exit criterion:</strong> correct computation, a sourced map, a fair baseline repair, and an evidence claim that survives the stated boundaries. Author execution does not mark your mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p>In 1, 7, and 30 days, redraw the map and recompute the grouping example from memory. Ask the agent follow-up questions wherever a historical claim, ownership index, or reproduction decision remains unclear.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Construct the row graph and verify every edge against a relational join. <a href="0122-reg-construction.html">Continue to Lesson 122</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/l121-lesson.js"></script></body></html>

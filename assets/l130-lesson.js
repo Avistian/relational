@@ -1,0 +1,6 @@
+(()=>{
+ KeyedScoreViz.mount(document.getElementById('l130-keyed'));
+ CheckpointAuditViz.mount(document.getElementById('l130-checkpoint'));
+ if(window.RetrievalBank)RetrievalBank.mount(document.getElementById('warmup'),{upTo:130,count:3});
+ if(window.Teachback)Teachback.mount(document.getElementById('l130-teachback'),{prompt:'Defend this experiment to a reviewer: what was predicted, what information was visible, and what exactly was reproduced?',points:['Define a query using entity AND cutoff, with a separate future label.','Trace tables to typed vectors, temporal messages and one supervised output.','Explain validation-only selection and complete keyed evaluation.','Use all five distinct runs and a predeclared descriptive tolerance.','State historical, availability, manual-FE and learner-mastery limits.'],model:'For each driver and cutoff I predict mean position in the next 60 days. Foreign keys define the graph; dated context is bounded by the root cutoff. Table encoders and two typed GraphSAGE layers feed a scalar driver head. I select the first best validation checkpoint, then evaluate every keyed test query. Complete distinct runs support a selected released-protocol replay. Close means are not historical identity, whole-paper reproduction, causal superiority, or learner mastery.'});
+})();

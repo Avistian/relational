@@ -1,0 +1,200 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Year 3 exit exam: a heterogeneous temporal GNN</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0119-year-3-synthesis.html">Lesson 119</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 120</p><h1>Year 3 exit exam: a heterogeneous temporal GNN</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 119 to this lesson</p>
+<p>The synthesis made a conditional argument for relational learning. The exam asks you to make the supporting graph, clock, training and evaluation contracts executable.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Query identity includes entity and cutoff. Local tensor position, database row identity and query ownership are different indices. Context rows can receive gradients without receiving direct labels.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<p class="stream-kicker">Year 3 exit · from assembled parts to a defensible system</p>
+
+<p><strong>Your win:</strong> build and defend a heterogeneous, temporal PyG predictor whose graph, batches, training labels and reported score refer to the same legal prediction questions.</p>
+<p><a href="../labs/0120-year-3-exit-exam.ipynb">Student notebook</a> · <a href="../labs/html/0120-year-3-exit-exam.html">Executed reference</a> · <a href="../labs/l120-submission.md">Exam submission</a> · <a href="../reference/year-3-exit-exam.html">Quick reference</a> · <a href="../labs/l120-reproduction.md">Full reproduction contract</a></p>
+<p>This is a deliverable-based exam. Start with the closed-notes questions, then implement the five functions in the notebook. Consult the worked explanation when stuck; record the assistance in your submission. Plan several one-hour sessions for implementation, full-paper reading, execution and defense. Finishing this page is not the Year 3 exit criterion.</p>
+<h2 id="1-%C2%B7-Retrieve-the-contracts-before-writing-code">1 &#183; Retrieve the contracts before writing code<a class="anchor-link" href="#1-%C2%B7-Retrieve-the-contracts-before-writing-code">&#182;</a></h2><p>Without opening previous lessons, answer these questions:</p>
+<ol>
+<li>Why does a foreign key equal to 90 not necessarily point to row 90?</li>
+<li>A result occurred on day 5 and arrived on day 8. Can a day-7 prediction use it?</li>
+<li>The same person appears in two queries at different times. Must their sampled graphs be identical?</li>
+<li>Which nodes receive the supervised loss in a sampled batch? Which may still receive gradients indirectly?</li>
+<li>What evidence would establish that your code ran, and what additional evidence establishes that you understand it?</li>
+</ol>
+<details><summary>Check the contracts after attempting retrieval</summary><p>Primary keys identify entities; array positions identify storage locations. Day-7 queries cannot use a day-8 arrival. Query identity includes entity and cutoff, so repeated entities can have different legal neighborhoods. Supervise query roots only; context representations can receive gradients through their messages. Executed artifacts establish reference behavior; an independently produced graph, implementation, leakage explanation and written defense establish learner performance.</p></details>
+
+<p><a href="0100-heterogeneous-gnn-checkpoint.html">Lesson 100</a> supplies heterogeneous graph discipline; <a href="0110-temporal-gnn-checkpoint.html">Lesson 110</a> supplies time discipline; <a href="0116-debug-gnn-training.html">Lesson 116</a> supplies diagnostic discipline. <a href="0119-year-3-synthesis.html">Lesson 119</a> asks what the resulting evidence actually supports. This exam joins those contracts.</p>
+<h2 id="2-%C2%B7-Draw-the-relational-entity-graph-by-hand">2 &#183; Draw the relational entity graph by hand<a class="anchor-link" href="#2-%C2%B7-Draw-the-relational-entity-graph-by-hand">&#182;</a></h2><p>A relational entity graph (REG) gives each table row its own node and each valid primary/foreign-key match its own typed edge. Reverse edges permit information to flow in the opposite direction; they do not add a second database fact. This is the construction in <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey §3</a>.</p>
+<p>Our small course database has three people with keys <code>[90,10,70]</code>, two merchants with keys <code>[8,4]</code>, and six event rows:</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Event row</th>
+  <th style="text-align:right">Person key</th>
+  <th style="text-align:right">Merchant key</th>
+  <th style="text-align:right">Event day</th>
+  <th style="text-align:right">Available day</th>
+  <th style="text-align:right">Amount</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">90</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">2</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">90</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">4</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">70</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">3</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td style="text-align:right">90</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">11</td>
+  <td style="text-align:right">11</td>
+  <td style="text-align:right">16</td>
+</tr>
+</tbody>
+</table></div>
+<p>Draw all eleven nodes first. Label table types and write the forward and reverse edge types. Then circle the two-hop neighborhood for <code>(person90, day7)</code>. Person and merchant attributes are immutable in this authored fixture; real changing dimension attributes need version/availability histories too.</p>
+<p><strong>Worked trace:</strong> person90 maps to person row0. Its event1 is legal at day7, event2 is late, and event5 is future. The two-hop graph therefore contains person90, event1 and merchant8. The event0 belonging to person10 is a third hop away through merchant8. At day8, event2 and merchant4 enter the graph. Neither a longer path nor a timeless merchant authorizes a future event.</p>
+<p><strong>TODO 1 — <code>key_edges</code>:</strong> map foreign keys into row positions; reject duplicate primary keys and dangling references. A missing foreign key creates no edge. The CHECK deliberately uses keys that differ from row positions.</p>
+<h2 id="3-%C2%B7-Preserve-the-query-boundary-through-extraction-and-batching">3 &#183; Preserve the query boundary through extraction and batching<a class="anchor-link" href="#3-%C2%B7-Preserve-the-query-boundary-through-extraction-and-batching">&#182;</a></h2><p>For a query at time <code>t</code>, each event must satisfy <code>event_time ≤ t</code> <strong>and</strong> <code>available_time ≤ t</code>. We remove illegal events before traversal, then apply the hop budget to this legal graph. The root cutoff stays fixed throughout traversal. This course contract explicitly adds availability time; the released F1 benchmark lacks real ingestion histories, so its timestamps cannot prove that every historical feature was actually available. <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey §3.3 and appendices</a>.</p>
+<figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l120/cutoff.svg" alt="A day-7 person90 query admits event1; late event2 enters only at day8. Both clocks stay bounded at every hop."><figcaption>A day-7 person90 query admits event1; late event2 enters only at day8. Both clocks stay bounded at every hop.</figcaption></figure>
+
+<div id="l120-cutoff"></div><noscript><p>Static trace: at day7, person90 sees event1. At day8, event2 arrives. Event5 first becomes visible at day11.</p></noscript>
+
+<p><strong>TODO 2 — <code>visible_rows</code>:</strong> implement both comparisons. The boundary CHECK distinguishes arrival7 from arrival8 for a day7 query.</p>
+<p>The provided extractor returns a real PyG <code>HeteroData</code> object. Each query gets a separate graph, even if two queries mention the same person. <code>Batch.from_data_list</code> concatenates nodes by type and offsets edge indices; <code>n_id</code> records original row identity, while local edge indices address the concatenated tensors. <a href="https://pytorch-geometric.readthedocs.io/en/latest/advanced/batching.html">PyG batching documentation</a>.</p>
+<p><strong>TODO 3 — <code>seed_positions</code>:</strong> locate query roots from their Boolean masks after batching. Do not assume they are the first <code>B</code> person nodes. The CHECK inserts extra context people so that correct roots are <code>[2,3]</code>, not <code>[0,1]</code>. A separate test compares batched predictions against individual predictions: disjoint batching must not transmit information between queries.</p>
+<h2 id="4-%C2%B7-Follow-a-complete-forward-pass,-then-train">4 &#183; Follow a complete forward pass, then train<a class="anchor-link" href="#4-%C2%B7-Follow-a-complete-forward-pass,-then-train">&#182;</a></h2><p>The small exam model is an original teaching model, separate from the published RelBench model. It uses the learner's graph construction, visibility, typed aggregation, seed mapping and loss in an actual training loop.</p>
+<figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l120/architecture.svg" alt="The course model: typed two-channel inputs, table encoders, two relation-specific message rounds, query head and mature-label seed loss."><figcaption>The course model: typed two-channel inputs, table encoders, two relation-specific message rounds, query head and mature-label seed loss.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Compare the course predictor with the paper lane. Which input widths and encoder choices differ, and where do query labels enter? On a narrow screen, scroll the figure sideways.</p>
+<p>Each node has two input channels. Events carry amount and age <code>(query_day − event_day)/10</code>; people and merchants use constant features in this fixture. A separate linear encoder for each table maps <code>[N_type,2]</code> to <code>[N_type,8]</code>. In each of two synchronous rounds, a relation-specific linear map transforms source states, and the receiver sums messages along that relation's edges. The model adds a type-specific root transform and applies ReLU. A scalar head reads person states; the root mask selects one prediction per query.</p>
+<p>For relation <code>r: s→d</code>, a message is <code>W_r h_s</code>; the receiving state is <code>ReLU(W_d h_d + sum_r sum_neighbors W_r h_s)</code>. All messages in a round use the previous round's states. There are distinct parameters for event→person and person→event. That makes direction and table type part of the computation.</p>
+<p><strong>TODO 5 — <code>typed_messages</code>:</strong> accumulate into the receiving table at the receiving local index. Multiple incoming edges must sum; assignment that overwrites the previous message is incorrect. The model applies its relation-specific transforms before calling your function.</p>
+<p><strong>TODO 4 — <code>seed_loss</code>:</strong> calculate mean absolute error only at query roots, rejecting training labels unavailable by the fit cutoff. Input visibility is checked at each query's prediction time; label maturity is checked at the model's fitting time. These are different clocks. A day7 question can legitimately train a model fitted at day10 using an outcome that became available on day9.</p>
+<p>The default notebook trains on six authored queries at days4/7, whose synthetic next-period labels are mature by day10. It runs 120 optimizer steps and predicts two day10 queries. It verifies that the training loss falls and that batching preserves predictions. There is no held-out target score or model selection in this tiny mechanism exercise; falling training loss is not evidence of generalization.</p>
+<p>Predict the direct gradient mask before running the CHECK. Context nodes must have zero <em>direct supervised-output</em> gradient, but may receive gradients indirectly through messages. This distinction is the point of the exercise, not a reason to detach context features.</p>
+<h2 id="5-%C2%B7-Execute-and-audit-the-full-selected-experiment">5 &#183; Execute and audit the full selected experiment<a class="anchor-link" href="#5-%C2%B7-Execute-and-audit-the-full-selected-experiment">&#182;</a></h2><p>The full-data track uses the pinned RelBench release's per-table PyTorch Frame encoders, relative-time encoders, two heterogeneous GraphSAGE layers and regression head. It retains the full visible implementation and trainer from Lesson 117. The small exam network above is not substituted for that model. <a href="https://arxiv.org/html/2407.20060v1">RelBench §3 and Appendix B</a>.</p>
+<figure class="stream-figure" tabindex="0" style="max-width:100%;overflow:auto"><img src="../labs/figures/l120/paper.svg" alt="The separate published RelBench model: table encoders, query-relative time, typed GraphSAGE and seed regression. Reused L117 architecture, executed afresh for L120."><figcaption>The separate published RelBench model: table encoders, query-relative time, typed GraphSAGE and seed regression. Reused L117 architecture, executed afresh for L120.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Compare the course predictor with the paper lane. Which input widths and encoder choices differ, and where do query labels enter? On a narrow screen, scroll the figure sideways.</p>
+<p>The exact target is <strong>RelBench v1 Table 7, F1 driver-position, RDL column</strong>. We execute five fresh seeds, all ten epochs, all 7,453 training queries per epoch, all 499 validation queries and all 760 test queries. Checkpoints are selected by validation MAE. Freeze the descriptive mean tolerance at 0.2 MAE before inspecting results; use the test set only after selection. The historical published means are 3.193 validation and 4.022 test.</p>
+<p><strong>Fresh author-reference execution: COMPLETE selected released-protocol experiment.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Mean MAE</th>
+  <th style="text-align:right">Sample seed SD</th>
+  <th style="text-align:right">Published mean</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.184459</td>
+  <td style="text-align:right">0.010072</td>
+  <td style="text-align:right">3.193</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">4.071967</td>
+  <td style="text-align:right">0.075394</td>
+  <td style="text-align:right">4.022</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Selected epoch</th>
+  <th style="text-align:right">Validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.177127</td>
+  <td style="text-align:right">4.062903</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">3.182222</td>
+  <td style="text-align:right">4.143431</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.179105</td>
+  <td style="text-align:right">4.112558</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.181749</td>
+  <td style="text-align:right">3.947681</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">3.202094</td>
+  <td style="text-align:right">4.093262</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>6,295</strong> final predictions were independently scored. Maximum original-model output discrepancy: <strong>2.86e-06</strong>. Measured pilot plus full-fit worker resource estimate: <strong>USD 0.0545</strong>, excluding unitemized overhead. The aggregate plan caps reservations plus overhead reserve at USD 10. <a href="../labs/evidence/l120/summary.json">Evidence</a>.</p>
+<p>The reproduction audit checks data/source hashes, every epoch, selected checkpoint hashes, query entities/timestamps/targets, independent MAE, and original-model output agreement. Sample seed standard deviation describes these five runs; it is not a confidence interval across datasets or a claim of statistical equivalence.</p>
+<p>Read the deviation ledger before making claims: released fanout <code>[128,64]</code> differs from the paper table's128; source preprocessing fits statistics on the database censored at the test cutoff; original historical seed/environment identity is unavailable; real ingestion histories are absent. The executable course leakage checks establish the both-clock contract on controlled data, not on unavailable F1 histories. Full-paper parity remains <strong>NOT_ESTABLISHED</strong>.</p>
+<p>For fresh execution, follow the exact commands and pinned runtime in the <a href="../labs/l120-reproduction.md">contract</a>. The notebook shows the complete model/trainer and has an OFF-by-default five-seed gate; executing the default reference notebook does not repeat the separate GPU reproduction. The runner reserves compute before dispatch and prevents duplicate launches or source changes under an existing ledger.</p>
+<h2 id="6-%C2%B7-Submit-the-exit-artifacts-and-defend-them">6 &#183; Submit the exit artifacts and defend them<a class="anchor-link" href="#6-%C2%B7-Submit-the-exit-artifacts-and-defend-them">&#182;</a></h2><p>Use the <a href="../labs/l120-submission.md">submission template</a>. Submit your hand-built REG, five implemented functions, executed notebook, task report, full-run evidence or a clearly labeled audit of author evidence, leakage counterexample, and written defense. The template distinguishes your own executions from inspected reference artifacts.</p>
+<p>Read <strong>all of <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey 2024</a></strong>, including appendices. For each entry in the reading ledger, record a section/page, a claim in your own words, its evidence type, and one limitation. Reading the lesson or passing code tests does not complete that requirement. Fey is a position/blueprint paper; the later RelBench v1 experiment is a separate empirical target, not a reproduction of every Fey appendix result.</p>
+<p>Score each of six domains 0–2: REG construction, temporal validity, mini-batch identity, model/training explanation, reproduction evidence, and full-paper defense. Zero means missing/incorrect; one means correct with unresolved assistance or gaps; two means independently correct with evidence. Exit requires at least 10/12, no zero, and a completed full-paper ledger. Any unresolved leakage, mislabeled evidence, or missing complete working pipeline blocks exit regardless of total.</p>
+<p><strong>Current learner status: PENDING_WRITTEN_DEFENSE.</strong> The executed teacher solution does not change that status. Explain one failure your tests catch and one they cannot establish. Then predict what changes when event2 arrives one day earlier, the hop count increases, or query roots are permuted.</p>
+<p>Ask the agent follow-up questions whenever a step is unclear; name the node, tensor or cutoff where the trace stops making sense. In 1, 7 and 30 days, redraw the query graph and reconstruct the loss mask without notes. Lesson 121 begins Year 4's history of relational ML after this exit is demonstrated.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Use the historical map to understand why the Year 4 design choices exist. <a href="0121-history-relational-ml.html">Continue to Lesson 121</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/l120-lesson.js"></script></body></html>

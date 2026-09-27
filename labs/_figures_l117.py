@@ -27,10 +27,29 @@ for (row,col),c in t.get_celld().items():c.set_facecolor('#edf5f2' if row in [1,
 ax.text(.03,.48,'Shuffled input_id = [2, 0, 1] → target = [11, 3, 7]',fontsize=14,color=TEAL,weight='bold')
 ax.text(.03,.33,'input_id  identifies a training-table query row\nn_id        identifies a database entity-row position\nbatch      identifies the query owning a sampled copy',fontsize=13,linespacing=1.8,color=INK)
 ax.text(.03,.08,'Driver 90 appears twice. Its node identity is shared;\nits prediction time, legal neighborhood and target are not.',fontsize=13,color=GOLD);save(fig,'queries')
-fig,ax=plt.subplots(figsize=(9,12));ax.set(xlim=(0,1),ylim=(0,1));ax.axis('off');ax.set_title('Model architecture · released RelBench node regression',loc='left',weight='bold',pad=18)
-boxes=[(.86,.11,'Query rows + complete database','B ≤ 512 (driver, time) pairs; PK/FK REG; sample [128,64]'),(.68,.12,'Per-table row encoder + relative age','Column encodings → four-block ResNet → [nₜ,128]\nAdd Linear(PositionalEncoding((query time − row time)/86400))'),(.48,.13,'Two typed GraphSAGE layers','Sum neighbor vectors per relation + relation-specific root map\nSum relations → node-wise LayerNorm → ReLU; width 128'),(.30,.10,'Read seed driver embeddings → linear head','First B driver copies: [B,128] → [B,1] prediction'),(.12,.11,'Train and select','Mean absolute error → Adam .005 → 10 epochs\nFirst minimum validation MAE; restore selected state')]
-for i,(y,h,title,detail) in enumerate(boxes):
- box(ax,.04,y,.92,h,title,detail,GOLD if i==4 else TEAL)
- if i:arrow(ax,.5,boxes[i-1][0],.5,y+h+.015)
-ax.text(.04,.02,'Inference: clip to training-target percentiles (2,98).\nFrozen GloVe text inputs; trainable row encoders, messages and head.',fontsize=11,color=INK);save(fig,'architecture')
+fig,ax=plt.subplots(figsize=(11,12));ax.set(xlim=(0,1),ylim=(0,1));ax.axis('off')
+ax.set_title('RelBench regression · trace a query through rows, messages and loss',loc='left',weight='bold',pad=20)
+ax.text(.02,.97,'1  ASK · illustrative query: driver 90 at day 7. Keep its future label separate.',fontsize=12,color=INK)
+# A concrete input graph makes the cutoff and message direction visible.
+for x,y,label,col in [(.17,.88,'Driver 90',TEAL),(.50,.88,'Result R1\nday 5',TEAL),(.83,.88,'Race 1',TEAL),(.50,.78,'Result R2\nday 11',RED)]:
+ ax.add_patch(FancyBboxPatch((x-.12,y-.035),.24,.07,boxstyle='round,pad=.008',facecolor='#edf5f2' if col==TEAL else '#fceeed',edgecolor=col,lw=1.5));ax.text(x,y,label,ha='center',va='center',color=col,fontsize=12)
+arrow(ax,.37,.88,.30,.88);arrow(ax,.63,.88,.70,.88)
+ax.text(.03,.79,'Keep R1: 5 ≤ 7\nReverse edges carry context back',fontsize=11,color=TEAL)
+ax.text(.66,.78,'Exclude R2: 11 > 7\nAt every sampled hop',fontsize=11,color=RED)
+ax.text(.02,.71,'2  ENCODE · separate parameters per table (three of nine shown), width 128',weight='bold',color=INK)
+for x,label in [(.02,'Driver columns'),(.35,'Result columns'),(.68,'Race columns')]:
+ box(ax,x,.58,.29,.10,label,'Typed columns → ResNet\n'+('row vector; undated table' if x==.02 else 'row vector + relative-time vector'))
+ax.text(.02,.545,'Dated occurrence age = (its query cutoff − its row time) / 86400 days.',fontsize=11,color=INK)
+ax.text(.02,.495,'3  PASS MESSAGES · open one relation before summing relations',weight='bold',color=INK)
+box(ax,.02,.355,.45,.115,'Neighbors on relation r','mᵣ(v) = Wₙ,ᵣ Σ hᵤ + bᵣ\nSum over eligible sampled senders')
+box(ax,.53,.355,.45,.115,'Destination on relation r','rootᵣ(v) = Wᵣ,ᵣ hᵥ\nEach incoming relation has its own map')
+arrow(ax,.24,.35,.40,.31);arrow(ax,.76,.35,.60,.31)
+box(ax,.18,.235,.64,.075,'Combine, normalize, activate','Σᵣ (mᵣ + rootᵣ) → LayerNorm → ReLU')
+ax.text(.02,.205,'Repeat with a second set of learned weights. Width remains 128; two-hop context can reach the root.',fontsize=11,color=INK)
+
+box(ax,.02,.08,.45,.09,'4  PREDICT · query roots only','First B driver occurrences: [B,128]\nLinear head → [B,1] positions',GOLD)
+box(ax,.53,.08,.45,.09,'5  TRAIN · future query labels','Mean |prediction − target| → Adam\nGradients reach encoders and both layers',GOLD)
+arrow(ax,.48,.125,.52,.125)
+ax.text(.02,.025,'Select: first minimum validation MAE. Inference: restore selected state; clip to train-label percentiles 2 and 98.',fontsize=10.5,color=INK)
+save(fig,'architecture')
 print('Built three portable computation figures')

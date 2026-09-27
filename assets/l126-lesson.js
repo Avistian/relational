@@ -1,0 +1,5 @@
+(()=>{
+ AveragePrecisionViz.mount(document.getElementById('l126-ap'));
+ if(window.RetrievalBank)RetrievalBank.mount(document.getElementById('warmup'),{upTo:126,count:3});
+ if(window.Teachback)Teachback.mount(document.getElementById('l126-teachback'),{prompt:'Why can a correctly loaded database and a plausible metric still fail to reproduce the beta benchmark?',points:['The paper version, archive hashes and task definition identify the experiment.','A global test cap does not enforce every earlier query cutoff.','Predictions must match entity and time in evaluator order.','AP consumes tied scores together and differs from ROC-AUC.','A modern task or synthetic source check does not recover historical data.'],model:'I need both semantic and artifact identity. I pin the paper, source and archives, verify eligibility and label windows, and preserve each query key while batching. I then align predictions and independently compute the declared metric. Correct code on a newer database proves that execution path, but cannot establish historical benchmark reproduction.'});
+})();

@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 106 to this lesson</p>
+<p>EdgeBank remembered pairs. A learned snapshot model needs a precise answer to a new question: does history live in node states or in convolution weights?</p>
+<details><summary>Quick prerequisite reminder</summary><p>A GCN mixes neighboring features within one graph. A recurrent update combines new input with stored state across time. These are separate directions of computation.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-label">One skill: trace what crosses a snapshot boundary</p>
 
 A database export arrives every night. You can build a graph from each export, but a graph neural network on today's export does not automatically remember yesterday. **By the end, you will implement a snapshot encoder, identify its recurrent state, and defend which observations a prediction could use.** That is the practical bridge from temporal graphs to periodically refreshed relational systems.
@@ -27,6 +35,8 @@ This differs from *nowcasting* a missing edge inside a graph already observed at
 ## 2 · Model architecture: which object remembers?
 
 [[FIG:architecture]]
+
+**Diagram trace.** Trace the two horizontal time paths. Which state has one row per node, and which state maps feature coordinates? On a narrow screen, scroll the figure sideways.
 
 There are two separate directions of computation: **across neighbors inside one graph**, and **across time between graphs**. A graph convolutional network (GCN) supplies the first. A recurrent neural network supplies the second.
 
@@ -138,3 +148,7 @@ Send your code and written defense to the teacher for feedback; ask follow-up qu
 **Primary reading:** Pareja et al., [EvolveGCN, §3–4](https://arxiv.org/html/1902.10191v3), especially Figures 1–2 and Table 2, then compare `egcn_o.py` and `splitter.py` in the [publication-era source](https://github.com/IBM/EvolveGCN/tree/3f4996ac2a742a69fe6ce6e378b6317518bd99bf). For the event-based alternative, revisit [TGN §3](https://arxiv.org/html/2006.10637v3#S3) and [L102](0102-temporal-graph-networks.html). Keep the [snapshot reference](../reference/snapshot-state-contracts.html) beside your implementation.
 
 **Next:** L108 makes temporal neighbor sampling efficient. The question changes from “what history is legal?” to “how can we retrieve enough of that history within a batch budget?”
+
+<!-- sequence-next:start -->
+**Carry this forward.** Retrieve a bounded event history without confusing a faster implementation with a changed sampler. [Continue to Lesson 108](0108-temporal-neighbor-sampling.html).
+<!-- sequence-next:end -->

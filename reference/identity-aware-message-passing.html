@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Identity-aware message passing · reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0131-gnn-tabular-stack.html">Lesson 131</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Lesson 132</p><h1>Identity-aware message passing · reference</h1></header><h2 id="Three-identities">Three identities<a class="anchor-link" href="#Three-identities">&#182;</a></h2><div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Signal</th>
+  <th>Meaning</th>
+  <th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Table type</td>
+  <td>What kind of row?</td>
+  <td>Separate encoder/relations</td>
+</tr>
+<tr>
+  <td>Global entity ID</td>
+  <td>Which known database row?</td>
+  <td>One embedding per ID</td>
+</tr>
+<tr>
+  <td>Root marker</td>
+  <td>Who is asking this query?</td>
+  <td>One shared role vector</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="Compute-and-train">Compute and train<a class="anchor-link" href="#Compute-and-train">&#182;</a></h2><p>Two-tower: encode source and sponsor separately → dot product → BPR. Released defaults include sponsor-ID embeddings. ID-aware: mark the condition root → four graph layers → sampled sponsor head → BCE. Original ID-GNN uses distinct root/nonroot message functions; the pinned RelBench variant uses an additive marker.</p>
+<h2 id="Query-ownership">Query ownership<a class="anchor-link" href="#Query-ownership">&#182;</a></h2><p>Label <code>(owner, sponsor_id)</code>, never sponsor ID alone. For B queries, <code>owner + B * sponsor_id</code> is an injective integer code within int64 range. Cutoffs stay attached to owners at every hop. Missing candidates cannot be repaired by a larger marker.</p>
+<h2 id="MAP@k">MAP@k<a class="anchor-link" href="#MAP@k">&#182;</a></h2><p>Sum precision at relevant ranks, divide by min(k, true-set size), then average equally over nonempty query truth sets. Duplicate predictions are invalid. Preserve query ordering or align by source + cutoff.</p>
+<h2 id="Evidence">Evidence<a class="anchor-link" href="#Evidence">&#182;</a></h2><p>Same-state marker intervention isolates a computation. Paired BCE fits isolate a toy learning mechanism. Full two-tower versus ID-GNN comparison changes multiple design choices. None establishes historical paper identity. Learner: PENDING_WRITTEN_DEFENSE.</p>
+<p><a href="../lessons/0132-identity-aware-message-passing.html">Lesson</a> · <a href="../labs/0132-identity-aware-message-passing.ipynb">Notebook</a> · <a href="../labs/l132-reproduction.md">Protocol</a> · <a href="https://snap.stanford.edu/idgnn/">Original ID-GNN</a> · <a href="https://arxiv.org/html/2407.20060v1">RelBench paper</a>.</p>
+</article></body></html>

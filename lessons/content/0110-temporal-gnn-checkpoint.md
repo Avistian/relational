@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 109 to this lesson</p>
+<p>The clock, sampler and model are now defined. The checkpoint must preserve the predictor that actually produced the selected validation score.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Parameters are learned shared weights. Temporal state includes memories, clocks and pending messages. A checkpoint is a saved state; restoring only some of it can change predictions.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-label">One skill: defend a trained temporal GNN from data cutoffs to restored state</p>
 
 A good test score is only useful if the predictor could have known its inputs. **Your Q3 checkpoint is to train a temporal graph network, reconstruct its evaluation, and demonstrate that changing the future cannot change an earlier prediction.** You will submit working code and a short defense, rather than declare mastery because a notebook ran.
@@ -25,6 +33,8 @@ The model also has node memories, last-update clocks and queued messages. A resu
 An interaction is a tuple `(user, page, timestamp, event_features)`. This dataset provides 172 numeric features per interaction. A node is a user or page with a stable integer identifier. Node features are zero vectors in this experiment, so identity and history carry the relational information. **Memory** is a 172-number vector stored for each node. Its entries are learned summaries, not named factual fields.
 
 [[FIG:architecture]]
+
+**Diagram trace.** Find the score-before-update boundary. Which current-event features are unavailable until after scoring? On a narrow screen, scroll the figure sideways.
 
 **First consume old messages.** A queued message contains the two endpoint memories, the interaction features and an elapsed-time encoding: 172 + 172 + 172 + 172 = 688 numbers. A gated recurrent unit (GRU) combines that message with the previous 172-number memory. A GRU learns how much old state to retain and how much new information to write. The latest queued message per node is used here. See the paper's message/update equations and the [released memory updater](https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/modules/memory_updater.py).
 
@@ -156,3 +166,7 @@ A strong defense explains why a strict sampler can coexist with leaking memory, 
 Tomorrow, reconstruct the four pieces of inference state without notes. Next week, invent a late-arriving event and a tied-timestamp counterexample. These spaced retrieval tasks test retention beyond today's ability to follow the notebook.
 
 The next quarter moves to OGB benchmark reproduction. Carry forward this habit: define the exact prediction question and evaluator before treating a leaderboard number as evidence. Keep the [temporal checkpoint reference](../reference/temporal-gnn-checkpoint.html) nearby. Ask the teaching agent follow-up questions about any unclear computation or submit your EXIT for feedback.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Transfer this protocol discipline to an official static-graph benchmark. [Continue to Lesson 111](0111-ogb-benchmark-contract.html).
+<!-- sequence-next:end -->

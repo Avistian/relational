@@ -1540,3 +1540,155 @@ Approved combined scope: database timestamp contracts plus full selected rel-f1/
 - Source fanout[128,64], preprocessing on test-censored database, declared training seeds0–4/type seed42/current runtime and unavailable real ingestion histories are explicit limits. Selected released-protocol replay COMPLETE; historical/whole-paper parity NOT_ESTABLISHED. Author execution separate from PENDING_WRITTEN_DEFENSE; live Colab NOT_CHECKED.
 - Pilot plus five-fit resource estimateUSD.05768676, excluding unitemized overhead; USD10aggregate plan, eight3600-second worker ceilingUSD6.500736 plus USD3.499264 overhead reserve. One local overly strict exact-GPU comparison blocked a launch before workers; corrected to existing1e-5numeric tolerance. No training retries or post-score tuning.
 - User also requested GitHub deployment repair. Actual failure was an ignored L110 solution required by the workflow. Clean-Git-index regression reproduced it; explicit publication exception fixed it. Commit8107c76 deployed in successful run36298946460; manifest, L116 and L110 solution live bytes matched. L117 publication is recorded separately.
+
+
+## Lesson 118 prepared · 2026-09-27
+
+- Approved Cvitkovic lesson connects expanded 2020 source to the 2019 lineage and L117 REG. Distinguishes general two-phase RDBToGraph from Home Credit's released two-hop query; explains separate table initializers, one shared GCN and gate/value graph pooling. Three live tasks, three portable figures, interactive extraction/cutoff trace, standalone executed solution and reference shipped.
+- Original TabMLP/embedding/GraphConv/gated-pooling Python modules agree on controlled inputs: maximum forward discrepancy2.98e-8 and gradient discrepancy1.19e-7 using a dense adapter on modern PyTorch. Original historical DGL binary NOT_CHECKED. Independent closure oracle792cases; every released train/val/test identity matches across five folds. Three mutants rejected; tiny complete trainer/checkpoint/prediction path and deadline checked.
+- User supplied Kaggle access; credentials stored outside the repository with600permissions. Home Credit raw archive downloaded and retained locally (ignored). Target-blind pilot1024applicants/130886nodes; CSV reconstruction is NOT verified against Neo4j and has5148unresolved previous-application references. No licensed row data published.
+- T4 real-data pilot resource estimateUSD.001291 for function body, unitemized startup/build overhead separate. Hard worker reservationUSD.406296, no retries, USD2overhead/retry reserve withinUSD10aggregate cap. Current unoptimized-port five-fold300epoch projectionUSD124.83,50epoch scenarioUSD20.80. Full selected GCN experiment NOT_RUN; historical/whole-paper parity NOT_ESTABLISHED. Cost can change with caching, which has not been measured.
+- Sixteen solution code cells executed; desktop/mobile/no-JS/print/keyboard, deterministic builders and copied Pages checks PASS. Live Colab/deployment NOT_CHECKED. Learner PENDING_WRITTEN_DEFENSE. Exact commands and prerequisites: labs/l118-reproduction.md.
+
+## Lesson 119 authoring · 2026-09-27
+
+User approved synthesis + executable lab + five fresh full-data RelBench F1 RDL runs. Selected experiment COMPLETE; validation3.18950±.04009/test4.01457±.12673 MAE, descriptive CLOSE/CLOSE. All6295 final query predictions independently rescored and original-model replayed. Worker resource estimateUSD.05844 excludes unitemized overhead. Model/trainer unchanged from pinned L117; new volume/timestamps/UUIDs and ledger. L118 remains NOT_RUN. Four live TODOs and one-page writing task preserve counter-evidence; learner PENDING_WRITTEN_DEFENSE. This note records author preparation, not completion of learner work.
+
+## Lesson 120 prepared · 2026-09-27
+
+Approved Year3 exit exam plus five fresh full-data ten-epoch RelBench F1 runs. Validation3.184459±.010072/test4.071967±.075394 MAE (sample seed SD), both descriptive CLOSE. All6295 final predictions independently scored and original-model replayed; maximum raw difference2.861023e-6. Source/current-CPU outputs, gradients and Adam update exact; full nine-table74063-row SQL/query audit passed.
+
+Five live functions feed a complete small heterogeneous temporal PyG training pipeline. Independent144-case temporal oracle, five rejected faults, disjoint-batch prediction equality, mature seed loss, three portable figures, full Fey reading/defense ledger and rubric. Small authored training is COURSE_ONLY. Author execution does not pass the learner: PENDING_WRITTEN_DEFENSE.
+
+Pilot plus five-fit worker-resource estimateUSD.054512, excluding unitemized overhead. Six of eight bounded worker reservations consumed underUSD10 aggregate plan; no retries. Selected release replay COMPLETE; historical/whole-paper parity NOT_ESTABLISHED; real ingestion histories unavailable. Live Colab and deployment NOT_CHECKED. Exact commands: labs/l120-reproduction.md.
+
+## Lesson 121 prepared · 2026-09-27
+
+Approved history + executable lab + renewed Home Credit attempt. Prior-art map spans ILP, propositionalization, DFS, Lam2018 neural relational features, Cvitkovic2019/2020, and Fey/RelBench2024. Three live rule/aggregate/path tasks, independent SQL check, four rejected mutations, three portable figures, interactive grouping trace, full visible Cvitkovic model/trainer and map defense template. Author solution executes22 code cells; learner PENDING_WRITTEN_DEFENSE.
+
+Fresh original-module checks and all five released fold identities pass. Full raw-key scan1670214 previous IDs resolves14 missing references in32 target-blind applicants as globally absent. Actual Neo4j3.5.4 query audit found123 empty-string/null cells across28 graphs; L121 corrected fixture matches2871nodes/4133edges as typed feature/edge multisets, with exact unchanged encoded tensors. Original L118 artifacts preserved. Full-population graph equivalence and historical DGL binary remain unchecked.
+
+Caching preserves encoded tensors, stochastic training outputs and gradients on8 real graphs. Fresh1024-graph T4 pilot lowers preparation1.4895s→cached collation.04338s; five-fold max-schedule projectionUSD15.70298 excludes cache construction/IO/overhead and exceedsUSD10cap. Worker reservationUSD.406296; overhead/retry reserveUSD2; function-body estimateUSD.002409 excludes unitemized overhead. No training retries or five-fold launch. Disk-cache full trainer not integrated; runnable fallback retains L118 trainer and conservative gate. Selected experiment NOT_RUN; historical/whole-paper parity NOT_ESTABLISHED.
+
+Notebook/browser1200px/375px/keyboard/no-JS/print/deterministic rebuild/copied Pages PASS;50 internal copied links checked. Live Colab/deployment NOT_CHECKED. Exact commands and engine setup: labs/l121-reproduction.md. No publication requested.
+
+
+## Lesson 122 prepared · 2026-09-27
+
+Approved REG-construction lesson plus full selected RelBench v1 F1 RDL replay. Three live functions handle key identity, FK resolution and typed graph assembly. All 74,063 released F1 rows / 13 forward relations / 338,842 directed edges match independent SQL and original-source topology. Portable notebook rebuilds every key row. Six semantic mutants rejected; isolated rows, null/dangling keys, two roles, row permutations and junction multiplicity checked.
+
+Five fresh full-data ten-epoch runs: validation 3.18870 ± .02246, test 4.05511 ± .15171 MAE, both descriptive CLOSE. All 6,295 final predictions independently rescored and replayed through original model. Pilot plus completed-fit worker resource estimate USD .05259377 excludes unitemized overhead; six of eight bounded worker reservations consumed within USD10 plan. No retries.
+
+Local upstream topology audit uses constant features and omits time attributes due to pandas read-only conversion incompatibility; full GPU path uses pinned runtime and released time/features. Source fanout/preprocessing deviations preserved. Whole-paper/historical identity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. Standalone solution, desktop/mobile/keyboard/no-JS/print/deterministic rebuild/copied Pages pass. Live Colab/deployment NOT_CHECKED. Protocol: labs/l122-reproduction.md.
+
+
+## Lesson 123 prepared · 2026-09-27
+
+Approved temporal-heterogeneous lesson + full selected reproduction. Three live functions implement explicit two-clock eligibility, exhaustive incoming sampling, and visibility/endpoint audit. Root cutoff persists across hops; undated rows are explicit assumptions. Complete F1 topology/times (74063rows/338842edges/72918dated rows) embedded in portable notebooks. Nine exact neighborhoods independently match SQL node sets and PyG typed nodes/edges; same-driver two-cutoff and six fault-injection checks pass.
+
+Five fresh full-data ten-epoch RDL fits: validation3.17118733±.05090126, test4.06491279±.06990434, both descriptive CLOSE. All6295 final predictions independently rescored and compared to original model;403895 repeated training/evaluation query occurrences audited for timestamp/source-edge identity and query isolation. Worker resource estimateUSD.059597827 excludes unitemized billing; six of eight bounded reservations used, no retries. Missing ingestion/static creation/mutable-feature histories and released preprocessing fit through test cutoff remain explicit. Whole-paper/historical identity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. Delivery details in labs/_delivery_l123_results.json; live Colab/deployment NOT_CHECKED. No publication requested.
+
+## Lesson 124 prepared · 2026-09-27
+
+Approved task-table lesson and full selected reproduction. Three live functions construct future labels, validate query identity/maturity, and align predictions by entity+time. All8712released task rows independently reconstructed from26080result events; original SQL and archived keys/labels agree. Past-only eligibility removes955/33/42labeled rows; future-participation conditioning remains explicit. One real task row traces to99nodes/245edges.
+
+Five fresh complete ten-epoch RDL fits: validation3.17965291±.04071402, test4.01843825±.10260667 MAE, both descriptive CLOSE. All6295final predictions independently rescored and replayed with original model. Full403895query-occurrence temporal audit inherited from L123. Pilot+five-fit worker estimateUSD.05386633 excludes unitemized overhead; six of eight reservations used withinUSD10 plan, no retries.
+
+Historical/whole-paper identity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. Notebook and delivery outcomes recorded separately in labs/_execution_l124_results.json and labs/_delivery_l124_results.json. Live Colab/deployment NOT_CHECKED. No publication requested. Exact commands: labs/l124-reproduction.md.
+
+## Lesson 125 prepared · 2026-09-27
+
+User approved PyTorch Frame deep dive with historical Table2 rel-stackex-engage target and USD10 aggregate cap. Twenty source files pinned. Six original/archive endpoint probes returned404; no checksum-matching mirror recovered. Exact paper commit/seeds/runtime/text revision remain unestablished. Full selected experiment NOT_RUN; cloud spendingUSD0. No substitute benchmark score claimed.
+
+Executable course package: all74,063 rows of nine-table F1 database through2010-01-01 encoded with separate width8/two-block Frame-equivalent ResNets. All-row upstream forward equality; fixture outputs/gradients/Adam equality; four rejected mutations. One step on23 real training queries at2004-09-03 proves gradients into driver and result encoders. Static creation histories unavailable; explicit hashed-text adapter is not pretrained. Four live TODOs and portable full-data notebook. Delivery/execution evidence lives in labs/_delivery_l125_results.json and labs/_execution_l125_results.json. Learner PENDING_WRITTEN_DEFENSE; live Colab/deployment NOT_CHECKED. No publication requested.
+
+## Lesson 126 prepared · 2026-09-27
+
+Approved beta paper/API lesson plus historical contract reproduction attempt. Pinned
+November2023 source0433616e identifies package0.1.1; the December2023 paper contains
+no numerical benchmark-results table. Historical beta database/task/raw endpoints
+returned404 in seven probes; web-archive query timed out. Original database checksum
+differs from L125's later snapshot. Full historical contract NOT_RUN/BLOCKED_DATA;
+whole-paper identity NOT_ESTABLISHED; numerical beta target NOT_APPLICABLE. USD0 spent.
+
+Four live functions cover schema/FK audit, engagement eligibility/labels, keyed prediction
+alignment and tied-score AP. Original beta package and independent SQL agree on82
+synthetic task/cutoff cases;200 AP comparisons agree within1.12e-16. Recovery operator
+checks hashes then reconstructs every split; synthetic complete-path/corrupt-label tests
+pass, full historical archives remain unavailable.730-day source horizon, stale3-year
+docstring, sentinel handling, source trainer's stale rtb imports and missing availability
+histories are explicit in the protocol.
+
+Separate complete RelBench1.1.0 F1 tour:97,606 raw rows,74,063 rows after test cap,
+9tables/13FKrelations; all8,712task rows independently audited. Frozen training-median
+predictor13.333333 yields validationMAE4.135571/testMAE4.444671; all760test predictions
+independently SQL-scored and notebook-matched. COURSE_ONLY; no GNN score claim.
+Six semantic mutations rejected.17 solution cells executed standalone; three portable
+figures and desktop/mobile/keyboard/no-JS/print/deterministic/copied-Pages checks pass.
+Author preparation leaves learner PENDING_WRITTEN_DEFENSE. LiveColab/deployment
+NOT_CHECKED; no publication requested. Exact commands: labs/l126-reproduction.md.
+
+## Lesson 127 prepared · 2026-09-27
+
+Approved benchmark overview + full selected RelBench v1 Table7 F1 RDL reproduction, USD10 aggregate. Five fresh full-data ten-epoch runs completed: validation3.178174±.022776MAE, test3.967165±.093906MAE, both descriptive CLOSE under predeclared .2 tolerance. All6295predictions independently rescored and replayed through original model; every sampled batch audited across403895query occurrences. SQL graph census and archive query identities independently verified.
+
+Three live tasks own frozen experiment configuration, first validation-minimum checkpoint selection and complete unique-seed aggregation. Portable notebooks replay real evidence and reconstruct driver10's99-node/245-edge exhaustive input neighborhood, with visible full model/trainer and explicit OFF full-training gate. Four diagrams, interactive test-selection counterexample, reference and manifest navigation. Execution and delivery results recorded in labs/_execution_l127_results.json and labs/_delivery_l127_results.json.
+
+Pilot+five-fit worker resource estimateUSD.06339861 excludes unitemized overhead; six of eight reservations used, no retries. Historical/whole-paper parity NOT_ESTABLISHED; other29tasks NOT_RUN here; learner PENDING_WRITTEN_DEFENSE. Live Colab/deployment NOT_CHECKED. Exact commands and deviations: labs/l127-reproduction.md. No publication requested.
+
+
+## Lesson 128 prepared · 2026-09-27
+
+Approved task taxonomy + fresh full selected driver-dnf experiment under USD10 aggregate cap. Three live functions implement task contracts, tied AUROC and macro MAP. Five computation figures, two interactive metric controls, portable student/solution notebooks and reference. Distinguishes output taxonomy from time and autoregressive decoding.
+
+Initial pilot rejected changed task archive checksum before training. Upstream label-flip history and independent SQLite/raw-event plus original pre-flip SQL audits establish all12679 historical query keys/labels. Current archive ordering retained; old archive bytes/order remain unestablished. Historical positive means no future statusId !=1, despite task name. Full timestamp precision is essential; date-only truncation changes strict window membership.
+
+Five fresh full-data ten-epoch runs: validation71.87810±1.29392pp; test71.67081±1.17596pp AUROC. Both descriptive CLOSE under predeclared2pp mean tolerance. All6340 final probabilities independently rescored and compared with original model;605190 sampled query occurrences audited. Successful pilot+five-fit worker estimateUSD.07802214 plus failed pilot bounded byUSD.812592; setup/storage/unitemized billing excluded. Seven of eight bounded reservations consumed, no automatic retries. No more cloud work planned.
+
+Standalone solution21 code cells and all12679 task rows execute; three TODOs,80 AUROC and40 MAP comparisons, six semantic mutants rejected. Desktop/mobile375px/keyboard/no-JS/print/deterministic rebuild/copied-Pages checks recorded separately. Learner PENDING_WRITTEN_DEFENSE; whole-paper/historical identity NOT_ESTABLISHED; live Colab/deployment NOT_CHECKED. No publication requested. Exact commands: labs/l128-reproduction.md.
+
+
+## Lesson129 prepared · 2026-09-27
+
+Approved manualFE lesson and complete selected user-study F1 driver-position replay. Original SQL pinned445bb7a3; PyTorchFrame0.2.2 and LightGBM4.3.0. All8712 queries;50 engineered fields plus retained driverId. Independent audit matches443552 feature/label values and every target. Past race slots use global IDs; schedule availability and static histories unknown. Historical relbench0.2.0 staging404; v1 archive substitution disclosed. Figure3 manualFE is not Table7 raw-entity LightGBM.
+
+Five fresh ten-trial full searches after freezing archive query row order: validation2.777330±0.027905MAE; test3.948917±0.070469. Every6295 output independently tree-replayed and SQL-scored; original source pilot exact. Full notebook rerun regenerates SQL/mappings and repeats all50 trials/refits with exact predictions. Earlier unspecified SQL row order changed fresh sampled fits; initial evidence retained separately and excluded from final aggregate. All diagnostic/final work local CPU, paid cloudUSD0.
+
+Three live TODOs, a course tree over all8712 learner-generated queries, five portable figures, complete model/SQL visibility, effort log and reference. Default solution14code cells passed. Desktop/mobile/keyboard/noJS/print and copied Pages checked. Human study NOT_RUN; historical/full-paper identity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE; liveColab/deployment NOT_CHECKED. Exact commands: labs/l129-reproduction.md. No publication requested.
+
+
+## Lesson130 prepared · 2026-09-27
+
+Approved Q1 checkpoint and complete fresh F1 driver-position RDL replay underUSD10 aggregate. Five fresh ten-epoch seeds: validation3.164116±.038287MAE; test4.070921±.075000MAE, both descriptive CLOSE under predeclared.2 tolerance. All6295final predictions independently scored and original-model checked;403895sampled query occurrences audited. Full archive query identity and SQL graph census verified.
+
+Three live functions validate query keys, align shuffled predictions, and require complete distinct fits before the verdict. Seven semantic mutants rejected. Real driver10 query reconstruction99nodes/245edges; five portable computation figures, two keyboard-accessible interventions, reference and written-defense template. Reused L129 tuned manual-FE predictions have identical keys/targets and lower mean testMAE3.948917; unequal protocols and human-effort limits explicit.
+
+Default solution22code cells passed standalone. Portable full-training gate separately completed five additional full fits and6295independently rescored predictions; validation3.171492/test4.083289means, not mixed into primary evidence. One initial remote import failure retained and stopped; corrected standalone launcher passed. All8reservations used. Successful worker estimateUSD.104571153; failed-worker boundUSD.812592; unitemized overhead excluded and reserve retained. No more cloud dispatch.
+
+Desktop/mobile/keyboard/noJS/print, deterministic builds and copied Pages checked. Historical/whole-paper identity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE; liveColab/deployment NOT_CHECKED. Exact commands: labs/l130-reproduction.md. No publication requested. Design alone committed; existing workspace work preserved.
+
+## Lesson 131 — GNN + tabular encoder stack (2026-09-27)
+
+Approved measured forward/backward lesson plus five fresh full-data ten-epoch RelBench Table7 F1 fits. Validation3.187859582±.020248973MAE; test4.119595342±.228564635MAE; both descriptive CLOSE under predeclared.2 tolerance. All6295predictions independently rescored/original-model replayed;403895query occurrences audited.
+
+Three live tasks summarize activations, align per-query age and select roots without detaching. Every fresh seed records actual first-batch activations and gradients. Original and instrumented paths have matching640nonfinite entries in results numerical-encoder weights; finite gradients agree within2.4e-7. Initial checker failed on NaNs; recovery explicitly checks masks and finite values. Original algorithm preserved; gradient health is not inferred from parity. Failure source/log and reservation retained.
+
+Complete lesson, portable student/solution, five measured figures, interactive owner/detach controls and reference. Default notebook24code cells executes a small full neural trace with state/RNG checks and replays author artifacts. Full-training gate and delivery reports are separate; see labs/l131-reproduction.md. Historical/whole-paper identity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. Live Colab/deployment NOT_CHECKED; no publication requested. USD10 aggregate guard includes failed pilot, successful pilot, five fits and one notebook validation reservation.
+
+L131 final validation: standalone notebook24cells PASS; separate pinned-T4 portable gate five complete fresh fits PASS,6295predictions and five traces independently checked. GPU validation was preempted once; guard stopped its infrastructure restart and a fresh-volume recovery completed. Budget reallocated within unchangedUSD10: ten worst-case one-hour worker slots8.125920USD plus1.874080USD overhead reserve. Successful workers0.103046493USD; failed/preempted ceiling2.437776USD; invoice NOT_ITEMIZED. Desktop/mobile375px/keyboard/noJS/print/deterministic rebuild/copiedPages checks PASS.
+
+
+## Lesson132 — identity-aware message passing (2026-09-27)
+
+Prepared lesson, reference, portable student/solution and full released-protocol operator. Three live identity functions, paired neural fixture, exact source output/gradient checks, six rejected mutants, all41072 SQL label rows independently reconstructed, and8276pilot rankings rescored. Both full-data seed100 one-epoch pilots completed. Full five-seed/twenty-epoch comparison INCOMPLETE: aggregate projected USD10.64 exceeds approved USD10; no further paid dispatch.
+
+WSL recovery: the large inline Python prediction literal triggered excessive IPython memory use. Compressed, hash-checked JSON replay passes at136124KiB peak RSS in a1.5GiB-limited probe. Complete30-cell notebook passes under a4GiB address-space ceiling with one BLAS thread. Execution tooling preserves incremental progress and limits. LiveColab/deployment NOT_CHECKED; learner PENDING_WRITTEN_DEFENSE. See labs/l132-reproduction.md and final verification report for delivery evidence.
+
+
+## Lesson134 prepared · 2026-09-27
+
+Approved temporal sampling/scale lesson and full selected F1 reproduction under USD10. Five fresh full ten-epoch fits: validation3.181779±.014839 MAE; test4.003968±.157440, both descriptively CLOSE under predeclared.2tolerance. All6295final predictions independently rescored and original-model replayed;403895query occurrences audited.
+
+Full pinned official rel-stack topology4,247,264nodes/11,625,774directed edges. Historical database checksum differs; source task SQL reconstructed on this archive and independently event-set checked for83,531queries at2020-07-02;19future-created roots excluded,2048eligible IDs selected without labels. Three bounded width32 constant+log-age training workloads completed; paper-scale benchmark NOT_RUN. Five failed pre-training attempts preserved (hash, dangling keys, temporal/root checks and insufficient early cohort); all six attempt sources hashed.
+
+Three live learner functions, source/model/trainer visible, four portable diagrams, full standalone22-cell default notebook PASS. Separate pinned-T4 namespace22cells and five additional full fits PASS; validation predictions independently rescored, not pooled with primary results. Worker resource estimate including failed attempts USD0.145069; conservative all-allocation ceiling USD9.625184, including3overhead reserve; invoice NOT_ITEMIZED. No mastery or historical/whole-paper parity claim. LiveColab/deployment NOT_CHECKED. Delivery recorded separately in labs/_delivery_l134_results.json.

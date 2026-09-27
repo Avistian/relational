@@ -1,0 +1,326 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Q1 checkpoint: run and defend the complete RDL pipeline</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/task-table.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0129-manual-feature-engineering.html">Lesson 129</a></nav><header><p class="stream-kicker">Year 4 · Quarter 1 · Lesson 130</p><h1>Q1 checkpoint: run and defend the complete RDL pipeline</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 129 to this lesson</p>
+<p>The baseline and competitor are available. The checkpoint tests ownership of the complete chain from a database query to an independently verified result.</p>
+<details><summary>Quick prerequisite reminder</summary><p>MAE is the mean absolute prediction error, in target units. A prediction packet must preserve entity and cutoff keys so independently saved outputs can be aligned.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<blockquote>
+<p><strong>The win.</strong> Produce a defensible experiment packet for one complete RelBench task. You must explain how a database becomes a prediction, run the pipeline, and show why its reported score belongs to the intended queries.</p>
+</blockquote>
+<p><a href="../labs/0130-rdl-checkpoint.ipynb">Student lab</a> · <a href="../labs/html/0130-rdl-checkpoint.html">Executed solution</a> · <a href="../reference/rdl-checkpoint.html">Checkpoint reference</a> · <a href="../labs/l130-reproduction.md">Exact commands and protocol</a> · <a href="../labs/l130-defense.md">Written defense template</a></p>
+<h2 id="1-%C2%B7-The-checkpoint-joins-the-quarter-together">1 &#183; The checkpoint joins the quarter together<a class="anchor-link" href="#1-%C2%B7-The-checkpoint-joins-the-quarter-together">&#182;</a></h2><p><a href="0122-reg-construction.html">Lesson 122</a> made the database into a graph. <a href="0123-temporal-heterogeneous-graphs.html">Lesson 123</a> restricted context by time. <a href="0124-entity-task-tables.html">Lesson 124</a> separated prediction queries from database rows. <a href="0125-pytorch-frame-deep-dive.html">Lesson 125</a> encoded typed columns. <a href="0127-relbench-v1.html">Lesson 127</a> established the benchmark protocol, <a href="0128-task-taxonomy.html">Lesson 128</a> matched the prediction head to the target, and <a href="0129-manual-feature-engineering.html">Lesson 129</a> built the relational-feature competitor.</p>
+<p>The missing skill is ownership of the chain. A passing training script is insufficient if you cannot identify the query, reconstruct its permitted information, explain its output, and independently verify the experiment report. This is the Q1 deliverable from the <a href="../plan/year-4.md">year-four plan</a>, and prepares the instrumented forward pass of Lesson 131.</p>
+<div id="warmup"></div><noscript><p>Recall the distinction between context rows, queries and selection metrics.</p></noscript>
+
+<p><strong>Recall before opening code.</strong> Why can one driver have several labels? Which rows receive loss? Which split chooses the checkpoint? Why does a future scheduled race differ from a future race result?</p>
+<p>Read <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey et al., RDL blueprint</a> for the database-to-graph-to-prediction argument. Read <a href="https://arxiv.org/html/2407.20060v1">Robinson et al., RelBench v1, §3, Table 7 and Appendix B</a> for this experiment. The former motivates the computation; the latter supplies the named numerical target.</p>
+<p><strong>Suggested route.</strong> First explain the task and trace one query without running code. Then implement the three checkpoint functions, run their checks and replay the author packet. Finally run the explicit full-training gate in the pinned environment and submit the written defense. The short replay and the longer fresh-training lane have separate completion records.</p>
+<h2 id="2-%C2%B7-Freeze-the-question-before-building-the-graph">2 &#183; Freeze the question before building the graph<a class="anchor-link" href="#2-%C2%B7-Freeze-the-question-before-building-the-graph">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A prediction is a question asked about a driver at a particular time. It is not a permanent property stored on that driver's node.</p>
+</blockquote>
+<p>A <strong>query</strong> is the pair <code>(driverId, cutoff)</code>. The <strong>cutoff</strong> is the time when a prediction is requested. The target is the driver's mean finishing position during the next 60 days, with outcomes in <strong>(cutoff, cutoff + 60 days]</strong>. Lower mean absolute error, or <strong>MAE</strong>, is better.</p>
+<p><strong>Worked example.</strong> Driver 10 at 2004-07-05 has an outcome window ending 2004-09-03. The same driver queried at another cutoff has another permitted history and another target. Store both key components at full timestamp precision; collapsing dates or grouping only by driver can silently combine different questions.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>Frozen value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Database / task</td>
+  <td><code>rel-f1</code> / <code>driver-position</code></td>
+</tr>
+<tr>
+  <td>Complete query splits</td>
+  <td>7,453 train / 499 validation / 760 test</td>
+</tr>
+<tr>
+  <td>Database through the test cap</td>
+  <td>9 tables, 74,063 rows, 338,842 directed edges</td>
+</tr>
+<tr>
+  <td>Task loss and score</td>
+  <td>Training mean L1; evaluation MAE in finishing-position units</td>
+</tr>
+<tr>
+  <td>Fits</td>
+  <td>Five fresh seeds 0–4; ten full epochs per seed</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>First strictly improved validation MAE</td>
+</tr>
+<tr>
+  <td>Numerical comparison</td>
+  <td>Table 7 validation 3.193 / test 4.022; absolute mean tolerance 0.2</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Freeze</strong> means deciding these values before inspecting the new test results. Hashes identify exact source and archive bytes. A changed setting creates another experiment; it does not silently replace this one.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The released cohort uses future participation when defining eligible queries. Reproducing that cohort is not proving that the task can be deployed without knowing future participation. Event timestamps are available; real ingestion times and historical versions of mutable/static features are not. Keep these limits in the packet.</p>
+</blockquote>
+<p><strong>TODO 1 — query identity.</strong> Implement <code>validate_queries</code>: require the complete expected row count, unique <code>(entity, time)</code> keys and finite targets. Return keys in the task's order. The check deliberately repeats a driver at two times and rejects duplicate questions.</p>
+<h2 id="3-%C2%B7-Trace-a-real-query-through-the-model">3 &#183; Trace a real query through the model<a class="anchor-link" href="#3-%C2%B7-Trace-a-real-query-through-the-model">&#182;</a></h2><p>A <strong>relational entity graph</strong> represents each table row as a typed node. A foreign key creates a directed link to its parent row; a reverse edge lets information flow back. Node types retain table identity. The graph is shared infrastructure, while each query specifies its own root and cutoff.</p>
+<p><strong>Sampling.</strong> Start at the driver root and gather incoming neighbors for two hops, with maximum per-relation fanouts <code>[128, 64]</code>. A fanout is a neighbor-count limit. The released loader samples uniformly among eligible neighbors. It constructs disjoint contexts for different query roots, so the same database row may occur more than once in a batch.</p>
+<p><strong>Time.</strong> Every dated row in a sampled context must satisfy <code>row_time &lt;= root_cutoff</code>. The cutoff stays attached to the root at every hop. Labels describe later outcomes and are attached to supervised queries separately; they are not a contextual node feature.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l130/trace.svg" alt="Real driver10 query at 2004-07-05: 99 nodes and 245 edges in the exhaustive neighborhood, one supervised output. Typed row counts determine encoder shapes; bounded training samples can differ."><figcaption>Real driver10 query at 2004-07-05: 99 nodes and 245 edges in the exhaustive neighborhood, one supervised output. Typed row counts determine encoder shapes; bounded training samples can differ.</figcaption></figure>
+
+<p>The figure uses the real driver-10 query and its <strong>exhaustive</strong> two-hop context: 99 node occurrences and 245 directed edges. These are structural counts, not recorded hidden activations. Bounded stochastic training neighborhoods can differ. The notebook reconstructs this example from the complete archived graph and checks the original row and edge identities.</p>
+<h3 id="Model-architecture-%C2%B7-keep-context-count-separate-from-output-count">Model architecture &#183; keep context count separate from output count<a class="anchor-link" href="#Model-architecture-%C2%B7-keep-context-count-separate-from-output-count">&#182;</a></h3><p>A <strong>TensorFrame</strong> stores typed columns for sampled rows. A separate four-block residual encoder for each table converts its numerical, categorical, timestamp and text features into 128-dimensional row vectors. A residual block combines a learned update with its input. It allows deeper transformations while retaining a direct path for the previous representation.</p>
+<p>The relative-time encoder represents the age of a row with respect to its query cutoff. This time vector is added to that row's encoded features. Rows without recorded time do not gain a fabricated timestamp.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l130/architecture.svg" alt="Queries drive disjoint temporal sampling and table-specific Frame ResNets. Relative-time vectors, two sum-GraphSAGE layers and a scalar seed head connect to separate training and evaluation branches."><figcaption>Queries drive disjoint temporal sampling and table-specific Frame ResNets. Relative-time vectors, two sum-GraphSAGE layers and a scalar seed head connect to separate training and evaluation branches.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Keep context count separate from query count. Which of the sampled rows become supervised root outputs? On a narrow screen, scroll the figure sideways.</p>
+<p><strong>Message passing.</strong> For each directed relation, GraphSAGE sums transformed information from neighbors. Relation-specific outputs are summed for each destination type, then normalized and passed through a rectified linear unit (ReLU), which replaces negative coordinates with zero. Repeat for two layers. The <strong>head</strong> maps the first B driver vectors to B scalar predictions; B is the number of supervised queries, not the number of context nodes.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">batch</span><span class="p">:</span> <span class="n">HeteroData</span><span class="p">,</span>
+    <span class="n">entity_table</span><span class="p">:</span> <span class="n">NodeType</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+    <span class="n">seed_time</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="n">entity_table</span><span class="p">]</span><span class="o">.</span><span class="n">seed_time</span>
+    <span class="n">x_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">tf_dict</span><span class="p">)</span>
+
+    <span class="n">rel_time_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporal_encoder</span><span class="p">(</span>
+        <span class="n">seed_time</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">time_dict</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">batch_dict</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">rel_time</span> <span class="ow">in</span> <span class="n">rel_time_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">x_dict</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_dict</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span> <span class="o">+</span> <span class="n">rel_time</span>
+
+    <span class="k">for</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">embedding</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">x_dict</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_dict</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span> <span class="o">+</span> <span class="n">embedding</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="n">node_type</span><span class="p">]</span><span class="o">.</span><span class="n">n_id</span><span class="p">)</span>
+
+    <span class="n">x_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gnn</span><span class="p">(</span>
+        <span class="n">x_dict</span><span class="p">,</span>
+        <span class="n">batch</span><span class="o">.</span><span class="n">edge_index_dict</span><span class="p">,</span>
+        <span class="n">batch</span><span class="o">.</span><span class="n">num_sampled_nodes_dict</span><span class="p">,</span>
+        <span class="n">batch</span><span class="o">.</span><span class="n">num_sampled_edges_dict</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">x_dict</span><span class="p">[</span><span class="n">entity_table</span><span class="p">][:</span> <span class="n">seed_time</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)])</span>
+</pre></div>
+<p><strong>Predict the shapes.</strong> If one query gathers 99 nodes in total, should the loss contain 99 terms or one? Explain why a context row can influence a prediction without receiving its own direct supervised loss.</p>
+<p>The code and diagram are inherited computation made explicit for this checkpoint. The notebook includes the complete model, graph constructor, trainer and underlying library primitives. In Lesson 131 you will instrument the actual intermediate activations rather than infer their shapes from the graph.</p>
+<h2 id="4-%C2%B7-Train,-choose,-and-freeze">4 &#183; Train, choose, and freeze<a class="anchor-link" href="#4-%C2%B7-Train,-choose,-and-freeze">&#182;</a></h2><p>An <strong>epoch</strong> visits every training query once. Each mini-batch predicts only its root queries. Mean L1 loss averages <code>abs(prediction - target)</code> over those roots. Backpropagation computes gradients; Adam uses them to update the row encoders, temporal encoder, message-passing layers and prediction head together.</p>
+<p>The released configuration uses Adam with learning rate 0.005 and batches of 512 queries. Every epoch must account for all 7,453 training queries. The final short batch still counts; a loop that silently skips it has changed the experiment.</p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">epochs</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">();</span><span class="n">loss_sum</span><span class="o">=</span><span class="mf">0.</span><span class="p">;</span><span class="n">count</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">loaders</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]:</span>
+        <span class="n">batch</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="n">pred</span><span class="o">=</span><span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span><span class="n">task</span><span class="o">.</span><span class="n">entity_table</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">loss</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">l1_loss</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span><span class="n">batch</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">entity_table</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">float</span><span class="p">())</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">count</span><span class="o">+=</span><span class="nb">len</span><span class="p">(</span><span class="n">pred</span><span class="p">);</span><span class="n">loss_sum</span><span class="o">+=</span><span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">detach</span><span class="p">())</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">count</span><span class="o">==</span><span class="mi">7453</span>
+    <span class="n">val</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="o">=</span><span class="n">predict</span><span class="p">(</span><span class="n">loaders</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">])</span>
+    <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="o">-</span><span class="n">tables</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">target_col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())))</span>
+    <span class="n">trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">epoch</span><span class="o">=</span><span class="n">epoch</span><span class="p">,</span><span class="n">train_mae</span><span class="o">=</span><span class="n">loss_sum</span><span class="o">/</span><span class="n">count</span><span class="p">,</span><span class="n">val_mae</span><span class="o">=</span><span class="n">score</span><span class="p">,</span><span class="n">train_queries</span><span class="o">=</span><span class="n">count</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">score</span><span class="o">&lt;</span><span class="n">best</span><span class="p">:</span><span class="n">best</span><span class="o">=</span><span class="n">score</span><span class="p">;</span><span class="n">state</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">());</span><span class="n">selected</span><span class="o">=</span><span class="n">epoch</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span><span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state</span><span class="p">);</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+</pre></div>
+<p>Validation is evaluated after each epoch. A <strong>checkpoint</strong> is a saved set of model parameters. Keep the first checkpoint whose validation MAE strictly improves on previous epochs. Equal scores retain the earlier checkpoint. The test score does not participate in this choice.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l130/selection.svg" alt="Training, validation-only checkpoint selection, frozen test scoring and complete-seed aggregation are separate decisions."><figcaption>Training, validation-only checkpoint selection, frozen test scoring and complete-seed aggregation are separate decisions.</figcaption></figure>
+
+<p><strong>Predict before interacting.</strong> Hold the validation trace fixed. Can changing the reported test MAE legitimately change the selected checkpoint?</p>
+<div class="stream-widget" id="l130-checkpoint"></div><noscript><p>Static trace: validation MAE [3,2,2] selects epoch2, the first minimum. Test MAE [5,4,1] would select epoch3 if misused. Changing test scores must not change the valid selection.</p></noscript>
+
+<p>At inference, the released pipeline clips predictions to the training-label 2nd and 98th percentiles. Clipping limits extreme predictions; its bounds come from training labels. The selected model is then evaluated on all 499 validation and 760 test queries using the official task evaluator.</p>
+<blockquote>
+<p><strong>Scope check.</strong> A fresh sampled validation pass can differ from the validation value that selected the checkpoint. Preserve both values. Released feature statistics are fitted on the database through the test cap, rather than exclusively on training-era rows. Reproduce and disclose that rule; changing it is a separately named intervention.</p>
+</blockquote>
+<h2 id="5-%C2%B7-A-plausible-score-can-belong-to-the-wrong-rows">5 &#183; A plausible score can belong to the wrong rows<a class="anchor-link" href="#5-%C2%B7-A-plausible-score-can-belong-to-the-wrong-rows">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Before subtracting predictions from labels, prove that each prediction answers the same question as its label.</p>
+</blockquote>
+<p><strong>Worked example.</strong> Driver 7 has target 2 at time 10 and target 5 at time 20. Its predictions are 2 and 4 respectively. The absolute errors are 0 and 1, so MAE is <code>(0 + 1) / 2 = 0.5</code>. Reverse only the prediction-row order. Positional subtraction now gives <code>(2 + 3) / 2 = 2.5</code>, even though neither prediction changed.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l130/alignment.svg" alt="Synthetic two-query join: reversed prediction order changes positional MAE from 0.5 to 2.5; exact key alignment restores 0.5. A duplicate key must be rejected."><figcaption>Synthetic two-query join: reversed prediction order changes positional MAE from 0.5 to 2.5; exact key alignment restores 0.5. A duplicate key must be rejected.</figcaption></figure>
+
+<p>Use a one-to-one join on both entity and cutoff. Reject missing, extra or duplicate keys <strong>before</strong> averaging. Never silently take an inner join: dropping difficult unmatched queries can make the remaining score look better.</p>
+<div class="stream-widget" id="l130-keyed"></div><noscript><p>Static keyed trace: reversing predictions changes positional MAE to2.5, but keyed MAE remains0.5. Duplicate keys are rejected.</p></noscript>
+
+<p><strong>TODO 2 — keyed MAE.</strong> Implement <code>keyed_mae</code>. Validate the task and prediction keys, require exact coverage, align predictions and compute the mean absolute error. The full fresh worker deliberately reverses prediction records before calling the canonical function; the notebook calls your implementation on the same complete author evidence.</p>
+<p>The official evaluator and independent scorer answer complementary questions. The official evaluator defines the metric. The independent scorer checks both arithmetic and identity. An archive audit separately confirms that the stored labels, IDs and times equal the released task table.</p>
+<h2 id="6-%C2%B7-Decide-what-five-runs-establish">6 &#183; Decide what five runs establish<a class="anchor-link" href="#6-%C2%B7-Decide-what-five-runs-establish">&#182;</a></h2><p>One successful fit can be lucky or incomplete. The selected experiment requires all five expected seeds. A seed controls the random initialization and stochastic sampling. A run UUID identifies an execution: two different seed labels attached to the same execution are not two fresh runs.</p>
+<p><strong>TODO 3 — reproduction verdict.</strong> Implement <code>reproduction_verdict</code>. Reject missing, unexpected or duplicate seeds, repeated run identities, incomplete epochs, nonfinite scores and negative errors. Then compute the mean and <strong>sample standard deviation</strong>, which divides squared deviations by <code>n - 1</code>. Compare each split's mean with its predeclared paper target.</p>
+<p><code>CLOSE</code> means <code>abs(measured_mean - paper_mean) &lt;= 0.2</code>. <code>OUTSIDE_TOLERANCE</code> is an equally valid reported outcome. Neither status grants permission to change the tolerance after seeing the result. Seed standard deviation describes variation between fits; it is not a confidence interval and does not account for new databases or alternate time splits.</p>
+<p><strong>Predict before reading.</strong> Would complete original-model output agreement plus a close mean establish the exact historical training environment? Name one missing piece of evidence.</p>
+<p><strong>Fresh author execution: COMPLETE selected released-protocol experiment.</strong> Five new seeds, ten complete epochs each.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Mean MAE</th>
+  <th style="text-align:right">Sample seed SD</th>
+  <th style="text-align:right">Paper mean</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.164116</td>
+  <td style="text-align:right">0.038287</td>
+  <td style="text-align:right">3.193</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">4.070921</td>
+  <td style="text-align:right">0.075000</td>
+  <td style="text-align:right">4.022</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Selected epoch</th>
+  <th style="text-align:right">Selection MAE</th>
+  <th style="text-align:right">Final validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.110827</td>
+  <td style="text-align:right">3.110300</td>
+  <td style="text-align:right">4.169197</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.143624</td>
+  <td style="text-align:right">3.144200</td>
+  <td style="text-align:right">3.993888</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">3.192786</td>
+  <td style="text-align:right">3.191587</td>
+  <td style="text-align:right">3.999256</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.171409</td>
+  <td style="text-align:right">3.167931</td>
+  <td style="text-align:right">4.111958</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">3.206558</td>
+  <td style="text-align:right">3.206561</td>
+  <td style="text-align:right">4.080304</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>6,295</strong> final predictions independently rescored; <strong>403,895</strong> training/evaluation query occurrences audited. Maximum original-model output discrepancy <strong>3.81e-06</strong>. Pilot plus five-fit worker resource estimate <strong>USD 0.063100</strong>, excluding unitemized overhead; six reservations for the primary experiment. Notebook validation and one failed setup use the remaining two reservations within the USD10 plan. <a href="../labs/evidence/l130/summary.json">Evidence</a> · <a href="../labs/_audit_l130_results.json">Independent archive/SQL audit</a>.</p>
+<p><strong>Portable full-training gate also verified:</strong> all 22 code cells executed in an isolated pinned T4 environment, including five additional full fits and independent scoring of 6,295 predictions. Its validation/test means are 3.171492/4.083289; these validation runs are kept separate from the primary experiment above. Exact bitwise repeatability is not established. Successful worker resources total USD0.104571; the failed setup retains a conservative USD0.812592 allowance. Unitemized overhead is separate. <a href="../labs/_notebook_gate_l130_results.json">Gate evidence</a>. Live Colab remains NOT_CHECKED.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l130/scores.svg" alt="Five fresh complete fits. Diamonds and error bars show mean and sample seed SD; dashed lines mark paper means. Each panel uses its own detail scale."><figcaption>Five fresh complete fits. Diamonds and error bars show mean and sample seed SD; dashed lines mark paper means. Each panel uses its own detail scale.</figcaption></figure>
+
+<p>The measured packet records source and archive hashes, all epoch traces, checkpoint hashes, fresh execution identities, original-model output checks and full-query predictions. Every actual batch also checks node identity, edge identity and its own root's temporal cutoff.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This is a complete selected released-protocol replay. The exact historical training commit, package/random-state identity and whole-paper reproduction are <strong>NOT_ESTABLISHED</strong>. The other 29 RelBench tasks are <strong>NOT_RUN</strong> here. Live Colab and deployment remain <strong>NOT_CHECKED</strong>. Author execution leaves learner mastery <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Compare-with-the-manual-feature-competitor-carefully">7 &#183; Compare with the manual-feature competitor carefully<a class="anchor-link" href="#7-%C2%B7-Compare-with-the-manual-feature-competitor-carefully">&#182;</a></h2><p>Lesson 129 gives a stronger relational baseline than fitting trees to a driver's raw row. Its SQL aggregates relational histories into features, then tunes LightGBM. Before comparing, verify identical query keys and targets. Both methods should answer the same question even though their information processing and training budgets differ.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Fresh basic RDL MAE ± seed SD</th>
+  <th style="text-align:right">L129 tuned manual FE MAE ± seed SD</th>
+  <th style="text-align:right">FE minus RDL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">3.164116 ± 0.038287</td>
+  <td style="text-align:right">2.777330 ± 0.027905</td>
+  <td style="text-align:right">-0.386786</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">4.070921 ± 0.075000</td>
+  <td style="text-align:right">3.948917 ± 0.070469</td>
+  <td style="text-align:right">-0.122004</td>
+</tr>
+</tbody>
+</table></div>
+<p>Negative differences favor manual FE. These are descriptive task-specific means, not a significance test or an equal-compute comparison. All 6,295 paired query identities and targets were rechecked. <a href="../labs/evidence/l130/comparison.json">Comparison evidence</a>.</p>
+<p>This comparison reuses the explicitly identified Lesson 129 runs; it does not call them fresh L130 fits. Basic RDL and tuned manual features have different preprocessing scopes and compute budgets. Figure 3's human-study comparison can also use a boosted regression head, whereas Table 7's basic RDL is the present target. Matching task keys does not erase those distinctions.</p>
+<p><strong>Interpretation task.</strong> Explain what the observed difference says about this task. Then explain why it cannot establish that RDL universally beats manual feature engineering, or reproduce the human-effort saving of the original study. A close or unfavorable result belongs in the research record too.</p>
+<h2 id="8-%C2%B7-Diagnose-before-repairing">8 &#183; Diagnose before repairing<a class="anchor-link" href="#8-%C2%B7-Diagnose-before-repairing">&#182;</a></h2><p>For each fault, first predict the artifact that should expose it. Then run the indicated check. Repair the cause and rerun; do not merely delete the check.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Fault</th>
+  <th>First evidence to inspect</th>
+  <th>Why the printed MAE may mislead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Join predictions by driver only</td>
+  <td>Full <code>(entity, time)</code> key coverage</td>
+  <td>Repeated drivers answer different questions</td>
+</tr>
+<tr>
+  <td>Choose the best test epoch</td>
+  <td>Epoch-selection trace</td>
+  <td>Test information influenced model selection</td>
+</tr>
+<tr>
+  <td>Train on context labels</td>
+  <td>Root count and target attachment</td>
+  <td>Context rows are not independent supervised queries</td>
+</tr>
+<tr>
+  <td>Permit a future neighbor</td>
+  <td>Per-root node-time audit</td>
+  <td>The model saw information unavailable at its cutoff</td>
+</tr>
+<tr>
+  <td>Average four completed seeds</td>
+  <td>Exact expected seed set</td>
+  <td>A failed or unfavorable run may be missing</td>
+</tr>
+<tr>
+  <td>Rename an old run as fresh</td>
+  <td>UUID, dispatch time and source hashes</td>
+  <td>A copied result does not demonstrate new execution</td>
+</tr>
+</tbody>
+</table></div>
+<p>The behavioral tests also reject deliberately corrupted implementations. This tests whether a guard can detect a plausible mistake, rather than merely accepting the reference solution.</p>
+<h2 id="9-%C2%B7-Submit-a-reproducible-packet-and-defend-it">9 &#183; Submit a reproducible packet and defend it<a class="anchor-link" href="#9-%C2%B7-Submit-a-reproducible-packet-and-defend-it">&#182;</a></h2><p>Use the <a href="../labs/l130-defense.md">defense template</a>. Attach the task/source/environment hashes, configuration, full traces, selected checkpoint hashes, query-keyed predictions and per-seed summary. Include the exact commands and the deviation ledger so another person can regenerate the result.</p>
+<p><strong>EXIT rubric — five required defenses.</strong></p>
+<ol>
+<li><strong>Question:</strong> state the query key, target window, eligibility rule, split sizes and the boundary of availability evidence.</li>
+<li><strong>Computation:</strong> trace the real query from rows and foreign keys through typed encoders, two message-passing layers and one output. Distinguish context from supervision.</li>
+<li><strong>Decisions:</strong> explain what trains parameters, what selects the checkpoint and when test labels enter evaluation. Account for every epoch and query.</li>
+<li><strong>Evidence:</strong> show how source parity, temporal audits, keyed metrics and complete fresh seeds support different claims. Interpret the predeclared tolerance honestly.</li>
+<li><strong>Research judgment:</strong> compare manual FE with basic RDL on this task, preserve protocol differences, and identify what another experiment would need to resolve.</li>
+</ol>
+<p>All five need a correct explanation supported by your artifacts. A benchmark score alone is not a pass. A well-diagnosed result outside tolerance is more useful than an unexplained close score. Your agent will assess the written defense; automated preparation does not mark this checkpoint mastered.</p>
+<div id="l130-teachback"></div>
+
+<p>Ask follow-up questions about any query, intermediate tensor, failed check or evidence claim. After a delay, explain the chain again without the diagram; that retrieval tests whether you can reconstruct it rather than recognize it.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Instrument a real forward and backward pass to explain what is learned. <a href="0131-gnn-tabular-stack.html">Continue to Lesson 131</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/checkpoint-audit-viz.js"></script><script src="../assets/keyed-score-viz.js"></script><script src="../assets/l130-lesson.js"></script></body></html>

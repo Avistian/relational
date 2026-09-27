@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Task taxonomy · reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/task-table.css"><link rel="stylesheet" href="../assets/rdl-stack-viz.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0127-relbench-v1.html">Lesson 127</a></nav><header><p class="stream-kicker">Year 4 · Quarter 1 · Lesson 128</p><h1>Task taxonomy · reference</h1></header><h2 id="Task-contracts-at-a-glance">Task contracts at a glance<a class="anchor-link" href="#Task-contracts-at-a-glance">&#182;</a></h2><div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Output family</th>
+  <th>Head</th>
+  <th>Released example loss</th>
+  <th>Selection</th>
+  <th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Binary entity</td>
+  <td>One logit; sigmoid for evaluation</td>
+  <td>BCEWithLogits</td>
+  <td>AUROC, maximize</td>
+  <td>Query cutoff and mature future window</td>
+</tr>
+<tr>
+  <td>Regression entity</td>
+  <td>One scalar</td>
+  <td>L1</td>
+  <td>MAE, minimize</td>
+  <td>Query cutoff and mature future window</td>
+</tr>
+<tr>
+  <td>Recommendation</td>
+  <td>Candidate scores → top-k IDs</td>
+  <td>BPR (two-tower example)</td>
+  <td>MAP@k, maximize</td>
+  <td>Query cutoff and eligible candidates</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="Metric-definitions">Metric definitions<a class="anchor-link" href="#Metric-definitions">&#182;</a></h2><p>AUROC = mean positive-negative ordering credit, with 0.5 for ties. Requires both classes. MAE = mean absolute difference in target units. AP@k = sum of precision at relevant ranks divided by min(k, number relevant). MAP averages eligible queries; pinned RelBench excludes zero-positive queries. Reject duplicate candidate IDs. A hit rate is a different metric.</p>
+<h2 id="Different-axes">Different axes<a class="anchor-link" href="#Different-axes">&#182;</a></h2><p>Entity/recommendation describes the output. Temporal describes information availability and splits. Autoregressive describes conditioning later outputs on earlier outputs; it is not a TaskType in the pinned API. Teacher forcing supplies true earlier outputs during training, while generation may supply model outputs.</p>
+<h2 id="DNF-provenance-trap">DNF provenance trap<a class="anchor-link" href="#DNF-provenance-trap">&#182;</a></h2><p>Paper Table13 has historical positive counts1365/125/207. Current archive has10046/441/495. Historical positive means no statusId !=1 in the future window; the later task flips it. Every recovered key/label matches old SQL, but historical archive bytes/order remain unestablished. Reversing both labels and probabilities preserves AUROC, not task semantics.</p>
+<p><a href="../lessons/0128-task-taxonomy.html">Lesson</a> · <a href="../labs/l128-reproduction.md">Protocol and commands</a> · <a href="../labs/evidence/l128/summary.json">Evidence</a> · <a href="https://arxiv.org/html/2407.20060v1">Paper</a> · <a href="../labs/sources/l128/metrics.py">Pinned metrics</a>.</p>
+</article></body></html>

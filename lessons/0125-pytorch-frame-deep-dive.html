@@ -1,0 +1,274 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PyTorch Frame: from typed columns to graph node features</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/task-table.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0124-entity-task-tables.html">Lesson 124</a></nav><header><p class="stream-kicker">Year 4 · Quarter 1 · Lesson 125</p><h1>PyTorch Frame: from typed columns to graph node features</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 124 to this lesson</p>
+<p>We have rows, relationships and prediction requests. Row encoding supplies the numerical vectors that message passing needs.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A semantic type describes how a column is interpreted. Materialization applies a fitted vocabulary or statistic; trainable encoding maps that prepared value into a vector.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<div id="warmup"></div><noscript><p>Recall: what does an entity ID identify, and why must a query carry a cutoff?</p></noscript>
+
+<h2 id="1-%C2%B7-We-have-a-graph-and-a-question.-What-does-each-node-contain?">1 &#183; We have a graph and a question. What does each node contain?<a class="anchor-link" href="#1-%C2%B7-We-have-a-graph-and-a-question.-What-does-each-node-contain?">&#182;</a></h2><p><a href="0122-reg-construction.html">Lesson 122</a> made database rows into nodes. <a href="0123-temporal-heterogeneous-graphs.html">Lesson 123</a> restricted their temporal neighborhoods. <a href="0124-entity-task-tables.html">Lesson 124</a> separated prediction queries from entity rows. We still need a differentiable function that turns a driver's nationality, birth date and name into a vector the GNN can consume.</p>
+<p><a href="0075-pytorch-frame-row-encoder.html">Lesson 075</a> established the row-encoder API contract. Here we open its numerical and categorical kernels, verify the ResNet computation, and connect it to real graph features and a differentiable training loss.</p>
+<p><strong>Your tangible win:</strong> materialize typed columns, implement two encoding kernels, preserve entity identity, and trace a training loss back into two table-specific row encoders. You will export features for <strong>every row of the nine-table F1 database censored at 2010-01-01</strong>. The portable notebook contains the actual data, visible code and four live TODO/CHECK tasks.</p>
+<p>This serves our <a href="../MISSION.md">mission</a>: to defend an RDL result, you must explain what information enters the model before discussing the power of message passing. A correct graph cannot repair a leaked scaler or vectors attached to the wrong entities.</p>
+<p>Primary reading: <a href="https://arxiv.org/html/2404.00776v2">Hu et al., PyTorch Frame, §§3–4 and §5.3</a>. Read Figure 1 first, then follow one numerical and one categorical column through §3. Our API reference is <a href="https://github.com/pyg-team/pytorch-frame/tree/d998aae368db6a4e36139ccc56bd54579a70874b">Frame 0.3.0</a>, pinned independently of the historical paper experiment.</p>
+<p><strong>Route:</strong> Sections 1–7 are the core sitting. Run the notebook and evidence audit in a second sitting. <a href="../labs/0125-pytorch-frame-deep-dive.ipynb">Student notebook</a> · <a href="../labs/html/0125-pytorch-frame-deep-dive.html">Executed solution</a> · <a href="../reference/pytorch-frame-deep-dive.html">Reference</a> · <a href="../labs/l125-reproduction.md">Reproduction contract</a>.</p>
+<h2 id="2-%C2%B7-A-semantic-type-chooses-a-computation">2 &#183; A semantic type chooses a computation<a class="anchor-link" href="#2-%C2%B7-A-semantic-type-chooses-a-computation">&#182;</a></h2><p>A pandas dtype describes storage. A Frame <strong>semantic type</strong>, or <code>stype</code>, describes how a model should interpret a column. Integer <code>statusId</code> could represent a category; a postal code should not acquire meaning from arithmetic distance. The course schema makes its choices explicit—including treating F1 <code>statusId</code> numerically as a deliberate simplification you should challenge.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Semantic type</th>
+  <th>Materialized representation</th>
+  <th>Encoder in this lab</th>
+  <th>Meaning of the learned operation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Numerical</td>
+  <td>Floating values, missing as NaN</td>
+  <td><code>LinearEncoder</code>, mean imputation</td>
+  <td>A separate affine embedding per column</td>
+</tr>
+<tr>
+  <td>Categorical</td>
+  <td>Column-local integer IDs, unknown/missing as −1</td>
+  <td><code>EmbeddingEncoder</code></td>
+  <td>A separate vocabulary region per column</td>
+</tr>
+<tr>
+  <td>Multicategorical</td>
+  <td>Ragged lists of category IDs</td>
+  <td><code>MultiCategoricalEmbeddingEncoder</code></td>
+  <td>Pool embeddings within each cell</td>
+</tr>
+<tr>
+  <td>Timestamp</td>
+  <td>Year and calendar components</td>
+  <td><code>TimestampEncoder</code></td>
+  <td>Year position plus cyclic components, then projection</td>
+</tr>
+<tr>
+  <td>Embedding</td>
+  <td>Dense vectors, possibly different widths by column</td>
+  <td><code>LinearEmbeddingEncoder</code></td>
+  <td>Project each column to a common width</td>
+</tr>
+<tr>
+  <td>Text embedded</td>
+  <td>Frozen text vectors, grouped under embedding</td>
+  <td>Text adapter + projection</td>
+  <td>Learn from supplied text features</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>text_embedded</code> is the current code name; the paper also uses <code>text_embedding</code>. It shares the embedding parent type in this pinned API. <code>text_tokenized</code> is a different route: retain token sequences and allow a text model to train. Our lab does not fine-tune a language model. <a href="../labs/sources/l125/frame/torch_frame/_stype.py">Type definitions</a> · <a href="../labs/sources/l125/frame/torch_frame/nn/encoder/stype_encoder.py">encoder source</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l125/typed.svg" alt="Six semantic-type routes expose raw cells, materialized representations and common-width tokens. Text counts are a fixed illustrative adapter."><figcaption>Six semantic-type routes expose raw cells, materialized representations and common-width tokens. Text counts are a fixed illustrative adapter.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Follow one numerical and one categorical column. Separate materialized values from learned tokens and from the final row vector. On a narrow screen, scroll the figure sideways.</p>
+<p><strong>Predict:</strong> can you batch a numerical column and a variable-length tag list into one ordinary rectangular numeric tensor without choosing a representation? Explain what padding or offsets would have to mean. A <code>TensorFrame</code> keeps the typed blocks and column names together so that this choice stays explicit.</p>
+<h2 id="3-%C2%B7-Materialize-once;-reuse-the-fitted-meaning">3 &#183; Materialize once; reuse the fitted meaning<a class="anchor-link" href="#3-%C2%B7-Materialize-once;-reuse-the-fitted-meaning">&#182;</a></h2><p>Materialization converts cells into tensors and records data-dependent state: numerical statistics, categorical vocabularies, timestamp statistics, and column roles. It is generally preprocessing, outside autograd. The encoder parameters are learned later. Mixing these two kinds of state makes leakage hard to see.</p>
+<p>For the small train/query exercise, the correct order is:</p>
+<div class="highlight"><pre><span></span><span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">col_to_stype</span><span class="o">=</span><span class="n">types</span><span class="p">,</span>
+             <span class="n">col_to_text_embedder_cfg</span><span class="o">=</span><span class="n">TextEmbedderConfig</span><span class="p">(</span><span class="n">fixed_text_vectors</span><span class="p">))</span>
+<span class="n">ds</span><span class="o">.</span><span class="n">materialize</span><span class="p">()</span>
+<span class="n">held</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">convert_to_tensor_frame</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+</pre></div>
+<p>The query conversion uses the training converter. Concatenating <code>train</code> and <code>query</code> before materialization changes that converter. Fitting separate converters on each split is also wrong: the same categorical integer could acquire different meanings. <a href="../labs/sources/l125/frame/torch_frame/data/dataset.py">Pinned Dataset implementation</a>.</p>
+<p><strong>TODO 1 — <code>fit_and_convert</code>:</strong> return the fitted dataset and query <code>TensorFrame</code>. <strong>CHECK:</strong> fitting on <code>[10,20,30]</code> keeps mean 20 even if query values change to ±10⁹; an unseen category remains −1. The checker deliberately changes the query population, not merely the output shape.</p>
+<div id="l125-frame"></div><noscript><p>Static trace: with fitting values 10,20,30, mean=20 and population scale≈8.165. Value30 produces token≈[2.949,−0.725]. Missing maps to bias[0.5,0.5]. Including future value1000 changes the fitted mean to265.</p></noscript>
+
+<p>The widget uses population standard deviation, as this Frame release does. With mean imputation, a missing numerical value becomes the training mean and has normalized value zero. That makes its token equal to the learned bias. <strong>It does not give the model an explicit missingness indicator.</strong> If missingness predicts the target, add a separately declared feature and evaluate that change.</p>
+<p>For the full F1 course run, dated-table statistics use rows on or before <strong>2004-09-03</strong>, and the frozen converter is applied to rows through 2010-01-01. Static tables are fitted in full because their creation/version histories are absent. That is an explicit historical-validity gap; a stored birth date is not proof that its containing row or mutable attributes were known then.</p>
+<h2 id="4-%C2%B7-Reconstruct-the-numerical-and-categorical-kernels">4 &#183; Reconstruct the numerical and categorical kernels<a class="anchor-link" href="#4-%C2%B7-Reconstruct-the-numerical-and-categorical-kernels">&#182;</a></h2><p>For numerical column j, width d, and row i:</p>
+<p><code>z[i,j] = (fill(x[i,j], μ[j]) − μ[j]) / scale[j]</code></p>
+<p><code>token[i,j,:] = z[i,j] × weight[j,:] + bias[j,:]</code></p>
+<p><code>scale</code> is the stored standard deviation plus the release's epsilon. Parameters have shape <code>[C,d]</code>; output has shape <code>[B,C,d]</code>. Different columns can use different affine maps. The map is linear in the normalized value, but the later residual blocks introduce nonlinear column interactions.</p>
+<div class="highlight"><pre><span></span><span class="n">filled</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">raw</span><span class="p">),</span> <span class="n">mean</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span>
+<span class="n">tokens</span> <span class="o">=</span> <span class="p">((</span><span class="n">filled</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">weight</span> <span class="o">+</span> <span class="n">bias</span>
+</pre></div>
+<p><strong>TODO 2 — <code>numeric_tokens</code>:</strong> implement this without mutating the raw input. <strong>CHECK:</strong> with supplied mean 20, scale 10, weight <code>[2,−1]</code>, bias <code>[.5,.5]</code>, value 30 maps to <code>[2.5,−.5]</code>; a missing value maps to <code>[.5,.5]</code>. These are hand-supplied constants, not a claim that Frame estimates scale 10 from <code>[10,20,30]</code>. The checker also tests finite parameter gradients.</p>
+<p>Categorical columns require a different operation. Suppose their vocabulary sizes are <code>[2,3]</code>. Their offsets are <code>[0,2]</code>; reserve index 0 for unknown/missing. Column-local ID 0 maps to global index <strong>1</strong> in the first column and <strong>3</strong> in the second. Without that offset, unrelated categories share a learned vector.</p>
+<div class="highlight"><pre><span></span><span class="n">offsets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">sizes</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">sizes</span>
+<span class="n">indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">raw</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">raw</span> <span class="o">+</span> <span class="n">offsets</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">tokens</span> <span class="o">=</span> <span class="n">embedding</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+</pre></div>
+<p><strong>TODO 3 — <code>categorical_indices</code>:</strong> apply offsets and reject IDs outside the fitted vocabulary. <strong>CHECK:</strong> <code>[[0,0],[1,2],[-1,1]]</code> becomes <code>[[1,3],[2,5],[0,4]]</code>. In this configuration padding index 0 is a zero vector and receives no embedding gradient. Unknown and missing are therefore indistinguishable at this encoder; test whether that assumption suits your task. <a href="../labs/sources/l125/frame/torch_frame/nn/encoder/stype_encoder.py">Exact numerical/categorical kernels</a>.</p>
+<h2 id="5-%C2%B7-Model-architecture:-how-a-row-becomes-a-GNN-input">5 &#183; Model architecture: how a row becomes a GNN input<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-how-a-row-becomes-a-GNN-input">&#182;</a></h2><p>Tokens initially describe separate cells. They need to interact before one row vector can summarize them. The visible implementation uses Frame's <strong>ResNet</strong> organization: flatten tokens, pass them through residual blocks, then apply a normalized readout. It is not an attention model.</p>
+<p>For the drivers table, six columns at width 8 give <code>[N,6,8]</code>, then <code>[N,48]</code>. The first block projects 48 values to width 8 and projects the shortcut to the same width. The second block keeps width 8. Each branch applies linear → LayerNorm → ReLU → dropout twice, adds the shortcut, and passes its result onward. The decoder is LayerNorm → ReLU → Linear. Our course run disables dropout to make the trace deterministic.</p>
+<div class="highlight"><pre><span></span><span class="n">tokens</span><span class="p">,</span> <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">(</span><span class="n">tf</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">row_vectors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+<p>The exact Frame ordering matters: concatenate in <strong><code>tf.stypes</code> order</strong>, and retain the fitted names within each type. Iterating an arbitrary dictionary can yield all the right dimensions and the wrong model. Our source comparison caught precisely this bug. The notebook exposes the residual-block implementation and the pinned upstream source side by side. <a href="../labs/sources/l125/frame/torch_frame/nn/models/resnet.py">Frame ResNet</a>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l125/architecture.svg" alt="The executed course architecture: separate driver/result ResNets, one mean-GraphSAGE relation, 23 seed predictions and a differentiable loss."><figcaption>The executed course architecture: separate driver/result ResNets, one mean-GraphSAGE relation, 23 seed predictions and a differentiable loss.</figcaption></figure>
+
+<p><strong>Diagram trace.</strong> Follow one numerical and one categorical column. Separate materialized values from learned tokens and from the final row vector. On a narrow screen, scroll the figure sideways.</p>
+<p>The diagram is the <strong>executed course model</strong>. Driver and result encoders have separate parameters but the same output width. A one-relation GraphSAGE operator averages historical result vectors by <code>driverId</code>, transforms root and neighbor vectors separately, adds them, applies ReLU, and predicts only the 23 training seeds. The dated result rows are filtered to the query cutoff before aggregation. The loss reaches both row encoders through differentiable projections and aggregation.</p>
+<p>The historical candidate architecture is larger: the archived RelBench code uses four width-128 row blocks, two typed GraphSAGE layers, relative-time encodings and a seed head. The paper names Frame ResNet + HeteroSAGE, but does not attest this exact source snapshot. <strong>Neither the small course model nor this source resemblance establishes its Table 2 result.</strong> <a href="../labs/sources/l125/relbench/examples/model.py">Archived candidate model</a> · <a href="../labs/sources/l125/relbench/relbench/external/nn.py">typed encoder/GNN</a>.</p>
+<p><strong>Predict:</strong> modify a different driver's row. With LayerNorm and dropout disabled, your row encoder output should stay unchanged. Modify one of your driver's historical result rows: the GNN prediction may change. Column interaction and graph interaction operate along different axes.</p>
+<h2 id="6-%C2%B7-Preserve-identity-across-the-encoder%E2%80%93GNN-boundary">6 &#183; Preserve identity across the encoder&#8211;GNN boundary<a class="anchor-link" href="#6-%C2%B7-Preserve-identity-across-the-encoder%E2%80%93GNN-boundary">&#182;</a></h2><p>The output contract is richer than <code>[N,d]</code>. It includes table identity, entity IDs, column roles, fitted statistics, model parameters and the information cutoff. An embedding file with no IDs cannot safely be attached to a graph after sorting or filtering.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l125/identity.svg" alt="Entity IDs preserve alignment under reordered and repeated queries; duplicate requests accumulate gradients to their source row."><figcaption>Entity IDs preserve alignment under reordered and repeated queries; duplicate requests accumulate gradients to their source row.</figcaption></figure>
+
+<p><strong>TODO 4 — <code>align_rows</code>:</strong> gather encoded rows by requested entity IDs. Duplicate IDs in the source export are invalid; repeated requested IDs are legal. <strong>CHECK:</strong> source IDs <code>[40,7,90]</code> and requests <code>[90,40,90]</code> gather positions <code>[2,0,2]</code>. The backward check gives entity 90 two gradient contributions. Indexing by an ID value or assuming request order equals storage order must fail.</p>
+<p>For the full export, every table is deliberately reversed and then realigned by ID. The independent audit also compares all vectors against the upstream Frame forward pass with identical weights. The lab uses primary and foreign keys as structure, removes the table's event-time column from row features, and keeps the time boundary separately. Other meaningful timestamp features, such as date of birth, still use a timestamp encoder.</p>
+<p>A cached node embedding is valid only for the encoder state that produced it. If the GNN is training the row encoder end to end, repeatedly reusing detached precomputed vectors would cut that gradient path. The exported file is an inspection artifact; the gradient exercise recomputes live vectors.</p>
+<h2 id="7-%C2%B7-Execute-the-complete-course-feature-path">7 &#183; Execute the complete course feature path<a class="anchor-link" href="#7-%C2%B7-Execute-the-complete-course-feature-path">&#182;</a></h2><p><strong>Author-reference execution: complete course feature path, not a paper-score reproduction.</strong></p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Table</th>
+  <th style="text-align:right">Fitting rows</th>
+  <th style="text-align:right">Encoded rows</th>
+  <th style="text-align:right">Columns</th>
+  <th style="text-align:right">Output width</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>constructor_results</td>
+  <td style="text-align:right">8,441</td>
+  <td style="text-align:right">9,408</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>constructor_standings</td>
+  <td style="text-align:right">9,189</td>
+  <td style="text-align:right">10,170</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>circuits</td>
+  <td style="text-align:right">77</td>
+  <td style="text-align:right">77</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>qualifying</td>
+  <td style="text-align:right">2,148</td>
+  <td style="text-align:right">4,082</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>drivers</td>
+  <td style="text-align:right">857</td>
+  <td style="text-align:right">857</td>
+  <td style="text-align:right">6</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>results</td>
+  <td style="text-align:right">18,389</td>
+  <td style="text-align:right">20,323</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>races</td>
+  <td style="text-align:right">727</td>
+  <td style="text-align:right">820</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>standings</td>
+  <td style="text-align:right">25,999</td>
+  <td style="text-align:right">28,115</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>constructors</td>
+  <td style="text-align:right">211</td>
+  <td style="text-align:right">211</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">8</td>
+</tr>
+</tbody>
+</table></div>
+<p>Total <strong>74,063 rows</strong>. Maximum difference from the upstream Frame forward pass with identical weights: <strong>0</strong>. All IDs and finite-value checks passed. The separate one-step exercise used <strong>23 training queries</strong>, <strong>18,389 eligible result rows</strong>, and updated <strong>58 parameter tensors</strong>. <a href="../labs/evidence/l125/summary.json">Measured report</a> · <a href="../labs/_audit_l125_results.json">Independent audit</a>.</p>
+<p>The notebook runs from an empty directory with embedded, checksum-verified F1 database and task archives. It materializes all nine tables, calls your numerical/categorical kernels, gathers by your identity function, and exports <code>l125-encoded-reg.npz</code>. Each table has an <code>*_ids</code> array and <code>*_vectors</code> array. <code>l125-feature-report.json</code> records shapes, fitting populations and one-step gradient evidence.</p>
+<p>The gradient step uses the released <strong>training</strong> task rows at 2004-09-03 and only result events no later than that cutoff. Its 23 labels supervise the seed outputs. Labels never enter the row features. Initial loss is recorded solely as a debugging observation; there is no test-set performance estimate from one optimizer step.</p>
+<p><strong>Read the limitations before interpreting the export:</strong> width 8, two residual blocks, deterministic 16-bin hashed text counts, random initial weights, a single graph relation for the gradient step, and no static creation history. Text hashing has collisions and no pretrained semantics. Real F1 data exercise numerical, categorical, timestamp and embedded-text paths; the six-type fixture separately covers multicategorical and external vectors. These are useful implementation tests, not the published Stack Exchange experiment.</p>
+<h2 id="8-%C2%B7-Full-reproduction-audit:-what-is-actually-recoverable?">8 &#183; Full reproduction audit: what is actually recoverable?<a class="anchor-link" href="#8-%C2%B7-Full-reproduction-audit:-what-is-actually-recoverable?">&#182;</a></h2><p>The selected target is <strong>Hu et al. Table 2, <code>rel-stackex-engage</code>: ROC-AUC 0.854</strong>. It predicts whether a user contributes a vote, comment or post over the next two years. The contemporaneous source implements a 730-day window, with validation at 2019-01-01 and test at 2021-01-01. <a href="https://arxiv.org/html/2404.00776v2#S5.SS3">Paper §5.3/Table 2</a> · <a href="../labs/sources/l125/relbench/relbench/tasks/stackex.py">archived task SQL</a>.</p>
+<p><strong>Current result: <code>NOT_RUN</code>.</strong> On 2026-09-27, all six probed historical/archive endpoints returned HTTP 404, including the original database, task and raw-data paths. The original SHA-256 identities are retained in the audit, but no matching archive was recovered. This finding is bounded to the checked sources; it is not proof that nobody has a private or archival copy. <a href="../labs/_paper_audit_l125_results.json">Probe evidence</a>.</p>
+<p>There are protocol gaps even if the data are recovered. The paper does not identify a precise source commit/seed ensemble. The archived example regenerates labels with <code>process=True</code>, uses an unpinned GloVe sentence-transformer revision, and has no historical environment lock. A modern task with a similar name does not close these gaps.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>State</th>
+  <th>What it establishes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Four learner contract checks + mutation failures</td>
+  <td>PASS</td>
+  <td>Correct tested mechanisms and failure detection</td>
+</tr>
+<tr>
+  <td>Frame outputs, gradients, Adam update</td>
+  <td>MATCH</td>
+  <td>Current pinned operator/model parity</td>
+</tr>
+<tr>
+  <td>Every F1 node-feature row</td>
+  <td>PASS</td>
+  <td>Complete course feature path, same-weight reference agreement</td>
+</tr>
+<tr>
+  <td>Real training-query gradient step</td>
+  <td>PASS</td>
+  <td>Loss reaches two table-specific encoders</td>
+</tr>
+<tr>
+  <td>Historical Stack Exchange target</td>
+  <td>NOT_RUN</td>
+  <td>No recovered checksum-matching input; no measured ROC-AUC</td>
+</tr>
+<tr>
+  <td>Historical binary/whole-paper reproduction</td>
+  <td>NOT_ESTABLISHED</td>
+  <td>Source resemblance is insufficient</td>
+</tr>
+<tr>
+  <td>Live Colab / deployment</td>
+  <td>NOT_CHECKED</td>
+  <td>Local notebook/browser checks are separate</td>
+</tr>
+<tr>
+  <td>Learner mastery</td>
+  <td>PENDING_WRITTEN_DEFENSE</td>
+  <td>Author execution is not your exit artifact</td>
+</tr>
+</tbody>
+</table></div>
+<p>The <a href="../labs/l125-reproduction.md">reproduction contract</a> includes exact commands, pinned model/trainer sources, the recovery preflight, source assumptions and compute ledger. Paid compute used: <strong>$0**. The approved **$10 aggregate cap</strong> remains unused; launching a different benchmark would not reproduce this target.</p>
+<h2 id="9-%C2%B7-Retrieval,-interventions-and-your-exit-artifact">9 &#183; Retrieval, interventions and your exit artifact<a class="anchor-link" href="#9-%C2%B7-Retrieval,-interventions-and-your-exit-artifact">&#182;</a></h2><p>Close the notebook and answer before checking the implementation:</p>
+<ol>
+<li>Why can a categorical ID of zero mean different things in two columns? Derive the offset for a third column with vocabulary size 4 after columns of sizes 2 and 3.</li>
+<li>Under mean imputation, what numerical token represents missingness? How would you preserve a separate missingness signal?</li>
+<li>Which fitted state changes if future rows are included, even when their labels are hidden? Give one numerical and one categorical example.</li>
+<li>Why does the first residual block need a shortcut projection for six width-8 tokens? Which axis mixes columns, and which operation later mixes rows?</li>
+<li>Why can repeated query IDs be correct while repeated source entity IDs are wrong? Show the backward accumulation for <code>[90,40,90]</code>.</li>
+<li>Which evidence is still missing before you could compare a score with 0.854? Distinguish archive identity, protocol identity, runtime identity and metric computation.</li>
+</ol>
+<p><strong>EXIT submission:</strong> your four implementations, the exported node features with IDs, the JSON report, and a one-page explanation of the six questions. Add one deliberate intervention: remove categorical offsets, contaminate fitted statistics, shuffle vectors without IDs, or detach one encoder before the graph loss. Predict the failure, run it, and explain the observed result. Do not overwrite the correct baseline.</p>
+<p>A passing solution notebook is author-reference evidence. Your status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until you can explain and defend the computation. Revisit questions 2, 4 and 5 tomorrow without notes; revisit the archive/protocol distinction next week.</p>
+<div id="l125-teachback"></div>
+
+<p>Ask the agent follow-up questions whenever a tensor, fitted statistic or gradient edge is unclear. Next, the separately planned <strong>L125b Universal Row Encoder</strong> asks how to decouple the encoder from a particular graph stack; L126 examines the RelBench beta paper. This lesson prepares the interface needed for both.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Use the benchmark API to keep database inputs, task questions and evaluation aligned. <a href="0126-relbench-beta.html">Continue to Lesson 126</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/frame-contract-viz.js"></script><script src="../assets/l125-lesson.js"></script></body></html>

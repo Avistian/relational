@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 111 to this lesson</p>
+<p>Lesson 111 fixes the official questions and evaluator. Now replace its simple baseline with the complete published GCN training procedure.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Transductive means held-out feature rows and graph structure can participate while held-out labels are excluded from loss. A percentage point is an absolute difference between percentages.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-kicker">One claim · one frozen protocol · ten fresh fits</p>
 
 Your tangible win is to **reproduce and defend one published OGB result**: a full-batch GCN on `ogbn-arxiv`. By the end you should be able to trace one prediction, explain which information entered training, and decide whether the resulting ten-run mean supports a bounded reproduction claim.
@@ -31,6 +39,8 @@ That distinction connects directly to [lesson 109's database timestamp contract]
 ## 3 · Model architecture: follow a paper to its prediction
 
 [[FIG:architecture]]
+
+**Diagram trace.** Count all three graph multiplications. Where do training labels enter, and which normalization buffers must be saved? On a narrow screen, scroll the figure sideways.
 
 Start with the feature matrix **X ∈ R^(169343×128)**. Turn the directed citations into a binary undirected adjacency, remove duplicate relations, and add one self-loop per node. This operation changes the information flow: a cited paper and a citing paper can now both send messages. It is part of the released baseline's definition.
 
@@ -108,3 +118,7 @@ Write a short experimental defense that answers all four prompts:
 Tomorrow, reconstruct the propagation equation and selection rule without opening the notebook. A week later, inspect another OGB entry and list which parts of this protocol transfer. Planned lesson 113 asks how sampling changes the memory/computation budget; lesson 114 asks where this fitted model fails. Neither a faster run nor a higher aggregate score substitutes for those analyses.
 
 This work supports the course mission by practicing a defensible graph baseline before making relational-learning claims. An arXiv citation result alone does not show that relational learning beats strong tabular models on business databases. Bring your EXIT answer or any confusing computation back to the agent for feedback; we can trace it together.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Determine what changes when a full graph no longer fits one training step. [Continue to Lesson 113](0113-scaling-ogb.html).
+<!-- sequence-next:end -->

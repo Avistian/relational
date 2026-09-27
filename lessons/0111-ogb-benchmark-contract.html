@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 111 — OGB setup and the benchmark contract</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0110-temporal-gnn-checkpoint.html">Lesson 110</a></nav><h1>OGB setup and the benchmark contract</h1><p class="stream-kicker">OGB setup · identify the experiment before reading its score</p>
+
+<p><strong>Your win:</strong> load an official graph benchmark, verify its split identities, run a training-only constant baseline, and explain what the evaluator's number means.</p>
+<p><a href="0110-temporal-gnn-checkpoint.html">Lesson 110</a> showed that a saved predictor needs a complete state and information contract. A benchmark adds another contract: everyone must answer the same questions under the same scoring rule. This prepares the GCN reproduction in <a href="0112-ogb-gcn-reproduction.html">Lesson 112</a> and the RelBench experiments in Year 4.</p>
+<p><strong>Route:</strong> read and trace the example in about 20 minutes, then implement two notebook functions. Loading the full graph needs a separate data download and several hundred MB of memory; no GPU or paid training is required.</p>
+<p><a href="../labs/0111-ogb-benchmark-contract.ipynb">Student notebook</a> · <a href="../labs/html/0111-ogb-benchmark-contract.html">Executed solution</a> · <a href="../reference/ogb-benchmark-contract.html">Reference card</a> · <a href="../labs/l111-reproduction.md">Exact commands</a></p>
+<h2 id="1-%C2%B7-Retrieve-the-distinction-before-downloading">1 &#183; Retrieve the distinction before downloading<a class="anchor-link" href="#1-%C2%B7-Retrieve-the-distinction-before-downloading">&#182;</a></h2><p>Write answers first: does a chronological label split prove historical feature availability? Which split selects a checkpoint? Does matching a paper's score prove that you ran its experiment?</p>
+<details><summary>Check your reasoning</summary><p>No: later features or graph edges may still be visible. Validation chooses the checkpoint; test evaluates the frozen choice. An equal number can arise from different data, preprocessing or model settings. A reproduction claim needs the protocol as well as the score.</p></details>
+
+<p><strong>Read first:</strong> the <a href="https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv">official OGB node-prediction specification</a>, then <a href="https://arxiv.org/html/2005.00687v6">Hu et al., OGB, §3 and §4.3</a>. Focus on the task definition, official split and evaluator. The current leaderboard and the historical paper table are separate snapshots of evidence.</p>
+<h2 id="2-%C2%B7-Five-objects,-five-jobs">2 &#183; Five objects, five jobs<a class="anchor-link" href="#2-%C2%B7-Five-objects,-five-jobs">&#182;</a></h2><p>A <strong>benchmark</strong> fixes prediction problems and evaluation rules. A <strong>dataset</strong> supplies the graph and feature rows. A <strong>split</strong> assigns node IDs to training, validation or test. A <strong>predictor</strong> maps inputs to answers. An <strong>evaluator</strong> compares those answers with the corresponding labels.</p>
+<p>Our selected task is <code>ogbn-arxiv</code>: predict a paper's subject category. The released features have 128 coordinates and the target has 40 classes. The official split uses publication year: through 2017 for training, 2018 for validation, and 2019 onward for test. These are official IDs, not a new random split. <a href="https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv">Dataset specification</a>.</p>
+<p>The library-agnostic loader makes the interface visible:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ogb.nodeproppred</span><span class="w"> </span><span class="kn">import</span> <span class="n">NodePropPredDataset</span><span class="p">,</span> <span class="n">Evaluator</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">NodePropPredDataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;ogbn-arxiv&quot;</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="s2">&quot;ogb-data&quot;</span><span class="p">)</span>
+<span class="n">graph</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">splits</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_idx_split</span><span class="p">()</span>
+<span class="n">evaluator</span> <span class="o">=</span> <span class="n">Evaluator</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;ogbn-arxiv&quot;</span><span class="p">)</span>
+</pre></div>
+<p><code>graph['node_feat'][i]</code> and <code>labels[i]</code> describe the same node i. An edge uses node indices too. A split index is not an independent row counter. Reordering features without remapping edges and labels changes the question.</p>
+<p><strong>TODO 1 — audit the partition.</strong> Require integer, in-range, nonduplicated IDs. Check that the three splits have no overlap and together cover this dataset's nodes. The notebook supplies deliberate overlap, duplicate and out-of-range cases. Merely checking split sizes would miss a swapped or repeated ID. Full membership hashes are recorded in the author report.</p>
+<h2 id="3-%C2%B7-Information-access-is-not-the-same-as-label-access">3 &#183; Information access is not the same as label access<a class="anchor-link" href="#3-%C2%B7-Information-access-is-not-the-same-as-label-access">&#182;</a></h2><figure class="stream-figure" tabindex="0"><img src="../labs/figures/l111/contract.svg" alt="One graph, three label roles. Label splitting and feature visibility are separate contracts."><figcaption>One graph, three label roles. Label splitting and feature visibility are separate contracts.</figcaption></figure>
+
+<p><strong>Read the diagram:</strong> follow the three label branches separately. Training labels fit the predictor; validation labels guide choices; test labels judge the frozen result. The feature graph has its own visibility policy.</p>
+<p>The published GCN baseline is transductive: it propagates on the released feature graph, then restricts its training objective to training labels. <strong>Transductive</strong> means that held-out feature rows and structure can participate without using their labels for fitting. A year-based label split therefore does not by itself certify a historically available feature graph. The exact GCN implementation is studied next; see the <a href="https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py">pinned released training code</a>.</p>
+<p>Our simple baseline ignores features and edges entirely. It predicts the most frequent <strong>training</strong> class for every node. This is a useful plumbing check: it exposes label alignment and scoring mistakes before neural training. It is not a competitive graph model.</p>
+<p><strong>Worked example.</strong> Training labels <code>[2,1,2,0]</code> choose class 2. For held-out labels <code>[2,0,2,1]</code>, predictions <code>[2,2,2,2]</code> get two of four correct: accuracy 0.5. Changing those held-out labels may change the measured score, but must not change the chosen class.</p>
+<p><strong>TODO 2 — fit without held-out labels.</strong> Implement <code>majority_predictions</code>. Count only <code>labels[train_idx]</code>. Return shape <code>[N,1]</code>; break a frequency tie by the smallest class ID. A test changes every held-out label and demands unchanged predictions.</p>
+<h2 id="4-%C2%B7-Score-aligned-answers-using-the-official-evaluator">4 &#183; Score aligned answers using the official evaluator<a class="anchor-link" href="#4-%C2%B7-Score-aligned-answers-using-the-official-evaluator">&#182;</a></h2><div class="highlight"><pre><span></span><span class="n">idx</span> <span class="o">=</span> <span class="n">splits</span><span class="p">[</span><span class="s1">&#39;valid&#39;</span><span class="p">]</span>
+<span class="n">score</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">eval</span><span class="p">({</span>
+    <span class="s2">&quot;y_true&quot;</span><span class="p">:</span> <span class="n">labels</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+    <span class="s2">&quot;y_pred&quot;</span><span class="p">:</span> <span class="n">predictions</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+<span class="p">})[</span><span class="s2">&quot;acc&quot;</span><span class="p">]</span>
+</pre></div>
+<p>For this task, the evaluator expects class IDs in <code>[number of evaluated nodes, 1]</code>, not a matrix of probabilities. A neural network's class logits would first use <code>argmax(axis=1, keepdims=True)</code>. Both labels and predictions must use the same split indices and ordering.</p>
+<p><strong>Accuracy</strong> is correct predictions divided by evaluated nodes. Independently compute that fraction and compare it to the official result. Agreement checks the arithmetic; the split audit checks which questions were scored.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Official nodes</th>
+  <th style="text-align:right">Majority accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>train</td>
+  <td style="text-align:right">90,941</td>
+  <td style="text-align:right">17.9061%</td>
+</tr>
+<tr>
+  <td>valid</td>
+  <td style="text-align:right">29,799</td>
+  <td style="text-align:right">7.6278%</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">48,603</td>
+  <td style="text-align:right">5.8618%</td>
+</tr>
+</tbody>
+</table></div>
+<p>Chosen training class: <strong>28</strong>. <a href="../labs/evidence/l111/summary.json">Full identity and score report</a>.</p>
+<blockquote>
+<p><strong>Evidence boundary.</strong> These are fresh full-data scores for a course majority baseline. There is no optimization, random seed study or validation tuning. The published GCN experiment is not reproduced in this lesson. Lesson 112 provides that separate named reproduction. Running this package does not establish learner mastery.</p>
+</blockquote>
+<p>The notebook authenticates the raw archive and uses the official loader on a fresh temporary extraction. This avoids depending on an old processed pickle cache whose loading behavior varies with PyTorch versions. The original archive is reusable; the notebook does not alter another lesson's processed cache.</p>
+<h2 id="5-%C2%B7-Read-a-leaderboard-as-a-protocol,-not-a-ranking-alone">5 &#183; Read a leaderboard as a protocol, not a ranking alone<a class="anchor-link" href="#5-%C2%B7-Read-a-leaderboard-as-a-protocol,-not-a-ranking-alone">&#182;</a></h2><p>Before comparing two rows, record: dataset and release, split IDs, feature and edge transformations, model, training schedule, validation selection, metric, run count and uncertainty. A higher test score is not a reproduction failure repair if the change was chosen after looking at test results.</p>
+<p><strong>Worked selection.</strong> Validation accuracies <code>[0.60,0.70,0.70]</code> select the second epoch under a first-maximum rule. Test scores <code>[0.80,0.65,0.90]</code> do not change that choice. Reporting 0.90 would select a different predictor using test labels.</p>
+<details><summary>Transfer check: what must be frozen for a fair comparison?</summary><p>Keep the dataset identities, evaluated questions, information policy and scoring rule fixed. Record any architecture, preprocessing, compute or selection differences. Equal epoch counts alone do not establish equal tuning effort.</p></details>
+
+<h2 id="EXIT-%C2%B7-deliver-a-benchmark-contract">EXIT &#183; deliver a benchmark contract<a class="anchor-link" href="#EXIT-%C2%B7-deliver-a-benchmark-contract">&#182;</a></h2><p>Submit both functions, the full-data report and a short explanation of four points: what each split does; why held-out labels cannot fit your baseline; why the GCN's graph visibility differs from your constant predictor; and what evidence a historical reproduction claim would still require.</p>
+<p>Tomorrow, reconstruct the five objects without notes. In a week, apply the same checklist to a relational task. Ask the teaching agent about any unclear index, score or evidence boundary. Learner status remains <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><strong>Carry this forward:</strong> <a href="0112-ogb-gcn-reproduction.html">Lesson 112</a> keeps these official questions and replaces the constant with a complete GCN, validation-selected state and ten fresh fits.</p>
+</article></body></html>

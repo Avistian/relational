@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 103 to this lesson</p>
+<p>A temporal encoder can process timestamps while still reading forbidden records. Trace the data dependencies before trusting its score.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Event time says when something happened; availability time says when the predictor could read it. A label is the outcome to predict, not an input feature.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 **Your win:** find a time-travel dependency, repair it, and defend the resulting metric. This is the evaluation discipline your relational-learning thesis depends on.
 
 Start with the short audit below. Then follow one prediction through its inputs. The lab uses a trained Temporal Graph Attention (TGAT) model on real Wikipedia interactions; its full model and training recipe remain visible.
@@ -165,3 +173,7 @@ An adversarial extension: perturb every inaccessible future row while keeping ac
 [[TEACHBACK]]
 
 **Read next:** Kapoor & Narayanan's taxonomy and model-info-sheet sections, then Fey §§2.2–3.3. [Reference card](../reference/temporal-leakage-audit.html) · [Temporal glossary](../reference/glossary.html#temporal-l101). Ask the tutor about any unclear boundary or paste your EXIT defense for review. Lesson 105 will ask how continuous-time event streams differ from snapshots; carry the prediction-time contract into that choice.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Ask what a daily snapshot discards even when its inputs are legal. [Continue to Lesson 105](0105-continuous-time.html).
+<!-- sequence-next:end -->

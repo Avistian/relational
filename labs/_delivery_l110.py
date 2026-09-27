@@ -1,4 +1,5 @@
 """Real browser, notebook and copied deployment-tree checks; separate from scientific evidence."""
+from _gallery_delivery import reveal_gallery_link
 import argparse,ast,functools,hashlib,json,os,re,subprocess,tempfile,threading,sys
 from pathlib import Path
 from html.parser import HTMLParser
@@ -75,8 +76,8 @@ if not args.preview:
   try:
    with sync_playwright() as pw:
     browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)));base=f'http://127.0.0.1:{server.server_port}'
-    page.goto(base+'/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]');assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
-    page.goto(base+'/notebooks.html');page.wait_for_selector('a[href="labs/html/'+S+'.html"]');page.goto(base+'/lessons/'+S+'.html');assert '1 tied boundaries' in page.locator('#l110-batches').inner_text();browser.close()
+    page.goto(base+'/index.html');reveal_gallery_link(page, 'a[href="lessons/'+S+'.html"]');assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
+    page.goto(base+'/notebooks.html');reveal_gallery_link(page, 'a[href="labs/html/'+S+'.html"]');page.goto(base+'/lessons/'+S+'.html');assert '1 tied boundaries' in page.locator('#l110-batches').inner_text();browser.close()
   finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors
 out={'status':'PREVIEW_PASS' if args.preview else 'PASS','browser_widths':[1200,375],'widget_states':states,'reset_keyboard':'PASS','prediction_and_teachback':'PASS','print_nojs':'PASS','portable_figures':4,'student_live_tasks':3,'canonical_definitions':len(canonical),'executed_code_hash':'MATCH','deterministic_rebuild':'EXACT','copied_pages_links':checked,'javascript_errors':errors,'screenshots':'/tmp/l110-*.png','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}

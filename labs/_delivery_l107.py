@@ -1,4 +1,5 @@
 """Actual browser, notebook, links, copied Pages and deterministic build checks."""
+from _gallery_delivery import reveal_gallery_link
 import ast,functools,hashlib,json,os,re,subprocess,tempfile,threading,sys
 from pathlib import Path
 from html.parser import HTMLParser
@@ -78,8 +79,8 @@ with tempfile.TemporaryDirectory(prefix='l107-pages-') as tmp:
  try:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)));base=f'http://127.0.0.1:{server.server_port}'
-   page.goto(base+'/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]');assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
-   page.goto(base+'/notebooks.html');page.wait_for_selector('a[href="labs/html/'+S+'.html"]')
+   page.goto(base+'/index.html');reveal_gallery_link(page, 'a[href="lessons/'+S+'.html"]');assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
+   page.goto(base+'/notebooks.html');reveal_gallery_link(page, 'a[href="labs/html/'+S+'.html"]')
    page.goto(base+'/lessons/'+S+'.html');assert page.locator('#l107-weight .state').first.inner_text()=='0.3500';browser.close()
  finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors

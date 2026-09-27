@@ -1,4 +1,5 @@
 """Check interactions, responsive reading, portable notebook and copied Pages navigation."""
+from _gallery_delivery import reveal_gallery_link
 import functools,hashlib,json,math,os,re,subprocess,tempfile,threading
 from pathlib import Path
 from html.parser import HTMLParser
@@ -78,7 +79,7 @@ with tempfile.TemporaryDirectory(prefix='l103-pages-') as tmp:
  try:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page()
-   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]')
+   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');reveal_gallery_link(page, 'a[href="lessons/'+S+'.html"]')
    assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
    page.goto(f'http://127.0.0.1:{server.server_port}/lessons/{S}.html');assert 'Baseline at t=4:' in page.locator('.tgat-readout').inner_text();browser.close()
  finally:server.shutdown();server.server_close();thread.join()

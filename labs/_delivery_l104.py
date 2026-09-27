@@ -1,4 +1,5 @@
 """Real-browser, standalone notebook, deterministic build and copied Pages checks."""
+from _gallery_delivery import reveal_gallery_link
 import functools,hashlib,json,os,re,subprocess,tempfile,threading
 from pathlib import Path
 from html.parser import HTMLParser
@@ -33,7 +34,7 @@ with sync_playwright() as pw:
   page.screenshot(path=f'/tmp/l104-full-{width}.png',full_page=True)
  page.goto((R/'lessons'/f'{S}.html').as_uri())
  page.emulate_media(media='print');assert page.locator('h1').is_visible()
- assert page.locator('details').nth(1).locator('table').first.evaluate('e=>e.checkVisibility()'),'Collapsed results must print'
+ assert page.locator('details:has(table)').locator('table').first.evaluate('e=>e.checkVisibility()'),'Collapsed results must print'
  assert page.locator('figure').first.locator('img').evaluate('(e)=>e.getBoundingClientRect().width<=e.parentElement.getBoundingClientRect().width+1')
  page.emulate_media(media='screen')
  for name in ['clocks','recursion','maturity']:
@@ -46,8 +47,9 @@ with sync_playwright() as pw:
  assert 'Without opening L103' in plain.locator('article').inner_text()
  assert plain.locator('figure').count()>=3
  assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
- assert plain.locator('details').count()==2
- plain.emulate_media(media='print');assert plain.locator('details').nth(1).locator('table').first.evaluate('e=>e.checkVisibility()'),'No-JS print results'
+ assert plain.get_by_text('Check after committing your answers',exact=True).count()==1
+ assert plain.locator('details:has(table)').count()==1
+ plain.emulate_media(media='print');assert plain.locator('details:has(table)').locator('table').first.evaluate('e=>e.checkVisibility()'),'No-JS print results'
  nojs.close();browser.close()
 student=nbformat.read(P/f'{S}.ipynb',as_version=4);solution=nbformat.read(P/'solutions'/f'{S}.ipynb',as_version=4)
 assert sum('raise NotImplementedError' in c.source for c in student.cells if c.cell_type=='code')==3
@@ -85,7 +87,7 @@ with tempfile.TemporaryDirectory(prefix='l104-pages-') as tmp:
  try:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page()
-   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]')
+   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');reveal_gallery_link(page, 'a[href="lessons/'+S+'.html"]')
    assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
    page.goto(f'http://127.0.0.1:{server.server_port}/lessons/{S}.html');assert 'BLOCK' in page.locator('.audit-live').inner_text();browser.close()
  finally:server.shutdown();server.server_close();thread.join()

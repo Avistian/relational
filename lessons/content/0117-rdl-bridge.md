@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 116 to this lesson</p>
+<p>You can now design and debug a GNN. Relational learning adds the missing input question: how do database rows become a query-specific graph?</p>
+<details><summary>Quick prerequisite reminder</summary><p>A schema describes tables and key roles. A relational entity graph contains actual rows and key links. A computation graph contains the sampled occurrences used for one prediction.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-kicker">From graph machinery to a database prediction</p>
 
 **Your win:** start with a relational schema and a prediction request, construct the right graph, and explain exactly which rows can influence the prediction. Then follow a complete RDL training run on real Formula One data.
@@ -85,6 +93,8 @@ Consider a small teaching schema with `query seed → timeless dimension → eve
 Fey specifies an architectural blueprint, not a unique GraphSAGE implementation. Our empirical companion uses the [RelBench RDL release](https://arxiv.org/html/2407.20060v1#S3): per-table row encoders, relative-time encoding, two heterogeneous GraphSAGE layers, and a scalar regression head. The complete local model and trainer are visible in the notebook and [canonical source](../labs/relkit/rdl_l117.py).
 
 [[FIG:architecture]]
+
+**Diagram trace.** Trace legal Result R1 toward the driver. Find the separate neighbor and root transforms before the relation sum, then count the supervised outputs. On a narrow screen, scroll the figure sideways.
 
 ### 5.1 Encode columns into row vectors
 
@@ -179,3 +189,7 @@ Submit your functions, generated `l117-task-report.json`, and this defense:
 Tomorrow, redraw the three graphs without notes. In a week, explain why two queries about the same driver need separate computation graphs. Interleave that exercise with the missing-update diagnosis from Lesson 116.
 
 **Learner status: PENDING_WRITTEN_DEFENSE.** Ask the teacher follow-up questions about any step, or paste your graph and EXIT ticket for feedback. Author execution verifies the package; your explanation supplies the learning evidence.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Compare this modern stack with the earlier target-specific extraction and readout in Cvitkovic. [Continue to Lesson 118](0118-cvitkovic-relational-gnn.html).
+<!-- sequence-next:end -->

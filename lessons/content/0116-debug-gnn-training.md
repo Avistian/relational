@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 115 to this lesson</p>
+<p>A modular design can still train incorrectly. Use a small experiment to separate competing explanations of the same symptom.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A gradient describes loss sensitivity. The optimizer uses it to change parameters. A finite gradient does not prove that an update happened or that row identities are correct.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-kicker">Debugging unit · predict → probe → repair → verify</p>
 
 **Your win:** take a broken GNN training loop, identify a cause with a failing experiment, repair it, and defend the resulting curve without using test accuracy to choose the repair.
@@ -166,3 +174,7 @@ Open the student notebook. Its normal execution downloads no dataset and uses yo
 **Bridge to Lesson 117.** A relational entity graph introduces more row types, joins, clocks and label-maturity rules. The same diagnosis loop survives: identify the prediction unit, enforce its information boundary, reproduce a failure, and verify one repair at a time. Ask the teacher follow-up questions or submit your evidence for feedback. Author execution is not learner mastery: **PENDING_WRITTEN_DEFENSE**.
 
 **Primary reading:** [the pinned OGB GCN training loop](https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/gnn.py). Trace every line into the forward/backward/update/selection diagram. Then read [Li et al.](https://arxiv.org/abs/1801.07606) for smoothing and [PyG's seed-node convention](https://pytorch-geometric.readthedocs.io/en/2.6.1/tutorial/neighbor_loader.html) for sampling.
+
+<!-- sequence-next:start -->
+**Carry this forward.** Build the graph from database keys rather than accepting it as a given. [Continue to Lesson 117](0117-rdl-bridge.html).
+<!-- sequence-next:end -->

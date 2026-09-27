@@ -1,4 +1,13 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Temporal link prediction: test the candidates</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/candidate-evaluation.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0105-continuous-time.html">Lesson 105</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 106</p><h1>Temporal link prediction: test the candidates</h1></header><p class="subtitle">One tangible win: explain exactly what a future-edge score measures—and expose when an easy candidate set makes memorization look intelligent. Core lesson: 20–30 minutes. Lab: 40–60 minutes, plus the complete source replay.</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Temporal link prediction: test the candidates</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/candidate-evaluation.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0105-continuous-time.html">Lesson 105</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 106</p><h1>Temporal link prediction: test the candidates</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Where this lesson fits">
+<p class="sequence-eyebrow">From Lesson 105 to this lesson</p>
+<p>The representation alone does not define the test. Fix the positive questions and sampled negative candidates before judging a scorer.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A positive is an observed interaction. A negative is a comparison under a declared sampling rule. Precision measures how many selected candidates are positive; recall measures how many positives were selected.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<p class="subtitle">One tangible win: explain exactly what a future-edge score measures—and expose when an easy candidate set makes memorization look intelligent. Core lesson: 20–30 minutes. Lab: 40–60 minutes, plus the complete source replay.</p>
 
 <h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without opening your notes, answer:</p>
 <ol>
@@ -25,6 +34,7 @@
 <p><strong>Worked example.</strong> Before query time 10, history contains AX@1, AY@3 and BX@8. Candidate AX receives 1; candidate BY receives 0. After an actual BY event is observed, it may enter memory for a later query. Negative candidates never enter memory merely because we scored them.</p>
 <figure class="stream-figure" tabindex="0"><img src="../labs/figures/l106/architecture.svg" alt="Synthetic membership trace: score AX and BY from strictly earlier history, then update only with observed positives."><figcaption>Synthetic membership trace: score AX and BY from strictly earlier history, then update only with observed positives.</figcaption></figure>
 
+<p><strong>Read the diagram:</strong> trace the inputs to the prediction first, then locate the operation taught in this section. The adjacent text explains the symbols; on a narrow screen, scroll the figure sideways.</p>
 <p><strong>Unlimited memory</strong> retains every supplied historical pair. <strong>Window memory</strong> forgets older events before forming the set. Recency can remove obsolete connections, reducing false positives. It can also forget a genuinely recurring pair, reducing true positives. Neither memory discovers a first-ever edge.</p>
 <p>The paper describes a recent fixed-duration window related to test duration. The released <code>fixed</code> implementation instead computes the 0.85 quantile of the current history's event times and retains events at or above it. Its duration changes with event density and history growth. Our named replay uses that released operator, with this deviation visible. There is no optimizer, loss, epoch schedule or checkpoint to tune. <a href="https://arxiv.org/html/2207.10128v2#S4">Paper §4</a> · <a href="https://github.com/fpour/DGB/blob/7793e9449f5321c7e39b24c0585e3c3de7cf9f5e/EdgeBank/link_pred/edge_bank_baseline.py">pinned implementation</a>.</p>
 <p><strong>Trace the clock.</strong> The source evaluates batches of 200 positives using training/validation history plus earlier test batches. It then adds the observed positives for later batches. This delays within-batch updates. Equal timestamps can cross batch boundaries; row order alone cannot establish a strict before-event history. The replay reports such exposure. The lab's <code>legal_history</code> exercise implements the stricter clock as a separate contract.</p>
@@ -166,4 +176,9 @@
 
 <p><strong>Next:</strong> L107 examines snapshot methods. Carry the same prediction contract into discrete time: define the forecast interval before constructing labels or releasing a completed snapshot. Ask the teaching agent follow-up questions and paste your EXIT evidence for feedback. Prepared materials remain <strong>PENDING_WRITTEN_DEFENSE</strong> until you demonstrate the skill.</p>
 <h2 id="Reference-and-primary-reading">Reference and primary reading<a class="anchor-link" href="#Reference-and-primary-reading">&#182;</a></h2><p>Read Poursafaei et al., <a href="https://arxiv.org/html/2207.10128v2"><em>Towards Better Evaluation for Dynamic Link Prediction</em>, §§4–6 and Appendix B</a>. Inspect the <a href="https://github.com/fpour/DGB/tree/7793e9449f5321c7e39b24c0585e3c3de7cf9f5e/EdgeBank/link_pred">publication-era code</a> alongside the prose. Keep the <a href="../reference/temporal-link-evaluation.html">evaluation reference card</a> beside your experiments.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Choose which state a model carries between completed snapshots. <a href="0107-snapshot-methods.html">Continue to Lesson 107</a>.</p>
+<!-- sequence-next:end -->
+
 </article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/candidate-evaluation-viz.js"></script><script src="../assets/l106-lesson.js"></script></body></html>
