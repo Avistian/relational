@@ -1,0 +1,11 @@
+# Approved Lesson 130 design
+
+User approved 2026-09-27: Q1 checkpoint, one complete fresh RelBench F1 driver-position experiment. Five fresh ten-epoch full-data RDL runs, seeds0–4; validation-only selection; official evaluation plus independent keyed scoring. Targets RelBench arXiv2407.20060v1 Table7: validation3.193/test4.022 MAE; predeclared descriptive mean tolerance0.2. Historical and whole-paper identity remain separate. Compare verified L129 manual-FE evidence after checking identical task keys; no universal superiority claim.
+
+Deliver HTML, student/solution notebooks, reference, architecture/query computation diagrams, three live checkpoint tasks, fault diagnosis, written EXIT rubric, exact commands, pinned sources/runtime/data, protocol/deviation ledger, executed evidence and desktop/mobile/no-JS/print/copied-Pages checks. Author execution is not learner mastery. No publication requested. Preserve pre-existing workspace edits.
+
+Budget USD10 aggregate: T4 .000164 +2 CPU cores*.0000131 +16GiB*.00000222 =.00022572/second. Eight maximum one-hour reservations USD6.500736, plus USD3.499264 overhead reserve. Pilot1+five fits5 leave two reservations for validation/recovery; no automatic retries. Gate dispatch on full pilot audits and conservative projection; stop at cap. Rates checked at https://modal.com/pricing on2026-09-27. L127 prior actual worker time suggests much lower expenditure, but is not a billing guarantee.
+
+Implementation sequence: freeze provenance; test checkpoint query/score/verdict contracts; implement visible functions; prepare isolated runner/volume/ledger; run and verify full-data pilot; execute and collect five fresh fits; independently verify hashes/epochs/query identities/metrics/temporal batches; compare L129; build figures and causal lesson; embed code/data/evidence into portable notebooks with gated full training; execute solution in empty directory; verify browser, source, deterministic build and copied Pages; update manifest and course evidence records.
+
+Writing-plans skill searched in workspace/global roots and unavailable; this document supplies the implementation plan. Reuse the existing pinned RDL model/trainer visibly rather than introduce a new architecture at this checkpoint.
