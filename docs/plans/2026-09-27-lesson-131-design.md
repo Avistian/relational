@@ -1,0 +1,11 @@
+# Approved Lesson 131 design
+
+Approved in this conversation: instrument the complete GNN + tabular encoder stack, with measured forward/backward traces and a fresh full selected RelBench v1 Table7 F1 driver-position experiment. Five seeds0–4, ten epochs each, original released architecture and protocol. Target3.193/4.022MAE with predeclared .2 descriptive tolerance. Historical identity and whole-paper parity remain NOT_ESTABLISHED.
+
+Trace table encodings, query-relative days, time-vector addition, relation aggregation, normalization/ReLU, root readout, prediction and gradient flow. Three live learner functions: activation summary, query-relative days and seed readout. Compare instrumented output/loss/parameter gradients to untouched original on identical state/batch/RNG. Deliberately detach encoders to demonstrate identical predictions with broken training. Preserve primary training RNG/state by isolated copies. Log actual minibatch shapes; never reuse exhaustive structural counts as activations.
+
+Deliver lesson, portable student/solution notebooks, executed default and fresh training gate, reference, five mechanism/result figures, interactive interventions, exact commands, source/data/runtime/deviation ledger, named runnable experiment, browser/mobile/noJS/print/copied-Pages checks. Learner PENDING_WRITTEN_DEFENSE. No publication requested.
+
+USD10 aggregate: rate T4 .000164 +2physical cores*.0000131 +16GiB*.00000222 =.00022572/second, verified2026-09-27 at modal.com/pricing. Eight max3600second worker reservations cost6.500736USD; reserve3.499264USD for overhead. Pilot1+five primary fits5+notebook validation1 leaves one recovery reservation; no automatic retries. Gate full dispatch on pilot completeness, parity and conservative projection.
+
+Sequence: behavioral failing tests; implement canonical trace functions; parity/source tests; pin sources and guarded runner; pilot then five fresh runs; independently collect and verify every seed; compose measured figures and causal lesson; portable visible implementation and exercises; execute notebooks; validate delivery and record limits. Existing workspace changes preserved. Writing-plans skill searched and unavailable; this document supplies the implementation plan.
