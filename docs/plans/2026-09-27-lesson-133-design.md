@@ -1,0 +1,11 @@
+# Lesson 133: heterogeneous convolution on a relational entity graph
+
+User approved 2026-09-27. Teach one skill: reconstruct and audit a typed GraphSAGE layer. Build on L131's stack and L132's identity distinction; defer scalability to L134. Trace source/destination indices, neighbor sum, relation-specific root transforms and bias, relation sum, node LayerNorm and ReLU. Distinguish an empty edge list from an absent relation key. Reverse relations own separate parameters.
+
+Deliver visible implementation, three live student tasks, executed portable solution, model-specific arithmetic and end-to-end figures, interactive controls, reference, protocol ledger and manifest navigation. Check forward/gradient/update parity, permutation equivariance and semantic mutants. No learner mastery or publication claim.
+
+Reproduce RelBench v1 Table7 rel-f1/driver-position basic RDL: full archived data, five fresh seeds0–4, ten full epochs, original validation selection and MAE. Inspect explicit convolution on actual first batches without altering training state/RNG. Compare final predictions with released model and independent scalar scoring. Preserve L131's known upstream nonfinite encoder gradients and source deviations; layer parity alone is not whole-model health.
+
+Budget: current Modal T4 .000164 +2CPU*.0000131 +16GiB*.00000222 =USD.00022572/s. Prior local evidence reports five-fit plus pilot compute below USD.10; allow a conservative USD2 expected total including setup/validation. Hard reservation ceiling: nine workers at3600s =USD7.313328 with USD2.686672 reserve within USD10 total. One pilot, five fits, up to three validation/retry workers; no automatic retries. Full dispatch requires fresh pilot projected duration<3600s and projected aggregate cost within cap. Full-paper alternative is unaffordable; source-only alternative lacks fresh result evidence.
+
+Implementation: (1) failing arithmetic/parity tests; (2) explicit layer and tests; (3) pinned runner plus pilot and five fits; (4) collect every artifact and independently audit; (5) author lesson/notebooks/figures/reference; (6) execute standalone solution, browser desktop/mobile/keyboard/no-JS/print, copied Pages and builder consistency. Keep unexecuted scopes explicit.
