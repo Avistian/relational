@@ -1,0 +1,247 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 139 — Clinical trials: transfer the pipeline, audit the target</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/tuning-budget.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0138-ecommerce-amazon.html">Lesson 138</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Lesson 139</p><h1>Clinical trials: transfer the pipeline, audit the target</h1></header><h2 id="1-%C2%B7-What-transfers-when-the-domain-changes?">1 &#183; What transfers when the domain changes?<a class="anchor-link" href="#1-%C2%B7-What-transfers-when-the-domain-changes?">&#182;</a></h2><p><a href="0138-ecommerce-amazon.html">Lesson 138</a> followed customer → review → product paths. Now the root is a clinical study, connected to sponsors, conditions, interventions, facilities, and recorded results. The database changes; the row encoder → temporal neighborhood → GNN → task head structure survives. Your tangible win is to adapt that pipeline <strong>and explain exactly which prediction problem you have built</strong>.</p>
+<p>Allow 25 minutes for the core lesson, then a separate lab session. Read <a href="https://arxiv.org/html/2407.20060v1#A2.SS2">RelBench v1 Appendix B.2</a> for the trial-specific training exception; inspect the <a href="../labs/sources/l139/relbench__tasks__trial.py">released target SQL</a> while working through the label.</p>
+<div id="warmup"></div>
+
+<p><strong>Retrieve before reading:</strong> what was an eligible Amazon customer? Which side of the cutoff supplied the churn label? Could a correct time filter recover an attribute whose historical availability was never recorded?</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>Amazon user-churn</th>
+  <th>Trial study-outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Query root</td>
+  <td>Customer</td>
+  <td>Study</td>
+</tr>
+<tr>
+  <td>Future window</td>
+  <td>91 days</td>
+  <td>365 days</td>
+</tr>
+<tr>
+  <td>Query inclusion</td>
+  <td>A recent review</td>
+  <td>Started study with a qualifying future analysis</td>
+</tr>
+<tr>
+  <td>Positive target</td>
+  <td>No future review</td>
+  <td>Minimum qualifying primary-outcome p-value ≤ 0.05</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>LR .005; sum; 128/64; 10 epochs</td>
+  <td>LR .0001; mean; 64/32; 20 epochs</td>
+</tr>
+<tr>
+  <td>Shared machinery</td>
+  <td>Row encoders, two-layer GNN, BCE, validation AUROC</td>
+  <td>Same computational structure; fresh weights</td>
+</tr>
+</tbody>
+</table></div>
+<p>This is <strong>pipeline transfer</strong>: rebuild the graph and train a new model. It is not zero-shot transfer of Amazon weights. The trial-specific settings come from the paper, before looking at our test results. <a href="https://arxiv.org/html/2407.20060v1#A2.SS2">Paper §B.2</a></p>
+<h2 id="2-%C2%B7-A-missing-result-is-not-a-negative-result">2 &#183; A missing result is not a negative result<a class="anchor-link" href="#2-%C2%B7-A-missing-result-is-not-a-negative-result">&#182;</a></h2><p>Imagine a study that started on day −40. At cutoff day 0, we ask about primary analyses dated in <strong>(0,365]</strong>. A qualifying p-value of .03 yields label 1. A qualifying p-value of .12 yields label 0. No qualifying analysis yields <strong>no query</strong>. Assigning zero in that last case silently changes both the population and the target.</p>
+<p>The source first joins analyses to outcomes and studies. It keeps primary outcomes with p-values in [0,1] and excludes modifier <code>&gt;</code>; it then requires the study to have started by the cutoff and the analysis to occur within the future window. For each study/cutoff, it tests whether the minimum remaining numeric p-value is at most .05. A <code>&lt;</code> modifier is retained but not interpreted as a numeric interval: <code>&lt;.051</code> is handled as .051. Preserve this source behavior in a replay and describe its limit.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l139/eligibility.svg" alt="The clinical target has two decisions: whether a query exists, then whether any qualifying primary analysis has p≤.05."><figcaption>The clinical target has two decisions: whether a query exists, then whether any qualifying primary analysis has p≤.05. On a narrow screen, scroll the diagram horizontally.</figcaption></figure>
+
+<p><strong>Predict:</strong> a primary analysis exactly at day 365 has p=.05. Is the study included, and with which label? Move the analysis to day 366 before revealing the result.</p>
+<div class="tuning-control" id="l139-target"></div><noscript>Baseline day365: eligible, label1. Day366: absent query, not label0.</noscript>
+
+<p><strong>TODO 1 — target contract.</strong> Implement <code>trial_target(start, analyses, cutoff, horizon=365)</code>. Return <code>(False, None)</code> for an excluded query. Check date endpoints, invalid/missing p-values, primary versus secondary outcomes, and the source modifier rule. The function works in relative days; the author audit preserves full timestamps.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">trial_target</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">analyses</span><span class="p">,</span><span class="n">cutoff</span><span class="p">,</span><span class="n">horizon</span><span class="o">=</span><span class="mi">365</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return (eligible, label); match released SQL, including modifier quirks.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">cutoff</span><span class="p">)</span> <span class="ow">or</span> <span class="n">horizon</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;finite start/cutoff and positive horizon required&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">start</span><span class="o">&gt;</span><span class="n">cutoff</span><span class="p">:</span><span class="k">return</span> <span class="kc">False</span><span class="p">,</span><span class="kc">None</span>
+    <span class="n">values</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">date</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">modifier</span><span class="p">,</span><span class="n">kind</span> <span class="ow">in</span> <span class="n">analyses</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">kind</span><span class="o">==</span><span class="s1">&#39;Primary&#39;</span> <span class="ow">and</span> <span class="n">modifier</span><span class="o">!=</span><span class="s1">&#39;&gt;&#39;</span> <span class="ow">and</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="mi">0</span><span class="o">&lt;=</span><span class="n">p</span><span class="o">&lt;=</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">cutoff</span><span class="o">&lt;</span><span class="n">date</span><span class="o">&lt;=</span><span class="n">cutoff</span><span class="o">+</span><span class="n">horizon</span><span class="p">):</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">values</span><span class="p">)</span><span class="o">&lt;=</span><span class="mf">.05</span><span class="p">))</span> <span class="k">if</span> <span class="n">values</span> <span class="k">else</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+<p>This operational label is not a treatment-effect estimate or proof of clinical benefit. The benchmark evaluates studies with qualifying recorded future analyses. Prospective deployment over <em>all</em> ongoing trials would need to address that different population. These are study-level registry records, not individual patient trajectories. Read the <a href="../labs/sources/l139/relbench__datasets__trial.py">dataset construction</a> before describing the population.</p>
+<h2 id="3-%C2%B7-Reconstruct-the-population-before-fitting">3 &#183; Reconstruct the population before fitting<a class="anchor-link" href="#3-%C2%B7-Reconstruct-the-population-before-fitting">&#182;</a></h2><p>A label can look plausible while the query set is wrong. We independently join the archived tables, rebuild inclusion and labels for every supplied timestamp, and compare both the complete key set and every label. We also execute the released SQL. Future outcome rows are needed for this audit; they do not become future input features.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Audited queries</th>
+  <th style="text-align:right">Positive labels</th>
+  <th style="text-align:right">Prevalence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>train</td>
+  <td style="text-align:right">11,994</td>
+  <td style="text-align:right">7,647</td>
+  <td style="text-align:right">0.6376</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">960</td>
+  <td style="text-align:right">561</td>
+  <td style="text-align:right">0.5844</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">825</td>
+  <td style="text-align:right">483</td>
+  <td style="text-align:right">0.5855</td>
+</tr>
+</tbody>
+</table></div>
+<p>Full audit: <strong>13779 queries</strong>, zero label/key mismatches after applying the released split contract.</p>
+<p><strong>The domain-specific clock matters.</strong> The released constructor assigns outcome/analysis dates from the study's completion date and assigns several design/association dates from its start date. These are inferred benchmark timestamps, not measured publication or database-arrival times. It also starts from studies with an actual completion date and a start date from 2000 onward. A past-only graph under these timestamps does not establish prospective availability in a live registry.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Source field or construction</th>
+  <th>What it supports</th>
+  <th>What it does not establish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Study start date</td>
+  <td>Root/start cutoff check</td>
+  <td>When every study attribute was published</td>
+</tr>
+<tr>
+  <td>Completion date assigned to analyses</td>
+  <td>Benchmark future label window</td>
+  <td>When results became publicly available</td>
+</tr>
+<tr>
+  <td>Actual-completion cohort in the source snapshot</td>
+  <td>Released benchmark population</td>
+  <td>Coverage of every ongoing or abandoned trial</td>
+</tr>
+</tbody>
+</table></div>
+<p><a href="../labs/sources/l139/relbench__datasets__trial.py">Inspect the constructor, especially inferred timestamps</a>. The raw archive supports label reconstruction beyond the test cutoff. The model snapshot is truncated at the dataset's test timestamp, 2021-01-01. Validation queries use 2020-01-01; a 365-day window is not always the same as “the same date next year.” Preserve exact timestamps and durations. <a href="../labs/sources/l139/relbench__datasets__trial.py">Dataset</a> · <a href="../labs/sources/l139/relbench__tasks__trial.py">Task</a></p>
+<p><strong>CHECK:</strong> compare the released counts with paper Table 2: 11,994 train, 960 validation, 825 test. A matching count alone does not establish matching identities; the audit checks keys too. Archive matches establish the released data version, not the historical training RNG state.</p>
+<h2 id="4-%C2%B7-Model-architecture:-one-query-cutoff-at-every-hop">4 &#183; Model architecture: one query cutoff at every hop<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-one-query-cutoff-at-every-hop">&#182;</a></h2><p>A facility influences a study through <code>facilities_studies</code>; a condition uses <code>conditions_studies</code>. The association rows are themselves graph nodes. A two-layer model therefore reaches a facility or condition through two foreign-key edges. Outcome and analysis rows follow the same timestamp contract; even a perfectly predictive future p-value is unavailable to the query.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l139/architecture.svg" alt="Facility → association → study, within the full clinical graph. Mean neighbors, sum relations, owner-specific time, study head and training objective."><figcaption>Facility → association → study, within the full clinical graph. Mean neighbors, sum relations, owner-specific time, study head and training objective. On a narrow screen, scroll the diagram horizontally.</figcaption></figure>
+
+<p>The full model contains <strong>15 node types, 5,434,924 nodes and 15,335,102 directed edges</strong>, not just the highlighted path. Per-table PyTorch Frame encoders map numerical, categorical and text features to 128 channels. Text uses the pinned 300-dimensional mean GloVe representation. Relative-time encodings use each sampled node's owning query cutoff. Each GraphSAGE relation averages its neighbor messages; relation outputs are then <strong>summed</strong>, normalized and passed through ReLU. “Mean aggregation” does not mean averaging relation types. Two layers produce a study root vector [B,128]; a linear head yields [B,1] logits. BCE trains the model and validation AUROC selects its checkpoint.</p>
+<p>The released loader halves the starting fanout across layers: 64,32. Sampling is per relation and disjoint per query. The same database row can appear twice in a batch with different owners and different allowed neighborhoods. <a href="../labs/relkit/rdl_l117.py">Visible implementation</a> · <a href="../labs/sources/l139/examples__gnn_node.py">Released trainer</a></p>
+<div class="tuning-control" id="l139-cutoff"></div><noscript>Baseline association time15: hidden for cutoff10, visible for cutoff20.</noscript>
+
+<p><strong>TODO 2 — visibility contract.</strong> Implement <code>visibility_mask(times, owners, cutoffs)</code>. Compare every node time with <code>cutoffs[owners]</code>. A batch maximum admits future rows for earlier queries. Equality is allowed by the released sampler; this is an event-time check. It does not prove that untimestamped metadata was known historically. The original feature statistics use the supplied snapshot; changing that preprocessing would create a different experiment.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">visibility_mask</span><span class="p">(</span><span class="n">times</span><span class="p">,</span><span class="n">owners</span><span class="p">,</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Every sampled node inherits its own query cutoff, never a batch maximum.&quot;&quot;&quot;</span>
+    <span class="n">times</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">times</span><span class="p">);</span><span class="n">owners</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">owners</span><span class="p">);</span><span class="n">cutoffs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">1</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">[</span><span class="n">times</span><span class="p">,</span><span class="n">owners</span><span class="p">,</span><span class="n">cutoffs</span><span class="p">])</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">owners</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;one time and owner per node required&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">times</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">cutoffs</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;nonfinite temporal values&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">owners</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">owners</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span> <span class="ow">or</span> <span class="n">owners</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">&lt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="n">owners</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">&gt;=</span><span class="nb">len</span><span class="p">(</span><span class="n">cutoffs</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;invalid query ownership&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">times</span><span class="o">&lt;=</span><span class="n">cutoffs</span><span class="p">[</span><span class="n">owners</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span>
+</pre></div>
+<h2 id="5-%C2%B7-Transfer-the-pipeline,-preserve-the-protocol">5 &#183; Transfer the pipeline, preserve the protocol<a class="anchor-link" href="#5-%C2%B7-Transfer-the-pipeline,-preserve-the-protocol">&#182;</a></h2><p>Keep the graph constructor, column encoders, temporal ownership, optimizer structure and validation selection visible. Change the dataset/task specification and the paper's documented trial settings. Do not tune on test results. The released epoch limit allows up to 2,001 batches; this small task finishes its complete training loader first.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Item</th>
+  <th>Selected reproduction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Named target</td>
+  <td>RelBench v1 Table 6, basic RDL, rel-trial/study-outcome</td>
+</tr>
+<tr>
+  <td>Data</td>
+  <td>Full released graph and task splits; no feature or row caps</td>
+</tr>
+<tr>
+  <td>Fits</td>
+  <td>Five fresh seeds 0–4, each 20 epochs</td>
+</tr>
+<tr>
+  <td>Optimizer / loss</td>
+  <td>Adam, LR .0001 / BCE with logits</td>
+</tr>
+<tr>
+  <td>Model / loader</td>
+  <td>2 × 128; mean neighbors; sum relations; batch 512; fanout 64/32; uniform temporal sampling</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>First strict maximum validation AUROC; selected state then re-evaluated</td>
+</tr>
+<tr>
+  <td>Preprocessing</td>
+  <td>Verified L132 materialization reused; seed 42, pinned GloVe; fresh materialization code supplied</td>
+</tr>
+<tr>
+  <td>Comparison</td>
+  <td>±1 AUROC percentage point descriptive tolerance declared before training</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l139/transfer.svg" alt="Shared model computation transfers; query semantics, schema and paper settings are audited afresh."><figcaption>Shared model computation transfers; query semantics, schema and paper settings are audited afresh. On a narrow screen, scroll the diagram horizontally.</figcaption></figure>
+
+<p><strong>Fresh reconstruction check:</strong> a separate execution rebuilt all 15 tables and produced a byte-identical graph to the reused primary-run graph. This verifies the current preprocessing reuse; it does not establish the historical paper's RNG state. <a href="../labs/evidence/l139/preprocessing_parity.json">Checksum evidence</a></p>
+<p>The lab includes the complete model, graph construction and trainer, plus a small forward/backward fixture. The default notebook checks the real evidence packet and learner functions. Enabling <code>RUN_FULL_REPRODUCTION</code> launches fresh training in the pinned runtime and requires substantial memory and compute. The supplied Modal operator reserves each attempt against the aggregate $10 budget. <a href="../labs/l139-reproduction.md">Exact commands and limitations</a></p>
+<h2 id="6-%C2%B7-Query-identity-comes-before-the-score">6 &#183; Query identity comes before the score<a class="anchor-link" href="#6-%C2%B7-Query-identity-comes-before-the-score">&#182;</a></h2><p>Two predictions for the same study at different cutoffs are different queries. Align by <strong>(study ID, cutoff)</strong>, reject duplicates and missing keys, then compute AUROC. Reordering scores without reordering their keys can create a convincing but meaningless result.</p>
+<p><strong>TODO 3 — evaluation contract.</strong> Implement <code>keyed_auc(query_keys, targets, prediction_keys, scores)</code>. The provided <code>rank_auc</code> primitive awards half credit to tied positive–negative pairs. Your work is the identity contract: shuffled predictions must score identically, while duplicate or incomplete keys must fail.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">keyed_auc</span><span class="p">(</span><span class="n">query_keys</span><span class="p">,</span><span class="n">targets</span><span class="p">,</span><span class="n">prediction_keys</span><span class="p">,</span><span class="n">scores</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Align complete unique (entity, cutoff) keys, then count tied rank wins.&quot;&quot;&quot;</span>
+    <span class="n">q</span><span class="o">=</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">query_keys</span><span class="p">];</span><span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">prediction_keys</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">q</span><span class="p">))</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">p</span><span class="p">))</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">!=</span><span class="nb">set</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;keys must be unique and cover exactly the same queries&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">):</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;length mismatch&#39;</span><span class="p">)</span>
+    <span class="n">mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">scores</span><span class="p">));</span><span class="k">return</span> <span class="n">rank_auc</span><span class="p">(</span><span class="n">targets</span><span class="p">,[</span><span class="n">mapping</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">q</span><span class="p">])</span>
+</pre></div>
+<p><strong>CHECK:</strong> re-score every preserved validation/test prediction using your function, after intentionally shuffling the prediction rows. This verifies evaluation, not fresh training. Source-model checks and audited sampling provide different evidence and must be reported separately.</p>
+<h2 id="7-%C2%B7-What-did-the-complete-experiment-establish?">7 &#183; What did the complete experiment establish?<a class="anchor-link" href="#7-%C2%B7-What-did-the-complete-experiment-establish?">&#182;</a></h2><figure class="stream-figure" tabindex="0"><img src="../labs/figures/l139/selection.svg" alt="Measured validation AUROC for all five complete fits. Dots mark first maxima; test scores play no role in checkpoint selection."><figcaption>Measured validation AUROC for all five complete fits. Dots mark first maxima; test scores play no role in checkpoint selection. On a narrow screen, scroll the diagram horizontally.</figcaption></figure>
+
+<p><strong>Complete selected released protocol</strong> — Five full-data twenty-epoch fits completed; independently reconstructed all 13,779 queries and rescored all 8,925 held-out predictions. Trial-specific paper settings preserved.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Fresh AUROC % ± sample SD</th>
+  <th style="text-align:right">Paper AUROC % ± SD</th>
+  <th>Descriptive comparison</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">67.9432 ± 0.5851</td>
+  <td style="text-align:right">68.18 ± .49</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">68.8891 ± 1.6141</td>
+  <td style="text-align:right">68.60 ± 1.01</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>All 8,925 held-out neural predictions independently aligned and re-scored. 1,304,325 sampled query occurrences audited. Five full20-epoch fits; no post-test tuning. The ±1pp closeness rule is descriptive, not equivalence. Historical identity and whole-paper reproduction remain <strong>NOT_ESTABLISHED</strong>.</p>
+<p>The paper's LightGBM comparison reports test AUROC 70.09±1.41 versus basic RDL 68.60±1.01. This lesson reproduces the selected GNN lane, not new LightGBM training. The paper notes that the study table already has rich features. Pipeline generality alone therefore does not establish a relational performance advantage. <a href="https://arxiv.org/html/2407.20060v1#S5.SS1">Paper §5.1 and Table 6</a></p>
+<p>Inspect the <a href="../labs/sources/l139/manifest.json">source manifest</a>, <a href="../labs/evidence/l139/task_audit.json">task audit</a>, <a href="../labs/evidence/l139/reproduction.json">run ledger</a>, and <a href="../labs/evidence/l139/training.json">training results</a>. The lesson's measurements, source parity, browser checks, and your own mastery are separate claims. Live Colab and deployment remain unverified unless explicitly tested.</p>
+<h2 id="8-%C2%B7-Exit:-defend-the-transfer">8 &#183; Exit: defend the transfer<a class="anchor-link" href="#8-%C2%B7-Exit:-defend-the-transfer">&#182;</a></h2><p>Without looking back, answer in four short paragraphs:</p>
+<ol>
+<li>A started trial has only a secondary future analysis. Why is it absent rather than label 0? What population does the reported AUROC describe?</li>
+<li>Trace facility → association → study with shapes and the query cutoff. What happens when the association is dated after the cutoff?</li>
+<li>Which code structure transfers from Amazon, which four training settings change, and why is this not zero-shot inference?</li>
+<li>State the measured result, one verified property, and one unresolved claim. Does successful execution show that the GNN beats a strong tabular baseline?</li>
+</ol>
+<div id="l139-teachback"></div>
+
+<p><a href="../labs/0139-healthcare-trial.ipynb">Student notebook</a> · <a href="../labs/solutions/0139-healthcare-trial.ipynb">Teacher solution</a> · <a href="../labs/html/0139-healthcare-trial.html">Prepared walkthrough</a> · <a href="../reference/healthcare-trial.html">Reference</a>. Ask the teacher about any unclear step, or submit the four paragraphs for feedback. Revisit the missing-result and two-cutoff examples tomorrow; the following checkpoint will compare evidence across tasks.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/trial-task-viz.js"></script></body></html>

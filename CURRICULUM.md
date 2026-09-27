@@ -354,8 +354,8 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 135 | [Hyperparameter tuning on REG](lessons/0135-tuning-on-reg.html) | — | [Fair tuning budget](labs/0135-tuning-on-reg.ipynb) |
 | 136 | [Leaderboard literacy](lessons/0136-leaderboard-literacy.html) | Pinned RelBench leaderboard + v1 Table 7 | [Complete archive replay, fresh training and config audit](labs/0136-leaderboard-literacy.ipynb) |
 | 137 | [Error analysis on REG](lessons/0137-error-analysis-reg.html) | RelBench v1 + original slice analysis | [Fresh full GNN/FE reproduction and paired error audit](labs/0137-error-analysis-reg.ipynb) |
-| 138 | Domain: e-commerce task | rel-amazon | Full task deep dive |
-| 139 | Domain: healthcare / social | RelBench v1 tasks | Second domain |
+| 138 | [E-commerce: Amazon review churn](lessons/0138-ecommerce-amazon.html) | rel-amazon/user-churn | [Full task audit and source-pinned reproduction](labs/0138-ecommerce-amazon.ipynb) |
+| 139 | [Domain: healthcare / social](lessons/0139-healthcare-trial.html) | RelBench v1 tasks | Second domain |
 | 140 | **Q2 checkpoint** | — | Match published GNN baseline on 2 tasks |
 
 ### Q3 · Advanced RDL methods (141–150)

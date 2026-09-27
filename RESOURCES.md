@@ -821,3 +821,17 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [RelBench v1, Table7 and expert-feature study](https://arxiv.org/html/2407.20060v1): selected basic RDL target plus distinct manual-FE pipeline provenance.
 - [Released user-study SQL](https://github.com/snap-stanford/relbench-user-study/blob/445bb7a3b1230f49f8e5890ae81754d3e365680f/f1/driver-position/feats.sql): strict-past standings, recent global-race slots and explicit schedule availability caveats.
 - [Pinned GNN implementation](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py). The lesson's slice protocol is an original course extension; source hashes and executed boundaries live in `labs/l137-reproduction.md`.
+
+
+## Lesson138 — Amazon review churn
+
+- [RelBench v1 §4/5.1/Table6](https://arxiv.org/html/2407.20060v1): named basic RDL user-churn target.
+- [Pinned task SQL](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/amazon.py): eligibility, horizon and exact endpoints.
+- [Pinned dataset construction](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/datasets/amazon.py): Books reviews, table schema and source limitations.
+
+## Lesson 139 — Clinical-trial pipeline transfer
+
+- [RelBench v1 Table6 and AppendixB.2](https://arxiv.org/html/2407.20060v1): study-outcome target and the trial-specific mean aggregation, learning rate, fanout and epoch exception.
+- [Pinned clinical task SQL](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/trial.py): observed-query inclusion, numeric p-values, modifier behavior and365-day windows.
+- [Pinned clinical dataset constructor](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/datasets/trial.py): retrospective completed-study cohort and timestamps inferred from start/completion dates. These do not establish recorded historical arrival times.
+- Source hashes, independent audit and exact commands: `labs/sources/l139/manifest.json`, `labs/l139-reproduction.md`.
