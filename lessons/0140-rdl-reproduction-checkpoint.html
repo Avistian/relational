@@ -1,0 +1,153 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 140 — Defend a two-task RDL reproduction</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/tuning-budget.css"><link rel="stylesheet" href="../assets/reproduction-gates.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0139-healthcare-trial.html">Lesson 139</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Checkpoint 140</p><h1>Defend a two-task RDL reproduction</h1></header><h2 id="1-%C2%B7-Turn-two-scores-into-a-defensible-result">1 &#183; Turn two scores into a defensible result<a class="anchor-link" href="#1-%C2%B7-Turn-two-scores-into-a-defensible-result">&#182;</a></h2><p>Lessons <a href="0138-ecommerce-amazon.html">138</a> and <a href="0139-healthcare-trial.html">139</a> established two domain pipelines. They left a harder question: <strong>what evidence lets you say that you reproduced a baseline?</strong> A plausible score can survive a broken join, a missing seed, a changed population, or test-driven selection. This checkpoint asks you to defend the entire chain.</p>
+<p>Your tangible win is a two-task report whose claims can be regenerated from query identities, checkpoint histories and saved predictions. Allow 25 minutes for the core lesson and a separate lab/defense session. Read <a href="https://arxiv.org/html/2407.20060v1#A2.SS1">RelBench v1 Table 6 and Appendix B.2</a>; compare the source configuration before looking at scores.</p>
+<div id="warmup"></div>
+
+<p><strong>Retrieve first:</strong> why does the same entity at two cutoffs create two queries? What happens to a trial with no qualifying future primary analysis? Which data may choose an epoch?</p>
+<h2 id="2-%C2%B7-Freeze-two-contracts-before-training">2 &#183; Freeze two contracts before training<a class="anchor-link" href="#2-%C2%B7-Freeze-two-contracts-before-training">&#182;</a></h2><p>A common model does not imply identical hyperparameters or identical query semantics. Preserve each task's released recipe. The comparison is replication against two named baselines, not a controlled experiment about domain difficulty.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>Amazon user-churn</th>
+  <th>Trial study-outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Query</td>
+  <td>Customer and cutoff</td>
+  <td>Study and cutoff</td>
+</tr>
+<tr>
+  <td>Eligible population</td>
+  <td>At least one review in the previous 91 days</td>
+  <td>Started study with a qualifying analysis in the next 365 days</td>
+</tr>
+<tr>
+  <td>Positive</td>
+  <td>No review in the next 91 days</td>
+  <td>Minimum qualifying primary p-value ≤ .05</td>
+</tr>
+<tr>
+  <td>Neighbor aggregation</td>
+  <td>Sum</td>
+  <td>Mean</td>
+</tr>
+<tr>
+  <td>Per-hop fanout</td>
+  <td>128, 64</td>
+  <td>64, 32</td>
+</tr>
+<tr>
+  <td>Adam learning rate</td>
+  <td>.005</td>
+  <td>.0001</td>
+</tr>
+<tr>
+  <td>Released epochs</td>
+  <td>10</td>
+  <td>20</td>
+</tr>
+<tr>
+  <td>Batch / width / layers</td>
+  <td>512 / 128 / 2</td>
+  <td>512 / 128 / 2</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>First maximum validation AUROC</td>
+  <td>First maximum validation AUROC</td>
+</tr>
+</tbody>
+</table></div>
+<p>Five new runs per task use seeds 0–4. Binary cross-entropy trains both. A released epoch stops after <code>steps &gt; 2000</code>, so Amazon uses <strong>2,001 batches per epoch</strong>, not a complete pass through its 4,708,383 training queries. “Full data” means the full released population is available; it does not mean visiting every row in every epoch. Trial visits all 11,994 training queries each epoch. <a href="../labs/sources/l139/examples__gnn_node.py">Released trainer</a></p>
+<p>The source pin is <code>9aa346267c2e1c560bd92da07d6f4ad1ca2f0639</code>. Preprocessing uses the full test-cutoff database snapshot, the released feature-type inference and pinned GloVe text features. We reuse checksum-verified materializations; we initialize and train new weights. The <a href="../labs/_full_l140.py">complete trainer</a> and <a href="../labs/relkit/rdl_l117.py">model implementation</a> are visible in the notebook, alongside a fresh-materialization path.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l140/architecture.svg" alt="Two concrete relational paths share the encoder → temporal GNN → head computation. The scalar neighbor example is illustrative. Task-specific fanout, aggregation and optimizer settings remain distinct."><figcaption>Two concrete relational paths share the encoder → temporal GNN → head computation. The scalar neighbor example is illustrative. Task-specific fanout, aggregation and optimizer settings remain distinct. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p>Trace one facility → association → study path. Each table's row encoder produces 128 channels; the query owner's time encoding is added; relation-specific GraphSAGE outputs are summed and normalized within each layer. The study root reaches the linear head after two layers. A customer → review → product path uses the same stack with the Amazon recipe. We transfer program structure, not learned weights.</p>
+<h2 id="3-%C2%B7-Freeze-the-checkpoint-using-validation-only">3 &#183; Freeze the checkpoint using validation only<a class="anchor-link" href="#3-%C2%B7-Freeze-the-checkpoint-using-validation-only">&#182;</a></h2><p>The best training loss is not the checkpoint rule. The best test score is not the checkpoint rule either. Record every epoch, then select the <strong>first</strong> strict maximum validation AUROC. A later tie must keep the earlier epoch. Re-evaluating the selected weights may draw new sampled neighborhoods; its validation score can differ from the selection score.</p>
+<p><strong>Predict:</strong> validation scores are .70, .75, .75; test scores are .90, .60, 1.00. Which epoch must survive? Commit before changing the selector.</p>
+<div class="tuning-control" id="l140-selection"></div><noscript>Synthetic baseline: epoch2 wins; epoch3 ties validation and must not replace it.</noscript>
+
+<p><strong>TODO 1 — <code>select_checkpoint(history)</code>.</strong> Require a complete ordered history with finite validation AUROCs. Return the epoch under the frozen rule. The CHECK rejects choosing by test, taking the last tie, skipping epochs or accepting NaN. Use your function on every fresh author history.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l140/selection.svg" alt="Fresh measured validation curves for every seed. Dots mark first maxima; no test curve is used for selection."><figcaption>Fresh measured validation curves for every seed. Dots mark first maxima; no test curve is used for selection. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p>We do not rerun “unlucky” seeds or retune after reading the test table. The same public test sets appeared in earlier lessons; these runs are fresh training, not new pristine holdouts. They support a replication exercise, not a new confirmatory discovery.</p>
+<h2 id="4-%C2%B7-Score-the-right-query,-not-the-current-row-position">4 &#183; Score the right query, not the current row position<a class="anchor-link" href="#4-%C2%B7-Score-the-right-query,-not-the-current-row-position">&#182;</a></h2><p>Suppose queries arrive as <code>(entity 4, day10)</code>, <code>(entity 4, day20)</code>, <code>(entity 8, day10)</code>, but predictions arrive in reverse order. A positional zip evaluates a different claim. Joining on entity alone also merges two distinct forecasts. Require unique <strong>(entity, cutoff)</strong> keys on both sides, equal populations, and finite probabilities before aligning.</p>
+<p><strong>TODO 2 — <code>align_predictions(query_keys, prediction_keys, predictions)</code>.</strong> Return probabilities in canonical query order. Missing, duplicate, unexpected or nonfinite predictions must fail. The lab shuffles real prediction rows and checks that the AUROC stays unchanged. Your output feeds the scorer; it is not an unused exercise beside a hidden answer.</p>
+<p>AUROC measures positive–negative ordering, with half credit for ties. The portable notebook provides the rank implementation and verifies it against scikit-learn. No threshold or calibration claim follows from AUROC alone.</p>
+<p>Temporal correctness is a separate audit: every sampled timestamp must be at or before <strong>its owning query cutoff</strong>, at every hop. Untimestamped metadata and inferred trial timestamps still lack historical arrival/version records. Passing the released sampler audit does not prove prospective availability. <a href="../labs/sources/l139/relbench__datasets__trial.py">Trial timestamp construction</a> · <a href="../labs/l138-reproduction.md">Amazon audit</a></p>
+<h2 id="5-%C2%B7-Keep-three-verdicts-instead-of-one-green-badge">5 &#183; Keep three verdicts instead of one green badge<a class="anchor-link" href="#5-%C2%B7-Keep-three-verdicts-instead-of-one-green-badge">&#182;</a></h2><ol>
+<li><strong>Execution:</strong> did every planned seed finish the released protocol?</li>
+<li><strong>Numerical agreement:</strong> is the mean within the predeclared ±1 percentage point band?</li>
+<li><strong>Protocol evidence:</strong> do the available source/data records align, and what remains missing?</li>
+</ol>
+<p>These questions can have different answers. For Amazon, the archived training table has <strong>24,172 fewer queries</strong> than paper Table 2; held-out counts match. A close AUROC cannot repair that difference. Clinical archive counts agree, but historical RNG/environment identity remains unestablished on both tasks. <a href="../labs/evidence/l138/paper_alignment.json">Count evidence</a></p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l140/evidence.svg" alt="Three evidence gates. The 0.2pp gap is illustrative; the Amazon training-count discrepancy is real."><figcaption>Three evidence gates. The 0.2pp gap is illustrative; the Amazon training-count discrepancy is real. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p><strong>Predict:</strong> four of five runs finish, all close to the paper. May their mean qualify the planned experiment? Then suppose all five finish but the archive differs. Which verdict changes?</p>
+<div class="tuning-control" id="l140-gates"></div><noscript>Hypothetical baseline:5/5 seeds,0.2pp gap,archive mismatch → COMPLETE / CLOSE / GAPPED; historical identity NOT_ESTABLISHED.</noscript>
+
+<p><strong>TODO 3 — <code>reproduction_verdict(...)</code>.</strong> Require exactly the planned seed set before producing a mean or closeness verdict. Report sample SD (<code>ddof=1</code>) and a separate protocol status. A missing seed yields <code>INCOMPLETE</code> and <code>NOT_EVALUATED</code>, not an average of the convenient survivors. Reject unexpected seeds and invalid scores.</p>
+<p>The ±1pp rule is a <strong>descriptive comparison</strong>, not a statistical equivalence test. Seed SD measures variation from this training procedure conditional on this split and preprocessing. It is neither a confidence interval over future deployments nor a cross-database uncertainty estimate. Seed0 on Amazon and seed0 on trial are unrelated runs, not paired observations for a cross-domain test. Two tasks also do not establish general RDL superiority.</p>
+<h2 id="6-%C2%B7-Inspect-the-fresh-author-evidence">6 &#183; Inspect the fresh author evidence<a class="anchor-link" href="#6-%C2%B7-Inspect-the-fresh-author-evidence">&#182;</a></h2><p><strong>Predict before revealing:</strong> which task should have wider seed variation? What evidence would make you reject a close mean? Then compare the points, not just the aggregate.</p>
+<div class="stream-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task / split</th>
+  <th style="text-align:right">Fresh AUROC % ± sample SD</th>
+  <th style="text-align:right">Paper AUROC %</th>
+  <th>Score</th>
+  <th>Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>amazon / val</td>
+  <td style="text-align:right">70.4547 ± 0.0724</td>
+  <td style="text-align:right">70.45</td>
+  <td>CLOSE</td>
+  <td>GAPPED</td>
+</tr>
+<tr>
+  <td>amazon / test</td>
+  <td style="text-align:right">70.3356 ± 0.1347</td>
+  <td style="text-align:right">70.42</td>
+  <td>CLOSE</td>
+  <td>GAPPED</td>
+</tr>
+<tr>
+  <td>trial / val</td>
+  <td style="text-align:right">67.9720 ± 0.4558</td>
+  <td style="text-align:right">68.18</td>
+  <td>CLOSE</td>
+  <td>ALIGNED_WITH_RELEASE</td>
+</tr>
+<tr>
+  <td>trial / test</td>
+  <td style="text-align:right">68.6378 ± 0.7115</td>
+  <td style="text-align:right">68.60</td>
+  <td>CLOSE</td>
+  <td>ALIGNED_WITH_RELEASE</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Ten fresh full released-protocol fits; 3,817,310 held-out predictions independently rescored.</strong> Amazon protocol remains gapped. Historical identity and whole-paper reproduction: <strong>NOT_ESTABLISHED</strong>.</p>
+<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l140/scores.svg" alt="Fresh L140 seed points, means and sample SD. Dashed lines are paper means. Separate vertical scales expose variance; the Amazon protocol gap remains."><figcaption>Fresh L140 seed points, means and sample SD. Dashed lines are paper means. Separate vertical scales expose variance; the Amazon protocol gap remains. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p>The author report checks all planned runs, full schedules, query keys, original-model checkpoint outputs, independent AUROC arithmetic and recorded temporal audits. Data/label reconstruction from L138/L139 is inherited evidence tied to the same archive hashes; it is not represented as a fresh reconstruction here. <a href="../labs/evidence/l140/training.json">Machine-readable report</a> · <a href="../labs/l140-reproduction.md">Protocol, budget and exact commands</a></p>
+<p>The cloud operator reserves each attempt before dispatch. The first complete seed per task doubles as the timing pilot; remaining runs are dispatched only if the forecast fits. The shared cap is **$10 including attempts and validation**, with $3 reserved for overhead. A budget refusal produces an honest incomplete experiment, not an excuse to silently shorten training.</p>
+<h2 id="7-%C2%B7-Lab-and-exit-defense">7 &#183; Lab and exit defense<a class="anchor-link" href="#7-%C2%B7-Lab-and-exit-defense">&#182;</a></h2><p><a href="../labs/html/0140-rdl-reproduction-checkpoint.html">Open the prepared lab</a> · <a href="../labs/0140-rdl-reproduction-checkpoint.ipynb">Student notebook</a> · <a href="../reference/rdl-reproduction-checkpoint.html">Reference</a></p>
+<p>Run your three live functions on the portable author evidence. Read and execute the provided small neural forward/backward trace. The full model and trainer are included below the core lab; enabling the fresh-training gate starts a separate experiment and requires the pinned GPU runtime and adequate host RAM. Default notebook execution re-scores artifacts; it does not train ten full models.</p>
+<p>Submit a one-page defense with four paragraphs:</p>
+<ul>
+<li><strong>Contract:</strong> name both targets, populations, splits, source, recipe and seed set; explain why the trial settings differ.</li>
+<li><strong>Evidence:</strong> report every seed, mean ± sample SD, selected epochs and independently verified query counts.</li>
+<li><strong>Counter-evidence:</strong> preserve Amazon's count gap, unknown historical availability, sampled evaluation variation, prior test reuse and historical identity limits.</li>
+<li><strong>Verdict:</strong> state what completed, what is numerically close, and what remains unestablished. Propose one test that could weaken your conclusion.</li>
+</ul>
+<p><strong>Assessment rubric:</strong> contract accuracy, reproducible evidence, treatment of counter-evidence, and defensible scope each earn 0–2 points. Aim for at least 7/8, with no test-based selection, missing-seed averaging, or claim that a close score repairs a data mismatch. A well-supported failed reproduction can pass the learner assessment.</p>
+<p>A passing author run is preparation for this assessment. Your checkpoint remains <strong>PENDING_WRITTEN_DEFENSE</strong> until your code and explanation demonstrate the skill. Ask the agent to challenge any unclear claim. Before Lesson 141's planned composite message passing, explain what this baseline does—and why matching it does not prove it uses relational structure optimally.</p>
+<div id="l140-teachback"></div>
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/reproduction-gates-viz.js"></script></body></html>

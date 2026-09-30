@@ -356,7 +356,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 137 | [Error analysis on REG](lessons/0137-error-analysis-reg.html) | RelBench v1 + original slice analysis | [Fresh full GNN/FE reproduction and paired error audit](labs/0137-error-analysis-reg.ipynb) |
 | 138 | [E-commerce: Amazon review churn](lessons/0138-ecommerce-amazon.html) | rel-amazon/user-churn | [Full task audit and source-pinned reproduction](labs/0138-ecommerce-amazon.ipynb) |
 | 139 | [Domain: healthcare / social](lessons/0139-healthcare-trial.html) | RelBench v1 tasks | Second domain |
-| 140 | **Q2 checkpoint** | — | Match published GNN baseline on 2 tasks |
+| 140 | [**Q2 checkpoint**](lessons/0140-rdl-reproduction-checkpoint.html) | RelBench v1 Table 6 | [Two fresh five-seed reproductions and evidence defense](labs/0140-rdl-reproduction-checkpoint.ipynb) |
 
 ### Q3 · Advanced RDL methods (141–150)
 **Papers (chronological):** ContextGNN (Yuan 2024) · RelGNN (Chen 2025, ICML) · Griffin (Wang 2025, ICML) · RelGT (Dwivedi 2025, ICLR 2026) · RDL survey (2025)

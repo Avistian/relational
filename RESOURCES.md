@@ -835,3 +835,5 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [Pinned clinical task SQL](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/trial.py): observed-query inclusion, numeric p-values, modifier behavior and365-day windows.
 - [Pinned clinical dataset constructor](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/datasets/trial.py): retrospective completed-study cohort and timestamps inferred from start/completion dates. These do not establish recorded historical arrival times.
 - Source hashes, independent audit and exact commands: `labs/sources/l139/manifest.json`, `labs/l139-reproduction.md`.
+
+- L140 checkpoint: [RelBench v1 Table 6 and Appendix B.2](https://arxiv.org/html/2407.20060v1#A2.SS1), [pinned source trainer](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py), and [Modal resource pricing](https://modal.com/pricing) checked2026-09-30. Use for two-task released-protocol reproduction, validation selection, seed variance and limits of historical claims.
