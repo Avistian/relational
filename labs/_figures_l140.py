@@ -16,6 +16,8 @@ def save(f,n):
    a=patch.get_window_extent(renderer);b=label.get_window_extent(renderer)
    assert a.x0<=b.x0 and b.x1<=a.x1 and a.y0<=b.y0 and b.y1<=a.y1,(n,label.get_text())
  for ext in ['svg','png']:f.savefig(D/f'{n}.{ext}',dpi=145,bbox_inches='tight',metadata={'Date':None} if ext=='svg' else None)
+ for path in D.glob(n+'.svg'):
+  path.write_text('\n'.join(line.rstrip() for line in path.read_text().splitlines())+'\n')
  plt.close(f)
 def box(a,x,y,w,h,text,color=teal):
  patch=FancyBboxPatch((x,y),w,h,boxstyle='round,pad=.02',edgecolor=color,facecolor='#eff7f6',linewidth=1.5);a.add_patch(patch);label=a.text(x+w/2,y+h/2,text,ha='center',va='center',fontsize=11,color=blue)
