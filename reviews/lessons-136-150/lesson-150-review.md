@@ -17,3 +17,7 @@ Delivery checks and the publication result are recorded separately alongside thi
 ## Pre-publication validation
 
 L149 and L150 passed their delivery suites: 12 and 32 interactive states respectively, 1200px/375px layouts, keyboard/reset, print, no-JavaScript, portable notebook figures, manifest navigation and deterministic rebuilds. L150's three function contracts, complete evidence/source audit and shared pedagogy checks passed. The exact staged Git checkout built successfully, and all 127 local links across the two lessons, prepared notebooks and references resolved. The architecture and evidence-gate screenshots were inspected at desktop and mobile reading sizes.
+
+## Live publication
+
+Published in `5fd3730abb5073adc9a379e3ae42b3a90cbc71b7`. [Pages run 36764560341](https://github.com/Avistian/relational/actions/runs/36764560341) completed successfully for build and deployment. All **155** checked live files matched the tested clean-build hashes. L149 and L150 passed four live browser views at 1200px/375px with loaded diagrams, keyboard prerequisite access, no page overflow and no JavaScript/HTTP errors. L150's live gate controls and reset also passed. See `lesson-150-deployment.json` and `lesson-150-live.json`.
