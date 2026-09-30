@@ -1,0 +1,158 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 141 — Composite message passing: trace an atomic route</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0140-rdl-reproduction-checkpoint.html">Lesson 140</a></nav><header><p class="route-kicker">Year 4 · Quarter 3 · Lesson 141</p><h1>Composite message passing: trace an atomic route</h1></header><h2 id="1-%C2%B7-Choose-what-gets-combined-before-choosing-how-to-combine-it">1 &#183; Choose what gets combined before choosing how to combine it<a class="anchor-link" href="#1-%C2%B7-Choose-what-gets-combined-before-choosing-how-to-combine-it">&#182;</a></h2><p>Lesson <a href="0140-rdl-reproduction-checkpoint.html">140</a> established an evidence discipline: keep the task, model, selection rule and query identities visible. It left the model itself unchanged. Now we change <strong>the unit of a message</strong>.</p>
+<p>A relational entity graph represents a database row as a node. A foreign key creates a link from that row to a row in another table. In Formula 1, one result row identifies a driver, a constructor and a race. The constructor is the team responsible for the car. To send constructor information to a driver, an ordinary edge-based network traverses <strong>constructor → result → driver</strong>.</p>
+<p><strong>In plain terms.</strong> Instead of first mixing every neighbor into one result representation, construct a result representation for the particular source–destination pair you want to communicate. Then let the driver weight those messages. That pair-specific update is the mechanism we will implement.</p>
+<p>Your tangible win: trace one complete composite update, explain its tensor dimensions, and distinguish a checkpoint replay from reconstructed fresh training. Read the core lesson in one sitting; use a separate lab session for the code and written defense. Primary reading: <a href="https://arxiv.org/html/2502.06784v2#S4">RelGNN, ICML 2025, §§4.1–4.3</a>. The runnable details below follow the <a href="https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b">pinned released code</a>.</p>
+<div id="warmup"></div>
+
+<p><strong>Retrieve before reading:</strong> what does a foreign key identify? Why are two forecasts for one driver at different dates two distinct queries? Which split may select a checkpoint?</p>
+<h2 id="2-%C2%B7-Derive-atomic-routes-from-foreign-key-roles">2 &#183; Derive atomic routes from foreign key roles<a class="anchor-link" href="#2-%C2%B7-Derive-atomic-routes-from-foreign-key-roles">&#182;</a></h2><p>A <strong>schema</strong> lists the tables and their key relationships. A <strong>route</strong> specifies the table types and foreign key roles used to carry a message. It is a recipe shared across many concrete row paths.</p>
+<p>An <strong>atomic route</strong> is one complete interaction unit in this model. “Atomic” refers to the update, not to an indivisible graph edge. A composite route still uses two physical edges.</p>
+<p><strong>One foreign key.</strong> The released route builder emits a direct route in each direction. For example, <code>races.circuitId</code> points to <code>circuits.circuitId</code>, so the direct routes are race → circuit and circuit → race. Count forward foreign key roles only; the graph's reverse edges are conveniences for propagation, not additional database constraints.</p>
+<p><strong>Two or more foreign keys.</strong> The intermediate row is a <em>fact</em>: a record of an event or relationship. Tables it references play the endpoint roles. For each ordered pair of different foreign key roles, emit source → fact → destination. A two-key bridge yields two routes. A three-key hub yields six: there are three destination choices and two remaining source choices for each.</p>
+<p><strong>Worked example.</strong> A result row has driver, constructor and race keys. One route sends constructor information through the result to the driver. Another sends race information through the result to the driver. Their learned parameters are separate. A route from constructor to driver and its reverse are also separate.</p>
+<p>The general count is <code>k × (k − 1)</code> for a fact with <code>k ≥ 2</code> foreign key roles. It is a schema count, not the number of sampled messages. Missing references can remove concrete row paths. Two different roles can reference the same table, such as home team and away team; they still identify different routes. <a href="../labs/sources/l141/examples__atomic_routes.py">Route construction source</a></p>
+<p><strong>Predict:</strong> how many routes does a four-key fact create? Would adding stored reverse edges double that number?</p>
+<div class="route-widget" id="l141-routes"></div><noscript>Baseline: three foreign key roles → six ordered composite routes; one key → two direct routes.</noscript>
+
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l141/routes.svg" alt="A three-key result row yields six ordered composite routes. The pictured arrows show information flow; foreign key declarations point from result to each endpoint."><figcaption>A three-key result row yields six ordered composite routes. The pictured arrows show information flow; foreign key declarations point from result to each endpoint. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p><strong>TODO 1 — <code>get_atomic_routes</code>.</strong> Produce the released route tuples. A composite tuple stores the fact→destination attention edge first, then the source→fact fusion edge. That storage order is not the direction of the whole information path. The CHECK tests direction, role identity, reverse-edge handling and ordinary one-key routes. Your function constructs the routes used by the real model below.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The release includes special handling for self-referencing tables. Keep it in the implementation and source audit; the F1 worked example does not require a self-reference. Schema-derived routing does not itself establish useful predictive signal.</p>
+</blockquote>
+<h2 id="3-%C2%B7-Fuse-one-source-role-with-the-fact-row">3 &#183; Fuse one source role with the fact row<a class="anchor-link" href="#3-%C2%B7-Fuse-one-source-role-with-the-fact-row">&#182;</a></h2><p><strong>A representation</strong> is a vector of learned numerical features. Let <code>s</code> be the source vector, <code>f</code> the fact-row vector and <code>d</code> the destination vector. The fact still contributes its own attributes; the route does not turn it into an empty edge.</p>
+<p>For the selected released variant, the intermediate representation is:</p>
+<p><code>u = W_source · sum(source neighbors) + b_source + W_fact · f</code>.</p>
+<p>Here <code>W</code> denotes a learned linear map; <code>b</code> is a learned offset. The source sum collects only the source role belonging to this ordered route. A valid nonmissing foreign key has one parent, so that sum usually contains one source vector. A missing sampled edge gives a zero source sum; the fact-root term remains. These operations reproduce the released GraphSAGE fusion, including its bias and root contribution. <a href="../labs/sources/l141/examples__relgnn_conv.py">Composite operator source</a></p>
+<p><strong>Worked example — deliberately scalar.</strong> Two historical result rows point to the same driver. Their constructor coordinates are 2 and 4; their result coordinates are 1 and 0. Set both linear weights to 1 and the bias to 0. The fused messages are then <strong>3 and 4</strong>. This arithmetic is an illustration, not a measured F1 embedding.</p>
+<p>The race role has its own route. It is not mixed into the constructor→result→driver intermediate above. The final driver representation may still include race information through other routes. “Pair-specific” does not mean “the entire network ignores every other table.”</p>
+<p>An ordinary two-layer heterogeneous GNN may mix the source, destination and other roles into the intermediate before returning information to the destination. RelGNN changes where that mixing occurs. We will study failure examples more deeply in Lesson 142; a diagram alone cannot establish that one model must win.</p>
+<h2 id="4-%C2%B7-Let-the-destination-weight-its-incoming-messages">4 &#183; Let the destination weight its incoming messages<a class="anchor-link" href="#4-%C2%B7-Let-the-destination-weight-its-incoming-messages">&#182;</a></h2><p><strong>Attention</strong> assigns learned weights to incoming vectors. The destination supplies a <em>query</em> vector. Each fused intermediate supplies a <em>key</em> and a <em>value</em>. Queries and keys determine weights; values supply the content that is averaged.</p>
+<p>For head <code>h</code> and an incoming fact <code>j</code>, the selected implementation computes:</p>
+<pre><code>q_h = W_query,h d + b_query,h
+k_jh = W_key,h u_j + b_key,h
+v_jh = W_value,h u_j + b_value,h
+score_jh = dot(q_h, k_jh) / sqrt(128)
+alpha_jh = exp(score_jh) / sum_incoming exp(score_h)
+message_h = sum_incoming alpha_jh * v_jh
+</code></pre>
+<p>A <strong>head</strong> is a separate learned query/key/value projection. The denominator ranges over incoming edges to this destination, within this route and head. It does not range across the whole batch, across heads or across routes. Subtracting the largest score before exponentiation preserves the ratio and prevents overflow.</p>
+<p><strong>Continue the scalar example.</strong> Use identity key/value maps and a one-dimensional query of 1. The scores are 3 and 4; the scale is <code>sqrt(1)</code> in this illustration. Softmax gives approximately <strong>0.269 and 0.731</strong>, producing <strong>3.731</strong>. With query 0, both scores are equal: the result becomes <strong>3.500</strong>. The source messages are unchanged; only the destination's weighting changes.</p>
+<p><strong>Predict:</strong> will raising the query emphasize the larger fused value? Will adding an unrelated race coordinate alter this particular route's calculation?</p>
+<div class="route-widget" id="l141-attention"></div><noscript>Scalar baseline q=1: scores[3,4], weights[0.269,0.731], output3.731. Change q to0: output3.500.</noscript>
+
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l141/attention.svg" alt="Synthetic scalar calculation: constructor [2,4] plus result [1,0] gives fused [3,4]. Query 1 yields 3.731; query 0 yields 3.500. These are not measured embeddings."><figcaption>Synthetic scalar calculation: constructor [2,4] plus result [1,0] gives fused [3,4]. Query 1 yields 3.731; query 0 yields 3.500. These are not measured embeddings. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p><strong>TODO 2 — <code>destination_softmax</code>.</strong> Normalize scores separately by destination and head. The CHECK uses two destinations, extreme scores, an unused destination, permuted edges and an empty edge set. The full attention forward pass calls your function, so a globally normalized answer changes the trained model.</p>
+<p>The real operator concatenates four 128-channel head outputs to 512 channels, adds a learned destination skip vector of that width, and projects back to 128 channels. The skip supplies a direct route for the destination's current state. This release does <strong>not</strong> divide a total width of 128 into four 32-channel heads. <a href="../labs/relkit/relgnn_l141.py">Visible arithmetic</a> · <a href="../labs/sources/l141/examples__relgnn_conv.py">Released operator</a></p>
+<h2 id="5-%C2%B7-Model-architecture:-one-composite-layer,-two-sampling-hops">5 &#183; Model architecture: one composite layer, two sampling hops<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-one-composite-layer,-two-sampling-hops">&#182;</a></h2><figure class="route-figure" tabindex="0"><img src="../labs/figures/l141/architecture.svg" alt="Selected F1 model: two sampling hops, one composite layer, four 128-channel heads, route sums and a scalar driver head. The source/fact/driver route is highlighted inside the complete forward pass."><figcaption>Selected F1 model: two sampling hops, one composite layer, four 128-channel heads, route sums and a scalar driver head. The source/fact/driver route is highlighted inside the complete forward pass. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p><strong>Input.</strong> Each query is <code>(driver_id, cutoff)</code>. A temporal sampler gathers a neighborhood using fanouts 128 and 64: the maximum requested neighbors per edge type at each of two sampling hops. The selected release uses uniform sampling and a bidirectional sampled subgraph. Each sampled node occurrence retains the query that owns it.</p>
+<p><strong>Encode.</strong> Each table has its own row encoder. Categorical, numerical, timestamp and text features are mapped into a 128-channel row vector using the released PyTorch Frame stack. Text uses fixed GloVe word embeddings. A learned projection of a positional encoding adds the time difference between the query cutoff and the row timestamp, measured in days. Untimestamped tables do not receive that temporal term. <a href="../labs/sources/l141/relbench__modeling__nn.py">Encoder source</a></p>
+<p><strong>Route.</strong> Each atomic route uses its own parameter set. Composite routes first fuse a source role with a fact, then attend from fact to destination. Direct routes skip fusion. The release also sends each composite route's fused intermediate to the fact table's output accumulator; omitting that update changes the model.</p>
+<p><strong>Update.</strong> Sum outputs targeting the same table. Normalize each node vector across its channels, then apply ReLU, which replaces negative coordinates by zero. This is one <strong>model layer</strong>, although a composite message used two sampled graph edges. Model depth and sampler depth are different settings. <a href="../labs/sources/l141/examples__relgnn_nn.py">Stack</a> · <a href="../labs/sources/l141/examples__relgnn_hetero_conv.py">Route dispatch</a></p>
+<p><strong>Predict and train.</strong> Select the driver roots and apply the released one-layer prediction head to obtain one scalar per query. L1 loss is the mean absolute error between predictions and training targets. Gradients update the row encoders, temporal projections, composite operators and head. At evaluation, clip predictions to the training targets' 2nd–98th percentile range. Training loss uses unclipped predictions.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Passing a timestamp test proves legality under the released event clocks. It does not supply missing historical arrival times or prove prospective feature availability. Atomic routes never authorize skipping either edge's owning-query cutoff.</p>
+</blockquote>
+<p><strong>Trace check:</strong> explain why the picture contains two graph edges but one composite layer. Identify where the fact's features enter, where the destination affects attention, and where different routes finally meet.</p>
+<h2 id="6-%C2%B7-Reproduce-what-the-available-evidence-actually-specifies">6 &#183; Reproduce what the available evidence actually specifies<a class="anchor-link" href="#6-%C2%B7-Reproduce-what-the-available-evidence-actually-specifies">&#182;</a></h2><p><strong>Task meaning.</strong> The target averages recorded finishing positions in <code>(cutoff, cutoff + 60 days]</code>. A driver needs an observed race result in that future window to receive a label; no future participation is not a zero finishing position. This is a benchmark population conditional on future participation, not a ready-made prospective roster of every driver. The independent audit rebuilds all 8,712 labels from raw result rows.</p>
+<p>Our named target is <strong>RelGNN, <code>rel-f1/driver-position</code>, Table 2: 3.798 test MAE</strong>. Lower is better. The paper reports a five-seed mean. Its released entry point instead downloads one checkpoint and evaluates it. The complete historical training recipe and five individual training histories are not supplied. <a href="https://arxiv.org/html/2502.06784v2#S5.T2">Paper Table 2</a> · <a href="../labs/sources/l141/examples__relgnn_task_node.py">Released entry point</a></p>
+<p>We therefore keep three evidence columns: the paper's reported mean, a full-data replay of the released checkpoint, and five fresh runs under a frozen reconstruction. A close replay does not become five fresh fits; five fresh fits with documented choices do not become the historical training protocol.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Decision</th>
+  <th>Released evidence</th>
+  <th>This reconstruction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Architecture</td>
+  <td>1 composite layer, 128 channels, 4 heads, sum</td>
+  <td>Preserve</td>
+</tr>
+<tr>
+  <td>Sampling</td>
+  <td>Uniform 128/64, bidirectional, batch 512</td>
+  <td>Preserve</td>
+</tr>
+<tr>
+  <td>Data / features</td>
+  <td>Complete F1 task; historical type cache absent</td>
+  <td>Checksum archives; freeze fresh inference; document replay override</td>
+</tr>
+<tr>
+  <td>Objective</td>
+  <td>L1 in paper / entry point</td>
+  <td>Preserve</td>
+</tr>
+<tr>
+  <td>Optimizer / schedule</td>
+  <td>Historical recipe unavailable</td>
+  <td>Adam 0.005, 10 full epochs</td>
+</tr>
+<tr>
+  <td>Runs</td>
+  <td>Paper averages 5 seeds</td>
+  <td>Fresh seeds 0–4</td>
+</tr>
+<tr>
+  <td>Checkpoint selection</td>
+  <td>Historical history unavailable</td>
+  <td>First strict minimum validation MAE</td>
+</tr>
+<tr>
+  <td>Prediction clipping</td>
+  <td>Training-target percentiles 2 and 98</td>
+  <td>Preserve</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Checkpoint preprocessing gap.</strong> Fresh type inference treats <code>qualifying.position</code> as categorical. The released checkpoint instead requires two numerical qualifying features. Its saved means and standard deviations match <code>number</code> and <code>position</code>, in that order. The initial unmodified replay fails strict weight loading. We retain that failure, rematerialize only this table with numerical position, and label the new lane <strong>CHECKPOINT_COMPATIBILITY_REPLAY</strong>. This is an evidence-backed reconstruction of one missing type choice; the historical type cache is still unavailable. Fresh training keeps the originally frozen inferred types. The two lanes therefore do not have identical feature semantics.</p>
+<p><strong>Gradient-health gap.</strong> The real numerical encoder can have nonfinite parameter gradients while yielding finite predictions. A clean synthetic fixture does not establish healthy optimization on missing real values. On a real training batch, 640 nonfinite numerical-weight gradients had identical masks in the original implementation; finite gradients agreed within 2.4×10⁻⁷ after matching dropout RNG. We preserve that behavior in these runs; a sanitized encoder would be a new experiment.</p>
+<p>The fresh runs are <strong>RECONSTRUCTED_TRAINING</strong>. No seed is dropped because it is inconvenient. Test scores never select the epoch, learning rate or a retry. All training rows are visited in every epoch. The initial full seed is also the timing pilot. A predeclared ±0.20 MAE band is only a descriptive comparison with the paper scalar; it is not an equivalence test. Exact historical reproduction remains <strong>NOT_ESTABLISHED</strong> regardless of the score.</p>
+<p><strong>TODO 3 — <code>keyed_mae</code>.</strong> Align finite predictions by the complete unique <code>(driver, cutoff)</code> key, then compute absolute errors. Reject missing or duplicate keys. The default notebook deliberately shuffles every real prediction vector before scoring it with your function.</p>
+<p><strong>Predict before inspecting results:</strong> if the checkpoint is close but fresh reconstructed fits vary, what has each lane established? What evidence would be needed to claim a causal improvement over the old baseline?</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence lane</th>
+  <th style="text-align:right">Validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+  <th>What was executed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Published Table 2</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">3.798</td>
+  <td>Reported five-seed mean</td>
+</tr>
+<tr>
+  <td>Checkpoint-compatible replay</td>
+  <td style="text-align:right">2.836661</td>
+  <td style="text-align:right">3.737381</td>
+  <td>One released set of weights; reconstructed qualifying types</td>
+</tr>
+<tr>
+  <td>Fresh reconstruction, five seeds</td>
+  <td style="text-align:right">3.216126 ± 0.095152</td>
+  <td style="text-align:right">4.259311 ± 0.267820</td>
+  <td>Ten full epochs per seed; sample SD</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>7,554 held-out predictions</strong> independently aligned and rescored. Fresh score comparison: <strong>OUTSIDE_TOLERANCE</strong>. Historical training: <strong>NOT_ESTABLISHED</strong>. Whole paper: <strong>NOT_RUN</strong>.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l141/results.svg" alt="Measured fresh seed points and mean ± sample SD; paper mean and checkpoint-compatible replay are separate evidence populations. No causal model comparison is established."><figcaption>Measured fresh seed points and mean ± sample SD; paper mean and checkpoint-compatible replay are separate evidence populations. No causal model comparison is established. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p>These results are conditional on one task and fixed splits. Earlier lessons have already used this public test set; it is not a new pristine holdout. A fresh controlled baseline comparison would be required to attribute a gain to routing alone. A full 30-task paper reproduction is outside this selected experiment. <a href="../labs/l141-reproduction.md">Protocol, commands, cost and deviation ledger</a></p>
+<h2 id="7-%C2%B7-Implement,-explain,-return-later">7 &#183; Implement, explain, return later<a class="anchor-link" href="#7-%C2%B7-Implement,-explain,-return-later">&#182;</a></h2><p>Open the <a href="../labs/0141-composite-message-passing.ipynb">student notebook</a>. It contains the model and trainer in annotated code sections, with portable figures. Implement the three TODOs and run each CHECK. The default CPU lane uses synthetic operator examples and independently re-scores author evidence. The explicit full-data gate runs preprocessing, checkpoint replay and fresh training in the pinned GPU environment.</p>
+<p><strong>EXIT — write before consulting the reference.</strong> Draw one constructor→result→driver update. Include the fact-root term, destination query, normalization set, four-head dimensions and output projection. Explain why one model layer needs two sampling hops. Then write two separate sentences describing the checkpoint evidence and reconstructed training evidence. Name what neither establishes.</p>
+<div id="l141-teachback"></div>
+
+<p>Return tomorrow and reconstruct the route-count rule and attention denominator from memory. Next week, revisit the keyed-metric exercise with shuffled predictions. Lesson 142 examines many-to-many failure mechanisms; Lesson 143 extends the RelGNN reproduction work. This lesson's author execution does not complete those units or establish your mastery.</p>
+<p><a href="../reference/composite-message-passing.html">One-page reference</a> · <a href="../labs/html/0141-composite-message-passing.html">Executed teacher notebook</a>. Ask the agent follow-up questions, or paste your EXIT explanation for feedback. Learner status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until that explanation is assessed.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/atomic-route-viz.js"></script></body></html>

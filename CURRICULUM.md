@@ -361,7 +361,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 ### Q3 · Advanced RDL methods (141–150)
 **Papers (chronological):** ContextGNN (Yuan 2024) · RelGNN (Chen 2025, ICML) · Griffin (Wang 2025, ICML) · RelGT (Dwivedi 2025, ICLR 2026) · RDL survey (2025)
 
-| 141 | Composite message passing ★ | Chen 2025 RelGNN (2502.06784) | Atomic routes concept |
+| 141 | [Composite message passing ★](lessons/0141-composite-message-passing.html) | Chen 2025 RelGNN v2 | [Visible atomic routes, checkpoint-compatible replay and five fresh full-data fits](labs/0141-composite-message-passing.ipynb) |
 | 142 | Many-to-many edge pathology | Chen 2025 §motivation | Why vanilla GNNs lose signal |
 | 143 | RelGNN reproduction | Chen 2025 | Run on RelBench subset |
 | 144 | ContextGNN — beyond two-tower recsys ★ | Yuan 2024 (2411.19513) | Pair-wise + two-tower fusion |

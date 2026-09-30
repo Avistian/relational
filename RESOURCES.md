@@ -837,3 +837,9 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - Source hashes, independent audit and exact commands: `labs/sources/l139/manifest.json`, `labs/l139-reproduction.md`.
 
 - L140 checkpoint: [RelBench v1 Table 6 and Appendix B.2](https://arxiv.org/html/2407.20060v1#A2.SS1), [pinned source trainer](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py), and [Modal resource pricing](https://modal.com/pricing) checked2026-09-30. Use for two-task released-protocol reproduction, validation selection, seed variance and limits of historical claims.
+
+## Lesson 141 · RelGNN atomic routes
+
+- [ICML2025 RelGNN v2](https://arxiv.org/html/2502.06784v2): §§4.1–4.3 and Table2.
+- [Pinned implementation](https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b): route derivation, composite attention, inference configuration. Main entry point is checkpoint evaluation, not training.
+- [Pinned checkpoint release](https://huggingface.co/tianlangchen/RelGNN/tree/321e6f6e7af5d7546b637f147783fc28ab5d4a7a): F1 driver-position weights; feature-type compatibility reconstruction documented in [protocol](labs/l141-reproduction.md).
