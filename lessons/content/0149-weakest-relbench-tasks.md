@@ -116,9 +116,9 @@ Implement three live functions: orient metric gaps without mixing units; rank on
 
 [[TEACHBACK]]
 
-Ask the teaching agent about any unclear comparison, or paste your EXIT for feedback. Revisit the metric-sign and comparator questions tomorrow, then again after a week. Carry the weakness catalog into [the Q3 checkpoint plan](../plan/year-4.md): a successful model on one task should coexist with an honest account of where it fails.
+Ask the teaching agent about any unclear comparison, or paste your EXIT for feedback. Revisit the metric-sign and comparator questions tomorrow, then again after a week. Carry the weakness catalog into [the Q3 checkpoint](0150-q3-reproduction-checkpoint.html): a successful model on one task should coexist with an honest account of where it fails.
 
 
 <!-- sequence-next:start -->
-**Carry this forward.** Lesson 150 is under construction. Keep your weakness catalog and proposed falsifier for that checkpoint; until it is ready, finish the written defense here.
+**Carry this forward.** Bring your weakness catalog and proposed falsifier into [Lesson 150’s reproduction report](0150-q3-reproduction-checkpoint.html). A complete report must defend both the successful checks and the counter-evidence.
 <!-- sequence-next:end -->

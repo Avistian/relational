@@ -1,5 +1,7 @@
 # Sequential review: Lessons 136–150
 
+**Follow-up:** Lesson 150 is now complete and included in the [finished-package review](lesson-150-review.md). The record below describes the earlier 136–149 release.
+
 Reviewed 2026-09-30. Lessons 136–149 are publication candidates. Lesson 150 is under construction and is excluded from this publication review's completion claim. This is a teaching and delivery review, not fresh model training or a new paper-fidelity audit.
 
 The sequence has a coherent progression: audit a score → diagnose errors → transfer the task to two domains → defend reproduction → inspect new architectures → compare them fairly → formulate questions → ablate components → record counter-evidence. Existing numerical results and reproduction limitations are retained.

@@ -886,3 +886,9 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 ## Lesson 149 · weakest RelBench tasks
 - [RelBench v1 Figure3, §6 and AppendixC.2](https://arxiv.org/html/2407.20060v1#S6): published 15-task user study; boosted regression head must be separated from Table7 basic RDL. Figure SVG freshly checksum-verified2026-09-30; reconstructed means are PLOT_DERIVED, with unresolved user-votes/post-votes label mismatch.
 - [Pinned FE release](https://github.com/snap-stanford/relbench-user-study/tree/445bb7a3b1230f49f8e5890ae81754d3e365680f) and [pinned RDL release](https://github.com/snap-stanford/relbench/tree/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639): complete fresh F1 selected-pipeline replay and separate exploratory slice profile. Ledger: labs/l149-reproduction.md.
+
+## Lesson150 checkpoint sources · 2026-09-30
+
+- [RelGNN v2 §5.2/Table2](https://arxiv.org/html/2502.06784v2#S5.T2): selected historical F1 target3.798 rawMAE. [Pinned release](https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b); fresh source/hash audit in labs/evidence/l150/sources.json.
+- [Current RelBench leaderboard](https://star-project.stanford.edu/relbench/leaderboard/) and [RelArena protocol](https://star-project.stanford.edu/relarena/): metric normalization and data-state/tuning/refit differences block a direct historical-current score comparison. Live JS/data snapshots retained; do not interpret the static empty fallback as no submissions.
+- [Checkpoint lesson](lessons/0150-q3-reproduction-checkpoint.html), [protocol](labs/l150-reproduction.md), [report scaffold](labs/l150-report-template.md).

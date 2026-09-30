@@ -370,7 +370,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 147 | [Survey: next-gen architectures](lessons/0147-next-generation-architectures.html) | arXiv 2506.16654 | Map open problems |
 | 148 | [Ablation discipline](lessons/0148-ablation-discipline.html) | RelBench v1 + controlled course extensions | [Encoder vs MP vs data contribution](labs/0148-ablation-discipline.ipynb) |
 | 149 | [Identify weakest RelBench tasks](lessons/0149-weakest-relbench-tasks.html) | RelBench v1 Figure 3 + fresh F1 RDL/FE | [Weakness catalog and full selected replay](labs/0149-weakest-relbench-tasks.ipynb) |
-| 150 | **Q3 checkpoint** | RelGNN or RelGT | SOTA or near-SOTA on 1 task; written reproduction report |
+| 150 | [**Q3 checkpoint: defend a full reproduction**](lessons/0150-q3-reproduction-checkpoint.html) | RelGNN full reference/search/selected tracks · [lab](labs/0150-q3-reproduction-checkpoint.ipynb) | Written report and four evidence gates; current SOTA/near-SOTA objective remains open |
 
 ### Q4 · RDL expertise (151–160)
 | 151–154 | Multi-task RelBench portfolio | — | 5 tasks, one report |
