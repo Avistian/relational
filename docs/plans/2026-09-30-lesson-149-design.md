@@ -1,0 +1,11 @@
+# Lesson 149 approved design and implementation plan
+
+User approved benchmark weakness audit plus fresh complete F1 RDL/FE replay. Budget USD10 aggregate, approximately USD4.50 reservation including USD3 overhead; T4 +2 physical CPU +16GiB rate .00022572/s checked2026-09-30. Six900s GPU slots (one timing pilot plus five10-epoch fits), one900s notebook check: USD1.422036 +USD3 reserve. Local FE50trials plus5refits aggregate timeout3600s. No automatic retries; reserve any additional dispatch within cap first.
+
+Named experiment: RelBench v1 Table7 basic RDL rel-f1/driver-position vs released user-study SQL/LightGBM. Five seeds0..4, all7453train/499validation/760test queries. Released GNN protocol and first validation minimum; FE ten-trial seeded TPE per run,2000round ceiling,50round early stopping, train-only refit. Sources pinned as L137. Historical identity NOT_ESTABLISHED; whole paper NOT_RUN; original human effort not reproduced. Figure3 regression uses GNN+LightGBM, not Table7 basic GNN.
+
+Catalog covers the15user-study tasks where source evidence permits; exact unreleased scalars remain unavailable, plot-derived estimates carry uncertainty. Do not mix AUROC and MAE units, basic and boosted models, or published and local runs. F1 is a feasible case study, not a claimed globally worst task. Slice thresholds fixed before new results; test previously inspected so extensions exploratory. Test no post-selection tuning.
+
+Implementation: freeze sources; pilot; fresh complete fits; reconstruct labels/SQL features; reconcile every keyed prediction and source parity; evidence catalog with provenance; implement/check oriented gaps, comparable ranking, supported weakness nomination; interpret cold start/history/missingness without causal claims; figures; canonical HTML, reference, student/solution notebooks with visible inherited training; execute and test delivery on desktop/mobile/keyboard/noJS/print and clean Git-index Pages. Update manifest/course/dossier/resources and preparation record; no push/deployment requested.
+
+Learning sequence: retrieve L137/L148 distinctions; compare two model variants; work a signed-gap example; rank within metric/protocol; predict uncertainty; inspect measured F1 slices; write a falsifiable counterexample and next intervention. Learner remains PENDING_WRITTEN_DEFENSE.
