@@ -36,3 +36,9 @@ Delivery evidence is recorded separately in `notebooks.json`, `checks.json`, `pa
 - The release manifest ends at 149. Lesson 150 authoring files and its pending workflow block remain in the shared workspace.
 
 The complete existing site is approximately 1.30 GB uncompressed. GitHub documents a [1 GB published-site limit](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits). Deployment status and live verification are separate evidence; this review does not delete older reproduction artifacts or alter their hashes to reduce size.
+
+## Live publication
+
+Published site commit: `514c938f06125b33c154158441b23ceb4fd85e19`. [Pages run 36763324139](https://github.com/Avistian/relational/actions/runs/36763324139) completed successfully for both build and deploy. All **218** checked live files matched the clean-build SHA-256 hashes: lesson HTML, student and solution notebooks, prepared notebook HTML, shared assets, reference pages, SVG/PNG figures and the lesson manifest. All 14 live lessons also passed a 375px browser check with loaded diagrams, no page overflow, no JavaScript exceptions and no local HTTP errors. See `deployment.json`, `live.json` and `live-browser.json`. The uploaded artifact was 790,312,443 bytes; successful deployment does not remove the documented uncompressed-site-size concern above.
+
+Lesson 150 was not included in the release manifest. Its authoring changes remain intact in the shared workspace. No cloud model training was launched for this review.
