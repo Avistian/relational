@@ -1750,3 +1750,86 @@ Approved RelGNN atomic-route lesson and full selected F1 driver-position experim
 Five fresh reconstructed fits, seeds 0–4, ten full epochs, Adam .005, first validation minimum: validation 3.216126 ± .095152 / test 4.259311 ± .267820 MAE (sample SD). OUTSIDE_TOLERANCE against published 3.798 under frozen ±.20 band; no retuning or discarded seeds. Historical training recipe unavailable; whole paper NOT_RUN. All original-model held-out comparisons pass. Real first-batch numerical encoder has 640 nonfinite weight gradients matching the original; finite gradients agree within 2.4e-7 after matching dropout RNG. Source parity is not gradient health.
 
 Three live TODOs: route enumeration, destination/head softmax, keyed MAE. Complete visible model/trainer, model-specific architecture and four portable figures. Standalone 24-code-cell solution PASS; pinned notebook executes an extra full seed100 and compatible replay, 2,518 further predictions independently checked and excluded from primary means. Browser desktop1200/mobile375,24interactive states,keyboard/reset,print/noJS,deterministic build and42copied-Pages links PASS. Conservative reservations + overhead USD6.656664; known worker-body estimate USD.080256 excludes unrecorded failures/startup/build/commit/storage; invoice NOT_ITEMIZED. Live Colab/deployment NOT_CHECKED; learner PENDING_WRITTEN_DEFENSE. Protocol: labs/l141-reproduction.md. Clean Git-index Pages build PASS; no publication requested.
+
+## Lesson 142 prepared · 2026-09-30
+
+Approved many-to-many pathology lesson plus five fresh full-data RelGNN fits and five ordinary edge-attention fits under USD10 aggregate. Composite validation3.133519±.185000/test4.267390±.087863MAE; ordinary validation3.045583±.127300/test4.418519±.305754. Test paired ordinary-minus-composite gap+.151129±.278950; composite wins3/5pairs, ordinary has lower mean validation. Composite remains OUTSIDE_TOLERANCE versus paper3.798±.20. Historical protocol NOT_ESTABLISHED; whole paper NOT_RUN. Existing F1 test population reused, no new confirmatory claim.
+
+Fresh full graph74,063rows/169,421forwardFKedges/20routes. All8,712labels independently reconstructed;12,590primary predictions reconciled to archive keys.10unique runs,10full epochs each,807,790query occurrences with zero future violations. Composite held-out predictions checked against original release; ordinary against PyG propagation; maximum raw error3.8147e-6. Parameter counts10,553,601versus20,519,169; different capacity,normalization depth and RNG trajectories explicit. First-batch missing-value encoder gradients have512or640nonfinite entries across both arms; preserved as limitation.
+
+Three live learner functions, exact matrix-power trace, harmful/harmless collision examples and6rejected mutants. Four portable figures and22browser intervention states. Standalone26-cell notebook PASS; pinned notebook executes extra full seed100per arm,2,518predictions independently audited and excluded from primary means. Local collector initially ran before remote volume commit; failure retained and collection rerun without new cloud dispatch. Model training had no retry.
+
+Conservative reservations+overheadUSD7.604688; measured worker-body estimateUSD.178140 excludes startup/build/commit/storage, invoice NOT_ITEMIZED. Desktop/mobile375,keyboard/reset/swap,noJS,print,portable figures,source AST,manifest discovery,deterministic build and40copiedPages links PASS. LiveColab/deployment NOT_CHECKED; learner PENDING_WRITTEN_DEFENSE. Protocol: labs/l142-reproduction.md. No publication requested.
+
+L142 final clean Git-index Pages build PASS. Only the approved design/plan was committed; lesson deliverables are staged locally. No push or deployment performed.
+
+
+## Lesson 143 prepared · 2026-09-30
+
+Approved full selected RelGNN F1 reproduction attempt under USD10. Five fresh complete ten-epoch fits: validation3.130064±.088643/test4.221853±.173512 MAE(sampleSD), OUTSIDE_TOLERANCE versus paper3.798 under frozen±.20. Separate CHECKPOINT_COMPATIBILITY_REPLAY scores validation2.836661/test3.737381; original feature-layout failure and ordered-moment reconstruction retained. Historical training/stypes cache NOT_ESTABLISHED; wholepaper NOT_RUN. No post-test tuning.
+
+Fresh full graph74063rows/338842directededges/20routes. All8712labels independently rebuilt and7554primary held-out predictions reconciled; every primary raw prediction compared with original architecture. Separate real first-batch gradient audit matches640nonfiniteentries and finite errors≤1.2e-7; per-seed batch counts can differ. Source parity is not gradient health.
+
+Three live learner contracts: checkpoint feature semantics, first validation minimum and complete-seed evidence verdict. Visible inline model/trainer and portable figures. Default/reference execution does not establish learner mastery; PENDING_WRITTEN_DEFENSE. Exact final notebook, cost and delivery statuses: labs/_verify_l143_results.json, _delivery_l143_results.json and l143-reproduction.md. LiveColab/deployment NOT_CHECKED.
+
+L143 final delivery: standalone25-cell CPU notebook and pinned25-cell full gate PASS; extra seed100+compatible replay2518predictions independently scored. Desktop1200/mobile375,24interactive states,keyboard/reset,noJS,print,four portable figures,36copiedPages links and manifest galleries PASS. Deterministic rebuild fixed to preserve executed notebook metadata. Clean Git-index Pages build PASS. Conservative reservations+overheadUSD6.3858; worker-body estimateUSD.076719, invoiceNOT_ITEMIZED. No deployment.
+
+
+## Lesson 144 prepared · 2026-09-30
+
+Approved ContextGNN/ShallowItem rel-trial/site-sponsor-run full released search attempt under USD10. Full selected reproduction INCOMPLETE: partial timing pilots project USD28.75 for110 one-epoch train/validation fits, USD575.03 at20epochs, before test passes; heterogeneous search/pruning can alter estimates. No tuning or repeat fits dispatched.
+
+Fresh graph5434924rows/53241sponsors,12.132GB serialized; all733741 labels independently rebuilt and source-SQL reconciled. Two pilots each16training batches/4096queries and4validation batches/1024queries; all2048 rankings independently keyed and rescored. No test evaluated. Real output parity within1e-5 absolute; both first-batch numerical encoder gradients include1408nonfinite entries. Independently confirmed upstream stale RHS evaluation cache; both issues preserved and disclosed.
+
+Three live learner functions, full inline source-adapted model/trainer, four portable figures, interactive branch calibration. Standalone and pinned-runtime25-cell notebooks PASS, identical code hashes; synthetic fixture metrics differ across runtimes and are not benchmark evidence. Desktop/mobile375,20intervention states,keyboard/reset,noJS,print,38copiedPages links,manifest galleries and deterministic regeneration PASS. Conservative reservations+overheadUSD3.503504; worker-body estimateUSD0.327385,invoiceNOT_ITEMIZED. Full gate not executed; liveColab/deploymentNOT_CHECKED; learnerPENDING_WRITTEN_DEFENSE. Protocol: labs/l144-reproduction.md.
+
+L144 clean Git-index Pages build PASS. Deliverables are staged locally; only the approved design was committed. No push or deployment performed.
+
+## Lesson 145 prepared · 2026-09-30
+
+Approved RelGT five-element tokenization and full selected F1 nine-config100-epoch search attempt under USD10. Full selected reproduction INCOMPLETE; nine full fits NOT_RUN. Fresh source token caches over hash-verified reused L143 graph expose569502train future-token occurrences across3277queries and21368val across217queries. All8712labels independently rebuilt. Repeated-entity cache overwrite and unfiltered fallback independently confirmed in original source. Evaluation local-attention dropout remains active; structural random features also resample in eval. These are release observations, not claims about unreleased historical paper caches.
+
+One shallow timing pilot uses768training/256validation queries; partial validation MAE9.084049479, testNOT_RUN. All256predictions keyed and independently rescored. Source-model real-batch maximum error1.9111e-6; synthetic full-model149gradient tensors match original. No nonfinite first-batch pilot parameter gradients. Three shallow full configurations projectUSD26.80 before overhead; nine at shallow speedUSD80.41. Temporal failure independently blocks clean reproduction. No deeper pilots or fresh GNN baseline dispatched; paper comparator labeled as cited evidence.
+
+Complete visible source-adapted model/trainer, three live TODOs, four portable figures and full source/protocol/deviation ledger. Default local and pinned notebooks execute mechanism/author-evidence checks, not full training. Learner PENDING_WRITTEN_DEFENSE. Scientific/delivery/cost reports: labs/_verify_l145_results.json, labs/_delivery_l145_results.json and labs/l145-reproduction.md. LiveColab/deploymentNOT_CHECKED; no publication requested.
+
+L145 final: local and pinned19-code-cell notebooks PASS;24browser intervention states, desktop/mobile375, keyboard/reset, print/noJS, manifest galleries,27copiedPages links, deterministic regeneration and clean Git-index Pages PASS. Conservative reservations+USD2overheadUSD2.812592; recorded worker-body estimateUSD.032919 excludes unitemized build/startup/storage. Initial stale-volume predispatch failure retained; no training retry. Only approved design committed; deliverables staged locally. No push/deployment.
+
+## Lesson 146 prepared · 2026-09-30
+
+Approved option 1: comparison lesson with a published-table audit and a separate corrected course experiment. Full selected paper reproduction remains INCOMPLETE: the nine-config RelGT search and fresh canonical RDL comparator are NOT_RUN. The Table 6 F1 displayed validation minimum (L4/.3) has test MAE 4.6316; headline 3.917 matches the smallest displayed test (L1/.5). Historical cross-configuration selection is NOT_ESTABLISHED; stochastic final reevaluation prevents inferring intent.
+
+Six fresh full-data fits, three seeds per arm, ten epochs each, K32, width64, two layers. GNN validation 3.197652 ± .056532 / test 4.293632 ± .037816 MAE; reduced corrected RelGT validation 3.048312 ± .102734 / test 4.617536 ± .291141. Paired test GNN-minus-RelGT difference −.323904 ± .253784 (sample seed SD). GNN wins all three test pairs; RelGT wins all three validation pairs. This compares complete model designs under one recipe, not the isolated effect of attention. No post-test retuning.
+
+All 8,712 labels independently rebuilt; 278,784 token occurrences audited with zero future violations; all 7,554 primary held-out predictions independently keyed and scored. Source graph and feature statistics REUSED under hashes. Padding: 43,000 / 1,228 / 10,623 train/validation/test occurrences. Feature-arrival legality NOT_ESTABLISHED. All six checkpoint streams independently hashed. Source RelGT training fixture matches 149 gradient tensors; independent GNN mean and full-network checks pass.
+
+First GNN pilot failed on a Module.type naming collision; fixed and retained. Five primary fits completed before an overstrict bit-exact CUDA evaluation check failed at differences ≤3.8147e-6. Evaluation-only recovery used unchanged checkpoints and histories; no training was repeated. The sixth fit ran once with an absolute 1e-5 check. A final sampler K=1 boundary fix does not affect the measured K32 contexts; original helper source retained. All attempts remain in the cost ledger.
+
+Local and pinned 24-code-cell notebooks pass. Desktop/mobile, path/selection interventions, prediction commitment, keyboard/reset, print/no-JS, four portable diagrams, deterministic generation and copied-Pages links are checked in labs/_delivery_l146_results.json. Final scientific/cost evidence: labs/_verify_l146_results.json; commands and limitations: labs/l146-reproduction.md. Conservative reservations including both notebook validations and overhead total USD6.740120; measured worker-body estimates exclude unitemized build/startup/commit/storage and are not an invoice. Author execution does not establish mastery: learner PENDING_WRITTEN_DEFENSE. Live Colab/deployment NOT_CHECKED. No publication requested.
+
+## Lesson 147 prepared · 2026-09-30
+
+Approved survey unit with executable evidence audit. Pinned arXiv2506.16654v1; map access/representation/prediction/transfer boundaries and five falsifiable questions. Three live contracts: complete keyed losses, paired seed summary, feasibility-first ranking. All7,554REUSED L146 held-out predictions freshly rescored; targets match saved preparation, raw labels not reconstructed again. Validation GNN−RelGT+.149340±.125959, test−.323904±.253784MAE (sample seed SD). No new fit, architecture claim or database-transfer experiment.
+
+Portable student/solution and three figures; solution executed in empty temporary directory. Browser1200/375,40map states,keyboard/reset,noJS,print,manifest galleries and34copiedPages links PASS. Visual review fixed overlapping plot footer and added mobile figure scrolling. Full selected RelGT reproduction INCOMPLETE; source temporalFAIL and inherited ~USD80.41projection remain; whole paper NOT_RUN, historical identity NOT_ESTABLISHED. L147 cloud spendUSD0. Learner PENDING_WRITTEN_DEFENSE; liveColab/deployment NOT_CHECKED. Protocol labs/l147-reproduction.md.
+
+L147 final clean Git-index Pages build PASS. Approved design committed; deliverables staged locally. No push or deployment performed.
+
+
+## Lesson 148 prepared · 2026-09-30
+
+Approved five-arm ablation discipline package and25fresh full-data F1fits (five seeds each, ten epochs). Baseline RelBench v1Table7 RDL validation3.224491±.053071/test4.193107±.242783MAE, both descriptively CLOSE under frozen±.2band. Four extensions: first-block row encoder, empty neighbor edges retaining root maps/biases,365-day post-sampling history prune without refill,combined encoder/messages. No post-test retuning. All8712labels independently rebuilt,31475primary predictions keyed/rescored,25checkpoint hashes collected.
+
+History improves validation−.2940but worsens test+.7708MAE; no-message reverses validation+.3990/test−.1538. Interaction test+.0554±.2850with mixed seed signs. Initial real batch has512nonfinitegradiententries in every arm; source numerical behavior preserved. These are conditional exploratory results, not a causal decomposition or cross-database claim.
+
+Three live student functions: owner-specific history mask,keyedMAE,pairedinteraction; four figures,complete visible baseline/interventions/trainer and pinned primitive reference. Default25-code-cell and pinned26-cell notebook PASS; pinned extra historyseed100fullfit excluded from primary statistics and1259predictions independently scored. Browser1200/375,16interactive states,keyboard/reset,print/noJS,deterministic build and25copied-Pages links PASS; clean Git-index Pages PASS.
+
+Conservative all-attempt reservations+USD3overheadUSD9.974748; known worker-body estimateUSD0.166615,invoiceNOT_ITEMIZED. Two preparation mount setup failures and one notebook remote-import setup failure retained; separate notebook image-order rejection happened before reservation/dispatch. Failed setup app stopped; no remaining paid work. Protocol:labs/l148-reproduction.md. Historical identityNOT_ESTABLISHED; wholepaperNOT_RUN; liveColab/deploymentNOT_CHECKED; learnerPENDING_WRITTEN_DEFENSE. No publication requested.
+
+## Lesson149 prepared · 2026-09-30
+
+Approved published15task weakness catalog plus fresh complete F1 RDL/FE replay withinUSD10. Five fresh10epoch GNN fits:val3.172598±.021711/test4.123071±.235929MAE, CLOSE under frozen±.2. Five fresh10trial FE searches+refits:val2.777330/test3.948917. All8712labels and50SQLfeatures independently reconstructed; all12590primary held-out predictions reconciled. High-history nominated on validation; test loss penalty+.079944,descriptive driver-cluster95%[−.397691,.638169]. Global test+.174155,interval[−.085850,.449621]. No superiority/equivalence/causal claim.
+
+Published Figure3 SVG gives plot-derived mean rankings; worst classification driver-top3, worst normalized regression item-sales. Regression uses GNN+LightGBM; preserve source user-votes label with unresolved Table7post-votes identity. H&M target is summed transaction prices next7days, not purchase counts. Historical identity NOT_ESTABLISHED; wholepaper/H&Mtraining NOT_RUN. Three live notebook tasks:metric sign,compatible ranking including units,validation nomination. Full model/trainer inline; final verification/status reports labs/_verify_l149_results.json and _delivery_l149_results.json. No learner completion; PENDING_WRITTEN_DEFENSE. No push/deployment requested.
+
+L149 final: standaloneCPU, pinnedFE full50trial notebook and pinnedGPU full5fit notebook PASS with identical final code hash. First revision checks retained; strengthened unit-contract validation added one reservedGPU slot. Resource estimateUSD.150530, conservative reservations+overheadUSD4.625184; invoiceNOT_ITEMIZED. Desktop1200/mobile375,12interactive states,keyboard/reset,noJS/print,3portable figures,27copiedPages links,manifest galleries and deterministic builder PASS. Delivery staged locally; no push/deployment.

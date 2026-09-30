@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">A checkpoint in reasoning, not just in training</p>
+<p><strong>Reading route.</strong> Freeze the two recipes → select using validation → align keys → defend three separate verdicts.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A hyperparameter is a setting chosen outside gradient updates, such as learning rate or neighbor fanout. A percentage point is an absolute difference between percentages: 70% to 71% is one point. Sample SD describes spread among runs; it does not measure uncertainty across databases.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 ## 1 · Turn two scores into a defensible result
 
 Lessons [138](0138-ecommerce-amazon.html) and [139](0139-healthcare-trial.html) established two domain pipelines. They left a harder question: **what evidence lets you say that you reproduced a baseline?** A plausible score can survive a broken join, a missing seed, a changed population, or test-driven selection. This checkpoint asks you to defend the entire chain.
@@ -101,6 +109,11 @@ Submit a one-page defense with four paragraphs:
 
 **Assessment rubric:** contract accuracy, reproducible evidence, treatment of counter-evidence, and defensible scope each earn 0–2 points. Aim for at least 7/8, with no test-based selection, missing-seed averaging, or claim that a close score repairs a data mismatch. A well-supported failed reproduction can pass the learner assessment.
 
-A passing author run is preparation for this assessment. Your checkpoint remains **PENDING_WRITTEN_DEFENSE** until your code and explanation demonstrate the skill. Ask the agent to challenge any unclear claim. Before Lesson 141's planned composite message passing, explain what this baseline does—and why matching it does not prove it uses relational structure optimally.
+A passing author run is preparation for this assessment. Your checkpoint remains **PENDING_WRITTEN_DEFENSE** until your code and explanation demonstrate the skill. Ask the agent to challenge any unclear claim. Before [Lesson 141’s composite message passing](0141-composite-message-passing.html), explain what this baseline does—and why matching it does not prove it uses relational structure optimally.
 
 [[TEACHBACK]]
+
+
+<!-- sequence-next:start -->
+**Carry this forward.** The next lesson changes the message itself. Use this checkpoint’s fixed-contract discipline to distinguish a new mechanism from evidence that it helps. [Continue to Lesson 141](0141-composite-message-passing.html).
+<!-- sequence-next:end -->

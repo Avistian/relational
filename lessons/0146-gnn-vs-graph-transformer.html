@@ -1,0 +1,109 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GNN vs graph transformer: defend the comparison</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/graph-comparison.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0145-relational-graph-transformer.html">Lesson 145</a></nav><header><p class="cmp-kicker">Year 4 · Quarter 3 · Lesson 146</p><h1>GNN vs graph transformer: defend the comparison</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">From architecture diagrams to a fair comparison</p>
+<p><strong>Reading route.</strong> Separate sampling from propagation → freeze selection → trace both course variants → pair errors on identical queries.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Readout is the operation that turns node states into the final prediction. An MLP is a feed-forward stack of learned linear maps and nonlinearities. A centroid is a representative vector for a group; EMA updates retain some old state while adding new training information. Matching seed labels does not make two different programs consume identical random draws.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<h2 id="The-decision-you-will-learn-to-defend">The decision you will learn to defend<a class="anchor-link" href="#The-decision-you-will-learn-to-defend">&#182;</a></h2><p>A graph transformer can connect two sampled rows in one attention step. That is a mechanism, not yet a reason to prefer it. Today you will learn to separate <strong>what a model can access</strong>, <strong>how a winner is selected</strong>, and <strong>what the measured comparison supports</strong>.</p>
+<p><a href="0143-relgnn-reproduction.html">Lesson 143</a> separated a compatible checkpoint from a reproduced training result. <a href="0145-relational-graph-transformer.html">Lesson 145</a> explained RelGT's five encodings and two attention branches, then found query ownership failures in its released cache. The unresolved question is now practical: <strong>how can we compare a GNN with a graph transformer without giving either an accidental advantage?</strong></p>
+<p>This serves the course mission: defend evidence that learned relational models add value, even when the defensible answer is “this experiment does not establish that claim.” Budget about 20 minutes for the main lesson; use the notebook for the implementation and evidence audit.</p>
+<div id="warmup"></div><noscript>Recall before reading: what makes a temporal query unique? What does validation select?</noscript>
+
+<h2 id="1-%C2%B7-Count-information-paths-before-counting-layers">1 &#183; Count information paths before counting layers<a class="anchor-link" href="#1-%C2%B7-Count-information-paths-before-counting-layers">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A model cannot use a row that was never retrieved. Once a row is retrieved, the model's communication and readout determine how it can affect the answer.</p>
+</blockquote>
+<p><strong>Three boundaries.</strong> Sampling chooses which rows enter a query. Propagation moves information between them. Readout chooses which final representations produce the prediction. A long sampling radius does not automatically give a shallow root-readout GNN access to every sampled row.</p>
+<p><strong>Worked example.</strong> A four-row chain is <code>driver → result → race → circuit</code>. In a synchronous root-readout GNN, one layer can move the result's original features to the driver. Two layers can move the race's original features there. Three layers are needed for the circuit's original features. Local all-pairs attention can read the circuit after one block <strong>if the circuit is already among the sampled tokens</strong>. Global pooling or precomputed structural features would change this example's assumptions.</p>
+<figure class="cmp-figure" tabindex="0"><img src="../labs/figures/l146/paths.svg" alt="Trace original row attributes under an explicit sampling, propagation and root-readout contract. Illustrative chain; not a benchmark result."><figcaption>Trace original row attributes under an explicit sampling, propagation and root-readout contract. Illustrative chain; not a benchmark result. Scroll horizontally for detail on a narrow screen.</figcaption></figure>
+<div id="cmp-path"></div><noscript>Baseline: circuit sampled, bridge legal, two GNN layers. Root-readout GNN cannot yet use circuit attributes; all-pairs attention can.</noscript>
+
+<p><strong>Predict before moving the controls.</strong> If the circuit is absent from the sample, will adding attention heads recover its attributes? If the result is a future row, should the sampler reach the otherwise old race through it?</p>
+<p><strong>The answer has two parts.</strong> Attention cannot recover an excluded row. A future bridge must be rejected before expansion. Validating only the last row's timestamp allows an illegal path to carry information into an earlier prediction.</p>
+<p>The actual course sampler below uses at most two hops. The three-hop chain is an explanatory intervention, not a claim that the measured model saw circuits through that route. See <a href="https://arxiv.org/html/2505.10960v1#S3.SS2">RelGT §3.2</a> for local all-pairs attention; inspect the <a href="../labs/relkit/comparison_l146.py">visible course sampler</a> for the executed access rule.</p>
+<h2 id="2-%C2%B7-A-winner-needs-a-selection-rule">2 &#183; A winner needs a selection rule<a class="anchor-link" href="#2-%C2%B7-A-winner-needs-a-selection-rule">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> “Choose the best configuration” is incomplete. Best on which data, at which stage, and under which tie rule?</p>
+</blockquote>
+<p>A <strong>checkpoint</strong> is the saved state after an epoch. A <strong>configuration</strong> specifies the architecture and training settings for a fit. Choosing a checkpoint inside each fit and choosing a configuration across fits are two separate decisions. Both need a rule fixed before looking at test scores.</p>
+<p><strong>Worked example from the reported table.</strong> The F1 row in RelGT's Table 6 contains nine configurations. The smallest displayed validation MAE is <strong>3.1046</strong>, at four layers and dropout <strong>0.3</strong>. Its displayed test MAE is <strong>4.6316</strong>. The headline test MAE <strong>3.9170</strong> belongs to one layer and dropout <strong>0.5</strong>, whose displayed validation MAE is <strong>3.3257</strong>.</p>
+<figure class="cmp-figure" tabindex="0"><img src="../labs/figures/l146/selection.svg" alt="Table 6 arithmetic under two declared selectors. Matching a test minimum does not establish historical selection intent."><figcaption>Table 6 arithmetic under two declared selectors. Matching a test minimum does not establish historical selection intent. Scroll horizontally for detail on a narrow screen.</figcaption></figure>
+<div id="cmp-selection"></div><noscript>Validation minimum: L4/.3 → test4.6316. Test minimum: L1/.5 → test3.917. Historical selection remains unresolved.</noscript>
+
+<p><strong>A precise inference.</strong> Selecting by the displayed validation row changes the apparent comparison with the cited RDL score, <strong>4.022</strong>. It does not prove which rule the authors actually used. The released trainer allows tied validation minima to replace an earlier checkpoint and reevaluates the saved model. Its evaluation is stochastic. Printed rounded final scores need not equal the selection-time values. The inspected trainer and launch script do not resolve historical cross-configuration selection.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This is an arithmetic audit of <a href="https://arxiv.org/html/2505.10960v1#A4">Tables 1 and 6</a>, not new training and not an accusation of test-set tuning. Historical selection is <strong>NOT_ESTABLISHED</strong>. <a href="../labs/evidence/l146/paper-table.json">Machine-readable table and calculation</a>.</p>
+</blockquote>
+<p><strong>Your rule in the lab.</strong> <code>select_config(configs, validation)</code> accepts no test scores. It chooses the first minimum and rejects incomplete or nonfinite scores. The same live function chooses checkpoints in the course trainer. This deliberately differs from the release's last-tie rule. A function signature cannot police where callers obtained a number; the protocol and audit still matter.</p>
+<h2 id="3-%C2%B7-Freeze-a-comparison-that-can-actually-run">3 &#183; Freeze a comparison that can actually run<a class="anchor-link" href="#3-%C2%B7-Freeze-a-comparison-that-can-actually-run">&#182;</a></h2><p>The paper experiment and the course experiment answer different questions. The complete paper-aligned RelGT runner retains all nine 100-epoch schedules. Lesson 145's temporal failure and cost estimate prevent calling its outputs a clean reproduction. We retain that runner and the canonical RDL runner; neither receives a fresh full paper-protocol fit in this lesson.</p>
+<p>The new experiment asks a narrower question: <strong>on the full F1 query population, how do two small model designs behave with identical legal sampled contexts and a fixed training recipe?</strong></p>
+<figure class="cmp-figure" tabindex="0"><img src="../labs/figures/l146/architecture.svg" alt="The actual two reduced course variants, including input shapes, internal operations, readouts and training boundaries."><figcaption>The actual two reduced course variants, including input shapes, internal operations, readouts and training boundaries. Scroll horizontally for detail on a narrow screen.</figcaption></figure>
+
+<p><strong>Common input.</strong> Both arms receive the same 32 token slots for each <code>(driver, cutoff)</code> and the same induced FK edges. Both use the source typed row encoder. Query-specific breadth-first sampling admits only rows at or before the owner cutoff, expands at most two hops, and keeps selected connectors. If too few rows exist, it repeats already selected legal rows. It never fills from arbitrary database rows. Every repeated slot gets its incident edges; an isolated query repeats its root. Repetition changes attention multiplicity and aggregation weights, so its frequency is reported.</p>
+<p><strong>The GNN control.</strong> Add row, table-type and relative-time vectors. Each of two layers transforms the destination's own state and adds a separate neighbor mean for each directed FK relation. Normalize, apply ReLU/dropout, and read the root through an MLP. For one relation with neighbor scalars 2 and 6, the mean is 4; adding ten unrelated rows does not alter that relation mean unless they enter that relation's neighborhood.</p>
+<p><strong>The reduced RelGT arm.</strong> Normalize and concatenate row, type, hop, time and GIN structural vectors. Mix them to width 64. Two local attention blocks compute interactions within 32 tokens; the root also attends to 128 EMA centroids through the source global branch. Fuse the branches and predict. Evaluation attention dropout is disabled, and structural normal draws are fixed for the evaluation batch layout. GPU aggregation still permits tiny floating-point ordering differences, checked within 0.00001 absolute. These are declared corrections, not claims about historical paper behavior.</p>
+<p><strong>Common training.</strong> Three paired seed labels, 0–2; ten complete epochs; batch 128; Adam at 0.001 with weight decay 0.00001; L1 loss; gradient norm clipping at 1. Each arm selects its own first minimum validation checkpoint. Test scoring occurs after that selection. Output clipping uses training-label percentiles 2 and 98. There is no hyperparameter search, discarded seed, or test-driven retuning.</p>
+<p><strong>What remains different.</strong> Parameter counts, structural encodings, relation handling, pooling, centroid state and random-number consumption differ. Equal seed numbers do not imply equal initial weights. Equal epochs do not imply equal GPU seconds. This tests two model designs under a common recipe; it does not isolate attention as the cause of any gap. The GNN control is not the canonical RDL baseline from the paper.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Full task coverage is not full paper reproduction. Graph features and statistics reuse the hash-verified L143 snapshot, including its transductive preprocessing. Event-time checks do not establish historical feature-arrival legality. The fixed test population has appeared in earlier course lessons; these results are descriptive rather than a new untouched confirmatory test. <a href="../labs/l146-reproduction.md">Frozen protocol and deviations</a>.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Pair-the-errors,-then-limit-the-claim">4 &#183; Pair the errors, then limit the claim<a class="anchor-link" href="#4-%C2%B7-Pair-the-errors,-then-limit-the-claim">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Compare the two models on exactly the same questions. A row position is not an identity.</p>
+</blockquote>
+<p>A query key is <code>(driver ID, cutoff)</code>. For query q, define the error difference:</p>
+<p><code>difference[q] = abs(GNN[q] − target[q]) − abs(RelGT[q] − target[q])</code>.</p>
+<p>Positive values favor RelGT; negative values favor the GNN. <strong>Worked example:</strong> for target 5, GNN prediction 8 and RelGT prediction 6, the difference is <code>3 − 1 = +2</code>. Shuffling one prediction file must not change the answer. Missing, duplicate, or mismatched keys must fail loudly.</p>
+<p>First average over the full query population within each seed pair. Then report the mean and sample standard deviation across the three seed differences. This standard deviation describes seed variation; it is not a confidence interval. Repeated drivers and related cutoff windows also make an independent-row significance test unjustified here.</p>
+<div id="cmp-predict"></div><noscript>Predict before reading the author scores: does lower validation error guarantee lower test error?</noscript>
+
+<div class="cmp-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Full-data course arm</th>
+  <th style="text-align:right">Validation MAE, mean ± seed SD</th>
+  <th style="text-align:right">Test MAE, mean ± seed SD</th>
+  <th style="text-align:right">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Typed-mean GNN</td>
+  <td style="text-align:right">3.197652 ± 0.056532</td>
+  <td style="text-align:right">4.293632 ± 0.037816</td>
+  <td style="text-align:right">3,485,825</td>
+</tr>
+<tr>
+  <td>Reduced corrected RelGT</td>
+  <td style="text-align:right">3.048312 ± 0.102734</td>
+  <td style="text-align:right">4.617536 ± 0.291141</td>
+  <td style="text-align:right">3,359,558</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Paired GNN − RelGT test difference: -0.323904 ± 0.253784 MAE</strong> (sample seed SD). Positive favors RelGT. Per-seed differences: -0.075640, -0.582870, -0.313201.</p>
+<p>All <strong>7,554 primary held-out predictions</strong> independently aligned and rescored. Six fresh fits each covered all <strong>7,453 training queries for ten epochs</strong>. Both arms used the same <strong>499 validation / 760 test</strong> keys. The sampler rebuilt all <strong>8,712 labels</strong> and passed its event-time audit. Repeated legal token slots: <strong>43,000 train / 1,228 validation / 10,623 test</strong>. These are occurrences, not distinct rows.</p>
+<p><strong>Full selected paper reproduction: INCOMPLETE.</strong> Nine full RelGT fits and a fresh canonical RDL comparator: <strong>NOT_RUN</strong>. Historical identity/selection: <strong>NOT_ESTABLISHED</strong>. Whole paper: <strong>NOT_RUN</strong>. Course runs do not change these verdicts.</p>
+<figure class="cmp-figure" tabindex="0"><img src="../labs/figures/l146/results.svg" alt="Three fresh seed pairs on the full task. Sample seed SD is not a confidence interval. The two models have distinct mechanisms and runtime."><figcaption>Three fresh seed pairs on the full task. Sample seed SD is not a confidence interval. The two models have distinct mechanisms and runtime. Scroll horizontally for detail on a narrow screen.</figcaption></figure>
+
+<p><strong>What happened here.</strong> Reduced RelGT has lower validation MAE in all three pairs, while the GNN has lower test MAE in all three. This does not identify the cause: tuning, regularization, distribution shift and architectural differences remain entangled. We keep the frozen settings and report the reversal; changing the recipe after seeing test scores would answer a new question.</p>
+<p><strong>Read the result as a conditional statement.</strong> Name the task, sampling rule, preprocessing, model sizes, training budget and selection rule. Explain what the difference measures and which architectural cause remains unisolated. A lower error here cannot establish that one paradigm dominates relational databases.</p>
+<h2 id="5-%C2%B7-Lab:-make-the-contract-executable">5 &#183; Lab: make the contract executable<a class="anchor-link" href="#5-%C2%B7-Lab:-make-the-contract-executable">&#182;</a></h2><p><a href="../labs/html/0146-gnn-vs-graph-transformer.html">Open the prepared notebook</a> · <a href="../labs/0146-gnn-vs-graph-transformer.ipynb">Student notebook</a> · <a href="../labs/solutions/0146-gnn-vs-graph-transformer.ipynb">Reference solution</a>.</p>
+<ol>
+<li><strong>TODO: legal context.</strong> Keep the original query cutoff through expansion and handle isolated roots without global fallback. Checks include a future bridge leading to an otherwise legal row.</li>
+<li><strong>TODO: select with validation.</strong> Reject an incomplete search and preserve the first-tie rule. Apply your function to the paper's displayed validation row and the saved training histories.</li>
+<li><strong>TODO: paired errors.</strong> Align both arms by full keys before computing differences. Checks intentionally shuffle predictions and inject duplicates.</li>
+</ol>
+<p>The full row encoders, attention, centroid updates, typed message passing and training loop are visible in the notebook. Default execution runs synthetic mechanism checks and independently scores <strong>saved author evidence</strong>. It does not silently rerun the six remote fits. The explicit course gate requires prepared data; the source-reproduction preflight remains separate.</p>
+<p><strong>Exit defense.</strong> Write 150–200 words: what the selected comparison establishes; why the printed selection discrepancy remains unresolved; which two changes would make a stronger causal experiment; and why a passing temporal audit does not prove historical availability. Suggest changing one thing at a time—for example, a matched five-element encoder/readout comparison or a prespecified equal-compute search—without promising either would reverse the ranking.</p>
+<div id="cmp-teachback"></div><noscript>Write your defense before viewing the reference answer; ask the teaching agent for feedback.</noscript>
+
+<p>Ask the teaching agent about any unclear path, tensor, metric or evidence boundary. Completing the author's notebook is not your mastery record. Your status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until you submit and defend your explanation.</p>
+<h2 id="Read,-retrieve,-then-return">Read, retrieve, then return<a class="anchor-link" href="#Read,-retrieve,-then-return">&#182;</a></h2><p>Primary reading: <a href="https://arxiv.org/html/2505.10960v1#S4">RelGT §4 and Appendix A.4</a>, alongside the <a href="https://github.com/snap-stanford/relgt/tree/19e423ca3e7cac761130aba790857f2dc3a46ef7">pinned release</a>. Trace <code>main_node_ddp.py</code>'s within-fit selection separately from the sweep launcher. Revisit <a href="../reference/gnn-vs-graph-transformer.html">the comparison reference</a> tomorrow, then answer without looking: “What makes two scores comparable?”</p>
+<p>Lesson 147 will turn these distinctions into a survey question: which open architectural problems have both a plausible mechanism and a tractable falsification experiment?</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Turn the unresolved comparison into a research question in Lesson 147. Name a missing measurement before proposing a larger model. <a href="0147-next-generation-architectures.html">Continue to Lesson 147</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/graph-comparison.js"></script><script src="../assets/graph-comparison-lesson.js"></script></body></html>

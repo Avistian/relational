@@ -1,0 +1,371 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Weakest RelBench tasks: stress-test the thesis</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/weakness.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Labs</a></nav><header><p class="eyebrow">Year 4 · Quarter 3 · Lesson 149</p><h1>Weakest RelBench tasks: stress-test the thesis</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">From component effects to the limits of the thesis</p>
+<p><strong>Reading route.</strong> Define the comparator and sign → read the published catalog → inspect the fresh F1 case → propose a falsifier.</p>
+<details><summary>Quick prerequisite reminder</summary><p>Provenance means where a value came from: a paper figure, saved predictions or fresh training. A point estimate is one reported summary, without its uncertainty. A baseline is the comparison procedure; changing its output head or training recipe changes the comparison.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<p><strong>The question:</strong> where does learned relational prediction lose to a strong feature-engineered baseline—and what would change your mind about the explanation?</p>
+<p><a href="0148-ablation-discipline.html">Lesson 148</a> asked which component earns a gain. That leaves a harder question: which tasks fail to produce a gain at all? The mission is to demonstrate useful relational learning, so a weakness catalog is part of the evidence for the thesis. A catalog records counterexamples instead of hiding them behind a benchmark average.</p>
+<p><strong>Your tangible win:</strong> produce a provenance-aware task ranking and a one-page weakness profile. The core reading and worked example are a short session; the full-data lab and reproduction appendix are a separate session.</p>
+<p><strong>Read first:</strong> <a href="https://arxiv.org/html/2407.20060v1#S6">RelBench v1 §6, Figure 3 and Appendix C.2</a>. Read the output-head qualification before comparing its regression results with Table 7. <a href="https://github.com/snap-stanford/relbench-user-study/tree/445bb7a3b1230f49f8e5890ae81754d3e365680f">Released user-study code</a> is the primary source for the manual feature-engineering comparator.</p>
+<h2 id="1-%C2%B7-Recall-before-looking">1 &#183; Recall before looking<a class="anchor-link" href="#1-%C2%B7-Recall-before-looking">&#182;</a></h2><div id="warmup"></div><noscript>Recall: graph construction changes access to information; five seeds on one database do not test transfer.</noscript>
+
+<p>Without opening the preceding lessons, write two sentences: why can removing graph history change more than architecture, and why do five seeds on one database not establish cross-database robustness?</p>
+<h2 id="2-%C2%B7-Make-%E2%80%9Cweak%E2%80%9D-mean-something-precise">2 &#183; Make &#8220;weak&#8221; mean something precise<a class="anchor-link" href="#2-%C2%B7-Make-%E2%80%9Cweak%E2%80%9D-mean-something-precise">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A model can have a respectable score and still lose to a cheaper or better-informed baseline. Weakness is comparative. First specify which two complete procedures you are comparing.</p>
+</blockquote>
+<p><strong>Feature engineering (FE)</strong> means computing task-specific input columns from the database, such as a driver's recent standings. A tree model then learns from those columns. <strong>RDL</strong> here means a learned row encoder and graph neural network that combine relational context to predict a query target. Both can use information from multiple tables. This is not a comparison of “relational information” against “no relational information.”</p>
+<p>A <strong>query</strong> is an entity together with a prediction cutoff. The same driver at two dates is two different queries. A fair error comparison aligns both predictions with the same <code>(driver_id, cutoff)</code> and target, rejecting missing or duplicate keys.</p>
+<p><strong>AUROC</strong> measures how often a positive example receives a higher score than a negative example, with half credit for ties. Higher is better. <strong>MAE</strong>, mean absolute error, averages the absolute distance between a prediction and its target. Lower is better. MAE carries the target's units.</p>
+<p><strong>Worked example.</strong> Suppose RDL has MAE 4.2 and FE has MAE 3.9. RDL loses by 0.3. For an oriented advantage that is always positive when RDL wins, use <code>FE − RDL</code> for MAE: −0.3. If AUROCs are 0.72 and 0.75, use <code>RDL − FE</code>: −0.03, or −3 percentage points. Never sort −0.3 position units beside −3 AUROC points as if their magnitudes were comparable.</p>
+<p><strong>The signed advantage:</strong> <code>A = RDL − FE</code> for AUROC; <code>A = FE − RDL</code> for MAE. The weakest point estimate sorts first, with the smallest A. Our slice plots later use a <strong>loss penalty</strong> <code>D = |y − GNN| − |y − FE|</code>: positive D means the GNN loses. Thus for MAE, <code>A = −mean(D)</code>. Each plot labels its sign.</p>
+<figure class="weakness-figure" tabindex="0"><img src="../labs/figures/l149/contract.svg" alt="Illustrative sign contract: metric advantage is positive when RDL wins; the loss penalty uses the opposite sign."><figcaption>Illustrative sign contract: metric advantage is positive when RDL wins; the loss penalty uses the opposite sign. Scroll for detail on a narrow screen.</figcaption></figure>
+
+<p><strong>How this extends Lesson 137.</strong> That lesson diagnosed slices within one F1 comparison. Here we first catalog weaknesses across published tasks, then use a fresh F1 replay to practice the same diagnostic discipline. Reusing that analysis pattern does not create new cross-database evidence.</p>
+<p><strong>Normalization changes the question.</strong> Figure 3 divides each regression score by that task's RDL score. Its RDL bars equal 1. This differs from <a href="0136-leaderboard-literacy.html">Lesson 136’s leaderboard NMAE</a>, which divides MAE by training-target standard deviation. Both remove the raw units, but their denominators and interpretations differ; do not combine their rankings. A normalized advantage of −0.35 means FE MAE is about 0.65 times RDL MAE. It does not mean a 0.35-unit error on the original target. Relative gaps can support an ordering under that normalization; they are not universal measures of business harm.</p>
+<h2 id="3-%C2%B7-The-published-weakness-catalog">3 &#183; The published weakness catalog<a class="anchor-link" href="#3-%C2%B7-The-published-weakness-catalog">&#182;</a></h2><p>Before revealing the catalog, predict whether a basic GNN's F1 score is interchangeable with Figure 3's regression bar.</p>
+<div id="predict"></div><noscript>Predict: can Table7 basic GNN replace the Figure3 regression comparator? No. Figure3 uses a GNN+LightGBM head.</noscript>
+
+<p>The answer is consequential. <strong>Figure 3 uses GNN features with a LightGBM output head for regression.</strong> Table 7 reports basic RDL. An output head is the final mapping from the learned representation to the target. A tree head changes that mapping and the complete training procedure. Appendix C.2 investigates this distinction; it does not prove every regression failure has the same cause.</p>
+<h3 id="Classification-%C2%B7-AUROC-points">Classification &#183; AUROC points<a class="anchor-link" href="#Classification-%C2%B7-AUROC-points">&#182;</a></h3><div class="weakness-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task (figure label)</th>
+  <th>RDL</th>
+  <th>FE</th>
+  <th>RDL advantage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-f1/driver-top3</td>
+  <td>78.3</td>
+  <td>82.4</td>
+  <td>-4.1</td>
+</tr>
+<tr>
+  <td>rel-stack/user-engagement</td>
+  <td>90.2</td>
+  <td>90.3</td>
+  <td>-0.1</td>
+</tr>
+<tr>
+  <td>rel-hm/user-churn</td>
+  <td>69.4</td>
+  <td>69.0</td>
+  <td>+0.4</td>
+</tr>
+<tr>
+  <td>rel-amazon/item-churn</td>
+  <td>83.0</td>
+  <td>81.8</td>
+  <td>+1.2</td>
+</tr>
+<tr>
+  <td>rel-stack/user-badge</td>
+  <td>88.2</td>
+  <td>86.1</td>
+  <td>+2.0</td>
+</tr>
+<tr>
+  <td>rel-f1/driver-dnf</td>
+  <td>72.0</td>
+  <td>69.8</td>
+  <td>+2.2</td>
+</tr>
+<tr>
+  <td>rel-amazon/user-churn</td>
+  <td>70.5</td>
+  <td>67.6</td>
+  <td>+2.9</td>
+</tr>
+<tr>
+  <td>rel-trial/study-outcome</td>
+  <td>66.5</td>
+  <td>58.9</td>
+  <td>+7.6</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="Regression-%C2%B7-normalized-MAE">Regression &#183; normalized MAE<a class="anchor-link" href="#Regression-%C2%B7-normalized-MAE">&#182;</a></h3><div class="weakness-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task (figure label)</th>
+  <th>RDL</th>
+  <th>FE</th>
+  <th>RDL advantage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-hm/item-sales</td>
+  <td>1.00</td>
+  <td>0.65</td>
+  <td>-0.35</td>
+</tr>
+<tr>
+  <td>rel-amazon/item-ltv</td>
+  <td>1.00</td>
+  <td>0.89</td>
+  <td>-0.11</td>
+</tr>
+<tr>
+  <td>rel-trial/study-adverse</td>
+  <td>1.00</td>
+  <td>0.95</td>
+  <td>-0.05</td>
+</tr>
+<tr>
+  <td>rel-amazon/user-ltv</td>
+  <td>1.00</td>
+  <td>0.99</td>
+  <td>-0.01</td>
+</tr>
+<tr>
+  <td>rel-f1/driver-position</td>
+  <td>1.00</td>
+  <td>1.01</td>
+  <td>+0.01</td>
+</tr>
+<tr>
+  <td>rel-trial/site-success</td>
+  <td>1.00</td>
+  <td>1.02</td>
+  <td>+0.02</td>
+</tr>
+<tr>
+  <td>rel-stack/user-votes</td>
+  <td>1.00</td>
+  <td>1.03</td>
+  <td>+0.03</td>
+</tr>
+</tbody>
+</table></div>
+<p>The catalog covers the <strong>15 tasks in the user study</strong>, not all 30 tasks in the initial benchmark. We extracted mean bar endpoints from the paper's SVG, calibrated against its printed ticks, and checked task labels against the rendered figure. Classification scores are displayed to 0.1 AUROC point; regression ratios to 0.01. These are <strong>PLOT_DERIVED</strong> values, not recovered original logs. Geometric precision does not recover experimental certainty. We have not digitized the error bars, so this is a ranking of mean bars, not a significance ranking.</p>
+<p>The ranking identifies <strong>rel-f1/driver-top3</strong> as the largest negative classification point gap and <strong>rel-hm/item-sales</strong> as the largest negative normalized regression gap. Close positions and near-zero gaps should not be read as decisive. The SVG labels one regression task <code>user-votes</code>, whereas Table 7 names <code>post-votes</code>; we retain the figure label and mark the cross-table task identity unresolved. For example, user-engagement has a tiny negative mean gap; the paper's “matches or outperforms” statement is not a count of strictly positive mean differences.</p>
+<figure class="weakness-figure" tabindex="0"><img src="../labs/figures/l149/catalog.svg" alt="Published Figure3 mean-bar extraction. Panels have different units and regression uses a boosted head; no original error bars or significance ranking recovered."><figcaption>Published Figure3 mean-bar extraction. Panels have different units and regression uses a boosted head; no original error bars or significance ranking recovered. Scroll for detail on a narrow screen.</figcaption></figure>
+
+<h3 id="Change-the-evidence-contract">Change the evidence contract<a class="anchor-link" href="#Change-the-evidence-contract">&#182;</a></h3><div id="rank_widget"></div><noscript>Static ranking: driver-top3 has the largest negative classification point gap; item-sales has the largest negative normalized regression point gap. The complete tables remain above.</noscript>
+
+<p>Predict before switching panels: can the F1 replay be inserted into the Figure 3 regression ranking? The widget keeps these evidence families separate. It also lets you change how large a disadvantage must be before it is flagged. That threshold is a declared decision rule, not a statistical test. A task falling below the threshold remains in the catalog.</p>
+<h2 id="4-%C2%B7-A-complete,-affordable-case-study">4 &#183; A complete, affordable case study<a class="anchor-link" href="#4-%C2%B7-A-complete,-affordable-case-study">&#182;</a></h2><p>The worst published regression point is H&amp;M item-sales. Our fresh training case is <strong>F1 driver-position</strong>, selected in advance for a feasible full two-pipeline replay. We profile the published worst task through source evidence and a falsifiable hypothesis; we profile F1 with fresh predictions. We do not relabel the affordable case as the global worst.</p>
+<p><strong>Published worst-task profile: H&amp;M item-sales.</strong> The task asks the total sales value for an article in the next seven days (the sum of transaction prices). Its large negative normalized gap is evidence about the Figure 3 boosted pipeline. A plausible explanation is that recent sales values and temporal patterns are easier for the engineered features to expose. That is a hypothesis: it needs a cutoff-safe feature audit and a controlled intervention, such as adding the same legal sales summaries to the graph pipeline while keeping queries and selection fixed. If that does not reduce the validation gap, the proposed missing-summary explanation loses support. We have not run that intervention or retrained H&amp;M here.</p>
+<p><strong>Fresh F1 protocol.</strong> We use the complete released dataset: 7,453 training, 499 validation and 760 test queries. Each label is the driver's mean finishing position in the next 60 days, conditional on participating. Five fresh GNN fits each train ten complete epochs. The graph model uses typed row encoders, relative time, two 128-channel GraphSAGE layers, sum aggregation, fanout 128/64, batch 512 and Adam with learning rate 0.005. The first strict minimum-validation checkpoint is selected, and predictions are clipped to training-label percentiles as in the released pipeline.</p>
+<p><strong>The competing FE procedure</strong> freshly computes the released SQL columns, fits preprocessing on training rows and performs ten LightGBM trials per seed, five seeds total, followed by selected train-only refits. Each trial has a 2,000-round ceiling and 50-round early stopping. Test results never choose a trial. The notebook exposes the SQL, model, optimizer and training loops in its reproduction appendix.</p>
+<p><strong>What stays fixed:</strong> task archives, query identities, splits and evaluation target. <strong>What differs:</strong> representation, preprocessing scope, learning procedure, search budget, and temporal details of the available inputs. This estimates a difference between complete released procedures. It does not isolate the causal effect of message passing.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The snapshot caps the database at 2010-01-01. GNN preprocessing uses that released snapshot, while FE category mappings fit training rows. Some FE schedule features reference future scheduled dates with unknown publication times. Static attributes lack historical mutation/arrival records. Event-time checks do not establish what was truly available in production. Original archive/run identity remains <strong>NOT_ESTABLISHED</strong>.</p>
+</blockquote>
+<div class="weakness-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th>GNN validation</th>
+  <th>FE validation</th>
+  <th>GNN test</th>
+  <th>FE test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td>3.159966</td>
+  <td>2.744086</td>
+  <td>4.355555</td>
+  <td>3.921045</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td>3.173181</td>
+  <td>2.816721</td>
+  <td>3.989141</td>
+  <td>4.042601</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>3.207023</td>
+  <td>2.773399</td>
+  <td>4.398051</td>
+  <td>3.852457</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>3.149367</td>
+  <td>2.791052</td>
+  <td>3.884890</td>
+  <td>3.980605</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>3.173453</td>
+  <td>2.761390</td>
+  <td>3.987721</td>
+  <td>3.947876</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>VAL mean ± sample seed SD:</strong> GNN 3.172598 ± 0.021711; FE 2.777330 ± 0.027905 MAE.</p>
+<p><strong>TEST mean ± sample seed SD:</strong> GNN 4.123071 ± 0.235929; FE 3.948917 ± 0.070469 MAE.</p>
+<p>Test GNN loss penalty <strong>+0.174155</strong>, descriptive driver-cluster 95% interval <strong>[-0.085850, 0.449621]</strong>. The interval crosses zero; neither superiority nor equivalence is established. Five paired run labels do not imply common random numbers across model families.</p>
+<figure class="weakness-figure" tabindex="0"><img src="../labs/figures/l149/results.svg" alt="Fresh F1 per-query mean losses across five fits. Intervals resample whole drivers and condition on the fitted models and split; highlighted slice was nominated using validation."><figcaption>Fresh F1 per-query mean losses across five fits. Intervals resample whole drivers and condition on the fitted models and split; highlighted slice was nominated using validation. Scroll for detail on a narrow screen.</figcaption></figure>
+
+<p>The GNN paper target is validation 3.193/test 4.022 MAE (Table 7). A predeclared ±0.2 MAE descriptive tolerance records closeness; it is not a statistical equivalence test. The historical FE scalar and Figure 3 training randomness are not recovered. Full selected released-pipeline execution is a narrower claim than exact historical result reproduction.</p>
+<h2 id="5-%C2%B7-Test-the-explanation,-not-just-the-ranking">5 &#183; Test the explanation, not just the ranking<a class="anchor-link" href="#5-%C2%B7-Test-the-explanation,-not-just-the-ranking">&#182;</a></h2><p>A <strong>slice</strong> is a subset of queries defined by a feature available at prediction time. We predeclare six slices in three complementary pairs: low/high history; stale/recent history; missing/observed recent race-slot features. History is the number of strictly earlier result rows. Low history uses the training median, 22. Stale means more than 180 days since a previous result. Missing means at least half of the 24 recent-slot columns are absent.</p>
+<p>Cold start means having no prior observed history. It is not synonymous with our low-history slice, which includes drivers with up to 22 records. A bad low-history score alone would not establish a cold-start mechanism.</p>
+<p><strong>The support rule:</strong> require at least 30 queries and 10 distinct drivers. Support is a floor for interpreting a slice, not a guarantee of precision. Nominate the largest positive mean validation loss penalty among supported slices; ties use the slice name. If none loses, nominate none. Freeze that decision before examining test slice results. All slices stay in the report, including empty ones.</p>
+<div class="weakness-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th>Slice</th>
+  <th>Queries/drivers</th>
+  <th>GNN loss penalty</th>
+  <th>95% conditional interval</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>val</td>
+  <td>all</td>
+  <td>499/47</td>
+  <td>+0.3953</td>
+  <td>[+0.2007, +0.5890]</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td>low_history</td>
+  <td>134/28</td>
+  <td>-0.0382</td>
+  <td>[-0.1878, +0.1057]</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td>high_history</td>
+  <td>365/35</td>
+  <td>+0.5544</td>
+  <td>[+0.3220, +0.7748]</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td>stale_history</td>
+  <td>39/32</td>
+  <td>+0.1108</td>
+  <td>[-0.1436, +0.3532]</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td>recent_history</td>
+  <td>460/41</td>
+  <td>+0.4194</td>
+  <td>[+0.2115, +0.6178]</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td>missing_recent_slots</td>
+  <td>137/47</td>
+  <td>+0.1625</td>
+  <td>[-0.0947, +0.3918]</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td>observed_recent_slots</td>
+  <td>362/41</td>
+  <td>+0.4834</td>
+  <td>[+0.2478, +0.7038]</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td>all</td>
+  <td>760/56</td>
+  <td>+0.1742</td>
+  <td>[-0.0859, +0.4496]</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td>low_history</td>
+  <td>401/37</td>
+  <td>+0.2585</td>
+  <td>[+0.0574, +0.4778]</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td>high_history</td>
+  <td>359/19</td>
+  <td>+0.0799</td>
+  <td>[-0.3977, +0.6382]</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td>stale_history</td>
+  <td>744/56</td>
+  <td>+0.1712</td>
+  <td>[-0.0861, +0.4431]</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td>recent_history</td>
+  <td>16/16</td>
+  <td>+0.3096</td>
+  <td>UNSUPPORTED</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td>missing_recent_slots</td>
+  <td>760/56</td>
+  <td>+0.1742</td>
+  <td>[-0.0859, +0.4496]</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td>observed_recent_slots</td>
+  <td>0/0</td>
+  <td>—</td>
+  <td>UNSUPPORTED</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Frozen nomination: high_history.</strong> Its validation penalty is +0.5544; test +0.0799 with an interval crossing zero. Low history is not the largest observed validation weakness. This undermines the simple cold-start story for this comparison without establishing the actual cause.</p>
+<p><strong>Why resample drivers?</strong> One driver's errors at several dates are related. A driver-cluster bootstrap repeatedly samples whole drivers with replacement, keeps all their queries and recomputes the query-weighted mean. Our intervals use 2,000 draws after averaging each query's losses over the five fits. They describe uncertainty conditional on these fitted models and this split. Shared races and time shocks remain; these are neither cross-database intervals nor full training-uncertainty intervals.</p>
+<p>An interval crossing zero permits both signs under this descriptive resampling. It does not prove equality. A narrow seed SD only says these five fits were similar; it does not eliminate sampling uncertainty. The test population has appeared in earlier lessons, so the profile is exploratory rather than a pristine confirmatory experiment.</p>
+<h3 id="Three-hypotheses-with-different-falsifiers">Three hypotheses with different falsifiers<a class="anchor-link" href="#Three-hypotheses-with-different-falsifiers">&#182;</a></h3><div class="weakness-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Hypothesis</th>
+  <th>Diagnostic evidence</th>
+  <th>Intervention that could refute it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Little usable history harms RDL</td>
+  <td>Validation penalty concentrated in genuinely empty/short histories</td>
+  <td>Add matched legal history summaries; no improvement weakens that explanation</td>
+</tr>
+<tr>
+  <td>Relational context has little predictive signal</td>
+  <td>A controlled no-message model retains performance</td>
+  <td>Compare full and no-message models under fixed inputs, capacity caveats and selection</td>
+</tr>
+<tr>
+  <td>Explicit rules or summaries favor FE</td>
+  <td>Audited engineered feature predicts residual errors</td>
+  <td>Supply that feature to both pipelines; persistence of the gap weakens missing-feature attribution</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are proposed tests. A performance gap alone establishes none of their causes. Use <a href="0148-ablation-discipline.html">L148's ablation discipline</a> to turn a story into an intervention.</p>
+<h2 id="6-%C2%B7-Lab:-export-the-weakness-catalog">6 &#183; Lab: export the weakness catalog<a class="anchor-link" href="#6-%C2%B7-Lab:-export-the-weakness-catalog">&#182;</a></h2><p><a href="../labs/0149-weakest-relbench-tasks.ipynb">Student notebook</a> · <a href="../labs/html/0149-weakest-relbench-tasks.html">Prepared notebook</a> · <a href="../reference/weakest-relbench-tasks.html">Reference</a> · <a href="../labs/l149-reproduction.md">Reproduction ledger</a>.</p>
+<p>Implement three live functions: orient metric gaps without mixing units; rank only compatible evidence; nominate a supported validation weakness. Your code processes the published catalog and every primary held-out prediction. The independent checks reject flipped signs, missing scores, mixed model variants, mixed splits and unsupported slices. The default notebook reanalyzes saved author evidence; the complete training lanes are separately gated and require their pinned runtimes.</p>
+<p><strong>EXIT · 150–250 words.</strong> Name one published weakness and the fresh F1 result. State the metric, comparator and evidence source for each. Explain whether the nominated F1 slice supports your original prediction. Propose one affordable intervention, its falsifier and one claim the current evidence cannot establish. Attach the exported catalog and report. Author execution does not establish learner mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<div id="teachback"></div><noscript>Write a weakness profile with comparator, metric, provenance, uncertainty, intervention and falsifier. Ask the teaching agent to review it.</noscript>
+
+<p>Ask the teaching agent about any unclear comparison, or paste your EXIT for feedback. Revisit the metric-sign and comparator questions tomorrow, then again after a week. Carry the weakness catalog into <a href="../plan/year-4.md">the Q3 checkpoint plan</a>: a successful model on one task should coexist with an honest account of where it fails.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Lesson 150 is under construction. Keep your weakness catalog and proposed falsifier for that checkpoint; until it is ready, finish the written defense here.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/weakness-viz.js"></script><script src="../assets/l149-lesson.js"></script></body></html>

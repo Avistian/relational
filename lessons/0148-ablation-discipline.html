@@ -1,0 +1,166 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ablation discipline: what earns the improvement?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/ablation.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Labs</a></nav><header><p class="eyebrow">Year 4 · Quarter 3 · Lesson 148</p><h1>Ablation discipline: what earns the improvement?</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">From a research question to a controlled intervention</p>
+<p><strong>Reading route.</strong> Locate the changed component → preserve query ownership → calculate paired effects → derive their interaction.</p>
+<details><summary>Quick prerequisite reminder</summary><p>An ablation removes or replaces a component and retrains under a declared recipe. A paired effect subtracts the full-model score from the changed-model score within a seed. An interaction asks whether two changes together have the sum of their separate effects. None of these automatically divides total performance into percentages of credit.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<div id="warmup"></div><noscript>Recall: full query identity includes entity and cutoff. A complete architecture comparison does not isolate one component. A validation rule selects checkpoints before test scoring.</noscript>
+
+<h2 id="1-%C2%B7-A-better-score-does-not-identify-the-useful-component">1 &#183; A better score does not identify the useful component<a class="anchor-link" href="#1-%C2%B7-A-better-score-does-not-identify-the-useful-component">&#182;</a></h2><p><a href="0147-next-generation-architectures.html">Lesson 147</a> converted architecture claims into testable questions. Its earlier GNN–transformer comparison changed several mechanisms at once. It could compare complete procedures, but could not attribute the difference to attention. Here you will write an experiment that makes a narrower claim defensible.</p>
+<p><strong>Your tangible win:</strong> produce an intervention matrix, calculate paired effects and an interaction, then defend exactly what your experiment isolates. This serves our mission: establish when relational information earns its complexity with evidence a skeptical reader can inspect.</p>
+<p><strong>An ablation</strong> removes or replaces a component, retrains the resulting procedure, and measures the change under a declared protocol. <strong>An intervention</strong> is the actual code change. A label such as “without graph” is insufficient: does it remove neighbor features, edges, relation-specific transformations, temporal encoding, or all four?</p>
+<p>Read <a href="https://arxiv.org/html/2407.20060v1">RelBench v1 §3 and Appendix B.3</a> for the RDL pipeline and published ablations. Our named reproduction anchor is <strong>Table 7, RDL, rel-f1/driver-position</strong>. Our four interventions are newly specified course experiments, not a reproduction of a published ablation table.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> First say what the model is allowed to know. Then say how it processes that information. Changing either can change the score, but they answer different questions.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Follow-one-prediction-through-the-intervention-map">2 &#183; Follow one prediction through the intervention map<a class="anchor-link" href="#2-%C2%B7-Follow-one-prediction-through-the-intervention-map">&#182;</a></h2><p>A <strong>query</strong> is a driver plus a prediction cutoff. The target is that driver's mean finishing position in the following 60 days. Query eligibility depends on participation in that future window. We evaluate this released population; we do not claim an all-driver prospective deployment population.</p>
+<p>The baseline samples past rows from nine related tables. Each <strong>row encoder</strong> converts column values into a 128-number vector. A numerical column uses a learned linear embedding; categorical columns use embedding lookup; text uses frozen GloVe vectors. The table's four residual blocks mix these encoded columns. A <strong>residual block</strong> learns a transformation with a skip connection so some input signal can pass directly.</p>
+<p>A relative-time vector records each dated row's age at its own query cutoff. Two <strong>message-passing</strong> layers then sum transformed neighboring representations along foreign-key relations. Each layer also transforms the destination's own vector. A scalar head maps the driver representation to a predicted position. During training, the mean absolute error supplies gradients to the trainable parts.</p>
+<figure class="ablation-figure" tabindex="0"><img src="../labs/figures/l148/interventions.svg" alt="Trace the exact information path each arm changes. Width128 is retained; shallow encoder capacity is not matched."><figcaption>Trace the exact information path each arm changes. Width128 is retained; shallow encoder capacity is not matched. Scroll for detail on narrow screens.</figcaption></figure>
+
+<div class="ablation-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>Changed</th>
+  <th>Retained</th>
+  <th>Interpretation cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Full</td>
+  <td>Nothing</td>
+  <td>Released model/protocol</td>
+  <td>Named baseline replay</td>
+</tr>
+<tr>
+  <td>Encoder</td>
+  <td>Keep only first of four residual blocks</td>
+  <td>Column embeddings, decoder, width, graph</td>
+  <td>Capacity, dropout calls and compute change</td>
+</tr>
+<tr>
+  <td>Messages</td>
+  <td>Empty every sampled edge tensor</td>
+  <td>Root maps, relation biases, encoders, time</td>
+  <td>Not the same as a separately tuned tabular baseline</td>
+</tr>
+<tr>
+  <td>History</td>
+  <td>Remove old dated non-root rows after sampling</td>
+  <td>Query roots, undated rows, other mechanisms</td>
+  <td>Sampling slots are not refilled</td>
+</tr>
+<tr>
+  <td>Combined</td>
+  <td>Encoder and message interventions together</td>
+  <td>Remaining baseline components</td>
+  <td>Tests their interaction, not data interactions</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Why retain root transformations?</strong> A GraphSAGE relation computes a transformed neighbor aggregate plus a transformed destination. Empty edges remove neighbor information; the destination transformation and neighbor-map bias still exist. Deleting the whole layer would also remove these, answering a different question.</p>
+<p><strong>Why retrain?</strong> Zeroing messages only at test time measures reliance of a fitted model under a distribution change. Our arms retrain from initialization, allowing the remaining components to adapt. Neither measurement is inherently interchangeable with the other.</p>
+<p><strong>Visible implementation.</strong> The intervention is short enough to inspect. For the shallow encoder, <code>encoder.backbone = Sequential(encoder.backbone[0])</code>. For no messages, each <code>edge_index</code> becomes <code>edge_index[:, :0]</code>. The notebook includes the complete underlying model and trainer, not just these two lines. Shared initialized tensors are retained, but different dropout calls can change later random-number consumption.</p>
+<h2 id="3-%C2%B7-Data-access-is-a-query-specific-contract">3 &#183; Data access is a query-specific contract<a class="anchor-link" href="#3-%C2%B7-Data-access-is-a-query-specific-contract">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> “Only the last year” means the last year before this query, not before the newest query in the batch.</p>
+</blockquote>
+<p>A <strong>query owner</strong> identifies which seed query a sampled copy belongs to. An entity may appear multiple times because it is queried at different cutoffs. Its copies need different context. For each dated non-root row, keep it when <code>cutoff − window ≤ row_time ≤ cutoff</code>. Undated rows remain; roots remain unless they violate the temporal upper bound. A year here is explicitly 365 days.</p>
+<p><strong>Worked example.</strong> Query A is at day 400 and query B at day 500. With a 365-day window, day 100 is legal for A but too old for B. Day 450 is future information for A and legal for B. A batch-wide maximum cutoff would give A information it should not see.</p>
+<figure class="ablation-figure" tabindex="0"><img src="../labs/figures/l148/history.svg" alt="Illustrative day units: each query has a different inclusive365-day window. The day100 row changes eligibility with its owner."><figcaption>Illustrative day units: each query has a different inclusive365-day window. The day100 row changes eligibility with its owner. Scroll for detail on narrow screens.</figcaption></figure>
+
+<div id="history_widget"></div><noscript>At365days, day100is legal for cutoff400but too old for cutoff500. Day450is future for cutoff400and legal for cutoff500.</noscript>
+
+<p><strong>Predict before changing the window.</strong> Which rows disappear at 30 days? Which return at 365? Does the day-450 row ever become legal for query A? Reset the control and explain why its upper bound is independent of the window length.</p>
+<p>The implemented history arm first uses the baseline temporal sampler, then deletes old non-root nodes and incident edges before encoding. It does <strong>not</strong> refill the removed sampling slots. Therefore its effect combines a shorter history with reduced sampled context. An alternative pre-sampling restriction could expose more recent neighbors; that is a different experiment. The retained graph can include legal but disconnected rows, which cannot send messages to the query.</p>
+<p><strong>Data contribution is conditional.</strong> An old row's removal can also remove a route to another row. This intervention measures access through this sampled graph, not the intrinsic value of one database column. Released preprocessing statistics remain fixed across arms and come from the test-censored database, not train-only materialization. Temporal filtering does not establish historical ingestion availability.</p>
+<h2 id="4-%C2%B7-Paired-effects:-subtract-within-seed-first">4 &#183; Paired effects: subtract within seed first<a class="anchor-link" href="#4-%C2%B7-Paired-effects:-subtract-within-seed-first">&#182;</a></h2><p><strong>MAE</strong>, mean absolute error, averages the absolute distance between prediction and target. Lower is better. For seed <code>s</code>, define the ablation effect as <code>MAE(arm,s) − MAE(full,s)</code>. Positive means the ablated procedure did worse. Pairing means subtracting the two scores with the same declared seed before summarizing; it does not promise identical batches or identical initialization of removed components.</p>
+<p><strong>Worked example.</strong> Full MAEs <code>[4, 5]</code> and ablated MAEs <code>[5, 7]</code> give paired differences <code>[1, 2]</code>, mean <code>1.5</code> and sample standard deviation about <code>0.707</code>. Sample standard deviation describes variability across these runs. It is not a confidence interval over databases or over drivers.</p>
+<p><strong>Score by full query key.</strong> A driver can have multiple cutoffs. Targets <code>[1,5]</code> for <code>(7,10),(7,20)</code> and reversed prediction rows <code>[5,3]</code> give MAE 1 after key alignment. Positional subtraction gives MAE 3. The notebook rejects missing, duplicate, extra and nonfinite predictions before computing any effect.</p>
+<div id="predict"></div><noscript>Predict: if removing two parts separately costs1and2MAE, must their joint removal cost3? No; their contributions can interact.</noscript>
+
+<figure class="ablation-figure" tabindex="0"><img src="../labs/figures/l148/results.svg" alt="Fresh full-data measurements. Five dots per arm are paired seed differences; diamond is their mean. No confidence intervals."><figcaption>Fresh full-data measurements. Five dots per arm are paired seed differences; diamond is their mean. No confidence intervals. Scroll for detail on narrow screens.</figcaption></figure>
+
+<div class="ablation-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Validation MAE ± seed SD</th>
+  <th style="text-align:right">Test MAE ± seed SD</th>
+  <th style="text-align:right">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>full</td>
+  <td style="text-align:right">3.2245 ± 0.0531</td>
+  <td style="text-align:right">4.1931 ± 0.2428</td>
+  <td style="text-align:right">5,077,249</td>
+</tr>
+<tr>
+  <td>encoder</td>
+  <td style="text-align:right">3.1888 ± 0.0434</td>
+  <td style="text-align:right">4.0937 ± 0.2673</td>
+  <td style="text-align:right">4,171,777</td>
+</tr>
+<tr>
+  <td>messages</td>
+  <td style="text-align:right">3.6235 ± 0.2263</td>
+  <td style="text-align:right">4.0393 ± 0.2050</td>
+  <td style="text-align:right">5,077,249</td>
+</tr>
+<tr>
+  <td>history</td>
+  <td style="text-align:right">2.9305 ± 0.0648</td>
+  <td style="text-align:right">4.9639 ± 0.6387</td>
+  <td style="text-align:right">5,077,249</td>
+</tr>
+<tr>
+  <td>combined</td>
+  <td style="text-align:right">3.6033 ± 0.0767</td>
+  <td style="text-align:right">3.9954 ± 0.0561</td>
+  <td style="text-align:right">4,171,777</td>
+</tr>
+</tbody>
+</table></div>
+<p>All 25 fresh fits completed; <strong>31,475</strong> held-out predictions independently rescored. Positive paired differences favor the full baseline.</p>
+<p><strong>Val paired changes:</strong> encoder -0.0356 ± 0.0498; messages +0.3990 ± 0.2181; history -0.2940 ± 0.0498; combined +0.3788 ± 0.1241.</p>
+<p><strong>Test paired changes:</strong> encoder -0.0994 ± 0.3422; messages -0.1538 ± 0.3183; history +0.7708 ± 0.7292; combined -0.1977 ± 0.2901.</p>
+<p>Encoder–message interaction: validation <strong>+0.0155 ± 0.2190</strong>, test <strong>+0.0554 ± 0.2850</strong> MAE. These are mean ± sample seed SD.</p>
+<p><strong>Read the reversal.</strong> Restricting history improves validation MAE by 0.2940 but worsens test MAE by 0.7708 on average. Removing messages worsens validation by 0.3990 yet improves test by 0.1538. These results challenge a simple “more history and more propagation always help” story. They do not identify why the ordering reverses: population shift, sampling coverage and the preserved numerical-gradient limitation remain candidates. We do not retune on these test outcomes.</p>
+<p><strong>Fixed protocol.</strong> All arms use every 7,453 training query for ten epochs, five seeds 0–4, Adam at 0.005, batch size 512, two 128-wide layers and uniform temporal fanouts 128/64. Each arm selects its first validation minimum using all 499 validation queries. Final scores use the restored checkpoint and all 760 test queries; evaluation clips outputs to the training-target 2nd/98th percentiles. Final sampled validation can differ from selection-time validation.</p>
+<p><strong>What is not fixed?</strong> Encoder parameter count and executed computation change. Empty edges leave unused parameters, so equal total parameter counts do not mean equal effective capacity. Sampled contexts can diverge after random-number consumption diverges. These are fixed-training-protocol interventions, not equal-capacity or equal-compute competitions.</p>
+<h2 id="5-%C2%B7-Two-useful-parts-need-not-contribute-additively">5 &#183; Two useful parts need not contribute additively<a class="anchor-link" href="#5-%C2%B7-Two-useful-parts-need-not-contribute-additively">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> The encoder may be useful mainly because message passing can carry its output. Remove messages first, and removing encoder depth may matter less.</p>
+</blockquote>
+<p>Let <code>F</code>, <code>E</code>, <code>M</code>, and <code>EM</code> be the four paired MAEs for full, shallow encoder, no messages and their combination. The <strong>interaction</strong> is <code>I = EM − E − M + F</code>. Every letter is a score for the same seed. Equivalently, compare the encoder effect without messages, <code>EM − M</code>, with its effect when messages remain, <code>E − F</code>.</p>
+<p><strong>Worked example.</strong> <code>F=4, E=5, M=6, EM=6.5</code>. Separate penalties are 1 and 2. Their sum predicts MAE 7 under additivity. Observed combined MAE is 6.5, so interaction is −0.5. On this error scale, the combined penalty is smaller than the sum. This does not prove a biological-style synergy or provide percentages of total “credit.”</p>
+<p><strong>Read the interaction cautiously.</strong> The test interaction averages +0.0554 MAE with sample SD 0.2850, and individual seeds have both signs. That describes weak directional consistency across these five fits; it does not establish either independence or a reliable positive interaction.</p>
+<figure class="ablation-figure" tabindex="0"><img src="../labs/figures/l148/interaction.svg" alt="Measured interaction on the MAE scale, calculated within seed. Data-access interactions were not included in this five-arm design."><figcaption>Measured interaction on the MAE scale, calculated within seed. Data-access interactions were not included in this five-arm design. Scroll for detail on narrow screens.</figcaption></figure>
+
+<div id="interaction_widget"></div><noscript>Hypothetical F4,E5,M6,EM6.5 gives interaction−.5. Changing only EMto7makes the interaction0.</noscript>
+
+<p><strong>Predict, then adjust.</strong> Keep F, E and M fixed and set EM to 7. The interaction should become zero. Set EM to 8 and explain the sign without looking at the answer. This widget uses hypothetical values; it never rewrites measured evidence.</p>
+<p>The five-arm design estimates the encoder–message interaction only. It has no combined history/encoder or history/message arms. A full three-factor design has eight cells; further interactions remain unmeasured. One-at-a-time ablations cannot establish an additive decomposition of performance.</p>
+<h2 id="6-%C2%B7-Lab:-implement-the-contract,-then-defend-the-claim">6 &#183; Lab: implement the contract, then defend the claim<a class="anchor-link" href="#6-%C2%B7-Lab:-implement-the-contract,-then-defend-the-claim">&#182;</a></h2><p>Open the <a href="../labs/0148-ablation-discipline.ipynb">student notebook</a>. Its three live TODOs implement the owner-specific history mask, keyed MAE and paired interaction. CHECK cells reject specific faulty implementations. The mask drives a real sampled-context exercise; the scoring functions audit all author predictions. The <a href="../labs/html/0148-ablation-discipline.html">executed solution</a> is author-reference evidence, not proof that you completed the exercises.</p>
+<p>The portable default runs without a GPU. Complete model, intervention and trainer definitions remain visible, with an explicit opt-in full training lane for a pinned environment. Author artifacts are embedded with a checksum so a fresh notebook can reproduce the analysis. Training is never silently triggered by a normal notebook run.</p>
+<p><strong>EXIT: 150–250 words.</strong> Choose one measured ablation. State the intervention, held-fixed quantities, paired result, one confound and a falsifier. Then explain the interaction sign and propose the smallest follow-up that separates shorter history from unfilled sampling slots. Do not select a new window after test inspection and call it confirmatory.</p>
+<div id="teachback"></div><noscript>Write your intervention, fixed protocol, paired evidence, confound and falsifier. Explain what the interaction can and cannot establish. Ask the teaching agent for feedback.</noscript>
+
+<h2 id="7-%C2%B7-Reproduction-and-claim-boundaries">7 &#183; Reproduction and claim boundaries<a class="anchor-link" href="#7-%C2%B7-Reproduction-and-claim-boundaries">&#182;</a></h2><p><strong>Executed:</strong> 25 complete ten-epoch fits on the full task; independent key/label audits; baseline original-model output replay; owner-window and intervention checks. Baseline descriptive comparisons: validation <strong>CLOSE</strong>, test <strong>CLOSE</strong>. Paper means are 3.193 / 4.022 MAE.</p>
+<p><strong>Gradient boundary:</strong> one real initial-batch diagnostic counted nonfinite gradient entries {'full': 512, 'encoder': 512, 'messages': 512, 'history': 512, 'combined': 512}. The released missing-value numerical path is preserved. Finite predictions and source parity do not prove gradient health; this is a limit on interpreting these fits.</p>
+<p><strong>Cost:</strong> conservative reservations including two pre-worker mount failures and overhead fit the approved USD 10 cap. Measured worker-body estimates and the exact reservations are in the cost ledger; they are not an itemized invoice. Browser and notebook results are recorded separately in the delivery reports.</p>
+<p><strong>Final delivery:</strong> default solution and pinned notebook PASS; pinned validation adds one full history seed100 fit, excluded from primary statistics, with1,259 independently checked predictions. Desktop/mobile, keyboard/reset, print/noJS and clean Git-index Pages PASS. Conservative all-attempt reservations plus overhead <strong>USD9.974748</strong>; known worker-body estimate <strong>USD0.166615</strong>, excluding unitemized costs. Live Colab/deployment NOT_CHECKED.</p>
+<p>The source-pinned baseline is a complete selected released-protocol replay where execution succeeds. Descriptive closeness uses a frozen ±0.2 MAE band around the paper means; it is not a statistical equivalence test. Missing historical seeds/environment and documented release/paper differences prevent an exact historical-identity claim.</p>
+<p>The same F1 test population has appeared in earlier lessons. These ablations are exploratory even though their protocol was frozen before this lesson's runs. No arm is retuned or dropped for a disappointing result. Whole-paper reproduction is NOT_RUN; learner mastery is PENDING_WRITTEN_DEFENSE. Live Colab and deployment are separate checks.</p>
+<p>Use the <a href="../labs/l148-reproduction.md">reproduction contract</a>, <a href="../reference/ablation-discipline.html">reference sheet</a> and <a href="https://arxiv.org/html/2407.20060v1">primary paper</a>. Ask the teaching agent to review any unclear mechanism or your written defense. Lesson 149 will use disciplined evidence to examine where the thesis is weakest.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Use the same discipline in Lesson 149: a weakness identifies where a procedure loses, while an intervention tests an explanation of that loss. <a href="0149-weakest-relbench-tasks.html">Continue to Lesson 149</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/ablation-viz.js"></script><script src="../assets/l148-lesson.js"></script></body></html>

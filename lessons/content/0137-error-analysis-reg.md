@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">From a score to a diagnosis</p>
+<p><strong>Reading route.</strong> Pair errors → define slices → count independent entities → propose a falsifiable repair.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A slice is a named subset of prediction queries. Support means how many queries and distinct entities it contains. A confidence interval here comes from a declared resampling procedure; it is not a guarantee about a new database.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-lead">A model can lose on average for several different reasons. Find the rows where it loses before choosing a repair.</p>
 
 **Your win:** produce a query-aligned error report that names one validation-selected failure slice, measures its test behavior, and proposes an experiment that could falsify your explanation.
@@ -126,3 +134,8 @@ The FE result is a full released-pipeline replay on pinned v1 archives. The old 
 [[TEACHBACK]]
 
 Ask the agent follow-up questions about any unclear step, and paste your EXIT report for feedback. Author execution is evidence that the artifact runs, not evidence that you have mastered the diagnosis. Return in two days and reconstruct the paired-loss and cluster-resampling rules from memory. Lesson 138 will carry this discipline into a complete e-commerce task.
+
+
+<!-- sequence-next:start -->
+**Carry this forward.** Take your diagnosis checklist into Amazon: before explaining an error, establish what the task’s label actually observes. [Continue to Lesson 138](0138-ecommerce-amazon.html).
+<!-- sequence-next:end -->

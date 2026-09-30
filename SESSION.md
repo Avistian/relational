@@ -51,3 +51,12 @@ Start with retrieval, then input, then a lab. Be strict — quiz me before teach
 - Labs are mandatory — no "done" on reading alone.
 - Stay on the vetted paper list (`RESOURCES.md`); ignore arXiv noise unless it sets SOTA, exposes a failure mode, or is a baseline you'll be measured against.
 - Honesty about confusion > performed fluency.
+
+## Prepared 2026-09-30 · Lesson 147
+
+[Next-generation architectures](lessons/0147-next-generation-architectures.html) and [lab](labs/0147-next-generation-architectures.ipynb) prepared and locally verified. Author audit rescored7,554reused predictions; USD0cloud. No learner completion inferred: PENDING_WRITTEN_DEFENSE. Next action is the research-map EXIT defense; L148 follows. Full RelGT reproduction remains INCOMPLETE. See labs/l147-reproduction.md.
+
+
+## Prepared 2026-09-30 · Lesson 148
+
+[Ablation discipline](lessons/0148-ablation-discipline.html) and [student lab](labs/0148-ablation-discipline.ipynb) are prepared. Twenty-five fresh full-task fits and independent audits complete. Next action: implement the three live contracts, then defend an intervention and the validation/test reversal. Learner PENDING_WRITTEN_DEFENSE. Lesson149 follows. Exact reproduction and gradient/budget boundaries: `labs/l148-reproduction.md`.

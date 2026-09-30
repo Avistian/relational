@@ -1,0 +1,137 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 142 — Many-to-many edges: trace where the signal mixes</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/pathology.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0141-composite-message-passing.html">Lesson 141</a> · <a href="../labs/html/0142-many-to-many-edge-pathology.html">Executed lab</a></nav><header><p class="route-kicker">Year 4 · Quarter 3 · Lesson 142</p><h1>Many-to-many edges: trace where the signal mixes</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">Explain the failure before claiming the fix</p>
+<p><strong>Reading route.</strong> Count two-layer walks → construct a collision → compare the real networks → limit the conclusion.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A synchronous layer reads every node’s old state before producing new states. A collision means different inputs become the same representation. It matters for prediction only when their targets differ. A controlled scalar example can establish this mechanism without establishing its importance in a trained benchmark.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<h2 id="1-%C2%B7-A-graph-can-preserve-the-database-while-an-update-loses-a-distinction">1 &#183; A graph can preserve the database while an update loses a distinction<a class="anchor-link" href="#1-%C2%B7-A-graph-can-preserve-the-database-while-an-update-loses-a-distinction">&#182;</a></h2><p><a href="0141-composite-message-passing.html">Lesson 141</a> built a composite route: source → fact row → destination. It showed how two physical edges can form one model update. Now ask the harder question: <strong>what goes wrong if we treat those edges as two ordinary updates?</strong></p>
+<p>Your tangible win is to trace a message, identify an avoidable return path, and explain what evidence would be needed to blame a benchmark error on that path. This supports our mission of defending relational deep learning with reproducible evidence rather than assuming that a new architecture must help.</p>
+<p>A <strong>row</strong> is one database record. Its <strong>primary key</strong> uniquely identifies it. A <strong>foreign key</strong> points to one row in another table. A <strong>many-to-many relationship</strong> allows each entity on either side to relate to several on the other: one driver enters many races, and one race contains many drivers. A junction or <strong>fact table</strong> records each occurrence; one result row refers to a particular driver, race, and constructor. The fact can contain important attributes such as a finishing position. It is not disposable plumbing.</p>
+<p>The graph keeps the fact as a node and foreign keys as edges. Keeping these rows and links can preserve the database information. A learned <strong>embedding</strong>, a fixed-width numerical summary of a node, is a different object. Its aggregation can mix distinctions the graph still contains. “Lossless graph conversion” does not imply “lossless message passing.” Primary reading: <a href="https://arxiv.org/html/2502.06784v2#S3">RelGNN v2 §§3.1–3.2 and equations 1–3</a>.</p>
+<div id="warmup"></div>
+
+<p><strong>Retrieve before reading:</strong> Which way does a foreign key point? Why is <code>(driver, date)</code> a stronger prediction identity than driver alone? Which split may select a model checkpoint?</p>
+<h2 id="2-%C2%B7-Count-walks-before-learning-weights">2 &#183; Count walks before learning weights<a class="anchor-link" href="#2-%C2%B7-Count-walks-before-learning-weights">&#182;</a></h2><p>A <strong>message</strong> is a numerical contribution sent along an edge. A <strong>layer</strong> updates all nodes from the previous layer's embeddings; it is synchronous. Updating a fact and immediately using its new value to update a driver inside an ordinary layer would silently change the model.</p>
+<p>Start with an exact, deliberately simple linear diagnostic. Let <code>s</code> be the source value, <code>f</code> the fact value, and <code>d</code> the destination value. The graph is <code>s ↔ f ↔ d</code>. Each ordinary layer adds the node's previous value to the sum of its neighbors' previous values. The self contribution is often called a <strong>residual</strong> or root term. We use identity weights and no activation to count paths transparently; this is not the trained attention network.</p>
+<p><strong>Predict before revealing:</strong> with <code>s=2</code>, <code>f=1</code>, <code>d=3</code>, what value reaches the destination after two ordinary layers? How much came from the original source?</p>
+<p>At layer 1, <code>f₁=f+s+d</code> and <code>d₁=d+f</code>. At layer 2, <code>d₂=d₁+f₁=s+2f+2d=10</code>. The source first arrives at layer 2. The fact contributes twice: it stayed at the fact then moved, or moved to the destination then stayed. The destination also contributes twice: it stayed twice, or traveled <code>d→f→d</code>.</p>
+<p>This is a walk-counting result under specified weights. It illustrates the paper's redundancy and imbalance arguments. It does not establish that every trained GNN duplicates information with coefficient two: attention, learned transforms, normalization, and root design change those coefficients.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l142/walks.svg" alt="Exact linear diagnostic: one source path, two fact paths and two destination paths. Identity weights and self sums differ from the trained attention network."><figcaption>Exact linear diagnostic: one source path, two fact paths and two destination paths. Identity weights and self sums differ from the trained attention network. Scroll horizontally on narrow screens.</figcaption></figure>
+<div class="path-widget" id="l142-walks"></div><noscript>Baseline s=2,f=1,d=3: ordinary10, composite6. Destination-only input1 produces ordinary2, composite1.</noscript>
+
+<p>For a transparent composite diagnostic, fuse <code>u=s+f</code> for this source–fact–destination route, then update <code>d′=d+u=6</code>. There is no <code>d→f→d</code> return inside this update. The fact still contributes. Removing the fact altogether would erase event attributes and could collapse repeated events with different times.</p>
+<p><strong>CHECK:</strong> set <code>s=0,f=0,d=1</code>. Ordinary output is 2; composite output is 1. Set only <code>f=1</code>: ordinary is 2; composite is 1. Set only <code>s=1</code>: both are 1. These interventions isolate the coefficient of each input.</p>
+<h2 id="3-%C2%B7-A-hub-can-mix-roles-before-the-destination-chooses">3 &#183; A hub can mix roles before the destination chooses<a class="anchor-link" href="#3-%C2%B7-A-hub-can-mix-roles-before-the-destination-chooses">&#182;</a></h2><p>A <strong>bridge</strong> fact has two foreign key roles. A <strong>hub</strong> has three or more. A result row connects driver, race, and constructor. If the source is race and the destination is driver, constructor is another role—not necessarily noise. Whether it is useful depends on the target.</p>
+<p>Add a third neighbor with scalar value <code>n</code>. The same ordinary diagnostic gives <code>f₁=f+s+d+n</code>, then <code>d₂=s+2f+2d+n</code>. A single shared intermediate representation has mixed the source with the third role before the destination receives it.</p>
+<p><strong>Predict:</strong> compare <code>(s,n)=(2,8)</code> and <code>(8,2)</code> with <code>f=1,d=3</code>. Can the destination's second-layer scalar identify which world it saw?</p>
+<p>Both ordinary outputs equal 18. The source-specific composite outputs are 6 and 12. If the target depends on <code>s</code>, that ordinary representation has a <strong>collision</strong>: distinct inputs needing distinct predictions became identical. No downstream function of that scalar alone can recover the difference. If the target is instead <code>s+n</code>, the two worlds legitimately share the same target, and the collision causes no problem.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l142/collision.svg" alt="Swapping source and third-role values preserves the shared scalar sum. It destroys a source-specific distinction but preserves their total."><figcaption>Swapping source and third-role values preserves the shared scalar sum. It destroys a source-specific distinction but preserves their total. Scroll horizontally on narrow screens.</figcaption></figure>
+<div class="path-widget" id="l142-hub"></div><noscript>Baseline s=2,n=8,f=1,d=3: ordinary18, composite6. Swap s/n: ordinary18, composite12.</noscript>
+
+<p>The qualification matters. Distinct learned maps per relation, enough hidden width, or separate channel blocks can preserve source roles even with ordinary message passing. Our collision is a proof about a specified equal-weight scalar sum, not an impossibility theorem for heterogeneous GNNs. Conversely, composite routes also compress information; their later route summation can still create collisions.</p>
+<p>The paper's motivation is a useful <strong>inductive bias</strong>: an architectural preference for preserving particular relational interactions. It is not a universal ordering of predictive performance. <a href="https://arxiv.org/html/2502.06784v2#S3.SS2">RelGNN §3.2 and §4.2</a>.</p>
+<p><strong>TODO 1 — incoming sums:</strong> implement <code>edge_sum</code>. Preserve the destination axis and every trailing feature/head axis. Duplicate destination indices mean sum, not overwrite. The function feeds both neural arms.</p>
+<p><strong>TODO 2 — route fusion:</strong> implement <code>route_fuse</code>. Select only the declared source role, sum its incoming values, apply its transform once per fact, and add the transformed fact. Applying a biased source transform before aggregation would repeat the bias when several sources are present and omit it on empty neighborhoods. This function feeds the composite model.</p>
+<h2 id="4-%C2%B7-What-the-full-networks-actually-compute">4 &#183; What the full networks actually compute<a class="anchor-link" href="#4-%C2%B7-What-the-full-networks-actually-compute">&#182;</a></h2><p>An <strong>attention head</strong> weights incoming messages using a destination query and source keys. For each edge, a dot-product score is divided by the square root of the head width. <strong>Softmax</strong> exponentiates scores and divides by their sum over messages with the same destination and head. The resulting nonnegative weights sum to one. Weighted source values are summed; multiple heads are concatenated and projected back to the model width.</p>
+<p>Both arms begin with the same kinds of table-specific <strong>row encoders</strong>, neural networks that map heterogeneous columns to 128 numbers. A query-relative time encoder adds information about the difference between the prediction cutoff and a sampled row's event time. Each timestamp is compared with the cutoff of its owning query, not the largest cutoff in the batch.</p>
+<p><strong>Composite arm:</strong> one released RelGNN layer. For each ordered source/fact/destination route, fuse transformed source and fact features, then attend from the destination to those fused messages. Each of four heads produces 128 channels: concatenation has 512 channels, projected to 128. Sum route outputs, normalize each node's channels with LayerNorm, apply ReLU (replace negative values by zero), select queried driver rows, and use a scalar head. The release also updates fact representations from route intermediates. The complete code preserves this behavior.</p>
+<p><strong>Ordinary arm:</strong> two layers of edge-type-specific attention. Each directed foreign key edge and reverse edge gets its own parameters. Every layer reads the old embeddings of all types, sums incoming relation outputs at each destination type, then applies the same kind of node-wise LayerNorm and ReLU. A second layer lets source information traverse the fact to the driver. This is a reasonable course comparator, not the paper's published GNN baseline.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l142/architecture.svg" alt="Both full networks reach two graph edges. Composite uses one route layer; ordinary uses two edge-attention layers. Shared input design does not imply equal capacity."><figcaption>Both full networks reach two graph edges. Composite uses one route layer; ordinary uses two edge-attention layers. Shared input design does not imply equal capacity. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p>Both arms have two-edge reach, 128-channel embeddings, four heads, and the same row/time/head components. The number of attention modules, normalization steps, and parameters differs. Therefore this is an <strong>architecture comparison</strong>, not an experiment that changes only one scalar mechanism. Sampling settings match, but random-number consumption differs, so realized sampled subgraphs are not guaranteed identical across arms.</p>
+<p>Inspect the <a href="../labs/relkit/relgnn_l142.py">visible full models</a>, <a href="../labs/relkit/pathology_l142.py">live functions</a>, and <a href="../labs/_full_l142.py">trainer</a>. The portable notebook includes their code inline. The original release serves as an independent composite oracle; ordinary attention is checked against PyG's implementation at identical weights.</p>
+<h2 id="5-%C2%B7-Make-%E2%80%9Cfull-reproduction%E2%80%9D-a-checkable-claim">5 &#183; Make &#8220;full reproduction&#8221; a checkable claim<a class="anchor-link" href="#5-%C2%B7-Make-%E2%80%9Cfull-reproduction%E2%80%9D-a-checkable-claim">&#182;</a></h2><p>Our selected published target is <strong>RelGNN Table 2, <code>rel-f1/driver-position</code>: 3.798 test MAE</strong>, averaged over five reported seeds. <strong>MAE</strong>, mean absolute error, averages <code>|prediction−target|</code>; its units here are finishing-position units. Lower is better. <a href="https://arxiv.org/html/2502.06784v2#S5.T2">Paper Table 2</a> · <a href="https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b">Pinned release</a>.</p>
+<p>The full archived task contains 7,453 training, 499 validation, and 760 test queries. Each label averages recorded finishing positions in <code>(cutoff,cutoff+60 days]</code>. A driver without a future result does not receive a target row. This population is conditional on future participation; it is not a prospective roster of all drivers. Raw-table reconstruction independently checks all labels and query identities.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>Both fresh arms</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Data</td>
+  <td>Complete checksum-pinned F1 archives; fresh materialization shared by the ten fits</td>
+</tr>
+<tr>
+  <td>Inputs</td>
+  <td>Same inferred column types, GloVe features, full released snapshot and feature statistics</td>
+</tr>
+<tr>
+  <td>Temporal sample</td>
+  <td>Uniform fanouts 128/64, bidirectional subgraphs, batch 512</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>Seeds 0–4, ten complete epochs each, Adam 0.005, absolute-error loss</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>First strict minimum validation MAE; test evaluated after checkpoint freeze</td>
+</tr>
+<tr>
+  <td>Output</td>
+  <td>Clip evaluation predictions to training-target percentiles 2/98; training is unclipped</td>
+</tr>
+<tr>
+  <td>Comparison</td>
+  <td>Five paired seed-level error differences; no test-driven tuning</td>
+</tr>
+</tbody>
+</table></div>
+<p>An <strong>epoch</strong> visits every training query once. Adam is the optimizer that adjusts parameters from loss gradients; 0.005 is its learning rate. Before creating it, an evaluation-mode training batch initializes lazy encoder parameters, matching the documented reconstruction. Validation sampling is stochastic; the selection score and final re-evaluated validation score can differ.</p>
+<p>The release does not supply the complete historical optimizer, schedule, initialization sequence, or feature-type cache. These fresh fits use frozen <strong>reconstructed training</strong>, not an exact historical protocol. Lesson 141's five fresh fits missed the ±0.20 descriptive MAE band; we do not retune to erase that finding. Its released checkpoint also required a qualifying-column type reconstruction. L142 trains fresh weights on the same freshly inferred types in both arms; no checkpoint-compatible replay is pooled into this experiment.</p>
+<p><strong>Predict before revealing:</strong> must the composite architecture win on every seed? Would a win prove that destination echoes caused the ordinary model's errors?</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th style="text-align:right">Validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+  <th style="text-align:right">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Published RelGNN five-seed mean</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">3.798</td>
+  <td style="text-align:right">—</td>
+</tr>
+<tr>
+  <td>Fresh composite, five seeds</td>
+  <td style="text-align:right">3.133519 ± 0.185000</td>
+  <td style="text-align:right">4.267390 ± 0.087863</td>
+  <td style="text-align:right">10,553,601</td>
+</tr>
+<tr>
+  <td>Fresh ordinary, five seeds</td>
+  <td style="text-align:right">3.045583 ± 0.127300</td>
+  <td style="text-align:right">4.418519 ± 0.305754</td>
+  <td style="text-align:right">20,519,169</td>
+</tr>
+</tbody>
+</table></div>
+<p>Mean paired test gap (ordinary − composite): <strong>+0.151129 ± 0.278950 MAE</strong> (sample SD across five seed pairs). Composite versus paper: <strong>OUTSIDE_TOLERANCE</strong>, using the frozen ±0.20 descriptive band. <strong>12,590 held-out predictions</strong> independently aligned and rescored. Historical identity remains <strong>NOT_ESTABLISHED</strong>.</p>
+<p>Composite wins <strong>three of five test seed pairs</strong>, while ordinary attention has the lower mean validation MAE. The sign describes these frozen runs only. Neither a win nor a loss identifies the bridge mechanism as the cause; the comparison also changes capacity and normalization depth.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l142/results.svg" alt="Measured test MAE for five complete fits per arm. Seed labels connect the comparison; positive ordinary-minus-composite gaps favor composite."><figcaption>Measured test MAE for five complete fits per arm. Seed labels connect the comparison; positive ordinary-minus-composite gaps favor composite. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p>For seed <code>j</code>, define the paired gap as <code>MAE_ordinary,j − MAE_composite,j</code>. A positive gap favors composite. Pairing uses the same seed labels and full query identities; it does not make the random trajectories identical. Sample standard deviation describes variation among these five fits. Repeated drivers and dates mean query rows are not independent experimental replicates. We do not manufacture a confidence interval by treating all rows as independent. This F1 test split has also been inspected in earlier lessons: these are fresh training runs, not a fresh held-out test population.</p>
+<p><strong>TODO 3 — keyed paired errors:</strong> implement <code>paired_loss_gap</code>. Align both prediction vectors by <code>(driver,cutoff)</code>, reject duplicate or missing keys, then subtract per-query absolute errors. Shuffling predictions with their keys must leave the answer unchanged. Your implementation rescoring the author files is a learner exercise, not evidence that you trained those models yourself.</p>
+<p>The released numerical row encoder can produce nonfinite gradients for missing-value columns. We retain and count them in both arms. Source parity proves correspondence with the implementation, not healthy optimization. This limitation weakens any causal claim about the graph operator.</p>
+<h2 id="6-%C2%B7-What-you-can-defend-now">6 &#183; What you can defend now<a class="anchor-link" href="#6-%C2%B7-What-you-can-defend-now">&#182;</a></h2><p>Read the <a href="../labs/l142-reproduction.md">complete protocol and evidence ledger</a>, <a href="../labs/evidence/l142/training.json">measured summary</a>, and <a href="../reference/many-to-many-edge-pathology.html">compact reference</a>. The default notebook executes neural fixtures and independently scores every author prediction. Its explicit full-data gate trains fresh models in the pinned GPU environment. The validation run of that gate is recorded separately and excluded from the five primary seed means.</p>
+<p>The aggregate cloud cap is **US$10**, including preparation, all seeds, failures, and validation. A pilot for each arm precedes the remaining fits; the runner reserves worst-case worker timeouts and retains $3 overhead. If the forecast cannot fit, it stops and labels the unfinished scope. Credits never raise this limit. <a href="https://modal.com/pricing">Current provider pricing</a>.</p>
+<p><strong>EXIT — write before checking:</strong> draw a driver–result–race route with a constructor neighbor. Derive the destination return term for our linear diagnostic. Construct two inputs that collide under that diagnostic but have different source-specific targets. Then explain why a full-data MAE difference does not prove this collision caused the difference in trained networks. Name one control you would add: capacity matching, controlled normalization depth, fixed sampled subgraphs, or a narrowly defined operator intervention.</p>
+<div id="l142-teachback"></div>
+
+<p>Author checks leave learner status <strong>PENDING_WRITTEN_DEFENSE</strong>. Historical training identity remains <strong>NOT_ESTABLISHED</strong>; the whole paper is <strong>NOT_RUN</strong>. Live Colab and deployment are <strong>NOT_CHECKED</strong> unless separately recorded. Ask the teaching agent follow-up questions, or paste your derivation and defense for feedback. Lesson 143 will build on this distinction between a runnable RelGNN experiment and a defensible reproduction claim.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Carry both the mechanism and its limits into Lesson 143: reproducing a model requires checking feature meaning, training history and query identity as well as the score. <a href="0143-relgnn-reproduction.html">Continue to Lesson 143</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/pathology-viz.js"></script></body></html>

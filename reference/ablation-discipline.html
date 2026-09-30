@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ablation discipline reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/ablation.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Labs</a></nav><header><p class="eyebrow">Year 4 · Quarter 3 · Lesson 148</p><h1>Ablation discipline reference</h1></header><h2 id="Design-before-measuring">Design before measuring<a class="anchor-link" href="#Design-before-measuring">&#182;</a></h2><p>Name the intervention in code. Freeze target population, splits, training and selection. Report what also changes: parameters, random-number consumption, sampling coverage, computation. Retraining an ablation differs from test-time corruption.</p>
+<h2 id="Analysis-contract">Analysis contract<a class="anchor-link" href="#Analysis-contract">&#182;</a></h2><p>Require unique complete (entity,cutoff) keys. Compute MAE per seed. Paired effect = arm MAE − full MAE. Positive is worse. Report mean and sample seed SD. Interaction = combined − encoder − messages + full, within each seed. A negative interaction means a smaller combined penalty than additivity predicts on this error scale. No additive credit allocation follows.</p>
+<h2 id="History-contract">History contract<a class="anchor-link" href="#History-contract">&#182;</a></h2><p>For dated non-root rows: owner cutoff −365days ≤ row time ≤ owner cutoff. Keep undated rows and legal query roots. Prune nodes and incident edges before encoding. This implementation prunes after sampling without refill; it tests reduced sampled context as well as shorter history.</p>
+<h2 id="Author-evidence">Author evidence<a class="anchor-link" href="#Author-evidence">&#182;</a></h2><div class="ablation-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Validation MAE ± seed SD</th>
+  <th style="text-align:right">Test MAE ± seed SD</th>
+  <th style="text-align:right">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>full</td>
+  <td style="text-align:right">3.2245 ± 0.0531</td>
+  <td style="text-align:right">4.1931 ± 0.2428</td>
+  <td style="text-align:right">5,077,249</td>
+</tr>
+<tr>
+  <td>encoder</td>
+  <td style="text-align:right">3.1888 ± 0.0434</td>
+  <td style="text-align:right">4.0937 ± 0.2673</td>
+  <td style="text-align:right">4,171,777</td>
+</tr>
+<tr>
+  <td>messages</td>
+  <td style="text-align:right">3.6235 ± 0.2263</td>
+  <td style="text-align:right">4.0393 ± 0.2050</td>
+  <td style="text-align:right">5,077,249</td>
+</tr>
+<tr>
+  <td>history</td>
+  <td style="text-align:right">2.9305 ± 0.0648</td>
+  <td style="text-align:right">4.9639 ± 0.6387</td>
+  <td style="text-align:right">5,077,249</td>
+</tr>
+<tr>
+  <td>combined</td>
+  <td style="text-align:right">3.6033 ± 0.0767</td>
+  <td style="text-align:right">3.9954 ± 0.0561</td>
+  <td style="text-align:right">4,171,777</td>
+</tr>
+</tbody>
+</table></div>
+<p>All 25 fresh fits completed; <strong>31,475</strong> held-out predictions independently rescored. Positive paired differences favor the full baseline.</p>
+<p><strong>Val paired changes:</strong> encoder -0.0356 ± 0.0498; messages +0.3990 ± 0.2181; history -0.2940 ± 0.0498; combined +0.3788 ± 0.1241.</p>
+<p><strong>Test paired changes:</strong> encoder -0.0994 ± 0.3422; messages -0.1538 ± 0.3183; history +0.7708 ± 0.7292; combined -0.1977 ± 0.2901.</p>
+<p>Encoder–message interaction: validation <strong>+0.0155 ± 0.2190</strong>, test <strong>+0.0554 ± 0.2850</strong> MAE. These are mean ± sample seed SD.</p>
+<p><strong>Executed:</strong> 25 complete ten-epoch fits on the full task; independent key/label audits; baseline original-model output replay; owner-window and intervention checks. Baseline descriptive comparisons: validation <strong>CLOSE</strong>, test <strong>CLOSE</strong>. Paper means are 3.193 / 4.022 MAE.</p>
+<p><strong>Gradient boundary:</strong> one real initial-batch diagnostic counted nonfinite gradient entries {'full': 512, 'encoder': 512, 'messages': 512, 'history': 512, 'combined': 512}. The released missing-value numerical path is preserved. Finite predictions and source parity do not prove gradient health; this is a limit on interpreting these fits.</p>
+<p><strong>Cost:</strong> conservative reservations including two pre-worker mount failures and overhead fit the approved USD 10 cap. Measured worker-body estimates and the exact reservations are in the cost ledger; they are not an itemized invoice. Browser and notebook results are recorded separately in the delivery reports.</p>
+<p><strong>Final delivery:</strong> default solution and pinned notebook PASS; pinned validation adds one full history seed100 fit, excluded from primary statistics, with1,259 independently checked predictions. Desktop/mobile, keyboard/reset, print/noJS and clean Git-index Pages PASS. Conservative all-attempt reservations plus overhead <strong>USD9.974748</strong>; known worker-body estimate <strong>USD0.166615</strong>, excluding unitemized costs. Live Colab/deployment NOT_CHECKED.</p>
+<p>Whole paper NOT_RUN; historical identity NOT_ESTABLISHED; extensions exploratory; learner PENDING_WRITTEN_DEFENSE. <a href="../lessons/0148-ablation-discipline.html">Lesson</a> · <a href="../labs/l148-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2407.20060v1">RelBench v1</a>.</p>
+</article></body></html>

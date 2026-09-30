@@ -211,3 +211,10 @@ Three live functions govern typed frontier bounds, temporal query ownership and 
 
 [Student](0136-leaderboard-literacy.ipynb) · [Executed reference](html/0136-leaderboard-literacy.html) · [Solution](solutions/0136-leaderboard-literacy.ipynb) · [Reproduction contract](l136-reproduction.md).
 Three live audit functions govern query identity, normalized error and complete-board coverage. Full nine-task archive replay for three entries plus five fresh historical RDL fits. Default notebook directly rescores F1 submissions and author training evidence; separate full-evaluation and full-training gates both have executed validation. Archive replay does not establish top-entry search/training identity.
+
+### Lesson146 · GNN versus graph transformer
+
+[Student](0146-gnn-vs-graph-transformer.ipynb) · [Executed reference](html/0146-gnn-vs-graph-transformer.html) · [Solution](solutions/0146-gnn-vs-graph-transformer.ipynb) · [Reproduction contract](l146-reproduction.md).
+Three live contracts govern query-owned context sampling, validation selection and paired keyed errors. Six complete full-data course fits are independently scored; the nine-config published-protocol search remains separately blocked. Full visible models and trainer, portable figures, explicit default author-evidence checks and optional full-course gate. Author execution does not establish learner mastery.
+
+- L149: [0149-weakest-relbench-tasks.ipynb](0149-weakest-relbench-tasks.ipynb) — weakness catalog, compatible ranking and supported-slice diagnosis. Full RDL/FE lanes and [protocol](l149-reproduction.md).

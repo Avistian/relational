@@ -1,0 +1,10 @@
+(function(){'use strict';
+const host=document.getElementById('relgt-token');if(!host)return;
+host.className='relgt-widget';host.innerHTML='<h3>Intervene on one token</h3><p>Illustrative scalars; weights and four inputs stay fixed. Baseline: [1,2,3,4,5] · [1,0,0,2,−1] = 4.</p><label>Structure component <input aria-label="Structure component" type="range" min="0" max="10" value="5" step="1"> <output class="value">5</output></label><label><input type="checkbox" checked> Include structure component</label><p class="calculation" aria-live="polite"></p><button type="button">Reset</button>';
+const slider=host.querySelector('input[type=range]'),check=host.querySelector('input[type=checkbox]');
+function update(){let pe=Number(slider.value),active=check.checked?pe:0,y=9-active;host.querySelector('.value').textContent=pe;host.querySelector('.calculation').textContent=`1 + 2 × 4 − ${active} = ${y}. Change from baseline: ${y-4}. This is a fixed-weight intervention, not a retrained ablation.`;host.dataset.result=y;}
+slider.addEventListener('input',update);check.addEventListener('change',update);host.querySelector('button').addEventListener('click',()=>{slider.value=5;check.checked=true;update();});update();
+const owner=document.getElementById('relgt-owner');owner.className='relgt-widget';owner.innerHTML='<h3>Does a positive age prove temporal safety?</h3><p>Released cached context uses cutoff 10 and event time 9: cached age is always +1.</p><label>Actual query cutoff <input aria-label="Actual query cutoff" type="range" min="5" max="10" value="5" step="1"> <output>5</output></label><p class="verdict" aria-live="polite"></p><button type="button">Reset</button>';
+function audit(){let t=Number(owner.querySelector('input').value);owner.querySelector('output').textContent=t;owner.querySelector('.verdict').textContent=`Event 9 ${9<=t?'≤':'>'} cutoff ${t}: ${9<=t?'eligible by event time':'future-data violation'}. Cached age remains +1.`;owner.dataset.valid=9<=t;}
+owner.querySelector('input').addEventListener('input',audit);owner.querySelector('button').addEventListener('click',()=>{owner.querySelector('input').value=5;audit();});audit();
+})();

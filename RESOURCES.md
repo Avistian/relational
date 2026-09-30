@@ -843,3 +843,46 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [ICML2025 RelGNN v2](https://arxiv.org/html/2502.06784v2): §§4.1–4.3 and Table2.
 - [Pinned implementation](https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b): route derivation, composite attention, inference configuration. Main entry point is checkpoint evaluation, not training.
 - [Pinned checkpoint release](https://huggingface.co/tianlangchen/RelGNN/tree/321e6f6e7af5d7546b637f147783fc28ab5d4a7a): F1 driver-position weights; feature-type compatibility reconstruction documented in [protocol](labs/l141-reproduction.md).
+
+
+## Lesson 142 — many-to-many edge pathology
+- Chen et al., RelGNN v2 §§3.1–4.3 and Table2: https://arxiv.org/html/2502.06784v2 — bridge return paths, hub role mixing and composite routes; architectural motivation is not a universal information-loss theorem.
+- Released code pinned cffdb8b54627e92c7dd112c1243dde739c90d35b: https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b — historical training recipe incomplete; L142 ordinary edge-attention comparator is a course experiment.
+- [Lesson](lessons/0142-many-to-many-edge-pathology.html) · [Full protocol](labs/l142-reproduction.md). Five full fits per arm, shared freshly materialized archives, independent keyed scoring and separate notebook-validation fits.
+
+## Lesson 143 — RelGNN reproduction
+
+- [RelGNN §4/§5.2/Table2](https://arxiv.org/html/2502.06784v2): composite computation and selected full F1 target3.798MAE.
+- [Pinned released evaluation code](https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b): architecture and checkpoint evaluation; historical training recipe incomplete.
+- [Pinned checkpoint](https://huggingface.co/tianlangchen/RelGNN/tree/321e6f6e7af5d7546b637f147783fc28ab5d4a7a): qualifying numerical-buffer evidence for the documented compatibility reconstruction.
+- [Protocol](labs/l143-reproduction.md): fresh full-task five-seed training, separate checkpoint replay, exact label/key audits and aggregate cost. Close scores do not establish historical identity.
+
+## Lesson 144 · ContextGNN
+- [Yuan et al., 2024, ContextGNN v1](https://arxiv.org/html/2411.19513v1): §§3–5; selected Table2 site-sponsor-run MAP targets.
+- [Pinned authors implementation](https://github.com/kumo-ai/ContextGNN/tree/ca4a96985b7ef73c36a40da32e70710ad9b59a1e): local replacement, distinct branch offsets, full-catalog training and search loop. Release differences and evaluation-cache behavior are recorded in labs/l144-reproduction.md.
+
+## Lesson 145 · RelGT
+- [RelGT v1](https://arxiv.org/html/2505.10960v1): five-element tokens, local/global attention, selected F1 Table1.
+- [Pinned source](https://github.com/snap-stanford/relgt/tree/19e423ca3e7cac761130aba790857f2dc3a46ef7): full nine-config search and confirmed cache/evaluation defects; see labs/l145-reproduction.md.
+
+## Lesson 146 · GNN versus graph transformer
+
+- [RelGT v1 §4 and Table6](https://arxiv.org/html/2505.10960v1#A4), checked2026-09-30: compare displayed validation/test rows without assuming historical selection intent.
+- [Pinned RelGT release](https://github.com/snap-stanford/relgt/tree/19e423ca3e7cac761130aba790857f2dc3a46ef7): distinguish checkpoint selection in`main_node_ddp.py`from sweep launching. Source changes and reused-file hashes: [ledger](labs/evidence/l146/sources.json).
+- [Reproduction and comparison contract](labs/l146-reproduction.md): full-data corrected course experiment, retained complete source schedules, cost cutoff and independent keyed evaluation. [Reference sheet](reference/gnn-vs-graph-transformer.html).
+
+## Lesson 147 · next-generation architecture survey
+
+- [Dwivedi et al., RDL: Challenges, Foundations and Next-Generation Architectures, v1](https://arxiv.org/html/2506.16654v1), 19June2025; checked2026-09-30. Read §§2.3–2.4,4.1,5. Scope: historical synthesis, not a current frontier census or a new experimental table.
+- [L147 source/claim ledger](labs/evidence/l147/sources.json) pins fetched source bytes and separates survey proposals, local reanalysis and author planning judgments.
+- [Executable research map](labs/evidence/l147/questions.json) and [reproduction boundary](labs/l147-reproduction.md). Six L146 fits reused; all7,554held-out predictions freshly rescored, no training/cloud cost.
+
+
+## Lesson 148 · Ablation discipline (2026-09-30)
+
+- RelBench v1, §3, Table 7 and Appendix B.3: https://arxiv.org/html/2407.20060v1 . Primary RDL pipeline, regression target and published ablation context. L148 freshly replays the F1 RDL baseline; its four controlled interventions are exploratory course extensions.
+- Pinned RelBench release: https://github.com/snap-stanford/relbench/tree/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639 . Current byte audit in `labs/evidence/l148/sources.json`; exact protocol and limitations in `labs/l148-reproduction.md`.
+
+## Lesson 149 · weakest RelBench tasks
+- [RelBench v1 Figure3, §6 and AppendixC.2](https://arxiv.org/html/2407.20060v1#S6): published 15-task user study; boosted regression head must be separated from Table7 basic RDL. Figure SVG freshly checksum-verified2026-09-30; reconstructed means are PLOT_DERIVED, with unresolved user-votes/post-votes label mismatch.
+- [Pinned FE release](https://github.com/snap-stanford/relbench-user-study/tree/445bb7a3b1230f49f8e5890ae81754d3e365680f) and [pinned RDL release](https://github.com/snap-stanford/relbench/tree/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639): complete fresh F1 selected-pipeline replay and separate exploratory slice profile. Ledger: labs/l149-reproduction.md.

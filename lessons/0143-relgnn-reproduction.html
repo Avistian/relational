@@ -1,0 +1,137 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 143 — RelGNN reproduction: defend the evidence</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0142-many-to-many-edge-pathology.html">Lesson 142</a></nav><header><p class="route-kicker">Year 4 · Quarter 3 · Lesson 143</p><h1>RelGNN reproduction: defend the evidence</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">Turn a runnable model into an auditable claim</p>
+<p><strong>Reading route.</strong> Freeze the recipe → verify feature meaning → inspect the forward pass → select a checkpoint → reconcile all runs.</p>
+<details><summary>Quick prerequisite reminder</summary><p>MAE is the average absolute prediction error; lower is better. L1 loss uses those absolute errors for training. A gradient tells the optimizer how a parameter affects loss. NaN means “not a number”; finite predictions can coexist with invalid gradients. A differential oracle is an independent implementation run on the same inputs to compare outputs.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<p><strong>The win:</strong> run a complete selected RelGNN experiment and defend exactly what its evidence establishes. Plan about 25 minutes for the guided lesson, then a separate coding and written-defense session. Full training is an explicit GPU lane.</p>
+<p><a href="0141-composite-message-passing.html">Lesson 141</a> exposed the atomic-route computation. <a href="0142-many-to-many-edge-pathology.html">Lesson 142</a> tested why mixing roles can matter and compared two architectures. Neither recovered the original training history. Now the unresolved question is operational: <strong>what must match before a number becomes reproduction evidence?</strong> This serves our mission of making relational-model claims that survive independent scrutiny.</p>
+<p>Start from memory: why does a two-edge route fit inside one composite layer? Why is validation allowed to choose an epoch while test is not? Name an example where a close score hides a different experiment.</p>
+<div id="warmup"></div>
+
+<h2 id="1-%C2%B7-Freeze-the-claim-before-running">1 &#183; Freeze the claim before running<a class="anchor-link" href="#1-%C2%B7-Freeze-the-claim-before-running">&#182;</a></h2><p>The named target is <strong>RelGNN, rel-f1/driver-position, Table 2, test MAE 3.798</strong> in <a href="https://arxiv.org/html/2502.06784v2#S5.SS2">Chen et al., ICML 2025, §5.2</a>. The paper reports five-run averages. We select one complete task from its benchmark, not the whole paper and not a reduced query sample.</p>
+<p>The <a href="https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b">pinned release</a> provides the architecture and checkpoint-evaluation entry point. It does not fully specify the historical training run. We therefore freeze a <strong>reconstructed training recipe</strong> and name the gaps. A successful replay of supplied weights cannot fill them.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Frozen item</th>
+  <th>Selected protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Query population</td>
+  <td>All 7,453 training, 499 validation, 760 test rows</td>
+</tr>
+<tr>
+  <td>Label</td>
+  <td>Mean recorded finishing position in <code>(cutoff, cutoff + 60 days]</code></td>
+</tr>
+<tr>
+  <td>Data</td>
+  <td>Checksum-pinned full F1 archive; fresh graph materialization</td>
+</tr>
+<tr>
+  <td>Model</td>
+  <td>One composite layer, 128 output channels, four heads of 128 channels</td>
+</tr>
+<tr>
+  <td>Sampling</td>
+  <td>Uniform temporal 128/64 neighbors, bidirectional subgraph, batch 512</td>
+</tr>
+<tr>
+  <td>Training</td>
+  <td>Adam .005, unclipped L1 loss, ten complete epochs, seeds 0–4</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>First minimum validation MAE; no test-based tuning</td>
+</tr>
+<tr>
+  <td>Scoring</td>
+  <td>Unique <code>(driver, cutoff)</code> alignment; train-target 2/98 percentile clipping</td>
+</tr>
+<tr>
+  <td>Comparison</td>
+  <td>Mean and sample SD; predeclared ±0.20 MAE descriptive tolerance</td>
+</tr>
+</tbody>
+</table></div>
+<p>Five seeds and the architecture follow the chosen evidence target; optimizer, schedule and other unresolved details are documented reconstruction choices, not recovered historical facts. The tolerance is a course reporting rule, not a statistical equivalence test.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l143/contract.svg" alt="Freeze the claim before observing scores. A complete task run and historical identity require different evidence."><figcaption>Freeze the claim before observing scores. A complete task run and historical identity require different evidence. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p><strong>Predict:</strong> would five perfect checkpoint replays satisfy this five-fit training contract? No: repeated evaluation never supplies the missing training trajectories.</p>
+<h2 id="2-%C2%B7-Make-feature-meaning-part-of-the-checkpoint">2 &#183; Make feature meaning part of the checkpoint<a class="anchor-link" href="#2-%C2%B7-Make-feature-meaning-part-of-the-checkpoint">&#182;</a></h2><p>A checkpoint tensor has a shape, but its columns also have meanings. Fresh inference assigns <code>qualifying.position</code> a categorical type. The released checkpoint expects two numerical columns. Loading it without intervention fails. Silently changing a type would conceal a different preprocessing path.</p>
+<p>The compatibility reconstruction changes only this column to numerical. It then compares <strong>ordered column means and population standard deviations</strong> against the checkpoint's saved numerical normalization buffers. The candidate order is <code>[number, position]</code>; both buffers must agree within the declared tolerance. This is evidence for the proposed mapping, not proof of a unique mapping or recovery of the missing historical cache.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l143/compatibility.svg" alt="Checkpoint shape is insufficient: compare ordered column moments. A supported reconstruction does not identify the historical cache."><figcaption>Checkpoint shape is insufficient: compare ordered column moments. A supported reconstruction does not identify the historical cache. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p><strong>TODO 1 — <code>verify_numeric_layout</code>:</strong> check dimension, finite values, and ordered mean/std agreement. Reject an order swap even when every shape still matches. This function guards the actual compatibility materialization in the full notebook lane. Try predicting which check catches a wrong second column before running it.</p>
+<p>The untouched freshly inferred graph goes to the training lane. The separately reconstructed graph goes to checkpoint replay. Comparing their scores does <strong>not</strong> isolate the feature-type effect: weights and training histories also differ.</p>
+<h2 id="3-%C2%B7-Trace-the-computation-you-are-reproducing">3 &#183; Trace the computation you are reproducing<a class="anchor-link" href="#3-%C2%B7-Trace-the-computation-you-are-reproducing">&#182;</a></h2><p>Follow one driver query through tables, sampling, row/time encoders, constructor→result→driver fusion, destination attention and the scalar head. The <a href="https://arxiv.org/html/2502.06784v2#S4">source equations and architecture</a> explain why the intermediate fact row participates in the message rather than disappearing into a flattened join.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l143/architecture.svg" alt="Full selected RelGNN computation: owner-safe temporal sampling, row/time encoders, route fusion, destination attention and scalar driver prediction."><figcaption>Full selected RelGNN computation: owner-safe temporal sampling, row/time encoders, route fusion, destination attention and scalar driver prediction. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p>The visible model below the notebook narrative implements the complete selected forward pass; the original source is a differential oracle. The trainer uses every training query each epoch and preserves owner-specific cutoffs in sampled batches. Source parity checks compare <strong>unclipped</strong> predictions on the same actual held-out batches, so clipping cannot hide model disagreement.</p>
+<p>A source-matching implementation can still have a problem. The released numerical encoder produces nonfinite gradients in a missing-value path. We record their locations/counts and compare against the original implementation instead of repairing the model inside the reproduction. Finite predictions, a finite loss, and source parity do not establish healthy optimization. The evidence ledger distinguishes synthetic operator checks from the real first-batch gradient audit.</p>
+<p><strong>Predict:</strong> if only the gradient entries containing NaN agree with upstream, is the implementation correct? That evidence is insufficient: compare the finite entries and output tensors too, under matched dropout randomness.</p>
+<h2 id="4-%C2%B7-Select-without-looking-at-test">4 &#183; Select without looking at test<a class="anchor-link" href="#4-%C2%B7-Select-without-looking-at-test">&#182;</a></h2><p>During training, validation chooses a checkpoint. When two epochs share the minimum validation MAE, choose the first. A later tied checkpoint has no stronger selection evidence. Test is evaluated only after the choice; we do not shorten schedules or discard seeds because their test scores are worse.</p>
+<p><strong>TODO 2 — <code>first_validation_min</code>:</strong> accept a contiguous finite epoch history and return the first minimum. Ignore any supplied test metric. This function controls checkpoint saving in the visible full trainer, not just a standalone quiz.</p>
+<div class="route-widget" id="l143-selection"></div><noscript>Baseline validation [4,3,3]: first minimum selects epoch2.</noscript>
+
+<p>The selection-time validation score and the final validation score can differ: temporal neighbor sampling is stochastic and final scoring draws another sample. Save both values. Seed variation also does not provide query-independent uncertainty; the same drivers occur at multiple dates.</p>
+<p>The F1 test population has already been inspected in preceding lessons. New weights give fresh training evidence on this fixed population, not a newly untouched confirmatory dataset.</p>
+<h2 id="5-%C2%B7-Reconcile-all-evidence-before-averaging">5 &#183; Reconcile all evidence before averaging<a class="anchor-link" href="#5-%C2%B7-Reconcile-all-evidence-before-averaging">&#182;</a></h2><p>First verify full query keys against the task archive. Independently reconstruct labels from raw result rows, using the exact open-left, closed-right 60-day interval. Future participation determines which drivers have label rows; this benchmark is not a prospective prediction for every driver.</p>
+<p>Then score each prediction file, check full schedules and chosen epochs, and verify five distinct fresh run IDs. Only after these checks may the five training metrics be aggregated. Keep the released-checkpoint metric on a separate row.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence lane</th>
+  <th style="text-align:right">Validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+  <th>What was executed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Published Table 2</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">3.798</td>
+  <td>Reported five-seed mean</td>
+</tr>
+<tr>
+  <td>Checkpoint-compatible replay</td>
+  <td style="text-align:right">2.836661</td>
+  <td style="text-align:right">3.737381</td>
+  <td>One released set of weights; reconstructed qualifying types</td>
+</tr>
+<tr>
+  <td>Fresh reconstruction, five seeds</td>
+  <td style="text-align:right">3.130064 ± 0.088643</td>
+  <td style="text-align:right">4.221853 ± 0.173512</td>
+  <td>Ten full epochs per seed; sample SD</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>7,554 held-out predictions</strong> independently aligned and rescored. Fresh score comparison: <strong>OUTSIDE_TOLERANCE</strong>. Historical training: <strong>NOT_ESTABLISHED</strong>. Whole paper: <strong>NOT_RUN</strong>.</p>
+<p>Independent raw-table reconstruction checked <strong>8,712 labels</strong>. The separate real first-batch source audit matched <strong>640 nonfinite gradient entries</strong> and a maximum finite-entry difference of <strong>1.2e-07</strong>. These gradient counts describe that diagnostic batch, not every seed or batch.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l143/results.svg" alt="Measured five-seed test scores and sample SD, separate from checkpoint replay and the published mean."><figcaption>Measured five-seed test scores and sample SD, separate from checkpoint replay and the published mean. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p><strong>TODO 3 — <code>evidence_verdict</code>:</strong> require one complete reconstructed ten-epoch fit for each seed 0–4. A missing seed, duplicate seed, replay substituted for training, nonfinite metric, or shortened run makes execution incomplete. On complete evidence, apply the frozen descriptive tolerance. Historical identity remains <code>NOT_ESTABLISHED</code> even when the mean is close.</p>
+<div class="route-widget" id="l143-verdict"></div><noscript>Baseline five complete fresh fits, illustrative mean3.90: COMPLETE, CLOSE; historical identity NOT_ESTABLISHED.</noscript>
+
+<p>The helper consumes validated run records; it cannot itself authenticate archives or reconstruct labels. The surrounding audit establishes those prerequisites. This division matters: passing a convenient summary into a function is not an evidence audit.</p>
+<h2 id="6-%C2%B7-Execute,-then-write-the-verdict">6 &#183; Execute, then write the verdict<a class="anchor-link" href="#6-%C2%B7-Execute,-then-write-the-verdict">&#182;</a></h2><p>The <a href="../labs/0143-relgnn-reproduction.ipynb">student notebook</a> contains three live TODOs, immediate checks, visible model/preprocessing/trainer code, embedded figures and hash-checked author evidence. The <a href="../labs/html/0143-relgnn-reproduction.html">executed solution</a> demonstrates reference execution. The default CPU lane runs model fixtures and independently re-scores the author's predictions. It does not train the full task.</p>
+<p>Set <code>RUN_FULL_REPRODUCTION=True</code> only in the documented pinned GPU environment to materialize the full graph, replay the compatible checkpoint and train all five fresh seeds. Its separate validation run uses seed100 plus replay, excluded from the five primary means. The <a href="../labs/l143-reproduction.md">protocol and commands</a>, <a href="../labs/_verify_l143_results.json">verification report</a>, and <a href="../reference/relgnn-reproduction.html">reference</a> record what actually ran. Live Colab and deployment remain <code>NOT_CHECKED</code>.</p>
+<p>The aggregate budget is <strong>US$10</strong>, including preparation, all attempts, notebook validation and overhead. Each cloud call reserves its maximum worker allocation before dispatch; a pilot gates the remaining fits. A failed run stays in the cost ledger. An incomplete budget-limited run is reported honestly, never silently replaced with a smaller experiment. <a href="https://modal.com/pricing">Provider rates</a>.</p>
+<p><strong>EXIT — write before checking:</strong> give a five-sentence report identifying the paper target, the two execution lanes, the measured fresh mean/SD, the unresolved historical gap, and one limitation that survives a close score. Explain why changing the numerical encoder now would require a separately named extension. Learner status remains <code>PENDING_WRITTEN_DEFENSE</code> until you complete the work and defend it.</p>
+<p>Primary reading: <a href="https://arxiv.org/html/2502.06784v2">RelGNN §4 and §5.2</a>, then inspect the <a href="https://github.com/snap-stanford/RelGNN/blob/cffdb8b54627e92c7dd112c1243dde739c90d35b/examples/relgnn_task_node.py">released evaluation entry point</a>. Ask the teaching agent to challenge your evidence verdict or walk through any unclear tensor operation.</p>
+<div id="l143-teachback"></div>
+
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> After predicting one number per driver, move to ranking many sponsors per facility. Lesson 144 asks how the candidate’s representation can depend on the query. <a href="0144-contextgnn.html">Continue to Lesson 144</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/reproduction-audit.js"></script></body></html>

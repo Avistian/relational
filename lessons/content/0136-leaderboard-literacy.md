@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">Audit the score before explaining the rank</p>
+<p><strong>Reading route.</strong> Align queries → understand the metric → check task coverage → distinguish score replay from training.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A cutoff is the instant at which a prediction is made. A checkpoint stores a fitted model’s state. Validation chooses that state; test measures the frozen choice. A seed controls a run’s random choices, not which database it tests.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-lead">A leaderboard number is the last line of an experiment. Your job is to recover the contract behind that line.</p>
 
 **Your win:** independently reconstruct a leading entry’s regression score, produce a configuration-difference report, and say exactly which parts of its claim you have reproduced.
@@ -149,6 +157,11 @@ The deliverable is a short audit, not a screenshot of a rank. Include:
 
 [[TEACHBACK]]
 
-**Return tomorrow:** reconstruct the normalization example from memory. In a week, audit another entry without looking at this checklist. For [Lesson 137](../plan/year-4.md), retain the query keys: they will let you ask where errors concentrate instead of treating one mean as the whole story.
+**Return tomorrow:** reconstruct the normalization example from memory. In a week, audit another entry without looking at this checklist. For [Lesson 137](0137-error-analysis-reg.html), retain the query keys: they will let you ask where errors concentrate instead of treating one mean as the whole story.
 
 Ask the teaching agent any follow-up question, or paste your EXIT audit for feedback. Author-reference execution is complete evidence preparation; learner mastery remains pending.
+
+
+<!-- sequence-next:start -->
+**Carry this forward.** Keep the aligned query keys from your leaderboard audit. Lesson 137 uses them to locate errors that the overall mean hides. [Continue to Lesson 137](0137-error-analysis-reg.html).
+<!-- sequence-next:end -->

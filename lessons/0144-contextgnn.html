@@ -1,0 +1,116 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 144 — ContextGNN: one graph, two ways to rank</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contextgnn.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0143-relgnn-reproduction.html">Lesson 143</a></nav><header><p class="context-kicker">Year 4 · Quarter 3 · Lesson 144</p><h1>ContextGNN: one graph, two ways to rank</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">From one target to a ranked candidate set</p>
+<p><strong>Reading route.</strong> Understand two towers → trace the local and distant branches → replace owner-specific scores → evaluate the full catalog.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A bipartite prediction problem links two entity roles, here facilities and sponsors. A dot product multiplies corresponding vector coordinates and sums them. B × N means a score for every one of B queries against every one of N candidates. “Local” means present in this query’s sampled graph, not geographically nearby.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<p><strong>The win:</strong> implement a ranking rule that uses a different representation for each nearby facility–sponsor pair while still scoring sponsors outside that facility’s sampled graph. Start with the guided trace; use the notebook for the three implementation contracts and your written defense.</p>
+<p><a href="0143-relgnn-reproduction.html">Lesson 143</a> asked what makes a reproduction claim defensible. Its model predicted one number for one entity. Recommendation adds a different problem: <strong>which of many candidate entities should come first?</strong> Better message passing alone does not decide how to represent each candidate relative to the query. This lesson connects the mission’s relational-model thesis to a concrete sponsor recommendation task.</p>
+<p>Recall <a href="0095-bipartite-graphs.html">bipartite graphs</a>, temporal sampling, and validation-only selection: what identifies a query when a facility appears at several dates? What is lost if every facility sees the same sponsor embedding? Why does a validation-selected configuration need a separate test score?</p>
+<div id="warmup"></div>
+
+<h2 id="1-%C2%B7-Why-two-towers-leave-something-unresolved">1 &#183; Why two towers leave something unresolved<a class="anchor-link" href="#1-%C2%B7-Why-two-towers-leave-something-unresolved">&#182;</a></h2><p>A <strong>query</strong> here is a facility and a cutoff time. A <strong>candidate</strong> is a sponsor. The task asks which sponsors will conduct trials at that facility in the next 365 days. The graph connects facilities, studies, sponsors, and other tables through foreign keys. At prediction time, temporal sampling admits timestamped rows only through the query cutoff.</p>
+<p>A <strong>two-tower model</strong> represents the query as a vector and each candidate as another vector. Their dot product—multiply matching coordinates and sum—gives a score. Candidates with larger scores are ranked first. An item vector can be reused across queries, making catalog-wide scoring efficient. But that sponsor’s vector does not itself change to describe its relationship with this particular facility.</p>
+<p><strong>Worked example.</strong> Facility vector <code>[1, 0]</code> and sponsor vector <code>[2, 3]</code> yield score 2. A second facility vector <code>[0, 1]</code> yields score 3 for the same sponsor. Two towers can therefore produce personalized scores. Their limitation is narrower: the sponsor representation remains pair-agnostic. Do not confuse a shared item embedding with identical rankings for every user.</p>
+<p>A <strong>pair-wise representation</strong> instead encodes a candidate inside the query’s context. This can capture a facility→study→sponsor connection and its surrounding facts. Computing a separate graph for every possible pair would be expensive. Restricting prediction to the facility’s local graph is cheaper, but any correct sponsor outside that graph becomes unreachable. These complementary limitations motivate <a href="https://arxiv.org/html/2411.19513v1#S4">ContextGNN, §§3–4</a>.</p>
+<h2 id="2-%C2%B7-Model-architecture:-share-the-graph,-split-the-scores">2 &#183; Model architecture: share the graph, split the scores<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-share-the-graph,-split-the-scores">&#182;</a></h2><p><strong>In plain terms.</strong> Run one graph computation around the facility. Read both the facility state and its contextual sponsor states from that computation. Use a separate shallow representation to score the rest of the sponsor catalog.</p>
+<figure class="context-figure" tabindex="0"><img src="../labs/figures/l144/architecture.svg" alt="Released ContextGNN: one temporal graph, contextual local scores and catalog-wide shallow item scores."><figcaption>Released ContextGNN: one temporal graph, contextual local scores and catalog-wide shallow item scores. Scroll the figure on a narrow screen.</figcaption></figure>
+
+<p>The released RelBench benchmark uses four graph layers for <code>rel-trial</code>. It samples at most 128, 64, 32, then 16 neighbors per hop with the <code>last</code> temporal strategy, which favors recent eligible neighbors. Sampling is <strong>query-owned</strong>: each copied node belongs to a particular root query and must respect that root’s cutoff.</p>
+<p><strong>Encode rows.</strong> Each table has a ResNet row encoder. A ResNet is a feed-forward network with residual additions that help carry information through multiple blocks. Categorical, numerical, text-embedding, and timestamp columns become a common hidden width <code>h</code>. Relative-age encodings express time relative to each root. A learned identity vector marks the root so the computation can distinguish the querying facility from other nodes.</p>
+<p><strong>Propagate.</strong> Heterogeneous GraphSAGE aggregates neighbors separately for each foreign-key relation, then combines relation outputs. “Heterogeneous” means table and relation types retain distinct operations. This release uses sum aggregation, node-wise layer normalization, and ReLU between layers. A sampled sponsor state <code>h_ui</code> has <code>h</code> coordinates and depends on query <code>u</code>; the root state is <code>h_u</code>.</p>
+<p><strong>Score outside the graph.</strong> Project the root into <code>d</code> coordinates: <code>z_u = W h_u + b</code>. The shallow sponsor vector <code>e_i</code> also has <code>d</code> coordinates. “Shallow” describes the candidate encoder, not the query encoder: the query still uses the GNN. The source supports learned ID lookups, feature-based embeddings, or their sum (<code>FUSION</code>). Feature-based embeddings pass sponsor columns through a small residual network; ID lookups are learned vectors indexed by sponsor ID.</p>
+<blockquote>
+<p><strong>Scope check.</strong> With learned sponsor-ID lookups, entirely new sponsors have no trained lookup vectors. New query facilities and unseen candidate sponsors are different generalization questions. <code>FUSION</code> in the source’s item encoder is also different from the final fusion of local and distant scores.</p>
+</blockquote>
+<p><strong>Score inside the graph.</strong> The paper explains local pair scores plus a personalized offset. The pinned release makes this more specific:</p>
+<pre><code>tower[u, i] = dot(z_u, e_i) + tower_offset(z_u)
+local[u, i] = head(h_ui) + dot(h_u, h_ui) + local_offset(z_u)
+</code></pre>
+<p>A <strong>head</strong> maps a hidden vector to the scalar score. An <strong>offset</strong> shifts all scores from one branch for a particular query. Their relative shift lets the model favor contextual candidates or exploration. Both branches share the graph computation. The full visible notebook includes the encoders, typed graph layers, item encoder, score construction, and trainer—not just a call to a packaged ContextGNN.</p>
+<blockquote>
+<p><strong>Source distinction.</strong> The release does not inject shallow sponsor embeddings into graph inputs as described in the paper’s two-tower discussion. Its contextual head also adds a root–candidate dot product and uses two learned offsets. We teach and execute this pinned release explicitly; historical paper identity remains a separate claim. <a href="https://github.com/kumo-ai/ContextGNN/tree/ca4a96985b7ef73c36a40da32e70710ad9b59a1e/contextgnn/nn/models">Source</a>.</p>
+</blockquote>
+<h2 id="3-%C2%B7-Fusion-is-replacement,-with-ownership">3 &#183; Fusion is replacement, with ownership<a class="anchor-link" href="#3-%C2%B7-Fusion-is-replacement,-with-ownership">&#182;</a></h2><p>Initialize a matrix of tower scores with shape <code>B × N</code>: <code>B</code> query rows and <code>N</code> sponsor candidates. For every sampled sponsor, replace precisely its <code>(query owner, sponsor ID)</code> entry with its local score. A sponsor can appear under several query owners, with different contextual vectors and different cutoffs.</p>
+<figure class="context-figure" tabindex="0"><img src="../labs/figures/l144/ownership.svg" alt="Each local score replaces exactly one owner/item coordinate; another query’s score is untouched."><figcaption>Each local score replaces exactly one owner/item coordinate; another query’s score is untouched. Scroll the figure on a narrow screen.</figcaption></figure>
+
+<p><strong>Predict first.</strong> If a local sponsor’s tower score is 3 and its contextual score is 1, should the final score be 1, 3, or 4? The released operator chooses 1. It does not add the two branches and does not take their maximum. Other sponsors keep their tower scores.</p>
+<figure class="context-figure" tabindex="0"><img src="../labs/figures/l144/ranking.svg" alt="Illustrative logits, not benchmark measurements. Sponsor C becomes less highly ranked after local replacement."><figcaption>Illustrative logits, not benchmark measurements. Sponsor C becomes less highly ranked after local replacement. Scroll the figure on a narrow screen.</figcaption></figure>
+
+<div id="context-ranking"></div><noscript>Baseline: scores [3,2,1,4]; ranking D → A → B → C. Add +2 only to local A/C: [5,2,3,4], ranking A → D → C → B.</noscript>
+
+<p>The illustration holds learned vectors fixed, so changing only the offset isolates score calibration. Changing graph membership is a second intervention. A sponsor outside the sampled graph is not necessarily new or never previously encountered; sampling may simply omit it.</p>
+<p><strong>TODO 1 — <code>fuse_scores</code>.</strong> Implement the owner-specific replacement without mutating the supplied tower matrix. The full model calls your function. The CHECK verifies two queries that share a candidate ID and checks gradients: overwritten tower entries must receive no gradient through the final score, while local values and offsets must receive it.</p>
+<h2 id="4-%C2%B7-Train-on-future-links,-constrain-access-to-the-past">4 &#183; Train on future links, constrain access to the past<a class="anchor-link" href="#4-%C2%B7-Train-on-future-links,-constrain-access-to-the-past">&#182;</a></h2><p>The label for <code>(facility, t)</code> is the distinct set of sponsors linked through studies whose facility-study date lies in <code>(t, t + 365 days]</code>. The left boundary is open; the right is closed. The source joins sponsor-study records by study ID. Preserve that exact label rule instead of adding an undocumented sponsor-date filter. Query rows without eligible targets and dangling entities follow RelBench’s filtering rules. <a href="https://github.com/stanford-star/relbench/blob/v1.1.0/relbench/tasks/trial.py">Task source</a>.</p>
+<p>The training objective is <strong>sparse multi-positive cross-entropy</strong>. A query can have several correct sponsors. The implementation consumes the listed positive <code>(query, sponsor)</code> pairs and trains scores against the full sponsor vocabulary. “Sparse” refers to storing positive pairs compactly; it does not mean this benchmark samples only a few negative candidates. The release has a separate sampled-softmax path, but the selected benchmark does not call it.</p>
+<p><strong>TODO 2 — <code>audit_cutoffs</code>.</strong> Check every timestamp against its own query owner. With cutoffs <code>[5, 10]</code>, a timestamp 6 owned by query 0 is a violation even though it is below the batch maximum 10. Your function runs on the actual sampled batches in the full trainer.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Correct event-time filtering does not prove when a non-timestamped attribute became available in the real world. We audit the released temporal contract and state the unresolved availability-time boundary.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Rank-and-score-the-complete-query-population">5 &#183; Rank and score the complete query population<a class="anchor-link" href="#5-%C2%B7-Rank-and-score-the-complete-query-population">&#182;</a></h2><p><strong>Average precision (AP)</strong> rewards putting relevant items early. At every relevant rank, compute the fraction of recommendations so far that are correct. Sum those fractions and divide by the smaller of the number of relevant items and the cutoff <code>k</code>. <strong>Mean average precision (MAP)</strong> averages AP across query rows. Here <code>k = 10</code>.</p>
+<figure class="context-figure" tabindex="0"><img src="../labs/figures/l144/metric.svg" alt="Compute precision at each relevant rank, divide by min(number of positives, k), then average across queries."><figcaption>Compute precision at each relevant rank, divide by min(number of positives, k), then average across queries. Scroll the figure on a narrow screen.</figcaption></figure>
+
+<p><strong>Worked example.</strong> Relevant sponsors are <code>{A, C}</code> and the top-three list is <code>[A, B, C]</code>. Precision is 1 at the first hit and 2/3 at the second hit. AP@3 is <code>(1 + 2/3) / 2 = 5/6</code>. A second query with AP 1/2 gives MAP <code>(5/6 + 1/2) / 2 = 2/3</code>. One repeated facility at two dates still contributes two distinct query rows.</p>
+<p><strong>TODO 3 — <code>keyed_map</code>.</strong> Align predictions by <code>(facility ID, cutoff)</code> before scoring. Reject missing or duplicate query keys and repeated candidate IDs. The CHECK shuffles prediction order so a positional shortcut fails. The full trainer compares your metric with RelBench’s evaluator on every validation pass.</p>
+<p>The paper reports MAP as percentages: 28.02% means 0.2802, not 28.02 in the Python evaluator. A ranking over a small handpicked candidate set cannot establish the full-catalog MAP target.</p>
+<h2 id="6-%C2%B7-Execute-the-named-reproduction-and-defend-its-boundary">6 &#183; Execute the named reproduction and defend its boundary<a class="anchor-link" href="#6-%C2%B7-Execute-the-named-reproduction-and-defend-its-boundary">&#182;</a></h2><p>The selected target is <strong>Table 2, <code>rel-trial/site-sponsor-run</code>: ContextGNN versus ShallowItem</strong>, with published test MAP <strong>28.02% versus 10.66%</strong>. This task is especially informative because both nearby context and distant candidates can matter. It does not establish the paper’s cross-task average improvement. <a href="https://arxiv.org/html/2411.19513v1#S5">Paper results</a>.</p>
+<p>The complete released search requests 50 Optuna trials for each architecture, then five repeat fits of each selected configuration. Optuna proposes hyperparameters using validation results; its median pruner can end unpromising trials. Each fit runs up to 20 epochs and stops when validation MAP falls more than 0.001 below its best value. The source also caps training at 2,001 batches per epoch because its stopping comparison is <code>steps &gt; 2000</code>. We preserve and report that detail.</p>
+<p>The paper describes a narrower search than the source. The release additionally searches encoder depth, item width, embedding mode, normalization, and learning-rate decay. Its Optuna sampler is unseeded, and repeated fits consume a continuing random stream. Our executable reconstruction seeds the search and each fit explicitly; these are recorded deviations, not recovered historical seeds. Validation chooses configurations and checkpoints; test scores never choose settings.</p>
+<div class="context-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th style="text-align:right">Validation MAP@10</th>
+  <th style="text-align:right">Test MAP@10</th>
+  <th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Published ContextGNN</td>
+  <td style="text-align:right">28.55%</td>
+  <td style="text-align:right">28.02%</td>
+  <td>Paper Table 2</td>
+</tr>
+<tr>
+  <td>Published ShallowItem</td>
+  <td style="text-align:right">12.59%</td>
+  <td style="text-align:right">10.66%</td>
+  <td>Paper Table 2</td>
+</tr>
+<tr>
+  <td>shallowrhsgnn timing pilot</td>
+  <td style="text-align:right">3.758% (partial)</td>
+  <td style="text-align:right">NOT_RUN</td>
+  <td>4,096 training queries; first 1,024 validation rows</td>
+</tr>
+<tr>
+  <td>contextgnn timing pilot</td>
+  <td style="text-align:right">13.250% (partial)</td>
+  <td style="text-align:right">NOT_RUN</td>
+  <td>4,096 training queries; first 1,024 validation rows</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Full selected-task reproduction: INCOMPLETE.</strong> Pilot scores are not comparable with the paper or each other as a model-selection result. Historical identity: <strong>NOT_ESTABLISHED</strong>. Whole-paper reproduction: <strong>NOT_RUN</strong>.</p>
+<p>Budget decision: <strong>STOP</strong>. Timing-based scenario at the pilot configuration: both 50+5 arms cost about USD28.75 even at one train/validation epoch per fit, or USD575.03 at twenty; test passes and heterogeneous search widths can change costs. Reserved allocations plus overhead: USD3.35. These are projections, not a guaranteed lower bound or an invoice. Full search is not dispatched when its projected cost exceeds USD10.</p>
+<p>An independent interval/join algorithm reconstructed <strong>733,741</strong> train/validation/test query labels. Saved pilot rankings independently rescored: <strong>2,048</strong>.</p>
+<p>Real pilot first-batch gradients contain nonfinite entries: shallowrhsgnn: 1408, contextgnn: 1408. Finite output parity does not establish healthy optimization.</p>
+<p>The synthetic full-network fixture and original score-operator gradient comparison are mechanism evidence only. The stale RHS evaluation cache is independently demonstrated in that fixture.</p>
+<p><strong>A source-matching failure mode.</strong> The RHS item encoder caches its embeddings in evaluation mode. The release does not clear that cache when training resumes. Our mechanism probe tests whether changing item weights leaves evaluation output stale until the cache is cleared. The reproduction preserves the released behavior. A repaired-cache comparison would be a separate experiment and must not silently replace these results.</p>
+<p>The reproduction budget is $10 total, including retries, preparation, and validation. The measured pilot is a cost and correctness probe, not a published-score reproduction. If the complete search cannot fit, preserve the runnable full experiment and mark it incomplete. Never turn a partial search into “full reproduction” by renaming it.</p>
+<p><a href="../labs/l144-reproduction.md">Protocol and execution commands</a> · <a href="../labs/0144-contextgnn.ipynb">Student notebook</a> · <a href="../labs/html/0144-contextgnn.html">Executed reference notebook</a> · <a href="../reference/contextgnn.html">Quick reference</a>.</p>
+<h2 id="7-%C2%B7-Exit:-explain-the-score-and-defend-the-claim">7 &#183; Exit: explain the score and defend the claim<a class="anchor-link" href="#7-%C2%B7-Exit:-explain-the-score-and-defend-the-claim">&#182;</a></h2><p>Without looking back, explain why the same sponsor can have different contextual embeddings under two facilities. Trace which final score changes when its owner-specific membership changes. Then defend the evidence status of a one-epoch pilot that uses all training rows but skips the 50-trial search.</p>
+<div id="context-teachback"></div>
+
+<p><strong>Written defense:</strong> identify a failure that output parity cannot rule out, explain the cached-embedding test, and state what additional evidence would support a full selected-task reproduction. The author’s runs do not establish your mastery. Ask the teaching agent to review your three functions and your explanation; follow-up questions are welcome.</p>
+<p>For the primary reading, use <a href="https://arxiv.org/abs/2411.19513">Yuan et al., ContextGNN, §§3–5</a>, then compare the <a href="https://github.com/kumo-ai/ContextGNN/tree/ca4a96985b7ef73c36a40da32e70710ad9b59a1e">pinned implementation</a>. This prepares the next lesson’s question: how can a relational transformer encode the query’s context without this particular message-passing design?</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> ContextGNN changes how query–candidate scores are formed. Lesson 145 returns to a scalar target and changes communication among sampled rows with RelGT. <a href="0145-relational-graph-transformer.html">Continue to Lesson 145</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/contextgnn-viz.js"></script><script src="../assets/contextgnn-lesson.js"></script></body></html>

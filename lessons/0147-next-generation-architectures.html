@@ -1,0 +1,101 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Next-generation architectures: turn gaps into experiments</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/research-map.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Labs</a></nav><header><p class="eyebrow">Year 4 · Quarter 3 · Lesson 147</p><h1>Next-generation architectures: turn gaps into experiments</h1></header><!-- sequence-review:start -->
+
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">From a comparison to an investigation</p>
+<p><strong>Reading route.</strong> Locate the information boundary → recheck the evidence → rank feasible questions → write a falsifier.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A mechanism describes how an operation could affect a prediction. A falsifier is a result that would refute a specific explanation. Transfer means reusing learned weights across tasks or databases; training new weights on another database is a different claim.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
+<p class="eyebrow">One win · turn an architecture claim into a testable research question</p>
+
+<p><a href="0146-gnn-vs-graph-transformer.html">Previous: defend a comparison</a> · <a href="../reference/next-generation-architectures.html">Reference</a> · <a href="../labs/0147-next-generation-architectures.ipynb">Student notebook</a> · <a href="../labs/html/0147-next-generation-architectures.html">Executed solution</a></p>
+<h2 id="0-%C2%B7-Retrieve-before-you-read">0 &#183; Retrieve before you read<a class="anchor-link" href="#0-%C2%B7-Retrieve-before-you-read">&#182;</a></h2><div id="warmup"></div><noscript>Recall: query identity includes entity and cutoff; attention cannot read excluded attributes; seeds do not create new databases.</noscript>
+
+<p>Without looking back: what identifies a temporal prediction query? Can attention use attributes of a row that was never sampled? What does repeating a run with three seeds tell you that testing three databases would not?</p>
+<h2 id="1-%C2%B7-From-a-model-catalogue-to-a-research-question">1 &#183; From a model catalogue to a research question<a class="anchor-link" href="#1-%C2%B7-From-a-model-catalogue-to-a-research-question">&#182;</a></h2><p><strong>Your mission is to make a defensible case for relational learning.</strong> A list of promising architectures is not yet evidence. In Lessons 141–145 you traced how different models move information. Lesson 146 compared two reduced designs on one task. Now ask what that comparison leaves unresolved, and which next investigation could actually resolve it.</p>
+<p><strong>The reading.</strong> <a href="https://arxiv.org/html/2506.16654v1">Dwivedi et al., <em>Relational Deep Learning: Challenges, Foundations and Next-Generation Architectures</em>, v1</a> organizes RDL around scale, temporal dynamics and heterogeneity. It connects relational entity graphs to established graph methods and discusses unified architectures and foundation models as research directions (§§2–5). Read §2.4, §4.1 and §5 first. This is a June 2025 source snapshot, not a claim to catalogue September 2026's frontier.</p>
+<p><strong>A relational entity graph (REG)</strong> has a node for each database row and edges for foreign-key references. <strong>Heterogeneity</strong> means different tables, relations and column modalities need different treatment. A <strong>foundation model</strong>, in this lesson's operational test, reuses pretrained weights across tasks or databases. A flexible architecture retrained from scratch on each database does not alone meet that test.</p>
+<figure class="research-figure" tabindex="0"><img src="../labs/figures/l147/map.svg" alt="Four distinct evidence boundaries: legal context, representation, prediction and transfer. Conceptual course synthesis, not a measured ranking."><figcaption>Four distinct evidence boundaries: legal context, representation, prediction and transfer. Conceptual course synthesis, not a measured ranking. Scroll horizontally for detail on a narrow screen.</figcaption></figure>
+
+<p>The survey's model families suggest mechanisms: typed GNNs aggregate neighbors, RelGNN composes routes through facts, ContextGNN combines local and candidate-wide ranking, and RelGT mixes token encodings with local/global attention. Its transfer agenda requires evaluation beyond fitting a single database. See <a href="https://arxiv.org/html/2506.16654v1#S3">§3</a>, <a href="https://arxiv.org/html/2506.16654v1#S4.SS1">§4.1</a>, and <a href="https://arxiv.org/html/2506.16654v1#S5.SS2">§5.2</a>.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The map below is our course synthesis. A mechanism addressing a problem does not prove that the problem is solved. This lesson introduces no new model and claims no survey-wide experimental reproduction.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Follow-the-information,-then-name-the-gap">2 &#183; Follow the information, then name the gap<a class="anchor-link" href="#2-%C2%B7-Follow-the-information,-then-name-the-gap">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Ask where the required information could be lost before asking which model is most powerful.</p>
+</blockquote>
+<p>Start with a query <code>(driver=7, cutoff=20)</code>. A sampler chooses legal rows for that particular query. A row encoder converts their columns into vectors. A propagation operator mixes information across the selected rows. A prediction head reads the root representation. Finally, a held-out evaluation tests the chosen training procedure. Each boundary creates a different research question.</p>
+<p><strong>Choose the benchmark contract.</strong> A task leaderboard compares procedures under particular splits and metrics. A foundation-model study additionally needs to identify which databases were excluded from pretraining. A row split cannot answer both questions. For the survey's benchmark inventory, read <a href="https://arxiv.org/html/2506.16654v1#S2.SS3">§2.3</a>; our executable evidence here is limited to the RelBench F1 task.</p>
+<p><strong>Information access comes first.</strong> If a useful row is absent, changing attention heads cannot expose its attributes. If a future row is present, encoding its age cannot establish permission to use it. These are logical properties of the input contract, not empirical accuracy claims. <a href="../labs/l145-reproduction.md">L145's source audit</a> is a concrete case: ownership was lost in a cache keyed only by entity.</p>
+<p><strong>Representation comes next.</strong> A shared sum may merge distinct role assignments. A route-specific update can be tested against that collision, but only a target depending on the lost distinction makes the collision harmful. Recall <a href="0142-many-to-many-edge-pathology.html">Lesson 142</a>: the target rule is part of the argument.</p>
+<p><strong>Transfer asks a different question.</strong> Training three seeds on F1 measures sensitivity to those runs under that task's protocol. It never changes the database. To test transfer, declare which databases are absent from pretraining, what adaptation data is allowed, and which scratch-trained baseline gets the same adaptation budget. That is an experimental proposal; this lesson does not execute it.</p>
+<div id="map_widget"></div><noscript>Baseline at four hours: selection → ownership → routes. At one hour only selection remains. At eight hours coverage enters. Transfer stays blocked because required inputs and protocol are missing.</noscript>
+
+<p><strong>Predict, then intervene.</strong> The baseline is four hours and $10 per candidate investigation. Reduce the time allowance to one hour; which questions remain feasible? Increase it to eight. Does the foundation-model question become ready? Why would more time alone fail to provide an uncontaminated pretraining corpus?</p>
+<h2 id="3-%C2%B7-Reproduce-the-evidence-you-actually-have">3 &#183; Reproduce the evidence you actually have<a class="anchor-link" href="#3-%C2%B7-Reproduce-the-evidence-you-actually-have">&#182;</a></h2><div id="predict"></div><noscript>Before reading: does reproducing six fits on F1 establish cross-database transfer? No; the database never changes.</noscript>
+
+<p><strong>Held fixed:</strong> the six saved L146 fits, their selected checkpoints and all held-out queries. <strong>Varied:</strong> only the order of prediction rows during the new audit. <strong>Measured:</strong> mean absolute error (MAE), the average distance between a prediction and its recorded target. The row shuffle must leave the score unchanged.</p>
+<p><strong>Worked example.</strong> Reference keys <code>(7,10)</code> and <code>(7,20)</code> have targets 1 and 5. Predictions arrive in reverse order: 5 and 3. Matching keys gives absolute errors 2 and 0, hence MAE 1. Matching positions gives 4 and 2, hence MAE 3. The same entity is insufficient identity because its cutoff changed.</p>
+<p>The live notebook function rejects missing, extra and duplicate keys. It checks recorded targets against saved prepared targets before scoring. The new audit reuses those targets; it does not independently reconstruct labels from the raw database again.</p>
+<figure class="research-figure" tabindex="0"><img src="../labs/figures/l147/evidence.svg" alt="Every point is one paired seed difference from saved L146 predictions, independently rescored in L147. SD describes three seeds, not uncertainty across databases."><figcaption>Every point is one paired seed difference from saved L146 predictions, independently rescored in L147. SD describes three seeds, not uncertainty across databases. Scroll horizontally for detail on a narrow screen.</figcaption></figure>
+
+<div class="research-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">GNN validation</th>
+  <th style="text-align:right">RelGT validation</th>
+  <th style="text-align:right">GNN test</th>
+  <th style="text-align:right">RelGT test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">3.222580</td>
+  <td style="text-align:right">3.147865</td>
+  <td style="text-align:right">4.261014</td>
+  <td style="text-align:right">4.336655</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">3.132941</td>
+  <td style="text-align:right">3.054402</td>
+  <td style="text-align:right">4.335083</td>
+  <td style="text-align:right">4.917953</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">3.237436</td>
+  <td style="text-align:right">2.942668</td>
+  <td style="text-align:right">4.284798</td>
+  <td style="text-align:right">4.597999</td>
+</tr>
+</tbody>
+</table></div>
+<p>Fresh reanalysis of <strong>7,554 reused L146 predictions</strong>. Paired validation difference <strong>+0.149340 ± 0.125959</strong>; test <strong>−0.323904 ± 0.253784</strong> MAE (mean ± sample seed SD). No fresh training.</p>
+<p>For each seed, define <strong>paired difference = GNN MAE − reduced RelGT MAE</strong>. Positive values favor reduced RelGT; negative values favor the GNN. Calculate each seed difference first, then report their mean and <strong>sample standard deviation</strong>, a measure of spread across these three seeds. This is not a confidence interval or a population-wide probability of superiority.</p>
+<p><strong>What follows?</strong> The conditional ordering reverses between the two splits. That motivates checking selection stability, context coverage or error slices. It does not isolate attention as the cause: the arms differ in several mechanisms. Reusing this familiar test set for new hypotheses makes the next analyses exploratory. Confirmatory claims need a protocol and evaluation population not chosen after inspecting these errors.</p>
+<h2 id="4-%C2%B7-Rank-questions-without-manufacturing-certainty">4 &#183; Rank questions without manufacturing certainty<a class="anchor-link" href="#4-%C2%B7-Rank-questions-without-manufacturing-certainty">&#182;</a></h2><p>A <strong>falsifier</strong> is an observable result that would refute the specific claim you propose. “Try a bigger transformer” lacks one. “The missing circuit rows explain the error gap” can be challenged by measuring whether those rows are already present.</p>
+<p>Our map records a mechanism, unresolved gap, minimal test, held-fixed variables and falsifier for each question. It also records planning assumptions. <strong>Hours</strong> estimate investigation effort, not measured runtime. <strong>Dollars</strong> describe the proposed local investigation, not training a new model. <strong>Ready</strong> means the required inputs and protocol are available for that investigation.</p>
+<p><strong>Evidence levels are a declared course rubric:</strong> 3 = a local empirical audit directly motivates the question; 2 = a controlled mechanism example; 1 = an architectural argument; 0 = an untested transfer proposal. They describe the basis for asking, not the likelihood that a new method will succeed.</p>
+<p>Our deliberately simple policy filters by readiness, hours and dollars; sorts remaining questions by evidence level descending, effort ascending, then stable ID. It does not add ordinal evidence levels to dollars. Each candidate is considered separately: the result is not a portfolio whose total effort fits the limit.</p>
+<figure class="research-figure" tabindex="0"><img src="../labs/figures/l147/ranking.svg" alt="Declared planning assumptions produce different feasible sets. An ordering is conditional on those judgments; it is not a measured probability of research success."><figcaption>Declared planning assumptions produce different feasible sets. An ordering is conditional on those judgments; it is not a measured probability of research success. Scroll horizontally for detail on a narrow screen.</figcaption></figure>
+
+<p><strong>Worked example.</strong> At four hours, the ranking is selection → ownership → routes. Coverage needs an estimated six hours. Transfer is not ready even with forty hours because a corpus and held-out-database protocol are missing. The forty-hour/$10 entry is an illustrative placeholder, not a priced foundation-model training plan. Your job is to challenge these judgments before treating the ordering as advice.</p>
+<p><strong>Sensitivity exercise.</strong> Change ownership's evidence level from 3 to 1 in the notebook. Predict the new order before running. Then argue whether that edit reflects weaker evidence or merely your preference. The ranking cannot make that distinction for you.</p>
+<h2 id="5-%C2%B7-Lab:-write-the-contracts,-then-defend-one-question">5 &#183; Lab: write the contracts, then defend one question<a class="anchor-link" href="#5-%C2%B7-Lab:-write-the-contracts,-then-defend-one-question">&#182;</a></h2><p>The portable <a href="../labs/0147-next-generation-architectures.ipynb">student lab</a> contains all audit inputs and diagrams. It needs NumPy, no GPU or repository checkout. Three TODOs implement the actual functions used in the full reanalysis: keyed losses, paired summaries and feasibility-first ranking. Each has immediate rejection checks. The <a href="../labs/html/0147-next-generation-architectures.html">executed solution</a> is author-reference evidence, not evidence of your mastery.</p>
+<p><strong>EXIT deliverable:</strong> export your revised open-problems map and write 150–250 words choosing one investigation. Include the hypothesis, minimum test, fixed quantities, falsifier, cost assumptions and one claim the current evidence cannot support. Explain how your proposal connects to the mission. Next, Lesson 148 will separate encoder, propagation and graph-construction effects with ablations—controlled removals or substitutions of one component.</p>
+<div id="teachback"></div><noscript>Write: choose one unresolved mechanism, a minimal falsifiable test and a claim your current evidence cannot support. Ask the teaching agent for feedback.</noscript>
+
+<h2 id="6-%C2%B7-Full-reproduction:-keep-the-boundary-visible">6 &#183; Full reproduction: keep the boundary visible<a class="anchor-link" href="#6-%C2%B7-Full-reproduction:-keep-the-boundary-visible">&#182;</a></h2><p>The survey provides a synthesis, not a new training table to rerun. The named retained experiment is <strong>RelGT v1 Table 1, rel-f1/driver-position</strong>. Its complete released lane has nine configurations, each trained for 100 epochs. The original model, trainer, source pins and data contract remain linked in the <a href="../labs/l145-reproduction.md">L145 reproduction protocol</a>; the <a href="../labs/_reproduce_l146.py">safe preflight</a> inspects the inherited blockers without allocating compute.</p>
+<p><strong>Full selected reproduction remains INCOMPLETE.</strong> The source temporal audit failed. The inherited shallow-pilot extrapolation is approximately $80.41 for the nine configurations before overhead, with deeper configurations unmeasured. That is not a fresh price estimate. No complete search is launched under this lesson's $10 aggregate cap. Whole-paper reproduction is NOT_RUN and historical identity is NOT_ESTABLISHED. Corrected reduced course runs cannot close either gap.</p>
+<p><strong>L147 execution:</strong> fresh CPU reanalysis, reused fits and targets, $0 cloud spend. <a href="../labs/l147-reproduction.md">Protocol and commands</a> · <a href="../labs/relkit/survey_l147.py">Visible audit functions</a> · <a href="../labs/evidence/l147/input-hashes.json">Input hashes</a> · <a href="../labs/evidence/l147/questions.json">Question ledger</a>.</p>
+<p>Ask the teaching agent about any unclear mechanism, or submit your EXIT defense for feedback. Return tomorrow and reconstruct your chosen question's falsifier without opening the map.</p>
+<!-- sequence-next:start -->
+
+<p><strong>Carry this forward.</strong> Bring one hypothesis to Lesson 148 and state the smallest intervention that could test it, including everything that must remain fixed. <a href="0148-ablation-discipline.html">Continue to Lesson 148</a>.</p>
+<!-- sequence-next:end -->
+
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/research-map.js"></script><script src="../assets/l147-lesson.js"></script></body></html>

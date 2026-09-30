@@ -1,0 +1,48 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 144 — ContextGNN reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contextgnn.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0143-relgnn-reproduction.html">Lesson 143</a></nav><header><p class="context-kicker">Year 4 · Quarter 3 · Lesson 144</p><h1>ContextGNN reference</h1></header><h2 id="The-score-contract">The score contract<a class="anchor-link" href="#The-score-contract">&#182;</a></h2><p>Query=(facility, cutoff); candidate=sponsor. The released model forms tower scores from projected root and shallow sponsor embeddings, then replaces local (owner,item) entries with contextual head + root-item dot product + local offset. It does not add both branches. Root-specific membership matters.</p>
+<h2 id="Temporal-and-metric-contracts">Temporal and metric contracts<a class="anchor-link" href="#Temporal-and-metric-contracts">&#182;</a></h2><p>Facility-study dates in (cutoff, cutoff+365days] define future sponsor targets via study IDs. Every sampled timestamp must be ≤ its owner cutoff. MAP@10 averages precision-at-hit sums divided by min(positive count,10). Align predictions by facility AND cutoff. Reject duplicate recommendations and missing query rows.</p>
+<h2 id="Tensor-trace">Tensor trace<a class="anchor-link" href="#Tensor-trace">&#182;</a></h2><p>Root states B×h → projection B×d. Shallow sponsor vectors N×d → tower matrix B×N. Sampled contextual sponsor states M×h → M local scores. M owner/item index pairs choose replacement positions in B×N.</p>
+<h2 id="Source-versus-paper">Source versus paper<a class="anchor-link" href="#Source-versus-paper">&#182;</a></h2><p>The released head includes root-item dot products and two offsets. Shallow item embeddings do not enter its GNN input. The release searches additional parameters and leaves the Optuna sampler unseeded. Evaluation RHS caches persist across epochs; source parity does not establish fresh evaluation embeddings.</p>
+<h2 id="Reproduction-evidence">Reproduction evidence<a class="anchor-link" href="#Reproduction-evidence">&#182;</a></h2><div class="context-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th style="text-align:right">Validation MAP@10</th>
+  <th style="text-align:right">Test MAP@10</th>
+  <th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Published ContextGNN</td>
+  <td style="text-align:right">28.55%</td>
+  <td style="text-align:right">28.02%</td>
+  <td>Paper Table 2</td>
+</tr>
+<tr>
+  <td>Published ShallowItem</td>
+  <td style="text-align:right">12.59%</td>
+  <td style="text-align:right">10.66%</td>
+  <td>Paper Table 2</td>
+</tr>
+<tr>
+  <td>shallowrhsgnn timing pilot</td>
+  <td style="text-align:right">3.758% (partial)</td>
+  <td style="text-align:right">NOT_RUN</td>
+  <td>4,096 training queries; first 1,024 validation rows</td>
+</tr>
+<tr>
+  <td>contextgnn timing pilot</td>
+  <td style="text-align:right">13.250% (partial)</td>
+  <td style="text-align:right">NOT_RUN</td>
+  <td>4,096 training queries; first 1,024 validation rows</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Full selected-task reproduction: INCOMPLETE.</strong> Pilot scores are not comparable with the paper or each other as a model-selection result. Historical identity: <strong>NOT_ESTABLISHED</strong>. Whole-paper reproduction: <strong>NOT_RUN</strong>.</p>
+<p>Budget decision: <strong>STOP</strong>. Timing-based scenario at the pilot configuration: both 50+5 arms cost about USD28.75 even at one train/validation epoch per fit, or USD575.03 at twenty; test passes and heterogeneous search widths can change costs. Reserved allocations plus overhead: USD3.35. These are projections, not a guaranteed lower bound or an invoice. Full search is not dispatched when its projected cost exceeds USD10.</p>
+<p>An independent interval/join algorithm reconstructed <strong>733,741</strong> train/validation/test query labels. Saved pilot rankings independently rescored: <strong>2,048</strong>.</p>
+<p>Real pilot first-batch gradients contain nonfinite entries: shallowrhsgnn: 1408, contextgnn: 1408. Finite output parity does not establish healthy optimization.</p>
+<p>The synthetic full-network fixture and original score-operator gradient comparison are mechanism evidence only. The stale RHS evaluation cache is independently demonstrated in that fixture.</p>
+<h2 id="Recall-without-looking">Recall without looking<a class="anchor-link" href="#Recall-without-looking">&#182;</a></h2><p>Why can local replacement lower a score? Why is “outside this sampled graph” different from a new sponsor? Why can a source-matching run still have an evaluation-cache problem?</p>
+<p><a href="../lessons/0144-contextgnn.html">Lesson</a> · <a href="../labs/l144-reproduction.md">Protocol</a> · <a href="https://arxiv.org/abs/2411.19513">Paper</a>. Ask the teaching agent to review your implementation and evidence defense.</p>
+</article></body></html>

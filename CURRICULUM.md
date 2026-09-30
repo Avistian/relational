@@ -362,14 +362,14 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 **Papers (chronological):** ContextGNN (Yuan 2024) · RelGNN (Chen 2025, ICML) · Griffin (Wang 2025, ICML) · RelGT (Dwivedi 2025, ICLR 2026) · RDL survey (2025)
 
 | 141 | [Composite message passing ★](lessons/0141-composite-message-passing.html) | Chen 2025 RelGNN v2 | [Visible atomic routes, checkpoint-compatible replay and five fresh full-data fits](labs/0141-composite-message-passing.ipynb) |
-| 142 | Many-to-many edge pathology | Chen 2025 §motivation | Why vanilla GNNs lose signal |
+| 142 | [Many-to-many edge pathology](lessons/0142-many-to-many-edge-pathology.html) | Chen 2025 §motivation | [Trace collisions and audit ten full paired fits](labs/0142-many-to-many-edge-pathology.ipynb) |
 | 143 | RelGNN reproduction | Chen 2025 | Run on RelBench subset |
 | 144 | ContextGNN — beyond two-tower recsys ★ | Yuan 2024 (2411.19513) | Pair-wise + two-tower fusion |
 | 145 | Relational Graph Transformer ★ | Dwivedi 2025 RelGT (2505.10960) | Multi-element tokenization |
-| 146 | GNN vs Graph-Transformer on REG | RelGT §results | Same tasks, two paradigms |
-| 147 | Survey: next-gen architectures | arXiv 2506.16654 | Map open problems |
-| 148 | Ablation discipline | — | Encoder vs MP vs data contribution |
-| 149 | Identify weakest RelBench tasks | — | Where the thesis might fail |
+| 146 | [GNN vs Graph-Transformer on REG](lessons/0146-gnn-vs-graph-transformer.html) | RelGT §results | Same tasks, two paradigms |
+| 147 | [Survey: next-gen architectures](lessons/0147-next-generation-architectures.html) | arXiv 2506.16654 | Map open problems |
+| 148 | [Ablation discipline](lessons/0148-ablation-discipline.html) | RelBench v1 + controlled course extensions | [Encoder vs MP vs data contribution](labs/0148-ablation-discipline.ipynb) |
+| 149 | [Identify weakest RelBench tasks](lessons/0149-weakest-relbench-tasks.html) | RelBench v1 Figure 3 + fresh F1 RDL/FE | [Weakness catalog and full selected replay](labs/0149-weakest-relbench-tasks.ipynb) |
 | 150 | **Q3 checkpoint** | RelGNN or RelGT | SOTA or near-SOTA on 1 task; written reproduction report |
 
 ### Q4 · RDL expertise (151–160)

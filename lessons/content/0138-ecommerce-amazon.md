@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">From diagnosis to the meaning of a label</p>
+<p><strong>Reading route.</strong> Build one eligible query → trace book-to-customer information → interpret the ranking → inspect reproduction evidence.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A graph node represents a database row. A message is a numerical contribution from a linked row. Two layers allow information to cross two edges. A positive label is the outcome coded as 1; here it means no future review, not a recorded purchase cancellation.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 <p class="stream-lead">Before predicting whether a customer will leave, establish what the database can actually observe.</p>
 
 **Your win:** defend an Amazon churn prediction from its eligible customer and cutoff, through historical review messages, to a correctly interpreted ranking score.
@@ -129,3 +137,8 @@ Without reopening the explanation, write a short defense containing:
 [[TEACHBACK]]
 
 Run the live CHECK cells and paste your exit defense into chat. Ask follow-up questions about any unclear step; successful reference execution does not establish your mastery. At your next session, reconstruct the two windows from memory before looking at the figure.
+
+
+<!-- sequence-next:start -->
+**Carry this forward.** Carry the population check into the trial task: an absent future observation can mean no query, rather than label zero. [Continue to Lesson 139](0139-healthcare-trial.html).
+<!-- sequence-next:end -->

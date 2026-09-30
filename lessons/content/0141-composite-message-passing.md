@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">Change the unit of communication</p>
+<p><strong>Reading route.</strong> Draw one route → fuse source and fact → let the destination weight messages → trace the full model → inspect the evidence.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A tensor is an array with named dimensions. A channel is one coordinate of a learned vector. A linear map multiplies a vector by learned weights, optionally adding an offset. Neighbor sampling selects the rows available to the computation; model layers decide how those rows exchange information.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 ## 1 · Choose what gets combined before choosing how to combine it
 
 Lesson [140](0140-rdl-reproduction-checkpoint.html) established an evidence discipline: keep the task, model, selection rule and query identities visible. It left the model itself unchanged. Now we change **the unit of a message**.
@@ -145,3 +153,8 @@ Open the [student notebook](../labs/0141-composite-message-passing.ipynb). It co
 Return tomorrow and reconstruct the route-count rule and attention denominator from memory. Next week, revisit the keyed-metric exercise with shuffled predictions. Lesson 142 examines many-to-many failure mechanisms; Lesson 143 extends the RelGNN reproduction work. This lesson's author execution does not complete those units or establish your mastery.
 
 [One-page reference](../reference/composite-message-passing.html) · [Executed teacher notebook](../labs/html/0141-composite-message-passing.html). Ask the agent follow-up questions, or paste your EXIT explanation for feedback. Learner status remains **PENDING_WRITTEN_DEFENSE** until that explanation is assessed.
+
+
+<!-- sequence-next:start -->
+**Carry this forward.** Keep the scalar source–fact–destination example. Lesson 142 uses controlled input changes to show exactly what an ordinary update can mix or repeat. [Continue to Lesson 142](0142-many-to-many-edge-pathology.html).
+<!-- sequence-next:end -->

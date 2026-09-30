@@ -62,3 +62,7 @@ if summary.exists():
  a.errorbar(5.1,np.mean(vals),yerr=np.std(vals,ddof=1),fmt='D',color=TEAL,capsize=5,label='Fresh mean ± sample SD')
  a.set(xticks=list(range(5))+[5.1],xticklabels=['0','1','2','3','4','Mean'],ylabel='Test MAE · lower is better',xlabel='Fresh seed',title='Same task; different evidence populations')
  a.legend(fontsize=9,loc='best');a.grid(axis='y',alpha=.2);f.tight_layout();save(f,'results')
+
+# Use the same model-specific operation map in the mechanism and replay lessons.
+from _relgnn_architecture import draw
+draw(Path(__file__).resolve().parent / "figures/l141")

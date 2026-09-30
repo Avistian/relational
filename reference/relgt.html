@@ -1,0 +1,40 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RelGT reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/relgt.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0144-contextgnn.html">Lesson 144</a></nav><header><p class="relgt-kicker">Year 4 · Quarter 3 · Lesson 145</p><h1>RelGT reference</h1></header><h2 id="Forward-trace">Forward trace<a class="anchor-link" href="#Forward-trace">&#182;</a></h2><p>Query=(entity, cutoff). K=300 slots including root. Type/hop/time/row/structure → five normalized 512-vectors → concatenate → 2560→1024→512 mixer. Local Transformer: four heads, all pairs within each query; root plus weighted neighbor readout. Global branch: root attends 4096 EMA centroids with log occupancy bias. Concatenate local/global → FFN → scalar head.</p>
+<h2 id="Source-contracts">Source contracts<a class="anchor-link" href="#Source-contracts">&#182;</a></h2><p>Age=(cutoff−time)/86400; negative ages are masked, not filtered. Time encoder: sinusoid then linear. Structure: random scalar and four residual GIN layers, including random draws in evaluation. Local attention dropout remains active during evaluation. EMA buffers update only during training. Last tied validation minimum selects the checkpoint. MAE uses train-percentile clipping at evaluation.</p>
+<h2 id="Temporal-audit">Temporal audit<a class="anchor-link" href="#Temporal-audit">&#182;</a></h2><p>Cache by entity alone can overwrite earlier queries with later contexts. Always compare raw row timestamps with each actual query cutoff; positive cached ages are insufficient. Global fallback is unfiltered. Source parity cannot prove temporal validity. A corrected sampler is a separate experiment.</p>
+<h2 id="Reproduction-verdict">Reproduction verdict<a class="anchor-link" href="#Reproduction-verdict">&#182;</a></h2><div class="relgt-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th style="text-align:right">Training queries</th>
+  <th style="text-align:right">Validation queries</th>
+  <th style="text-align:right">Future token occurrences</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Full train token audit</td>
+  <td style="text-align:right">7453</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">569,502</td>
+</tr>
+<tr>
+  <td>Full val token audit</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">499</td>
+  <td style="text-align:right">21,368</td>
+</tr>
+<tr>
+  <td>Full test token audit</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Full selected reproduction: INCOMPLETE.</strong> The source token cache fails the temporal contract. The full test cache contains 760 queries; zero future-token violations there does not repair leaked training/validation contexts. All <strong>8,712 labels</strong> were independently rebuilt. Graph preprocessing is <strong>reused under verified hashes from L143</strong>, not freshly regenerated here.</p>
+<p>Depth 1 timing pilot: <strong>768 training queries</strong>, <strong>256 validation queries</strong>, partial validation MAE <strong>9.084049</strong>. Test <strong>NOT_RUN</strong>. This is invalid-context source replay for timing, not benchmark evidence. Real-batch original-model maximum output difference: <strong>1.91e-06</strong>.</p>
+<p><strong>Cost decision: STOP.</strong> Temporal audit FAIL independently blocks clean reproduction. The three shallow 100-epoch configurations alone project USD 26.80; all nine at that same measured shallow speed project USD 80.41, before final evaluations and overhead. Deeper pilots and full fits were not dispatched. Estimates use linear batch scaling, not measured full epochs.</p>
+<p>Historical identity <strong>NOT_ESTABLISHED</strong>; whole paper <strong>NOT_RUN</strong>; live Colab/deployment <strong>NOT_CHECKED</strong>; learner <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<h2 id="Recall">Recall<a class="anchor-link" href="#Recall">&#182;</a></h2><p>Why concatenate rather than sum the five elements? Which centroids enter global attention? What should a checkpoint contain besides gradient-trained parameters? Why can eval() remain stochastic?</p>
+<p><a href="../lessons/0145-relational-graph-transformer.html">Lesson</a> · <a href="../labs/l145-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2505.10960v1">Paper</a>. Ask the teaching agent for feedback on your explanation.</p>
+</article></body></html>

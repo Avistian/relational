@@ -1,3 +1,11 @@
+<!-- sequence-review:start -->
+<aside class="sequence-context" aria-label="Reading guide">
+<p class="sequence-eyebrow">Transfer the pipeline, rebuild the question</p>
+<p><strong>Reading route.</strong> Define the study population → trace a facility-to-study path → change the documented recipe → score keyed predictions.</p>
+<details><summary>Quick prerequisite reminder</summary><p>A root is the study being predicted. Fanout limits how many neighbors are sampled per relation and hop. B is the number of queries in a batch; [B,128] means 128 learned coordinates for each query. BCE means binary cross-entropy, the training penalty for incorrect binary predictions. AUROC measures positive–negative ranking, with half credit for ties.</p></details>
+</aside>
+<!-- sequence-review:end -->
+
 ## 1 · What transfers when the domain changes?
 
 [Lesson 138](0138-ecommerce-amazon.html) followed customer → review → product paths. Now the root is a clinical study, connected to sponsors, conditions, interventions, facilities, and recorded results. The database changes; the row encoder → temporal neighborhood → GNN → task head structure survives. Your tangible win is to adapt that pipeline **and explain exactly which prediction problem you have built**.
@@ -20,6 +28,8 @@ Allow 25 minutes for the core lesson, then a separate lab session. Read [RelBenc
 This is **pipeline transfer**: rebuild the graph and train a new model. It is not zero-shot transfer of Amazon weights. The trial-specific settings come from the paper, before looking at our test results. [Paper §B.2](https://arxiv.org/html/2407.20060v1#A2.SS2)
 
 ## 2 · A missing result is not a negative result
+
+**First, decode the clinical terms.** A primary outcome is a study’s designated main measurement. A p-value measures how incompatible the observed data are with a specified null hypothesis, under that statistical test’s assumptions. It is not the probability that a treatment works. Here the benchmark uses the recorded number and a threshold to construct a label; you do not need to derive the original clinical test. A modifier is a qualifier such as `<` or `>` attached to that recorded number.
 
 Imagine a study that started on day −40. At cutoff day 0, we ask about primary analyses dated in **(0,365]**. A qualifying p-value of .03 yields label 1. A qualifying p-value of .12 yields label 0. No qualifying analysis yields **no query**. Assigning zero in that last case silently changes both the population and the target.
 
@@ -124,3 +134,8 @@ Without looking back, answer in four short paragraphs:
 [[TEACHBACK]]
 
 [Student notebook](../labs/0139-healthcare-trial.ipynb) · [Teacher solution](../labs/solutions/0139-healthcare-trial.ipynb) · [Prepared walkthrough](../labs/html/0139-healthcare-trial.html) · [Reference](../reference/healthcare-trial.html). Ask the teacher about any unclear step, or submit the four paragraphs for feedback. Revisit the missing-result and two-cutoff examples tomorrow; the following checkpoint will compare evidence across tasks.
+
+
+<!-- sequence-next:start -->
+**Carry this forward.** Keep both domain contracts. Lesson 140 asks you to defend complete runs, numerical closeness and protocol evidence as separate verdicts. [Continue to Lesson 140](0140-rdl-reproduction-checkpoint.html).
+<!-- sequence-next:end -->
