@@ -1,0 +1,11 @@
+# Lesson 148 approved design and implementation plan
+
+User approved five arms, five seeds each, complete F1 task, ten epochs, aggregate USD10 ceiling. Named anchor RelBench v1 Table7 RDL driver-position; four course extensions. Baseline protocol inherited from L117, freshly executed and audited. No historical/whole-paper claim.
+
+Arms: full; encoder (keep semantic embedding, first of four residual blocks, decoder); messages (empty all sampled edge tensors, retaining relation root maps and biases); history (prune dated non-root nodes older than 365 days relative to their owning query from sampled context, no refill, preserve undated rows and query roots); combined encoder/messages. History is a post-sampling context restriction, not a pre-sampling graph reconstruction. Preserve temporal upper bound everywhere. Parameter/capacity and compute changes reported, not falsely controlled.
+
+Implementation sequence: behavioral contracts and failure probes; visible intervention/model/trainer; full preparation with hashes and query references; baseline pilot seed0 full ten epochs; forecast gate; remaining24 runs; independent keyed audit and paired interaction; diagrams and causal prose; portable student/solution notebooks with live exercises; executed solution and pinned neural check; browser/mobile/keyboard/noJS/print and copied/index Pages verification. No publishing requested; preserve existing staged work.
+
+Budget at T4 +2CPU+16GiB USD.00022572/sec:25*900second fits,1800prepare,1800notebook,600audit,1800retry=28500seconds=USD6.43302 plusUSD3overhead=USD9.43302. Every dispatch reserved, duplicate phases refused, no automatic retries. Seed0 is primary if complete. Pilot forecast125%+120seconds must fit900; stop on failed audit or over-limit forecast. Dollar amounts are resource reservations, not invoices.
+
+Lesson: retrieval; intervention map; numerical example and failure cases; interaction difference-in-differences; measured paired points; three live TODO/CHECK functions; written EXIT. Reference and source/protocol/cost/deviation ledger. Learner PENDING_WRITTEN_DEFENSE. Frozen descriptive baseline tolerance0.2MAE vs3.193val/4.022test, not equivalence inference. Reused test population makes extensions exploratory.
