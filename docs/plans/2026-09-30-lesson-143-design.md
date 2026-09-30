@@ -1,0 +1,9 @@
+# Lesson 143 — RelGNN reproduction
+
+Approved 2026-09-30: complete selected rel-f1/driver-position Table2 reproduction attempt; released checkpoint compatibility replay and five fresh reconstructed fits. Source cffdb8b54627e92c7dd112c1243dde739c90d35b, paper2502.06784v2, target3.798 MAE, descriptive tolerance.20. Historical training recipe/cache NOT_ESTABLISHED; whole paper NOT_RUN. No tuning after test access.
+
+Fresh full preprocessing, complete7453/499/760 queries, one128-channel composite layer/four heads, temporal uniform128/64,batch512,Adam.005,L1,10epochs,seeds0–4,first validation minimum,train2/98percentile evaluation clipping. Separate checkpoint-compatible qualifying.position numerical reconstruction with moment evidence. Preserve source encoder nonfinite gradients; independent original-model output/gradient comparison, raw label reconstruction and keyed scoring. Three live exercises: layout compatibility, first validation minimum, complete-evidence verdict. Reuse verified visible model, build new reproduction narrative and diagrams, student/solution and reference.
+
+Budget USD10 total. T4+2CPU+16GiB USD.00022572/s, checked2026-09-30. Preparation1800s, five fits1800s each, replay1800s, notebook1800s =14400seconds USD3.250368 +USD3overhead =USD6.250368 reservation. Pilot seed0 before remaining four;25percent margin+120seconds must fit1800seconds. Failures remain charged/reserved; no automatic retries. Notebook gate validation uses one extra full seed100 and compatibility replay, excluded from primary mean.
+
+Validate semantic mutants, source hashes, every primary held-out prediction, raw labels, portable CPU notebook and pinned GPU gate, desktop/mobile/keyboard/reset/noJS/print, deterministic generation, copied Pages and clean Git-index publication inputs. Learner remains PENDING_WRITTEN_DEFENSE. No deployment requested.
