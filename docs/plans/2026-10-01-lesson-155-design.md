@@ -1,0 +1,16 @@
+# Lesson 155 approved design and implementation plan
+
+Approved in chat 2026-10-01. Named experiment: L155 rel-f1/driver-position — released manual-FE pipeline versus basic RDL. Full-data five fresh ten-epoch GNN seeds0–4; five fresh ten-trial LightGBM searches,2000-tree cap,50-round early stopping and train-only selected refits. Freeze sources and archive hashes before dispatch. Reuse audited released code; all evidence goes to new l155 namespaces. Complete query populations7453/499/760. No test-guided choice.
+
+Paper targets: Table7 basicGNN val3.193/test4.022, descriptive mean tolerance±.20 inherited from L152; Section6 released FE SQL/LightGBM protocol, historical scalar unavailable. Figure3 regression has boostedGNN; do not claim its reproduction. Historical data/feature-arrival identity NOT_ESTABLISHED; original human study NOT_RUN. Prior test exposure disclosed.
+
+USD10 total hard cap. T4+2physicalCPU+16GiB costs .00022572USD/s at pricing checked2026-10-01. Eight1800s worker slots cost3.250368 plus3USD overhead reserve, leaving3.749632margin. Pilot is seed0, included in primary mean; require1.25*pilot_seconds+120<1800 before remaining. No automatic retries. Local FE overall3600s deadline and4threads, cloudUSD0. Full notebook GPU execution uses one reserved1800s worker, excluded from primary mean. Failed attempts consume reservations; no more than8reserved workers without a new budget decision. Model/trainer source changes invalidate dispatch. No deployment requested.
+
+Teaching: bridge L154 reporting gap to matched local quality, then marginal human effort. Three live learner functions align paired losses, summarize validated effort logs, and gate an effort ratio. Reject duplicate/missing keys, mismatched labels, overlapping human sessions, missing scope/assistance and unobserved time. Human active time, machine runtime and shared setup are distinct. Synthetic fixtures labeled; no invented human measurements. Personal paired practice is order/experience confounded, not the published human trial. Retain other portfolio gaps and separate reference lanes.
+
+Plan:
+1. Add behavioral checks and failing stubs for learner functions, then implement contracts.
+2. Freeze/adapt audited FE/GNN runners and fresh budget; independently reconstruct labels/SQL features before fresh fitting. Pilot then complete all seeds; collect provenance,weights,predictions,selection traces and diagnostics. Independently rescore and check original-model/tree prediction parity.
+3. Produce lesson, reference, portable student/solution, side-by-side pipelines, paired loss/seed plots and interactive marginal/shared-effort worked trace. Inline full released computational path in notebook with separate pinned FE and GNN gates. Keep human logs empty and provide an executable logging workflow.
+4. Execute portable notebook in clean directory and full gates in pinned environments; test rejection behavior and live learner functions. Browser desktop/mobile/keyboard/reset/print/noJS, source parity, deterministic regeneration, local links and clean Git-index Pages checks.
+5. Update manifest,course plan,resources,notes,glossary,retrieval and thesis ledger. Author preparation does not grant learner mastery. Preserve all earlier staged work; commit only this approved design.
