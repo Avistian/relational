@@ -1,0 +1,18 @@
+# Lesson 156 approved design and implementation plan
+
+Approved in chat 2026-10-01. Named experiment: L156 rel-f1/driver-position — temporal audit of released RDL and manual-FE pipelines.
+
+Full released F1 reference: five fresh seeds0–4, ten full epochs,7453/499/760queries,Adam.005,batch512,two128-channel sum GraphSAGE layers,uniform128/64fanouts,L1,first strict minimum validation MAE,train2nd/98thpercentile clipping. RelBench9aa346267c2e1c560bd92da07d6f4ad1ca2f0639; Table7 val3.193/test4.022, descriptive±.20mean tolerance. Archive hashes inherited from L155 and verified before dispatch. Preserve original source behavior and any nonfinite gradients. Whole-paper/historical identity not implied.
+
+Audit all8712labels and complete FE history/schedule dependencies; exercise owner-cutoff/global-node/global-edge identity checks on every yielded batch of fresh reference fits. Scope semantic-type discovery, vocabularies/statistics,feature timestamps,static attributes,label maturity,query identities,validation selection and test access separately. Test with injected cutoff/arrival/key/window/sign-off defects. Review existing classification/recommendation evidence without calling incomplete training complete. A hash-bound author audit is not learner sign-off or a signature from an independent human.
+
+If a demonstrated defect affects the declared temporal contract, freeze correction before inspecting its scores and execute the affected full pipeline separately; distinguish strict-policy sensitivity from defects in released-protocol parity. Unknown arrival histories cannot be repaired by inventing timestamps. Preserve before/after ledgers and claims. No arbitrary normalization of all boundaries to strict less-than.
+
+USD10 hard aggregate cap, USD3overhead allowance. Twelve1800sT4+2physicalCPU+16GiBallocations atUSD.00022572/s totalUSD4.875552plus3=7.875552,margin2.124448. Preparation,pilot,baseline,correction,notebook and failures all charged. Pilot is complete seed0 included in primary mean; require1.25*pilot_seconds+120<1800before remaining seeds. No automatic retries. Local CPU audits capped4threads and3600s cumulative per audit command. Stop at forecast/budget cutoff, preserve INCOMPLETE instead of reducing work. Rates verifiedhttps://modal.com/pricing2026-10-01.
+
+Plan:
+1. Meaningful failing behavioral tests and learner stubs, then implement cutoff/window/sign-off contracts. Freeze sources and budget; independent archive/SQL and preprocessing audit before fresh reference fitting.
+2. Instrument unchanged training with new live audits and original identity checker. Pilot,forecast,remaining seeds. Collect source hashes,checkpoints,predictions,per-batch coverage,gradient diagnostics,costs; independently rescore all predictions and verify selection/source replay. Conditional corrected lane only after explicit findings and frozen protocol.
+3. Create causal lesson,reference,portable figures and owner-cutoff/availability interactive task. Three live TODOs and reusable evidence checklist; distinguish PASS/FAIL/NOT_ESTABLISHED/NOT_CHECKED. Embed readable implementations and full runnable reproduction gate, including pinned environment.
+4. Execute standalone solution and full pinned notebook gate; verify injected leaks rejected,default evidence parity,figures,desktop/mobile/reset/keyboard/print/noJS,deterministic rebuild and clean Git-index Pages staging.
+5. Update course manifest,plan,resources,notes,glossary,retrieval and thesis ledger. Preserve earlier staged work; only design committed. No push/deploy; liveColabNOT_CHECKED,learnerPENDING_WRITTEN_DEFENSE.
