@@ -26,3 +26,11 @@ when you've forgotten it. Newest at the bottom.
 - **Negative proposal q(j|u,r):** declared distribution over eligible destination nodes for a fixed source and relation; an unobserved draw is not a verified false fact.
 - **Hard negative mining:** select high-scoring eligible pairs under the current model; separate sampling decisions from differentiating the selected loss.
 - **Evaluation candidate set:** the items competing in a ranking metric; changing it changes the measurement even with frozen model scores.
+
+## Lesson157 · Contribution evidence (prepared definitions)
+
+- **Evidence replay:** recheck frozen inputs/outputs, identities, coverage and metrics without fitting the model again. It can validate saved results but cannot stand in for a fresh training run.
+- **Experiment manifest:** the pre-dispatch source/protocol hashes recorded by each run. It identifies executable bytes, not the author's identity.
+- **Release manifest:** hashes of the final shipped files, including documentation and saved evidence, except the manifest itself.
+- **Selected reproduction:** execution of the complete named experiment, with its declared population, seeds, epochs, preprocessing, selection and metric. Its scope need not be the whole paper.
+- **PENDING_PUBLICATION:** local contribution preparation has not yet produced a verified public artifact URL. Neither local checks nor a drafted issue imply a public submission.

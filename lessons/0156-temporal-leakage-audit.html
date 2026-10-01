@@ -1,0 +1,140 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson156 — Temporal leakage audit: trace every information path</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/temporal-audit.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0155-compare-manual-fe.html">Lesson155</a></nav><header><p class="route-kicker">Year4 · Quarter4 · Lesson156</p><h1>Temporal leakage audit: trace every information path</h1></header><h2 id="1-%C2%B7-Trace-the-information-before-trusting-the-score">1 &#183; Trace the information before trusting the score<a class="anchor-link" href="#1-%C2%B7-Trace-the-information-before-trusting-the-score">&#182;</a></h2><p><strong>Reading route.</strong> Separate event and availability time → rebuild labels → audit both input paths → measure the explicit correction → sign the scope.</p>
+<p><strong>Your win:</strong> produce an evidence-backed temporal audit that can say <strong>PASS</strong>, <strong>FAIL</strong>, or <strong>not established</strong>, and explain the difference. The core reading takes about 30 minutes; the executable audit and full reproduction are a separate lab session.</p>
+<p><a href="0155-compare-manual-fe.html">Lesson 155</a> compared manual features with relational learning on the same F1 queries. It verified scores but left three temporal questions: the SQL uses strict-past history, graph sampling includes equal timestamps, and neither pipeline has complete feature-arrival histories. We now follow information through the entire pipeline. This serves our mission: a predictive advantage matters only if the required information could have been used when the prediction was made.</p>
+<p><strong>Recall the objects.</strong> A relational entity graph, or <strong>REG</strong>, represents table rows as nodes and foreign-key links as edges. A <strong>query</strong> identifies an entity and a prediction cutoff. A driver can have many queries, so the full identity is <code>(driver_id, cutoff)</code>. A <strong>label</strong> is the future outcome used for training or evaluation. A <strong>feature</strong> is an input available to the predictor. The same raw result can be a label for an earlier query and a legal historical feature for a later query.</p>
+<div id="warmup"></div>
+
+<p>The primary reading is <a href="https://arxiv.org/html/2407.20060v1#S2">RelBench, Section 2: Data Splits</a>, followed by its <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/graph.py">released graph construction</a>. Read the actual input population passed to the feature processor. A temporal sampler does not control every information path.</p>
+<h2 id="2-%C2%B7-There-are-two-clocks,-and-the-query-owns-the-cutoff">2 &#183; There are two clocks, and the query owns the cutoff<a class="anchor-link" href="#2-%C2%B7-There-are-two-clocks,-and-the-query-owns-the-cutoff">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> “It happened yesterday” and “we learned about it yesterday” are different claims.</p>
+</blockquote>
+<p><strong>Event time</strong> records when an event occurred. <strong>Availability time</strong> records when the prediction system could first use a value or version. A late-arriving result can have event time 9 and availability time 12. For a query at time 10, that result is too late despite its old event timestamp.</p>
+<p><strong>Worked example, synthetic.</strong> Query A has cutoff 10 and query B has cutoff 20. A sampled result at time 12 belongs to A. Comparing it with the batch maximum, 20, falsely accepts it. The correct comparison uses A's cutoff, 10, at every graph hop. Reaching the result through another entity does not grant a new cutoff.</p>
+<p>A strict-past event rule requires <code>event &lt; cutoff</code>; an inclusive rule requires <code>event &lt;= cutoff</code>. Both additionally require <code>availability &lt;= cutoff</code> for a historical availability claim. Equality is a policy question: a timestamp representing the start of a day does not prove that the day's result was already known. Preserve the source boundary and disclose its resolution. Do not silently change every <code>&lt;=</code> into <code>&lt;</code> and call that reproduction.</p>
+<p>A <strong>schedule</strong> is different. A race dated 12 can be a legal input at cutoff 10 if its schedule was published at 9. Applying <code>event &lt;= cutoff</code> to schedules would wrongly reject known future plans. Conversely, seeing a schedule in today's archive does not prove it was published before the old query. A field with no timestamp is <strong>timeless in the schema</strong>, not automatically available forever.</p>
+<p>On narrow screens, scroll each diagram horizontally; the surrounding worked example provides the same values in text.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l156/clocks.svg" alt="Synthetic event 9/arrival 12 at query cutoff 10: event time passes while availability fails. Query B cannot lend its cutoff 20."><figcaption>Synthetic event 9/arrival 12 at query cutoff 10: event time passes while availability fails. Query B cannot lend its cutoff 20.</figcaption></figure>
+
+<div id="predict"></div>
+
+<p>Predict whether the row should pass before changing its event time, arrival time, or boundary:</p>
+<div id="l156-audit" class="temporal-audit"></div><noscript>For cutoff 10: event9/arrival9passes; event 9/arrival 12fails; event9/unknown arrival is NOT_ESTABLISHED. A schedule for event12published9can pass.</noscript>
+
+<p><strong>Lab task 1 — <code>audit_observations</code>.</strong> Evaluate each dependency under its own cutoff and declared kind. A known violation gives FAIL even when another timestamp is missing. If the known conditions pass but availability is missing, return NOT_ESTABLISHED. An empty input is not evidence. The actual SQL lineage replay and fresh training audit call this function.</p>
+<h2 id="3-%C2%B7-Labels-belong-after-the-cutoff;-inputs-do-not-inherit-that-permission">3 &#183; Labels belong after the cutoff; inputs do not inherit that permission<a class="anchor-link" href="#3-%C2%B7-Labels-belong-after-the-cutoff;-inputs-do-not-inherit-that-permission">&#182;</a></h2><p>The F1 task asks for a driver's mean finishing position over the next 60 days. Its label window is <strong><code>(cutoff, cutoff + 60 days]</code></strong>: exclude the left boundary and include the right. An entity without a future participation label is absent from this benchmark's query population. This is a benchmark conditioned on future participation, not an unrestricted deployment population of every driver.</p>
+<p><strong>Worked example, synthetic.</strong> At cutoff 10 with horizon 5, result values are 99 at time 10, 2 at time 11, 6 at time 15, and 99 at time 16. Only 2 and 6 contribute: label <code>(2 + 6) / 2 = 4</code>. Using either boundary incorrectly changes the answer. Changing prediction order must not change the score; matching only driver ID can.</p>
+<p><strong>Label maturity</strong> asks whether a training label's observation window ended before the model's training completion time. We verify the latest training window ends by the 2005 validation boundary, and the latest validation window ends by the 2010 test boundary. Validation outcomes may select the checkpoint; test outcomes may score the frozen selection. Reusing a previously exposed test split is a reproduction, not untouched confirmation.</p>
+<p><strong>Lab task 2 — <code>audit_label_windows</code>.</strong> Rebuild every supplied mean from raw events using complete query keys. Reject duplicate queries and nonfinite values; return a failed audit for a mismatched or empty label window. The full audit separately reconstructs each cutoff's eligible entity set so checking only the supplied rows cannot hide missing queries.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l156/window.svg" alt="Synthetic label trace: include times 11 and 15 in (10,15], exclude 10 and 16, mean(2+6)/2=4."><figcaption>Synthetic label trace: include times 11 and 15 in (10,15], exclude 10 and 16, mean(2+6)/2=4.</figcaption></figure>
+
+<h2 id="4-%C2%B7-Follow-both-paths-into-the-prediction">4 &#183; Follow both paths into the prediction<a class="anchor-link" href="#4-%C2%B7-Follow-both-paths-into-the-prediction">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Blocking a future neighbor does not stop a future row from influencing the encoder's fitted statistics.</p>
+</blockquote>
+<p>A <strong>feature processor</strong> converts raw columns into numerical tensors. It can learn numerical means, time ranges and categorical vocabularies. <strong>Type inference</strong> decides which kind of processor a column receives. Both have a fitting population. <strong>Transforming</strong> later rows with an already fitted processor is different from fitting again on them.</p>
+<p>The released GNN constructs features from database rows through <strong>2010-01-01</strong>, the test cutoff. Its neighbor loader then filters dated rows for each query. This follows the <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py">pinned implementation</a>. It is not proof that the processors could have been fitted when training ended in 2005.</p>
+<p>Our declared <strong>fit-horizon policy</strong> requires dated-table type discovery and feature-processor fitting to use rows dated no later than <strong>2005-01-01</strong>. The audit finds that the released preprocessing violates this policy. This is a separate verdict from source parity. It does not show that future labels were directly fed into the neural network, and it does not establish the size or direction of any score effect.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l156/paths.svg" alt="Actual released and corrected information paths. Preprocessing population and owner-cutoff sampling are separate checks."><figcaption>Actual released and corrected information paths. Preprocessing population and owner-cutoff sampling are separate checks.</figcaption></figure>
+
+<p>The correction fits dated-table processors using the permitted population and uses their fixed conversion on every graph row. It preserves graph identities and event timestamps. The training recipe, query populations, validation selection and evaluation rule remain fixed. Vocabulary or inferred-type changes can alter encoder dimensions; this intervention concerns the complete preprocessing policy, not only one scalar mean.</p>
+<p><strong>A crucial distinction:</strong> these are frozen processors fitted when model training ends. They may use matured training history later than an early training query. We do not pretend this is a separate model retrained at every historical query cutoff. If that is the deployment question, it needs its own rolling-origin experiment.</p>
+<p>The FE pipeline already fits its tabular processor on training feature rows. Its SQL still needs an audit of the inputs used to create those rows. We regenerate every feature and independently reconstruct all 50 engineered fields. Result and standings history passes the source event-date conditions. Upcoming race fields have future event dates, but their publication histories are missing. Static driver and constructor attributes have no version history. The SQL percentage-of-laps denominator also depends on eligible joined query rows within each split. Exact source reconstruction does not establish a feature independent of that benchmark cohort. Neither arm earns a historical availability guarantee.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The corrected GNN still retains static-table rows without proven creation/arrival times. Its dated-table cutoff is an event-time proxy. Correcting that demonstrated fit-scope violation cannot recover missing ingestion histories, historical versions, or a different deployment cohort.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Reproduce-first,-correct-explicitly,-then-measure">5 &#183; Reproduce first, correct explicitly, then measure<a class="anchor-link" href="#5-%C2%B7-Reproduce-first,-correct-explicitly,-then-measure">&#182;</a></h2><p><strong>Named experiment:</strong> <code>L156 rel-f1/driver-position — temporal audit of released RDL and manual-FE pipelines</code>.</p>
+<p>The released lane runs all 7,453 training, 499 validation and 760 test queries. Five seeds each train ten full epochs. The model uses typed row encoders, relative time, two 128-channel sum-GraphSAGE layers and a scalar head. It uses Adam at 0.005, batches of 512, L1 loss and uniform 128/64 neighbor fanouts. The first strict validation-MAE minimum selects the checkpoint. Predictions are clipped to the training-target 2nd/98th percentiles, as in the released evaluator. <strong>MAE</strong> is mean absolute prediction error, measured in finishing-position units; lower is better.</p>
+<p>The corrected lane repeats all five complete fits with the frozen preprocessing policy from Section 4. The policy was written before inspecting corrected scores. It is a course intervention, separate from the paper-table reproduction. We do not select whichever temporal policy happens to score better on test.</p>
+<p><strong>During every yielded batch:</strong> compare roots with the source task table, verify original node and edge identities, reject cross-query edges, and check each dated node against its owner's cutoff. The new function checks timestamp maxima separately for each owner and table; the existing identity checker still examines every sampled node and edge. Passing the sampled census covers those draws, not every possible stochastic neighborhood. On each split's first batch, forged root cutoffs and node times must be rejected.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Lane</th>
+  <th style="text-align:right">Validation MAE</th>
+  <th style="text-align:right">Test MAE</th>
+  <th>Strict fit/availability verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Released source</td>
+  <td style="text-align:right">3.1842 ± 0.0332</td>
+  <td style="text-align:right">4.1283 ± 0.2222</td>
+  <td>FAIL</td>
+</tr>
+<tr>
+  <td>Fit by 2005 correction</td>
+  <td style="text-align:right">3.2035 ± 0.0424</td>
+  <td style="text-align:right">4.2004 ± 0.2696</td>
+  <td>NOT_ESTABLISHED</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l156/results.svg" alt="Actual primary five-seed runs per policy. Points are seeds; diamonds and bars are mean and sample seed SD. Separate validation/test scales."><figcaption>Actual primary five-seed runs per policy. Points are seeds; diamonds and bars are mean and sample seed SD. Separate validation/test scales.</figcaption></figure>
+
+<p><strong>Measured consequence:</strong> corrected minus released test MAE is <strong>+0.0721 finishing positions</strong>. Positive means the corrected lane is worse. The temporal policy is justified by its information contract, not by a preferred score. The released mean's frozen ±0.20 comparison with Table 7 is <strong>CLOSE</strong>; the corrected lane is not that published experiment.</p>
+<p>Points are individual seeds; bars show mean ± sample seed standard deviation. Seed variation describes these fits on one database. Matching integer seeds across policies does not make identical initial weights when preprocessing changes dimensions. The difference is descriptive; no population-level superiority or equivalence claim follows.</p>
+<p><strong>Measured coverage:</strong> all 8,712 labels, 443,552 independently reconstructed SQL values, and 12,590 held-out predictions across ten primary fits. Each lane audits 403,895 yielded query occurrences. The released lane checks 56,097,400 dated-node occurrences and 130,667,821 edge occurrences; these are repeated sampled occurrences, not unique database rows. Equality-boundary occurrences: 51,049. Nonfinite first-backward entries per released seed: [640, 640, 640, 640, 640]. <a href="../labs/evidence/l156/report.json">Machine-readable coverage</a>.</p>
+<p><strong>Delivery evidence:</strong> the standalone 30-code-cell audit notebook passed in an empty directory. Its full pinned GPU gate ran ten additional complete fits and independently checked another 12,590 predictions, excluded from the primary means. A controlled future-row perturbation left corrected fit statistics unchanged and changed the released control. Reserved worker resources plus the overhead allowance total <strong>$7.47**, within the **$10 aggregate cap</strong>; this is not an invoice. <a href="../labs/_budget_l156.json">Budget ledger</a>. Live Colab and deployment remain NOT_CHECKED.</p>
+<p>The first backward pass also records nonfinite gradient entries inherited from the source numeric encoder. They are an optimization-health limitation, separate from temporal leakage. We preserve them rather than silently repairing another mechanism inside this experiment.</p>
+<h2 id="6-%C2%B7-Sign-the-scope,-not-a-universal-promise">6 &#183; Sign the scope, not a universal promise<a class="anchor-link" href="#6-%C2%B7-Sign-the-scope,-not-a-universal-promise">&#182;</a></h2><p>A reusable checklist needs <strong>claim, policy, coverage, evidence and verdict</strong> for each item. A source hash ties a report to bytes; it is not a signature from an independent reviewer. A completed audit can honestly conclude that legality is not established.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Check</th>
+  <th>Evidence required</th>
+  <th>What a pass does not prove</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Query identity</td>
+  <td>Complete <code>(entity, cutoff)</code> key set and root/task agreement</td>
+  <td>Arrival history</td>
+</tr>
+<tr>
+  <td>Label window/cohort</td>
+  <td>Rebuilt values, eligible entities, boundary and maturity checks</td>
+  <td>Deployment population equivalence</td>
+</tr>
+<tr>
+  <td>Sampled graph</td>
+  <td>Original identities, owner cutoffs, no cross-query edges</td>
+  <td>Every possible draw or mutable attributes</td>
+</tr>
+<tr>
+  <td>SQL features</td>
+  <td>Value reconstruction and joined-row time conditions</td>
+  <td>Publication of scheduled events</td>
+</tr>
+<tr>
+  <td>Processor fitting</td>
+  <td>Type/vocabulary/statistic fitting population and frozen conversion</td>
+  <td>Static fields existed historically</td>
+</tr>
+<tr>
+  <td>Availability</td>
+  <td>Ingestion/publication/version history or explicit missing evidence</td>
+  <td>Event dates alone are insufficient</td>
+</tr>
+<tr>
+  <td>Model selection</td>
+  <td>Complete validation trace and first-best rule</td>
+  <td>Pristine test data after prior exposure</td>
+</tr>
+<tr>
+  <td>Scores</td>
+  <td>Finite predictions aligned to complete keys</td>
+  <td>Information legality or superiority</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Lab task 3 — <code>audit_verdict</code>.</strong> Require all declared checks. Known failures dominate; missing checks prevent sign-off; unobserved histories remain NOT_ESTABLISHED. A PASS needs every required check and evidence. The final report calls your function for both real experiment lanes.</p>
+<p><strong>Portfolio coverage:</strong> F1 receives the new full census and fresh instrumented fits. The classification entry has existing completed fits, but a fresh L156 execution of its new auditor is <strong>NOT_RUN</strong>. Recommendation retains its earlier 32-batch validation pilot: full reproduction <strong>INCOMPLETE</strong>, test <strong>NOT_RUN</strong>. Reviewing their pinned contracts does not close those gaps. <a href="../labs/evidence/l156/portfolio-review.json">Coverage record</a>.</p>
+<p><strong>Fixing a leak means tracing its cause.</strong> A mutated batch-maximum checker is repaired by indexing the original owner cutoff. A future fitted statistic is repaired by fitting on the declared historical population and transforming later inputs without refitting. A missing schedule history requires better evidence or an explicitly different feature policy; replacing missing timestamps with event dates manufactures certainty. Score improvements are never the acceptance criterion for a temporal repair.</p>
+<h2 id="7-%C2%B7-Exit:-defend-the-boundary-you-actually-checked">7 &#183; Exit: defend the boundary you actually checked<a class="anchor-link" href="#7-%C2%B7-Exit:-defend-the-boundary-you-actually-checked">&#182;</a></h2><p><a href="../labs/0156-temporal-leakage-audit.ipynb">Student notebook</a> · <a href="../labs/html/0156-temporal-leakage-audit.html">Worked notebook</a> · <a href="../labs/solutions/0156-temporal-leakage-audit.ipynb">Teacher solution</a> · <a href="../reference/reg-temporal-leakage-audit.html">Reference checklist</a> · <a href="../labs/evidence/l156/report.md">Measured report</a> · <a href="../labs/l156-reproduction.md">Reproduction contract</a>.</p>
+<p>Complete the three live functions, export your audit, and write 250–400 words. Name one demonstrated policy violation, explain its correction and measured consequence, and defend why historical availability is still unknown. Distinguish source parity, sampled event-time legality, fit-time policy and original availability. Include the coverage boundary of the other portfolio tasks.</p>
+<p>The teaching agent grades policy clarity, owner/query reasoning, evidence coverage, correction interpretation and honest conclusion, 0–2 each. Readiness needs 8/10 with no zero. Author execution leaves <strong>PENDING_WRITTEN_DEFENSE</strong>. Tomorrow reconstruct the two-clock counterexample without notes. In a week, audit a schedule published before its future event and a late-arriving past result.</p>
+<div id="teachback"></div>
+
+<p>Ask the agent follow-up questions about any boundary or missing history. <a href="0157-open-source-contribution.html">Lesson 157</a> packages reproducible work for others; this audit determines which claims that package may carry.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/temporal-audit.js"></script><script src="../assets/l156-lesson.js"></script></body></html>

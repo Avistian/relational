@@ -332,7 +332,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 **Goal:** Master RDL end-to-end — REG, RelBench, reproduction, beat manual FE fairly.
 
 ### Q1 · RDL foundations (121–130)
-**Papers (chronological):** Cvitkovic 2019 · Šír 2021 · Zahradník 2023 · Fey 2024 · Robinson 2023/2024
+**Papers (chronological):** Cvitkovic 2019 · Šír 2021 · Vogel 2023 · Fey 2024 · Robinson 2023/2024
 
 | 121 | [History of relational ML](lessons/0121-history-relational-ml.html) | Cvitkovic 2019 / 2020 + historical primary sources | [Prior-art map + executable lab](labs/0121-history-relational-ml.ipynb); full Home Credit NOT_RUN |
 | 122 | [REG construction](lessons/0122-reg-construction.html) | Fey 2024 §3 | [Full graph audit + five fresh F1 RDL fits](labs/0122-reg-construction.ipynb) |
@@ -374,13 +374,13 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 
 ### Q4 · RDL expertise (151–160)
 | 151–154 | Multi-task RelBench portfolio | — | 5 tasks, one report |
-| 155 | Compare to manual FE | Robinson user study protocol | Document human-effort ratio |
-| 156 | Temporal leakage audit | — | Full REG audit checklist |
-| 157 | Open-source contribution | — | PR or reproducibility repo |
+| 155 | [Compare to manual FE](lessons/0155-compare-manual-fe.html) | Robinson user study protocol | [Full F1 comparison and observed-effort accounting](labs/0155-compare-manual-fe.ipynb) |
+| 156 | [Temporal leakage audit](lessons/0156-temporal-leakage-audit.html) | RelBench temporal contracts | [Full F1 audit and fit-horizon correction](labs/0156-temporal-leakage-audit.ipynb) |
+| 157 | [Open-source contribution](lessons/0157-open-source-contribution.html) | RelBench F1 reproducibility release | [Standalone package and full reproduction](labs/0157-open-source-contribution.ipynb); publication pending |
 | 157b | When schema graphs fail ★ | Cheng & Luo 2026 (2606.08491) | Filtering vs injection for REG graphs |
-| 158 | Year 4 synthesis essay | — | Evidence for/against thesis |
-| 159 | Foundation model preview | Zahradník 2023 full | Pre-training objectives |
-| 160 | **Year 4 exit exam** | All Y4 papers | RelBench portfolio + essay |
+| 158 | [Year 4 synthesis essay](lessons/0158-year-4-synthesis.html) | RelBench evidence replay | [Replay and essay lab](labs/0158-year-4-synthesis.ipynb); written defense pending |
+| 159 | [Foundation model preview](lessons/0159-foundation-model-preview.html) | Vogel, Hilprecht & Binnig 2023 | [Masked objectives and reproduction audit](labs/0159-foundation-model-preview.ipynb); paper target NOT_RUN |
+| 160 | [**Year 4 exit exam**](lessons/0160-year-4-exit-exam.html) | All Y4 papers | [Executable evidence audit + portfolio defense](labs/0160-year-4-exit-exam.ipynb); current exit INCOMPLETE |
 
 **Year 4 exit criterion:** Reproduce RelBench baselines; documented comparison to manual FE on ≥3 tasks.
 
@@ -394,11 +394,11 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 **Goal:** Pre-training, in-context relational learning, cross-database generalization.
 
 ### Q1 · Foundation model concepts (161–170)
-**Papers (chronological):** Bommasani 2021 (FM definition) · Zahradník 2023 (vision) · Griffin (Wang 2025) · KumoRFM (2025, industry) · RDB-PFN (Wang 2026) · Fey survey 2025 §FM
+**Papers (chronological):** Bommasani 2021 (FM definition) · Vogel 2023 (vision) · Griffin (Wang 2025) · KumoRFM (2025, industry) · RDB-PFN (Wang 2026) · Fey survey 2025 §FM
 
 | 161 | What is a foundation model | Bommasani 2021 | Scope for relational |
-| 162 | The relational FM vision | Zahradník 2023 (2305.15321) | LM + GNN pre-training |
-| 163 | LM encoders for rows | Zahradník 2023 §4 | Text vs typed columns |
+| 162 | The relational FM vision | Vogel 2023 (2305.15321) | LM + GNN pre-training |
+| 163 | LM encoders for rows | Vogel 2023 §4 | Text vs typed columns |
 | 164 | Griffin — graph-centric RDB FM ★ | Wang 2025 (2505.05568) | Unified encoder/decoder, cross-attention |
 | 165 | KumoRFM — in-context relational learner | KumoRFM tech report (2025) | Few-shot task adaptation (proprietary comparator) |
 | 165b | OpenRFM — open relational ICL ★ | Chen et al. 2026 (2606.04320) | Dual-stage ICL; ~30% over RT; open weights |
@@ -407,7 +407,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 167 | Tabular FM → relational FM transfer | TabPFN v2 + TabICL recap | What carries over from Year 2 |
 | 168 | Cross-database generalization | Griffin + RDB-PFN experiments | Zero-/few-shot on unseen schema |
 | 169 | Scaling laws & open questions | Survey 2025 | What's unknown |
-| 170 | **Q1 checkpoint** | Zahradník + Griffin + RDB-PFN + RDBLearn | Written FM design doc comparing paradigms |
+| 170 | **Q1 checkpoint** | Vogel + Griffin + RDB-PFN + RDBLearn | Written FM design doc comparing paradigms |
 | 170b | Three relational FM paradigms ★ | Synthesis lecture | Graph-native ICL vs synthetic pretrain vs training-free |
 
 ### Q2 · Building pre-training pipelines (171–180)
@@ -557,7 +557,7 @@ On days with extra time, add minutes to **Practice** first, then **Input** (pape
 | Y2 neural tabular | Architecture recall | Paper section | TabM / TabPFN v2 / TabICL run |
 | Y3 graphs | MPNN equation | GNN paper | PyG implementation |
 | Y4 RDL | REG sketch from memory | RelBench / RDL paper | RelBench training run |
-| Y5 FM | Pre-training objective | Zahradník / survey | Fine-tune experiment |
+| Y5 FM | Pre-training objective | Vogel / survey | Fine-tune experiment |
 | Y6 research | Hypothesis restatement | Related work | Code / write |
 
 ---
@@ -658,7 +658,7 @@ Confirmed via arXiv search, June 2026. ★ = must-read. Read in publication orde
 - DHN expressive power — Schönherr et al. 2026 — `2605.22852` ◆ (SQL ↔ deep homomorphism nets)
 
 ### Year 5 — Foundation relational models
-- Zahradník et al. 2023 — Towards FMs for relational DBs — `2305.15321` ★
+- Vogel et al. 2023 — Towards FMs for relational DBs — `2305.15321` ★
 - Griffin — Wang et al. 2025 — `2505.05568` ★ (graph-centric RDB FM, ICML 2025)
 - RDB-PFN — Wang et al. 2026 — `2603.03805` ★ (synthetic-prior relational FM, open code)
 - RDBLearn toolkit — Zhang et al. 2026 — `2602.18495` ★; companion *No Need to Train Your RDB Foundation Model* — Xu et al. — `2602.13697` ★
@@ -783,7 +783,7 @@ Canonical ★/◆ assignments live in the [verified index](#verified-paper-index
 ### Relational — foundation models
 | Paper | arXiv | Tier | Notes |
 |-------|-------|------|-------|
-| Zahradník FM vision | 2305.15321 | ★ | LM+GNN roadmap |
+| Vogel FM vision | 2305.15321 | ★ | LM+GNN roadmap |
 | Griffin | 2505.05568 | ★ | Open RDB FM |
 | Relational Transformer | 2510.06377 | ★ | Zero-shot cell tokens |
 | RDB-PFN | 2603.03805 | ★ | Synthetic prior only |

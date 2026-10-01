@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 153 — Recommendation portfolio reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0152-regression-portfolio.html">Lesson 152</a></nav><header><p class="route-kicker">Year 4 · Quarter 4 · Lesson 153</p><h1>Recommendation portfolio reference</h1></header><h2 id="Ranking-entry-contract">Ranking entry contract<a class="anchor-link" href="#Ranking-entry-contract">&#182;</a></h2><p>Query population + full candidate catalog → source/data/runtime pins → cutoff audit + negative-sampling rule → validation-only selection → complete rankings + keyed metrics → seed coverage → bounded verdict.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Quantity</th>
+  <th>Definition</th>
+  <th>Distinction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>AP@k</td>
+  <td>sum(hit at r × prefix precision at r) / min(k,positive count)</td>
+  <td>Sensitive to ordering</td>
+</tr>
+<tr>
+  <td>MAP@k</td>
+  <td>Mean query AP</td>
+  <td>Each query has equal weight</td>
+</tr>
+<tr>
+  <td>Hit@k</td>
+  <td>Any relevant item in topk</td>
+  <td>Does not reward all positives</td>
+</tr>
+<tr>
+  <td>Recall@k</td>
+  <td>Retrieved positives / all positives</td>
+  <td>Can be low while AP=1</td>
+</tr>
+<tr>
+  <td>Positive collision</td>
+  <td>Sampled training candidate belongs to positive set</td>
+  <td>Not automatically temporal leakage</td>
+</tr>
+<tr>
+  <td>Temporal violation</td>
+  <td>Observed information later than owner cutoff</td>
+  <td>Unknown availability is not a pass</td>
+</tr>
+</tbody>
+</table></div>
+<p>Truth{A,C},ranking[A,B,C]: AP@3=5/6,Hit=1,Recall=1. RemoveB: AP@2 changes from.5to1 without improving the model. Align repeated entities by full(entity,cutoff)keys. Reject duplicate recommendations.</p>
+<h2 id="Released-GraphSAGE-recipe">Released GraphSAGE recipe<a class="anchor-link" href="#Released-GraphSAGE-recipe">&#182;</a></h2><p>Two128-channel sum layers;128/64fanouts; shallow sponsor embeddings; BPR across timestamp-shared512×512negative pairs;Adam.001;20epochs;latest tied validation maximum;full53,241-candidate catalog. Source drops incomplete timestamp batches and caps at2001batches. Five seeds0–4; source/paper differences and feature-arrival limits remain explicit.</p>
+<h2 id="Measured-evidence">Measured evidence<a class="anchor-link" href="#Measured-evidence">&#182;</a></h2><p><strong>Full selected reproduction: INCOMPLETE — budget gate STOP.</strong> The full code is provided, but no five-seed test comparison is claimed.</p>
+<p>The fresh pilot trained <strong>32 batches / 16,384 query occurrences</strong>, then evaluated all <strong>37,003 validation queries</strong> against the full <strong>53,241-candidate catalog</strong>. Its validation MAP@10 was <strong>1.051%</strong>, Hit@10 <strong>7.040%</strong>, Recall@10 <strong>5.648%</strong>. These are partial-training diagnostics, not final baseline results. Test was not evaluated.</p>
+<p>Training the 32 pilot batches took <strong>38.2s</strong>; a full validation pass took <strong>20.1s</strong>. The released timestamp sampler yields <strong>1,299 full batches</strong> per epoch, covering <strong>665,088 query occurrences</strong>. The remaining timestamp-group tails are dropped by source design.</p>
+<p>A linear scenario for five 20-epoch runs projects <strong>USD41.23 compute before overhead</strong>. The projection includes the pilot's audit/cold-start cost; it is not a mathematical lower bound. The safety-adjusted forecast exceeds the remaining allowance, so no full fits were dispatched. We preserved the recipe rather than reducing epochs, candidates or seeds. <a href="../labs/evidence/l153/cost-decision.json">Recorded cost decision</a>.</p>
+<p><strong>What passed:</strong> all <strong>733,741 query labels</strong> were independently reconstructed through interval/join logic in addition to the source-SQL check. All <strong>37,003 saved rankings</strong> were independently aligned and rescored. The pilot audited <strong>229,640 root occurrences</strong>, <strong>4,503,923 dated-node occurrences</strong> and <strong>6,783,360 sampled-edge occurrences</strong>, with zero observed owner-cutoff violations.</p>
+<p>The first32training batches contained <strong>356 positive collisions out of 8,388,608 shared comparisons</strong>. This diagnostic preserves source sampling; it does not establish a false-negative rate for unobserved relevance. Candidate/feature arrival history remains unobserved.</p>
+<p>The first real backward pass contained <strong>384 nonfinite gradient entries</strong>. Source behavior was retained and recorded. Finite prediction parity with the released model (maximum absolute difference <strong>2.38e-07</strong>) and the healthy synthetic mechanism check do not certify healthy optimization on this real dataset.</p>
+<p>Current immutable resource reservations plus the USD3 overhead allowance total <strong>USD4.253952</strong> under the USD10 cap. Recorded main-worker body estimate: <strong>USD0.285716</strong>; this excludes unitemized overhead and is not an invoice. <a href="../labs/_budget_l153.json">Budget</a> · <a href="../labs/evidence/l153/summary.json">Evidence</a>.</p>
+<p>All default notebook cells also passed in an isolated pinned runtime. The full training gate was not executed in this check; live Colab remains NOT_CHECKED.</p>
+<h2 id="Read-/-execute-/-defend">Read / execute / defend<a class="anchor-link" href="#Read-/-execute-/-defend">&#182;</a></h2><p><a href="../lessons/0153-recommendation-portfolio.html">Lesson</a> · <a href="../labs/l153-reproduction.md">Protocol</a> · <a href="../labs/l153-entry-template.md">Entry template</a> · <a href="https://arxiv.org/html/2407.20060v1#A2.T8">RelBench Table8</a>.</p>
+<p>Do not equate a checked notebook, pilot or source parity with five completed benchmark fits. Author evidence does not establish learner mastery.</p>
+</article></body></html>

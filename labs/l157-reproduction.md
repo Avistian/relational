@@ -1,0 +1,13 @@
+# L157 selected reproduction and contribution contract
+
+Approved2026-10-01: L157 — RelBench F1 temporal-audit reproducibility release. The standalone package repeats both L156 protocols using fresh package-only execution, not copied L156 predictions.
+
+Full-data reference: RelBench commit9aa346267c2e1c560bd92da07d6f4ad1ca2f0639; rel-f1/driver-position;7453/499/760 train/val/test queries; seeds0–4; ten full epochs; two128-channel sum-GraphSAGE layers;uniform128/64fanouts;batch512;Adam.005;L1;train-target2nd/98thpercentile clipping;first strict minimum validation MAE. Table7 target val3.193/test4.022; frozen descriptive mean tolerance±.20. Intervention independently repeats all five fits with dated type discovery/vocabulary/stats fitted by2005-01-01; graph data still materialized through2010. Static history remains unknown. No test-selected correction or new hyperparameter search.
+
+Package contents: complete executable source, MIT upstream notices, input URLs/SHA256,text-model revision, environment recipe,pre-dispatch experiment manifest, final release manifest, fresh compact evidence, independent replay and contribution draft. Hash verification is integrity,not identity authentication. CPU-only replay differs from prepare+fresh training. Primary dependency versions pinned; transitive hash lock NOT_ESTABLISHED. Fresh runs require upstream hosts.
+
+All labels and complete feature SQL are independently reconstructed in isolated prepare. Fresh fitting checks every yielded batch/root cutoff/original node/edge identity, source-model replay, all training epochs and selected checkpoint. Independent replay aligns every(entity,cutoff), rejects missing/duplicate keys, and rescores all12590predictions. Final weight hashes verified separately; binary weights regenerate and are not shipped.
+
+USD10 aggregate cutoff: .00022572/s T4+2physicalCPU+16GiB; max12×1800s workers plusUSD3overhead. Ten primary allocations + one failed notebook startup + one corrected notebook validation reservedUSD7.875552; all12allocations reserved, no further automatic retry. Invoice NOT_ITEMIZED. Pilot requires1.25×elapsed+120<1800. Local CPU preparation limited4threads and3600s per command. No reduced protocol substituted.
+
+Full notebook validation is additional execution, excluded from primary means. Fresh checks do not establish original historical archive identity, actual arrival legality, all-paper reproduction, modern-upstream bug, public publication,liveColab or learner mastery. Prior test exposure disclosed; original nonfinite gradients preserved. Public contribution PENDING_PUBLICATION; upstream submission NOT_SENT.

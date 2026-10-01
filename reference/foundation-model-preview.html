@@ -1,0 +1,48 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pre-training objectives — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/pretraining-objective.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0158-year-4-synthesis.html">Lesson 158</a></nav><header><p class="fm-kicker">Year 4 · Lesson 159 · Foundation-model preview</p><h1>Pre-training objectives — quick reference</h1></header><h2 id="The-objective-contract">The objective contract<a class="anchor-link" href="#The-objective-contract">&#182;</a></h2><p>Name <strong>target identity → permitted context → corruption before encoding → prediction → selected loss → evaluation split</strong>.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Decision</th>
+  <th>Good contract</th>
+  <th>Failure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Schema target</td>
+  <td>Mask every serialization of that identity</td>
+  <td>Root-only mask leaves copies</td>
+</tr>
+<tr>
+  <td>Cell target</td>
+  <td>Mask that cell, retain other identities</td>
+  <td>Remove every matching string</td>
+</tr>
+<tr>
+  <td>Cached features</td>
+  <td>Recompute from corrupted input</td>
+  <td>Clean cache leaks the answer</td>
+</tr>
+<tr>
+  <td>Loss</td>
+  <td>Average selected targets only</td>
+  <td>Reward unmasked fields or accept empty target set</td>
+</tr>
+<tr>
+  <td>Frozen decoder</td>
+  <td>Fixed weights; differentiate its input</td>
+  <td>Detach the decoder path</td>
+</tr>
+<tr>
+  <td>Transfer</td>
+  <td>Hold out databases; declare adaptation</td>
+  <td>Rename reconstruction as transfer</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="Two-stages,-two-learning-boundaries">Two stages, two learning boundaries<a class="anchor-link" href="#Two-stages,-two-learning-boundaries">&#182;</a></h2><p>Stage1 learns row encoder and decoder from reconstruction. Stage2 fixes those weights and learns contextual graph representations. A frozen decoder is still a differentiable function. For target1, z=wh, p=sigmoid(z): dL/dh=w(p−1). At h=.4,w=2, this is approximately−.620.</p>
+<h2 id="Scope-ladder">Scope ladder<a class="anchor-link" href="#Scope-ladder">&#182;</a></h2><p><strong>Paper:</strong> <a href="https://arxiv.org/html/2305.15321v1">Vogel, Hilprecht and Binnig 2023</a>, BART/GCN masked text reconstruction. Selected Table1 wikiTables experiment NOT_RUN locally; exact protocol/source gaps recorded.</p>
+<p><strong>Executed lab:</strong> synthetic four-row tables; mean-pooled 16-wide codec, complete-graph aggregation and three binary heads. Frozen-weight and masking checks pass; binary accuracy is INCOMPARABLE to paper text accuracy.</p>
+<p><strong>Desired transfer:</strong> new databases, matched scratch baseline, declared label/adaptation budgets and validation-only selection. NOT_TESTED here.</p>
+<p><a href="../lessons/0159-foundation-model-preview.html">Lesson</a> · <a href="../labs/0159-foundation-model-preview.ipynb">Student notebook</a> · <a href="../labs/l159-reproduction.md">Protocol</a> · <a href="../labs/l159-vision-brief-template.md">Vision brief</a>. Ask the teaching agent to review your explanation; author execution does not prove learner mastery.</p>
+</article></body></html>

@@ -1,0 +1,136 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Year 4 synthesis: a verdict that could change</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0157-open-source-contribution.html">Lesson 157</a></nav><header><p class="route-kicker">Year 4 · Quarter 4 · Lesson 158</p><h1>Year 4 synthesis: a verdict that could change</h1></header><h2 id="1-%C2%B7-Turn-a-portfolio-into-an-argument">1 &#183; Turn a portfolio into an argument<a class="anchor-link" href="#1-%C2%B7-Turn-a-portfolio-into-an-argument">&#182;</a></h2><p><strong>Reading route.</strong> Separate the thesis questions → read the matched result → trace evidence reuse → state counter-evidence → propose a falsifier.</p>
+<p><strong>Your win:</strong> write a defensible interim verdict on the mission: does learning directly from relational structure deliver value beyond manual feature engineering? Spend about 20 minutes on this lesson, then 45–60 minutes on the replay and a 700–1,000-word essay. The essay is your work; the executed solution is author evidence.</p>
+<p><a href="0154-portfolio-synthesis.html">L154</a> assembled results. <a href="0155-compare-manual-fe.html">L155</a> added a matched FE comparison. <a href="0156-temporal-leakage-audit.html">L156</a> separated timestamp filtering from historical availability. <a href="0157-open-source-contribution.html">L157</a> packaged a contribution. A reviewable package now lets us ask a harder question: <strong>what should a skeptical reader believe after seeing it?</strong> More artifact checks do not automatically strengthen the broad thesis.</p>
+<p>Recall the earlier weakness work in <a href="0137-error-analysis-reg.html">L137</a> and <a href="0149-weakest-relbench-tasks.html">L149</a>: a proposed explanation must survive a held-out check. Those lessons are conceptual callbacks here, not extra numerical samples in this report. The planned graph-construction Lesson 157b is absent; we cannot use its planned experiment as evidence. This lesson introduces no new architecture.</p>
+<p><strong>Prerequisites in one sentence each:</strong> a query is <code>(entity, cutoff)</code>; validation selects the recipe/checkpoint; test evaluates the frozen choice; MAE is lower-is-better; training-seed SD is not uncertainty across databases.</p>
+<div id="warmup"></div>
+
+<h2 id="2-%C2%B7-Separate-four-questions-before-drafting">2 &#183; Separate four questions before drafting<a class="anchor-link" href="#2-%C2%B7-Separate-four-questions-before-drafting">&#182;</a></h2><div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Question</th>
+  <th>Evidence needed</th>
+  <th>Current local boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Does the pipeline run reproducibly?</td>
+  <td>Pinned inputs, complete runs, rescored predictions</td>
+  <td>Selected saved-prediction replay passes</td>
+</tr>
+<tr>
+  <td>Does RDL predict better than FE?</td>
+  <td>Matched task, information, evaluation and comparison budget</td>
+  <td>One matched F1 task; no decisive advantage</td>
+</tr>
+<tr>
+  <td>Does it save human effort?</td>
+  <td>Prospectively recorded comparable human work</td>
+  <td>NOT_OBSERVED</td>
+</tr>
+<tr>
+  <td>Does this establish broad undervaluation?</td>
+  <td>Generalization plus evidence about value and adoption</td>
+  <td>Research hypothesis; no market/adoption study</td>
+</tr>
+</tbody>
+</table></div>
+<p>The primary reading is <a href="https://arxiv.org/html/2407.20060v1#S6">RelBench v1, Section 6 and Appendix C</a>. It reports a study of predictive quality and human work. Treat that as <strong>published evidence</strong>, with the paper's own scope. Our selected replay does not recreate that human study. Its basic regression GNN also differs from the boosted regression comparison; the <a href="../labs/l155-reproduction.md">L155 protocol</a> records the distinction.</p>
+<p>A good synthesis does not make the strongest sentence it can phrase. It makes the strongest sentence its evidence can support, then says which experiment would change it.</p>
+<h2 id="3-%C2%B7-Work-through-one-measured-claim">3 &#183; Work through one measured claim<a class="anchor-link" href="#3-%C2%B7-Work-through-one-measured-claim">&#182;</a></h2><div id="predict"></div>
+
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>Measured result</th>
+  <th>Permitted interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>L151 classification</td>
+  <td>69.2588% AUROC</td>
+  <td>Execution evidence; fresh FE missing</td>
+</tr>
+<tr>
+  <td>L152 regression</td>
+  <td>3.970840 MAE</td>
+  <td>Execution evidence; use L155 for matched FE</td>
+</tr>
+<tr>
+  <td>L153 recommendation</td>
+  <td>Test NOT_RUN</td>
+  <td>INCOMPLETE; validation pilot cannot fill test</td>
+</tr>
+<tr>
+  <td>L155 matched F1</td>
+  <td>FE 3.948917; RDL 4.013141 MAE</td>
+  <td>Point estimate favors FE</td>
+</tr>
+<tr>
+  <td>L155 benefit FE − RDL</td>
+  <td>-0.064225; conditional 95% [-0.312329, +0.172961]</td>
+  <td>Neither superiority nor equivalence established</td>
+</tr>
+<tr>
+  <td>Human effort</td>
+  <td>NOT_OBSERVED</td>
+  <td>No local effort-saving ratio</td>
+</tr>
+<tr>
+  <td>L156 released → fixed horizon</td>
+  <td>4.128265 → 4.200381 MAE</td>
+  <td>Policy verdict FAIL → NOT_ESTABLISHED; no leak-free sign-off</td>
+</tr>
+<tr>
+  <td>L157 released → fixed horizon</td>
+  <td>4.015191 → 4.073480 MAE</td>
+  <td>Policy verdict FAIL → NOT_ESTABLISHED; no leak-free sign-off</td>
+</tr>
+</tbody>
+</table></div>
+<p>The F1 comparison uses the same held-out query population and five complete runs per method. A positive <strong>benefit</strong> means RDL has lower error:</p>
+<p><code>benefit = FE MAE − RDL MAE ≈ 3.948917 − 4.013141 ≈ −0.064225 positions</code>.</p>
+<p>The benefit is computed from unrounded scores. Subtracting the two displayed six-decimal means gives −0.064224; the last-digit difference is rounding.</p>
+<p>That point estimate favors FE. The 95% driver-cluster bootstrap interval is approximately <strong>[−0.3123, +0.1730]</strong>. It keeps a driver's cutoff queries together and is conditional on the already fitted models and this split. It does not cover new databases, all training randomness, or shared race/time dependence. An interval spanning zero does <strong>not</strong> prove the methods equivalent. See the <a href="../labs/evidence/l158/report.json">replayed evidence</a> and <a href="../labs/l155-reproduction.md">L155 uncertainty protocol</a>.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l158/comparison.svg" alt="Actual L155 test scores. Dots are training seeds; horizontal bars are means. The interval resamples drivers, conditional on fitted models, and crosses zero."><figcaption>Actual L155 test scores. Dots are training seeds; horizontal bars are means. The interval resamples drivers, conditional on fitted models, and crosses zero.</figcaption></figure>
+
+<p><strong>Worked rewrite.</strong> “RDL beats feature engineering” becomes: “On our one matched F1 task, FE had lower mean test MAE by 0.0642 positions; the conditional interval did not resolve a consistent direction. This result does not establish a portfolio-wide RDL advantage.” The revised sentence names the population, magnitude, uncertainty and scope.</p>
+<p><strong>Lab task — <code>claim_verdict</code>.</strong> Map a requested claim to the evidence it requires. The function is a guard against overclaiming, not an essay grader or a significance test. Your actual essay still needs reasoning.</p>
+<div id="thesis-claim"></div><noscript>One F1 comparison does not establish a portfolio win. Human effort is unobserved; historical availability remains unestablished. Repeating a report adds no new evidence.</noscript>
+
+<h2 id="4-%C2%B7-Do-not-count-a-report-as-another-experiment">4 &#183; Do not count a report as another experiment<a class="anchor-link" href="#4-%C2%B7-Do-not-count-a-report-as-another-experiment">&#182;</a></h2><p>Follow this chain: L151 seed-0 predictions → L154 portfolio report → L158 essay. These are three artifacts describing <strong>one</strong> prediction packet. Now contrast L155, L156 and L157: fresh predictions can differ, yet all concern the same F1 task and database. Distinct bytes are not proof of independent scientific replications or new-domain coverage.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l158/lineage.svg" alt="L154 and L158 reuse the L151 predictions. New F1 runs still evaluate the same task and database; file counts are not independent-domain counts."><figcaption>L154 and L158 reuse the L151 predictions. New F1 runs still evaluate the same task and database; file counts are not independent-domain counts.</figcaption></figure>
+
+<p><strong>Lab task — <code>evidence_coverage</code>.</strong> Count completed test tasks and databases once; group identical prediction hashes. Reject duplicate evidence IDs and validation pilots passed off as test entries. The report includes an explicit alias for the L154 view of L151 seed 0 so that you can see reuse rather than merely read a warning.</p>
+<p>The completed portfolio covers <strong>two tasks on two databases</strong>, with <strong>one matched FE task</strong>. Recommendation remains incomplete. The 98,918 rescored rows include repeated evaluation populations, multiple seeds and a validation pilot; they are not 98,918 independent tests of the thesis. Never average AUROC, MAE and MAP into a headline score.</p>
+<h2 id="5-%C2%B7-A-validity-correction-answers-a-different-question">5 &#183; A validity correction answers a different question<a class="anchor-link" href="#5-%C2%B7-A-validity-correction-answers-a-different-question">&#182;</a></h2><p>L156's released/fixed-horizon test means are <strong>4.128265 / 4.200381 MAE</strong>; L157's are <strong>4.015191 / 4.073480</strong>. These are separate execution cohorts, not four interchangeable methods to rank by the best test number. Each fixed-horizon intervention changes dated preprocessing to respect the declared 2005 fitting boundary.</p>
+<p>The inherited policy verdict changes from <strong>FAIL</strong> for released preprocessing under that strict policy to <strong>NOT_ESTABLISHED</strong> after correction. Missing historical arrival information prevents a leak-free sign-off. A score can worsen while a declared policy is better respected. Neither observation explains every cause of performance. Source nonfinite-gradient observations also remain unresolved; reproducing a score does not certify healthy optimization. <a href="../labs/evidence/l156/report.json">L156 evidence</a> · <a href="../labs/evidence/l157/report.json">L157 evidence</a>.</p>
+<p>L158 freshly checks prediction metrics, keys and checkpoint selection. It <strong>inherits</strong>, rather than re-executes, the pinned SQL, sampling, gradient and availability audits. The <a href="../labs/evidence/l158/input-manifest.json">manifest</a> names those files. Hashes demonstrate unchanged captured bytes, not the correctness of every upstream judgment or historical identity.</p>
+<h2 id="6-%C2%B7-Reproduce-every-numerical-premise-used-here">6 &#183; Reproduce every numerical premise used here<a class="anchor-link" href="#6-%C2%B7-Reproduce-every-numerical-premise-used-here">&#182;</a></h2><p><strong>Named experiment:</strong> <code>L158 Year 4 thesis evidence replay</code>. Full selected scope: classification reference and selected lanes, regression, recommendation validation pilot, the matched FE/GNN comparison, and both temporal-policy lanes in L156 and L157. No test missingness is replaced with a pilot score. The selected classification lane remains separate from the reference lane.</p>
+<p><strong>Executed author evidence:</strong> 98,918 rows rescored, 45 validation-selection checks and 220 frozen inputs. No fresh training. These counts describe audit work, not independent scientific replications.</p>
+<div class="highlight"><pre><span></span><span class="c1"># From relational/. CPU only; no downloads, fitting or cloud dispatch.</span>
+.venv/bin/python<span class="w"> </span>labs/_replay_l158.py
+.venv/bin/python<span class="w"> </span>labs/_verify_l158.py
+</pre></div>
+<p>The verifier uses independent sklearn metric calculations and a separate bootstrap implementation. Complete <code>(entity, cutoff)</code> alignment includes explicit seconds-to-nanoseconds conversion for temporal-label packets. Checkpoint selection is validated against saved validation histories. Fresh training commands and their original boundaries remain in <a href="../labs/l151-reproduction.md">L151</a>, <a href="../labs/l152-reproduction.md">L152</a>, <a href="../labs/l153-reproduction.md">L153</a>, <a href="../labs/l155-reproduction.md">L155</a>, <a href="../labs/l156-reproduction.md">L156</a> and <a href="../labs/l157-reproduction.md">L157</a>.</p>
+<p><strong>Budget:</strong> USD0 new cloud spend; no fresh training. This is full replay of the declared evidence set, not whole-paper reproduction. The recommendation run remains INCOMPLETE; the original human study remains NOT_RUN. The local contribution remains PENDING_PUBLICATION.</p>
+<h2 id="7-%C2%B7-Write-a-claim-that-could-lose">7 &#183; Write a claim that could lose<a class="anchor-link" href="#7-%C2%B7-Write-a-claim-that-could-lose">&#182;</a></h2><p><strong>Lab task — <code>validate_falsifier</code>.</strong> Specify the task, comparator, information policy, metric direction, minimum useful benefit, validation selection rule and test decision rule. A complete form is only SPECIFIED_NOT_EXECUTED, not a well-powered research design by itself.</p>
+<p><strong>Illustrative future test, not an executed result:</strong> on a predeclared task from a new held-out database, compare RDL against SQL features plus LightGBM under the same information boundary. Choose a useful benefit threshold before test access; for a finishing-position task, 0.1 MAE could be a planning example, not a universal threshold. Freeze model selection on validation. An upper benefit-interval bound below that threshold would disconfirm the claim of a benefit at least that large. Specify budget fairness, seeds, cluster unit and interval method before running. Measure human effort separately and prospectively; a runtime timer cannot substitute for it.</p>
+<p>The missing graph-construction experiment is another possible follow-up, but do not presume its result. L159's foundation-model preview will introduce a new research direction; this essay must not borrow that future promise as present evidence.</p>
+<h2 id="8-%C2%B7-Your-synthesis-essay">8 &#183; Your synthesis essay<a class="anchor-link" href="#8-%C2%B7-Your-synthesis-essay">&#182;</a></h2><p>Use the <a href="../labs/l158-essay-template.md">essay template</a> and the <a href="../labs/0158-year-4-synthesis.ipynb">student notebook</a>. The <a href="../labs/html/0158-year-4-synthesis.html">executed author solution</a> demonstrates the audit, not your mastery.</p>
+<ol>
+<li><strong>Verdict:</strong> one bounded paragraph defining which part of the thesis you are testing.</li>
+<li><strong>Evidence for:</strong> distinguish published support from locally reproduced execution; cite exact artifacts.</li>
+<li><strong>Evidence against or unresolved:</strong> use the matched F1 result, missing effort observations and incomplete recommendation entry.</li>
+<li><strong>Validity and dependence:</strong> explain the temporal audit and why repeated seeds/reports add no new database.</li>
+<li><strong>Falsifier:</strong> propose the next experiment and the result that would change your mind.</li>
+</ol>
+<p>Score 0–2 on each of five axes: numerical/provenance accuracy, comparator fairness, uncertainty/dependence, counter-evidence, and an operational falsifier. A review target is <strong>8/10 with no zero</strong>. Automated checks cannot grade your reasoning; send the essay to the teaching agent for feedback. Learner status remains PENDING_WRITTEN_DEFENSE.</p>
+<div id="teachback"></div>
+
+<p><strong>Spaced retrieval:</strong> tomorrow, reconstruct the four-question table without opening this page. In a week, rewrite an unsupported “RDL wins and saves time” claim using only the evidence you can recall, then check the report. Ask the teaching agent about anything unclear and bring your written defense for review.</p>
+<p><a href="../reference/year-4-synthesis.html">Quick reference</a> · <a href="0157-open-source-contribution.html">Previous lesson</a> · <a href="../index.html">Course</a></p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/thesis-claim.js"></script><script src="../assets/l158-lesson.js"></script></body></html>

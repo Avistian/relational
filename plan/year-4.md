@@ -324,7 +324,8 @@ beta `2312.04615` · Robinson et al. 2024 RelBench v1 `2407.20060` ★ · Hu 202
 
 The `CURRICULUM.md` range `151–154 · Multi-task RelBench portfolio` is decomposed into four lessons below.
 
-### 151 · Portfolio task 1 — entity classification — *— (portfolio unit)*
+### 151 · [Portfolio task 1 — entity classification](../lessons/0151-classification-portfolio.html) — *RelBench v1 Table6*
+- **Prepared** — Prepared L151: fresh full graph and13full20-epoch fits (5reference,3search,5selected); frozen rate0.0001. Reference test69.258775±0.748950AUROC points, CLOSE; selected test68.457012±1.350223. Same chosen rate as reference: no tuning-gain claim. All13779labels and20730predictions independently checked; 3388770query occurrences, zero future-timestamp violations. Historical identity/feature-arrival legality NOT_ESTABLISHED; wholepaper/freshFE NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
 - **Skill** — deliver a complete, documented result on an entity-classification task (model, tuning, metric,
   variance) as one entry in a reusable portfolio.
 - **Teach** — the portfolio-entry contract (reproducible config, fair budget, variance), consistent reporting.
@@ -332,55 +333,53 @@ The `CURRICULUM.md` range `151–154 · Multi-task RelBench portfolio` is decomp
 - **Viz** — reuse `rdl-stack-viz.js` + `checklist.js`.
 - **Bridge** — starts the ≥3-task exit portfolio; callback L128/L130.
 
-### 152 · Portfolio task 2 — entity regression — *— (portfolio unit)*
-- **Skill** — deliver a regression-task entry with correct metric (MAE/RMSE) and calibration check.
-- **Teach** — regression heads/metrics on REG, calibration (callback Y1 L008), variance.
-- **Lab** — Tier B · crucial fragment: regression pipeline + entry. Deliverable: entry 2.
-- **Viz** — reuse `reliability-viz.js` (regression calibration).
-- **Bridge** — broadens the portfolio; callback Y1 L008.
+### 152 · [Portfolio task 2 — entity regression](../lessons/0152-regression-portfolio.html) — *RelBench v1 Table7 + regression calibration*
+- **Skill** — deliver a regression entry with correct units, keyed MAE/RMSE, complete seed evidence and median calibration diagnostics.
+- **Teach** — L1 targets a conditional median; squared error targets a mean. Preserve ties, empty bins and validation-fixed diagnostic boundaries.
+- **Lab** — three live functions: keyed_metrics, median_diagnostics, portfolio_summary. Full visible model/trainer and separate author-audit/fresh-five-seed lanes.
+- **Prepared evidence** — Five fresh full-data ten-epoch fits: validation 3.180178 ± 0.049613, test 3.970840 ± 0.162612 MAE; descriptive CLOSE against Table7 test4.022±.20. All6295predictions independently rescored, all8712labels reconstructed against released SQL/archive,403895query occurrences audited. First backward retains640nonfinite gradient entries per seed. Median diagnostics use validation-fixed bins with counts/ties; no correction or test-led retuning. Historical identity/feature-arrival legality NOT_ESTABLISHED; whole paper/freshFE NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+- **Viz** — end-to-end regression architecture, mean-versus-median loss curves, interactive tied-outcome intervention, measured test bins and five-seed scores.
+- **Bridge** — extends L151's entry contract and L008/L130; forward to L153 ranking and L154 cross-task reporting.
 
-### 153 · Portfolio task 3 — recommendation / link — *— (portfolio unit)*
-- **Skill** — deliver a recommendation/link-prediction entry with ranking metrics + temporal negatives.
-- **Teach** — recsys metrics (MAP/Hits@k), temporal negatives (callback Y3 L097/L106), ContextGNN as the
-  strong option (L144).
-- **Lab** — Tier B · crucial fragment: recsys pipeline + entry. Deliverable: entry 3.
-- **Viz** — reuse `cross-viz.js` + `hetero-graph-viz.js`.
-- **Bridge** — completes the ≥3-task requirement; callback L144.
+### 153 · Portfolio task 3 — recommendation / link — *RelBench v1 Table8*
+- **Skill** — deliver entry3 with a fixed candidate catalog, keyed MAP/Hit/Recall, temporal ownership and honest seed coverage.
+- **Teach** — shared-negative BPR versus full-catalog evaluation; positive collisions versus future information; AP denominator and candidate-protocol sensitivity; ContextGNN callbackL144.
+- **Lab** — TierB; three live functions: negative audit, keyed ranking metrics, complete portfolio verdict. Full visible model/loader/trainer and a five-seed20epoch gate.
+- **Prepared evidence** — all733741labels rebuilt;32training-batch pilot;37003full-catalog validation rankings rescored(MAP1.050815%).229640root occurrences audited;356collisions/8388608comparisons;384source nonfinite gradient entries. Full selected reproductionINCOMPLETE:USD41.23five-run projectionbeforeoverhead exceedsUSD10cap; testNOT_RUN. No smaller recipe substituted.
+- **Viz** — shared three-branch encoder/BPR architecture; negative-collision matrix; AP trace; candidate-removal intervention; measured cost/evidence boundary.
+- **Bridge** — supplies the third entry artifact while explicitly leaving the third completed-baseline requirement unmet. L154 must preserve that gap; learnerPENDING_WRITTEN_DEFENSE.
 
-### 154 · Portfolio synthesis report — *— (portfolio unit)*
+### 154 · [Portfolio synthesis report](../lessons/0154-portfolio-synthesis.html) — *RelBench evidence replay*
 - **Skill** — synthesize the 3+ entries into one report with a consistent fair-comparison table (RDL vs
   FE vs trees) and per-task verdicts.
 - **Teach** — cross-task reporting, when to aggregate vs report per-task, single-benchmark-claim caveats.
 - **Lab** — Tier B · crucial fragment: assemble the unified results table. Deliverable: the portfolio report.
-- **Viz** — reuse `checklist.js` + a results table.
+- **Prepared** — CPU replay verifies55frozen files,61,148prediction rows and15validation-selected checkpoints. Two of three completed test tasks; zero fresh matched comparator tasks. Recommendation stays INCOMPLETE/testNOT_RUN; local superiorityNOT_ESTABLISHED. Reference/selected classification lanes remain separate; no cross-metric mean.
+- **Viz** — evidence flow, per-task seed plots and synthetic provenance/completeness intervention. Three live reporting functions generate the standalone notebook report.
 - **Bridge** — the artifact the Y4 exit exam grades; callback L151–L153; forward to L155.
 
-### 155 · Compare to manual FE — *Robinson user-study protocol, ★*
-- **Skill** — quantify the **human-effort ratio** (hours of FE vs RDL setup) alongside accuracy across the
-  portfolio, replicating the RelBench user-study logic.
-- **Teach** — measuring human effort, the ">order-of-magnitude" claim tested on your own work, accuracy-per-
-  effort as the real thesis metric.
-- **Lab** — Tier B · crucial fragment: log FE hours vs RDL hours across tasks + accuracy. Deliverable:
-  effort-vs-accuracy table.
-- **Viz** — reuse `feature-viz.js` + a effort/accuracy scatter.
-- **Bridge** — the core of the Y4 exit criterion; callback L129, Y1 L033; forward to Y6 thesis.
+### 155 · [Compare to manual FE](../lessons/0155-compare-manual-fe.html) — *Robinson user-study protocol*
+- **Skill** — compare matched query losses and validate marginal human-effort logs without substituting machine runtime.
+- **Full experiment** — five fresh ten-epoch basic GNN fits and five complete ten-trial FE searches on all F1 driver-position queries. Test FE3.948917±.070469 versus RDL4.013141±.208250MAE; FE−RDL−.064225, conditional driver95%[−.312329,+.172961]. Point estimate favors FE; superiority/equivalence not established.
+- **Lab** — three live contracts: keyed paired loss, nonoverlapping effort sessions, completeness-gated ratio. Complete visible pipelines plus portable full FE/GNN gates in separate pinned runtimes.
+- **Boundary** — one matched task; Figure3 boostedGNN differs from Table7 basicGNN. Human effort NOT_OBSERVED; original human study NOT_RUN. Recommendation remains incomplete, classificationFE unrun. Author preparation is not learner mastery.
+- **Viz** — actual dual pipelines, per-arm seed points and synthetic marginal/shared-effort intervention. Connect L129/L033 and L154 to L156 temporal audit and the Y4 thesis defense.
 
-### 156 · Temporal leakage audit — *— (audit unit)*
-- **Skill** — run a full temporal-leakage audit on the REG pipeline (seed times, neighbor sampling, label
-  windows, feature timestamps) with a reusable checklist.
-- **Teach** — the complete REG audit checklist (callback Y3 L104, L123), common RDL time-travel bugs, sign-off.
-- **Lab** — Tier B · crucial fragment: audit the portfolio pipeline; find/fix any leak; re-measure.
-  Deliverable: signed audit + any corrected numbers.
-- **Viz** — reuse `leakage-viz.js` (temporal REG) + `checklist.js`.
-- **Bridge** — makes the portfolio numbers trustworthy; callback Y3 L104/Y4 L123; the discipline for Y6.
+### 156 · [Temporal leakage audit](../lessons/0156-temporal-leakage-audit.html) — *RelBench temporal contracts*
+- **Skill** — audit owner cutoffs,label windows,feature availability and processor fitting separately; a complete audit can conclude NOT_ESTABLISHED.
+- **Full experiment** — all8,712F1labels and443,552SQLvalues rebuilt; five fresh10epoch released fits plus five full fit-horizon corrections. Test MAE4.128265±.222239 versus4.200381±.269608; descriptive correction penalty+.072116.12,590held-out predictions independently rescored.
+- **Finding** — released dated preprocessing through2010fails the declared2005fit-horizon policy while matching source. Corrected dated processors pass; static/version/schedule availability remains NOT_ESTABLISHED. No leak-free sign-off.
+- **Lab** — three live functions: observation audit,label windows,evidence-gated verdict. Default complete offline audit plus portable full GPU reproduction. Other portfolio entries retain explicit coverage gaps.
+- **Viz** — owner-cutoff/arrival intervention,two-clock trace,label interval,processor versus sampling path and measured seed plots.
+- **Bridge** — L155 comparator limitations become scoped audit claims for L157 public packaging. Learner PENDING_WRITTEN_DEFENSE.
 
-### 157 · Open-source contribution — *— (contribution unit)*
-- **Skill** — package a reproduction as a public artifact (PR to RelBench/PyG or a reproducibility repo) with
-  docs + fixed env.
-- **Teach** — contribution mechanics (issue → PR, reproducibility standards, licensing), community norms.
-- **Lab** — Tier B · crucial fragment: open a PR or publish a reproduction repo. Deliverable: the public link.
-- **Viz** — none (code/PR artifact).
-- **Bridge** — first public artifact toward the Y6 launch; callback L143; forward to Y5 L196, Y6 L222.
+### 157 · [Open-source contribution](../lessons/0157-open-source-contribution.html) — *reproducibility release*
+- **Skill** — package a complete named experiment so a third party can check bytes, run coverage and claims outside the course checkout.
+- **Full experiment** — fresh standalone F1 reference and fixed2005intervention: five seeds × ten epochs each, all queries. Test4.015191±.150212 versus4.073480±.250688MAE; descriptive difference+.058289. Complete8712label/443552SQL-value audit and12590prediction rescore.
+- **Lab** — three live integrity, completeness and claim functions; student/solution notebook, standalone ZIP, pinned GPU recipe, source/release manifests, notices and contribution draft. Full fresh notebook gate separate from default offline replay.
+- **Boundary** — selected reproduction supported; arrival history and current-upstream defect NOT_ESTABLISHED. Whole paper NOT_RUN; learner PENDING_WRITTEN_DEFENSE; public artifact PENDING_PUBLICATION. No issue/PR sent.
+- **Viz** — computation-to-release evidence path, measured seed results and interactive contribution-claim review.
+- **Bridge** — L156's scoped audit becomes a reviewable contribution. Public link remains the eventual contribution milestone; forward to graph-construction157b, Y4synthesis and Y6launch.
 
 ### 157b · When schema graphs fail — *Desired graph `2606.08491`, ★ (ICML 2026)*
 - **Skill** — apply controlled structural adaptation to a REG — **filtering** (mitigate information overload)
@@ -395,23 +394,25 @@ The `CURRICULUM.md` range `151–154 · Multi-task RelBench portfolio` is decomp
 - **Bridge** — an optimizer *on top of* the REG vocabulary (must understand Fey's default REG first, L122);
   callback L142 pathology; forward to Y6 graph-construction experiments.
 
-### 158 · Year 4 synthesis essay — *— (writing unit)*
-- **Skill** — write the evidence for/against the thesis from the portfolio: where RDL beat FE, by how much,
-  at what effort, and where it honestly lost.
-- **Teach** — synthesis of L155 (effort), L149/L137 (weaknesses), L157b (graph matters); a falsifiable
-  interim verdict.
-- **Lab** — writing deliverable: the evidence essay with the portfolio table as backbone.
-- **Viz** — reuse the L154/L155 tables.
-- **Bridge** — the honest mid-thesis verdict; callback L149/L155; forward to Y6 hypothesis.
+### 158 · [Year 4 synthesis essay](../lessons/0158-year-4-synthesis.html) — *evidence-bounded writing*
+- **Skill** — defend a falsifiable interim verdict, separating quality, effort, validity and generalization.
+- **Teach** — L155 matched comparison; L156/157 policy boundary; L137/L149 weakness discipline. L157b is absent, not assumed evidence.
+- **Lab** — [portable replay and essay](../labs/0158-year-4-synthesis.ipynb):98,918 saved prediction rows,45 selection checks,220 frozen inputs; three live claim/lineage/falsifier functions;700–1,000-word defense.
+- **Viz** — actual five-seed FE/RDL scores and conditional interval; evidence lineage; interactive claim-scope audit.
+- **Boundary** — two completed tasks, one matched FE task; effort NOT_OBSERVED, recommendation INCOMPLETE, wholepaper NOT_RUN. CPU replay, USD0 new cloud spend. Learner PENDING_WRITTEN_DEFENSE.
+- **Bridge** — current evidence constrains the thesis before L159's new foundation-model agenda and Y6 hypothesis.
 
-### 159 · Foundation model preview — *Zahradník 2023 full, `2305.15321`*
+### 159 · Foundation model preview — *Vogel 2023 full, `2305.15321`*
 - **Skill** — state the relational foundation-model vision (learn from the *full* relational structure +
   scale to real DBs) and why it follows from RDL.
-- **Teach** — Zahradník's vision paper (LM/GNN pretraining over full DBs, scale limits of single-table
+- **Teach** — Vogel's vision paper (LM/GNN pretraining over full DBs, scale limits of single-table
   models), the convergence the survey (L147) predicted; the Year-5 north star.
-- **Lab** — Tier C · crucial fragment: write a one-page FM vision brief grounded in the portfolio's limits.
-  Deliverable: the brief.
-- **Viz** — reuse `rdl-stack-viz.js` + `arch-family-viz.js`.
+- **Lab** — Tier C · visible masked-objective mechanism with three live functions, paired three-seed
+  two-stage training, source/reproduction audit and one-page FM vision brief. Published Table1
+  wikiTables target NOT_RUN because exact source/protocol artifacts were not located.
+  Deliverable: the brief plus executable local evidence, explicitly distinct from paper reproduction.
+- **Viz** — paper-specific architecture, semantic-identity masking and frozen-decoder gradient trace;
+  reusable `pretraining-objective.js` controls and portable figures.
 - **Bridge** — the on-ramp to Year 5; callback L147; forward to Y5 L162.
 
 ### 160 · **Year 4 exit exam** — *all Y4 papers · Deliverable-based*

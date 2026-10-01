@@ -152,3 +152,18 @@ matching entry in `assets/retrieval-pool.js` in sync.*
 ## L051 course wording correction (author audit; not a learner diagnosis)
 
 The shared glossary and existing retrieval/card IDs for L019/L025–L027 now distinguish transported neural weights from independently trained Adam predictions, and empirical noise robustness from immunity. A smoothing response supports a conditional explanation; it does not prove a unique mechanism. These corrections came from reviewing course materials, not from a new learner answer. Preserve existing scheduling IDs and do not mark mastery or retire misconceptions from this authoring work.
+
+
+## L151 · Same score does not mean same procedure
+
+Author-prepared trap, not a diagnosed learner error: a validation-tuned course result close to the paper mean is not a fixed-recipe reproduction. Preserve reference and selected tracks, source/arrival unknowns, and evidence ownership. Five seed values describe training variation on one task, not generalization across tasks.
+
+## L153 · A negative sample and a ranking score need a protocol
+
+- A sampled training negative need not be a true nonpositive. The released shared pool can collide with a query's positive set; count collisions separately from cutoff violations.
+- MAP can improve when distractors disappear without changing model quality. Keep the candidate catalog fixed; AP divides by min(k, positive count), while Recall uses all positives.
+- A full validation pass after32training batches is still a training pilot. It cannot complete a five-seed test reproduction or the portfolio's third completed baseline.
+
+Prepared teaching material, not evidence that the learner held or corrected these misconceptions. [Reference](reference/recommendation-portfolio.html).
+
+| Passing event-time sampling proves the whole pipeline leak-free | Processor fitting and actual feature availability need separate evidence; missing history prevents sign-off | L156 | active |

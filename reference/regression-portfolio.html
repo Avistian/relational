@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 152 — Regression portfolio reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/regression-calibration.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0151-classification-portfolio.html">Lesson 151</a></nav><header><p class="route-kicker">Year 4 · Quarter 4 · Lesson 152</p><h1>Regression portfolio reference</h1></header><h2 id="Regression-entry-contract">Regression entry contract<a class="anchor-link" href="#Regression-entry-contract">&#182;</a></h2><p>Query population + units → pinned full procedure → validation-only checkpoint → complete five-seed metrics → validation-fixed diagnostic bins → audits/cost → bounded claim.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Quantity</th>
+  <th>Definition</th>
+  <th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>MAE</td>
+  <td>mean(abs(p-y))</td>
+  <td>Primary absolute error; L1 targets median</td>
+</tr>
+<tr>
+  <td>RMSE</td>
+  <td>sqrt(mean((p-y)^2))</td>
+  <td>Secondary diagnostic; large misses matter more</td>
+</tr>
+<tr>
+  <td>Bias</td>
+  <td>mean(p-y)</td>
+  <td>Positive means overprediction</td>
+</tr>
+<tr>
+  <td>Median inequalities</td>
+  <td>P(y&lt;p)≤.5 and P(y&gt;p)≤.5</td>
+  <td>Ties remain separate</td>
+</tr>
+<tr>
+  <td>Median violation</td>
+  <td>max(0,below-.5,above-.5)</td>
+  <td>Empirical bin diagnostic, not population proof</td>
+</tr>
+</tbody>
+</table></div>
+<p>Targets0,1,1,9 predicted as1 give below/equal/above=.25/.50/.25, mean(y-p)=1.75 and median violation0. Empty bins have undefined statistics. Freeze unique validation prediction quintiles before test; exact-edge predictions go right. Repeated driver queries are dependent.</p>
+<h2 id="Full-procedure">Full procedure<a class="anchor-link" href="#Full-procedure">&#182;</a></h2><p>Seeds0–4, ten full epochs, Adam.005, batch512, channels128, two sum-GraphSAGE layers, uniform128/64fanouts, L1, train2nd/98thpercentile clipping. First strict validation minimum selects; final resampling can change validation MAE. No post-test changes or fitted correction.</p>
+<h2 id="Measured-result">Measured result<a class="anchor-link" href="#Measured-result">&#182;</a></h2><div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Selected epoch</th>
+  <th style="text-align:right">Selection MAE</th>
+  <th style="text-align:right">Final val MAE</th>
+  <th style="text-align:right">Test MAE</th>
+  <th style="text-align:right">Test RMSE</th>
+  <th style="text-align:right">Test bias</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">3.205062</td>
+  <td style="text-align:right">3.207255</td>
+  <td style="text-align:right">3.933465</td>
+  <td style="text-align:right">4.723830</td>
+  <td style="text-align:right">+0.502623</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">3.108677</td>
+  <td style="text-align:right">3.110727</td>
+  <td style="text-align:right">3.840081</td>
+  <td style="text-align:right">4.704185</td>
+  <td style="text-align:right">+0.285210</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.239623</td>
+  <td style="text-align:right">3.240849</td>
+  <td style="text-align:right">3.873139</td>
+  <td style="text-align:right">4.724245</td>
+  <td style="text-align:right">+0.042989</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">3.189180</td>
+  <td style="text-align:right">3.185877</td>
+  <td style="text-align:right">3.958161</td>
+  <td style="text-align:right">4.861776</td>
+  <td style="text-align:right">+0.784117</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">3.159506</td>
+  <td style="text-align:right">3.156182</td>
+  <td style="text-align:right">4.249352</td>
+  <td style="text-align:right">5.190039</td>
+  <td style="text-align:right">+1.525781</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Five fresh fits:</strong> validation MAE <strong>3.180178 ± 0.049613</strong>; test MAE <strong>3.970840 ± 0.162612</strong>; test RMSE <strong>4.840815 ± 0.205145</strong>. Mean ± sample seed SD, finishing-position units. Test mean: <strong>CLOSE</strong> under the frozen ±0.20 descriptive rule. These are new runs, not earlier-lesson scores.</p>
+<h2 id="Evidence">Evidence<a class="anchor-link" href="#Evidence">&#182;</a></h2><p>All <strong>8,712 labels</strong> were independently reconstructed from raw result rows. All <strong>6,295 primary predictions</strong> were aligned to the archive and independently rescored. Every training/evaluation batch was audited: <strong>403,895 query occurrences</strong>, zero owner-cutoff violations. Original-model held-out output comparisons passed, maximum discrepancy <strong>3.81e-06</strong>.</p>
+<p>First-backward nonfinite-gradient counts by seed: <strong>{'0': 640, '1': 640, '2': 640, '3': 640, '4': 640}</strong>. We retained the released computation. Exact source structure and a small local neural gradient/update check passed; they do not certify healthy optimization on real data.</p>
+<p>Primary measured worker-body cost estimate <strong>USD 0.059556</strong> excludes unitemized overhead. Current reservations plus the USD3 overhead allowance total <strong>USD 5.437776</strong> under the aggregate USD10 cap. This is a conservative resource allowance, not an itemized invoice. <a href="../labs/evidence/l152/summary.json">Evidence</a> · <a href="../labs/_budget_l152.json">Budget ledger</a>.</p>
+<p>The portable full GPU gate also executed <strong>23 code cells</strong> and <strong>five additional ten-epoch fits</strong>, independently rescoring <strong>6295 predictions</strong> in an isolated pinned runtime. Those runs are separate from the primary mean. Live Colab and deployment remain NOT_CHECKED.</p>
+<h2 id="Boundaries-and-next-action">Boundaries and next action<a class="anchor-link" href="#Boundaries-and-next-action">&#182;</a></h2><p>Historical identity/feature-arrival legality NOT_ESTABLISHED; whole paper/fresh manual-FE NOT_RUN; learner PENDING_WRITTEN_DEFENSE. Prior F1 test exposure disclosed. Mean±seedSD is not future-population uncertainty.</p>
+<p><a href="../lessons/0152-regression-portfolio.html">Lesson</a> · <a href="../labs/l152-reproduction.md">Protocol</a> · <a href="../labs/l152-entry-template.md">Template</a> · <a href="https://arxiv.org/html/2407.20060v1#A2.T7">RelBench Table7</a> · <a href="https://arxiv.org/abs/2108.03210">Calibration primary source</a>.</p>
+</article></body></html>

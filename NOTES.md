@@ -1837,3 +1837,100 @@ L149 final: standaloneCPU, pinnedFE full50trial notebook and pinnedGPU full5fit 
 ## Lesson150 prepared · 2026-09-30
 
 Approved full checkpoint experiment completed: five reference fits, three validation-only search fits, five selected refits, separate compatible replay and extra full notebook validation. Frozen lr0.003; both reference4.314567±0.371880 and selected4.079708±0.099947 raw testMAE miss historical±.20 tolerance around3.798. Current leaderboard nMAE/protocol differs; competitive performance remains NOT_ESTABLISHED. Full source/model/trainer and all prediction evidence provided; report scaffold does not grant learner mastery. Budget/provenance checks: labs/_verify_l150_results.json. Next: implement three contracts and submit250–400word defense, then revisit after one day/week.
+
+
+## Lesson 151 prepared · 2026-10-01
+
+Prepared L151: fresh full graph and13full20-epoch fits (5reference,3search,5selected); frozen rate0.0001. Reference test69.258775±0.748950AUROC points, CLOSE; selected test68.457012±1.350223. Same chosen rate as reference: no tuning-gain claim. All13779labels and20730predictions independently checked; 3388770query occurrences, zero future-timestamp violations. Historical identity/feature-arrival legality NOT_ESTABLISHED; wholepaper/freshFE NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
+The live learner functions select a validation-only candidate, reject incomplete/mixed seed evidence and construct bounded portfolio verdicts. Default notebook audits author evidence; the full gate executes fresh training separately. Source-matched gradient defect retained:256nonfinite entries at the independent selected-checkpoint audit. First audit failed before execution due to a missing remote helper import; packaging fixed with a separately recorded reservation, no training retry. Full delivery/cost evidence: labs/l151-reproduction.md, labs/_verify_l151_results.json, labs/_delivery_l151_results.json and labs/evidence/l151/reproduction.json. No publication requested.
+
+L151 final: standalone and pinned26-code-cell notebooks PASS; extra seed1000/1785predictions separately verified. Browser1200/mobile375,16intervention states,keyboard/reset,noJS,print,four portable figures,29copiedPages links,manifest galleries and deterministic regeneration PASS. Complete Git-index Pages build PASS. Reservations+overheadUSD8.183568; worker-body estimateUSD0.966480, invoiceNOT_ITEMIZED. Deliverables staged locally; only design committed. LiveColab/deploymentNOT_CHECKED.
+
+
+## Lesson 152 prepared · 2026-10-01
+
+Five fresh full-data ten-epoch fits: validation 3.180178 ± 0.049613, test 3.970840 ± 0.162612 MAE; descriptive CLOSE against Table7 test4.022±.20. All6295predictions independently rescored, all8712labels reconstructed against released SQL/archive,403895query occurrences audited. First backward retains640nonfinite gradient entries per seed. Median diagnostics use validation-fixed bins with counts/ties; no correction or test-led retuning. Historical identity/feature-arrival legality NOT_ESTABLISHED; whole paper/freshFE NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
+Three meaningful learner functions and independent prediction/scientific checks. Full portable notebook training validation is recorded separately in labs/_notebook_l152_results.json; delivery and budget summaries in labs/_delivery_l152_results.json and labs/_verify_l152_results.json. No deployment requested.
+
+Final L152 delivery: default and isolated pinned23-code-cell notebooks PASS; full gate ran five additional fits and rescored6295predictions separately. Browser1200/mobile375,16intervention states,keyboard/reset,noJS,print,four portable figures,38copied-Pages links,manifest galleries and deterministic rebuild PASS. Source/protocol/selected-weight hashes verified. Reservations+overhead USD5.437776; measured worker-body estimate USD0.103811, invoice NOT_ITEMIZED. LiveColab/deployment NOT_CHECKED.
+
+Complete Git-index Pages build PASS. Deliverables staged locally; only the approved design was committed.
+
+## Lesson 153 prepared · recommendation portfolio · 2026-10-01
+
+Approved selected target: RelBench v1 Table8 GraphSAGE rel-trial/site-sponsor-run, five seeds0–4 and20released epochs. Fresh graph5,434,924rows; both source SQL and independent join reconstructed all733,741query labels. Pilot32batches/16,384training occurrences; full37,003validation rankings independently rescored: MAP@10=1.050815%,Hit@10=7.039970%,Recall@10=5.648286%. Selection-pass MAP=.706271%; final validation resamples neighborhoods. Test predictions NOT_RUN.
+
+Full selected reproduction INCOMPLETE: measured five-run compute scenarioUSD41.232549before overhead; safety-adjusted runs/checksUSD51.854174againstUSD6.059536remaining compute allowance. STOP, no full fits dispatched. Keep complete executable source and manual/managed gates; no smaller protocol substituted. Source timestamp sampler yields1299batches/665088queries per full epoch and drops4222timestamp-tail rows.
+
+All450sampled batches audited:229640root occurrences,4503923dated-node occurrences,6783360edge occurrences, zero observed cutoff/global-identity violations. First32batch shared negatives:356positive collisions/8388608comparisons; arrival history NOT_OBSERVED. Source first-backward384nonfinite gradient entries preserved; actual source-model forward max error2.384e-7. Synthetic complete neural output/gradient/update and temporal mutation checks PASS.
+
+HTML/reference, three live learner functions, portable student/solution notebooks, visible complete model/trainer/loader, four figures and ranking widget delivered. Twentycode-cell solution PASS locally and in pinned runtime; initial pinned check lacked IPython and failed before lesson code, separately reserved retry passed. Browser1200/375,32widgetstates,keyboard/reset,noJS,print,40copiedPages links,manifest galleries and deterministic build PASS. Reservations+USD3overheadUSD4.253952; known worker-body estimateUSD0.289883,invoiceNOT_ITEMIZED.
+
+Author preparation only; no new learner mastery record. LearnerPENDING_WRITTEN_DEFENSE. Historical identity/feature-arrival legalityNOT_ESTABLISHED; wholepaper/freshmanualFE NOT_RUN; liveColab/deploymentNOT_CHECKED. L154 must retain this missing third completed-baseline result. No deployment requested.
+
+L153 complete Git-index Pages build PASS. Deliverables staged locally; only the approved design was committed. No push or deployment.
+
+## Lesson 154 prepared · portfolio synthesis · 2026-10-01
+
+Approved CPU-only named experiment: L154 RelBench portfolio evidence replay.55 frozen input files,61,148 independently rescored rows,15 validation-selected checkpoint checks; independent sklearn/vectorized oracles agree within2.23e-16. Fifteen inherited prediction hashes and three published table rows independently cross-checked. Classification reference test69.258775±.748950% AUROC; regression3.970840±.162612 MAE. Course-selected classification68.457012±1.350223% remains a separate lane. Recommendation retains validation-only pilot1.050815%MAP@10, full selected reproductionINCOMPLETE/testNOT_RUN.
+
+Coverage2/3tasks; zero fresh matched FE/tree comparator tasks; local superiorityNOT_ESTABLISHED. No cross-metric mean, pilot promotion or missing-value zero fill. Raw-table LightGBM and Past Visit published context remain distinct from manual FE. This three-entry synthesis does not satisfy the broad five-task aspiration or minimum three completed test tasks. Source gradient defects, historical identity and feature-arrival uncertainty remain explicit. New cloud spendUSD0; no training dispatched.
+
+HTML/reference, generated report+JSON, source/protocol ledger, two portable figures and three live learner functions delivered. Standalone11-code-cell solution produced exact report parity in an empty directory. Browser1200/375,32widgetstates,keyboard/reset,noJS/print,38copied-Pages links,manifest galleries,inline-code parity and deterministic rebuildPASS. No new learner mastery record; learnerPENDING_WRITTEN_DEFENSE. LiveColab/deploymentNOT_CHECKED. Only design committed; lesson deliverables staged locally, no publication requested.
+
+L154 final: complete Git-index Pages build PASS. Final measured delivery/evidence summary: `labs/_verify_l154_results.json`. No push or deployment.
+
+## Lesson155 prepared · compare manual FE · 2026-10-01
+
+Approved full selected experiment: five fresh full-data ten-epoch basicGNN fits and five fresh ten-trial SQL/LightGBM searches. FE test3.948917±.070469 versus GNN4.013141±.208250MAE. Signed RDL benefit−.064225; conditional driver-cluster95%[−.312329,+.172961]. Point estimate favors FE; no decisive superiority/equivalence. Complete12590held-out prediction audit,8712label reconstruction,all50SQLfeatures checked,originalGNN output and tree-sum replay.
+
+Three live learner contracts: paired keyed loss, observed/nonoverlapping effort sessions and completeness-gated human-effort ratio. Human effortNOT_OBSERVED; original human study and Figure3 boosted-regression reproductionNOT_RUN. One matched task; classificationFEunrun, recommendationINCOMPLETE/testNOT_RUN. Historical identity/feature-arrival legalityNOT_ESTABLISHED. Source first-backward640nonfinite entries per seed retained. Author preparation only; learnerPENDING_WRITTEN_DEFENSE.
+
+Portable48-code-cell notebook: offline audit and both full pinned gates PASS; five additional GNNfits and five FEsearches excluded from primary means. First GPU notebook validation failed before fitting due to a missing source-hash file in the portable packet; corrected and regression-tested. Failed attempt retained/charged. Total reserved resources+USD3overhead=USD5.844072withinUSD10; worker-body estimateUSD.108702excludes unitemized overhead. Browser1200/mobile375,24accounting states,keyboard/reset,print/noJS,source parity and deterministic build checked; final results labs/_verify_l155_results.json. LiveColab/deploymentNOT_CHECKED. No publication requested.
+
+L155 final: complete Git-index Pages build PASS. Deliverables staged locally; only the approved design was committed. No push or deployment.
+
+## Lesson156 prepared · temporal leakage audit · 2026-10-01
+
+Approved full F1 audit and conditional fit-horizon correction underUSD10. All8712labels,complete query populations,label maturity and443552SQLvalues independently reconstructed. Five full released10epoch fits plus five full correction fits; test4.128265±.222239versus4.200381±.269608MAE. Correction−reference+.072116,descriptive only.12590held-out predictions independently rescored;403895query occurrences per lane audited for sampled identity/owner cutoff/root task agreement.
+
+Released test-cutoff feature materialization violates the explicitly declared2005dated-processor fit horizon while matching source. Correction refits dated type discovery,vocabularies and numerical/time stats by2005; preserves graph/query/training recipe. Static entity/version history and schedule publication remainNOT_ESTABLISHED; no universal leak-free sign-off. Legacy audit.json preprocessing prose is nominal released wording; audit-l156.json supplies actual corrected per-table fit scope. Source nonfinite gradients retained. Classification freshL156auditNOT_RUN; recommendation remainsINCOMPLETE/testNOT_RUN. Prior test exposure disclosed.
+
+Lesson/student/solution/reference include three live functions,full readable trainer/auditor/correction,portable figures and owner-cutoff/two-clock interaction. Author preparation is not learner mastery. No deployment requested.
+
+L156 delivery: standalone30-code-cell notebook and isolated pinned full gate PASS. Ten additional full notebook fits excluded from primary means;12590validation-run predictions and all20primary/notebook checkpoints independently checked. Future-row perturbation preserves corrected stats and changes released control. Browser1200/mobile375,72states,keyboard/reset,print/noJS,source parity,portable figures,deterministic build and clean Git-index Pages checks PASS. USD7.469256resources+overhead reserved; measured worker-body estimateUSD.231397,invoiceNOT_ITEMIZED. LiveColab/deploymentNOT_CHECKED. Final verification labs/_verify_l156_results.json. No push or deployment.
+
+## Lesson157 prepared · open-source contribution · 2026-10-01
+
+Approved standalone reproducibility release with full selected F1 experiment underUSD10. Fresh package-only released and fixed2005lanes: five seeds × ten epochs each, complete7453/499/760queries. TestMAE4.015191±.150212 versus4.073480±.250688; descriptive correction difference+.058289. All8712labels,443552SQLvalues and12590primary held-out predictions independently checked. Original-model maximum error2.861023e-6; every yielded batch/root/edge identity and owner cutoff audited. Per-lane403895query occurrences. No new test selection; original gradient defects and historical availability uncertainty retained.
+
+Standalone ZIP contains executable source,pinned primary dependencies/GPU recipe,hash-checked downloads,experiment/release manifests,license notices,compact evidence,README and contribution draft. SQL not bundled because no root license was found at pinned user-study commit; fetch from original host and verify hash. No raw database archives or model weights shipped. Artifact SHA256 is in labs/_package_l157_results.json. Three live learner functions gate integrity,complete-run summary and bounded claims. Default offline replay is distinct from prepare+fresh training.
+
+27-code-cell solution passed in empty directory. Full pinned notebook gate completed ten additional fits with12590predictions excluded from primary means. Browser1200/mobile375,80states,keyboard/reset,print/noJS,source parity,deterministic generation and copied links passed. One image-order failure occurred locally; next remote launcher failed before notebook execution due to an unavailable workspace import. App explicitly stopped; full failed allocation retained and a corrected retry reserved. Total12allocations+USD3overhead=USD7.875552; invoiceNOT_ITEMIZED. Final checkpoint/delivery ledger: labs/_verify_l157_results.json.
+
+Author preparation only; learnerPENDING_WRITTEN_DEFENSE. Selected reproduction supported,wholepaperNOT_RUN,current-upstream defect/historical availabilityNOT_ESTABLISHED. Public contributionPENDING_PUBLICATION: local draft/ZIP is not a public link. No issue,PR,push or deployment. LiveColab/deploymentNOT_CHECKED. Deliverables staged locally; only approved design committed.
+
+## Lesson158 prepared · Year4 synthesis · 2026-10-01
+
+Approved CPU-only named experiment: L158 Year4 thesis evidence replay.220 frozen inputs,98,918 prediction rows and45 validation-selection checks. Independent sklearn/vectorized metrics match exactly; separate loop bootstrap agrees within1e-12. Full portable27-code-cell solution runs in an empty directory with exact report parity. No new fits or cloud spend.
+
+Evidence scope: L151 reference/selected, L152 reference, L153 validation-only pilot, L155 matched FE/GNN, L156/L157 released/fixed-horizon lanes. Two completed tasks on two databases, one matched FE task. L155 benefit−.064225MAE, conditional driver95%[−.312329,+.172961]. Human effortNOT_OBSERVED; no superiority/equivalence verdict. Repeated report views and F1 seeds do not add databases. Temporal labels use seconds versus prediction nanoseconds, explicitly converted before keyed alignment. SQL/sampling/gradient/policy audits inherited and pinned, not newly executed.
+
+HTML/reference, evidence report, essay template/rubric, portable student/solution, two figures and16claim-scope widget states delivered. Desktop/mobile1200/375,keyboard/reset,noJS,print,46copiedPages links,manifest galleries,inline-source parity and deterministic rebuild PASS. Figures visually inspected. L157b absent; recommendationINCOMPLETE, wholepaper/humanstudyNOT_RUN, historical availabilityNOT_ESTABLISHED, public contributionPENDING_PUBLICATION. Author preparation only; learnerPENDING_WRITTEN_DEFENSE. LiveColab/deploymentNOT_CHECKED.
+
+L158 final: complete Git-index Pages build PASS. Deliverables staged locally; approved design committed. No push or deployment.
+
+## Lesson 159 prepared · Foundation-model preview · 2026-10-01
+
+Approved scope: objective lesson, executable synthetic mechanism and full-reproduction audit; no cloud spend. Corrected arXiv2305.15321 attribution to Vogel, Hilprecht and Binnig. Exact published wikiTables subset/splits, matching released code and sufficient training configuration were not located; historical target NOT_RUN and fidelity NOT_ESTABLISHED. No historical trainer is represented as runnable.
+
+Local three-seed row/graph experiment completed all 480 updates; 120 four-row synthetic tables and 216 held-out predictions. Independent NumPy forward/metric checks and semantic-copy counterfactuals pass; three deliberately broken learner functions rejected. Tiny mean-pooled codec/binary heads are not BART. Graph context is useful under built-in synthetic redundancy; extra graph training is not matched total compute. Zero observed seed SD does not imply zero population uncertainty. Learner PENDING_WRITTEN_DEFENSE; no Year4 exit gate advanced. Delivery receipts track notebook/browser/staging checks separately; live Colab/deployment NOT_CHECKED.
+
+L159 delivery: standalone 20-code-cell solution executed from an empty directory with exact report parity. All 50 interactive browser states, desktop/mobile, keyboard/reset, no-JS, print, three portable figures, 34 copied-site links, deterministic regeneration and clean Git-index Pages build PASS. Geometry checks caught and resolved label overlaps before delivery. Source search covered the pinned 99-entry public lab repository listing and recorded probes; absence is not established globally. Deliverables staged locally; only approved design committed. No push or deployment.
+
+## Lesson 160 prepared — 2026-10-01
+Approved CPU-only Year4 exit evidence replay; USD0 cloud. Replays the complete L158 set and adds three live learner mechanisms: keyed losses, observed-effort accounting, conjunctive exit gates. Two completed tasks, one matched FE task, no observed effort ratio or temporal sign-off. Replay and exam completion are separate; current Year4 exit INCOMPLETE, learner PENDING_WRITTEN_DEFENSE. No new training or paid dispatch. Delivery receipts record actual checks.
+
+L160 delivery: independent metric oracle and driver-bootstrap replay PASS; three incorrect learner implementations rejected; standalone 33-code-cell solution exact parity; 64 desktop/mobile interaction states, keyboard/reset, no-JS, print, 44 copied-site links, all inline source parity and deterministic rebuild PASS. Two portable figures visually inspected. Complete Git-index Pages build PASS. The gate visual extends L158’s claim picker by exposing which separate evidence additions change eligibility. Deliverables staged locally; only the approved design was committed. No push/deployment or paid runs.

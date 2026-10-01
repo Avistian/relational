@@ -218,3 +218,26 @@ Three live audit functions govern query identity, normalized error and complete-
 Three live contracts govern query-owned context sampling, validation selection and paired keyed errors. Six complete full-data course fits are independently scored; the nine-config published-protocol search remains separately blocked. Full visible models and trainer, portable figures, explicit default author-evidence checks and optional full-course gate. Author execution does not establish learner mastery.
 
 - L149: [0149-weakest-relbench-tasks.ipynb](0149-weakest-relbench-tasks.ipynb) — weakness catalog, compatible ranking and supported-slice diagnosis. Full RDL/FE lanes and [protocol](l149-reproduction.md).
+
+
+### Lesson152 · Regression portfolio
+
+[Student](0152-regression-portfolio.ipynb) · [Prepared notebook](html/0152-regression-portfolio.html) · [Solution](solutions/0152-regression-portfolio.ipynb) · [Protocol](l152-reproduction.md).
+Three live tasks: key-aligned MAE/RMSE/bias, tie-aware median diagnostics and complete five-seed evidence. Full model/trainer visible; default author-evidence audit and optional complete fresh five-seed gate are separate. Learning requires the written defense.
+
+
+### Lesson154 — Portfolio synthesis
+
+[Student notebook](0154-portfolio-synthesis.ipynb) · [Worked notebook](html/0154-portfolio-synthesis.html) · [Protocol](l154-reproduction.md) · [Generated report](evidence/l154/report.md). CPU-only, standalone replay of55frozen inputs and61,148prediction rows. Three live functions gate seed summaries, comparable differences and coverage. No new training or cloud spend; recommendation remains INCOMPLETE.
+
+- [Lesson155: manual features vs RDL](0155-compare-manual-fe.ipynb): paired real query losses, prospective human-effort logs, full released FE/GNN gates. [Protocol](l155-reproduction.md).
+
+- [Lesson156: temporal leakage audit](0156-temporal-leakage-audit.ipynb): three live owner-time,label-window and sign-off functions. Complete offline evidence replay plus both full GPU lanes. [Protocol](l156-reproduction.md) · [Reference execution](html/0156-temporal-leakage-audit.html).
+
+- [Lesson157: open-source contribution](0157-open-source-contribution.ipynb): live integrity, complete-run and bounded-claim functions; [standalone package](releases/l157-f1-audit.zip), [protocol](l157-reproduction.md), [executed solution](html/0157-open-source-contribution.html). Full selected experiment separate from public publication.
+
+## Lesson158 · Year4 synthesis
+[Student](0158-year-4-synthesis.ipynb) · [Executed solution](html/0158-year-4-synthesis.html) · [Protocol](l158-reproduction.md) · [Essay template](l158-essay-template.md). Full selected CPU evidence replay; no new training. Written defense pending.
+
+## Lesson 159 · Pre-training objectives
+[Student](0159-foundation-model-preview.ipynb) · [Executed solution](html/0159-foundation-model-preview.html) · [Protocol](l159-reproduction.md) · [Brief template](l159-vision-brief-template.md). Three live masking/loss/freezing tasks and complete synthetic two-stage training. Historical BART+GCN benchmark NOT_RUN; this is not a foundation-model training run.

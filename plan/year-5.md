@@ -13,7 +13,7 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 
 ## Q1 · Foundation model concepts (161–170b)
 
-**Papers (chronological):** Bommasani 2021 (FM definition) · Zahradník 2023 `2305.15321` ★ · Griffin
+**Papers (chronological):** Bommasani 2021 (FM definition) · Vogel 2023 `2305.15321` ★ · Griffin
 `2505.05568` ★ · Relational Transformer (RT) `2510.06377` ★ · KumoRFM v1 (2025 tech report) · OpenRFM
 `2606.04320` ★ · RDB-PFN `2603.03805` ★ · RDBLearn `2602.13697` ★ · RDL survey `2506.16654` (§FM).
 
@@ -27,7 +27,7 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `arch-family-viz.js` (FM branch).
 - **Bridge** — frames the year; callback Y2 L061 PFN (amortized inference); forward to L162.
 
-### 162 · The relational FM vision — *Zahradník 2023, ★ `2305.15321`*
+### 162 · The relational FM vision — *Vogel 2023, ★ `2305.15321`*
 - **Skill** — articulate the vision: learn from the *full* relational structure (not one table) and scale to
   real-world DB sizes; name the opportunities and obstacles.
 - **Teach** — why single-table representation learning ignores neighbor tables, the scale barrier, the LM+GNN
@@ -37,7 +37,7 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `rdl-stack-viz.js` + `arch-family-viz.js`.
 - **Bridge** — callback Y4 L159; the conceptual spine of the year; forward to L163/L168.
 
-### 163 · LM encoders for rows — *Zahradník 2023 §4*
+### 163 · LM encoders for rows — *Vogel 2023 §4*
 - **Skill** — compare text-serialized vs typed-column row encoding and explain the trade-off (LM
   flexibility vs typed-encoder precision).
 - **Teach** — serialize-a-row-as-text vs stype encoders (callback Y4 L125/L125b), where LM encoders help
@@ -135,7 +135,7 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `arch-family-viz.js`.
 - **Bridge** — feeds the Q3 research-gap doc; callback Y4 L147; forward to L189/L198.
 
-### 170 · **Q1 checkpoint** — *Zahradník + Griffin + RDB-PFN + RDBLearn · Deliverable-based*
+### 170 · **Q1 checkpoint** — *Vogel + Griffin + RDB-PFN + RDBLearn · Deliverable-based*
 - **Deliverable** — a written **FM design doc** comparing the paradigms (graph-native pretraining vs
   synthetic-prior vs training-free ICL) on data, compute, transfer, and thesis-fit.
 - **Bridge** — consolidates the concepts before building pipelines; callback L164–L166b.

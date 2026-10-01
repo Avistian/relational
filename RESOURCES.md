@@ -228,7 +228,7 @@ _Optional / extension (◆):_
 
 ## Knowledge — Year 5 (Foundation relational models)
 
-- [Towards Foundation Models for Relational DBs — Zahradník et al., 2023](https://arxiv.org/abs/2305.15321)
+- [Towards Foundation Models for Relational DBs — Vogel et al., 2023](https://arxiv.org/abs/2305.15321)
   LM + GNN pre-training vision. Use for: foundation-model thesis and open problems.
 - [Griffin — Wang et al., ICML 2025](https://arxiv.org/abs/2505.05568)
   Graph-centric RDB foundation model; unified encoder/decoder, cross-attention, pretrained on 150M+ nodes. Use for: the first serious open RDB FM.
@@ -892,3 +892,58 @@ The [sequence map](reference/0091-0100-model-map.html) connects these sources to
 - [RelGNN v2 §5.2/Table2](https://arxiv.org/html/2502.06784v2#S5.T2): selected historical F1 target3.798 rawMAE. [Pinned release](https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b); fresh source/hash audit in labs/evidence/l150/sources.json.
 - [Current RelBench leaderboard](https://star-project.stanford.edu/relbench/leaderboard/) and [RelArena protocol](https://star-project.stanford.edu/relarena/): metric normalization and data-state/tuning/refit differences block a direct historical-current score comparison. Live JS/data snapshots retained; do not interpret the static empty fallback as no submissions.
 - [Checkpoint lesson](lessons/0150-q3-reproduction-checkpoint.html), [protocol](labs/l150-reproduction.md), [report scaffold](labs/l150-report-template.md).
+
+
+## Lesson 151 · Classification portfolio
+
+- [RelBench v1 §5.1, Table6 and AppendixB.2](https://arxiv.org/html/2407.20060v1#A2): named RDL rel-trial/study-outcome experiment and trial-specific hyperparameters.
+- [Pinned RelBench release](https://github.com/snap-stanford/relbench/tree/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639): exact model, graph and task provenance in labs/sources/l151; full protocol in labs/l151-reproduction.md.
+- [Modal pricing](https://modal.com/pricing), verified2026-10-01: aggregate USD10 cap; failed audit packaging reservation retained.
+
+
+## Lesson 152 · Regression portfolio
+
+- [Robinson et al., RelBench v1 Table7 and Appendix B.2](https://arxiv.org/html/2407.20060v1#A2.T7): selected basic RDL driver-position regression experiment, full five-seed replay; see labs/l152-reproduction.md.
+- [Pinned released F1 task SQL](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/f1.py): target window, cohort and entity-cutoff identity. Full timestamp grid compared with independent pandas reconstruction and archive.
+- [Gneiting and Resin, Regression Diagnostics meets Forecast Evaluation](https://arxiv.org/abs/2108.03210): calibration must match the elicited target functional. L152's simple fixed-bin median diagnostic is a course extension, not a reproduction of their estimation methods.
+- [Modal pricing](https://modal.com/pricing), checked2026-10-01: T4+2physicalCPU+16GiB=.00022572USD/sec; aggregate USD10cap and immutable reservations.
+
+### Lesson 153 · Ranking portfolio protocol
+
+- [RelBench v1, Table 8 and Appendix B.2](https://arxiv.org/html/2407.20060v1#A2.T8). Primary target: GraphSAGE on rel-trial/site-sponsor-run, five-run MAP@10. Use with the pinned [trainer and loader](labs/sources/l153/manifest.json): full-catalog evaluation, BPR shared negatives, timestamp batching and tied validation selection. L153's measured cost gate leaves full reproduction INCOMPLETE; the pilot is separate evidence.
+
+
+### Lesson154 · Portfolio synthesis sources
+
+- [RelBench v1, Tables6–8 and Section6](https://arxiv.org/html/2407.20060v1#A2.SS1): published baseline identity, metric units and manual-FE study distinction. Retrieved/checked2026-10-01; frozen table excerpts and extracted context at `labs/evidence/l154/`.
+- [L151–153 provenance and replay contract](labs/l154-reproduction.md): current author evidence, frozen inputs, local comparison gaps and budget-stopped recommendation lane. These do not establish historical identity or learner mastery.
+
+## Lesson155 · human effort and matched FE comparison
+
+Primary: [RelBench v1 Section6 and AppendixC](https://arxiv.org/html/2407.20060v1#S6); [released user study](https://github.com/snap-stanford/relbench-user-study/tree/445bb7a3b1230f49f8e5890ae81754d3e365680f). Marginal human work excludes reusable infrastructure. Full F1 computational replay is separate from original human-study replication. See labs/l155-reproduction.md.
+
+## Lesson156 · temporal audit sources
+
+- [RelBench v1 Section2 and Table7](https://arxiv.org/html/2407.20060v1): temporal split intent and selected basic-GNN target.
+- [Pinned graph feature materialization](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/graph.py): processor fitting population versus neighbor timestamps.
+- [Pinned user-study F1 SQL](https://github.com/snap-stanford/relbench-user-study/blob/445bb7a3b1230f49f8e5890ae81754d3e365680f/f1/driver-position/feats.sql): strict historical joins,upcoming schedules and cohort-conditioned maxima; verified upstream bytes in labs/_sources_l156.json.
+
+## Lesson157 · Reproducibility contribution
+
+- [RelBench contribution guide](https://github.com/stanford-star/relbench/blob/main/CONTRIBUTING.md), checked2026-10-01: current development workflow and small synthetic regression tests. Mutable contributor mechanics are distinct from the pinned historical experiment.
+- [Pinned RelBench implementation](https://github.com/stanford-star/relbench/tree/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639), MIT; original experiment reference.
+- [User-study SQL](https://github.com/snap-stanford/relbench-user-study/blob/445bb7a3b1230f49f8e5890ae81754d3e365680f/f1/driver-position/feats.sql): hash-checked download, omitted from the release archive; root license not found at that commit.
+- [Modal pricing](https://modal.com/pricing), checked2026-10-01: T4.000164/s,physicalCPU.0000131/core/s,memory.00000222/GiB/s; used for aggregate reservations, not represented as an invoice.
+
+## Lesson158 · Evidence-bounded synthesis
+- [RelBench v1 Section6 and AppendixC](https://arxiv.org/html/2407.20060v1#S6): primary reading for the predictive-quality/human-effort distinction. Local basic-GNN replay is not its boosted regression or human-work study.
+- [L158 reproducible evidence report](labs/evidence/l158/report.md): frozen portfolio, matched comparison and temporal-policy evidence; inherited versus fresh checks explicitly separated.
+
+## Lesson 159 · Foundation-model preview
+
+- [Vogel, Hilprecht and Binnig (2023), pinned v1](https://arxiv.org/html/2305.15321v1): row LM plus GCN, masked reconstruction and initial single-table experiments. Corrects prior author attribution.
+- [L159 source audit](labs/sources/l159/manifest.json) and [protocol/deviations](labs/l159-reproduction.md): selected wikiTables Table1 target NOT_RUN; exact release/subset/configuration not located.
+
+## Lesson 160 · Year 4 exit evidence
+- [RelBench v1 Section6 and AppendixC](https://arxiv.org/html/2407.20060v1#S6): distinguish published expert work from replaying the released pipeline.
+- [L160 frozen report](labs/evidence/l160/report.md) and [reproduction/remediation contract](labs/l160-reproduction.md): full selected saved-evidence replay with unmet experimental gates.
