@@ -1,0 +1,116 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The relational FM vision</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/relational-vision.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0161-what-is-a-foundation-model.html">Lesson 161</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 162</p><h1>The relational FM vision</h1></header><div class="lab-access"><strong>Lesson package</strong> · <a href="../labs/0162-the-relational-fm-vision.ipynb">Student notebook</a> · <a href="../labs/html/0162-the-relational-fm-vision.html">Executed author preview</a> · <a href="../labs/solutions/0162-the-relational-fm-vision.ipynb">Solution</a><br><a href="../reference/relational-fm-vision.html">Quick reference</a> · <a href="../labs/l162-vision-map-template.md">Vision map template</a> · <a href="../labs/l162-reproduction.md">Reproduction contract</a> · <a href="../labs/evidence/l162/report.md">Complete local audit</a></div>
+
+<h2 id="1-%C2%B7-A-row-is-a-starting-point,-not-the-whole-database">1 &#183; A row is a starting point, not the whole database<a class="anchor-link" href="#1-%C2%B7-A-row-is-a-starting-point,-not-the-whole-database">&#182;</a></h2><p><strong>Single win:</strong> explain how a row language model and a graph could work together, then turn that architecture into a testable opportunities/obstacles map. Read the main argument first; complete the notebook and map in a separate practice session.</p>
+<p><a href="0159-foundation-model-preview.html">Lesson 159</a> supplied masked reconstruction objectives: hide an item and learn to recover it. <a href="0161-what-is-a-foundation-model.html">Lesson 161</a> asked what makes a learned starting point reusable. Neither objective nor definition explains how related tables enter a prediction. This lesson connects them through Vogel, Hilprecht and Binnig’s <a href="https://arxiv.org/html/2305.15321v1#S2">2023 relational foundation-model vision</a>.</p>
+<div id="warmup"></div>
+
+<p><strong>Worked example.</strong> A database has rows about moons, their planets and their stars. A moon row carries a planet key. That planet carries a star key. A language model that reads only the moon’s text cannot directly read a star’s attributes. We need a route between the rows before we can ask whether those attributes help.</p>
+<p>A <strong>primary key</strong> identifies a row. A <strong>foreign key</strong> refers to a row in another table. A <strong>graph</strong> represents entities as nodes and relationships as edges. <strong>Message passing</strong> updates a node’s representation using representations from its neighbors. One <strong>hop</strong> crosses one edge. These definitions concern information access; useful prediction still has to be learned and tested.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Let the language model read a manageable piece. Let the graph connect pieces that belong together. Then test whether those connections help.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Model-architecture:-text-inside-rows,-context-between-rows">2 &#183; Model architecture: text inside rows, context between rows<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-text-inside-rows,-context-between-rows">&#182;</a></h2><p><strong>Reading route.</strong> Follow the moon row through the encoder, graph and decoder first. Then return to the two training stages. The forward arrows carry representations; the backward training signal changes only the weights that are allowed to learn.</p>
+<p>A <strong>language model (LM)</strong> learns patterns in token sequences. A <strong>token</strong> is a piece of text recognized by its tokenizer. <strong>Serialization</strong> turns structured values and schema names into a sequence. An <strong>encoder</strong> turns that sequence into numerical representations; a <strong>decoder</strong> uses representations to generate output text. An <strong>embedding</strong> is a learned vector representing an input.</p>
+<p>The paper’s proposal combines row-wise LM encoding with a graph neural network (<strong>GNN</strong>) and a task head. Its prototype uses BART, an encoder–decoder LM, and a graph convolutional network (<strong>GCN</strong>), a form of neighborhood aggregation. Row serialization includes table and column names. <a href="https://arxiv.org/html/2305.15321v1#S2">Paper §§2–4</a></p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l162/architecture.svg" alt="Source-inspired conceptual architecture, not a released tensor specification. The decoder loss trains graph weights through frozen LM operations. n counts rows, d counts representation features; the historical graph/decoder interface is unresolved."><figcaption>Source-inspired conceptual architecture, not a released tensor specification. The decoder loss trains graph weights through frozen LM operations. n counts rows, d counts representation features; the historical graph/decoder interface is unresolved. On narrow screens, focus and scroll the diagram horizontally.</figcaption></figure>
+
+<p><strong>Trace the forward pass.</strong> Start with a row such as <code>moons: name=[MASK]; planet=7</code>. <code>[MASK]</code> marks withheld content. After tokenization, the row has length ℓᵢ tokens, where i identifies the row. The encoder produces a representation of width d, where d is a feature count. Across n rows, a conceptual row-vector array has shape n×d. A graph operation combines connected representations. A decoder then predicts tokens for the withheld name.</p>
+<p><strong>What the drawing abstracts.</strong> The paper describes representations at cell, column and table levels, but does not specify enough of the graph/decoder interface to reconstruct the exact released tensor routing. The n×d row-vector view is an explanatory abstraction. Decoder inputs may require a sequence or projection. The figure deliberately leaves that historical interface unresolved rather than inventing its shape.</p>
+<p><strong>Two training stages.</strong> First adapt BART on masked row reconstruction. Then freeze its parameters while training the GNN to improve reconstruction through graph context. A <strong>parameter</strong> is a learned weight; freezing means not updating it. A <strong>gradient</strong> measures how a change affects the loss. <strong>Cross entropy</strong> penalizes low probability assigned to the correct output token. The frozen decoder still needs to pass gradients back to the GNN. Turning off all differentiation through the decoder would prevent that training signal. The source also discusses joint end-to-end training as a more costly alternative, not the reported staged recipe. <a href="https://arxiv.org/html/2305.15321v1#S3">Paper §§3–4</a></p>
+<p><strong>Mask before encoding.</strong> If a hidden name remains visible in another serialized copy or a cached clean embedding, reconstruction can leak its answer. L159 examined that danger. Here we trace access to representations; the local audit neither tokenizes real data nor trains BART.</p>
+<h2 id="3-%C2%B7-Context-is-a-path,-not-a-promise">3 &#183; Context is a path, not a promise<a class="anchor-link" href="#3-%C2%B7-Context-is-a-path,-not-a-promise">&#182;</a></h2><div id="predict"></div>
+
+<p>Our course graph has five nodes: moon rows m1 and m2, planet p1, star s1, and unrelated row z1. The edges m1—p1, m2—p1 and p1—s1 pass information both ways. This is an explicitly chosen teaching graph, not a reconstruction of the paper’s undocumented graph construction.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l162/context.svg" alt="Course graph at two hops with all three edges: m1, p1, m2 and s1 are reachable; z1 is not. Remove planet p1 before traversal and only m1 remains. Reachability is potential access, not a prediction."><figcaption>Course graph at two hops with all three edges: m1, p1, m2 and s1 are reachable; z1 is not. Remove planet p1 before traversal and only m1 remains. Reachability is potential access, not a prediction. On narrow screens, focus and scroll the diagram horizontally.</figcaption></figure>
+
+<p><strong>Worked trace.</strong> Starting at m1, zero hops retain only m1. One hop adds p1. Two hops add m2 and s1. The unrelated z1 remains unreachable. Reaching m2 uses two key edges through the shared planet; the example does not add an automatic same-table edge.</p>
+<p>A <strong>receptive field</strong> is the set of inputs that can potentially affect an output through the available computation. Reachability is a structural upper bound: learned weights might suppress a message, and an accessible value might be irrelevant. More reachable rows do not guarantee higher accuracy.</p>
+<p><strong>Remove an intermediate table.</strong> If we exclude planets, we remove p1 and its incident edges before traversing. The retained moon and star tables do not create a shortcut. An <strong>induced subgraph</strong> retains chosen nodes and only edges whose two endpoints remain. Neighborhood limits can lower graph work, but also discard useful context. This is one scale–context trade-off discussed in the paper. <a href="https://arxiv.org/html/2305.15321v1#S3">§3, efficient learning</a></p>
+<div id="context-explorer"></div><noscript>At two hops m1 reaches p1, m2 and s1. Removing p1 leaves only m1.</noscript>
+
+<p><strong>Lab task 1 — <code>reachable_rows</code>.</strong> Implement the traversal over the induced graph. Return sorted unique row IDs reachable within at most h hops, including the root. Test an excluded intermediate table and a disconnected row. The CHECK must reject a solution that simply returns all rows.</p>
+<h2 id="4-%C2%B7-Many-rows-and-wide-rows-are-different-obstacles">4 &#183; Many rows and wide rows are different obstacles<a class="anchor-link" href="#4-%C2%B7-Many-rows-and-wide-rows-are-different-obstacles">&#182;</a></h2><p><strong>A row input can fit while the table does not.</strong> Suppose two serialized rows have 3 and 5 tokens. Joining them gives 8 tokens. A simple dense attention score matrix compares every token with every token: 8×8=64 ordered pairs. Separate row inputs give 3×3+5×5=34 pairs. The missing cross-row token comparisons explain why another mechanism is needed for context.</p>
+<p>Let ℓᵢ denote each row length. The hypothetical whole-table pair count is <code>(Σᵢ ℓᵢ)²</code>; independent rows give <code>Σᵢ ℓᵢ²</code>. The symbol Σ means “sum over rows.” These are counts for one dense attention score pattern, not measured speed, total model floating-point operations (FLOPs) or memory. Graph computation, decoder work, other transformer operations and padding are absent.</p>
+<p><strong>A wide row can still fail.</strong> The source identifies a 1024-token BART input limit. A row with 1100 serialized tokens exceeds it by 76. Processing rows independently does not solve that case. Truncating loses information; splitting columns may change which facts can interact. Schema and special tokens also consume the real input budget. <a href="https://arxiv.org/html/2305.15321v1#S3">Paper §3, wide tables</a></p>
+<div id="token-explorer"></div><noscript>Lengths 3/5: 64 whole-table pairs, 34 row pairs. Limit 4 drops one token and retains 25 row pairs.</noscript>
+
+<p><strong>Fixed baseline.</strong> The widget starts at two rows of 3/5 tokens and limit 4, deliberately small enough to count by hand. Whole-table pairs = 64, independent-row pairs = 34, and truncated-row pairs = 3² + 4² = 25. One token is dropped. The smaller 25 is purchased by deleting input; it is not a free improvement. The wide-row preset uses 1100/18/22 tokens and the source’s 1024-token limit.</p>
+<p><strong>Lab task 2 — <code>token_budget</code>.</strong> Return both untruncated pair counts, retained pair count, dropped tokens and overflowing row indices. Use supplied synthetic lengths, without claiming to run a tokenizer. An input length of zero is legal in this arithmetic exercise; actual BART inputs generally contain special tokens.</p>
+<h2 id="5-%C2%B7-What-the-initial-experiment-actually-establishes">5 &#183; What the initial experiment actually establishes<a class="anchor-link" href="#5-%C2%B7-What-the-initial-experiment-actually-establishes">&#182;</a></h2><p>The vision is pretraining across diverse relational databases and reuse on new ones. The initial evaluation instead uses single-table corpora, wikiTables and gitTables, for reconstruction. The authors use 10,000 tables per corpus, a 70/20/10 split, best-validation-accuracy checkpoints and three-run means. Graph context within a table can help without demonstrating foreign-key transfer across unseen databases. <a href="https://arxiv.org/html/2305.15321v1#S4">Paper §4</a></p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>wikiTables reconstruction task</th>
+  <th style="text-align:right">Published BART_table accuracy</th>
+  <th style="text-align:right">Published +GNN accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Missing cell values</td>
+  <td style="text-align:right">20.75%</td>
+  <td style="text-align:right">46.15%</td>
+</tr>
+<tr>
+  <td>Column names</td>
+  <td style="text-align:right">66.88%</td>
+  <td style="text-align:right">83.91%</td>
+</tr>
+<tr>
+  <td>Table names</td>
+  <td style="text-align:right">36.99%</td>
+  <td style="text-align:right">37.85%</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are published Table 1 targets, not this lesson’s results. The missing-value difference is 25.40 percentage points; it is not a 25.40% relative improvement. Neither that difference nor the table-name result isolates all confounders of additional graph training.</p>
+<blockquote>
+<p><strong>Full-reproduction boundary.</strong> The selected target is the complete wikiTables two-arm, three-task, three-run comparison. Exact subsets/splits, matching implementation and important configuration details remain unavailable in our bounded source search. Historical reproduction is <strong>NOT_RUN</strong>, and fidelity is <strong>NOT_ESTABLISHED</strong>. The runnable local audit below is a different experiment. See the <a href="../labs/l162-reproduction.md">protocol and source-gap ledger</a>.</p>
+</blockquote>
+<p><strong>Lab task 3 — <code>evidence_verdict</code>.</strong> Check six evidence declarations: multi-table evaluation, held-out database identity, audited pretraining provenance, legal adaptation, a matched baseline and verified predictions. Collect every missing item. If all six are present, return <code>TRANSFER_REVIEW_ELIGIBLE</code>; retain transfer=<code>NOT_ESTABLISHED</code> until the evidence itself receives review. <code>RECONSTRUCTION_ONLY</code> and <code>MULTITABLE_ONLY</code> describe maximum scope conditional on the record, not certified performance.</p>
+<p>A <strong>matched baseline</strong> receives the declared comparable information and adaptation budget. <strong>Legal adaptation</strong> uses only labels and information allowed by the evaluation protocol, including query cutoffs. Verified prediction files still require appropriate metrics, uncertainty and scientific interpretation. A Boolean declaration cannot do that work.</p>
+<h2 id="6-%C2%B7-Build-the-opportunities-and-obstacles-map">6 &#183; Build the opportunities and obstacles map<a class="anchor-link" href="#6-%C2%B7-Build-the-opportunities-and-obstacles-map">&#182;</a></h2><div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Opportunity</th>
+  <th>Why the design might help</th>
+  <th>Obstacle</th>
+  <th>A test that could change your mind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Neighbor-table information</td>
+  <td>Paths expose related rows</td>
+  <td>Sampling can cut the necessary path</td>
+  <td>Compare full and cut paths on matched held-out queries</td>
+</tr>
+<tr>
+  <td>Many-row processing</td>
+  <td>LM inputs stay row-sized</td>
+  <td>Graph and total row encoding still grow</td>
+  <td>Measure end-to-end cost as row count increases</td>
+</tr>
+<tr>
+  <td>Reusable representations</td>
+  <td>Pretraining supplies a shared starting point</td>
+  <td>Connected corpora and database provenance</td>
+  <td>Hold out an entire database and compare with training from scratch</td>
+</tr>
+<tr>
+  <td>Numerical and typed information</td>
+  <td>Additional features can complement text</td>
+  <td>Numeric structure can be poorly preserved</td>
+  <td>Compare text-only and typed inputs on a prespecified task</td>
+</tr>
+</tbody>
+</table></div>
+<p>The paper discusses corpus availability, wide tables, graph efficiency and statistical features as open challenges. The tests above are course proposals, not experiments the paper completed. L163 will examine row encoding choices; L164 introduces Griffin. This lesson supplies the questions to carry into those readings.</p>
+<p><strong>Executed author audit:</strong> all 16 graph interventions, 8 token cases and 64 evidence configurations completed. Of the evidence fixtures, 32 have a reconstruction-only scope ceiling, 31 a multi-table-only ceiling and 1 is eligible for transfer review. All 64 retain transfer <strong>NOT_ESTABLISHED</strong>. These are synthetic declarations, not benchmark populations. <a href="../labs/evidence/l162/report.md">Complete output</a>.</p>
+<p><strong>Practice sequence.</strong> Predict the graph and token examples before running code. Implement the three functions and complete every CHECK. Write a 400–600-word map using the <a href="../labs/l162-vision-map-template.md">template</a>, including an explicit adaptation budget and a disconfirming result for your proposed transfer experiment. Keep the map’s arguments distinct from the deterministic audit’s outputs.</p>
+<div id="teachback"></div>
+
+<p><strong>Exit criterion.</strong> Human review scores architecture, context/scale arithmetic, causal mapping, source boundaries and falsifiable evaluation from 0–2 each. Aim for ≥ 8/10 with no zero. Author execution is preparation; your status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until your own work is assessed. Existing Year 4 exit gates remain unchanged.</p>
+<p>Tomorrow, redraw m1→p1→s1 and explain why row count differs from row width. In one week, explain why a stronger reconstruction score need not imply transfer. Ask the teaching agent about any unclear step or paste your map for feedback.</p>
+<p><strong>Primary reading:</strong> Vogel, Hilprecht and Binnig, <a href="https://arxiv.org/html/2305.15321v1">Towards Foundation Models for Relational Databases, §§2–4</a>. Read the architecture beside its experiment boundaries.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/relational-vision.js"></script><script src="../assets/l162-lesson.js"></script></body></html>

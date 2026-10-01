@@ -1,0 +1,118 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>What is a foundation model?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0160-year-4-exit-exam.html">Lesson 160</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 161</p><h1>What is a foundation model?</h1></header><div class="lab-access"><strong>Lesson package</strong> · <a href="../labs/0161-what-is-a-foundation-model.ipynb">Student notebook</a> · <a href="../labs/html/0161-what-is-a-foundation-model.html">Executed author preview</a> · <a href="../labs/solutions/0161-what-is-a-foundation-model.ipynb">Solution</a><br><a href="../reference/foundation-model-scope.html">Quick reference</a> · <a href="../labs/l161-scope-template.md">Scoping note</a> · <a href="../labs/l161-reproduction.md">Reproduction contract</a> · <a href="../labs/evidence/l161/report.md">Audit output</a></div>
+
+<h2 id="1-%C2%B7-From-one-task-to-a-reusable-starting-point">1 &#183; From one task to a reusable starting point<a class="anchor-link" href="#1-%C2%B7-From-one-task-to-a-reusable-starting-point">&#182;</a></h2><p><strong>Single win:</strong> write a precise, testable scope for a relational foundation model. Read the core lesson in about 20 minutes, then use the notebook and write your note in a separate practice session. Route: define the reusable model → trace adaptation → locate the database boundary → defend a bounded claim.</p>
+<p>In <a href="0159-foundation-model-preview.html">Lesson 159</a>, predicting masked values supplied a training objective. It did not establish that what was learned helps a new task or database. <a href="0160-year-4-exit-exam.html">Lesson 160</a> separated reproducible computation from sufficient evidence. Year 5 asks what could be reused across tasks, and how to test that reuse. The outstanding Year 4 exit requirements remain outstanding.</p>
+<div id="warmup"></div>
+
+<p>Recall before reading: What changes when a frozen model receives new context? Why does a reconstruction score not establish transfer? Which information must be excluded from test-time selection?</p>
+<blockquote>
+<p><strong>In plain terms.</strong> A foundation model is a reusable learned starting point. The important questions are what experience produced it and what different jobs it can support.</p>
+</blockquote>
+<p>Bommasani and colleagues describe models trained on broad data and adaptable to a range of downstream tasks. Pretraining creates the reusable model; adaptation makes it useful for a particular task. Large parameter count alone does not supply those properties. The report also emphasizes that a foundation model is an intermediate component, not a complete deployed application. <a href="https://arxiv.org/abs/2108.07258v1">Primary reading: Bommasani et al., 2021, introduction</a>.</p>
+<p>A <strong>task</strong> specifies an input, a target and an evaluation rule. <strong>Pretraining</strong> is the earlier learning stage whose result is reused. A <strong>checkpoint</strong> is a saved set of learned parameters, or weights. <strong>Downstream</strong> identifies a later use of that checkpoint. <strong>Transfer</strong> means that prior learning is useful in that later setting; demonstrating benefit needs an appropriate comparison.</p>
+<p><strong>Before the adaptation table.</strong> A label is a known target used for learning or context. A gradient tells an optimizer how to change weights to reduce a chosen loss, the numerical penalty for wrong predictions. A forward pass computes predictions from the current inputs and weights; it need not update those weights. These are separate operations.</p>
+<p><strong>Worked example — a hypothetical research proposal.</strong> Pretrain one checkpoint on databases A and B. Adapt it to customer churn and delivery delay in database C. Compare it with models built independently for those tasks. This proposes reuse across tasks and a database boundary. It does not yet demonstrate either performance gain or sufficient breadth to justify the foundation-model description. Counting databases is not a substitute for explaining their diversity.</p>
+<h2 id="2-%C2%B7-Follow-the-information,-not-the-label">2 &#183; Follow the information, not the label<a class="anchor-link" href="#2-%C2%B7-Follow-the-information,-not-the-label">&#182;</a></h2><p><strong>Adaptation</strong> can change weights, add a learned task head, or condition prediction on examples. A <strong>backbone</strong> is the reusable representation-producing part. A <strong>head</strong> maps that representation to a task output. A <strong>context example</strong> is an input with its known target, supplied to inform another prediction. A query is the input whose target is withheld. These routes are discussed in the report's <a href="https://crfm.stanford.edu/report.html">adaptation overview</a>.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Route in this lesson</th>
+  <th>Backbone at the target task</th>
+  <th>Target-specific information</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Fine-tuning</td>
+  <td>Updated</td>
+  <td>An adaptation objective, often with labels</td>
+</tr>
+<tr>
+  <td>Frozen encoder + trained head</td>
+  <td>Frozen</td>
+  <td>Head updates, often with labels</td>
+</tr>
+<tr>
+  <td>In-context prediction</td>
+  <td>Frozen</td>
+  <td>Labeled examples supplied as context</td>
+</tr>
+<tr>
+  <td>Zero-shot prediction</td>
+  <td>Frozen</td>
+  <td>No target-task labeled examples or weight updates</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Zero-shot</strong> here means zero supplied target-task labeled examples. It does not mean no pretraining, no database features or no task description. <strong>Few-shot</strong> describes a small declared label budget; write the actual count, such as eight. It does not uniquely specify an adaptation algorithm. Fine-tuning and in-context prediction can both use eight examples. Our simplified four-route classifier gives weight updates priority for hybrid methods. It records the label count separately and does not classify every possible adaptation technique.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l161/adaptation.svg" alt="Schematic: both routes start from θ₀ and use eight target labels. In-context prediction changes inputs; fine-tuning changes weights. No model performance is shown. On a narrow screen, focus the figure and scroll horizontally for the full trace."><figcaption>Schematic: both routes start from θ₀ and use eight target labels. In-context prediction changes inputs; fine-tuning changes weights. No model performance is shown. On a narrow screen, focus the figure and scroll horizontally for the full trace.</figcaption></figure>
+
+<p><strong>Trace the operation.</strong> Write <code>prediction = f(weights; context, query)</code>. A semicolon separates learned weights from prediction inputs. Holding weights fixed still allows a changed context to alter the output. By contrast, fine-tuning replaces the initial weights with adapted weights. <a href="0061-prior-data-fitted-networks.html">Lesson 61's PFN</a> called this reuse of learned inference <strong>amortization</strong>: pay the learning cost earlier, then reuse the procedure.</p>
+<div id="predict"></div>
+
+<div id="adaptation-explorer"></div><noscript>No updates plus 8 target labels is in-context prediction. Weight updates change the route to fine-tuning.</noscript>
+
+<p><strong>What stays fixed in the explorer?</strong> The starting checkpoint and target query. Switch the update rule and label budget; trace which information can change. The explorer reports a protocol classification, not a predicted accuracy.</p>
+<p>A no-gradient prediction can still require joins, neighborhood sampling, context construction and expensive attention. “One forward pass” describes a computation strategy; it is not a definition of a foundation model, a guarantee of low latency, or proof that every database fits. “Any database” is an especially strong generalization claim. The ordinary definition allows adaptation and does not require universal schema support.</p>
+<h2 id="3-%C2%B7-Hold-out-the-right-thing">3 &#183; Hold out the right thing<a class="anchor-link" href="#3-%C2%B7-Hold-out-the-right-thing">&#182;</a></h2><p>For relational data, specify tables, typed columns, primary/foreign-key links, timestamps and the target entity at its query cutoff. A <strong>foreign key</strong> links a row to a row in another table. A <strong>cutoff</strong> is the time limiting information for a prediction. A <strong>schema</strong> specifies table/column structure and relationships. Transferring to a new schema is a different challenge from predicting new rows in a familiar one.</p>
+<p><strong>Worked example.</strong> A and B are pretraining databases. C supplies eight adaptation labels and disjoint test queries. C can remain held out <strong>from pretraining</strong> while legitimately supplying adaptation examples. If C was actually included in pretraining under an alias, that same test evaluates something else. New test rows cannot undo database-level exposure.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l161/boundary.svg" alt="Schematic: target C is absent from pretraining A/B but supplies eight legal adaptation labels. Its test queries remain separate. Declared disjointness still needs a provenance audit. On a narrow screen, focus the figure and scroll horizontally for the full trace."><figcaption>Schematic: target C is absent from pretraining A/B but supplies eight legal adaptation labels. Its test queries remain separate. Declared disjointness still needs a provenance audit. On a narrow screen, focus the figure and scroll horizontally for the full trace.</figcaption></figure>
+
+<p>A useful evaluation has nested boundaries. First separate pretraining databases from the target database. Then, inside the target database, separate adaptation examples, validation decisions and test queries. In temporal tasks, context labels must already be available at each query's cutoff. Labels from the future remain illegal even when called “context.” This is a proposed course evaluation contract, not a benchmark specified by Bommasani's report.</p>
+<div id="boundary-explorer"></div><noscript>A/B pretraining excludes C. A/B/C includes C. An undocumented inventory cannot establish either fact. Target adaptation is separate.</noscript>
+
+<p><strong>Interpret the three states.</strong> HELD_OUT means the supplied nonempty inventory excludes C. SEEN means it includes C. UNKNOWN means the inventory is absent or empty. The code cannot discover undisclosed pretraining data, aliases, copies or mislabeled metadata. Canonical database identities must come from a source audit; our fixture names A/B/C are only illustrations. Unknown provenance is not proof of contamination, and it is not proof of independence.</p>
+<p><strong>Broad data requires a written argument.</strong> Discuss domains, schemas, task families and coverage limitations. Synthetic pretraining can cover many generated tasks; a single physical file can encode broad experience. Conversely, many near-duplicate databases can provide little diversity. This lesson deliberately avoids a numerical “FM threshold.”</p>
+<h2 id="4-%C2%B7-Reuse-also-shares-limitations">4 &#183; Reuse also shares limitations<a class="anchor-link" href="#4-%C2%B7-Reuse-also-shares-limitations">&#182;</a></h2><p>The report highlights <strong>emergence</strong>: capabilities arising from the learned system rather than being individually programmed, and <strong>homogenization</strong>: many applications coming to depend on the same underlying model. Shared foundations can spread improvements, but can also transmit defects. The report motivates investigation; these terms do not establish that a particular relational model exhibits a new capability. <a href="https://arxiv.org/abs/2108.07258v1">Bommasani et al., abstract and introduction</a>.</p>
+<p><strong>Relational thought experiment.</strong> Both churn and delivery prediction reuse a representation that discards all but the latest ten transactions. Suppose churn depends on recent activity, but delay depends on a year of recurring disruptions. Reusing the checkpoint does not restore the missing rows. A strong churn result cannot validate the delay task. This is a constructed reasoning example, not a measured failure of a named model.</p>
+<p>The practical response is to write falsifiable tests: compare different history requirements, inspect excluded records, and use matched information budgets. Keep the supervised RDL and feature-engineering baselines from Year 4. Foundation-model status alone does not imply superiority over them.</p>
+<h2 id="5-%C2%B7-Turn-a-vision-into-a-scope-note">5 &#183; Turn a vision into a scope note<a class="anchor-link" href="#5-%C2%B7-Turn-a-vision-into-a-scope-note">&#182;</a></h2><p>Complete <a href="../labs/l161-scope-template.md">the template</a> in 400–600 words. Make one proposal small enough that its success or failure could be observed.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Scope field</th>
+  <th>A reviewable answer must name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Inputs</td>
+  <td>Tables, keys, types, time policy, task query and schema limits</td>
+</tr>
+<tr>
+  <td>Pretraining</td>
+  <td>Corpus identity/version, diversity, objective and checkpoint lineage</td>
+</tr>
+<tr>
+  <td>Adaptation</td>
+  <td>Updated parameters, label/context count, preprocessing and selection rules</td>
+</tr>
+<tr>
+  <td>Evaluation</td>
+  <td>Held-out databases, target splits, eligible context and unseen-schema claims</td>
+</tr>
+<tr>
+  <td>Comparison</td>
+  <td>Baselines with comparable information, labels and declared compute/search budgets</td>
+</tr>
+<tr>
+  <td>Success and failure</td>
+  <td>Per-task metric, direction, threshold, uncertainty and disconfirming outcome</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Illustrative success criterion.</strong> On prespecified held-out database C, compare paired MAE differences for delay and paired AUROC differences for churn against the same-label baseline. MAE is average absolute prediction error; lower is better. AUROC measures ranking across positive and negative classes; higher is better. Declare a useful improvement threshold and an uncertainty procedure before test evaluation. Do not average raw MAE and AUROC. Repeated seeds measure some training variation; they do not supply new databases. This is an example of writing a criterion, not a request to run that experiment here.</p>
+<p><a id="practice"></a></p>
+<h2 id="6-%C2%B7-Practice:-make-the-audit-resist-an-attractive-claim">6 &#183; Practice: make the audit resist an attractive claim<a class="anchor-link" href="#6-%C2%B7-Practice:-make-the-audit-resist-an-attractive-claim">&#182;</a></h2><p>The standalone notebook provides <strong>15 synthetic protocol records</strong>. Implement three functions: <code>adaptation_route</code>, <code>database_boundary</code>, and <code>scope_verdict</code>. All three are called by the actual audit. The first two trace information access. The third identifies contradictions in a proposed cross-database comparison: leaked labels, test-led selection, unreviewed time policy, missing matched baseline, lack of a shared initial checkpoint, and a wrongly named adaptation route.</p>
+<p>Predict which record fails before each CHECK. Explain why eight legal target-context examples do not imply pretraining overlap. Then change one field in a failed record and explain which issue remains.</p>
+<p><strong>Status is deliberately narrow.</strong> READY_TO_RUN means the supplied plan passes these consistency rules. READY_FOR_REVIEW means a record also declares execution complete; source artifacts and actual predictions still require inspection. REVISE names remaining contradictions or missing evidence. None establishes the foundation-model label, a measured transfer gain, universal database support or learner mastery. Passing a <code>temporal_audit=PASS</code> declaration cannot authenticate an audit.</p>
+<p><strong>Executed author audit:</strong> all 15 synthetic records are included: 4 READY_TO_RUN, 1 READY_FOR_REVIEW and 10 REVISE. These counts describe fixtures, not models or databases. <a href="../labs/evidence/l161/report.md">Complete output</a>.</p>
+<blockquote>
+<p><strong>Full-reproduction boundary.</strong> This introductory source is a synthesis report. No named relational numerical benchmark is selected for this lesson, and no report-wide numerical reproduction is claimed. The executable local target is the complete 15-record scope audit. No model is trained. Transfer performance remains NOT_ESTABLISHED. A future performance reproduction needs its own exact paper table, source/code/data pins, all seeds and search trials, and aggregate budget approval. <a href="../labs/l161-reproduction.md">Contract and source audit</a>.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Defend,-then-revisit">7 &#183; Defend, then revisit<a class="anchor-link" href="#7-%C2%B7-Defend,-then-revisit">&#182;</a></h2><p>Submit the completed notebook and your 400–600-word scope note. A teacher scores definition, data/provenance, adaptation, evaluation, and evidence boundaries from 0–2 each; target at least 8/10 with no zero. Automated checks are feedback, not a substitute for this review. Learner status stays PENDING_WRITTEN_DEFENSE until your own submission is assessed.</p>
+<div id="teachback"></div>
+
+<p>Tomorrow, reconstruct the four adaptation routes without looking. In one week, audit a proposal whose target database was renamed before pretraining. Ask the teaching agent about any unclear step or paste your scope note for feedback.</p>
+<p><strong>Read next:</strong> the introduction and adaptation discussion of <a href="https://arxiv.org/abs/2108.07258v1">Bommasani et al. (2021)</a>, with the <a href="https://crfm.stanford.edu/report.html">author overview</a>. <a href="0162-the-relational-fm-vision.html">Lesson 162</a> applies this scope to the relational foundation-model vision. Read Year 5 concepts while preserving Year 4's pending evidence gates.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/foundation-scope.js"></script><script src="../assets/l161-lesson.js"></script></body></html>

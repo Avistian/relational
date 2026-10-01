@@ -1,0 +1,126 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tabular → relational FM: what transfers?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/transfer-map.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0166-rdb-pfn-synthetic-relational-priors.html">Lesson 166</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 167</p><h1>Tabular → relational FM: what transfers?</h1></header><p class="route-lead">A tabular foundation model can predict from relationally constructed features. Your job is to locate where the relationships enter—and what the predictor still cannot recover.</p>
+
+<p><strong>Today’s win:</strong> build a defensible transfer map: what carries over, what needs new machinery, and which experiment supports each claim. Read and trace in <strong>15 minutes</strong>; allow <strong>30–45 minutes</strong> for the notebook and written defense.</p>
+<p><a href="../labs/0167-tabular-to-relational-fm-transfer.ipynb">Student notebook</a> · <a href="../labs/html/0167-tabular-to-relational-fm-transfer.html">Executed solution</a> · <a href="../reference/tabular-relational-transfer.html">Quick reference</a> · <a href="../labs/l167-reproduction.md">Reproduction contract</a></p>
+<h2 id="1-%C2%B7-The-gap-left-by-Lesson-166">1 &#183; The gap left by Lesson 166<a class="anchor-link" href="#1-%C2%B7-The-gap-left-by-Lesson-166">&#182;</a></h2><p><a href="0166-rdb-pfn-synthetic-relational-priors.html">Lesson 166</a> showed how synthetic relational data can shape a pretrained predictor. But its comparator, TabICL, also received the same relationally constructed matrix. If both methods see database information, what exactly makes their learning different?</p>
+<p>Retrieve <a href="0064-tabpfn-v2.html">TabPFN v2</a> and <a href="0066-tabicl-column-row-attention.html">TabICL</a>: <strong>support</strong> means labeled examples supplied during inference; a <strong>query</strong> is a row whose target must remain hidden. In-context learning changes these inputs while the pretrained weights stay fixed. Pretraining previously changed the weights across many tasks. The distinction is explained in the <a href="https://proceedings.mlr.press/v267/qu25d.html">TabICL paper</a>; Molnar’s <a href="https://tabularfoundationmodels.com/introduction">introduction and reading map</a> provide a gentle recap.</p>
+<div id="warmup"></div>
+
+<p>Use three separate questions: <strong>What information reaches the model? What prior shaped its weights? How does it adapt to this task?</strong> A model name alone answers none of them completely. This directly serves our mission: before claiming that relational models unlock extra value, make the tabular baseline competitive and identify the actual source of any gain.</p>
+<h2 id="2-%C2%B7-Model-architecture:-trace-the-handoff">2 &#183; Model architecture: trace the handoff<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-trace-the-handoff">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Keep three boxes separate: prepare the database inputs, load the learned weights, and supply this task's examples. Two methods can receive exactly the same relational features yet have learned different prediction rules before this task.</p>
+</blockquote>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l167/architecture.svg" alt="Three model-specific routes from a cutoff-safe matrix to predictions. Relational preparation and the pretrained prior are separate; TabPFN is not a measured arm."><figcaption>Three model-specific routes from a cutoff-safe matrix to predictions. Relational preparation and the pretrained prior are separate; TabPFN is not a measured arm.</figcaption></figure>
+
+<p>The shared interface is <code>predict(X_support, y_support, X_query)</code> with frozen weights. The implementations differ. TabPFN v2 alternates attention across features and across examples. TabICL first builds row representations, then performs dataset-level ICL. The released RDB-PFN numeric model alternates feature attention and support-only row attention over a DFS matrix. A shared API does not make their internal operations or pretrained weights interchangeable. See <a href="https://www.nature.com/articles/s41586-024-08328-6">TabPFN’s architecture</a>, <a href="https://proceedings.mlr.press/v267/qu25d.html">TabICL</a>, and <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN §§4–5</a>.</p>
+<p><strong>DFS means Deep Feature Synthesis:</strong> follow relationships and aggregate records into target-row features. It can supply relational information to a tabular FM. RDB-PFN additionally changes the synthetic pretraining distribution. Neither fact means its inference input is the original database graph. In contrast, <a href="0164-griffin-graph-centric-rdb-fm.html">Griffin</a> makes graph structure part of the model’s computation. This distinction explains why “relational” can describe the data preparation, the pretraining prior, or the predictor architecture.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Component</th>
+  <th>What carries over</th>
+  <th>What must be supplied or checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Row/cell representation</td>
+  <td>Encoders can process a constructed numeric table</td>
+  <td>Keys define joins; arbitrary ID codes do not explain relationships</td>
+</tr>
+<tr>
+  <td>Context inference</td>
+  <td>Labeled support guides frozen-weight predictions</td>
+  <td>Every support label must be available at the query time</td>
+</tr>
+<tr>
+  <td>Feature construction</td>
+  <td>A tabular FM accepts engineered relational summaries</td>
+  <td>Join path, aggregation and owner cutoff must be explicit</td>
+</tr>
+<tr>
+  <td>Pretraining</td>
+  <td>Learn a reusable prediction procedure across tasks</td>
+  <td>A relational synthetic prior changes task distribution; same API does not imply same prior</td>
+</tr>
+<tr>
+  <td>Evaluation</td>
+  <td>AUROC compares binary rankings</td>
+  <td>Align complete entity/cutoff keys, label orientation and support draws</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>What cannot transfer automatically:</strong> information discarded by the representation. Child histories <code>[2,8]</code> and <code>[5,5]</code> both become count 2, mean 5. Any predictor receiving only those two summaries sees identical inputs. It cannot distinguish their spread without another feature or representation. Better pretraining cannot reconstruct which history actually occurred.</p>
+<div id="predict"></div>
+
+<h2 id="3-%C2%B7-Worked-trace:-the-attention-mask-is-only-half-the-contract">3 &#183; Worked trace: the attention mask is only half the contract<a class="anchor-link" href="#3-%C2%B7-Worked-trace:-the-attention-mask-is-only-half-the-contract">&#182;</a></h2><p>Suppose customer 7 has purchases <code>(day 2, value 4)</code>, <code>(day 8, value 8)</code>, <code>(day 10, value 100)</code>, <code>(day 14, value 12)</code>. For a prediction at day 10, a strict-past join includes days 2 and 8: count <strong>2</strong>, mean <strong>6</strong>. At day 20, all four are eligible: count <strong>4</strong>, mean <strong>31</strong>. One batch-wide cutoff would corrupt the earlier query.</p>
+<p>Now consider three candidate support rows, queried on days 2, 5 and 10. Their labels become available on days 9, 12 and 10. At cutoff 10, this lesson’s strict-before policy allows only the first row. The second row’s features are old enough but its label is not. The third sits exactly on the boundary. In a real task, label availability comes from the target horizon and reporting process; it is not generally the task timestamp.</p>
+<p><strong>Boundary convention changed deliberately.</strong> Lesson 165 allowed a matured label arriving exactly at the current query cutoff (<code>arrival ≤ cutoff</code>), while still requiring an earlier context anchor. This fixture uses strict-before availability (<code>arrival &lt; cutoff</code>). Neither convention should be inferred from a variable named “time”: write it into the task contract. A context anchored on day 5 whose label arrives on day 10 passes L165's arrival test at day 10 and fails this fixture's test. Its input graph still uses its own day-5 cutoff in both cases.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l167/cutoff.svg" alt="The feature clock filters events and the label clock filters support. Both use the individual query cutoff."><figcaption>The feature clock filters events and the label clock filters support. Both use the individual query cutoff.</figcaption></figure>
+
+<div id="transfer-explorer"></div><noscript>Baseline: cutoff 10, final value 12 → count 2, mean 6, support A only. At cutoff 20 → count 4, mean 31, supports A/B/C. The notebook runs the intervention without JavaScript.</noscript>
+
+<p>The explorer recomputes <strong>features and eligible support identities</strong>, not model probabilities. Its baseline is cutoff 10, final purchase value 12. Changing that later purchase must leave the baseline features unchanged. At cutoff 20 it should change the mean. This fixture assumes events are available immediately; it does not certify historical availability in RelBench.</p>
+<h3 id="Visible-implementation-%C2%B7-strict-past-aggregation">Visible implementation &#183; strict-past aggregation<a class="anchor-link" href="#Visible-implementation-%C2%B7-strict-past-aggregation">&#182;</a></h3><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">temporal_summary</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Course fixture: [entity,cutoff] queries; [entity,event_time,value] events.</span>
+
+<span class="sd">    Return [count,mean] for matching events strictly before each owner cutoff.</span>
+<span class="sd">    Event time is assumed to equal availability time ONLY in this fixture.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="n">q</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">queries</span><span class="p">);</span><span class="n">e</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">2</span> <span class="ow">or</span> <span class="n">q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">!=</span><span class="mi">2</span> <span class="ow">or</span> <span class="n">e</span><span class="o">.</span><span class="n">ndim</span><span class="o">!=</span><span class="mi">2</span> <span class="ow">or</span> <span class="n">e</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">!=</span><span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Expected query pairs and event triples&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Nonfinite fixture input&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span><span class="n">q</span><span class="p">)))</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">):</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Duplicate query keys&#39;</span><span class="p">)</span>
+    <span class="n">result</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">entity</span><span class="p">,</span><span class="n">cutoff</span> <span class="ow">in</span> <span class="n">q</span><span class="p">:</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">e</span><span class="p">[(</span><span class="n">e</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">entity</span><span class="p">)</span><span class="o">&amp;</span><span class="p">(</span><span class="n">e</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">&lt;</span><span class="n">cutoff</span><span class="p">),</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span><span class="nb">float</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+<p>The relational preparation enforces time eligibility; the predictor’s attention mask enforces which supplied rows can act as context. A correct mask still leaks if you feed it labels that were unavailable. The notebook makes you implement both eligibility functions, then tests future-value changes, repeated entities and exact-boundary cases.</p>
+<h2 id="4-%C2%B7-Reproduce-the-evidence-before-interpreting-it">4 &#183; Reproduce the evidence before interpreting it<a class="anchor-link" href="#4-%C2%B7-Reproduce-the-evidence-before-interpreting-it">&#182;</a></h2><p>The named experiment is <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN v5, Table 9</a>: <strong>rel-f1 / driver-dnf, 512 support rows, seeds 0–9</strong>, three fixed arms. All receive 72 released DFS features and the full 702-query test population. TabICLv1.1 uses <strong>32 estimators</strong>. TabPFN v2 is discussed above but is <strong>not a measured arm here</strong>.</p>
+<p>Lesson 166 ran the 30 checkpoint evaluations. Lesson 167 independently verifies <strong>41 input/source files</strong>, regenerates all support draws, aligns <code>(driverId,date)</code> identities and recomputes all <strong>21,060 predictions’</strong> AUROCs using average ranks with half-credit ties. No new benchmark inference or cloud job runs in this lesson.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Model</th>
+  <th style="text-align:right">Paper AUROC</th>
+  <th style="text-align:right">Audited mean ± sample SD</th>
+  <th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>RDBPFN</td>
+  <td style="text-align:right">0.7219</td>
+  <td style="text-align:right">0.721938 ± 0.019983</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>RDBPFN_single</td>
+  <td style="text-align:right">0.6640</td>
+  <td style="text-align:right">0.663990 ± 0.034177</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>TabICLv1.1</td>
+  <td style="text-align:right">0.7176</td>
+  <td style="text-align:right">0.717568 ± 0.009770</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l167/paired.svg" alt="All ten paired AUROC differences from the original L166 runs, independently rescored in L167. Repeated support draws on one task do not establish cross-database performance."><figcaption>All ten paired AUROC differences from the original L166 runs, independently rescored in L167. Repeated support draws on one task do not establish cross-database performance.</figcaption></figure>
+
+<p>The paired RDB-PFN minus single-table checkpoint difference is <strong>+0.05795 AUROC</strong>, positive in all ten draws. Against TabICL it is <strong>+0.00437</strong>, positive in six draws and negative in four. These are ten support draws on <strong>one task</strong>, with overlapping support and the same test population—not ten independent databases. Their variability does not establish cross-database generalization or a causal effect of the prior alone. The single-table checkpoint is the closer comparison, but this replay does not independently recreate its full training history.</p>
+<p><strong>Keep the boundaries visible.</strong> All three means match the paper at four decimals; the inherited descriptive tolerance is 0.02 AUROC, not a statistical equivalence test. Released labels complement the current raw DNF reconstruction documented in L166. Preserve that orientation when replaying: silently calling class 1 “DNF risk” would be wrong. Complement both labels and probabilities to preserve AUROC under the alternate orientation. This lesson audits saved evidence; it does not rerun the SQL reconstruction or original DFS. Historical identity remains <code>NOT_ESTABLISHED</code>; fresh pretraining and whole-paper reproduction remain <code>NOT_RUN</code>.</p>
+<h2 id="5-%C2%B7-Your-transfer-map">5 &#183; Your transfer map<a class="anchor-link" href="#5-%C2%B7-Your-transfer-map">&#182;</a></h2><p>Open the notebook and complete three live functions: <code>temporal_summary</code>, <code>eligible_support</code>, and <code>keyed_auc</code>. The last one must reject missing or duplicate keys and align reordered predictions. The full 30-run audit calls your scorer, so a hard-coded toy answer cannot complete the lab.</p>
+<p>Then fill the <a href="../labs/l167-transfer-map-template.md">transfer-map template</a>: for <strong>representation, prior, adaptation, time and evaluation</strong>, state what transfers, what must be added, a concrete counterexample, and the evidence boundary. Defend this conclusion in 300–500 words: “A strong relationally prepared tabular baseline tests whether a more specialized relational model adds value.” Do not claim the experiment proves the thesis across databases.</p>
+<div id="teachback"></div>
+
+<p><strong>Exit check:</strong> explain the count/mean collision; exclude a support label whose window has not closed; reproduce the paired scores; distinguish checkpoint replay from pretraining. Author checks do not mark your learning complete: <code>PENDING_WRITTEN_DEFENSE</code>. Tomorrow, redraw the three interfaces without notes. Lesson 168 will ask whether the same reasoning survives an unseen database schema. Ask the agent to review your map or explain any unclear step.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN v5 §§4–5 and Table 9</a>, comparing the input representation with <a href="https://proceedings.mlr.press/v267/qu25d.html">TabICL’s two-stage design</a>. <a href="../labs/l167-reproduction.md">Full protocol and runnable fresh-inference lane</a>.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/transfer-map.js"></script><script src="../assets/l167-lesson.js"></script></body></html>

@@ -1,0 +1,188 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cross-database generalization</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/cross-database.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0167-tabular-to-relational-fm-transfer.html">Lesson 167</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 168</p><h1>Cross-database generalization</h1></header><p class="route-lead">A model accepting a new schema is the beginning of a transfer experiment. The result becomes meaningful only after you specify what was unseen, what target information was allowed, and which databases the evidence covers.</p>
+
+<p><strong>Today’s win:</strong> build a cross-database comparison you can defend. Spend <strong>15 minutes</strong> on the trace and explorer, then <strong>30–45 minutes</strong> on the notebook. The default notebook rescoring is CPU-only; fresh model inference has a separate executable lane.</p>
+<p><a href="../labs/0168-cross-database-generalization.ipynb">Student notebook</a> · <a href="../labs/html/0168-cross-database-generalization.html">Executed solution</a> · <a href="../reference/cross-database-generalization.html">Quick reference</a> · <a href="../labs/l168-reproduction.md">Full reproduction contract</a></p>
+<h2 id="1-%C2%B7-The-gap-left-by-Lesson-167">1 &#183; The gap left by Lesson 167<a class="anchor-link" href="#1-%C2%B7-The-gap-left-by-Lesson-167">&#182;</a></h2><p><a href="0167-tabular-to-relational-fm-transfer.html">Lesson 167</a> separated the representation, pretrained prior and adaptation rule. Its 30 saved runs all concerned F1. Ten different support draws still share one database and one test population. To test a cross-database claim, change the <strong>database</strong>, preserve a defensible evaluation contract, and report each database separately.</p>
+<p>Recall three prerequisites: a <strong>support</strong> row has a supplied label; a <strong>query</strong> row has a hidden target; a <strong>schema</strong> describes tables, columns and relationships. AUROC measures binary ranking: 0.5 is chance ranking, 1 is perfect ranking. Our mission is to test where relational modeling adds value, so the tabular comparator must receive the same available relational features and labels.</p>
+<div id="warmup"></div>
+
+<p><strong>Prediction to commit:</strong> a frozen model receives 512 labeled target examples. Has it performed zero-shot prediction?</p>
+<div id="predict"></div>
+
+<h2 id="2-%C2%B7-Ask-%E2%80%9Cunseen-in-which-sense?%E2%80%9D">2 &#183; Ask &#8220;unseen in which sense?&#8221;<a class="anchor-link" href="#2-%C2%B7-Ask-%E2%80%9Cunseen-in-which-sense?%E2%80%9D">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Repeating a test with new examples from the same database asks whether a result is stable there. Moving to a different database asks a new question. Before calling that database unseen, check what reached pretraining, schema generation and target adaptation.</p>
+</blockquote>
+<p>A random row split tests new rows in a familiar database. A temporal split tests later queries from that database. A database-held-out experiment excludes the target database from pretraining. A stronger schema-novelty claim also needs an explicit definition of schema similarity and an audit of the generator or training corpus. These claims do not follow automatically from one another.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Question</th>
+  <th>Evidence needed</th>
+  <th>This lesson’s boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Can the same predictor process another schema?</td>
+  <td>Run its interface on the second task’s feature width</td>
+  <td>F1 has 72 DFS features; trial has 176</td>
+</tr>
+<tr>
+  <td>Were target rows absent from pretraining?</td>
+  <td>Audited training lineage, including initialization</td>
+  <td>Synthetic predictor pretraining is reported; lineage not independently reconstructed</td>
+</tr>
+<tr>
+  <td>Is the schema itself unseen?</td>
+  <td>Defined matching rule and schema-corpus audit</td>
+  <td>Exact target-schema exclusion NOT_ESTABLISHED</td>
+</tr>
+<tr>
+  <td>Does transfer help this task?</td>
+  <td>Matched comparator, support and query population</td>
+  <td>Per-task paired AUROC differences</td>
+</tr>
+<tr>
+  <td>Does it usually help new databases?</td>
+  <td>A sufficiently broad, independently selected database sample</td>
+  <td>Two selected databases give descriptive evidence only</td>
+</tr>
+</tbody>
+</table></div>
+<p>The <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN paper, §5 and Appendix C.1.1</a> reports synthetic predictor training, while its <strong>schema generator</strong> learns from real schema corpora, citing Spider and BIRD. Synthetic cell values do not imply that the entire schema-generation process is independent of real structures. We have not reconstructed the complete checkpoint lineage or established exact target-schema exclusion. Keep the paper’s reported protocol separate from our verified inference artifacts.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l168/architecture.svg" alt="Same frozen RDB-PFN checkpoint across two DFS feature widths. F1 evidence is reused, trial evidence is fresh; schema-generator provenance is a separate question."><figcaption>Same frozen RDB-PFN checkpoint across two DFS feature widths. F1 evidence is reused, trial evidence is fresh; schema-generator provenance is a separate question.</figcaption></figure>
+
+<p>The same RDB-PFN checkpoint handles both constructed feature widths. Its alternating feature and support-row attention operates on a task matrix; it does not receive raw PK/FK edges at inference. DFS supplies those relationships through joins and summaries. TabICL receives <strong>the same matrix</strong>, so the comparison tests the released predictors under matched preparation. <a href="0166-rdb-pfn-synthetic-relational-priors.html">Lesson 166</a> contains the complete visible checkpoint-compatible implementation.</p>
+<p><strong>Schema compatibility is not semantic invariance.</strong> Renaming a table is harmless only if the preparation still resolves the same relationships and values. Changing a join, dropping a child table or shuffling category meanings changes the actual information supplied. A model accepting 176 columns does not prove it understands every new schema.</p>
+<h2 id="3-%C2%B7-Separate-adaptation-from-exclusion">3 &#183; Separate adaptation from exclusion<a class="anchor-link" href="#3-%C2%B7-Separate-adaptation-from-exclusion">&#182;</a></h2><p><a href="https://arxiv.org/html/2505.05568v1">Griffin</a> studies transferring pretrained graph representations with supervised target adaptation. <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN</a> uses labeled target context with frozen weights. Both can be evaluated on a database excluded from predictor training, but they spend the target labels differently. A fair comparison must declare the label budget, optimizer updates, feature access, validation selection and test population.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l168/protocol.svg" alt="Pretraining exclusion and target adaptation are independent axes. Griffin uses graph computation and supervised adaptation; RDB-PFN uses DFS and labeled context."><figcaption>Pretraining exclusion and target adaptation are independent axes. Griffin uses graph computation and supervised adaptation; RDB-PFN uses DFS and labeled context.</figcaption></figure>
+
+<p><strong>Worked trace:</strong> suppose the complete pretraining database list is <code>{shop, forum}</code>, and the target is <code>trial</code>. With 512 trial labels and zero updates, the target is held out of pretraining under that stipulated list, and adaptation is <strong>few-shot ICL</strong>. Five supervised updates change the adaptation classification. If the list is incomplete, holdout becomes <strong>NOT_ESTABLISHED</strong>, even if predictions stay numerically identical. If <code>trial</code> appears in the list, it is <strong>SEEN</strong>.</p>
+<div id="cross-explorer"></div><noscript>Baseline: incomplete lineage + 512 labels + frozen weights → NOT_ESTABLISHED / FEW_SHOT_ICL. A complete target-excluding inventory changes holdout to HELD_OUT. The notebook runs this exercise without JavaScript.</noscript>
+
+<p>This exercise classifies a protocol, not model performance. Its hypothetical zero-label setting is not a runnable zero-label RDB-PFN mode. The measured experiment always uses 512 labels. The invalid combination of supervised updates and zero labels is rejected by the notebook contract.</p>
+<h3 id="Visible-implementation-%C2%B7-the-claim-follows-the-evidence">Visible implementation &#183; the claim follows the evidence<a class="anchor-link" href="#Visible-implementation-%C2%B7-the-claim-follows-the-evidence">&#182;</a></h3><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">transfer_regime</span><span class="p">(</span><span class="n">pretraining_databases</span><span class="p">,</span> <span class="n">target_database</span><span class="p">,</span> <span class="n">exposure_complete</span><span class="p">,</span> <span class="n">support_labels</span><span class="p">,</span> <span class="n">gradient_steps</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Classify database exposure separately from target-task adaptation.</span>
+
+<span class="sd">    A complete exposure list is an input assumption, not inferred from a model name.</span>
+<span class="sd">    Synthetic schema reuse does not by itself imply reuse of target database rows.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_database</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">target_database</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">exposure_complete</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Explicit target and exposure completeness required&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pretraining_databases</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Expected database identifiers, not a string&#39;</span><span class="p">)</span>
+    <span class="n">pretraining_databases</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">pretraining_databases</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">pretraining_databases</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Expected a collection of database identifiers&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="n">x</span><span class="o">&lt;</span><span class="mi">0</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="n">support_labels</span><span class="p">,</span><span class="n">gradient_steps</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Label and update counts must be nonnegative integers&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gradient_steps</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">support_labels</span><span class="p">:</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;This contract covers supervised adaptation only&#39;</span><span class="p">)</span>
+    <span class="n">seen</span><span class="o">=</span><span class="n">target_database</span> <span class="ow">in</span> <span class="n">pretraining_databases</span>
+    <span class="n">holdout</span><span class="o">=</span><span class="s1">&#39;SEEN&#39;</span> <span class="k">if</span> <span class="n">seen</span> <span class="k">else</span> <span class="p">(</span><span class="s1">&#39;HELD_OUT&#39;</span> <span class="k">if</span> <span class="n">exposure_complete</span> <span class="k">else</span> <span class="s1">&#39;NOT_ESTABLISHED&#39;</span><span class="p">)</span>
+    <span class="n">adaptation</span><span class="o">=</span><span class="s1">&#39;SUPERVISED_ADAPTATION&#39;</span> <span class="k">if</span> <span class="n">gradient_steps</span> <span class="k">else</span> <span class="p">(</span><span class="s1">&#39;FEW_SHOT_ICL&#39;</span> <span class="k">if</span> <span class="n">support_labels</span> <span class="k">else</span> <span class="s1">&#39;ZERO_LABEL_ZERO_GRADIENT&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">database_holdout</span><span class="o">=</span><span class="n">holdout</span><span class="p">,</span><span class="n">adaptation</span><span class="o">=</span><span class="n">adaptation</span><span class="p">)</span>
+</pre></div>
+<p>Griffin’s <a href="../labs/l164-reproduction.md">Lesson 164 reproduction</a> remains <strong>INCOMPLETE_BUDGET_GATE</strong>. We explain its adaptation procedure and cite its paper; we do not put an unrun Griffin score in the freshly measured results table.</p>
+<h2 id="4-%C2%B7-Complete-selected-reproduction:-a-second-database">4 &#183; Complete selected reproduction: a second database<a class="anchor-link" href="#4-%C2%B7-Complete-selected-reproduction:-a-second-database">&#182;</a></h2><p>Our new experiment is <strong>RDB-PFN v5 Table 9, rel-trial / study-outcome, context size 512</strong>. All ten seeds, three fixed model arms and the entire 825-row test split are evaluated. No lighter TabICL ensemble, smaller test subset or post-test checkpoint choice is substituted. The complete F1 experiment is authenticated and rescored as <strong>reused</strong> evidence. <a href="https://arxiv.org/html/2603.03805v5#A6.T9">Published targets and protocol</a>.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>Fixed choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Models</td>
+  <td>RDBPFN <code>00528</code>; single-table checkpoint <code>00360</code>; TabICLv1.1 with 32 estimators</td>
+</tr>
+<tr>
+  <td>New data</td>
+  <td>Released trial DFS depth-2 task; 11,994 train / 960 validation / 825 test</td>
+</tr>
+<tr>
+  <td>Support</td>
+  <td>512 train rows; ten deterministic draws; identical identities across arms</td>
+</tr>
+<tr>
+  <td>Preprocessing</td>
+  <td>Original sorted numeric/category features; support-only median fill; original model normalization</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Checkpoints and settings frozen before new test scores; no validation tuning</td>
+</tr>
+<tr>
+  <td>Evaluation</td>
+  <td>Exact <code>(nct_id, timestamp)</code> keys; all 30 runs; AUROC mean and sample SD</td>
+</tr>
+<tr>
+  <td>Stop rule</td>
+  <td>$10 aggregate cap; pilot timing gate; record incomplete work if the full protocol cannot fit</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Read the label before interpreting a probability.</strong> All 13,779 trial labels equal <strong>one minus</strong> the pinned RelBench task labels after exact study/date alignment. The original task marks a qualifying primary outcome positive when its minimum eligible p-value is at most .05 within the next 365 days. The released RDB-PFN labels reverse that orientation. Reproduce the released labels for its score; complement both labels and probabilities when discussing the original outcome direction. AUROC is unchanged when both are complemented. The released class-1 probability needs that complement before it expresses the original primary-outcome direction. <a href="../labs/sources/l139/relbench__tasks__trial.py">Pinned task source</a>.</p>
+<p>Twelve exposed maximum-timestamp columns pass their owner-cutoff checks, and every training label’s 365-day horizon ends before the earliest test query. This does <strong>not</strong> certify every DFS feature or historical arrival time. We did not regenerate DFS from the full raw database. RelBench’s retrospective cohort and inferred dates retain the limitations explained in <a href="0139-healthcare-trial.html">Lesson 139</a>.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Database / evidence</th>
+  <th>Model</th>
+  <th style="text-align:right">Paper AUROC</th>
+  <th style="text-align:right">Measured mean ± sample SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-f1 / REUSED_L166</td>
+  <td>RDBPFN</td>
+  <td style="text-align:right">0.7219</td>
+  <td style="text-align:right">0.721938 ± 0.019983</td>
+</tr>
+<tr>
+  <td>rel-f1 / REUSED_L166</td>
+  <td>RDBPFN_single</td>
+  <td style="text-align:right">0.6640</td>
+  <td style="text-align:right">0.663990 ± 0.034177</td>
+</tr>
+<tr>
+  <td>rel-f1 / REUSED_L166</td>
+  <td>TabICLv1.1</td>
+  <td style="text-align:right">0.7176</td>
+  <td style="text-align:right">0.717568 ± 0.009770</td>
+</tr>
+<tr>
+  <td>rel-trial / FRESH_L168</td>
+  <td>RDBPFN</td>
+  <td style="text-align:right">0.5986</td>
+  <td style="text-align:right">0.598556 ± 0.021570</td>
+</tr>
+<tr>
+  <td>rel-trial / FRESH_L168</td>
+  <td>RDBPFN_single</td>
+  <td style="text-align:right">0.5961</td>
+  <td style="text-align:right">0.596101 ± 0.021897</td>
+</tr>
+<tr>
+  <td>rel-trial / FRESH_L168</td>
+  <td>TabICLv1.1</td>
+  <td style="text-align:right">0.5926</td>
+  <td style="text-align:right">0.592820 ± 0.030357</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l168/results.svg" alt="All ten paired RDB-PFN minus TabICL AUROC differences per database. The horizontal scale is shared; seeds measure support variation, not the distribution of new databases."><figcaption>All ten paired RDB-PFN minus TabICL AUROC differences per database. The horizontal scale is shared; seeds measure support variation, not the distribution of new databases.</figcaption></figure>
+
+<p>RDB-PFN minus TabICL averages <strong>+0.00437 AUROC on F1</strong> and <strong>+0.00574 on trial</strong>, positive in 6/10 and 6/10 support draws respectively. The equal-database mean gain is <strong>+0.00505</strong>. All three fresh trial means are within the predeclared .02 descriptive distance from the published values; this is not a statistical equivalence test or proof of historical data identity.</p>
+<p>The new evidence is 30 complete trial evaluations and <strong>24,750 fresh probabilities</strong>. The comparison also independently rescores 21,060 reused F1 probabilities. Both selected task means favor RDB-PFN over TabICL, but seed-level reversals and only two databases prevent a broad-superiority claim. The small trial gain over its single-table ablation also cautions against attributing every gain to the relational prior.</p>
+<h2 id="5-%C2%B7-Aggregate-at-the-unit-of-the-claim">5 &#183; Aggregate at the unit of the claim<a class="anchor-link" href="#5-%C2%B7-Aggregate-at-the-unit-of-the-claim">&#182;</a></h2><p>For database d and support seed s, compute <code>delta[d,s] = AUROC(RDBPFN) − AUROC(TabICL)</code>. Pair by <strong>database and seed</strong>, after matching all query and support identities. Average the ten deltas within each database. Then give each selected database one weight in the macro mean.</p>
+<p><strong>Hand-worked counterexample:</strong> a small database gains +0.10 and a large one loses −0.20. Their equal-database macro gain is <code>(0.10 − 0.20)/2 = −0.05</code>, regardless of row counts. Pooling predictions from different tasks changes the estimand: score scales and target meanings differ. Counting ten support draws as ten independent databases also overstates the evidence. The plotted sample SD describes support-selection variation on a fixed test population; it is not a confidence interval over new databases.</p>
+<p>An <strong>estimand</strong> is the quantity the comparison is meant to measure. Here it is the mean task-level gain across the two selected databases. <strong>Macro</strong> means each database contributes equally. SD means standard deviation, the spread of the ten support-draw results; changing those draws does not create additional databases.</p>
+<p>The notebook makes you implement three load-bearing functions: classify exposure/adaptation, assemble complete paired gains, and calculate the equal-database macro. These functions feed the actual saved-evidence audit and final table. Checks reject a missing seed, duplicate run, mismatched test count and mixed metric; the raw audit separately rejects wrong keys, supports, labels and hashes.</p>
+<h2 id="6-%C2%B7-Exit:-write-the-claim-you-can-defend">6 &#183; Exit: write the claim you can defend<a class="anchor-link" href="#6-%C2%B7-Exit:-write-the-claim-you-can-defend">&#182;</a></h2><p>Fill the <a href="../labs/l168-transfer-template.md">cross-database table and defense</a>: exposure evidence, representation, label budget, updates, metric, measured/reused status and unresolved limits. Write 250–400 words answering: <strong>What did the trial run add beyond F1? What would a third database add? What evidence would establish exact schema novelty?</strong></p>
+<p>Pass rubric: 0–2 each for exposure, adaptation, pairing, aggregation and evidence limits; target ≥8/10, no zero, and teacher review. Running the solution is author verification, not learner mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<div id="teachback"></div>
+
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN §6.1, Appendix A.3, C.1.1 and Table 9</a>. Read <a href="https://arxiv.org/html/2505.05568v1">Griffin’s transfer experiments</a> to locate its target adaptation budget. Ask me follow-up questions about any step—especially the difference between verified inference, reported training provenance and schema novelty.</p>
+<p>Next: Lesson 169 asks what scale and diversity evidence we would need before calling these observations a scaling law.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/cross-database.js"></script><script src="../assets/l168-lesson.js"></script></body></html>

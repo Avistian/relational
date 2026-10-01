@@ -396,18 +396,18 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 ### Q1 · Foundation model concepts (161–170)
 **Papers (chronological):** Bommasani 2021 (FM definition) · Vogel 2023 (vision) · Griffin (Wang 2025) · KumoRFM (2025, industry) · RDB-PFN (Wang 2026) · Fey survey 2025 §FM
 
-| 161 | What is a foundation model | Bommasani 2021 | Scope for relational |
-| 162 | The relational FM vision | Vogel 2023 (2305.15321) | LM + GNN pre-training |
-| 163 | LM encoders for rows | Vogel 2023 §4 | Text vs typed columns |
-| 164 | Griffin — graph-centric RDB FM ★ | Wang 2025 (2505.05568) | Unified encoder/decoder, cross-attention |
-| 165 | KumoRFM — in-context relational learner | KumoRFM tech report (2025) | Few-shot task adaptation (proprietary comparator) |
+| 161 | [What is a foundation model](lessons/0161-what-is-a-foundation-model.html) | Bommasani 2021 | Scope note + executable protocol audit; no performance claim |
+| 162 | [The relational FM vision](lessons/0162-the-relational-fm-vision.html) | Vogel 2023 (2305.15321) | LM + GNN pre-training |
+| 163 | [LM encoders for rows](lessons/0163-lm-encoders-for-rows.html) | Vogel 2023 §4 | Frozen BART vs typed features; complete synthetic comparison |
+| 164 | [Griffin — graph-centric RDB FM ★](lessons/0164-griffin-graph-centric-rdb-fm.html) | Wang 2025 (2505.05568) | Visible model + source parity; full20fit transfer INCOMPLETE_BUDGET_GATE |
+| 165 | [KumoRFM — in-context relational learner](lessons/0165-kumorfm-in-context-relational-learning.html) | KumoRFM v1 report (2025) | Complete local context audit; historical reproduction NOT_RUN |
 | 165b | OpenRFM — open relational ICL ★ | Chen et al. 2026 (2606.04320) | Dual-stage ICL; ~30% over RT; open weights |
-| 166 | RDB-PFN — synthetic-prior relational FM ★ | Wang 2026 (2603.03805) | Relational Prior Generator; reproduce (open code) |
+| 166 | [RDB-PFN — synthetic relational priors ★](lessons/0166-rdb-pfn-synthetic-relational-priors.html) | Wang et al. 2026 (2603.03805v5) | Complete 30-run selected checkpoint replay; pretraining NOT_RUN |
 | 166b | RDBLearn — training-free relational ICL ★ | Zhang et al. 2026 (2602.18495); Xu et al. companion (2602.13697) | DFS + TabICL; no RDB FM training |
-| 167 | Tabular FM → relational FM transfer | TabPFN v2 + TabICL recap | What carries over from Year 2 |
-| 168 | Cross-database generalization | Griffin + RDB-PFN experiments | Zero-/few-shot on unseen schema |
-| 169 | Scaling laws & open questions | Survey 2025 | What's unknown |
-| 170 | **Q1 checkpoint** | Vogel + Griffin + RDB-PFN + RDBLearn | Written FM design doc comparing paradigms |
+| 167 | [Tabular FM → relational FM transfer](lessons/0167-tabular-to-relational-fm-transfer.html) | TabPFN v2 + TabICL recap; RDB-PFN Table 9 | Complete independent audit of 30 saved runs; no new inference |
+| 168 | [Cross-database generalization](lessons/0168-cross-database-generalization.html) | Griffin + RDB-PFN experiments | Complete trial 30-run checkpoint evaluation; F1 evidence reused |
+| 169 | [Scaling laws & open questions](lessons/0169-scaling-laws-open-questions.html) | Survey §5.2 + RDB-PFN v5 Tables 6–10 | Complete selected context sweep; pretraining law not established |
+| 170 | [**Q1 checkpoint: defend an FM design**](lessons/0170-fm-design-checkpoint.html) | Vogel + Griffin + RDB-PFN + RDBLearn | [Full 300-run saved replay and written design defense](labs/0170-fm-design-checkpoint.ipynb); learner pending |
 | 170b | Three relational FM paradigms ★ | Synthesis lecture | Graph-native ICL vs synthetic pretrain vs training-free |
 
 ### Q2 · Building pre-training pipelines (171–180)

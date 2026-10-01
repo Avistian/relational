@@ -947,3 +947,68 @@ Primary: [RelBench v1 Section6 and AppendixC](https://arxiv.org/html/2407.20060v
 ## Lesson 160 · Year 4 exit evidence
 - [RelBench v1 Section6 and AppendixC](https://arxiv.org/html/2407.20060v1#S6): distinguish published expert work from replaying the released pipeline.
 - [L160 frozen report](labs/evidence/l160/report.md) and [reproduction/remediation contract](labs/l160-reproduction.md): full selected saved-evidence replay with unmet experimental gates.
+
+## Lesson 161 · Foundation-model definition and scope (2026-10-01)
+
+- **Primary:** Bommasani et al. (2021), [On the Opportunities and Risks of Foundation Models, v1](https://arxiv.org/abs/2108.07258v1). Read the introduction and adaptation discussion. [CRFM overview](https://crfm.stanford.edu/report.html) provides navigation. Broad pretraining and task adaptation ground the scope note; emergence/homogenization motivate evidence and failure analysis. This synthesis report is not represented as a selected relational training benchmark.
+- **Prepared practice:** [Lesson 161](lessons/0161-what-is-a-foundation-model.html), [protocol](labs/l161-reproduction.md). Synthetic design audit, no trained model or numerical paper-result claim.
+- **Year 5 boundary source pass:** [record](docs/plans/2026-10-01-year-5-source-check.md). Existing bridge already covers Context Window Failures and RelArena/TabPFN-Rel. The newly accessible [TabFM report](https://arxiv.org/abs/2609.37959) is a candidate method/code audit, not a new performance conclusion or required L161 experiment.
+
+## Lesson 162 · Relational FM vision
+Vogel, Hilprecht and Binnig (2023), [Towards Foundation Models for Relational Databases, arXiv:2305.15321v1](https://arxiv.org/html/2305.15321v1), §§2–4 and Table1. Primary reading for row-wise LM encoding, graph context, staged training and scaling obstacles. Initial single-table reconstruction is distinct from held-out multi-table transfer. [Pinned source ledger](labs/sources/l162/source-ledger.json) records bytes, search scope and unresolved protocol details. The complete local context/scale audit is synthetic; historical wikiTables training remains NOT_RUN.
+
+## Lesson163 · row encoders
+
+- Vogel, Hilprecht and Binnig, [2023 vision paper §§2–4](https://arxiv.org/html/2305.15321v1): primary conceptual/historical target. Exact artifacts and training protocol remain unresolved.
+- Meta [BART-base model card](https://huggingface.co/facebook/bart-base) and [Transformers4.57.1 BART API](https://huggingface.co/docs/transformers/v4.57.1/en/model_doc/bart): real encoder/tokenizer used at immutable revision aadd2ab0ae0c8268c7c9693540e9904811f36177; hashes in labs/evidence/l163/encoding-receipt.json. Mean pooling and ridge are course choices.
+- [L163 contract](labs/l163-reproduction.md): complete synthetic comparison and separately unrun historical target; no general encoder superiority claim.
+
+## Lesson164 · Griffin · pinned2026-10-01
+
+- Wang et al., [Griffin: Towards a Graph-Centric Relational Database Foundation Model](https://arxiv.org/html/2505.05568v1), §§3–4,Table12. Shared cell/task representation,graph-centric adaptation and low-data transfer.
+- [Official code at b9d0e1f](https://github.com/yanxwb/Griffin/tree/b9d0e1fa8d89dfb1cd8bd5976b71de8a3b515427),Apache2.0; unmodified archive/license in `labs/sources/l164/upstream`.
+- [Processed data](https://huggingface.co/datasets/yamboo/Griffin_datasets_joint_v65/tree/e0c54ceada75317b06f11f8dcda7aa8304fbb593) and [released checkpoints](https://huggingface.co/yamboo/Griffin_models/tree/bd8c5be5130f34e7faa31099d0bd81d95d0aa995). Artifact hashes and source deviations in `labs/l164-reproduction.md`; published scores are not local results.
+
+### Lesson 165 · KumoRFM v1 · 2026-10-01
+
+- Fey, Kocijan, Lopez, Lenssen and Leskovec (2025), [original archived technical report](https://web.archive.org/web/20260702201348id_/https://kumo.ai/research/kumo_relational_foundation_model.pdf): Eq.1, §§2.2–2.3 and Table2. [Pinned local PDF](labs/sources/l165/paper.pdf), SHA256 `805febc5e9af8a8e9d34c6123fa37af4d9c2f29ea2d1d04be0e87d63e249cfa2`.
+- Historical selected target: rel-f1/driver-dnf, in-context AUROC82.41. Weights, exact data identity and complete context/evaluation recipe unresolved; NOT_RUN/fidelity NOT_ESTABLISHED. [Full protocol](labs/l165-reproduction.md).
+- Current NVIDIA [research overview](https://docs.nvidia.com/sdgm/research/kumorfm-paper) is a source-drift observation: its paper link points to KumoRFM-2. The original Kumo report URL redirects to current documentation; a live client cannot establish v1 historical identity. [Retrieval ledger](labs/sources/l165/source-ledger.json).
+- Local teaching evidence: complete deterministic context, graph and keyed-scoring audit. No inference or training; USD0 cloud/API. Author preparation is not learner mastery.
+
+### Lesson 166 · RDB-PFN · 2026-10-01
+
+- Wang, You, Shi and Zhang, [Relational In-Context Learning via Synthetic Pre-training with Structural Prior, v5](https://arxiv.org/html/2603.03805v5), §§4–6, Appendix A.3/C.2/F; Table9 selected512-context driver-dnf comparison.
+- [Official code at a953782](https://github.com/MuLabPKU/RDBPFN/tree/a95378225478daa262b85f180d482da7516b0af6), [processed data](https://huggingface.co/datasets/yamboo/RDB_PFN/tree/d6a88c0a8cce79607cfc0fca0dcba78ba262ffad). Exact checkpoint/data/library hashes and deviations in [contract](labs/l166-reproduction.md).
+- Fresh complete30-run released-checkpoint replay matches all three paper means at four decimals. One released prior draw completed. Fresh pretraining and wholepaper NOT_RUN; historical identity NOT_ESTABLISHED. Author preparation, not learner mastery.
+
+
+## Lesson 167 — tabular to relational FM transfer
+
+- Hollmann et al., [TabPFN v2 / Nature2025](https://www.nature.com/articles/s41586-024-08328-6), architecture and context caching. Conceptual comparison; no TabPFN benchmark arm added.
+- Qu et al., [TabICL / ICML2025](https://proceedings.mlr.press/v267/qu25d.html), row representations followed by dataset ICL. The audited release is L166's pinned TabICLv1.1,32estimators.
+- Wang et al., [RDB-PFN v5](https://arxiv.org/html/2603.03805v5), synthetic relational prior and Table9 context512 driver-dnf comparison. Full30-run saved-evidence audit in L167, no new inference.
+- Molnar, [Tabular Foundation Models introduction](https://tabularfoundationmodels.com/introduction), conceptual reading map; primary papers govern mechanism/benchmark claims. Four source snapshots and hashes: `labs/sources/l167/source-ledger.json`.
+
+
+## Lesson 168 · cross-database evaluation
+
+- [RDB-PFN v5](https://arxiv.org/html/2603.03805v5): §6.1,AppendixA.3,C.1.1andTable9. Source-pinned trial512-context experiment; explicit synthetic-predictor versus real-schema-generator boundary.
+- [Griffin v1](https://arxiv.org/html/2505.05568v1): compare supervised target adaptation with labeled-context prediction. L164fresh experiment remains budget-blocked.
+- [Pinned RelBench study-outcome source](labs/sources/l139/relbench__tasks__trial.py): outcome horizon and primary-outcome semantics; new released labels are its complement by full query key.
+
+## Lesson 169 · Scaling laws and open questions · checked 2026-10-01
+
+- [Dwivedi et al., RDL survey v1 §5.2](https://arxiv.org/html/2506.16654v1#S5.SS2): historical foundation-model convergence argument; no fitted relational scaling law in this section.
+- [Wang et al., RDB-PFN v5, Appendix A.3 and Tables6–10](https://arxiv.org/html/2603.03805v5#A6): contexts64–1024, ten support seeds; selected full two-task/three-model scope, not the whole benchmark or fresh pretraining.
+- [Pinned RDBPFN evaluation source](https://github.com/MuLabPKU/RDBPFN/blob/a95378225478daa262b85f180d482da7516b0af6/model_pretrain/src/eval.py): stable task/seed key, independent sampling per context; same seed does not guarantee nested supports.
+- [Modal pricing](https://modal.com/pricing): L4+2physical CPU+16GiB at USD0.00028372/s; USD10aggregate lesson limit including retries and validation, USD3overhead reserve. Source snapshots and hashes in labs/sources/l169/.
+
+
+## Lesson 170 · evidence-backed FM design checkpoint · checked 2026-10-01
+
+- [Vogel et al., vision v1](https://arxiv.org/html/2305.15321v1): motivation and reusable relational representations; conceptual context, not a completed benchmark.
+- [Griffin v1 §§3–4](https://arxiv.org/html/2505.05568v1#S3): cell attention, relational messages and supervised transfer; L164 selected reproduction remains budget-stopped.
+- [RDB-PFN v5 Appendix A.3 / Tables 6–10](https://arxiv.org/html/2603.03805v5#A6): source protocol for the complete selected 300-evaluation evidence replay.
+- [RDBLearn v1 §§3–5](https://arxiv.org/html/2602.18495v1#S3): relational featurization plus an existing tabular ICL predictor. L170 compares the approach conceptually; the RDB-PFN DFS+TabICL arm does not reproduce its pipeline.
+- Versioned primary snapshots and SHA256: `labs/sources/l170/source-ledger.json`. Named scope, executable commands and deviations: `labs/l170-reproduction.md`.

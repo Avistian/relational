@@ -1,0 +1,150 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LM encoders for rows</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/row-encoder.css"></head><body class="checkpoint row-lesson"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0162-the-relational-fm-vision.html">Lesson 162</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 163</p><h1>LM encoders for rows</h1></header><div class="lab-access"><strong>Lesson package</strong> · <a href="../labs/0163-lm-encoders-for-rows.ipynb">Student notebook</a> · <a href="../labs/html/0163-lm-encoders-for-rows.html">Executed author preview</a> · <a href="../labs/solutions/0163-lm-encoders-for-rows.ipynb">Solution</a><br><a href="../reference/row-encoders.html">Quick reference</a> · <a href="../labs/l163-comparison-template.md">Comparison template</a> · <a href="../labs/l163-reproduction.md">Reproduction contract</a> · <a href="../labs/evidence/l163/report.md">Complete measured results</a></div>
+
+<h2 id="1-%C2%B7-What-does-the-row-vector-remember?">1 &#183; What does the row vector remember?<a class="anchor-link" href="#1-%C2%B7-What-does-the-row-vector-remember?">&#182;</a></h2><p><strong>Single win:</strong> encode the same row as text and as typed features, then defend an encoder choice using predictions and information loss. Read the core lesson in about 10 minutes; do the notebook comparison in a separate practice session.</p>
+<p><a href="0162-the-relational-fm-vision.html">Lesson 162</a> placed a row encoder before graph message passing. That left a gap: what information reaches the graph in the first place? <a href="0125-pytorch-frame-deep-dive.html">Lesson 125</a> introduced semantic column types. Here we compare a numerical value carried as a number with that same value carried through language-model tokens. Recall also <a href="0074-carte-cross-table-transfer.html">CARTE in Lesson 74</a>: how you represent a row changes what later computation can use.</p>
+<div id="warmup"></div>
+
+<p>Our worked row describes a product: price <strong>10 USD</strong>, weight <strong>2 kg</strong>, colour <strong>red</strong>, condition <strong>used</strong>. A <strong>schema</strong> names and types these fields. An <strong>encoder</strong> turns their values into features a prediction model can use. A <strong>head</strong> is the final fitted mapping from features to the predicted target.</p>
+<blockquote>
+<p>Before asking which encoder wins, ask what information each path receives, what is fitted, and what stays fixed.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Model-architecture:-two-routes-from-one-row">2 &#183; Model architecture: two routes from one row<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-two-routes-from-one-row">&#182;</a></h2><p>Vogel, Hilprecht and Binnig propose serializing rows together with schema, encoding them with BART, and adding graph context. Their prototype adapts BART on table reconstruction before GNN training. Our comparison isolates the row-input decision: it uses a frozen text-pretrained BART encoder and a typed baseline, with no GNN. The pooling and regression head below are course choices, not a reconstruction of their hidden implementation details. <a href="https://arxiv.org/html/2305.15321v1#S2">Primary reading: §§2–4</a></p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l163/architecture.svg" alt="The implemented comparison: frozen BART encoder and a train-fitted typed feature map feed separately selected ridge heads. Both use identical splits and target information. This is a local synthetic comparison, not the historical BART_table+GNN model."><figcaption>The implemented comparison: frozen BART encoder and a train-fitted typed feature map feed separately selected ridge heads. Both use identical splits and target information. This is a local synthetic comparison, not the historical BART_table+GNN model.</figcaption></figure>
+
+<p><strong>Text route.</strong> We serialize only allowed inputs:</p>
+<div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;table&quot;</span><span class="p">:</span><span class="s2">&quot;products&quot;</span><span class="p">,</span><span class="s2">&quot;price_usd&quot;</span><span class="p">:</span><span class="mf">10.0</span><span class="p">,</span><span class="s2">&quot;weight_kg&quot;</span><span class="p">:</span><span class="mf">2.0</span><span class="p">,</span>
+ <span class="s2">&quot;colour&quot;</span><span class="p">:</span><span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;condition&quot;</span><span class="p">:</span><span class="s2">&quot;used&quot;</span><span class="p">}</span>
+</pre></div>
+<p>Serialization must preserve which value belongs to which field. JSON escaping prevents a quoted string from accidentally becoming another field. IDs and the prediction target never enter the text. A tokenizer maps the string to integer token IDs. A token may represent a word fragment, punctuation or part of a number; it is not a typed database cell.</p>
+<p>The pinned <code>facebook/bart-base</code> encoder has six layers and hidden width 768. For a batch of B rows, padding gives L token positions; final hidden states have shape <strong>B×L×768</strong>. We average real token vectors into <strong>B×768</strong> row features. This pooling is explicit; a generic BART output is not automatically a single row vector. Only the encoder runs. BART's pretrained encoder–decoder design and attention-mask interface are documented in the <a href="https://huggingface.co/facebook/bart-base">model card</a> and <a href="https://huggingface.co/docs/transformers/v4.57.1/en/model_doc/bart">version-pinned API</a>.</p>
+<p><strong>Typed route.</strong> Fit numeric means/scales and categorical vocabularies on training rows. For each numeric column, compute <code>z=(value−training_mean)/training_SD</code>. A category becomes a one-hot block: one position is 1, others 0. With two numeric columns and three values each for colour/condition, our data gives <strong>8 features</strong>. This transparent baseline illustrates type-specific treatment; it is not a trained PyTorch Frame neural encoder.</p>
+<p><strong>Read the units.</strong> SD means standard deviation, a measure of spread around the mean. Subtracting the mean centers a numeric column; dividing by its training SD expresses the value in units of that spread. Using training statistics keeps validation and test values from changing the fitted transform. MAE, used below to select the head, means mean absolute error: average distance between predictions and targets, in target units.</p>
+<p><strong>Worked arithmetic.</strong> If the training price mean is 20 and SD 10, price 10 becomes −1. If weight mean is 1 and SD 0.5, weight 2 becomes 2. With category orders <code>[blue,green,red]</code> and <code>[new,refurbished,used]</code>, the row becomes <code>[-1,2,0,0,1,0,0,1]</code>. These moments are a hand example, not the experiment's fitted statistics. An unseen category produces an all-zero block in our implementation; that policy trades an explicit unknown signal for simplicity.</p>
+<p>Both paths then receive training-fitted feature standardization and a ridge head. <strong>Ridge regression</strong> minimizes squared training error plus <code>alpha × sum(coefficient²)</code>; the intercept is unpenalized. Larger alpha discourages large coefficients. We choose alpha on validation MAE, then freeze the complete pipeline before testing. Different feature dimensions and pretraining histories mean equal head-selection rules do not imply equal model capacity or compute.</p>
+<h2 id="3-%C2%B7-Padding,-order-and-names-are-testable-choices">3 &#183; Padding, order and names are testable choices<a class="anchor-link" href="#3-%C2%B7-Padding,-order-and-names-are-testable-choices">&#182;</a></h2><div id="predict"></div>
+
+<p>A short row might be padded to match another row in its batch. Padding positions must not enter the average. If token vectors are <code>[1,3]</code>, <code>[3,7]</code> and padded <code>[900,900]</code>, the correct pooled vector is <code>[2,5]</code>, not an average of all three. We include BART's beginning/end special tokens and exclude only padding:</p>
+<div class="highlight"><pre><span></span><span class="n">pooled</span> <span class="o">=</span> <span class="p">(</span><span class="n">hidden</span> <span class="o">*</span> <span class="n">mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">pooled</span> <span class="o">=</span> <span class="n">pooled</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+</pre></div>
+<p>The mask has shape B×L; adding the last axis broadcasts it over 768 features. A zero denominator is an error. Padding exclusion at pooling complements the encoder's attention mask; both matter.</p>
+<p>Here <strong>broadcasting</strong> applies the same keep/drop value to every coordinate of one token vector. The attention mask stops padding from being read inside the encoder; the pooling mask stops it from entering the final average. BOS/EOS in the diagram mean beginning/end-of-sequence tokens.</p>
+<p><strong>Now intervene on presentation.</strong> Reverse the field order, or rename the columns to <code>c0…c3</code>, preserving every value. A positional text model receives a different sequence. Our typed route looks up canonical field identities, so these presentation changes leave its vector unchanged. That invariance is built into its input mapping. It would not survive an actual loss of field identity.</p>
+<div id="row-explorer"></div><noscript>Measured token traces for baseline, reversed order and opaque names are in the notebook. All variants preserve values; the result table below remains available without JavaScript.</noscript><script type="application/json" id="row-data">{"rows": [{"id": "p000", "baseline": {"id": "p000", "text": "{\"table\":\"products\",\"price_usd\":163.26,\"weight_kg\":0.32,\"colour\":\"red\",\"condition\":\"used\"}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 17212, 1215, 687, 417, 7862, 29425, 4, 2481, 60, 4301, 1215, 9043, 7862, 288, 4, 2881, 60, 42082, 4805, 2050, 4332, 27503, 4805, 6199, 48805, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "price", "_", "us", "d", "\":", "163", ".", "26", ",\"", "weight", "_", "kg", "\":", "0", ".", "32", ",\"", "colour", "\":\"", "red", "\",\"", "condition", "\":\"", "used", "\"}", "<\/s>"], "length": 32, "cosine_distance": 0.0}, "reordered": {"id": "p000", "text": "{\"table\":\"products\",\"condition\":\"used\",\"colour\":\"red\",\"weight_kg\":0.32,\"price_usd\":163.26}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 27503, 4805, 6199, 4332, 42082, 4805, 2050, 4332, 4301, 1215, 9043, 7862, 288, 4, 2881, 60, 17212, 1215, 687, 417, 7862, 29425, 4, 2481, 24303, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "condition", "\":\"", "used", "\",\"", "colour", "\":\"", "red", "\",\"", "weight", "_", "kg", "\":", "0", ".", "32", ",\"", "price", "_", "us", "d", "\":", "163", ".", "26", "}", "<\/s>"], "length": 32, "cosine_distance": 0.01073648986516329}, "renamed": {"id": "p000", "text": "{\"table\":\"products\",\"c0\":163.26,\"c1\":0.32,\"c2\":\"red\",\"c3\":\"used\"}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 438, 288, 7862, 29425, 4, 2481, 60, 438, 134, 7862, 288, 4, 2881, 60, 438, 176, 4805, 2050, 4332, 438, 246, 4805, 6199, 48805, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "c", "0", "\":", "163", ".", "26", ",\"", "c", "1", "\":", "0", ".", "32", ",\"", "c", "2", "\":\"", "red", "\",\"", "c", "3", "\":\"", "used", "\"}", "<\/s>"], "length": 31, "cosine_distance": 0.062957440511763}}, {"id": "p001", "baseline": {"id": "p001", "text": "{\"table\":\"products\",\"price_usd\":57.25,\"weight_kg\":4.07,\"colour\":\"blue\",\"condition\":\"used\"}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 17212, 1215, 687, 417, 7862, 4390, 4, 1244, 60, 4301, 1215, 9043, 7862, 306, 4, 3570, 60, 42082, 4805, 22128, 4332, 27503, 4805, 6199, 48805, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "price", "_", "us", "d", "\":", "57", ".", "25", ",\"", "weight", "_", "kg", "\":", "4", ".", "07", ",\"", "colour", "\":\"", "blue", "\",\"", "condition", "\":\"", "used", "\"}", "<\/s>"], "length": 32, "cosine_distance": 0.0}, "reordered": {"id": "p001", "text": "{\"table\":\"products\",\"condition\":\"used\",\"colour\":\"blue\",\"weight_kg\":4.07,\"price_usd\":57.25}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 27503, 4805, 6199, 4332, 42082, 4805, 22128, 4332, 4301, 1215, 9043, 7862, 306, 4, 3570, 60, 17212, 1215, 687, 417, 7862, 4390, 4, 1244, 24303, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "condition", "\":\"", "used", "\",\"", "colour", "\":\"", "blue", "\",\"", "weight", "_", "kg", "\":", "4", ".", "07", ",\"", "price", "_", "us", "d", "\":", "57", ".", "25", "}", "<\/s>"], "length": 32, "cosine_distance": 0.010930019574127425}, "renamed": {"id": "p001", "text": "{\"table\":\"products\",\"c0\":57.25,\"c1\":4.07,\"c2\":\"blue\",\"c3\":\"used\"}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 438, 288, 7862, 4390, 4, 1244, 60, 438, 134, 7862, 306, 4, 3570, 60, 438, 176, 4805, 22128, 4332, 438, 246, 4805, 6199, 48805, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "c", "0", "\":", "57", ".", "25", ",\"", "c", "1", "\":", "4", ".", "07", ",\"", "c", "2", "\":\"", "blue", "\",\"", "c", "3", "\":\"", "used", "\"}", "<\/s>"], "length": 31, "cosine_distance": 0.0626066008673769}}, {"id": "p002", "baseline": {"id": "p002", "text": "{\"table\":\"products\",\"price_usd\":106.43,\"weight_kg\":7.11,\"colour\":\"blue\",\"condition\":\"refurbished\"}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 17212, 1215, 687, 417, 7862, 18427, 4, 3897, 60, 4301, 1215, 9043, 7862, 406, 4, 1225, 60, 42082, 4805, 22128, 4332, 27503, 4805, 13043, 13157, 6555, 48805, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "price", "_", "us", "d", "\":", "106", ".", "43", ",\"", "weight", "_", "kg", "\":", "7", ".", "11", ",\"", "colour", "\":\"", "blue", "\",\"", "condition", "\":\"", "ref", "urb", "ished", "\"}", "<\/s>"], "length": 34, "cosine_distance": 0.0}, "reordered": {"id": "p002", "text": "{\"table\":\"products\",\"condition\":\"refurbished\",\"colour\":\"blue\",\"weight_kg\":7.11,\"price_usd\":106.43}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 27503, 4805, 13043, 13157, 6555, 4332, 42082, 4805, 22128, 4332, 4301, 1215, 9043, 7862, 406, 4, 1225, 60, 17212, 1215, 687, 417, 7862, 18427, 4, 3897, 24303, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "condition", "\":\"", "ref", "urb", "ished", "\",\"", "colour", "\":\"", "blue", "\",\"", "weight", "_", "kg", "\":", "7", ".", "11", ",\"", "price", "_", "us", "d", "\":", "106", ".", "43", "}", "<\/s>"], "length": 34, "cosine_distance": 0.008584109995542821}, "renamed": {"id": "p002", "text": "{\"table\":\"products\",\"c0\":106.43,\"c1\":7.11,\"c2\":\"blue\",\"c3\":\"refurbished\"}", "token_ids": [0, 49643, 14595, 4805, 33119, 4332, 438, 288, 7862, 18427, 4, 3897, 60, 438, 134, 7862, 406, 4, 1225, 60, 438, 176, 4805, 22128, 4332, 438, 246, 4805, 13043, 13157, 6555, 48805, 2], "tokens": ["<s>", "{\"", "table", "\":\"", "products", "\",\"", "c", "0", "\":", "106", ".", "43", ",\"", "c", "1", "\":", "7", ".", "11", ",\"", "c", "2", "\":\"", "blue", "\",\"", "c", "3", "\":\"", "ref", "urb", "ished", "\"}", "<\/s>"], "length": 33, "cosine_distance": 0.05844850911710775}}]}</script>
+
+<p>This explorer shows actual tokenization saved from the pinned BART tokenizer for the first three fixture rows. It runs no model in your browser. Switch a row or schema presentation and inspect token IDs, token count, and the row's precomputed change in pooled features. Token strings use the tokenizer's vocabulary notation; <code>Ġ</code> marks a preceding space where present. Dense attention-pair count L² is only a size proxy, not measured end-to-end compute.</p>
+<p><strong>What text can offer.</strong> A pretrained LM is a plausible way to reuse language information in descriptive names and values. That is a hypothesis to test on appropriate data. Turning a number into tokens does not impose arithmetic distance: the character sequence for 20 is not defined to be twice the representation for 10. Conversely, a numeric transform preserves the specified numeric relation but cannot infer the meaning of an unfamiliar product description. Our experiment contains short categories and no free-text descriptions, so it cannot settle that semantic trade-off.</p>
+<h2 id="4-%C2%B7-A-complete,-deliberately-narrow-comparison">4 &#183; A complete, deliberately narrow comparison<a class="anchor-link" href="#4-%C2%B7-A-complete,-deliberately-narrow-comparison">&#182;</a></h2><p>We generated <strong>240 synthetic rows</strong> and disclosed the target:</p>
+<p><code>target = 2×price + 5×weight + condition_offset + colour_offset + noise</code></p>
+<p>Noise has standard deviation 2. This target is designed to favour a linear numeric/one-hot representation. It tests whether the LM path makes a simple numeric relationship easier or harder to recover; it is not a neutral tournament across all tabular tasks.</p>
+<p>For each of three fixed splits, both methods get 144 training, 48 validation and 48 test rows. Preprocessing uses training rows only. Five alphas (<code>0.01,0.1,1,10,100</code>) compete on validation MAE. We keep the selected training-only head without refitting on validation. Reordered/renamed test text goes through that <strong>same head</strong>. MAE is the average absolute prediction error in synthetic target units; lower is better. <a href="../labs/l163-reproduction.md">Exact protocol and commands</a></p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Encoder</th>
+  <th>Input presentation</th>
+  <th style="text-align:right">Mean MAE ± split SD</th>
+  <th style="text-align:right">Mean absolute prediction change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>typed</td>
+  <td>baseline</td>
+  <td style="text-align:right">1.714 ± 0.151</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>typed</td>
+  <td>reordered</td>
+  <td style="text-align:right">1.714 ± 0.151</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>typed</td>
+  <td>renamed</td>
+  <td style="text-align:right">1.714 ± 0.151</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>bart</td>
+  <td>baseline</td>
+  <td style="text-align:right">14.265 ± 1.285</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>bart</td>
+  <td>reordered</td>
+  <td style="text-align:right">55.051 ± 34.406</td>
+  <td style="text-align:right">50.765</td>
+</tr>
+<tr>
+  <td>bart</td>
+  <td>renamed</td>
+  <td style="text-align:right">705.122 ± 81.466</td>
+  <td style="text-align:right">705.388</td>
+</tr>
+</tbody>
+</table></div>
+<p>All 720 row encodings and all six head selections completed. Fresh encoding took 36.2 seconds across the three variants; 117.9 seconds including fetch and checks. These are local CPU timings, not matched throughput benchmarks. Cloud spend: <strong>$0</strong>.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Encoding work</th>
+  <th style="text-align:right">Local elapsed time</th>
+  <th style="text-align:right">Features per row</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Typed fit/transform, split 0</td>
+  <td style="text-align:right">5.34 ms</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>Typed fit/transform, split 1</td>
+  <td style="text-align:right">4.42 ms</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>Typed fit/transform, split 2</td>
+  <td style="text-align:right">6.16 ms</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>Frozen BART, baseline</td>
+  <td style="text-align:right">12.17 s</td>
+  <td style="text-align:right">768</td>
+</tr>
+<tr>
+  <td>Frozen BART, reordered</td>
+  <td style="text-align:right">12.21 s</td>
+  <td style="text-align:right">768</td>
+</tr>
+<tr>
+  <td>Frozen BART, renamed</td>
+  <td style="text-align:right">11.84 s</td>
+  <td style="text-align:right">768</td>
+</tr>
+</tbody>
+</table></div>
+<p>Single local timings for all 240 rows per entry. Typed time includes train-moment/vocabulary fitting and transformation; BART time includes tokenization, forward computation and pooling after loading. Imports, process startup and head fitting are excluded. This is cost accounting, not a controlled speed benchmark.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l163/comparison.svg" alt="Measured synthetic task: every dot is a split score. The left panel is linear; the right is logarithmic to show large schema-shift errors. No intervention retuning. The disclosed additive target favours typed linear features."><figcaption>Measured synthetic task: every dot is a split score. The left panel is linear; the right is logarithmic to show large schema-shift errors. No intervention retuning. The disclosed additive target favours typed linear features.</figcaption></figure>
+
+<p><strong>Read the result causally.</strong> The typed path can directly express the target's numeric and categorical terms. Frozen pooled BART features make that relationship less accessible to this head. Renaming also moves representations away from the distribution used to fit the head. Large coefficients or rescaling of low-variance features can amplify such a shift. Our measurements establish the shift and prediction change; they do not isolate each internal cause or prove a general failure of LM encoders.</p>
+<p>The typed scores repeat across presentation variants because the canonical features are identical. The three test sets overlap, so their SD describes split variation and is not a confidence interval. A train-mean baseline, every split score and all 864 keyed predictions are retained in the report. The numeric result does not establish transfer to new databases, unseen categories, missing values, or meaningful free-text tasks.</p>
+<h2 id="5-%C2%B7-What-%E2%80%9Cfull-reproduction%E2%80%9D-means-here">5 &#183; What &#8220;full reproduction&#8221; means here<a class="anchor-link" href="#5-%C2%B7-What-%E2%80%9Cfull-reproduction%E2%80%9D-means-here">&#182;</a></h2><p><strong>Local experiment:</strong> all rows, three splits, both encoders and both presentation interventions are part of the executable contract. Fresh frozen BART encoding and cached head replay have separate receipts. The notebook defaults to the portable replay so you can inspect and refit the heads cheaply; an explicit cell enables fresh encoding at the pinned revision.</p>
+<p><strong>Historical target:</strong> the paper's Table 1 wikiTables BART_table versus +GNN reconstruction experiment remains <strong>NOT_RUN</strong>. Exact data/splits, matching code/checkpoints and enough training details remain unresolved, so historical fidelity is <strong>NOT_ESTABLISHED</strong>. Our regression comparison is not that experiment, and the paper does not provide a typed-versus-text result to reproduce. <a href="../labs/l163-reproduction.md">Historical contract</a></p>
+<h2 id="6-%C2%B7-Make-the-comparison-yourself">6 &#183; Make the comparison yourself<a class="anchor-link" href="#6-%C2%B7-Make-the-comparison-yourself">&#182;</a></h2><p>In the student notebook, implement three functions whose outputs are used by the experiment:</p>
+<ol>
+<li><strong><code>serialize_row</code></strong> — allow-list inputs, preserve schema/value association and implement both presentation interventions. CHECK rejects target leakage and broken escaping.</li>
+<li><strong><code>masked_mean</code></strong> — use the real-token mask and reject empty rows. CHECK rejects a plain padded mean. Stored real token states for the first eight rows let your implementation affect the replayed features; the remaining rows use verified pooled features.</li>
+<li><strong><code>choose_alpha</code></strong> — choose from validation losses with a deterministic tie rule. CHECK rejects always choosing the first alpha. The runner uses your choice for all six heads.</li>
+</ol>
+<p>Then fill the <a href="../labs/l163-comparison-template.md">comparison template</a>: inputs, fitted/frozen parts, shape, cost, three-split MAE, sensitivity, limitation and next falsifiable test. Explain one schema perturbation before looking at its measured output. A useful next test would add a real free-text task, matched target information and held-out entities; it is a proposal, not evidence supplied here.</p>
+<div id="teachback"></div>
+
+<p><strong>EXIT:</strong> defend your encoder choice in 200–300 words. Name the synthetic bias, a leakage control, the difference between fresh encoding and cached replay, and the historical gap. Passing code checks is author/implementation evidence; your reasoning still needs review. Learner status stays <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><strong>Spaced retrieval:</strong> tomorrow, derive <code>[2,5]</code> from the masked token example without opening the solution. In one week, explain why a presentation-invariant typed feature map does not demonstrate unseen-schema transfer. Ask the teaching agent about any unclear step or submit your table for review.</p>
+<p><strong>Bridge to Lesson 164:</strong> a row encoder supplies local features. A relational foundation model must also decide how to exchange information across rows and tasks. Griffin introduces that next architectural question; neither text serialization nor a typed vector alone creates relational context.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/row-encoder.js"></script><script src="../assets/l163-lesson.js"></script></body></html>

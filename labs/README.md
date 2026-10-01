@@ -241,3 +241,12 @@ Three live tasks: key-aligned MAE/RMSE/bias, tie-aware median diagnostics and co
 
 ## Lesson 159 · Pre-training objectives
 [Student](0159-foundation-model-preview.ipynb) · [Executed solution](html/0159-foundation-model-preview.html) · [Protocol](l159-reproduction.md) · [Brief template](l159-vision-brief-template.md). Three live masking/loss/freezing tasks and complete synthetic two-stage training. Historical BART+GCN benchmark NOT_RUN; this is not a foundation-model training run.
+
+
+### Lesson 168 · Cross-database generalization
+
+[Student](0168-cross-database-generalization.ipynb) · [Executed solution](html/0168-cross-database-generalization.html) · [Reproduction](l168-reproduction.md). Default notebook independently audits all60raw runs across F1(reused) and trial(fresh). Separate complete30-evaluation fresh-inference lane. No automatic paid dispatch. Learner PENDING_WRITTEN_DEFENSE.
+
+### Lesson 169 · Scaling laws & open questions
+
+[Student](0169-scaling-laws-open-questions.ipynb) · [Executed reference](html/0169-scaling-laws-open-questions.html) · [Protocol](l169-reproduction.md) · [Gap map](l169-gap-template.md). Default portable notebook independently replays all300selected evaluations:240fresh +60reused512-context runs, across two tasks/five sizes/three models/ten seeds. Three live learner contracts drive support verification, curve aggregation and evidence classification. Fresh inference is explicit and separately budgeted. Pretraining law NOT_ESTABLISHED; fresh pretraining/whole paper NOT_RUN; learner PENDING_WRITTEN_DEFENSE.

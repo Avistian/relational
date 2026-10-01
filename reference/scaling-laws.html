@@ -1,0 +1,105 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scaling evidence — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/scaling-context.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0168-cross-database-generalization.html">Lesson 168</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 169</p><h1>Scaling evidence — quick reference</h1></header><p><strong>One question:</strong> which scale changed, and which claim follows?</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Axis</th>
+  <th>Unit</th>
+  <th>Evidence here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Context K</td>
+  <td>Labeled target examples at inference</td>
+  <td>Five sizes; fixed checkpoints; two tasks</td>
+</tr>
+<tr>
+  <td>Parameters P</td>
+  <td>Learned coefficients</td>
+  <td>Not varied</td>
+</tr>
+<tr>
+  <td>Pretraining D</td>
+  <td>Training examples before target evaluation</td>
+  <td>Not varied</td>
+</tr>
+<tr>
+  <td>Schema diversity S</td>
+  <td>Distinct declared schema units</td>
+  <td>Not varied; lineage caveats</td>
+</tr>
+<tr>
+  <td>Compute C</td>
+  <td>Operations or resource expenditure</td>
+  <td>Budgeted; no compute-optimal law fitted</td>
+</tr>
+</tbody>
+</table></div>
+<p>A curve is observed response. A scaling law is a quantitative model with a stated domain and predictive validation. An illustrative loss law L(x)=L∞+A·x^(−α) needs a named loss, fitted floor and exponent, controlled axes, uncertainty and held-out-scale checks. AUROC is a ranking metric; this lesson does not fit a pretraining exponent.</p>
+<p>For each doubling compute seed-indexed Δ=A(2K,s)−A(K,s), then mean and sample SD. Same-seed samples are not nested under the released sampler; these are descriptive contrasts. At each K the models do share exactly the same supports. A sample SD over ten support draws is not uncertainty across databases.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task / model</th>
+  <th style="text-align:right">K=64</th>
+  <th style="text-align:right">128</th>
+  <th style="text-align:right">256</th>
+  <th style="text-align:right">512 reused</th>
+  <th style="text-align:right">1024</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-f1 / RDBPFN</td>
+  <td style="text-align:right">0.6932</td>
+  <td style="text-align:right">0.7000</td>
+  <td style="text-align:right">0.7171</td>
+  <td style="text-align:right">0.7219</td>
+  <td style="text-align:right">0.7188</td>
+</tr>
+<tr>
+  <td>rel-f1 / RDBPFN_single</td>
+  <td style="text-align:right">0.6063</td>
+  <td style="text-align:right">0.6242</td>
+  <td style="text-align:right">0.6126</td>
+  <td style="text-align:right">0.6640</td>
+  <td style="text-align:right">0.7086</td>
+</tr>
+<tr>
+  <td>rel-f1 / TabICLv1.1</td>
+  <td style="text-align:right">0.7142</td>
+  <td style="text-align:right">0.7087</td>
+  <td style="text-align:right">0.7137</td>
+  <td style="text-align:right">0.7176</td>
+  <td style="text-align:right">0.7173</td>
+</tr>
+<tr>
+  <td>rel-trial / RDBPFN</td>
+  <td style="text-align:right">0.5474</td>
+  <td style="text-align:right">0.5386</td>
+  <td style="text-align:right">0.5844</td>
+  <td style="text-align:right">0.5986</td>
+  <td style="text-align:right">0.6159</td>
+</tr>
+<tr>
+  <td>rel-trial / RDBPFN_single</td>
+  <td style="text-align:right">0.5212</td>
+  <td style="text-align:right">0.5393</td>
+  <td style="text-align:right">0.5858</td>
+  <td style="text-align:right">0.5961</td>
+  <td style="text-align:right">0.5963</td>
+</tr>
+<tr>
+  <td>rel-trial / TabICLv1.1</td>
+  <td style="text-align:right">0.5303</td>
+  <td style="text-align:right">0.5447</td>
+  <td style="text-align:right">0.5669</td>
+  <td style="text-align:right">0.5928</td>
+  <td style="text-align:right">0.6088</td>
+</tr>
+</tbody>
+</table></div>
+<p>On rel-f1, RDB-PFN changes from <strong>0.69318</strong> at 64 to <strong>0.71876</strong> at 1024 (+0.02558 AUROC). On rel-trial, RDB-PFN changes from <strong>0.54736</strong> at 64 to <strong>0.61595</strong> at 1024 (+0.06859 AUROC). <strong>30/30 published-mean comparisons</strong> fall within the predeclared 0.02 AUROC descriptive tolerance. Negative mean doubling contrasts: rel-f1/RDBPFN 512→1024 (-0.00318); rel-f1/RDBPFN_single 128→256 (-0.01161); rel-f1/TabICLv1.1 64→128 (-0.00548); rel-f1/TabICLv1.1 512→1024 (-0.00023); rel-trial/RDBPFN 64→128 (-0.00879). These are measured responses under changing support draws, not evidence for a universal monotonic law.</p>
+<p>Complete selected experiment:300evaluations,240fresh+60reused;229,050probabilities.30table-cell means compared with0.02descriptive AUROC tolerance. Exact query keys, raw labels/supports, hashes and original receipts verified. Released labels complement raw task labels. Full DFS regeneration NOT_RUN; historical identity/availability, checkpoint lineage and exact schema exclusion NOT_ESTABLISHED. Exact TabICL repeatability failed in two diagnostic reruns (max probability difference .0002791, max AUROC difference .00000488); the first retained results are used without score selection. Whole paper and fresh pretraining NOT_RUN. Learner PENDING_WRITTEN_DEFENSE.</p>
+<p><a href="../lessons/0169-scaling-laws-open-questions.html">Lesson</a> · <a href="../labs/l169-reproduction.md">Protocol</a> · <a href="../labs/l169-gap-template.md">Gap template</a> · <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN v5</a> · <a href="https://arxiv.org/html/2506.16654v1#S5.SS2">Survey §5.2</a>.</p>
+</article></body></html>

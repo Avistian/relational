@@ -21,10 +21,11 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Skill** — define a foundation model (pretrain on broad data → adapt to many tasks) and scope what
   "foundation model" means for *relational* data specifically.
 - **Teach** — emergence/homogenization, pretraining→adaptation, transfer/zero-/few-shot; the relational
-  analogue (one model, any database, one forward pass).
+  ambition (one model, any database, one forward pass), distinguished from the definition.
 - **Lab** — Tier C · crucial fragment: write the relational-FM scope definition (inputs, adaptation modes,
   success criteria). Deliverable: the scoping note.
-- **Viz** — reuse `arch-family-viz.js` (FM branch).
+- **Viz** — `foundation-scope.js`: adaptation information flow and nested database/query boundaries. The older `arch-family-viz.js` now serves a different mechanism.
+- **Prepared L161** — [lesson](../lessons/0161-what-is-a-foundation-model.html), portable notebook and complete 15-case synthetic scope audit. USD0; no training/transfer performance claimed. “Any database, one forward pass” is an ambition, not a definition.
 - **Bridge** — frames the year; callback Y2 L061 PFN (amortized inference); forward to L162.
 
 ### 162 · The relational FM vision — *Vogel 2023, ★ `2305.15321`*
@@ -34,18 +35,21 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
   pretraining sketch, the "FMs for DBs like text/images have" ambition.
 - **Lab** — Tier C · crucial fragment: extend the Y4 L159 brief into a full obstacles/opportunities map.
   Deliverable: the vision map.
-- **Viz** — reuse `rdl-stack-viz.js` + `arch-family-viz.js`.
+- **Viz** — model-specific LM→graph→decoder overview, explicit bridge/receptive-field trace, and `relational-vision.js` context/token interventions.
+- **Prepared L162** — [lesson](../lessons/0162-the-relational-fm-vision.html), portable lab and complete 16 graph + 8 token + 64 evidence-case audit. USD0 cloud. Historical wikiTables target NOT_RUN; matching source/protocol gaps remain documented. No training or transfer gain claimed.
 - **Bridge** — callback Y4 L159; the conceptual spine of the year; forward to L163/L168.
 
-### 163 · LM encoders for rows — *Vogel 2023 §4*
+### 163 · [LM encoders for rows](../lessons/0163-lm-encoders-for-rows.html) — *Vogel 2023 §4*
 - **Skill** — compare text-serialized vs typed-column row encoding and explain the trade-off (LM
   flexibility vs typed-encoder precision).
 - **Teach** — serialize-a-row-as-text vs stype encoders (callback Y4 L125/L125b), where LM encoders help
   (text/high-cardinality) and where they add noise; the thesis's rejection of text-only (MISSION out-of-scope).
 - **Lab** — Tier B · crucial fragment: encode the same rows via text-serialization vs typed encoder; compare
   downstream. Deliverable: encoder-comparison table.
-- **Viz** — reuse `tokenizer-viz.js` + `cell-graph-viz.js`.
+- **Viz** — two actual encoding paths and measured token explorer (`row-encoder.js`); prior tokenizer/cell-graph components describe different models and remain prerequisite references.
 - **Bridge** — callback Y2 L074 CARTE / Y4 L125b; guards the "text ≠ relational" boundary; forward to L164.
+
+- **Prepared evidence** — complete L163 Frozen Row Encoder Comparison:240 synthetic rows, three fixed splits, frozen BART and typed features, fixed-head order/name interventions. Historical Table1 reproduction NOT_RUN/fidelity NOT_ESTABLISHED. Author preparation only; learner PENDING_WRITTEN_DEFENSE.
 
 ### 164 · Griffin — graph-centric RDB FM — *Griffin `2505.05568`, ★ (ICML 2025)*
 - **Skill** — explain Griffin's unified data encoder + task decoder, its cross-attention module and novel
@@ -57,15 +61,19 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `rdl-stack-viz.js` (unified encoder/decoder) + `tokenizer-viz.js`.
 - **Bridge** — the first open graph-centric RDB FM; callback Y4 L131 stack; forward to L168/L183.
 
+- **Prepared L164** — [lesson](../lessons/0164-griffin-graph-centric-rdb-fm.html), complete visible checkpoint-compatible model, three live learner contracts and independent source/gradient audits. Released Table12 Others-2→F1 target:20fits,512/4096labels,subset seeds42–46. L4timing probe complete; conservative200epoch scenarioUSD51.11raw/63.89withmargin exceedsUSD7fit allowance. Full selected reproductionINCOMPLETE_BUDGET_GATE,final testNOT_RUN. Source few-shot timestamp weakness retained; F1static-root audit is narrower. Shared generic visual recommendation above is superseded by model-specific Griffin architecture, computation boards and portable figures.
+
 ### 165 · KumoRFM — in-context relational learner — *KumoRFM v1 tech report (2025)*
 - **Skill** — describe KumoRFM's in-context, few-shot relational learning and treat it as the *proprietary
   comparator* (not a reproduction target).
 - **Teach** — in-context relational prediction across connected tables without flattening, few-shot task
-  adaptation, why proprietary numbers set a ceiling but can't ground the thesis.
+  adaptation, why proprietary reported comparators do not establish an upper bound or ground an independent reproduction claim.
 - **Lab** — Tier C · crucial fragment: read the tech report; extract the claimed capabilities + the
-  reproduction gap. Deliverable: capability/ceiling note.
+  reproduction gap. Deliverable: capability and reproduction note.
 - **Viz** — reuse `retrieval-viz.js` (in-context examples).
-- **Bridge** — the commercial ceiling; callback Y2 L061 ICL; forward to L165b (open counterpart), L191 (v2).
+- **Bridge** — the commercial comparator; callback Y2 L061 ICL; forward to L165b (open counterpart), L191 (v2).
+
+- **Prepared L165** — [lesson](../lessons/0165-kumorfm-in-context-relational-learning.html), portable student/solution and complete deterministic contract audit:144context,96graph,24scoring cases and2hidden-label interventions. USD0 cloud/API. Original v1 Table2 driver-dnf target82.41AUROC; matching artifacts unresolved, historical NOT_RUN/fidelity NOT_ESTABLISHED. Model-specific two-context-path and two-clock diagrams supersede the generic visualization suggestion. Author preparation only; learner PENDING_WRITTEN_DEFENSE.
 
 ### 165b · OpenRFM — open relational ICL — *OpenRFM `2606.04320`, ★*
 - **Skill** — explain the two diagnoses of relational ICL and OpenRFM's fixes: (model) relation-level ICL
@@ -92,6 +100,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `pfn-prior-viz.js` (relational prior) + `retrieval-viz.js`.
 - **Bridge** — the synthetic-pretraining paradigm; callback Y2 L061–L063; contrasts with L165b (real-data) and
   L166b (training-free); forward to L170b synthesis.
+
+- **Prepared L166** — [lesson](../lessons/0166-rdb-pfn-synthetic-relational-priors.html), visible checkpoint-compatible model, one released prior draw and complete Table 9 driver-dnf 512-context comparison: three models × ten seeds. All three means match paper rounding; fresh pretraining / whole paper NOT_RUN. Historical identity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. [Contract](../labs/l166-reproduction.md).
 
 ### 166b · RDBLearn — training-free relational ICL — *RDBLearn toolkit `2602.18495`; companion analysis `2602.13697`, ★*
 - **Skill** — build the training-free RDB encoder: compress variable-sized RDB neighborhoods into fixed-length
@@ -122,8 +132,10 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Teach** — the cross-DB eval protocol, schema invariance (callback Y4 L125b), where transfer succeeds/fails.
 - **Lab** — Tier B · crucial fragment: evaluate a pretrained FM on a held-out database. Deliverable:
   cross-DB transfer table.
-- **Viz** — reuse `hetero-graph-viz.js` (source vs unseen schema).
+- **Viz** — two-schema data flow, independent exposure/adaptation axes, measured paired gains on a shared scale.
 - **Bridge** — the defining FM capability; callback Y4 L139; forward to L175 zero-shot eval.
+
+- **Prepared L168** — [lesson](../lessons/0168-cross-database-generalization.html), full30fresh trial evaluations/24,750probabilities; complete30-run F1 evidence reused. Same512support budget,10seeds,3fixed models. All45,810predictions independently rescored. Target-label reversal retained; exact schema exclusion/training lineage/historical identity NOT_ESTABLISHED. Wholepaper/pretraining NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
 
 ### 169 · Scaling laws & open questions — *RDL survey `2506.16654` §FM*
 - **Skill** — state what is known vs unknown about scaling relational FMs (data, params, schema diversity)
@@ -134,6 +146,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
   the scaling-gap map.
 - **Viz** — reuse `arch-family-viz.js`.
 - **Bridge** — feeds the Q3 research-gap doc; callback Y4 L147; forward to L189/L198.
+
+- **Prepared L169** — [lesson](../lessons/0169-scaling-laws-open-questions.html), complete selected two-task/five-context/three-model/ten-seed sweep: 240 fresh + 60 reused evaluations, 229,050 probabilities. All 30 means within predeclared .02 AUROC distance. Non-nested source sampling and negative doubling gains retained. Four RDB-PFN sentinels exact; two TabICL repeats differ slightly (max AUROC 4.88e-6); exact repeatability not established. Pretraining scaling law NOT_ESTABLISHED; whole paper/pretraining NOT_RUN. Learner PENDING_WRITTEN_DEFENSE.
 
 ### 170 · **Q1 checkpoint** — *Vogel + Griffin + RDB-PFN + RDBLearn · Deliverable-based*
 - **Deliverable** — a written **FM design doc** comparing the paradigms (graph-native pretraining vs

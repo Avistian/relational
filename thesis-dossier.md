@@ -626,3 +626,33 @@ The CPU replay rescores98,918 saved rows with45 selection checks across220 froze
 
 ## L160 · BAR · A reproducible packet can still be an incomplete portfolio
 The complete selected CPU replay checks98,918 saved prediction rows and45 validation decisions. Three declared tasks contain two complete experiments and one matched FE comparison; human effort and temporal sign-off remain missing. The Year4 exit is INCOMPLETE despite replay PASS. A negative result can satisfy an experiment requirement; a missing experiment cannot. [Report](labs/evidence/l160/report.md). Learner PENDING_WRITTEN_DEFENSE.
+
+## L161 · BAR · Reuse needs a scoped transfer test
+Broad pretraining and multi-task adaptation define an ambition worth testing, but frozen weights, many parameters or a clean design checklist do not establish relational advantage. The complete15-case synthetic metadata audit supplies no empirical transfer result. Require canonical database provenance, legal target context, matched baselines and an inspected held-out comparison. [Lesson](lessons/0161-what-is-a-foundation-model.html) · [Protocol](labs/l161-reproduction.md). TrainingNOT_RUN; transferNOT_ESTABLISHED; learnerPENDING_WRITTEN_DEFENSE.
+
+## L162 · BAR · Accessible context is not established transfer
+Row-wise language encoding plus graph paths supplies a plausible mechanism for combining semantics and relational context. The complete synthetic 16 graph + 8 token + 64 declaration audit verifies information access and arithmetic, not model performance. The historical single-table reconstruction results cannot establish transfer to unseen multi-table databases; exact historical reproduction remains source-gated. [Lesson](lessons/0162-the-relational-fm-vision.html) · [Protocol](labs/l162-reproduction.md). Learner PENDING_WRITTEN_DEFENSE.
+
+## L163 · measured row encoder boundary
+
+Complete synthetic numeric/additive comparison: typed baseline MAE1.714±0.151 versus frozen pooled BART14.265±1.285 across three overlapping splits. BART schema perturbations use fixed baseline heads; renamed MAE705.122. This task is deliberately favourable to numeric/one-hot features. No general model ranking, natural-language semantic gain or relational transfer is established. Historical Vogel Table1 NOT_RUN; fidelity NOT_ESTABLISHED. [Protocol](labs/l163-reproduction.md).
+
+| 2026-10-01 | L164 Griffin | BAR | Visible model matches released outputs/gradients; a real512-wide checkpoint and complete F1input audit support implementation readiness. The20fit Others-2→F1 transfer comparison remains INCOMPLETE_BUDGET_GATE after a timed probe; no local transfer-gain claim. General index-based few-shot temporal weakness retained; F1static-root finding is narrower. | `labs/l164-reproduction.md`; `labs/evidence/l164/report.md` |
+
+## Lesson 165 · proprietary relational ICL comparator
+
+KumoRFM v1 provides an author-reported comparator, not a performance ceiling or independently reproduced result. Selected Table2 rel-f1/driver-dnf in-context82.41AUROC remains NOT_RUN, historical fidelity NOT_ESTABLISHED. Original report bytes are pinned; modern service identity cannot substitute for v1 weights/data/context policy. The complete local144context/96graph/24scoring audit and two query-label interventions establish only explicit synthetic contracts. No new evidence of relational superiority, transfer or practical effort reduction; USD0 cloud/API. [Protocol and gaps](labs/l165-reproduction.md). Learner PENDING_WRITTEN_DEFENSE.
+
+## Lesson 166 · synthetic relational prior evidence
+
+The complete Table9 driver-dnf512-context checkpoint replay matches the rounded paper means for RDBPFN (.721938), its single-table initialization (.663990), and TabICLv1.1 (.717568). All three receive identical DFS features and paired support keys across ten seeds. The relational checkpoint gains .057948 over initialization but also received additional training; this is not a matched-compute causal isolation of the prior. Its .004369 mean gain over TabICL has paired SD .019808 on this one task. Do not extrapolate to databases or effort savings. Released label orientation differs from current raw SQL. Fresh pretraining/wholepaper NOT_RUN; historical identity NOT_ESTABLISHED. [Evidence and limits](labs/l166-reproduction.md).
+
+## Lesson 168 · second-database transfer evidence
+
+Fresh trial inference adds a second selected database to the reused F1 result. RDBPFN−TabICL mean AUROC gains are .005735353 (trial) and .004369297 (F1), with 6/10 positive support draws on each. Equal-database gain .005052325 describes these two tasks; it does not estimate broad database superiority. Trial's relational-versus-single-table checkpoint gain is only .002454809 and the checkpoints have different training histories. Matching preparation/supports improves attribution, but does not isolate relational pretraining at equal compute. Reported synthetic predictor training coexists with real-schema training of LayerDAG; exact target-schema exclusion and full checkpoint lineage remain unestablished. [Lesson](lessons/0168-cross-database-generalization.html) · [Protocol and evidence](labs/l168-reproduction.md).
+
+## Lesson 169 · context scaling is conditional evidence
+
+The selected two-task sweep supplies all five published context sizes and ten seeds for RDB-PFN, its single-table ablation and TabICLv1.1. All 300 evaluations are accounted for (240 fresh,60 reused); every mean is within the predeclared .02AUROC descriptive distance from the paper. RDB-PFN gains from64→1024 on both tasks, but intermediate reversals and comparator curves reject an unqualified “more context always helps” claim. The released sampler is not nested across sizes. Model/data/schema pretraining axes were not varied, so no pretraining scaling law follows. TabICL exact-repeatability diagnostics show small numerical differences, explicitly retained. [Lesson](lessons/0169-scaling-laws-open-questions.html) · [Evidence](labs/evidence/l169/report.md) · [Protocol](labs/l169-reproduction.md). Historical lineage/availability NOT_ESTABLISHED; fresh pretraining/whole paper NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
+- **L170 · BAR · FM design checkpoint:** Complete CPU replay of all300 selected evaluations /229,050 probabilities supports traceable comparisons, not a matched three-paradigm victory. RDB-PFN−TabICL signs change with task/context; two selected tasks and support-draw SD cannot establish general superiority. Griffin budget stop, TabICL exact-repeatability failure, RDBLearn pipeline NOT_RUN and DFS/temporal/lineage gaps remain. Written design and learner mastery PENDING_WRITTEN_DEFENSE. [Protocol](labs/l170-reproduction.md).

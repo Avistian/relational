@@ -1,0 +1,102 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Row encoders — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/row-encoder.css"></head><body class="checkpoint row-lesson"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0162-the-relational-fm-vision.html">Lesson 162</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 163</p><h1>Row encoders — quick reference</h1></header><h2 id="Two-paths,-one-input-contract">Two paths, one input contract<a class="anchor-link" href="#Two-paths,-one-input-contract">&#182;</a></h2><p>Text: allow-listed schema/value JSON → token IDs + attention mask → frozen BART encoder → B×L×768 hidden states → masked mean → B×768 features. Include BOS/EOS; exclude PAD. Reject overlength inputs instead of silently truncating.</p>
+<p>Typed: training means/SD → numeric z-scores; training vocabularies → one-hot categories. Our two numbers plus two three-category fields give8 features. Unknown category→zero block; constant numeric SD→1. Canonical identity lookup gives presentation invariance by construction.</p>
+<h2 id="Three-load-bearing-rules">Three load-bearing rules<a class="anchor-link" href="#Three-load-bearing-rules">&#182;</a></h2><ol>
+<li>Exclude target/row ID from inputs; preserve field/value association and string escaping.</li>
+<li>Pool only real tokens: <code>(hidden*mask[:,:,None]).sum(1)/mask.sum(1)[:,None]</code>.</li>
+<li>Fit preprocessing/head on training rows, choose alpha on validation, freeze before test. Renamed/reordered inputs get the same frozen head.</li>
+</ol>
+<h2 id="Reading-the-evidence">Reading the evidence<a class="anchor-link" href="#Reading-the-evidence">&#182;</a></h2><p>The synthetic target is numeric/additive and favours typed features. Short categories do not test rich text semantics. Equal split/grid rules do not equalize pretraining or feature capacity. Three overlapping split scores give descriptive SD, not a confidence interval. A changed embedding is not automatically a worse prediction; measure both.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Encoder</th>
+  <th>Input presentation</th>
+  <th style="text-align:right">Mean MAE ± split SD</th>
+  <th style="text-align:right">Mean absolute prediction change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>typed</td>
+  <td>baseline</td>
+  <td style="text-align:right">1.714 ± 0.151</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>typed</td>
+  <td>reordered</td>
+  <td style="text-align:right">1.714 ± 0.151</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>typed</td>
+  <td>renamed</td>
+  <td style="text-align:right">1.714 ± 0.151</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>bart</td>
+  <td>baseline</td>
+  <td style="text-align:right">14.265 ± 1.285</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>bart</td>
+  <td>reordered</td>
+  <td style="text-align:right">55.051 ± 34.406</td>
+  <td style="text-align:right">50.765</td>
+</tr>
+<tr>
+  <td>bart</td>
+  <td>renamed</td>
+  <td style="text-align:right">705.122 ± 81.466</td>
+  <td style="text-align:right">705.388</td>
+</tr>
+</tbody>
+</table></div>
+<p>All 720 row encodings and all six head selections completed. Fresh encoding took 36.2 seconds across the three variants; 117.9 seconds including fetch and checks. These are local CPU timings, not matched throughput benchmarks. Cloud spend: <strong>$0</strong>.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Encoding work</th>
+  <th style="text-align:right">Local elapsed time</th>
+  <th style="text-align:right">Features per row</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Typed fit/transform, split 0</td>
+  <td style="text-align:right">5.34 ms</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>Typed fit/transform, split 1</td>
+  <td style="text-align:right">4.42 ms</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>Typed fit/transform, split 2</td>
+  <td style="text-align:right">6.16 ms</td>
+  <td style="text-align:right">8</td>
+</tr>
+<tr>
+  <td>Frozen BART, baseline</td>
+  <td style="text-align:right">12.17 s</td>
+  <td style="text-align:right">768</td>
+</tr>
+<tr>
+  <td>Frozen BART, reordered</td>
+  <td style="text-align:right">12.21 s</td>
+  <td style="text-align:right">768</td>
+</tr>
+<tr>
+  <td>Frozen BART, renamed</td>
+  <td style="text-align:right">11.84 s</td>
+  <td style="text-align:right">768</td>
+</tr>
+</tbody>
+</table></div>
+<p>Single local timings for all 240 rows per entry. Typed time includes train-moment/vocabulary fitting and transformation; BART time includes tokenization, forward computation and pooling after loading. Imports, process startup and head fitting are excluded. This is cost accounting, not a controlled speed benchmark.</p>
+<h2 id="Reproduction-boundaries">Reproduction boundaries<a class="anchor-link" href="#Reproduction-boundaries">&#182;</a></h2><p>Local complete comparison:240 rows, three seeds, two encoders, three input variants. Fresh BART encoding and cached head replay have distinct receipts. Historical Vogel Table1 wikiTables reconstruction: NOT_RUN; fidelity NOT_ESTABLISHED because exact artifacts and training details are unresolved. No GNN or relational transfer is evaluated. Learner PENDING_WRITTEN_DEFENSE.</p>
+<p><a href="../lessons/0163-lm-encoders-for-rows.html">Lesson</a> · <a href="../labs/l163-comparison-template.md">Comparison template</a> · <a href="../labs/l163-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2305.15321v1#S4">Paper §4</a> · <a href="https://huggingface.co/facebook/bart-base">BART model</a>.</p>
+</article></body></html>

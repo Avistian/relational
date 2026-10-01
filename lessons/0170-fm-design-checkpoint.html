@@ -1,0 +1,146 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Defend a relational foundation-model design</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/design-evidence.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0169-scaling-laws-open-questions.html">Lesson 169</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 170</p><h1>Defend a relational foundation-model design</h1></header><p><strong>Your task:</strong> write a defensible design for one relational prediction problem. Choose a representation, a pretrained predictor and a target-adaptation rule. Attach evidence for the claims you make, and name an experiment that could change your mind.</p>
+<p><strong>Reading route.</strong> First recall the three decisions below. Then replay the evidence, inspect where the comparison reverses, and complete the design template. The core reading takes about 25 minutes; leave a separate session for the lab and written defense. Preparation is complete only when the artifacts pass their checks. Your checkpoint remains <strong>PENDING_WRITTEN_DEFENSE</strong> until you submit your own work for review.</p>
+<p><a href="../labs/html/0170-fm-design-checkpoint.html">Open the lab</a> · <a href="../labs/0170-fm-design-checkpoint.ipynb">Student notebook</a> · <a href="../labs/solutions/0170-fm-design-checkpoint.ipynb">Reference solution</a> · <a href="../labs/l170-design-template.md">Design template</a> · <a href="../reference/fm-design-checkpoint.html">Quick reference</a></p>
+<div id="warmup"></div>
+
+<h2 id="1-%C2%B7-From-measuring-a-curve-to-making-a-decision">1 &#183; From measuring a curve to making a decision<a class="anchor-link" href="#1-%C2%B7-From-measuring-a-curve-to-making-a-decision">&#182;</a></h2><p><a href="0167-tabular-to-relational-fm-transfer.html">Lesson 167</a> separated representation, pretraining and adaptation. <a href="0168-cross-database-generalization.html">Lesson 168</a> added a second task. <a href="0169-scaling-laws-open-questions.html">Lesson 169</a> varied context size while keeping pretrained weights fixed. Those experiments tell us what happened under their protocols. They do not automatically choose an architecture for a new database.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> A design document connects “what the system must do” to “why this method is a reasonable starting point” and “what would make us reject it.” A small measured gain can justify another experiment without justifying deployment.</p>
+</blockquote>
+<p><strong>Prerequisite recap.</strong> A relational database stores entities and events in linked tables. A foreign key names a related row. A query key is the pair <strong>(entity, cutoff)</strong>: who receives a prediction, and when. Features must use information available by that cutoff. A label describes the future outcome to predict. A training label may be used only after its outcome window has closed and it is available.</p>
+<p>A <strong>foundation model</strong> has reusable pretrained parameters. <strong>Pretraining</strong> learns those parameters before the target task. <strong>Adaptation</strong> makes the predictor useful on the target task. Adaptation can update weights or supply labeled examples as inputs. <strong>In-context learning (ICL)</strong> uses such examples while keeping predictor weights fixed. A <strong>support set</strong> is that collection of labeled examples. Its size is K. These definitions let us compare methods without treating every use of “foundation model” as the same mechanism. <a href="https://arxiv.org/html/2305.15321v1">Vogel vision paper</a>, <a href="https://arxiv.org/html/2505.05568v1#S4">Griffin §4</a>, <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN v5</a>.</p>
+<h2 id="2-%C2%B7-Three-independent-design-decisions">2 &#183; Three independent design decisions<a class="anchor-link" href="#2-%C2%B7-Three-independent-design-decisions">&#182;</a></h2><p><strong>Representation: what information reaches the predictor?</strong> A graph representation retains rows and key links, then learns how neighboring rows communicate. A materialized feature table summarizes linked records into columns before prediction. <strong>Deep Feature Synthesis (DFS)</strong> composes joins, transformations and aggregations into those columns. Here “deep” describes compositions; it does not imply a deep neural encoder.</p>
+<p><strong>Prior: what was learned before this task?</strong> A prior is a learned preference for certain relationships before observing target labels. Griffin learns transferable graph and cell operations through source-task supervision. RDB-PFN learns from synthetic tasks with relational structure. RDBLearn uses an already pretrained tabular predictor after relational featurization. <a href="https://arxiv.org/html/2505.05568v1#S3">Griffin §§3–4</a>, <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN §§4–5</a>, <a href="https://arxiv.org/html/2602.18495v1#S3">RDBLearn §3</a>.</p>
+<p><strong>Adaptation: where do target labels enter?</strong> Griffin's supervised transfer route fine-tunes weights on a target task. The RDB-PFN and tabular-ICL routes studied here feed support labels to a fixed predictor. “Training-free” describes the target-time use of the pretrained predictor, not an absence of pretraining, labels, preprocessing or computational cost.</p>
+<p><strong>Which Griffin weights change?</strong> The shared cell-reading and graph-message operations adapt; the released input encoders and task decoder stay frozen. Classification compares the adapted root state with frozen label vectors. This is why the diagram ends with a frozen decoder even though the overall target-task route performs fine-tuning. Return to <a href="0164-griffin-graph-centric-rdb-fm.html">Lesson 164's architecture</a> for the complete path.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l170/paradigms.svg" alt="Trace the target labels: Griffin updates target weights; the two ICL routes supply labels as inputs. RDBLearn is a pipeline approach, not an extra model arm in this replay. On narrow screens, scroll the diagram horizontally."><figcaption>Trace the target labels: Griffin updates target weights; the two ICL routes supply labels as inputs. RDBLearn is a pipeline approach, not an extra model arm in this replay. On narrow screens, scroll the diagram horizontally.</figcaption></figure>
+
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Candidate</th>
+  <th>Why consider it?</th>
+  <th>What could break the choice?</th>
+  <th>Evidence we actually have</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Griffin graph transfer</td>
+  <td>Learned messages can preserve relationships that fixed aggregates discard</td>
+  <td>Supervised adaptation cost; insufficient labels; temporal graph errors</td>
+  <td>L164 mechanism/source checks; fresh selected experiment stopped at its budget gate</td>
+</tr>
+<tr>
+  <td>RDB-PFN</td>
+  <td>Synthetic relational tasks may provide a useful prior for small labeled contexts</td>
+  <td>Prior mismatch; lost information in DFS; unverified exposure lineage</td>
+  <td>Complete selected released-checkpoint evidence on two tasks across five contexts</td>
+</tr>
+<tr>
+  <td>RDBLearn approach</td>
+  <td>Relational aggregates plus an existing tabular ICL predictor offer a direct baseline</td>
+  <td>Aggregations may omit the relevant relation; feature generation may dominate cost</td>
+  <td>Primary-paper evidence; our DFS + TabICL arm illustrates the approach but is not the RDBLearn pipeline</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are candidate reasons and failure hypotheses, not a ranking across three matched implementations. Griffin is graph-centric, but its fine-tuning route is not graph-native ICL. KumoRFM in <a href="0165-kumorfm-in-context-relational-learning.html">Lesson 165</a> provides a separate graph-native ICL comparison; its proprietary historical pipeline was not reproduced. You do not need the optional 165b, 166b or 170b lessons to complete this checkpoint.</p>
+<p><strong>Worked example — where the label goes.</strong> Suppose a fixed predictor reads 512 past labeled driver queries and predicts 702 new queries. It takes zero gradient steps. This is labeled-context adaptation, not a zero-label experiment. By contrast, a supervised model that updates its weights on those labels uses target training. The lab's classifier covers this supervised setting; it does not classify unsupervised or self-supervised target adaptation.</p>
+<h2 id="3-%C2%B7-Reproduce-the-evidence-before-using-it">3 &#183; Reproduce the evidence before using it<a class="anchor-link" href="#3-%C2%B7-Reproduce-the-evidence-before-using-it">&#182;</a></h2><p>Our named experiment is the <strong>complete saved-evidence replay of L169's selected RDB-PFN v5 Tables 6–10</strong>. The selection contains all five contexts (64, 128, 256, 512, 1024), all ten support seeds, all three fixed models, and every test query on <strong>rel-f1/driver-dnf (702)</strong> and <strong>rel-trial/study-outcome (825)</strong>. This gives <strong>300 evaluations and 229,050 probabilities</strong>. <a href="https://arxiv.org/html/2603.03805v5#A6">Paper Appendix A.3 and Tables 6–10</a>.</p>
+<p><strong>Held fixed:</strong> released checkpoints, feature arrays, preprocessing, test populations and source versions. Within each task/context/seed, all models receive the same support identities. The third model is the single-table-pretrained RDB-PFN ablation. <strong>Varied:</strong> context size and predictor. <strong>Measured:</strong> ranking quality and paired differences. Support sets at different K are independently drawn by the source sampler; equal seed numbers do not make them nested prefixes. Nothing in this experiment varies pretraining scale.</p>
+<p><strong>AUROC</strong> is the probability that a positive example receives a higher score than a negative example, giving half credit to ties. It is a ranking metric, not a measure of probability calibration. We align predictions by full query key before scoring. The local audit also checks hashes, original per-run receipts, support labels, raw labels and the complete experiment grid. A separate sklearn calculation checks all 300 scores.</p>
+<blockquote>
+<p><strong>Scope check.</strong> All 300 evaluations are reused in L170. Of these, 240 were fresh in L169 and 60 came from L166/L168. L170 runs no new inference or training. The full replay is executable and complete for this selection; whole-paper reproduction and fresh pretraining remain <strong>NOT_RUN</strong>. <a href="../labs/l170-reproduction.md">Exact protocol and commands</a>.</p>
+</blockquote>
+<div id="predict"></div>
+
+<h3 id="Pair-first,-then-average">Pair first, then average<a class="anchor-link" href="#Pair-first,-then-average">&#182;</a></h3><p><strong>Worked example.</strong> On one task, suppose model A scores .72 and .68 on seeds 0 and 1, while B scores .70 and .69. Paired gains are +.02 and −.01. The mean gain is +.005; A wins on only one of the two draws. Keeping the pairs exposes a reversal that a single mean conceals.</p>
+<p>For each task and K, calculate ten differences <strong>Δs = AUROC(RDB-PFN, s) − AUROC(TabICL, s)</strong>. The symbol s indexes the support draw. Average those differences, count how many are positive, and compute their <strong>sample standard deviation</strong>, the square root of squared deviations from the mean divided by 9. This describes sensitivity to support draws on a fixed task. It is not a confidence interval over unseen databases.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l170/paired.svg" alt="Each dot is one paired support draw; the white diamond is the mean. Zero and identical horizontal scales expose sign reversals. All 100 differences come from reused raw predictions. Scroll horizontally on narrow screens."><figcaption>Each dot is one paired support draw; the white diamond is the mean. Zero and identical horizontal scales expose sign reversals. All 100 differences come from reused raw predictions. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Context K</th>
+  <th style="text-align:right">F1 gain ± SD</th>
+  <th style="text-align:right">Positive draws</th>
+  <th style="text-align:right">Trial gain ± SD</th>
+  <th style="text-align:right">Positive draws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>64</td>
+  <td style="text-align:right">-0.02098 ± 0.03744</td>
+  <td style="text-align:right">2/10</td>
+  <td style="text-align:right">+0.01707 ± 0.02199</td>
+  <td style="text-align:right">9/10</td>
+</tr>
+<tr>
+  <td>128</td>
+  <td style="text-align:right">-0.00863 ± 0.05041</td>
+  <td style="text-align:right">3/10</td>
+  <td style="text-align:right">-0.00612 ± 0.02829</td>
+  <td style="text-align:right">4/10</td>
+</tr>
+<tr>
+  <td>256</td>
+  <td style="text-align:right">+0.00343 ± 0.01228</td>
+  <td style="text-align:right">6/10</td>
+  <td style="text-align:right">+0.01752 ± 0.03414</td>
+  <td style="text-align:right">6/10</td>
+</tr>
+<tr>
+  <td>512</td>
+  <td style="text-align:right">+0.00437 ± 0.01981</td>
+  <td style="text-align:right">6/10</td>
+  <td style="text-align:right">+0.00574 ± 0.01765</td>
+  <td style="text-align:right">6/10</td>
+</tr>
+<tr>
+  <td>1024</td>
+  <td style="text-align:right">+0.00142 ± 0.00915</td>
+  <td style="text-align:right">6/10</td>
+  <td style="text-align:right">+0.00719 ± 0.02538</td>
+  <td style="text-align:right">6/10</td>
+</tr>
+</tbody>
+</table></div>
+<p>Gain = RDB-PFN minus TabICL AUROC. SD describes support-draw variation within each fixed task. All numbers are authenticated author-reference evidence, not learner results.</p>
+<p>For a summary across these two tasks, give each task one equal weight. Do not concatenate probabilities from unrelated tasks or weight the task gains by their query counts. The lab requires all 300 cells before calculating the comparison, so silently dropping an inconvenient context or seed is rejected.</p>
+<div class="highlight"><pre><span></span><span class="c1"># A two-seed arithmetic example, not the complete lab implementation.</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mf">.72</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mf">.68</span><span class="p">}</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mf">.70</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mf">.69</span><span class="p">}</span>
+<span class="n">paired</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="p">[</span><span class="n">seed</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="p">[</span><span class="n">seed</span><span class="p">]</span> <span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">a</span><span class="p">)]</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">paired</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">paired</span><span class="p">))</span>  <span class="c1"># approximately +0.005</span>
+</pre></div>
+<p><strong>Interpretation.</strong> At K=512, RDB-PFN's mean advantage is positive on both tasks, but only six of ten support draws are positive in each. At K=64 it loses on F1 and wins on trial; at K=128 both mean differences are negative. This is a reason to test context sensitivity. Selecting the best K from these test results would turn descriptive analysis into test-set tuning. In a future experiment, freeze K using validation data before evaluating test results.</p>
+<h2 id="4-%C2%B7-Audit-the-claim,-not-just-the-arithmetic">4 &#183; Audit the claim, not just the arithmetic<a class="anchor-link" href="#4-%C2%B7-Audit-the-claim,-not-just-the-arithmetic">&#182;</a></h2><p>A trustworthy replay can still sit inside an incomplete scientific comparison. The original released labels are complements of the pinned raw task labels; the saved experiment consistently retains the released orientation. Available support-horizon and selected timestamp checks passed, but these are not a complete audit of historical information availability. Full DFS regeneration was not run. Exact target-schema exclusion and checkpoint training lineage remain unestablished.</p>
+<p>The exact-repeatability diagnostic also stays visible: four RDB-PFN repeats matched exactly; two TabICL repeats differed, with maximum probability difference about .0002791 and maximum AUROC difference about .00000488. The cause was not isolated. The original accepted predictions remain in the comparison; we do not choose whichever repeat scores best or invent a new tolerance after observing the difference. <a href="../labs/evidence/l169/recovery-report.json">Original diagnostics</a>.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l170/gates.svg" alt="The replay authenticates computations. Missing pipeline and pretraining evidence still constrain a design. The exact-repeatability failure remains visible. Scroll horizontally on narrow screens."><figcaption>The replay authenticates computations. Missing pipeline and pretraining evidence still constrain a design. The exact-repeatability failure remains visible. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p><strong>How to read a gate.</strong> “Artifacts” means byte-level identity was checked. “Metrics” means raw predictions were independently rescored. “Temporal” here requires the complete information-availability audit, so it remains false even though narrower checks passed. “Exposure” requires the relevant pretraining and schema-source inventory. “Matched pipeline” means the compared systems ran under the same declared evaluation contract. “Held-out databases” means an adequate, prespecified multi-database evaluation for the intended claim; two selected tasks alone do not certify a general advantage.</p>
+<div id="design-explorer"></div><noscript>Authenticated baseline: only the artifact and metric prerequisites are met. Saved replay is ready for review; complete-pipeline, fresh-pretraining, general-advantage and exact-repeatability claims remain unestablished. The notebook computes the same checklist without JavaScript.</noscript>
+
+<p>The explorer is a <strong>hypothetical evidence checklist</strong>. Checking a box does not create that evidence or change the authenticated report. <strong>READY_FOR_REVIEW</strong> means the listed necessary prerequisites are present; a reviewer must still assess results, uncertainty and relevance. It is never an automatic declaration that one paradigm wins.</p>
+<h2 id="5-%C2%B7-Write-the-design-that-the-evidence-can-support">5 &#183; Write the design that the evidence can support<a class="anchor-link" href="#5-%C2%B7-Write-the-design-that-the-evidence-can-support">&#182;</a></h2><p>Choose either a real task you can document or the worked F1 task as a planning exercise. For F1, preserve the released binary-label orientation and identify exactly which event that label represents. Do not invent a business requirement and report it as observed.</p>
+<p>Your 500–800-word design should contain these eight short sections. The <a href="../labs/l170-design-template.md">template</a> includes prompts and a submission checklist.</p>
+<ol>
+<li><strong>Decision and task.</strong> Who is scored, at what cutoff, for which future outcome, and what decision uses the score? Name the metric and operational constraints.</li>
+<li><strong>Information contract.</strong> State key paths, feature availability and support-label readiness. Separate observed checks from unresolved assumptions.</li>
+<li><strong>Candidates.</strong> Compare the three paradigms on representation, pretraining and adaptation. Explain why the chosen candidate is feasible and why at least one alternative might still win.</li>
+<li><strong>Evidence.</strong> Cite a task/context/seed comparison from the replay. Explain one reversal and the correct uncertainty unit. Keep RDBLearn and Griffin gaps explicit.</li>
+<li><strong>Proposed experiment.</strong> Specify fixed splits, matched labels/supports, preprocessing, validation-only selection, repeated seeds and a suitable supervised baseline. Charge feature generation and adaptation to each pipeline.</li>
+<li><strong>Falsifier.</strong> Name a measurable outcome that would make you change the design. Declare the threshold before running the new experiment.</li>
+<li><strong>Cost and stop rule.</strong> Include preparation, all seeds, retries and checks under an aggregate cap. If the complete protocol does not fit, stop and report incomplete work.</li>
+<li><strong>Limitations and next step.</strong> State which conclusion is currently justified and which one remains a hypothesis.</li>
+</ol>
+<p><strong>Example of the reasoning, not a completed submission.</strong> If target-time weight updates are prohibited but historical labels are available, start by comparing the two labeled-context routes. The replay supports evaluating RDB-PFN against a DFS + TabICL baseline. It does not establish that either is better than a fully audited graph pipeline. A useful next experiment would compare complete pipelines on prespecified held-out tasks with temporal audits and a fixed context policy. A nonpositive paired gain under that protocol could challenge the extra complexity of the relational prior. Its exact population, decision threshold and budget must be frozen before execution.</p>
+<p><strong>Rubric: 0–2 on each axis.</strong> Task/temporal contract; paradigm accuracy; evidence and uncertainty; fair falsifiable experiment; cost and limitations. Zero means absent or materially wrong, one means plausible but incomplete, two means concrete and defensible. Target <strong>at least 8/10 with no zero</strong>, plus passing computational checks and teacher review. A runnable solution or a filled template cannot certify your understanding. No Year 4 gate is changed by this checkpoint.</p>
+<div id="teachback"></div>
+
+<h2 id="Lab-and-primary-reading">Lab and primary reading<a class="anchor-link" href="#Lab-and-primary-reading">&#182;</a></h2><p>The portable notebook embeds original evidence and visible audit code. Implement the three live functions, run their checks, replay every prediction, and submit the computed report together with your written design. The teacher solution leaves the personal defense blank. The default requires Python and NumPy, uses CPU only, and makes no network or cloud calls. Author validation adds sklearn as an independent scorer.</p>
+<p>Primary reading: <a href="https://arxiv.org/html/2603.03805v5#A6">RDB-PFN v5 Appendix A.3 and Tables 6–10</a>, alongside <a href="https://arxiv.org/html/2505.05568v1#S3">Griffin §§3–4</a> and <a href="https://arxiv.org/html/2602.18495v1#S3">RDBLearn §§3–5</a>. Revisit <a href="https://arxiv.org/html/2305.15321v1">Vogel's vision</a> to distinguish an architectural research agenda from executed evidence. The versioned source snapshots and hashes are in the <a href="../labs/sources/l170/source-ledger.json">source ledger</a>.</p>
+<p>Ask the teacher about any unclear mechanism or bring your defense back for a challenge: “Which claim in my design has the weakest evidence?” Revisit the same question after the next corpus-design lesson, without rereading your answer first.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/design-evidence.js"></script><script src="../assets/l170-evidence.js"></script><script src="../assets/l170-lesson.js"></script></body></html>

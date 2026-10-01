@@ -1,0 +1,196 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scaling laws & open questions</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/scaling-context.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0168-cross-database-generalization.html">Lesson 168</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 169</p><h1>Scaling laws & open questions</h1></header><p><strong>The skill:</strong> decide what a scaling curve actually supports, then turn its missing evidence into a testable research question.</p>
+<p><strong>Reading route.</strong> Identify the axis being changed, work through the doubling example, then inspect the measured curves. Finish by choosing one unanswered question for the gap template. Use a separate session for the complete notebook replay and written defense.</p>
+<p><a href="0168-cross-database-generalization.html">Lesson 168</a> added a second database at a fixed budget of 512 labeled examples. It left a different question unanswered: <strong>what changes when the model can read more labeled context?</strong> This lesson completes that axis before asking what we still do not know about pretraining scale. That distinction protects the mission: evidence for useful relational models must survive a skeptical comparison.</p>
+<p><strong>Prerequisites, restated:</strong> a <em>support set</em> is the labeled training examples supplied to an in-context predictor; a <em>query</em> is an example whose target must be predicted. <em>Frozen weights</em> means no optimizer updates on the target task. A <em>checkpoint</em> is a saved set of model parameters. <em>DFS</em> (Deep Feature Synthesis) builds a flat feature matrix from related tables using aggregations. A <em>seed</em> fixes a reproducible support draw; ten seeds are ten draws on the same database, not ten new databases.</p>
+<div id="warmup"></div>
+
+<h2 id="1-%C2%B7-%E2%80%9CBigger%E2%80%9D-has-several-meanings">1 &#183; &#8220;Bigger&#8221; has several meanings<a class="anchor-link" href="#1-%C2%B7-%E2%80%9CBigger%E2%80%9D-has-several-meanings">&#182;</a></h2><p>The <a href="https://arxiv.org/html/2506.16654v1#S5.SS2">2025 RDL survey, §5.2</a> argues for models that combine reusable relational structure, heterogeneous attributes and temporal reasoning. It motivates a research direction; it does not give a fitted relational scaling law. We use it as historical framing and the version-pinned <a href="https://arxiv.org/html/2603.03805v5#A1.SS3">RDB-PFN v5 experiment</a> as measurable evidence.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Axis increased</th>
+  <th>What changes</th>
+  <th>What must be controlled to isolate it?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Inference context K</td>
+  <td>Labeled target examples read by a frozen predictor</td>
+  <td>Checkpoint, task, feature pipeline, test queries, support sampler</td>
+</tr>
+<tr>
+  <td>Parameter count P</td>
+  <td>Number of learned model coefficients</td>
+  <td>Training data, optimization and evaluation; declare compute allocation</td>
+</tr>
+<tr>
+  <td>Pretraining data D</td>
+  <td>Training examples consumed before target inference</td>
+  <td>Model capacity, data mix, duplicates, training budget and stopping rule</td>
+</tr>
+<tr>
+  <td>Schema diversity S</td>
+  <td>Variety of table/link structures during pretraining</td>
+  <td>Total rows/tokens, domain mix, schema definition and target exposure</td>
+</tr>
+<tr>
+  <td>Compute C</td>
+  <td>Operations or resource budget spent</td>
+  <td>Hardware/precision for timings; architecture and data allocation for learning</td>
+</tr>
+</tbody>
+</table></div>
+<p>Rows are not independent units of schema diversity: copying one database a hundred times changes row count without adding a new schema. Parameters, data and compute also interact; holding training compute fixed answers a different question from training every model to convergence. Define the estimand—the quantity your comparison is intended to measure—before choosing the sweep.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l169/protocol.svg" alt="Only context changes in the observed sweep. The parameter, data and diversity rows are proposed experiments with additional compute controls required."><figcaption>Only context changes in the observed sweep. The parameter, data and diversity rows are proposed experiments with additional compute controls required.</figcaption></figure>
+
+<p><strong>Worked trace.</strong> Imagine weights θ with 700,000 coefficients and a fixed query matrix. At K=64, the predictor reads 64 feature rows and their labels. At K=128, it reads 128. θ is identical in both calls. We have changed target-time information and computation, not the number of pretrained parameters or pretraining examples. The number here is illustrative; the experiment loads and hashes the released weights.</p>
+<h2 id="2-%C2%B7-A-response-curve-is-not-yet-a-scaling-law">2 &#183; A response curve is not yet a scaling law<a class="anchor-link" href="#2-%C2%B7-A-response-curve-is-not-yet-a-scaling-law">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A curve records what happened at the sizes we tried. A proposed scaling law goes further: it predicts how the outcome should change with size. Testing that prediction at sizes left out of fitting is part of the evidence it needs.</p>
+</blockquote>
+<p>A response curve plots a measured outcome against an intervention. A scaling law is a proposed quantitative relationship that remains useful across a declared range. A common <em>illustrative</em> form is <strong>L(x) = L∞ + A·x^(−α)</strong>: L is a loss, x a positive scale variable, L∞ an assumed limiting loss, A a positive amplitude and α a positive exponent. Doubling x multiplies the excess loss L−L∞ by 2^(−α). If α=1/2, an excess loss of .10 becomes about .0707. This is arithmetic under an assumed model, not a fitted law for relational databases.</p>
+<p>Why not fit that equation to any five points? The estimated slope depends on the assumed floor; a different floor can change the exponent substantially. Five noisy points over a short range can fit several functional forms. A defensible law needs a named metric, controlled axes, uncertainty, checks against alternative fits, and predictions checked on held-out scales and tasks. An extrapolation predicts outside the observed range; a smooth line inside a chart does not validate it.</p>
+<p>Our metric is <strong>AUROC</strong>, the probability that a random positive gets a higher score than a random negative, giving ties half credit. Higher is better. AUROC measures ranking rather than calibrated probabilities. We report AUROC directly; substituting 1−AUROC for a training loss would add an untested modeling assumption. We do not fit or claim a pretraining exponent here.</p>
+<div id="predict"></div>
+
+<h2 id="3-%C2%B7-The-complete-selected-reproduction">3 &#183; The complete selected reproduction<a class="anchor-link" href="#3-%C2%B7-The-complete-selected-reproduction">&#182;</a></h2><p><a href="https://arxiv.org/html/2603.03805v5#A6">RDB-PFN v5 Appendix A.3 and Tables 6–10</a> evaluate contexts <strong>64, 128, 256, 512, 1024</strong> over ten support seeds. We select two tasks and three released models while retaining every size, seed and test query within that selection.</p>
+<ul>
+<li><strong>F1 / driver-dnf:</strong> 11,411 training candidates; 702 test queries; 72 released DFS features.</li>
+<li><strong>Trial / study-outcome:</strong> 11,994 training candidates; 825 test queries; 176 released DFS features.</li>
+<li><strong>Models:</strong> RDB-PFN, its single-table-pretrained ablation, and TabICLv1.1 with 32 estimators. All receive the same DFS features and support identities for each task/size/seed.</li>
+<li><strong>Frozen protocol:</strong> released checkpoint hashes, source/data revisions, preprocessing and sampler; no checkpoint search or test-based selection. The ablation changes the pretraining prior, not the inference features.</li>
+</ul>
+<p><strong>300 evaluations = 2 tasks × 5 sizes × 3 models × 10 seeds.</strong> The 60 K=512 evaluations are authenticated evidence reused from Lessons 166/168. The other 240 are fresh evaluations for this lesson. All 229,050 query probabilities are independently rescored, including 183,240 fresh probabilities. This is complete for the selected scope; the paper's other tasks/models and fresh pretraining remain unrun.</p>
+<h3 id="The-sampler-is-part-of-the-intervention">The sampler is part of the intervention<a class="anchor-link" href="#The-sampler-is-part-of-the-intervention">&#182;</a></h3><p>For each task and seed, the release hashes a text key into an integer and draws K distinct training indices uniformly. It starts a new generator for each K. <strong>Identical seeds do not make different-size draws nested prefixes.</strong> A doubling changes both the number and the composition of supports. We preserve this published protocol rather than silently replacing it with an additive-support experiment.</p>
+<p>At a fixed K, model differences are paired on exactly the same supports. Across K, seed-indexed differences are descriptive contrasts under the released sampler; they are not the causal effect of adding precisely K extra rows to an unchanged support set. The notebook also reports actual support overlaps. A separately declared nested-support experiment would answer that narrower question.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sample_context</span><span class="p">(</span><span class="n">n_rows</span><span class="p">,</span><span class="n">context</span><span class="p">,</span><span class="n">seed_key</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">n_rows</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">context</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="ow">not</span> <span class="mi">0</span><span class="o">&lt;</span><span class="n">context</span><span class="o">&lt;=</span><span class="n">n_rows</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seed_key</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">seed_key</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid context request&#39;</span><span class="p">)</span>
+    <span class="n">integer</span><span class="o">=</span><span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">seed_key</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">digest</span><span class="p">()[:</span><span class="mi">4</span><span class="p">],</span><span class="s1">&#39;big&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">integer</span><span class="p">)</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">n_rows</span><span class="p">,</span><span class="n">context</span><span class="p">,</span><span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+<h3 id="Identity-and-time-before-scores">Identity and time before scores<a class="anchor-link" href="#Identity-and-time-before-scores">&#182;</a></h3><p>Predictions align on complete <strong>(entity ID, query cutoff)</strong> keys. Every training label's outcome window ends before the earliest test query (60 days for F1, 365 for trial). Earlier audits check the exposed MAX timestamps; they do not reconstruct every DFS operation or historical data arrival. The released labels complement the raw task labels on both tasks. We retain the release's semantics; complementing labels and probabilities together preserves AUROC, but complementing only one does not.</p>
+<p>Code, data, weights, original receipts and raw predictions are authenticated. Two client RPC cancellations interrupted the main batch. We preserved 225 complete runs from the second attempt, completed nine missing runs, and checked six repeated sentinel results: four RDB-PFN repeats match exactly; two TabICL repeats differ by up to 0.0002791 in probability and 0.00000488 in AUROC. Exact TabICL repeatability is not established; the cause is not isolated. We retain the first completed result per identity, without score-based selection. The combined receipt is explicitly author-assembled from original per-run records; incomplete or duplicate runs are not counted twice. Full DFS regeneration is <code>NOT_RUN</code>; historical identity/availability, checkpoint training lineage and exact target-schema exclusion remain <code>NOT_ESTABLISHED</code>. Numeric closeness does not resolve these gaps.</p>
+<h2 id="4-%C2%B7-Read-the-whole-curve,-including-reversals">4 &#183; Read the whole curve, including reversals<a class="anchor-link" href="#4-%C2%B7-Read-the-whole-curve,-including-reversals">&#182;</a></h2><figure class="route-figure" tabindex="0"><img src="../labs/figures/l169/curves.svg" alt="Same AUROC scale across both tasks. Solid means and sample SD bands are measured; dotted diamonds are published means. Hollow512 markers are reused evidence."><figcaption>Same AUROC scale across both tasks. Solid means and sample SD bands are measured; dotted diamonds are published means. Hollow512 markers are reused evidence.</figcaption></figure>
+
+<p>Each point is a mean over ten support draws; the shaded band is <strong>± one sample standard deviation</strong>, not a confidence interval or uncertainty across databases. The dotted diamonds mark the published means. The hollow measured marker at K=512 denotes reused evidence. Both panels use the same AUROC scale.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task / model</th>
+  <th style="text-align:right">K=64</th>
+  <th style="text-align:right">128</th>
+  <th style="text-align:right">256</th>
+  <th style="text-align:right">512 reused</th>
+  <th style="text-align:right">1024</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-f1 / RDBPFN</td>
+  <td style="text-align:right">0.6932</td>
+  <td style="text-align:right">0.7000</td>
+  <td style="text-align:right">0.7171</td>
+  <td style="text-align:right">0.7219</td>
+  <td style="text-align:right">0.7188</td>
+</tr>
+<tr>
+  <td>rel-f1 / RDBPFN_single</td>
+  <td style="text-align:right">0.6063</td>
+  <td style="text-align:right">0.6242</td>
+  <td style="text-align:right">0.6126</td>
+  <td style="text-align:right">0.6640</td>
+  <td style="text-align:right">0.7086</td>
+</tr>
+<tr>
+  <td>rel-f1 / TabICLv1.1</td>
+  <td style="text-align:right">0.7142</td>
+  <td style="text-align:right">0.7087</td>
+  <td style="text-align:right">0.7137</td>
+  <td style="text-align:right">0.7176</td>
+  <td style="text-align:right">0.7173</td>
+</tr>
+<tr>
+  <td>rel-trial / RDBPFN</td>
+  <td style="text-align:right">0.5474</td>
+  <td style="text-align:right">0.5386</td>
+  <td style="text-align:right">0.5844</td>
+  <td style="text-align:right">0.5986</td>
+  <td style="text-align:right">0.6159</td>
+</tr>
+<tr>
+  <td>rel-trial / RDBPFN_single</td>
+  <td style="text-align:right">0.5212</td>
+  <td style="text-align:right">0.5393</td>
+  <td style="text-align:right">0.5858</td>
+  <td style="text-align:right">0.5961</td>
+  <td style="text-align:right">0.5963</td>
+</tr>
+<tr>
+  <td>rel-trial / TabICLv1.1</td>
+  <td style="text-align:right">0.5303</td>
+  <td style="text-align:right">0.5447</td>
+  <td style="text-align:right">0.5669</td>
+  <td style="text-align:right">0.5928</td>
+  <td style="text-align:right">0.6088</td>
+</tr>
+</tbody>
+</table></div>
+<p>On rel-f1, RDB-PFN changes from <strong>0.69318</strong> at 64 to <strong>0.71876</strong> at 1024 (+0.02558 AUROC). On rel-trial, RDB-PFN changes from <strong>0.54736</strong> at 64 to <strong>0.61595</strong> at 1024 (+0.06859 AUROC). <strong>30/30 published-mean comparisons</strong> fall within the predeclared 0.02 AUROC descriptive tolerance. Negative mean doubling contrasts: rel-f1/RDBPFN 512→1024 (-0.00318); rel-f1/RDBPFN_single 128→256 (-0.01161); rel-f1/TabICLv1.1 64→128 (-0.00548); rel-f1/TabICLv1.1 512→1024 (-0.00023); rel-trial/RDBPFN 64→128 (-0.00879). These are measured responses under changing support draws, not evidence for a universal monotonic law.</p>
+<div id="context-explorer"></div><noscript>The full curves and table above remain available without JavaScript.512evidence is reused; other contexts are fresh. The notebook computes every difference.</noscript>
+
+<h3 id="Compute-a-gain-before-explaining-it">Compute a gain before explaining it<a class="anchor-link" href="#Compute-a-gain-before-explaining-it">&#182;</a></h3><p>For a given model, let A(k,s) be its AUROC at context k and seed s. The seed-indexed doubling contrast is Δ(k,s)=A(2k,s)−A(k,s). Average the ten differences; also report their sample SD and the number above zero. For illustrative values [.70,.72] at 64 and [.71,.70] at 128, the differences are [.01,−.02] and the mean is −.005. Averaging can hide a reversal. Two seeds are used only to make the arithmetic visible; the experiment uses ten.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l169/gains.svg" alt="Mean AUROC change for each context doubling with sample SD over ten seed-indexed contrasts. Negative gains remain visible; supports across sizes are not nested."><figcaption>Mean AUROC change for each context doubling with sample SD over ten seed-indexed contrasts. Negative gains remain visible; supports across sizes are not nested.</figcaption></figure>
+
+<p>The gain plot retains negative differences. Neither more context nor a relational prior is guaranteed to improve every draw. More support can supply useful evidence, irrelevant examples or a different class mix, while increasing inference cost. This sweep measures the combined response; a mechanism explanation requires an additional controlled ablation. Model-to-model differences at each K are included in the report and notebook.</p>
+<h2 id="5-%C2%B7-Convert-unknowns-into-experiments">5 &#183; Convert unknowns into experiments<a class="anchor-link" href="#5-%C2%B7-Convert-unknowns-into-experiments">&#182;</a></h2><p>A useful gap is more specific than “scale up.” Name what changes, what remains fixed, the evaluation contract and a result that would contradict the hypothesis.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Question</th>
+  <th>Evidence available here</th>
+  <th>Missing experiment / falsifier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Does more labeled context improve this checkpoint?</td>
+  <td>Complete five-size, two-task curves</td>
+  <td>Replicate on held-out databases; a consistent flat or negative curve challenges broad benefit</td>
+</tr>
+<tr>
+  <td>Do more pretrained parameters improve transfer?</td>
+  <td>Fixed checkpoints only</td>
+  <td>Several model sizes with declared compute allocation and matched data; no held-out gain challenges size-only benefit</td>
+</tr>
+<tr>
+  <td>Do more synthetic tasks help?</td>
+  <td>One released checkpoint per prior</td>
+  <td>Controlled pretraining-data sweep with repeats; plateau or deterioration challenges monotonic improvement</td>
+</tr>
+<tr>
+  <td>Does schema diversity matter beyond row count?</td>
+  <td>Reported relational-prior construction; lineage gaps remain</td>
+  <td>Hold total rows fixed, vary distinct schemas, exclude target schemas; no improvement challenges diversity benefit</td>
+</tr>
+<tr>
+  <td>Can a fitted relation predict outside this range?</td>
+  <td>Observations only through K=1024</td>
+  <td>Freeze candidate fit using smaller scales, evaluate unseen scales/tasks; large systematic errors reject extrapolation</td>
+</tr>
+</tbody>
+</table></div>
+<p>The first row is substantially measured; the next four are research proposals. They are not claims that no later paper has studied these questions. This is a source-pinned evidence map for this course, not a census of every current result.</p>
+<div id="claim-explorer"></div><noscript>Controlled context variation supports CONTEXT_RESPONSE_ONLY. An unvalidated extrapolation remains NOT_ESTABLISHED. See the evidence-map table above.</noscript>
+
+<p><strong>Prioritize three gaps.</strong> Score each from 1–3 for expected decision value, tractability within a stated budget, and ability to falsify the hypothesis. Explain the score rather than treating the sum as objective truth. A nested-context comparison is accessible with released checkpoints; a parameter/data scaling study needs fresh pretraining and a separate cost estimate. This prepares <a href="0170-fm-design-checkpoint.html">Lesson 170's design checkpoint</a> and the later Year 6 research proposal without requiring optional bridge lessons.</p>
+<h2 id="Lab-%C2%B7-Make-the-evidence-map-executable">Lab &#183; Make the evidence map executable<a class="anchor-link" href="#Lab-%C2%B7-Make-the-evidence-map-executable">&#182;</a></h2><p><a href="../labs/0169-scaling-laws-open-questions.ipynb">Student notebook</a> · <a href="../labs/html/0169-scaling-laws-open-questions.html">Executed reference notebook</a> · <a href="../labs/l169-reproduction.md">Reproduction protocol</a> · <a href="../labs/l169-gap-template.md">Scaling-gap template</a> · <a href="../reference/scaling-laws.html">Quick reference</a>.</p>
+<p>The default notebook is a portable CPU-only replay of the complete raw evidence. Three live tasks implement the source-compatible support schedule, complete-grid curve aggregation and conservative claim classifier. Your functions are used by the final audit; missing contexts, duplicated runs and wrong claims must fail. All computation is visible. A separately enabled fresh-inference lane loads the pinned released model source; the managed operator reserves cost before dispatch.</p>
+<p><strong>Exit ticket:</strong> submit a known/unknown table plus a 250–400-word defense of one tractable experiment. State the axis, control variables, target exposure, expected falsifier and budget. Explain why ten seeds do not establish a law across databases. Rubric: 0–2 each for axis separation, protocol, uncertainty, falsifiability and feasibility; target ≥8/10 with no zero. Passing code is author/learner computational evidence; a reviewed written defense is still required for mastery.</p>
+<div id="teachback"></div>
+
+<p>Ask the teacher about any unclear step, or paste your curve interpretation and gap map for feedback. Tomorrow, explain without notes why a K=512 result cannot reveal an exponent for pretraining-data scale.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2506.16654v1#S5.SS2">Dwivedi et al., RDL survey §5.2</a>, then <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN v5 §6 and Appendix A.3/F</a>. Read the released sampler beside the paper: <a href="https://github.com/MuLabPKU/RDBPFN/blob/a95378225478daa262b85f180d482da7516b0af6/model_pretrain/src/eval.py">pinned evaluation code</a>.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/scaling-context.js"></script><script src="../assets/l169-evidence.js"></script><script src="../assets/l169-lesson.js"></script></body></html>
