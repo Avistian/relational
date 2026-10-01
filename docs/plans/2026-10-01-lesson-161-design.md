@@ -1,0 +1,13 @@
+# Lesson 161 approved design and implementation plan
+
+Approved in chat: concept lesson plus **L161 Relational Foundation-Model Scope Audit**. Primary source: Bommasani et al., On the Opportunities and Risks of Foundation Models, arXiv:2108.07258 (2021). Teach broad pretraining, adaptation, emergence and homogenization, then write a falsifiable relational scope. Any-database/one-pass inference is a stronger ambition, not a necessary definition. Preserve the outstanding Year 4 exit requirements.
+
+USD0 cloud spending; no model training, paid runs, or deployment. Bound each local execution/check to 600 seconds with one numerical thread. Stop and diagnose failed checks without reducing the scope. This source is a synthesis report, not a selected relational numerical experiment. Published performance is cited, not reproduced; no historical trainer is invented. Reproducible local output is a synthetic metadata/design audit, not transfer evidence.
+
+Deliver canonical lesson prose/HTML, printable reference, portable student/solution notebooks, two diagrams, interactive adaptation and database-boundary traces, executable audit with three meaningful learner functions, source/version ledger, scoped writing template, manifest integration and verification receipts. Human review assesses broadness, source truth and prose; an executable check only establishes internal consistency.
+
+Implementation sequence: (1) behavioral checks and failing stubs; (2) adaptation, database provenance and claim-review functions with adversarial fixtures; (3) source ledger, complete fixture manifest, deterministic reports and explanatory figures; (4) lesson/reference and notebook builder with visible functions; (5) standalone solution execution and independent mutation checks; (6) browser desktop/mobile, keyboard/reset, print/no-JS, links, source parity and deterministic rebuild; (7) stage only intended files and check the complete Pages build from the Git index. No subagents or publication requested.
+
+Reuse course typography, retrieval, prediction and teach-back components. The planned arch-family-viz.js now implements an HIN path explorer, so introduce an appropriately named reusable foundation-scope component rather than repurposing it. The closest L160 visual exposes evidence gates; L161 adds information flow and distinguishes target-context adaptation from pretraining contamination.
+
+No installed writing-plans skill is available; this document records the implementation plan directly. Run the Year 5 source currency pass without replacing the approved introductory topic or claiming current leaderboard supremacy.
