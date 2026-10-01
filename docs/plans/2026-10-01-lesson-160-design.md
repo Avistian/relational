@@ -1,0 +1,11 @@
+# Lesson 160 approved design and implementation plan
+
+Approved in chat 2026-10-01: Year 4 exit exam, RelBench portfolio and manual-feature comparison. Named experiment: L160 Year 4 exit evidence replay. CPU-only, USD0 cloud spending, 600-second limit per complete replay/verification/solution command. No new fits, paid retries or external publication. Standing USD10 cap does not authorize resuming L153.
+
+Freeze and replay the complete L158 inclusion set: L151 reference and selected classification lanes, L152 regression, L153 validation-only pilot, L155 matched FE/basic-RDL comparison and L156/L157 temporal lanes. Preserve source identities, complete query keys, seed coverage, validation selection, metric direction and conditional uncertainty. Independently check metrics and bootstrap. L159 is a conceptual callback, not an additional benchmark task.
+
+The exam teaches a defensible readiness decision. The current portfolio has two completed tasks and one matched FE task; effort is unobserved and strict temporal validity unestablished. An executable replay can pass while the Year 4 exit remains INCOMPLETE. Preserve three tasks versus FE, prospective human-effort ratios, temporal audit, honest failures and reviewed defense as separate gates. A negative model result is admissible; missing evidence cannot be counted as a completed experiment.
+
+Deliver lesson HTML, printable reference, self-contained student and solution notebooks, portable figures, reusable interactive gate exercise, evidence report, submission/effort templates, reproduction/remediation instructions, and manifest/course integration. Three learner functions perform keyed paired losses, observed-effort accounting and conjunctive exit gates in the real replay. Human review remains separate from code checks.
+
+Implementation: behavioral tests and stubs; canonical assessment functions; immutable input manifest and replay adapter; independent score and corruption checks; lesson/figures/notebooks; empty-directory solution execution; desktop/mobile/keyboard/reset/no-JS/print and copied-site links; deterministic regeneration and clean Git-index Pages build. Preserve all pre-existing staged changes and outputs. No agents requested or used. No installed writing-plans skill was found; this file records the implementation plan directly.
