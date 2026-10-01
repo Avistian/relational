@@ -1,0 +1,13 @@
+# Lesson 152 approved design and implementation plan
+
+User approved 2026-10-01: regression portfolio entry, fresh RelBench v1 Table7 rel-f1/driver-position basic RDL plus regression diagnostics. Five seeds0–4, full7453/499/760train/validation/test queries, ten full epochs, two128-channel sum GraphSAGE layers, Adam.005, batch512, uniform fanouts128/64, L1, first strict validation minimum, released training2nd/98th-percentile clipping. Published validation3.193/test4.022MAE; frozen descriptive tolerance±.20, not equivalence. Source9aa346267c2e1c560bd92da07d6f4ad1ca2f0639; exact historical identity unavailable.
+
+Fresh graph preparation per worker; seed0 is the included feasibility pilot. Independent all-label SQL reconstruction before remaining fits. Every sampled node/edge audited against its owner cutoff. Retain source gradient limitations without modifying the recipe.
+
+Three learner functions: exact-key MAE/RMSE/bias, tie-aware binned median diagnostics, complete five-seed portfolio verdict. Validation prediction quintile edges frozen separately per seed before test diagnostics; empty bins retained; interval endpoints handle discrete ties. Mean residual is diagnostic, not the L1 calibration target; no post-hoc fitting or test-led tuning. Prior F1 test exposure disclosed. Full reproduction is the selected published experiment, not all30paper tasks.
+
+USD10 aggregate cap, T4+2physicalCPU+16GiB=.00022572USD/sec at current Modal rates. Eight1800second reservations at mostUSD3.250368 plusUSD3overhead reserve, USD3.749632margin. No automatic retries, immutable attempt reservations. Stop if pilot forecast1.25*seconds+120>=1800 or total reservation+overhead exceedsUSD10. Budget includes failed attempts, audit/preparation and notebook validation. Additional full notebook execution is separate from primary seeds.
+
+Implementation sequence: fail meaningful contract tests; implement live regression helpers; pin source/runtime/protocol; audit archives/labels; dispatch included seed0, assess feasibility; dispatch remaining four; independently rescore/aggregate and inspect diagnostic bins; author lesson/reference, portable student/solution notebook with full visible code and fresh five-seed gate; execute default notebook and isolated pinned full gate; validate browser/mobile/keyboard/reset/noJS/print, deterministic rebuild, manifest links and copied/Git-index Pages build. Preserve existing staged Lesson151 work. No deployment requested.
+
+Learner status remains PENDING_WRITTEN_DEFENSE. Historical identity and feature-arrival legality NOT_ESTABLISHED; whole-paper/fresh manual-FE NOT_RUN; liveColab/deployment NOT_CHECKED unless directly tested.
