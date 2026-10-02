@@ -20,15 +20,15 @@ with sync_playwright() as pw:
  page.on('requestfailed',lambda r:failed.append(r.url) if r.url.startswith(base) else None)
  for gallery,prefix in [('index.html','lessons/'),('notebooks.html','labs/html/')]:
   page.goto(base+'/'+gallery,wait_until='networkidle')
-  for n in list(range(181,190)):
+  for n in list(range(181,191)):
    lesson=next((stage/'lessons').glob(f'0{n}-*.html'));reveal_gallery_link(page,f'a[href="{prefix}{lesson.name}"]')
- for n in list(range(181,190)):
+ for n in list(range(181,191)):
   lesson=next((stage/'lessons').glob(f'0{n}-*.html'))
   for width in [1200,375]:
    page.set_viewport_size(dict(width=width,height=900));r=page.goto(base+'/lessons/'+lesson.name,wait_until='networkidle');assert r.status==200
    assert page.locator('h1').is_visible();assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),(n,width,'overflow')
    assert page.locator('figure img').evaluate_all('(xs)=>xs.length>0&&xs.every(x=>x.complete&&x.naturalWidth>0)'),(n,'images')
-   assert (n==189 or page.locator('#warmup button').count()>0) and page.locator('#teachback textarea').count()==1
+   assert (n in [189,190] or page.locator('#warmup button').count()>0) and page.locator('#teachback textarea, #defense').count()==1
    if width==1200:assert page.locator('figure').evaluate_all('(xs)=>xs.every(x=>x.scrollWidth<=x.clientWidth+1)'),(n,'desktop figure clipped')
    page.screenshot(path=str(screens/f'{n}-{width}.png'))
    for i in range(page.locator('figure').count()):
@@ -50,5 +50,5 @@ with sync_playwright() as pw:
   print('Browser PASS',n,flush=True)
  browser.close()
 if server:server.shutdown();server.server_close()
-report=dict(status='PASS' if not errors+http+failed else 'FAIL',base=base,views=rows,gallery_links=18,javascript_errors=errors,http_errors=http,failed_requests=failed,print_lessons=9,no_js_lessons=9,screenshots=str(screens))
+report=dict(status='PASS' if not errors+http+failed else 'FAIL',base=base,views=rows,gallery_links=20,javascript_errors=errors,http_errors=http,failed_requests=failed,print_lessons=10,no_js_lessons=10,screenshots=str(screens))
 (D/('live-browser.json' if live else 'browser.json')).write_text(json.dumps(report,indent=2)+'\n');print(report['status'],errors,http,failed);assert report['status']=='PASS'

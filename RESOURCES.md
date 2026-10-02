@@ -1136,3 +1136,10 @@ Watch sources: [RelBench board](https://star-project.stanford.edu/relbench/leade
 ## Lesson 189 · Research-problem selection · 2026-10-02
 
 Primary starting reading: [Dwivedi et al., RDL survey, 2506.16654v1](https://arxiv.org/html/2506.16654v1), §§2.4/5. Treat a dated survey as a map rather than a novelty certificate. Closest-work checks use [RelGNN v2](https://arxiv.org/html/2502.06784v2), [RDB-PFN v5](https://arxiv.org/html/2603.03805v5), [RT v1](https://arxiv.org/html/2510.06377v1), [Temporal Heterogeneous Graph Pretraining v1](https://arxiv.org/html/2609.35219v1), §4.4, and [RelArena-α v2](https://arxiv.org/html/2608.16319v2). The temporal paper explicitly leaves unseen-database transfer and matched computational cost open; RT means that cross-database transfer itself is not new. Selected-source coverage only; candidate novelty NOT_ESTABLISHED. Exact source bytes and retrieval receipts: `labs/evidence/l189/packet/sources.json`.
+
+## Lesson 190 · research-gap checkpoint
+
+- [RDB-PFN v5](https://arxiv.org/html/2603.03805v5): read the method and Table 9 to distinguish the released DFS/checkpoint comparison from a proposed structural hybrid. L190 replays all selected L182 predictions; it performs no new model inference.
+- [RelGNN v2](https://arxiv.org/html/2502.06784v2): composite message passing is existing work; a proposed foundation-model interaction requires a matched control and separate novelty argument.
+- [RelBench v2](https://arxiv.org/abs/2602.12606): autocomplete task framing; availability histories and a healthy predictor remain admission requirements for the proposed L190 study.
+- [Worked five-page document](reference/research-gap-document.html) and [field guide](reference/research-gap-checkpoint.html): claims, evidence, alternatives, falsifiers and honest limits. Quarterly discovery remains incomplete.

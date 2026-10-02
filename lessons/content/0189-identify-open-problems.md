@@ -1,4 +1,4 @@
-> **Under construction.** This is a reviewable draft. Its saved audit and ranking are available, but the lesson is not certified complete. Lesson 190’s research-gap checkpoint is also under construction.
+> **Under construction.** This is a reviewable draft. Its saved audit and ranking are available, but the lesson is not certified complete. [Lesson 190’s research-gap checkpoint](0190-research-gap-checkpoint.html) is now available as a worked synthesis.
 
 ## Your tangible win
 
@@ -98,6 +98,6 @@ Implement three live functions: a complete-cost gate, the priority formula, and 
 
 Submit the ranked shortlist with one revised assumption and its reason. For each question, name the closest work, the useful effect, the complete comparison, a stop condition, and the cheapest informative next decision. The automatic checks cannot certify your novelty argument or understanding.
 
-**Tomorrow:** reconstruct the priority formula and explain why an unknown cost is not zero. **In one week:** reread the nearest work, change one justified score, and defend whether the shortlist changes. This becomes the three-problem spine of the [Lesson 190 research-gap document](../reference/curriculum.html), not a claim that its checkpoint is complete.
+**Tomorrow:** reconstruct the priority formula and explain why an unknown cost is not zero. **In one week:** reread the nearest work, change one justified score, and defend whether the shortlist changes. This becomes the three-problem spine of the [Lesson 190 research-gap document](0190-research-gap-checkpoint.html), not a claim that its checkpoint is complete.
 
 **Primary reading:** the [RDL survey](https://arxiv.org/html/2506.16654v1), then the temporal-pretraining paper’s [limitations](https://arxiv.org/html/2609.35219v1#S4.SS4). For practitioner feedback, prepare a concise related-work comparison for the [RelBench project](https://github.com/snap-stanford/relbench) community; posting is your choice. Ask the agent follow-up questions about any hypothesis, baseline, or budget assumption you cannot yet defend.

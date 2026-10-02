@@ -432,7 +432,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 187 | [Ethics & privacy on REG](lessons/0187-ethics-privacy-reg.html) | Dwork/Roth + graph-privacy critique | [Full 857-driver audit; 270 bounded histogram simulations](labs/0187-ethics-privacy-reg.ipynb); production DP not established |
 | 188 | [Systematic literature tracking](lessons/0188-systematic-literature-tracking.html) | arXiv API/RSS | 30-paper replay; quarterly collection INCOMPLETE |
 | 189 | Identify 3 open problems — under construction | Survey 2025 | Draft ranking by tractability |
-| 190 | **Q3 checkpoint — under construction** | — | Research gap document (5 pages); delivery pending |
+| 190 | **Q3 checkpoint** | — | Five-page research gap document; selected replay complete, learner defense pending |
 
 ### Q4 · Year 5 synthesis (191–200)
 | 191 | KumoRFM-2 SOTA tracking ★ | Fey et al. 2026 (2604.12596) | RelBench v1+v2 numbers; proprietary vs open gap |

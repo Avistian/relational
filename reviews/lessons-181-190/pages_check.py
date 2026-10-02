@@ -12,7 +12,7 @@ stage=checkout/'public';files=set();rows=[];cache={}
 def soup(p):
  if p not in cache:cache[p]=BeautifulSoup(p.read_text(),'html.parser')
  return cache[p]
-for n in list(range(181,190)):
+for n in list(range(181,191)):
  lesson=next((stage/'lessons').glob(f'0{n}-*.html'));pages={lesson,stage/'labs/html'/lesson.name}
  for a in soup(lesson).select('a[href]'):
   u=urlsplit(a['href'])
@@ -36,10 +36,10 @@ for n in list(range(181,190)):
   if re.search(r'\[\[[A-Z_]+(?::[^\]]+)?\]\]',soup(page).get_text()):broken.append([str(page),'unexpanded marker'])
  rows.append(dict(lesson=n,links=count,pages=len(pages),broken=broken,status='FAIL' if broken else 'PASS'))
 for p in ['index.html','notebooks.html','lessons/manifest.json','reviews/lessons-181-190/review.md']:files.add(stage/p)
-for n in list(range(181,190)):
+for n in list(range(181,191)):
  files.update((stage/f'labs/figures/l{n}').glob('*'))
  files.add(next((stage/'labs/solutions').glob(f'0{n}-*.ipynb')))
-report=dict(status='PASS' if all(r['status']=='PASS' for r in rows) else 'FAIL',clean_index_build=True,missing_lessons=[190],under_construction=[189,190],lessons=rows,total_links=sum(r['links'] for r in rows),stage=str(stage))
+report=dict(status='PASS' if all(r['status']=='PASS' for r in rows) else 'FAIL',clean_index_build=True,missing_lessons=[],under_construction=[189],lessons=rows,total_links=sum(r['links'] for r in rows),stage=str(stage))
 (D/'pages.json').write_text(json.dumps(report,indent=2)+'\n')
 hashes={str(p.relative_to(stage)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files)}
 (D/'site-hashes.json').write_text(json.dumps(hashes,indent=2)+'\n')
