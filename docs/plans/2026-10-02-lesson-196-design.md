@@ -1,0 +1,7 @@
+# Lesson 196 — approved community engagement
+
+User approved the proposed scope in conversation. Create an answerable technical question from the L192–193 RDBLearn preprocessing observation, with complete four-case diagnostic reproduction on frozen v0.1.2 commit b5b03ebf8091547285a6e06cba53d2d1a40cb171. Include unseen a/z/0/e, numeric controls, query batching, environment/source receipts and independent expected outputs. No repaired source substitution, model inference, paid dispatch, external posting or deployment. USD0 cloud/API; 1800 aggregate local execution seconds including failures and validation. Stop at the cutoff.
+
+Teach observation versus inference, community routing, a minimal executable question and feedback verification. Deliver HTML, reference, portable student/solution notebooks, original-source reproducer, local draft and response log. Keep benchmark effect and historical environment NOT_ESTABLISHED; full RDBLearn reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE. Participation remains pending until an actual thread and response assessment exist.
+
+Alternatives: a general RelBench protocol question is less directly testable; prose-only community advice misses the concrete reproduction opportunity. Preserve current community links separately from frozen historical source. Validate standalone solution, source/expected-output checks, accessible desktop/mobile interactions, links and actual Pages build from a temporary Git index.
