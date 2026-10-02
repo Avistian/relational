@@ -1,0 +1,183 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 187 — Ethics & privacy on relational entity graphs</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/entity-privacy.css"></head><body class="checkpoint ep-lesson"><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><header><p class="route-kicker">Year 5 · Quarter 3 · Lesson 187</p><h1>Ethics & privacy on relational entity graphs</h1></header><h2 id="Your-tangible-win">Your tangible win<a class="anchor-link" href="#Your-tangible-win">&#182;</a></h2><p>Write a release contract that answers <strong>whose information changes, which records change, and what an observer receives</strong>. Then implement and audit a complete contribution-bounded histogram experiment. This supports the mission: a relational model's useful connections also create obligations that a flat-row evaluation can miss.</p>
+<p><strong>Author evidence:</strong> complete <code>L187-F1-ENTITY-PRIVACY</code> course experiment. All 857 drivers, 2,571 histogram neighbors and 270 simulated releases checked. Published private-GNN reproduction <strong>NOT_RUN</strong>; production DP and complete erasure <strong>NOT_ESTABLISHED</strong>. Learner <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<h2 id="Recall-before-reading">Recall before reading<a class="anchor-link" href="#Recall-before-reading">&#182;</a></h2><div id="warmup"></div>
+
+<p><strong>Bridge from earlier work.</strong> <a href="0156-temporal-leakage-audit.html">Lesson 156</a> asked whether information existed at prediction time. <a href="0181-relbench-v2-autocomplete.html">Lesson 181</a> asked which target cells a model could see. This lesson asks what publishing an answer can reveal about a person. A time-valid, correctly masked model can still expose personal information. <a href="0186-production-constraints.html">Lesson 186</a> added deadlines and freshness to the serving contract. Here we add what the response may reveal. The needed prerequisites are restated below; its simulator is not required.</p>
+<h2 id="1-%C2%B7-A-person-is-not-necessarily-one-node">1 &#183; A person is not necessarily one node<a class="anchor-link" href="#1-%C2%B7-A-person-is-not-necessarily-one-node">&#182;</a></h2><p><strong>Relational entity graph (REG).</strong> Represent each table row as a node. Represent each foreign-key reference as an edge. A foreign key is a column pointing to another table's row identity. One person can be represented by a profile row and many event rows. Graph-node privacy depends on this representation; it does not automatically mean person-level privacy.</p>
+<p><strong>Threat model.</strong> State what an observer already knows, what you release, and what they try to infer. Here the observer sees a constructor-count vector and may know public race metadata. The protected change will be one driver's declared contribution. We are not trying to hide public race names, nor promising to conceal every fact correlated with a driver's existence.</p>
+<div id="predict"></div>
+
+<p><strong>Worked example.</strong> Driver A owns a profile, three result rows, one qualifying row and two standings rows: seven nodes in total. Each result and qualifying row has three foreign keys; each standings row has two. There are 16 edges touching the declared owned set. Six point directly to the driver profile.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l187/ownership.svg" alt="Synthetic ownership map: each arrow bundles foreign-key edges. Standings connect to races and the driver, not constructors. Deleting the profile leaves child nodes; declared owner removal still retains shared context."><figcaption>Synthetic ownership map: each arrow bundles foreign-key edges. Standings connect to races and the driver, not constructors. Deleting the profile leaves child nodes; declared owner removal still retains shared context.</figcaption></figure>
+
+<div id="privacy-removal"></div><noscript>Deleting the profile leaves six child nodes and ten edges to shared context. Removing all declared owned rows removes seven nodes and sixteen edges.</noscript>
+
+<p>Deleting one result row removes that row and its three edges. Deleting the driver <strong>graph node</strong> removes the profile and its six incident edges, leaving six child nodes connected to shared context. In an SQL database, foreign-key constraints can reject parent-only deletion; cascades depend on schema configuration. Neither behavior should be guessed from a graph diagram.</p>
+<p><strong>Declared entity removal</strong> deletes the profile and all rows directly owned through <code>driverId</code> in results, qualifying and standings. It retains shared races, circuits, constructors and constructor aggregate tables. This is an explicit course policy, not a discovery that those are all possible traces of the person. A model checkpoint, a log, a backup or a constructor's historical points may retain derived information.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Node deletion, contribution removal, anonymization and model unlearning are different operations. We execute the second under a declared ownership map. We do not certify complete erasure or retrain a model.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Four-questions-that-%E2%80%9Cno-leakage%E2%80%9D-cannot-answer">2 &#183; Four questions that &#8220;no leakage&#8221; cannot answer<a class="anchor-link" href="#2-%C2%B7-Four-questions-that-%E2%80%9Cno-leakage%E2%80%9D-cannot-answer">&#182;</a></h2><div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Question</th>
+  <th>Example</th>
+  <th>Appropriate evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Was future information used?</td>
+  <td>Tomorrow's result enters today's context</td>
+  <td>Availability and temporal audit</td>
+</tr>
+<tr>
+  <td>Can a person be linked to records?</td>
+  <td>Removing names leaves distinctive relationships</td>
+  <td>Linkage threat model and disclosure audit</td>
+</tr>
+<tr>
+  <td>Can participation be inferred?</td>
+  <td>An output differs when one person is included</td>
+  <td>Membership attack plus a separate privacy analysis</td>
+</tr>
+<tr>
+  <td>Is the use acceptable?</td>
+  <td>A permitted prediction is used for a harmful purpose</td>
+  <td>Purpose, authority, affected-person review and recourse</td>
+</tr>
+</tbody>
+</table></div>
+<p>An unsuccessful membership attack only tests that attack under its assumptions. It does not establish a universal privacy guarantee. Conversely, a population-level fact may be learnable even with a private mechanism. Privacy also does not establish fairness: a model can protect participation while producing systematically harmful decisions.</p>
+<p><strong>Ethics decision exercise.</strong> Imagine replacing the public F1 records with patients, visits and hospitals. A researcher proposes releasing hospital counts and retaining embeddings for future projects. Before choosing a noise level, write the intended benefit, the permission or authority for that use, the minimum necessary fields, who can see each output, and a route to challenge harmful use. Explain why public availability or technical access alone would not settle those choices. This is a research-design exercise, not legal advice or a compliance certification.</p>
+<h2 id="3-%C2%B7-Fix-the-neighboring-databases-before-the-noise">3 &#183; Fix the neighboring databases before the noise<a class="anchor-link" href="#3-%C2%B7-Fix-the-neighboring-databases-before-the-noise">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> A privacy guarantee limits how much the released answer's distribution can change when one protected contribution is added or removed. You must first define that contribution.</p>
+</blockquote>
+<p>Call two databases <strong>neighbors</strong> when one contains one additional driver's complete declared contribution and everything else is fixed. Stable driver and row identities remain unchanged for other people. Shared metadata is fixed. This is <strong>add/remove adjacency</strong>. Replacing one driver's whole contribution can instead require a bound of 2C below.</p>
+<p>For a randomized mechanism M and every output event S, pure ε-differential privacy requires:</p>
+<p><code>Pr[M(D) ∈ S] ≤ exp(ε) × Pr[M(D′) ∈ S]</code></p>
+<p>Here D and D′ are neighbors, <code>Pr</code> is probability over the mechanism's hidden randomness, <code>exp</code> is the exponential function, and ε (epsilon) controls the allowed multiplicative change. The inequality must hold in both directions because neighboring is symmetric. Smaller ε is a stronger restriction. This is a distributional statement over all allowed neighbors and events, not a bound on one sampled output difference. See <a href="https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf#page=20">Dwork and Roth, Definition 2.4</a>.</p>
+<p><strong>Our query.</strong> Count result rows in each constructor category. A histogram is the vector of these counts. Its category list is all 211 constructor IDs from the pinned <strong>public</strong> snapshot, fixed across neighboring datasets. A private category list must not be discovered and published for free. Our count mechanism reads only result IDs, driver IDs and constructor IDs; changes to other declared owned tables do not enter that query.</p>
+<p><strong>Worked example.</strong> A's result sequence is Red, Red, Blue; B has Blue. The raw histogram is <code>[2, 2]</code>. Keep at most C = 2 results per driver, ordered by immutable result ID. The clipped histogram is <code>[2, 1]</code>. Removing A produces <code>[0, 1]</code>: the whole vector changes by two counts.</p>
+<p><strong>Why the cap is across bins.</strong> Allowing C contributions <em>per constructor</em> would let one driver affect many bins, exceeding the claimed total bound. Sorting must be local to each owner; deleting A must not change which of B's rows survive. Our deterministic first-events rule is auditable but changes the scientific quantity: it emphasizes earlier results in the snapshot.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l187/mechanism.svg" alt="Synthetic Red/Blue worked example: cap 2 reduces [2,2] to [2,1]. Removing A changes the clipped vector by [2,0], whose L1 norm is 2. At epsilon 1 the ideal Laplace scale is 2."><figcaption>Synthetic Red/Blue worked example: cap 2 reduces [2,2] to [2,1]. Removing A changes the clipped vector by [2,0], whose L1 norm is 2. At epsilon 1 the ideal Laplace scale is 2.</figcaption></figure>
+
+<h2 id="4-%C2%B7-Derive-the-bound,-then-choose-the-mechanism">4 &#183; Derive the bound, then choose the mechanism<a class="anchor-link" href="#4-%C2%B7-Derive-the-bound,-then-choose-the-mechanism">&#182;</a></h2><p><strong>L1 distance</strong> adds the absolute coordinate differences between two vectors. <strong>Global sensitivity</strong> is the largest such query difference over all allowed neighboring databases, not just the largest difference observed in this snapshot.</p>
+<p>Each retained result adds one to exactly one bin. A driver's retained rows therefore form a nonnegative vector whose coordinates sum to at most C. Other drivers' vectors are unchanged by removal. The histogram difference has L1 norm at most C. This argument holds for every database in the declared domain; the 2,571 actual deletion checks test the implementation but do not replace the argument.</p>
+<p><strong>Laplace mechanism.</strong> Add independent Laplace noise to every bin with scale <code>b = C / ε</code>. This symmetric noise has density proportional to <code>exp(−|z|/b)</code> and expected absolute magnitude b. For two neighboring query vectors, the density ratio at any output is at most <code>exp(||f(D)−f(D′)||₁/b) ≤ exp(ε)</code>. Integrating over output events yields the required inequality. The scale uses the <strong>whole vector's sensitivity</strong>; this is one vector release, not 211 separately budgeted scalar queries. <a href="https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf#page=34">Dwork and Roth, Definition 3.4 and Theorem 3.6</a>.</p>
+<p>At C = 2 and ε = 1, the scale is two counts per coordinate. Noise can yield fractional or negative counts. We retain those values in the experiment so their error is transparent. Rounding or clamping an already private release is post-processing, but changes utility. It cannot fix a wrong sensitivity bound.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l187/noise.svg" alt="Synthetic Laplace density comparison for neighboring scalar counts 0 and 2. At epsilon 1, scale 2 attains ratio exp(1); the incorrect row-calibrated scale 1 permits ratio exp(2). The full-vector proof is in the text."><figcaption>Synthetic Laplace density comparison for neighboring scalar counts 0 and 2. At epsilon 1, scale 2 attains ratio exp(1); the incorrect row-calibrated scale 1 permits ratio exp(2). The full-vector proof is in the text.</figcaption></figure>
+
+<div id="privacy-release"></div><noscript>At cap 2 and epsilon 1, clipped counts are [2,1] and noise scale is 2. Five fresh releases compose to epsilon at most 5.</noscript>
+
+<p><strong>Repeated releases.</strong> Fresh answers for the same population reveal more. Basic sequential composition adds their ε values. Thirty independent ε = 1 releases have an upper bound of ε = 30, not ε = 1. Re-reading the exact same released answer costs nothing extra. Our nine configurations with 30 repetitions would have basic bound <strong>315</strong> if they were genuine private mechanisms released together. They are public simulations, so that number is an accounting exercise, not their privacy certification. <a href="https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf#page=46">Dwork and Roth, Corollary 3.15</a>.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The proof is for ideal hidden randomness and real arithmetic. The notebook intentionally publishes the raw data, seeds and float64 outputs. An observer who knows the noise can subtract it. This implementation is an inspectable simulator, not a production differential-privacy service; finite-precision sampling also requires a separate analysis.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Complete-experiment,-visible-limitations">5 &#183; Complete experiment, visible limitations<a class="anchor-link" href="#5-%C2%B7-Complete-experiment,-visible-limitations">&#182;</a></h2><p><strong>Held fixed:</strong> all nine F1 tables, all drivers, the public constructor domain, stable ownership, row-ID ordering and the full results population. <strong>Varied:</strong> C ∈ {1, 5, 20}, ε ∈ {0.5, 1, 2}, seeds 0–29. <strong>Measured:</strong> owned records and edges, deletion effects, clipping loss, noise error and error against the original histogram. There is no training, hyperparameter selection or temporal forecasting claim. All dates belong to a static descriptive snapshot.</p>
+<p><strong>Predict first.</strong> Will a larger cap always reduce error relative to the original histogram? Write down the two competing effects: retaining more records reduces clipping loss, while the same ε requires more noise.</p>
+<p>The full nine-table snapshot contains <strong>70,876 declared owned records</strong> and <strong>175,933 edges incident to those owned sets</strong>. Driver ID 3 has the largest contribution: <strong>370 results + 353 qualifying + 372 standings + 1 driver = 1,096 records</strong>. These IDs are snapshot identities, not names inferred by an attack.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th style="text-align:right">Cap C</th>
+  <th style="text-align:right">ε</th>
+  <th style="text-align:right">Kept / 26,080</th>
+  <th style="text-align:right">Clipping L1</th>
+  <th style="text-align:right">Noise MAE ± SD</th>
+  <th style="text-align:right">Raw MAE ± SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0.5</td>
+  <td style="text-align:right">857</td>
+  <td style="text-align:right">25,223</td>
+  <td style="text-align:right">1.997 ± 0.124</td>
+  <td style="text-align:right">119.977 ± 0.150</td>
+</tr>
+<tr>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">857</td>
+  <td style="text-align:right">25,223</td>
+  <td style="text-align:right">1.006 ± 0.058</td>
+  <td style="text-align:right">119.720 ± 0.099</td>
+</tr>
+<tr>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">857</td>
+  <td style="text-align:right">25,223</td>
+  <td style="text-align:right">0.498 ± 0.044</td>
+  <td style="text-align:right">119.587 ± 0.039</td>
+</tr>
+<tr>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">0.5</td>
+  <td style="text-align:right">3,135</td>
+  <td style="text-align:right">22,945</td>
+  <td style="text-align:right">10.209 ± 0.662</td>
+  <td style="text-align:right">113.344 ± 0.951</td>
+</tr>
+<tr>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">3,135</td>
+  <td style="text-align:right">22,945</td>
+  <td style="text-align:right">4.973 ± 0.337</td>
+  <td style="text-align:right">110.636 ± 0.378</td>
+</tr>
+<tr>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">3,135</td>
+  <td style="text-align:right">22,945</td>
+  <td style="text-align:right">2.397 ± 0.164</td>
+  <td style="text-align:right">109.623 ± 0.192</td>
+</tr>
+<tr>
+  <td style="text-align:right">20</td>
+  <td style="text-align:right">0.5</td>
+  <td style="text-align:right">8,260</td>
+  <td style="text-align:right">17,820</td>
+  <td style="text-align:right">39.891 ± 2.555</td>
+  <td style="text-align:right">110.678 ± 2.745</td>
+</tr>
+<tr>
+  <td style="text-align:right">20</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">8,260</td>
+  <td style="text-align:right">17,820</td>
+  <td style="text-align:right">20.253 ± 1.415</td>
+  <td style="text-align:right">96.531 ± 1.481</td>
+</tr>
+<tr>
+  <td style="text-align:right">20</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">8,260</td>
+  <td style="text-align:right">17,820</td>
+  <td style="text-align:right">9.897 ± 0.651</td>
+  <td style="text-align:right">89.770 ± 0.797</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Read the columns carefully.</strong> Clipping L1 is the total number of discarded results. Noise MAE is mean absolute error per constructor relative to the clipped query. Raw MAE compares the release with the original full histogram. The table reports mean ± sample standard deviation across 30 seeds; it is descriptive simulation variation, not uncertainty across new databases or a privacy proof.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l187/utility.svg" alt="Measured full F1 simulation. All 270 seeds/configuration runs shown; means and sample standard deviations describe simulation variation. Different panel scales are explicit. Public data and seeds confer no production privacy guarantee."><figcaption>Measured full F1 simulation. All 270 seeds/configuration runs shown; means and sample standard deviations describe simulation variation. Different panel scales are explicit. Public data and seeds confer no production privacy guarantee.</figcaption></figure>
+
+<p>The local verifier independently checks all primary/foreign keys, ownership counts with SQL, every driver deletion at all three caps, every saved vector and scalar error calculation. The <a href="../labs/evidence/l187/report.json">full evidence</a>, <a href="../labs/evidence/l187/driver-audit.csv">driver audit</a>, <a href="../labs/_verify_l187_results.json">verification receipt</a> and <a href="../labs/l187-reproduction.md">frozen protocol</a> preserve exact results.</p>
+<p><strong>The erasure boundary is measured too.</strong> Shared constructor-result aggregates are joined through race and constructor keys to 24,501 distinct driver/aggregate pairs in this snapshot. These are retained relationships, not 24,501 proven attacks. They demonstrate why a direct foreign-key ownership policy does not establish removal of every derived trace.</p>
+<h2 id="6-%C2%B7-What-changes-for-a-GNN?">6 &#183; What changes for a GNN?<a class="anchor-link" href="#6-%C2%B7-What-changes-for-a-GNN?">&#182;</a></h2><p>A graph neural network mixes a node's features with its neighbors' features. Removing one person can therefore change messages used in several predictions and gradient computations. Clipping each training row as if the examples were independent is not automatically a person-level proof. The protected unit, sampling, message dependencies, preprocessing, training and inference access all need accounting.</p>
+<p><a href="https://arxiv.org/abs/2203.00949">GAP</a> proposes noisy aggregation for private graph learning. <a href="https://arxiv.org/html/2311.06888v2">Xiang, Wang and Wang, v2 §VI</a> report flaws in the privacy treatment of instance embeddings and analyze GAP's aggregation noise. Attribute that finding to their analysis. Neither their critique nor reproducing an accuracy table is a new local privacy proof.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This lesson does not implement GAP or HeterPoisson, train a private GNN, or reproduce their published benchmarks. Full execution here means the named course audit and histogram experiment. Paper reproduction remains <code>NOT_RUN</code>. A private histogram also does not privatize a model trained on the original graph.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Implement,-explain,-return-later">7 &#183; Implement, explain, return later<a class="anchor-link" href="#7-%C2%B7-Implement,-explain,-return-later">&#182;</a></h2><p>Open the <a href="../labs/0187-ethics-privacy-reg.ipynb">student notebook</a>, <a href="../labs/html/0187-ethics-privacy-reg.html">executed walkthrough</a>, or <a href="../labs/solutions/0187-ethics-privacy-reg.ipynb">solution</a>. The lab contains all input tables with hashes, readable functions, three live TODOs and an independent verifier. Implement ownership counting, stable per-person clipping and the scale/composition contract. Checks call your functions on synthetic counterexamples and then on the complete dataset.</p>
+<p><strong>EXIT:</strong> explain why the largest owner has 1,096 records; derive C rather than asserting it; distinguish count error from privacy; explain why publishing the seed changes the release contract; and defend one ethically acceptable use with an explicit limitation. Send the written defense and check output to the teaching agent. Author execution does not establish your mastery.</p>
+<div id="teachback"></div>
+
+<p><strong>Spaced return.</strong> Tomorrow, derive the scale without looking. In one week, change the policy to per-category clipping and find a counterexample. Compare a time-valid but privacy-unsafe release with a noisy release whose intended use is still unacceptable.</p>
+<p><strong>Primary reading:</strong> <a href="https://www.cis.upenn.edu/~aaroth/privacybook.html">Dwork and Roth</a>, definitions and Laplace/composition sections linked above. Use the <a href="../reference/ethics-privacy-reg.html">privacy contract reference</a> when auditing another database. Ask follow-up questions wherever the ownership map or proof feels unclear.</p>
+<p><strong>Next: <a href="0188-systematic-literature-tracking.html">Lesson 188</a>.</strong> Carry the distinction between a reported result and an established guarantee into your paper log. Record what each source actually supports before choosing a research direction.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/entity-privacy.js"></script><script src="../assets/l187-lesson.js"></script></body></html>

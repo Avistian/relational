@@ -1,0 +1,129 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 181 — Autocomplete without reading the answer</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/autocomplete-visibility.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0180-public-encoder-checkpoint.html">Lesson 180</a></nav><header><p class="route-kicker">Year 5 · Quarter 3 · Lesson 181</p><h1>Autocomplete without reading the answer</h1></header><p><strong>Your win:</strong> turn “predict this missing cell” into an executable task contract: name the row, hide the answer, define legal context, and score the complete split. Read the core path in about 20 minutes; use another session for the lab.</p>
+<p><strong>Observed:</strong> complete two-task aggregation-baseline reproduction. Fresh GNN training <strong>NOT_RUN_TRAINING_HEALTH_GATE</strong>; the approved baseline-plus-GNN experiment <strong>INCOMPLETE</strong>. RelGT-AC numerical reproduction <strong>NOT_RUN_SOURCE_GAPS</strong>. New cloud/API spend <strong>$0</strong>. Learner: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><a href="../labs/0181-relbench-v2-autocomplete.ipynb">Student notebook</a> · <a href="../labs/html/0181-relbench-v2-autocomplete.html">Executed solution</a> · <a href="../labs/solutions/0181-relbench-v2-autocomplete.ipynb">Solution notebook</a> · <a href="../reference/relbench-v2-autocomplete.html">Quick reference</a> · <a href="../labs/l181-reproduction.md">Reproduction protocol</a>.</p>
+<h2 id="1-%C2%B7-A-different-question-for-the-same-database">1 &#183; A different question for the same database<a class="anchor-link" href="#1-%C2%B7-A-different-question-for-the-same-database">&#182;</a></h2><p><a href="0180-public-encoder-checkpoint.html">Lesson 180</a> asked what evidence establishes a public encoder fine-tune. Its practical exit remains <strong>INCOMPLETE</strong>. Here we start the research-frontier sequence by changing the prediction question. Exploring a new task does not complete that earlier gate.</p>
+<p><strong>Forecasting</strong> constructs a future outcome: for example, whether a driver fails to finish during the next 30 days. <strong>Autocomplete</strong> predicts an existing column value in a particular row while pretending that value has not been entered yet. The target is still available to the evaluator; it must be hidden from the predictor. <strong>Supervised learning</strong> uses those target values to train a prediction rule. That does not by itself establish foundation-model pretraining or transfer to another database.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Forecasting asks “what happens next?” Autocomplete asks “what belongs in this blank?” Both require a precise account of what was knowable at prediction time.</p>
+</blockquote>
+<p>RelBench v2 adds four databases: scholarly publications (<code>rel-arxiv</code>), enterprise orders (<code>rel-salt</code>), consumer reviews (<code>rel-ratebeer</code>), and clinical records (<code>rel-mimic</code>). Its new autocomplete tasks include binary, multiclass and numerical targets. We use the two published F1 numerical tasks to make the contract small enough to inspect completely. <a href="https://arxiv.org/html/2602.12606v1#S4">Primary source: RelBench v2 §§2–4</a>.</p>
+<div id="warmup"></div>
+
+<h2 id="2-%C2%B7-Name-the-row-before-choosing-the-model">2 &#183; Name the row before choosing the model<a class="anchor-link" href="#2-%C2%B7-Name-the-row-before-choosing-the-model">&#182;</a></h2><p>A <strong>primary key</strong> identifies a row. A <strong>foreign key</strong> points to a row in another table. A result row can link to a driver, race and constructor, but those linked entities are not interchangeable with the result row itself.</p>
+<p><strong>Worked example.</strong> Suppose result row 9001 belongs to driver 7 at time 10. The query is <code>(resultId=9001, time=10)</code>; the missing value is its finishing <code>position</code>. A second result for driver 7 has another result ID. A baseline grouped by result ID cannot retrieve driver 7's history merely because a driver foreign key exists.</p>
+<p>The two real tasks use <code>resultId</code> and <code>qualifyId</code>, respectively. The complete query identity is <strong>(row ID, timestamp)</strong>. Our evaluator rejects duplicate, missing, extra or mismatched identities before calculating a score. Prediction file order is irrelevant.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task</th>
+  <th style="text-align:right">Training rows</th>
+  <th style="text-align:right">Validation rows</th>
+  <th style="text-align:right">Test rows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>results-position</code></td>
+  <td style="text-align:right">8,997</td>
+  <td style="text-align:right">1,400</td>
+  <td style="text-align:right">4,798</td>
+</tr>
+<tr>
+  <td><code>qualifying-position</code></td>
+  <td style="text-align:right">2,228</td>
+  <td style="text-align:right">1,854</td>
+  <td style="text-align:right">5,733</td>
+</tr>
+</tbody>
+</table></div>
+<p>These reconstructed counts match paper Table 2. The cached database archive also matches the SHA256 digest in the publication-date source registry. A matching archive and count do not establish the historical training environment or seed identities.</p>
+<p><strong>Exact split boundaries.</strong> The pinned source uses <code>(database minimum, 2005-01-01 minus one second]</code>, <code>(2005-01-01, 2010-01-01 minus one second]</code>, and <code>(2010-01-01, database maximum]</code>, then removes missing targets. Parentheses exclude a boundary; a square bracket includes it. We retain these source predicates, including their boundary exclusions. The original implementation allocates a timestamp per second across decades; our bounded implementation passes the same minimum and maximum to SQL. Independent SQL checks all <strong>25,010 retained labels</strong>, and small dense-index tests verify the extrema calculation. <a href="../labs/sources/l181/upstream/relbench/base/task_autocomplete.py">Pinned task builder</a>.</p>
+<h2 id="3-%C2%B7-Hiding-the-answer-is-more-than-dropping-one-cell">3 &#183; Hiding the answer is more than dropping one cell<a class="anchor-link" href="#3-%C2%B7-Hiding-the-answer-is-more-than-dropping-one-cell">&#182;</a></h2><p>A <strong>proxy</strong> here is a field the task designer excludes because it could reveal information unavailable when filling the target. Correlation alone is not a universal reason to remove a legitimate predictor. The exclusion list belongs to the specific task contract.</p>
+<p>For <code>results-position</code>, the released contract drops <code>position</code> and seven named fields from <strong>every result row</strong>: <code>statusId</code>, <code>positionOrder</code>, <code>points</code>, <code>laps</code>, <code>milliseconds</code>, <code>fastestLap</code>, and <code>rank</code>. For <code>qualifying-position</code>, it removes qualifying <code>position</code> without additional named proxies. A <strong>temporal cutoff</strong> then limits dated context to the query time. Column removal and temporal filtering solve different problems. <a href="../labs/sources/l181/upstream/relbench/tasks/__init__.py">Task registry</a>, <a href="../labs/sources/l181/upstream/relbench/base/dataset.py">database transformation</a>.</p>
+<p><strong>Worked example.</strong> At query time 10, a past context row has position 2 and points 18. Whole-table removal hides both. A query-only mask leaves them in that context row. A row dated 11 is excluded regardless of whether its position is hidden.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l181/masking.svg" alt="Synthetic query and context rows under two masking policies. Future rows are excluded independently of target masking. Retained context targets change the information set."><figcaption>Synthetic query and context rows under two masking policies. Future rows are excluded independently of target masking. Retained context targets change the information set.</figcaption></figure>
+
+<div id="autocomplete-visibility"></div><noscript>At query time 10, global masking hides position and points in both query and past context rows. Query-only masking retains past context values 2 and 18. A future row at 11 is excluded in both cases.</noscript>
+
+<p>Your first live notebook function implements this column-visibility rule. The full baseline audit calls it to verify the released global policy. The widget also illustrates a different policy, but changing the widget does not modify the measured experiment.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The source removes specified columns, not every conceivable proxy. Full event-availability auditing and sampled-neighborhood auditing remain unperformed after the training-health stop. Same calendar dates do not establish the within-day order in which race and qualifying information became available.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Reproduce-the-simple-models-completely">4 &#183; Reproduce the simple models completely<a class="anchor-link" href="#4-%C2%B7-Reproduce-the-simple-models-completely">&#182;</a></h2><p>Before training a graph model, reproduce the baseline meanings. <strong>Global mean/median</strong> predicts one fitted statistic for every query. <strong>Entity mean/median</strong> groups by the task's primary-key identity and uses zero for an unseen identity. <strong>Global zero</strong> always predicts zero. A driver-history aggregate would be an additional model, not the released entity baseline.</p>
+<div id="predict"></div>
+
+<p><strong>Fit population matters.</strong> The released script fits validation predictions on training labels. For test predictions it refits the aggregation baselines using training <strong>plus validation</strong> labels. No test labels enter the fitted statistic. Your second live notebook function receives the fitting rows explicitly, so the harness cannot hide this choice. <a href="../labs/sources/l181/upstream/examples/baseline_autocomplete.py">Released baseline script</a>.</p>
+<p><strong>Mean absolute error (MAE)</strong> is the average absolute prediction error, measured in finishing/qualifying places. Lower is better. <strong>R²</strong> compares squared error with always predicting the evaluation population's mean: <code>1 − sum((y − prediction)²) / sum((y − mean(y))²)</code>. Here <code>y</code> is the true position. Negative R² is possible. A constant learned from an earlier population need not equal the evaluation mean. That evaluation mean defines the metric denominator; it is not information passed to the predictor.</p>
+<p><strong>Worked example.</strong> Truth <code>[1, 3, 5]</code> and predictions <code>[2, 3, 4]</code> give MAE <code>2/3</code>. Squared error is <code>2</code>; the squared deviation from the truth mean <code>3</code> is <code>8</code>. R² is <code>1 − 2/8 = 0.75</code>. Your third function joins full query keys before applying these equations.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l181/baselines.svg" alt="Measured complete test MAE for all five deterministic recipes. The row-identity entity baselines fall back to zero; no GNN result or seed uncertainty is implied."><figcaption>Measured complete test MAE for all five deterministic recipes. The row-identity entity baselines fall back to zero; no GNN result or seed uncertainty is implied.</figcaption></figure>
+
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task / test recipe</th>
+  <th style="text-align:right">Measured R²</th>
+  <th style="text-align:right">Measured MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>results-position / global mean</td>
+  <td style="text-align:right">-0.175775</td>
+  <td style="text-align:right">4.822495</td>
+</tr>
+<tr>
+  <td>results-position / global median</td>
+  <td style="text-align:right">-0.218592</td>
+  <td style="text-align:right">4.876615</td>
+</tr>
+<tr>
+  <td>results-position / entity mean</td>
+  <td style="text-align:right">-3.148348</td>
+  <td style="text-align:right">9.504377</td>
+</tr>
+<tr>
+  <td>qualifying-position / global mean</td>
+  <td style="text-align:right">-0.001576</td>
+  <td style="text-align:right">5.357594</td>
+</tr>
+<tr>
+  <td>qualifying-position / global median</td>
+  <td style="text-align:right">-0.000525</td>
+  <td style="text-align:right">5.342055</td>
+</tr>
+<tr>
+  <td>qualifying-position / entity mean</td>
+  <td style="text-align:right">-3.214357</td>
+  <td style="text-align:right">11.142334</td>
+</tr>
+</tbody>
+</table></div>
+<p>Entity median equals entity mean here; both equal global zero. The full validation/test table is in the measured report.</p>
+<p>All five recipes were evaluated on both complete validation and test populations: <strong>68,925 predictions</strong>. Independent SQL reconstructed every label, scalar aggregation regenerated every prediction, and scikit-learn independently checked every metric. All <strong>40 comparisons</strong> with the paper's rounded baseline MAE/R² values are within the predeclared <code>0.001</code> tolerance. These are deterministic recipes; repeated seeds would not create meaningful uncertainty bars.</p>
+<p>The large entity-baseline errors are intelligible: zero primary-key overlap makes both entity recipes use the zero fallback. This result checks our understanding of task identity, rather than proving that relational history is useless.</p>
+<h2 id="5-%C2%B7-Model-architecture:-what-the-fresh-GNN-would-train">5 &#183; Model architecture: what the fresh GNN would train<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-what-the-fresh-GNN-would-train">&#182;</a></h2><p>A <strong>node embedding</strong> is a vector representing a row. The released model encodes numerical, categorical and timestamp features, then applies a four-layer row-level ResNet. ResNet adds intermediate representations through residual connections. The output contains 128 values per sampled row.</p>
+<p>A <strong>heterogeneous graph</strong> distinguishes table and relation types. Two GraphSAGE layers sum neighboring messages within each foreign-key relation, transform self and neighbor representations, then sum relation outputs. Node-wise normalization and ReLU follow each layer. ReLU replaces negative coordinates with zero. Relative-time encodings tell the model how far context rows are from the query. Finally, a linear head turns the query embedding into one predicted position. <a href="../labs/sources/l181/upstream/examples/model.py">Full model</a>, <a href="../labs/sources/l181/upstream/relbench/modeling/nn.py">encoder and graph layers</a>.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l181/gnn.svg" alt="Complete released GNN path and its source fitting boundaries. Shapes describe the intended model; no full sampled GNN update ran in L181."><figcaption>Complete released GNN path and its source fitting boundaries. Shapes describe the intended model; no full sampled GNN update ran in L181.</figcaption></figure>
+
+<p>The approved experiment specified five seeds per task, ten epochs per seed, batch 512, width 128, Adam learning rate 0.005 and fanouts <code>[128, 64]</code>. An <strong>epoch</strong> traverses the training loader; a <strong>fanout</strong> limits sampled neighbors at a hop. L1 loss penalizes absolute training error. The lowest validation MAE selects the saved state, with the last tie winning in the source. Predictions are clipped to the training labels' 2nd–98th percentiles. Reported R² is not the checkpoint-selection metric. <a href="../labs/sources/l181/upstream/examples/gnn_autocomplete.py">Original trainer</a>.</p>
+<p><strong>Why it stopped.</strong> A gradient is the derivative used to update a weight. The pinned encoder's numerical path produced finite outputs but nonfinite weight gradients on real missing <code>circuits.alt</code> and <code>results</code> values. For the circuits probe, 3 missing altitudes produced 128 nonfinite weight-gradient entries. An independent direct <code>LinearEncoder</code> experiment reproduced that count. Missing values can enter a multiplication before the output is cleaned; a zero upstream derivative multiplied by NaN can still be NaN.</p>
+<p>Replacing missing inputs before multiplication produced finite gradients in a diagnostic control. We did <strong>not</strong> substitute that repair into the full model. The probe used CPU PyTorch 2.13.0 and PyTorch Frame 0.3.0, permitted by the release's open-ended dependencies. It does not establish what happened in the authors' historical environment or in an unrun CUDA configuration. <a href="../labs/evidence/l181/packet/gradient-preflight.json">Measured probe</a>.</p>
+<p>The source also materializes feature statistics over all database dates before temporal sampling. That is an additional fitting-scope concern: filtering sampled rows later does not undo statistics computed earlier. We have not established a full temporally valid training pipeline. Fresh GNN fitting stays <strong>NOT_RUN_TRAINING_HEALTH_GATE</strong>; the approved selected experiment stays <strong>INCOMPLETE</strong>.</p>
+<h2 id="6-%C2%B7-Read-RelGT-AC-as-a-research-claim">6 &#183; Read RelGT-AC as a research claim<a class="anchor-link" href="#6-%C2%B7-Read-RelGT-AC-as-a-research-claim">&#182;</a></h2><p>RelGT-AC proposes query-row masking, a text encoder and a Transformer over relational context. <strong>TF-IDF</strong> weights words by their frequency in a row's text and their rarity across fitting documents. The paper uses 64 text features and projects them to 32 dimensions. A learned projection changes a vector's width. The experiment setup specifies 32 text dimensions, while equation 4 writes the general hidden width; without authenticated code that detail remains a source ambiguity. Table type, hop count, relative time and local degree are added to the feature representation. A <strong>hop</strong> traverses one graph edge; <strong>degree</strong> counts adjacent edges.</p>
+<p>Local GraphSAGE combines nearby messages. <strong>Attention</strong> then gives sampled rows learned weights: compare query and key vectors, normalize scores with softmax so weights sum to one, and take a weighted sum of value vectors. Two Transformer layers use eight attention heads, which learn different comparisons. The query representation feeds a task-specific prediction head. Regression uses squared-error training; binary and multiclass tasks use cross-entropy losses that penalize wrong class probabilities. <a href="https://arxiv.org/html/2606.03040v1#S4">RelGT-AC §§4–5</a>.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l181/relgt-ac.svg" alt="Paper-described RelGT-AC architecture and an illustrative attention calculation. This is not authenticated implementation or executed model evidence."><figcaption>Paper-described RelGT-AC architecture and an illustrative attention calculation. This is not authenticated implementation or executed model evidence.</figcaption></figure>
+
+<p><strong>Do not compare the wrong columns.</strong> RelGT-AC's tables reuse RelBench <strong>validation</strong> numbers. Its reported F1 R² values <code>0.528</code> and <code>0.239</code> must not be compared as fresh test results against RelBench test values <code>0.394</code> and <code>0.015</code>. The paper-described seed-only masking also differs from the baseline's global removal. Before attributing a gain to attention, establish matched information access, split identities and selection procedures.</p>
+<p>The paper states that code and checkpoints are released. In a bounded search of the paper, author page and repository search results, we did not locate an authenticated RelGT-AC release. That is a search result, not proof of absence. The architecture here follows the paper and is not a validated reimplementation. Its numerical reproduction remains <strong>NOT_RUN_SOURCE_GAPS</strong>. <a href="../labs/sources/l181/protocol-audit.json">Search and protocol ledger</a>.</p>
+<h2 id="7-%C2%B7-Run,-defend,-retrieve">7 &#183; Run, defend, retrieve<a class="anchor-link" href="#7-%C2%B7-Run,-defend,-retrieve">&#182;</a></h2><p>The default notebook authenticates an embedded real-data packet and reruns the complete baseline audit. It makes no cloud calls. The separately gated command verifies current packet hashes and stops before paid training:</p>
+<div class="highlight"><pre><span></span>.venv/bin/python<span class="w"> </span>labs/_budget_l181.py<span class="w"> </span>.venv/bin/python<span class="w"> </span>labs/_run_l181.py
+<span class="c1"># Expected exit 2: BLOCKED by the observed gradient prerequisite.</span>
+</pre></div>
+<p>The complete original model/trainer is visible in the notebook appendix. The admission command and Modal local wrapper are tested gates; post-gate cloud training is <strong>NOT_VALIDATED</strong>. No pilot was dispatched. Actual new cloud/API spend is **$0**. The approved $10 aggregate cap, planned $8 stop and $2 reserve remain intact; changing missing-value handling would require a newly declared protocol.</p>
+<p><strong>EXIT.</strong> Implement the three functions, rerun all complete-key predictions, and submit a short defense: identify the task row, explain global versus query-only masking, justify the baseline fit populations, and state precisely which reproduction completed. Keep the GNN stop separate from the correct baseline results. Author preparation does not establish your mastery.</p>
+<div id="teachback"></div>
+
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2602.12606v1">RelBench v2 §§2–4 and Tables 5/14/15</a>, alongside the pinned task builder and baseline script. Read RelGT-AC as the frontier comparison after the core contract is clear. Tomorrow, explain why entity mean predicts zero here without reopening this page. Ask the teaching agent about any unclear step or send your defense for feedback.</p>
+<p><a href="../reference/curriculum.html">Course sequence</a> · <a href="../labs/evidence/l181/report.json">Measured report</a> · <a href="../labs/evidence/l181/paper-comparison.json">Paper comparison</a> · <a href="../labs/_verify_l181_results.json">Independent verification</a>.</p>
+<p><strong>Next: <a href="0182-rdb-pfn-composite-message-passing.html">Lesson 182</a>.</strong> You can now state what information a model may use. Next, use that contract to ask whether combining two architectures changes the computation in a useful, testable way.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/autocomplete-visibility.js"></script><script src="../assets/l181-lesson.js"></script></body></html>

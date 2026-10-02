@@ -1,0 +1,152 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>A good prediction can suggest a useless action</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/causal-intervention.css"></head><body class="causal-page"><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebooks</a></nav><p class="eyebrow">Year 5 · Lesson 185 · From prediction to action</p><h1>A good prediction can suggest a useless action</h1><p><strong>Your win:</strong> explain why a predictor can rank customers correctly yet recommend an ineffective action. Then implement the intervention that proves the distinction in a fully specified simulator.</p>
+<p><strong>Observed evidence:</strong> all five seeds of the approved original synthetic experiment completed. This is a complete teaching experiment, not a published-paper benchmark reproduction. Learner defense remains <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<div class="lab-links"><a href="../labs/0185-causal-relational-data.ipynb">Start the student notebook</a> · <a href="../labs/html/0185-causal-relational-data.html">Read the executed solution</a> · <a href="../labs/solutions/0185-causal-relational-data.ipynb">Download the solution</a> · <a href="../reference/causal-relational-data.html">Printable reference</a> · <a href="../labs/l185-reproduction.md">Reproduce all five seeds</a></div>
+
+<h2 id="1-%C2%B7-A-leaderboard-answers-only-the-first-question">1 &#183; A leaderboard answers only the first question<a class="anchor-link" href="#1-%C2%B7-A-leaderboard-answers-only-the-first-question">&#182;</a></h2><p>The frontier sequence explores better ways to predict from relational data. This lesson changes the question: <strong>what should we change to improve an outcome?</strong> It does not require you to have completed the intervening model lessons. <a href="0184-gelgt-temporal-attention.html">Lesson 184</a> separated legal context from learned attention. Even if both are correct, a prediction need not identify an effective action. Recall <a href="0181-relbench-v2-autocomplete.html">Lesson 181</a>: a trustworthy score needs a legal information set and a clearly identified query. Here those checks pass, yet a proposed action still fails.</p>
+<p>A sales manager sees that customers at badged companies buy more often. A badge-only predictor ranks them well, even on companies withheld from training. The manager proposes giving every company a badge. Should purchases rise?</p>
+<p><strong>Prediction</strong> estimates an outcome under a data-generating process. <strong>Intervention</strong> changes part of that process. A feature can be useful for the first without being a useful lever for the second. Pearl formalizes this distinction by replacing a variable's generating rule while retaining the remaining rules. <a href="https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf">Primary reading: Pearl (2009), §§2 and 3.2.1</a>.</p>
+<div id="warmup"></div>
+
+<h2 id="2-%C2%B7-Follow-the-company-relationship">2 &#183; Follow the company relationship<a class="anchor-link" href="#2-%C2%B7-Follow-the-company-relationship">&#182;</a></h2><p>A <strong>structural causal model</strong>, abbreviated SCM, declares how variables generate one another. Its arrows encode assumptions about causes. They are not arrows inferred from a foreign-key join or from predictive importance.</p>
+<p>Our SCM has four variables. <strong>U</strong> is company demand: 0 means low and 1 means high. Despite the letter U, demand is <strong>observed</strong> in this experiment. <strong>B</strong> is the company's badge. <strong>A</strong> is a customer service action. <strong>Y</strong> is a later purchase, coded 0 or 1. Each company has twenty customers. Their shared demand and badge create dependence across rows.</p>
+<figure><div class="figure-scroll" tabindex="0" aria-label="Scrollable mechanism diagram"><img src="../labs/figures/l185/mechanism.svg" alt="Declared causal graph. Company U and B are shared by twenty customers; A and Y belong to individual customers. Arrows are causal assumptions, not foreign keys. Cutting the badge assignment leaves no causal path from B to Y."></div><figcaption>Declared causal graph. Company U and B are shared by twenty customers; A and Y belong to individual customers. Arrows are causal assumptions, not foreign keys. Cutting the badge assignment leaves no causal path from B to Y. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<p><strong>Database structure.</strong> <code>companies(company_id, U, B, available_at)</code> joins to <code>customers(customer_id, company_id, cutoff, split)</code>. Customer IDs join to <code>actions(customer_id, A, action_at)</code> and <code>outcomes(customer_id, Y, E, outcome_at)</code>. A <strong>primary key</strong> uniquely names a row; a <strong>foreign key</strong> refers to a row in another table. The prediction query is <code>(customer_id, cutoff)</code>.</p>
+<p>All company features arrive at time 0. Actions occur at time 1, when prediction is made. Purchases occur at time 2. The outcome table also stores <strong>E</strong>, a random threshold used only by the evaluator. Predictors may see B, A, or (U,A); they never see E, Y, or future fields. The action-only predictor is therefore an after-action forecast, not a pre-action decision rule.</p>
+<p><strong>The precise generating rules.</strong> A Bernoulli draw produces 1 with its stated probability. Company demand is Bernoulli(0.5). The badge equals demand with probability 0.95. Action probability is 0.1 for low-demand companies and 0.9 for high-demand companies. Customer thresholds E are independent uniform draws between 0 and 1. Purchase probability is:</p>
+<p><code>p = 0.05 + 0.85 × U + 0.05 × A</code>, followed by <code>Y = 1 if E &lt; p, otherwise 0</code>.</p>
+<p>These constants are our teaching choices. They do not come from an empirical sales study. B is deliberately absent from the purchase equation. No customer's action changes another customer's outcome in this baseline.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> The badge usually tells you which companies already have demand. Printing a new badge does not create that demand.</p>
+</blockquote>
+<h2 id="3-%C2%B7-Observe-a-badge,-or-assign-one?">3 &#183; Observe a badge, or assign one?<a class="anchor-link" href="#3-%C2%B7-Observe-a-badge,-or-assign-one?">&#182;</a></h2><p><strong>Conditioning</strong> selects cases with an observed value. Among companies already carrying a badge, high demand is common. <strong>Doing</strong>, written <code>do(B=1)</code>, assigns that value regardless of the old rule. It does not select a high-demand population. This is the distinction pictured by cutting the incoming arrow to the assigned variable. <a href="https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf">Pearl, §3.2.1</a>.</p>
+<div id="predict"></div>
+
+<p><strong>Pause and predict:</strong> will assigning badges change purchases in the declared graph?</p>
+<p><strong>Worked example.</strong> In the exact balanced population, purchase probability is 90.05% among observed badged companies and 9.95% among unbadged companies. But forcing all badges to 1 leaves purchase probability at 50%. Forcing all badges to 0 also leaves it at 50%. Observing B changes what we know about U; assigning B does not change U.</p>
+<div id="intervention"></div>
+<noscript><p><strong>Static intervention reference:</strong> observed purchase probability 50%; do(B=0) and do(B=1): 50%; do(A=0): 47.5%; do(A=1): 52.5%. All values use the exact 50/50 demand population.</p></noscript>
+
+<p><strong>Hold randomness fixed.</strong> A <strong>potential outcome</strong> is the purchase a particular customer would have under a specified action. Run the same customer twice with the same U and E, replacing only A. This isolates the effect in the simulator. For U=0 and E=0.075, no action gives p=0.05 and Y=0; action gives p=0.10 and Y=1. Changing only B leaves p unchanged. Real observational data do not supply both potential outcomes for the same customer. <a href="https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf">Pearl, §3.4</a>.</p>
+<h2 id="4-%C2%B7-Why-the-observed-action-gap-is-too-large">4 &#183; Why the observed action gap is too large<a class="anchor-link" href="#4-%C2%B7-Why-the-observed-action-gap-is-too-large">&#182;</a></h2><p>A <strong>confounder</strong> is a common cause of action and outcome. Demand is one here: high-demand customers receive more actions and buy more anyway. The path <code>A ← U → Y</code> mixes those differences into the observed action comparison.</p>
+<p><strong>Worked example.</strong> Among customers with A=1, 90% have high demand. Their purchase rate is <code>0.9 × 0.95 + 0.1 × 0.10 = 0.865</code>. Among A=0 customers, only 10% have high demand. Their rate is <code>0.1 × 0.90 + 0.9 × 0.05 = 0.135</code>. Subtraction gives <strong>73 percentage points</strong>, although the action adds only <strong>5 points</strong> within either demand group.</p>
+<figure><div class="figure-scroll" tabindex="0" aria-label="Scrollable adjustment diagram"><img src="../labs/figures/l185/adjustment.svg" alt="Exact population illustration, not measured sample means. Standardization holds the demand mix at 50/50: .5 × (.10 − .05) + .5 × (.95 − .90) = .05."></div><figcaption>Exact population illustration, not measured sample means. Standardization holds the demand mix at 50/50: .5 × (.10 − .05) + .5 × (.95 − .90) = .05. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<p><strong>Standardization</strong> compares both action states under the same demand composition. Within low demand, the difference is <code>0.10 − 0.05 = 0.05</code>. Within high demand, it is <code>0.95 − 0.90 = 0.05</code>. Weighting both differences by the population's demand proportions gives 0.05. In a finite dataset, the notebook estimates those group means and weights from the held-out population. This estimates its average treatment effect, abbreviated <strong>ATE</strong>. <a href="https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf">Adjustment principle: Pearl, §§3.2.3 and 3.3.1</a>.</p>
+<p>This works here because we declared the full causal mechanism. For a real application, defend the following assumptions before interpreting an adjusted comparison causally:</p>
+<ul>
+<li><strong>Sufficient adjustment:</strong> no remaining common cause of A and Y after accounting for U.</li>
+<li><strong>Overlap:</strong> each demand group can receive either action. Here those probabilities are 0.1 and 0.9, both strictly between zero and one.</li>
+<li><strong>Well-defined action:</strong> setting A means the same intervention across the comparison.</li>
+<li><strong>No interference in this baseline:</strong> one customer's action does not change another customer's purchase.</li>
+</ul>
+<p>A join can recover a relevant company variable. It cannot establish these assumptions. If colleagues influence each other, an intervention must also specify who else receives it. Relational causal discovery is a separate research topic; <a href="https://arxiv.org/abs/1309.6843v1">Maier et al. (2013)</a> introduce an algorithm for that problem. This lab assumes its graph and does not reproduce their algorithm or results.</p>
+<h2 id="5-%C2%B7-Full-experiment:-every-seed,-every-customer">5 &#183; Full experiment: every seed, every customer<a class="anchor-link" href="#5-%C2%B7-Full-experiment:-every-seed,-every-customer">&#182;</a></h2><p><strong>Held fixed:</strong> the four generating rules, 1,000 companies, twenty customers each, three predictor recipes, and company-disjoint 60/20/20 splits. Independent random streams determine company traits, actions, outcomes, and splits. <strong>Varied:</strong> seeds 0–4 and the declared intervention. <strong>Measured:</strong> held-out ranking, observed association, adjusted effect, and paired potential-outcome differences.</p>
+<p>Each predictor is a transparent conditional-frequency table fitted only on training labels. Badge-only learns two purchase rates; action-only learns two; demand-plus-action learns four. An unseen combination falls back to the global training purchase rate. No model is selected using validation or test. Both splits are scored for all three recipes. The causal audit uses test outcomes to estimate effects, separately from fitting the predictive models.</p>
+<p><strong>AUROC</strong> is the probability that a randomly selected purchaser receives a higher score than a nonpurchaser, with half credit for a tie. A score of 0.5 is chance ranking; 1 is perfect. It says nothing by itself about the effect of changing a score input.</p>
+<figure><div class="figure-scroll" tabindex="0" aria-label="Scrollable results diagram"><img src="../labs/figures/l185/results.svg" alt="Measured synthetic evidence. Each dot is one of seeds 0–4. Ranking and action effects have different units; a strong AUROC is not an intervention effect. The dotted line marks the known 5-point action effect."></div><figcaption>Measured synthetic evidence. Each dot is one of seeds 0–4. Ranking and action effects have different units; a strong AUROC is not an intervention effect. The dotted line marks the known 5-point action effect. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Quantity</th>
+  <th style="text-align:right">Mean ± seed SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Badge-only test AUROC</td>
+  <td style="text-align:right">0.8986 ± 0.0097</td>
+</tr>
+<tr>
+  <td>Action-only test AUROC</td>
+  <td style="text-align:right">0.8653 ± 0.0037</td>
+</tr>
+<tr>
+  <td>Demand + action test AUROC</td>
+  <td style="text-align:right">0.9503 ± 0.0013</td>
+</tr>
+<tr>
+  <td>Observed action gap (points)</td>
+  <td style="text-align:right">73.0164 ± 0.8386</td>
+</tr>
+<tr>
+  <td>Adjusted action effect (points)</td>
+  <td style="text-align:right">4.8060 ± 0.7057</td>
+</tr>
+<tr>
+  <td>Paired action effect (points)</td>
+  <td style="text-align:right">4.9150 ± 0.4141</td>
+</tr>
+<tr>
+  <td>Paired badge effect (points)</td>
+  <td style="text-align:right">0.0000 ± 0.0000</td>
+</tr>
+</tbody>
+</table></div>
+<p>The table gives <strong>mean ± sample standard deviation across five independently generated seeds</strong>. These spreads are not confidence intervals based on 20,000 independent customers: customers share companies. The five seeds are replications of one declared simulator, not five independent real datasets.</p>
+<div class="table-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Badge AUROC</th>
+  <th style="text-align:right">Observed action gap (points)</th>
+  <th style="text-align:right">Adjusted effect (points)</th>
+  <th style="text-align:right">Paired effect (points)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">0.8877</td>
+  <td style="text-align:right">72.885</td>
+  <td style="text-align:right">4.281</td>
+  <td style="text-align:right">5.325</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">0.8915</td>
+  <td style="text-align:right">72.200</td>
+  <td style="text-align:right">4.322</td>
+  <td style="text-align:right">4.525</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">0.9082</td>
+  <td style="text-align:right">73.394</td>
+  <td style="text-align:right">5.677</td>
+  <td style="text-align:right">5.400</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td style="text-align:right">0.9090</td>
+  <td style="text-align:right">74.256</td>
+  <td style="text-align:right">5.473</td>
+  <td style="text-align:right">4.700</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td style="text-align:right">0.8967</td>
+  <td style="text-align:right">72.346</td>
+  <td style="text-align:right">4.278</td>
+  <td style="text-align:right">4.625</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>A policy has a different baseline.</strong> Setting A=1 for everyone adds <strong>2.41 percentage points</strong> relative to the observed assignments. This is smaller than the 5-point ATE because some customers already receive A. Setting B=1 adds exactly zero. These are purchase-rate gains; costs, capacity, and profit are not modeled, so we do not claim an optimal deployment policy.</p>
+<p>The audit independently recomputed <strong>120,000 prediction scores</strong> across all validation/test/model/seed combinations and checked <strong>20,000 paired test customers</strong>. A fresh complete run reproduced every saved table and report exactly in the captured environment. See the <a href="../labs/_verify_l185_results.json">audit</a>, <a href="../labs/evidence/l185/report.json">measured report</a>, and <a href="../labs/evidence/l185/budget.json">budget ledger</a>.</p>
+<h2 id="6-%C2%B7-Implement,-predict,-defend">6 &#183; Implement, predict, defend<a class="anchor-link" href="#6-%C2%B7-Implement,-predict,-defend">&#182;</a></h2><p>Open the <a href="../labs/0185-causal-relational-data.ipynb">student notebook</a>. Its three live tasks feed the full five-seed run:</p>
+<ol>
+<li><strong>Join safely.</strong> Preserve one row per customer/cutoff, reject missing or duplicated relationships, and enforce time and split boundaries.</li>
+<li><strong>Intervene.</strong> Replace the assigned mechanism and reuse the customer's random threshold without mutating the original rows.</li>
+<li><strong>Adjust.</strong> Compare action groups within demand strata and standardize; refuse an estimate when treatment overlap is absent.</li>
+</ol>
+<p>Each task has an immediate CHECK. The provided cells expose the generator, predictor, evaluation, and aggregation. Predict the direction of each result before running the final experiment. Then submit your report and a short defense: “What evidence would make assigning badges a defensible real-world strategy?”</p>
+<div id="teachback"></div>
+
+<p><strong>Exit gate.</strong> Successful code establishes that you can execute this experiment. Your explanation must distinguish prediction, observation, intervention, and policy value. A prepared solution is not evidence of your mastery. Ask the teacher about any unclear step, and return in a few days to explain the badge example without looking at the diagram.</p>
+<p><strong>Reading and next connection.</strong> Read Pearl §§2 and 3.2.1 first; then §3.3.1 for adjustment. <a href="0186-production-constraints.html">Lesson 186</a> asks whether a justified strategy can also meet serving and freshness requirements. The later research proposal must defend both its predictive claim and its decision claim.</p>
+<blockquote>
+<p><strong>Evidence boundary.</strong> Complete original synthetic experiment; published-paper reproduction and real-world causal effectiveness <strong>NOT_ESTABLISHED</strong>. Live Colab and deployment <strong>NOT_CHECKED</strong>. No earlier lesson's completion gate is changed.</p>
+</blockquote>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/causal-intervention.js"></script><script src="../assets/l185-lesson.js"></script></body></html>

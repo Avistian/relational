@@ -294,6 +294,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `tokenizer-viz.js` + `arch-family-viz.js`.
 - **Bridge** — callback Y4 L145/L146, L164; a candidate Y6 direction; forward to L189.
 
+- **Prepared L183** — [lesson](../lessons/0183-graph-transformer-pretraining.html), [lab](../labs/0183-graph-transformer-pretraining.ipynb), [full protocol](../labs/l183-reproduction.md). All7554saved L146 predictions replay; full RelGT/Griffin reproductions retain temporal/budget blockers. Narrow the gap to backbone×pretraining interaction; broader novelty NOT_ESTABLISHED. Hybrid training NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
 ### 184 · Latest relational Graph-Transformers — *GelGT `2605.15575` ◆*
 - **Skill** — explain GelGT's fixes for long-range dependencies — structure-semantic collaborative sampling +
   a Gaussian graph-attention bias for temporal dynamics — and where information decay bites vanilla RDL MP.
@@ -303,6 +305,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
   Deliverable: long-range gain table.
 - **Viz** — reuse `temporal-embed-viz.js` + `atomic-route-viz.js`.
 - **Bridge** — the frontier of relational graph-transformers; callback Y3 over-squashing, L145; forward to L189.
+
+- **Prepared L184:** [lesson](../lessons/0184-gelgt-temporal-attention.html), portable lab, full8712label audit and original-source temporal counterexample. Selected GelGT reproduction INCOMPLETE_SOURCE_TEMPORAL_GATE; fresh training NOT_RUN. [Protocol](../labs/l184-reproduction.md). No downstream gain table is claimed.
 
 ### 185 · Causal & relational data — *— (causality unit)*
 - **Skill** — distinguish predictive correlation from a deployable/causal strategy on relational data and
@@ -314,15 +318,12 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `leakage-viz.js` (confounding path).
 - **Bridge** — matures the thesis beyond benchmark numbers; callback Y1 leakage, Y2 L069b; forward to L195.
 
-### 186 · Production constraints — *Huyen (Designing ML Systems)*
-- **Skill** — enumerate production constraints for relational models (latency, feature/data freshness,
-  monitoring, retraining) and their effect on architecture choice.
-- **Teach** — serving an RDL/FM model, freshness of the REG, drift monitoring (callback Y2 L068), the
-  training-free-ICL serving advantage.
-- **Lab** — Tier C · crucial fragment: write a serving-constraints spec for one paradigm. Deliverable: the
-  production checklist.
-- **Viz** — reuse `checklist.js`.
-- **Bridge** — grounds the thesis in deployability; callback L166b/L177; forward to Y6 L236 pilot.
+### 186 · Production constraints — *Huyen + Google SRE*
+- **Skill** — write a relational serving contract that separates request latency, source age, materialization age and delayed quality feedback.
+- **Teach** — FIFO queueing, legal source/refresh reads, precomputed versus cached versus request-time policies, and already-active versus newly triggered alerts. Training-free inference alone does not establish a serving advantage.
+- **Lab** — complete81-cell course simulation/810000responses with three live learner functions; separate300original batch-receipt replay. Hypothetical durations; fresh model inference and production performance NOT_RUN.
+- **Viz** — reusable serving-contract explorer, relational serving routes, four-clock witness and complete normal-arrival trade-off plots.
+- **Bridge** — causal action justification (185) → serving contract → privacy obligations (187); callback175–177; forward to Y6 pilot. Learner PENDING_WRITTEN_DEFENSE.
 
 ### 187 · Ethics & privacy on REG — *— (ethics unit)*
 - **Skill** — analyze node-level privacy and leakage risks in a REG (linkage across tables, membership
@@ -344,6 +345,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — none (workflow artifact).
 - **Bridge** — keeps Y5–Y6 current on a monthly-moving frontier; callback the `curriculum-currency` skill.
 
+- **Prepared L188** — [lesson](../lessons/0188-systematic-literature-tracking.html), portable lab,30-paper log and importable RSS configuration. All31retrieved records replay;2/4queries complete, quarterly collectionINCOMPLETE. Seven abstract-screened candidates;23deferred. Model resultsNOT_RUN; historical ranksNOT_ESTABLISHED. Author preparation only;learnerPENDING_WRITTEN_DEFENSE.
+
 ### 189 · Identify 3 open problems — *RDL survey `2506.16654`*
 - **Skill** — select and rank three tractable open problems by expected impact × feasibility for a solo
   researcher at baseline compute.
@@ -352,6 +355,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
   ranked shortlist.
 - **Viz** — reuse `checklist.js` (tractability rubric).
 - **Bridge** — the direct input to the Q3 gap doc + Y6 hypothesis; callback L169/L182/L183; forward to L190.
+
+- **L189 delivery (2026-10-02):** three source-grounded candidate gaps and complete 27-setting authored-rubric replay. Source/report audit only; proposed model runs NOT_RUN; novelty and full-run cost NOT_ESTABLISHED. Portable lab, interactive rubric and ranked shortlist feed L190.
 
 ### 190 · **Q3 checkpoint** — *Deliverable-based*
 - **Deliverable** — a **5-page research-gap document** with ≥3 tractable open problems, each with related

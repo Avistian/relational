@@ -423,16 +423,16 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 180 | [**Q2 checkpoint**](lessons/0180-public-encoder-checkpoint.html) | RT-v1 | Public encoder audit complete; fresh fit NOT_RUN; practical exit INCOMPLETE |
 
 ### Q3 · Research frontier mapping (181–190)
-| 181 | RelBench v2 / autocomplete tasks | RelBench v2 (2602.12606) · RelGT-AC (2606.03040) | New tasks & databases |
-| 182 | RDB-PFN + composite message passing | RDB-PFN × RelGNN | Hypothesis generation |
-| 183 | Graph-Transformer + pre-training | RelGT × Griffin | Architecture research gap |
-| 184 | Latest relational Graph-Transformers | GelGT (2605.15575) | Long-range dependency fixes |
-| 185 | Causal & relational data | — | When correlation ≠ deployable strategy |
-| 186 | Production constraints | Huyen | Latency, freshness, monitoring |
-| 187 | Ethics & privacy on REG | — | Node-level privacy, leakage |
-| 188 | Systematic literature tracking | — | arXiv alerts, RelBench leaderboard, paper log |
-| 189 | Identify 3 open problems | Survey 2025 | Rank by tractability |
-| 190 | **Q3 checkpoint** | — | Research gap document (5 pages) |
+| 181 | [**RelBench v2 / autocomplete tasks**](lessons/0181-relbench-v2-autocomplete.html) | RelBench v2 (2602.12606) · RelGT-AC (2606.03040) | Full F1 baselines reproduced; fresh GNN stopped at gradient gate; selected experiment INCOMPLETE |
+| 182 | [RDB-PFN + composite message passing](lessons/0182-rdb-pfn-composite-message-passing.html) | RDB-PFN × RelGNN | Fresh full selected checkpoint reproduction; composite mechanism; hybrid hypothesis NOT_RUN |
+| 183 | [Graph-Transformer + pre-training](lessons/0183-graph-transformer-pretraining.html) | RelGT × Griffin | [Complete saved replay; four-arm gap brief; full paper lanes INCOMPLETE](labs/0183-graph-transformer-pretraining.ipynb) |
+| 184 | [GelGT: context and temporal attention](lessons/0184-gelgt-temporal-attention.html) | GelGT v2 (2605.15575) | [Lab](labs/0184-gelgt-temporal-attention.ipynb): source audit PASS; full reproduction INCOMPLETE |
+| 185 | [Causal & relational data](lessons/0185-causal-relational-data.html) | Pearl 2009; original synthetic experiment | [Five-seed shortcut/intervention reproduction](labs/0185-causal-relational-data.ipynb); paper/real-world causal claims NOT_ESTABLISHED |
+| 186 | [Production constraints](lessons/0186-production-constraints.html) | Huyen + Google SRE | [Complete 81-scenario serving simulation + 300 batch-receipt replays](labs/0186-production-constraints.ipynb); live production NOT_RUN |
+| 187 | [Ethics & privacy on REG](lessons/0187-ethics-privacy-reg.html) | Dwork/Roth + graph-privacy critique | [Full 857-driver audit; 270 bounded histogram simulations](labs/0187-ethics-privacy-reg.ipynb); production DP not established |
+| 188 | [Systematic literature tracking](lessons/0188-systematic-literature-tracking.html) | arXiv API/RSS | 30-paper replay; quarterly collection INCOMPLETE |
+| 189 | Identify 3 open problems — under construction | Survey 2025 | Draft ranking by tractability |
+| 190 | **Q3 checkpoint — under construction** | — | Research gap document (5 pages); delivery pending |
 
 ### Q4 · Year 5 synthesis (191–200)
 | 191 | KumoRFM-2 SOTA tracking ★ | Fey et al. 2026 (2604.12596) | RelBench v1+v2 numbers; proprietary vs open gap |

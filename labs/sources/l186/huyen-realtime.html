@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Real-time machine learning: challenges and solutions</title>
+  <meta name="description" content="[Twitter discussion, LinkedIn]">
+  
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html">
+  <link rel="alternate" type="application/rss+xml" title="Chip Huyen" href="/feed.xml">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-MRNJDX3023"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-MRNJDX3023');
+  </script>
+
+  
+  
+  <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-103070243-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+  
+
+  <!-- for mathjax support -->
+  
+
+  <!--  -->
+  <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script type="text/javascript" src="https://pixel-v0.wl.r.appspot.com/static/pixel.js"></script>
+<script type="text/javascript">
+    let ccid = "huyenchip.com";
+    cc(ccid);
+</script> -->
+  <!-- SEO tags -->
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Real-time machine learning: challenges and solutions | Chip Huyen</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Real-time machine learning: challenges and solutions" />
+<meta name="author" content="Chip Huyen" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="[Twitter discussion, LinkedIn]" />
+<meta property="og:description" content="[Twitter discussion, LinkedIn]" />
+<link rel="canonical" href="https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html" />
+<meta property="og:url" content="https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html" />
+<meta property="og:site_name" content="Chip Huyen" />
+<meta property="og:image" content="https://huyenchip.com/assets/pics/real-time-ml-2022/online-prediction.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-01-02T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://huyenchip.com/assets/pics/real-time-ml-2022/online-prediction.png" />
+<meta property="twitter:title" content="Real-time machine learning: challenges and solutions" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Chip Huyen"},"dateModified":"2022-01-02T00:00:00+00:00","datePublished":"2022-01-02T00:00:00+00:00","description":"[Twitter discussion, LinkedIn]","headline":"Real-time machine learning: challenges and solutions","image":"https://huyenchip.com/assets/pics/real-time-ml-2022/online-prediction.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html"},"url":"https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+<meta name="cf-2fa-verify" content="YpmKnmQEEb22PZui8RFD">
+</head>
+
+
+  <body>
+
+    <header class="site-header" role="banner">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <div class="wrapper">
+    
+    
+    <a class="site-title" href="/">Chip Huyen</a>
+
+
+    
+      <nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+              <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+              <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          
+            
+              <a class="page-link" href="/blog/">Blog</a>
+            
+          
+            
+              <a class="page-link" href="/books/">Books</a>
+            
+          
+            
+              <a class="page-link" href="/events/">Events</a>
+            
+          
+            
+              <div class="dropdown">
+                <a class="dropbtn">AI Guide<i class="fas fa-chevron-down"></i></a>
+                <ul class="dropdown-content">
+                  
+                    <li><a href="/mlops/">AI Roadmap</a></li>
+                  
+                    <li><a href="https://goodailist.com">Good AI List</a></li>
+                  
+                    <li><a href="https://huyenchip.com/ml-interviews-book/">ML Interviews</a></li>
+                  
+                </ul>
+              </div>
+            
+          
+            
+              <a class="page-link" href="/list-100/">List 100</a>
+            
+          
+            
+              <a class="page-link" href="https://instagram.com/chipslib">Chip's Lib</a>
+            
+          
+            
+              <a class="page-link" href="https://huyenchip.com/vn/">VN</a>
+            
+          
+        </div>
+
+        <!-- this is the original working code -->
+        <!-- <div class="trigger">
+          
+            <a class="page-link" href="/blog/">Blog</a>
+          
+            <a class="page-link" href="/books/">Books</a>
+          
+            <a class="page-link" href="/events/">Events</a>
+          
+            <a class="page-link" href="">AI Guide</a>
+          
+            <a class="page-link" href="/list-100/">List 100</a>
+          
+            <a class="page-link" href="https://instagram.com/chipslib">Chip's Lib</a>
+          
+            <a class="page-link" href="https://huyenchip.com/vn/">VN</a>
+          
+        </div> -->
+
+        <!-- No idea what it is -->
+        <!-- <div class="trigger">
+          
+            
+            
+            <a class="page-link" href="/about/">About</a>
+            
+          
+            
+            
+            <a class="page-link" href="/stories/anything-i-want.html">Anything I want</a>
+            
+          
+            
+            
+            <a class="page-link" href="/archive/">Archive</a>
+            
+          
+            
+            
+            <a class="page-link" href="/blog/">Blog</a>
+            
+          
+            
+            
+            <a class="page-link" href="/books/">Books</a>
+            
+          
+            
+            
+            <a class="page-link" href="/communication/">Contact me</a>
+            
+          
+            
+            
+            <a class="page-link" href="/creators/">Creators&#39; Collective</a>
+            
+          
+            
+            
+            <a class="page-link" href="/dotagents/">dotagents</a>
+            
+          
+            
+            
+            <a class="page-link" href="/entanglements/">Entanglements That Never End</a>
+            
+          
+            
+            
+            <a class="page-link" href="/events/">Events</a>
+            
+          
+            
+            
+          
+            
+            
+            <a class="page-link" href="/stories/how-they-arrived">How they arrived</a>
+            
+          
+            
+            
+          
+            
+            
+            <a class="page-link" href="/list-100/">List 100</a>
+            
+          
+            
+            
+            <a class="page-link" href="/llama-devs.html">Open Source LLM Developers</a>
+            
+          
+            
+            
+            <a class="page-link" href="/llama-police.html">Open Source LLM Tools</a>
+            
+          
+            
+            
+          
+            
+            
+            <a class="page-link" href="/mlops/">MLOps - tools, best practices, and case studies</a>
+            
+          
+            
+            
+            <a class="page-link" href="/mlops/">MLOps guide</a>
+            
+          
+            
+            
+            <a class="page-link" href="/stories/my-posthumous-collection-of-letters.html">My posthumous collection of letters</a>
+            
+          
+            
+            
+            <a class="page-link" href="/stories/neo-beat">Unnamed</a>
+            
+          
+            
+            
+            <a class="page-link" href="/research/">Research</a>
+            
+          
+            
+            
+            <a class="page-link" href="/start/">You made it!</a>
+            
+          
+            
+            
+            <a class="page-link" href="/stories/the-door.html">The door</a>
+            
+          
+            
+            
+          
+            
+            
+          
+        </div> -->
+
+      </nav>
+    
+  </div>
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <!-- Sidebar Navigation, which can be customized for each post -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+
+  <aside id="sidebar" class="sidebar">
+    <span class="toc-title"><b>Table of Contents</b></span>
+    <button id="close-sidebar-btn" class="close-btn"><i class="fas fa-chevron-down"></i></button>
+      <a href="#towards-online-prediction">Towards Online Prediction</a>
+<ul class="sidebar-list">
+    <li><a href="#batch-prediction">Stage 1. Batch Prediction</a></li>
+    <li><a href="#session-based-prediction">Stage 2. Online prediction with batch features</a></li>
+    <li><a href="#online-prediction">Stage 3. Online prediction with online features</a></li>
+    <li><a href="#bandits">Discussion: Online prediction for bandits and contextual bandits</a>
+        <ul>
+            <li><a href="#model-bandits">Bandits for model evaluation</a></li>
+            <li><a href="#contextual-bandits">Contextual bandits as an exploration strategy</a></li>
+        </ul>
+    </li>
+</ul>
+
+<a href="#towards-continual-learning">Towards Continual Learning</a>
+<ul class="sidebar-list">
+    <li><a href="#manual-stateless-retraining">Stage 1. Manual, Stateless Retraining</a></li>
+    <li><a href="#automated-retraining">Stage 2. Automated Retraining</a></li>
+    <li><a href="#stateful-training">Stage 3. Automated, Stateful Training</a></li>
+    <li><a href="#continual-learning">Stage 4. Continual Learning</a></li>
+</ul>
+
+<a href="#conclusion">Conclusion</a><br>
+
+<a href="#appendix">Appendix</a>
+<ul class="sidebar-list">
+    <li><a href="#stream-batch-processing">On the efficiency of stream processing vs. batch processing</a></li>
+</ul>
+
+  </aside>
+
+  <!-- Button to reopen the sidebar -->
+  <button id="open-sidebar-btn" class="open-btn" style="display:none;">
+    Table of Contents <span class="chevron-icon"><i class="fas fa-chevron-up"></i></span>
+  </button>
+
+
+<script>
+  
+    // Function to handle sidebar visibility on resize
+    function handleResize() {
+      if (window.innerWidth <= 768) {
+        // Automatically minimize the sidebar if it's open on small screens
+        document.getElementById('sidebar').classList.add('sidebar-hidden');
+        document.getElementById('open-sidebar-btn').style.display = 'block'; // Show open button
+      }
+    }
+  
+    // Add event listener for window resize
+    window.addEventListener('resize', handleResize);
+  
+    // Call handleResize on page load to check the initial screen size
+    handleResize();
+  
+    // Close sidebar and show "Table of Contents" button
+    document.getElementById('close-sidebar-btn').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.add('sidebar-hidden');
+      document.getElementById('open-sidebar-btn').style.display = 'block'; // Show open button
+    });
+  
+    // Reopen the sidebar when "Table of Contents" is clicked
+    document.getElementById('open-sidebar-btn').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.remove('sidebar-hidden');
+      document.getElementById('open-sidebar-btn').style.display = 'none'; // Hide open button
+    });
+  
+</script>
+
+<article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Real-time machine learning: challenges and solutions</h1>
+    <p class="post-meta">
+      <time datetime="2022-01-02T00:00:00+00:00" itemprop="datePublished">
+        
+        Jan 2, 2022
+      </time>
+      
+        • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span itemprop="name">Chip Huyen</span></span>
+      </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>[<em><a href="https://twitter.com/chipro/status/1477812589484658689">Twitter discussion</a>, <a href="https://www.linkedin.com/posts/chiphuyen_machinelearning-realtimeml-onlineprediction-activity-6883579455357489152-u1I0">LinkedIn</a></em>]</p>
+
+<p><strong>Updates</strong></p>
+<ul>
+  <li>Jan 3, 2023: Update the online features section to differentiate between real-time features and near real-time features.</li>
+  <li>If you’re interested in this topic, my book <a href="https://www.amazon.com/Designing-Machine-Learning-Systems-Production-Ready/dp/1098107969">Designing Machine Learning Systems</a> (O’Reilly, June 2022) covers online prediction and continual learning in much more detail.</li>
+</ul>
+
+<p>Real-time machine learning is the approach of using real-time data to generate more accurate predictions and adapt models to changing environments. A year ago, I wrote a post on how <a href="https://huyenchip.com/2020/12/27/real-time-machine-learning.html">machine learning is going real-time</a>. The post must have captured many data scientists’ pain points because, after the post, many companies reached out to me sharing their pain points and discussing how to move their pipelines real time. These conversations prompted me to start a company on real-time machine learning. We have some exciting news I can’t wait to share with you, but that’s a story for another time :-)</p>
+
+<p>In the last year, I’ve talked to ~30 companies in different industries about their challenges with real-time machine learning. I’ve also worked with quite a few to find the solutions. This post outlines the solutions for (1) online prediction and (2) continual learning, with step-by-step use cases, considerations, and technologies required for each level.</p>
+
+<p><em>Depending on your experience, some stages might seem basic to you. It’s ok to skip those!</em></p>
+
+<p><strong>Disclaimer</strong>: the perspective outlined in this post is heavily influenced by the companies I’ve talked to/worked with, which are predominantly tech companies. Feedback &amp; suggestions are much appreciated.</p>
+
+<p><em>I’d also love to learn more about the ML workflows at your company for a more accurate perspective. Here’s the link to a <a href="https://forms.gle/dDvgF7QgpPdvJE5b8">5-minute survey</a>. The results will be aggregated, summarized, and shared with the community. Thank you!</em></p>
+
+<h2 id="towards-online-prediction">Towards Online Prediction</h2>
+
+<p>While I believe that we’re still a few years away from mainstream adoption of continual learning, I’m seeing significant investments from companies to move towards online inference. Starting with a batch prediction system, we’ll discuss what’s needed for a simple online prediction system using batch features, typically useful for in-session adaptation (e.g. giving a user predictions based on their activities within a session on a website or mobile app). Then we’ll continue to discuss how to move to a more mature online prediction system that leverages both complex streaming + batch features.</p>
+
+<h3 id="batch-prediction">Stage 1. Batch prediction</h3>
+
+<p>At this stage, all predictions are precomputed in batch, generated at a certain interval, e.g. every 4 hours or every day. Typical use cases for batch prediction are collaborative filtering, content-based recommendations. Examples of companies that use batch prediction are DoorDash’s restaurant recommendations, Reddit’s subreddit recommendations, Netflix’s recommendations circa 2021. As of this post, Netflix is moving their predictions online.</p>
+
+<p>Batch prediction has many limitations, as outlined in my <a href="https://huyenchip.com/2020/12/27/real-time-machine-learning.html">previous post</a>. Here, I want to quickly go over one example. Consider an e-commerce website where half of their visitors are new users or aren’t logged in. Because these visitors are new, there are no precomputed recommendations personalized to them. By the time the next batch of recommendations is generated, these visitors might have already left without making a purchase because they didn’t find anything relevant to them.</p>
+
+<center>
+<figure>
+<img alt="A typical batch prediction workflow" src="/assets/pics/real-time-ml-2022/batch-prediction.png" style="float: center; max-width: 100%; margin: 0 0 0em 0em" />
+</figure>
+A typical batch prediction workflow
+</center>
+<p><br /></p>
+
+<blockquote>
+  <blockquote>
+    <p>Batch prediction is NOT a prerequisite for online prediction. Batch prediction is largely a product of legacy systems.</p>
+  </blockquote>
+</blockquote>
+
+<p>In the last decade, big data processing has been dominated by batch systems like MapReduce and Spark, which allow us to periodically process a large amount of data very efficiently. When companies started with machine learning, they leveraged their existing batch systems to make predictions.</p>
+
+<p><strong>If you’re building a new ML system today, it’s possible to start with online prediction.</strong></p>
+
+<h3 id="session-based-prediction">Stage 2. Online prediction with batch features</h3>
+
+<p>Instead of generating predictions before requests arrive, companies in this stage generate predictions after requests arrive. They collect users’ activities on their apps in real-time. However, these events are only used to look up pre-computed embeddings to generate session embeddings. No features are computed in real-time from streaming data.</p>
+
+<p>Consider the same e-commerce website example in the previous stage. When a new visitor visits your website, instead of suggesting them generic items, you show them items based on their activities. For example, if they have looked at a keyboard and a computer monitor, they’re likely looking at work-from-home setups and your algorithm should recommend relevant items like HDMI cables or monitor mounts.</p>
+
+<p>To do so, you need to collect and process this visitor’s activities as they happen. If this visitor has looked at item 1, item 10, and item 20, you pull out embeddings for items 1, 10, and 20 from your data warehouse. These embeddings are combined (e.g. averaged) to create this visitor’s current session embedding.</p>
+
+<p>You want to find the most relevant items given this session embedding. Naively, you can have a model to rank every item available on your site and show the visitor the items with the highest scores. However, you might have millions of items on your site, and scoring all of them might take too long – you don’t want your visitors to wait forever to see recommendations. Most companies use another algorithm, such as item-item collaborative filtering and k-nearest neighbors, to generate a small number of candidate items (e.g. 1000) to score. This process of generating candidates is called “candidate generation” or “retrieval”. For readers interested, check out Eugene Yan’s primer on <a href="https://eugeneyan.com/writing/real-time-recommendations/">session-based recommendations</a> and <a href="https://developers.google.com/machine-learning/recommendation/overview/candidate-generation">Google’s free crash course</a>.</p>
+
+<center>
+<figure>
+<img alt="A typical batch prediction workflow" src="/assets/pics/real-time-ml-2022/session-recsys.png" style="float: center; max-width: 90%; margin: 0 0 0em 0em" />
+</figure>
+An example pipeline for session-based recommendation
+</center>
+<p><br /></p>
+
+<p>The embeddings can be learned separately from or together with the ranking model. If separately, your system will consist of at least three models: one for learning embeddings, one for retrieval, and one for ranking.</p>
+
+<p>Here, we used a recommender system to illustrate this stage, but it can be applied to other tasks including ads CTR, search, or any retrieval task.</p>
+
+<blockquote>
+  <blockquote>
+    <p>The goal of session-based predictions is to increase conversion (e.g. converting first-time visitors to new users, click-through rates) and retention.</p>
+  </blockquote>
+</blockquote>
+
+<p>The list of companies that are already doing online inference or have online inference on their 2022 roadmaps is growing, including Netflix, YouTube, Roblox, Coveo, etc. Every single company that’s moved to online inference told me that they’re very happy with their metrics wins. I expect that in the next two years, most recommender systems will be session-based: every click, every view, every transaction will be used to generate fresh, relevant recommendations in (near) real-time.</p>
+
+<h3 id="requirements">Requirements</h3>
+
+<p>For this stage, you will need to:</p>
+
+<ol>
+  <li>
+    <p><strong>Update your models from batch prediction to session-based predictions</strong>.</p>
+
+    <p>This means that you might need to add new models. Responsible team: data science/ML.</p>
+  </li>
+  <li>
+    <p><strong>Integrate session data into your prediction service</strong>.</p>
+
+    <p>Typically, you can do this with streaming infrastructure, which consists of two components:</p>
+
+    <ul>
+      <li>
+        <p><strong>a streaming transport</strong>, e.g. Kafka / AWS Kinesis / GCP Dataflow, to move streaming data (users’ activities). Most companies use managed real-time transport – it’s a pain self-host Kafka.</p>
+      </li>
+      <li>
+        <p><strong>a streaming computation engine</strong>, e.g. Flink SQL, KSQL, Spark Streaming, to process streaming data. In the case of in-session adaption, this streaming computation engine is responsible for dividing users’ activities into sessions and keeping track of the information within each session (state keeping). Of the three streaming computation engines mentioned here, Flink SQL and KSQL are more recognized in the industry and provide a nice SQL abstraction for data scientists.</p>
+      </li>
+    </ul>
+
+    <blockquote>
+      <blockquote>
+        <p>Many people believe that online prediction is less efficient, both in terms of cost and performance than batch prediction because processing predictions in batch is more efficient than processing predictions one by one. This is not necessarily true, as discussed <a href="#stream-batch-processing">in the appendix</a>.</p>
+      </blockquote>
+    </blockquote>
+
+    <p><strong>With online prediction, you don’t have to generate predictions for users who aren’t visiting your site.</strong> Imagine you run an app where only 2% of your users log in daily – e.g. in 2020, Grubhub had <a href="https://www.businessofapps.com/data/grubhub-statistics/">31 million users</a> and <a href="https://www.statista.com/statistics/668094/orders-per-day-grubhub/">622,000 daily orders</a>.</p>
+
+    <p><strong>If you generate predictions for every user each day, the compute used to generate 98% of your predictions will be wasted.</strong></p>
+
+    <p>If your company already uses streaming for logging, this change shouldn’t be too steep. However, this might impose heavier workloads on your streaming infrastructure, which might require upgrading for it to be more efficient/scalable.</p>
+
+    <p>Responsible team: data/ML platform.</p>
+
+    <p><strong>Side note</strong>: <em>A small subset of people I’ve talked to use “streaming prediction” to refer to systems that leverage streaming infrastructure for predictions and “online prediction” to refer to systems that don’t. In this post, “online prediction” encompasses “streaming prediction”.</em></p>
+  </li>
+</ol>
+
+<h3 id="challenges">Challenges</h3>
+<p>The challenges of this stage will be in:</p>
+
+<ul>
+  <li><strong>Inference latency</strong>: with batch prediction, you don’t need to worry about the inference latency. With online prediction, however, inference latency is crucial.</li>
+  <li><strong>Setting up the streaming infrastructure</strong>: Many engineers are still terrified of doing <a href="https://arxiv.org/abs/1905.12133">SQL-like joins</a> on streaming even though tooling around it is maturing.</li>
+  <li><strong>Having high-quality embeddings</strong>, especially if you deal with different item types.</li>
+</ul>
+
+<h3 id="online-prediction">Stage 3. Online prediction with online features</h3>
+
+<ul>
+  <li><strong>Batch features</strong> are features extracted from historical data, often with batch processing. Also called static features or historical features.</li>
+  <li><strong>Online features</strong> are features extracted from fresh data. Also called dynamic features.</li>
+</ul>
+
+<p>Depending on how online features are computed, they can be further categorized into one of the two categories: real-time (RT) features and near real-time features.</p>
+
+<h4 id="real-time-features">Real-time features</h4>
+
+<p>Real-time features are features computed in real-time, as soon as a prediction request is generated. Say, if you want to compute the number of views your product has had in the last 30 minutes in real-time, here are two of several simple ways you can do so:</p>
+
+<ol>
+  <li>Create a lambda function that takes in all the recent user activities and counts the number of views.</li>
+  <li>Store all the user activities in a database like postgres and write a SQL query to retrieve this count.</li>
+</ol>
+
+<p>Because features are computed at prediction time, they are fresh, e.g. in the order of milliseconds.</p>
+
+<p>While real-time features are easy to set up, they’re harder to scale. Because real-time features are computed upon receiving prediction requests, their computation latency adds directly to user-facing latency. Traffic growth and fluctuation can significantly affect computation latency. Complex features might be infeasible to support since they might take too long to compute.</p>
+
+<h4 id="near-rt-features">Near RT features</h4>
+
+<p>Like batch features, near RT features are also precomputed and at prediction time, the latest values are retrieved and used. Since features are computed async, feature computation latency doesn’t add to user-facing latency. You can use as many features or as complex features as they want.</p>
+
+<p>Unlike batch features, <strong>near RT feature values are recomputed much more frequently, so feature staleness can be in the order of seconds</strong> (it’s only “near” instead of “completely” real-time.) If a user doesn’t visit your site, its feature values won’t be recomputed, avoiding wasted computation. <strong>Near RT features are computed using a streaming processing engine.</strong></p>
+
+<p>If companies at stage 2 require little stream processing, companies at stage 3 might benefit much more from streaming. For example, after a user puts in order on Doordash, they might need the following features to estimate the delivery time:</p>
+
+<ul>
+  <li><strong>Batch features</strong>: the mean preparation time of this restaurant in the past</li>
+  <li><strong>RT features</strong>: how far is the restaurant location from the delivery location</li>
+  <li><strong>Streaming features</strong>: how many other orders this restaurant currently has, how many dashers will be available in the next 30 minutes</li>
+</ul>
+
+<p>In the case of session-based recommendation discussed in stage 2, instead of just using item embeddings to create session embedding, you might use online features such as how long the user has spent on the site, the number of purchases an item has had in the last 24 hours.</p>
+
+<center>
+<figure>
+<img alt="A typical batch prediction workflow" src="/assets/pics/real-time-ml-2022/online-prediction.png" style="float: center; max-width: 90%; margin: 0 0 0em 0em" />
+</figure>
+Online prediction with streaming features and batch features
+</center>
+<p><br /></p>
+
+<p>Examples of companies at this stage include Stripe, Uber, Faire for use cases like <strong>fraud detection, credit scoring, estimation for driving and delivery</strong>, and <strong>recommendations</strong>.</p>
+
+<blockquote>
+  <blockquote>
+    <p>The number of online features for each prediction can be in the hundreds, if not thousands. Online features can be arbitrarily complex with joins, aggregations over large windows, transformations that depend on other transformations. Architecting a system to compute online features efficiently and affordably is very hard.</p>
+  </blockquote>
+</blockquote>
+
+<h3 id="requirements-1">Requirements</h3>
+
+<p>To move your ML workflow to this stage, you’ll need to:</p>
+
+<ol>
+  <li>
+    <p>Mature streaming infrastructure with an <strong>efficient stream processing engine</strong> that can compute all the streaming features with acceptable latency. You need to be able to get a request into your streaming transport and process them quickly enough for the prediction service before the next request arrives.</p>
+  </li>
+  <li>
+    <p>A <strong>feature store</strong> for managing materialized features and ensuring consistency of stream features during training and prediction. Note: <em>current <a href="https://madewithml.com/courses/mlops/feature-store/">feature stores</a> often manage materialized streaming features but don’t manage feature computation or the source code for the features</em>.</p>
+  </li>
+  <li>
+    <p>A <strong>model store</strong>. A stream feature, after being created, needs to be validated. To ensure that a new feature actually helps with your model’s performance, you want to add it to a model, which efficiently creates a new model. Ideally, your model store should help you manage and evaluate models created with new streaming features, but model stores that also evaluate models don’t exist yet. You can potentially delegate part of this to a feature store.</p>
+  </li>
+  <li>
+    <p><strong>Preferably a better development environment</strong>. Data scientists currently work off historical data even when they’re creating streaming features, which makes it difficult to come up with and validate new streaming features. What if we can give data scientists direct access to data streams so that they can quickly experiment and validate new stream features? Instead of data scientists only having access to historical data, what if they can also access incoming streams of data from their notebooks?</p>
+  </li>
+</ol>
+
+<h2 id="bandits">Discussion: Online prediction for bandits and contextual bandits</h2>
+
+<p><strong>Online prediction not only allows your models to make more accurate predictions but also enables bandits for online model evaluation – which is more interesting and more powerful than A/B testing – and as an exploration strategy for generating predictions.</strong></p>
+
+<p>For those unfamiliar, bandit algorithms originated in gambling. A casino has multiple slot machines with different payouts. A slot machine is also known as a one-armed bandit, hence the name. You don’t know which slot machine gives the highest payout. You can experiment over time to find out which slot machine is the best while maximizing your payout.</p>
+
+<p>Multi-armed bandits are algorithms that allow you to balance between exploitation (choosing the slot machine that has paid the most in the past) and exploration (choosing other slot machines that may pay off even more).</p>
+
+<h3 id="model-bandits">Bandits for model evaluation</h3>
+
+<p>Currently, the industry’s standard for online model evaluation is A/B testing. With A/B testing, you randomly route traffic to each model for predictions and measure at the end of your trial which model works better.</p>
+
+<blockquote>
+  <blockquote>
+    <p>A/B testing is stateless: you can route traffic to each model without having to know about their current performance. You can do A/B testing even with batch prediction.</p>
+  </blockquote>
+</blockquote>
+
+<p>When you have multiple models to evaluate, each model can be considered a slot machine whose payout (e.g. prediction accuracy) you don’t know. Bandits allow you to determine how to route traffic to each model for prediction to determine the best model while minimizing wrong predictions shown to your users.</p>
+
+<blockquote>
+  <blockquote>
+    <p>Bandits are stateful: before routing a request to a model, you need to calculate all models’ current performance.</p>
+  </blockquote>
+</blockquote>
+
+<p>Bandits are well-studied in academia and have been shown to be a lot more data-efficient than A/B testing. In many cases, bandits are even the optimal methods.</p>
+
+<blockquote>
+  <blockquote>
+    <p>Bandits require less data to determine which model is the best, and at the same time, reduce opportunity cost as they route traffic to the better model more quickly.</p>
+  </blockquote>
+</blockquote>
+
+<p>In <a href="https://towardsdatascience.com/a-b-testing-is-there-a-better-way-an-exploration-of-multi-armed-bandits-98ca927b357d">this experiment</a> by Google’s Greg Rafferty, <strong><em>A/B test required over 630,000 samples to get a confidence interval of 95%, while a simple bandit algorithm (Thompson Sampling) determined that a model was 5% better than the other with less than 12,000 samples.</em></strong></p>
+
+<p>See discussions on bandits at <a href="https://netflixtechblog.com/ml-platform-meetup-infra-for-contextual-bandits-and-reinforcement-learning-4a90305948ef">LinkedIn, Netflix, Facebook, Dropbox</a>, and <a href="https://multithreaded.stitchfix.com/blog/2020/08/05/bandits/">Stitch Fix</a>. For a more theoretical view, see chapter 2 of the <a href="http://incompleteideas.net/book/RLbook2020.pdf">Reinforcement Learning book</a> (Sutton &amp; Barton, 2020).</p>
+
+<h3 id="requirements-2">Requirements</h3>
+<p>To do bandits for model evaluation, your system needs the following three requirements.</p>
+
+<ol>
+  <li><strong>Online prediction</strong>.</li>
+  <li>
+    <p><strong>Preferably short feedback loops</strong>: you need to get feedback on whether a prediction made by a model is good or not to calculate the models’ current performance. The feedback is used to extracted labels for predictions.</p>
+
+    <p>Examples of tasks with short feedback loops tasks where labels can be determined from users’ feedback like in recommendations — if users click on a recommendation, the recommendation is inferred to be good. If the feedback loops are short, you can update the performance of each model quickly. If the loops are long, it’s still possible to do bandits, but it’ll take longer to update a model’s performance after it’s made a recommendation.</p>
+  </li>
+  <li><strong>A mechanism to collect feedback, calculate and keep track of each model’s performance, as well as route prediction requests to different models based on their current performance.</strong></li>
+</ol>
+
+<p>Because of these requirements, bandits are a lot more difficult to implement than A/B testing. Therefore, not widely used in the industry other than at a few big tech companies.</p>
+
+<h3 id="contextual-bandits">Contextual bandits as an exploration strategy</h3>
+
+<p>If bandits for model evaluation are to determine the payout (e.g. prediction accuracy) of each model, contextual bandits are to determine the payout of each action. In the case of recommendations, an action is an item to show to users, and the payout is how likely a user will click on it.</p>
+
+<p><strong>Disclaimer</strong>: <em>some people also call bandits for model evaluation “contextual bandits”. This makes conversations confusing, so in this post, contextual bandits refer to exploration strategies to determine the payout of predictions.</em></p>
+
+<p>To illustrate this, consider a recommendation system for 10,000 items. Each time, you can recommend 10 items to users. The 10 shown items get users’ feedback on them (click or not click). But you won’t get feedback on the other 9,990 items.</p>
+
+<blockquote>
+  <blockquote>
+    <p>If you keep showing users only the items they most likely click on, you’ll get stuck in a feedback loop, showing only popular items and will never get feedback on less popular items.</p>
+  </blockquote>
+</blockquote>
+
+<p>Contextual bandits leverage contextual information to balance between showing users the items they will like (exploitation) and showing the items you don’t know much about yet (exploration) while minizing the cost of suboptimal actions.</p>
+
+<p>Contextual bandits are well-researched and have been shown to improve models’ performance significantly (see reports by <a href="https://arxiv.org/abs/2008.00727">Twitter</a>, <a href="https://arxiv.org/abs/1909.03212">Google</a>). However, contextual bandits are even harder to implement than model bandits, since the exploration strategy depends on the ML model’s architecture (e.g. whether it’s a decision tree or a neural network), which makes it less generalizable across use cases.</p>
+
+<h2 id="towards-continual-learning">Towards Continual Learning</h2>
+
+<p>When hearing continual learning, people imagine updating models very frequently, such as every 5 minutes. Many people argue that most companies don’t need updates that frequently because:</p>
+
+<ol>
+  <li>They don’t have traffic for that retraining schedule to make sense.</li>
+  <li>Their models don’t decay that fast.</li>
+</ol>
+
+<p>I agree with them. However, continual learning isn’t about the retraining frequency, but the manner in which the model is retrained.</p>
+
+<p>Most companies do <strong>stateless retraining</strong> – the model is trained from scratch each time. Continual learning means allowing <strong>stateful training</strong> – the model continues training on new data (fine-tuning).</p>
+
+<blockquote>
+  <blockquote>
+    <p><strong>Once your infrastructure is set up to do stateful training, the training frequency is just a knob to twist.</strong> You can update your models once an hour, once a day, or you can update your models whenever your system detects a distribution shift.</p>
+  </blockquote>
+</blockquote>
+
+<p>There are two types of model updates:</p>
+
+<ul>
+  <li><strong>Model iteration</strong>: adding a new feature to an existing model architecture or changing the model architecture.</li>
+  <li><strong>Data iteration</strong>: same model architecture and features but new data.</li>
+</ul>
+
+<p>As of today, stateful training refers to data iteration. If you change your model architecture or add a new feature, you still have to train the new model from scratch. There has been interesting research showing that it’s possible to do <a href="https://arxiv.org/abs/1511.05641">knowledge transfer</a> (Google, 2015) and <a href="https://arxiv.org/abs/1912.06719">model surgery</a> (OpenAI, 2019): “<em>transfer trained weights from one network to another after a selection process to determine which sections of the model are unchanged and which must be re-initialized</em>.” Several large research labs have experimented with this, though I’m not aware of any clear results in the industry.</p>
+
+<p>Starting with manual retraining, the first step will be to automate the retraining process. We’ll then move from stateless retraining to stateful training. Last but not least, we’ll discuss continual learning.</p>
+
+<h3 id="manual-stateless-retraining">Stage 1. Manual, Stateless Retraining</h3>
+
+<p>In the beginning, your ML team focuses on developing ML models to solve as many business problems as possible – fraud detection, recommendation, delivery estimation, etc. Because your team is focusing on developing new models, updating existing models takes a backseat. You update an existing model only when:</p>
+
+<ul>
+  <li>the model’s performance has degraded to the point that it’s doing more harm than good, and</li>
+  <li>your team has time to update it.</li>
+</ul>
+
+<p>Some of your models are being updated once every six months. Some are being updated once a quarter. Some have been out in the wild for a year and haven’t been updated at all.</p>
+
+<p>The process of updating a model is manual and ad-hoc. Someone, usually on the data platform team, queries data warehouses for new data. Someone else cleans this new data, extracts features from it, retrains that model from scratch on both the old and new data, then exports the updated model into a binary format. Then someone else takes that binary format and deploys the updated model. Oftentimes, the feature/model/processing code was updated during the model retraining, but the changes failed to be replicated to production, causing bugs that are hard to track down.</p>
+
+<p>If this process sounds painfully familiar to you, you’re not alone. A vast majority of companies outside the tech industry – e.g. any company that has adopted ML less than 3 years ago and doesn’t have an ML platform team – are in this stage.</p>
+
+<h3 id="automated-retraining">Stage 2. Automated Retraining</h3>
+
+<p>Instead of retraining your model manually in an ad-hoc manner, you have a script to automatically execute the retraining process. This is usually done in a batch process, such as Spark.</p>
+
+<p>Most companies with somewhat mature ML infrastructure are in this stage. Some sophisticated companies run experiments to determine the optimal retraining frequency. However, for most companies, the retraining frequency is set based on gut feeling – e.g. “<em>once a day seems about right</em>” or “<em>let’s kick off the retraining process each night when we have idle compute</em>”.</p>
+
+<blockquote>
+  <blockquote>
+    <p>Different models in your pipeline might require different retraining schedules.</p>
+  </blockquote>
+</blockquote>
+
+<p>In the case of the session-based recommendation above, if your embedding model is separate from your ranking model, then the embedding model might need to be retrained a lot less frequently than the ranking model. For example, you might get away with retraining your embeddings once a week while retraining your ranking models once a day. It’s a different story if you have a lot of new items each day whose embeddings need to be learned.</p>
+
+<p>Things get a lot more complicated if there are dependencies among your models. For example, because the ranking model depends on the embeddings when the embeddings change, the ranking model should be updated too.</p>
+
+<h3 id="requirements-3">Requirements</h3>
+
+<p>If your company has ML models in production, it’s likely that your company already has most of the infrastructure pieces needed for automated retraining. The only new piece you’ll need, if you don’t have one already, is <strong>a model store</strong> to automatically version and store all the code/artifacts needed to reproduce a model.</p>
+
+<p>The simplest model store is probably an S3 bucket that stores serialized blobs of models in some structured manner. If you want a more mature model store, the two solutions that I often hear about are SageMaker (managed service) and MLFlow (open-source). SageMaker is harder to use and doesn’t store your models’ code and artifacts. MLFlow is open-sourced and has more features but if your ML platform has a lot of quirks, it might be hard to get it to work.</p>
+
+<p>You’ll need to write scripts to automate your workflow and configure your infrastructure to automatically sample your data, extract features, and process/annotate labels for retraining. How long this process will take depends on many factors, but here are the two major ones:</p>
+
+<ol>
+  <li><strong>Scheduler</strong>. If you already have a CRON scheduler such as Airflow, Argo, wiring the scripts together shouldn’t be that hard.</li>
+  <li><strong>Data access and availability</strong>. Is all the data you need already collected in your data warehouse? Will you have to join data from multiple organizations? Do you need to build a lot of tables from scratch? Stefan Krawczyk, ML/Data platform manager at Stitch Fix, commented that he suspects most people’s time might be spent here.</li>
+</ol>
+
+<h3 id="bonus-log-and-wait-feature-reuse">Bonus: Log and wait (feature reuse)</h3>
+
+<p>When you retrain your model on new data, it’s likely that the new data has already gone through your prediction service, which means features have already been extracted once for predictions. Some companies reuse these extracted features for model updates, which both saves computation and allows for consistency between prediction and training. This approach is known as <strong>log and wait</strong>. It’s a classic approach to reduce the training-serving skew – bugs caused by mismatches between the production and development environments.</p>
+
+<p>This isn’t yet a popular approach, but it’s getting more popular. I expect that it’ll become a standard soon. Faire has a <a href="https://craft.faire.com/building-faires-new-marketplace-ranking-infrastructure-a53bf938aba0">great blog post</a> discussing the pros and cons of their <strong>log and wait</strong> approach.</p>
+
+<h3 id="stateful-training">Stage 3. Automated, Stateful Training</h3>
+
+<p>Remember that stateful training is when you continue training your model on new data instead of retraining your model from scratch. <strong>Stateful retraining allows you to update your model with less data.</strong> If you update your model once a month, you might need to retrain your model from scratch on data from the last 3 months. However, if you update your model every day, you only need to fine-tune your model on data from the last day.</p>
+
+<blockquote>
+  <blockquote>
+    <p>Grubhub, after switching from stateless daily retraining to stateful daily retraining, reduced their training cost <a href="https://arxiv.org/abs/2107.07106">45 times</a> (2021).</p>
+  </blockquote>
+</blockquote>
+
+<center>
+<figure>
+<img alt="Stateless vs. stateful training" src="/assets/pics/real-time-ml-2022/stateful-training.png" style="float: center; max-width: 90%; margin: 0 0 0em 0em" />
+</figure>
+Stateless vs. stateful training
+</center>
+<p><br /></p>
+
+<p>Another nice property of incremental learning is that you only need to see each data sample at most twice: once during prediction and once during model training. If you’re worried about data privacy, you might be able to discard your data samples after using them.</p>
+
+<h3 id="requirements-4">Requirements</h3>
+
+<p>The main thing you need at this stage is a better model store.</p>
+
+<ul>
+  <li><strong>Model lineage</strong>: you want to not just version your models but also track their lineage – which model fine-tunes on which model.</li>
+  <li><strong>Streaming features reproducibility</strong>: you want to be able to time-travel to extract streaming features in the past and recreate the training data for your models at any point in the past in case something happens and you need to debug.</li>
+</ul>
+
+<p>As far as I know, no existing model store has both of these capacities. You might be able to delegate streaming features reproducibility to a feature store, but you’ll likely have to build the solution in-house.</p>
+
+<h3 id="continual-learning">Stage 4. Continual Learning</h3>
+
+<p>What I’m working towards and what I hope many companies will eventually adopt is continual learning.</p>
+
+<blockquote>
+  <blockquote>
+    <p>Instead of updating your models based on a fixed schedule, continually update your model whenever data distributions shift and the model’s performance plummets.</p>
+  </blockquote>
+</blockquote>
+
+<p>The holy grail is when you combine continual learning with edge deployment. Imagine you can ship a base model with a new device – a phone, a watch, a drone, etc. — and the model on that device will continually update and adapt to its environment. There’s no centralized server cost, no need to transfer data back and forth between device and cloud!</p>
+
+<h3 id="requirements-5">Requirements</h3>
+
+<p>The switch from stage 3 to stage 4 is steep. You’ll need the following:</p>
+
+<ul>
+  <li>
+    <p><strong>A mechanism to trigger model updates</strong>. This trigger can be time-based (e.g. every 5 minutes), performance-based (e.g. whenever a model performance plummets), or drift-based (e.g. whenever data distributions shift).</p>
+
+    <p>Most monitoring solutions today focus on analyzing features – analyzing the summary statistics of a feature (e.g. mean, variance, min, max) and alerting you when significant changes in these statistics happen. However, a model can have hundreds, if not thousands of features. Most feature statistics changes are benign. The problem is not how to detect these changes, but how to know which change actually requires your attention.</p>
+  </li>
+  <li><strong>Better ways to continually evaluate your models</strong>. Writing a function to update your models isn’t much different from what you’d do in stage 3. The hard part is to ensure that the updated model is working properly. Because you’re updating your models to adapt to changing environments, a stationary test set no longer suffices. You might want to incorporate backtest, <a href="https://maxhalford.github.io/blog/online-learning-evaluation/">progressive evaluation</a>, test in production including shadow deployment, A/B test, canary analysis, and bandits.</li>
+  <li><strong>An orchestrator</strong> to automatically spin up instances to update and evaluate your models without interrupting the existing prediction service.</li>
+</ul>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Real-time machine learning is largely an infrastructure problem. Solving it will require the data science/ML team and the platform team to work together.</p>
+
+<p>Both online inference and continual learning require a mature streaming infrastructure. The training part of continual learning can be done in batch, but the online evaluation part requires streaming. Many engineers worry that streaming is hard and costly. It was true 3 years ago, but streaming technologies have matured significantly since then. More and more companies are providing solutions to make it easier for companies to move to streaming, including Spark Streaming, Snowflake Streaming, Materialize, Decodable, Vectorize, etc.</p>
+
+<p><em>To better understand the adoption and challenges of real-time ML in the industry, my team and I are doing a <a href="https://forms.gle/dDvgF7QgpPdvJE5b8">survey</a>. It’d be great if you could share with us your thoughts –  it should take around 5 minutes. The results will be aggregated, summarized, and shared with the community. Thank you!</em></p>
+
+<p>Do get in touch if you want to discuss how I and my team can help you with online prediction, online model evaluation, and automated, stateful training.</p>
+
+<h1 id="acknowledgments">Acknowledgments</h1>
+
+<p>This post wouldn’t have been possible without the help of a long list of engineers who have been extremely patient with my questions about their workflows.</p>
+
+<p>I’d also like to thank <a href="https://www.linkedin.com/in/skrawczyk/">Stefan Krawczyk</a>, <a href="https://www.linkedin.com/in/zhenzhong-xu-0243003/">Zhenzhong Xu</a>, <a href="https://maxhalford.github.io/">Max Halford</a>, <a href="https://twitter.com/gokumohandas">Goku Mohandas</a>, <a href="https://www.linkedin.com/in/eggie5/">Alex Egg</a>, <a href="https://twitter.com/jacopotagliabue">Jacopo Tagliabue</a>, and <a href="http://lukemetz.com/">Luke Metz</a> for their thoughtful comments that made this post better.</p>
+
+<p>Thanks Ammar Asmro, Alex Gidiotis, Aditya Soni, Shaosu Liu, Deepanshu Setia, Bonson Sebastian Mampilli, Sean Sheng, and Daniel Tan for your feedback on the survey!</p>
+
+<h2 id="appendix">Appendix</h2>
+
+<h3 id="stream-batch-processing">On the efficiency of stream processing vs. batch processing</h3>
+
+<p>We’ll compare the efficiency along three dimensions: overall cost efficiency, compute performance efficiency, and talent efficiency. <em>Thanks Zhenzhong Xu for this thoughtful analysis!</em></p>
+
+<ol>
+  <li>
+    <p><strong>Cost efficiency</strong></p>
+
+    <p>Unfortunately, there is no universal cost-efficiency formula between stream and batch processing. It depends on a lot of variables such as latency requirement, data size, late arrival tolerance, failure tolerance, statefulness, etc.  Stream processing’s strength is in stateful, continuous, and unbounded data processing. When used properly, often than not it’s less expensive compared to stateless batch processing. An example is if you have to compute a sliding window to score the user engagement during their 30 day trial period, batch processing will have to re-compute 30 days’ worth of data in every single batch, while stateful streaming workload will avoid all the redundant processing, hence less computationally expensive. On the other hand, for one-time processing of extremely large datasets at rest, Batch will still be the top choice. The best teams are the ones who master both.</p>
+  </li>
+  <li>
+    <p><strong>Performance efficiency</strong></p>
+
+    <p>Stream Processing is a very sophisticated technology today. Frameworks like Apache Flink are proven to be highly scalable and fully distributed. Stream Processing is optimized for speed and unbounded data. Its performance is measured by throughput per operator, and the availability SLA is often defined as the percentage of events processed within a certain delay tolerance. However, Stream Processing is not optimized for large bounded data processing, and its performance is significantly lower in large historical data processing (e.g., backfill). With that being said, having a cohesive and unified architecture leveraging both streaming and batch’s strength is an active development area. The takeaway here is stream processing and batch all have their strengths and weaknesses. But ultimately as a data processing user, you probably don’t need to worry about the current streaming/batch divide, the gap will close in a couple of years as the abstraction inevitably moves up.</p>
+  </li>
+  <li>
+    <p><strong>Talent efficiency</strong></p>
+
+    <p>Today, it’s still a general consensus that streaming is hard to manage in-house. You will need a very strong team of infrastructure engineers who are well versed to do both technical depth and operation work.  However, with data processing capabilities becoming more and more commoditized, many companies will start considering buying rather than building in-house. An analogy here, you don’t need nuclear scientists to work for you if what you need is to turn electricity into higher values. (oh well, unless you are running a nuclear powered electricity company  :) - in that case, be ready to get the best people you can!)</p>
+  </li>
+</ol>
+
+<h3 id="what-do-feature-stores-do">What do feature stores do?</h3>
+
+<p><em>Thanks Stefan Krawczyk for this analysis.</em></p>
+
+<p>Feature stores like Tecton and FEAST do some streaming feature computation for you, but they only operate on data that doesn’t need any joins, so it’s unlikely they’ll orchestrate an entire feature computation flow for you.</p>
+
+<p><a href="https://aws.amazon.com/sagemaker/feature-store/">Sagemaker’s feature store</a> only stores materialized data and requires you to hook it up to pipelines that would do the actual computation. People then reference/use the materialized features in the system, not the actual code that computes them.</p>
+
+<p><em>If you want to learn any of the above topics, join our <a href="https://discord.gg/Mw77HPrgjF">Discord chat</a>. We’ll be sharing learning resources and strategies. We might even host learning sessions and discussions if there’s interest. Serious learners only!</em></p>
+
+  </div>
+
+  <!-- Twitter cards -->
+  <meta name="twitter:site"    content="@chipro">
+  <meta name="twitter:creator" content="@Chip Huyen">
+  <meta name="twitter:title"   content="Real-time machine learning: challenges and solutions">
+
+  
+  <meta name="twitter:description" content="In the last year, I've talked to ~30 companies in different industries about their challenges with real-time machine learning. I've also worked with quite a few to find the solutions. This post outlines the solutions for (1) online prediction and (2) continual learning, with step-by-step use cases, considerations, and technologies required for each level.">
+  
+
+  
+  <meta name="twitter:card"  content="summary_large_image">
+  <meta name="twitter:image" content="https://huyenchip.com/assets/pics/real-time-ml-2022/online-prediction.png">
+  
+  <!-- end of Twitter cards -->
+  
+  <!-- <div id="collective_recsys"></div> -->
+  <!-- <script async data-uid="45ca838230" src="https://chiphuyen.ck.page/45ca838230/index.js"></script> -->
+  <br>
+  
+  
+    
+  <div id="disqus_thread"></div>
+  <script>
+    var disqus_config = function () {
+      this.page.url = 'https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html';
+      this.page.identifier = 'https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html';
+    };
+
+    (function() {
+      var d = document, s = d.createElement('script');
+
+      s.src = 'https://chiphuyen.disqus.com/embed.js';
+
+      s.setAttribute('data-timestamp', +new Date());
+      (d.head || d.body).appendChild(s);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+  
+</article>
+
+<!-- Add the scroll detection script here -->
+<script>
+  // Get all h2 and h3 and h4 elements within the .post-content
+  const sections = document.querySelectorAll(".post-content h2, .post-content h3, .post-content h4");
+
+  // Get all links in the sidebar
+  const navLinks = document.querySelectorAll(".sidebar a");
+
+  // Function to update active link
+  function updateActiveLink() {
+    let currentSection = "";
+
+    // Get the distance from the top of the page to the top of the first section
+    const firstSectionTop = sections[0].offsetTop;
+
+    // Only run the active class update if you've scrolled past the first section
+    if (window.pageYOffset < firstSectionTop - 100) {
+      // If we're at the top of the page, make sure all links are inactive
+      navLinks.forEach((link) => {
+        link.classList.remove("active");
+      });
+      return; // Stop execution here so no links are marked active
+    }
+
+    // Loop through sections to find the current section in view
+    sections.forEach((section) => {
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.clientHeight;
+
+      // Check if the section is in the viewport
+      if (pageYOffset >= sectionTop - sectionHeight / 3) {
+        currentSection = section.getAttribute("id");
+      }
+    });
+
+    // Update active class on the sidebar links
+    navLinks.forEach((link) => {
+      link.classList.remove("active");
+      // if (link.getAttribute("href").includes(currentSection)) {
+      //   link.classList.add("active");
+      // }
+      // Extract the href value and match exactly with the current section
+      const linkHref = link.getAttribute("href").replace("#", ""); // Remove the '#' to match the section id
+      if (linkHref === currentSection) {
+        link.classList.add("active");
+      }
+    });
+  }
+
+  // Add scroll event listener to update active link while scrolling
+  window.addEventListener("scroll", updateActiveLink);
+</script>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">Chip Huyen</h2> -->
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <!--li>
+            
+            Chip Huyen
+            
+          </li-->
+          
+          <li>
+            <a><span class="icon icon--github"><svg viewBox="0 4.801209 28.3499966 18.7475815" enable-background="new 0 4.801209 28.3499966 18.7475815">
+<path fill="#828282" d="M15.699194,17.7568531c-0.4572582,0.3048401-0.9145174,0.6096783-1.5241938,0.6096783
+	c-0.6096773,0-1.0669355-0.15242-1.5241938-0.6096783L0,6.7826605v16.1564522C0,23.2439518,0.3048387,23.54879,0.6096774,23.54879
+	h27.1306419c0.3048401,0,0.6096764-0.3048382,0.6096764-0.6096764V6.7826605L15.699194,17.7568531z"/>
+<path fill="#828282" d="M14.9370966,15.7754021L27.587904,4.801209H0.9145162l12.6508064,10.9741936
+	C13.870162,16.0802422,14.4798384,16.0802422,14.9370966,15.7754021z"/>
+</svg>
+</span><span class="username">hi@[thiswebsite]</span></a>
+
+          </li>
+          
+          
+          
+          <li>
+            <a href="https://twitter.com/chipro"><span class="icon icon--twitter"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/></svg>
+</span><span class="username">chipro</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://www.linkedin.com/in/chiphuyen"><span class="icon icon--linkedin"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></span><span class="username">chiphuyen</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://chiphuyen.substack.com"><span class="icon icon--linkedin"><?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <title>Substack logo</title>
+  <g fill="#FF6719">
+    <!-- top stripe -->
+    <rect x="0" y="40" width="256" height="32" />
+    <!-- middle stripe -->
+    <rect x="0" y="96" width="256" height="32" />
+    <!-- bookmark shape -->
+    <polygon points="0,160 256,160 256,256 128,208 0,256"/>
+  </g>
+</svg>
+</span><span class="username">chiphuyen</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://facebook.com/chipiscrazy"><span class="icon icon--facebook"><svg viewBox="0 0 155 155" width="16px" height="16px"><path id="f_1_" d="M89.584,155.139V84.378h23.742l3.562-27.585H89.584V39.184   c0-7.984,2.208-13.425,13.67-13.425l14.595-0.006V1.08C115.325,0.752,106.661,0,96.577,0C75.52,0,61.104,12.853,61.104,36.452   v20.341H37.29v27.585h23.814v70.761H89.584z" fill="#828282"/></svg>
+</span><span class="username">chipiscrazy</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://instagram.com/huyenchip19"><span class="icon icon--instagram"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="256px" height="256px" viewBox="0 0 256 256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid">
+    <g>
+        <path d="M127.999746,23.06353 C162.177385,23.06353 166.225393,23.1936027 179.722476,23.8094161 C192.20235,24.3789926 198.979853,26.4642218 203.490736,28.2166477 C209.464938,30.5386501 213.729395,33.3128586 218.208268,37.7917319 C222.687141,42.2706052 225.46135,46.5350617 227.782844,52.5092638 C229.535778,57.0201472 231.621007,63.7976504 232.190584,76.277016 C232.806397,89.7746075 232.93647,93.8226147 232.93647,128.000254 C232.93647,162.177893 232.806397,166.225901 232.190584,179.722984 C231.621007,192.202858 229.535778,198.980361 227.782844,203.491244 C225.46135,209.465446 222.687141,213.729903 218.208268,218.208776 C213.729395,222.687649 209.464938,225.461858 203.490736,227.783352 C198.979853,229.536286 192.20235,231.621516 179.722476,232.191092 C166.227425,232.806905 162.179418,232.936978 127.999746,232.936978 C93.8200742,232.936978 89.772067,232.806905 76.277016,232.191092 C63.7971424,231.621516 57.0196391,229.536286 52.5092638,227.783352 C46.5345536,225.461858 42.2700971,222.687649 37.7912238,218.208776 C33.3123505,213.729903 30.538142,209.465446 28.2166477,203.491244 C26.4637138,198.980361 24.3784845,192.202858 23.808908,179.723492 C23.1930946,166.225901 23.0630219,162.177893 23.0630219,128.000254 C23.0630219,93.8226147 23.1930946,89.7746075 23.808908,76.2775241 C24.3784845,63.7976504 26.4637138,57.0201472 28.2166477,52.5092638 C30.538142,46.5350617 33.3123505,42.2706052 37.7912238,37.7917319 C42.2700971,33.3128586 46.5345536,30.5386501 52.5092638,28.2166477 C57.0196391,26.4642218 63.7971424,24.3789926 76.2765079,23.8094161 C89.7740994,23.1936027 93.8221066,23.06353 127.999746,23.06353 M127.999746,0 C93.2367791,0 88.8783247,0.147348072 75.2257637,0.770274749 C61.601148,1.39218523 52.2968794,3.55566141 44.1546281,6.72008828 C35.7374966,9.99121548 28.5992446,14.3679613 21.4833489,21.483857 C14.3674532,28.5997527 9.99070739,35.7380046 6.71958019,44.1551362 C3.55515331,52.2973875 1.39167714,61.6016561 0.769766653,75.2262718 C0.146839975,88.8783247 0,93.2372872 0,128.000254 C0,162.763221 0.146839975,167.122183 0.769766653,180.774236 C1.39167714,194.398852 3.55515331,203.703121 6.71958019,211.845372 C9.99070739,220.261995 14.3674532,227.400755 21.4833489,234.516651 C28.5992446,241.632547 35.7374966,246.009293 44.1546281,249.28042 C52.2968794,252.444847 61.601148,254.608323 75.2257637,255.230233 C88.8783247,255.85316 93.2367791,256 127.999746,256 C162.762713,256 167.121675,255.85316 180.773728,255.230233 C194.398344,254.608323 203.702613,252.444847 211.844864,249.28042 C220.261995,246.009293 227.400247,241.632547 234.516143,234.516651 C241.632039,227.400755 246.008785,220.262503 249.279912,211.845372 C252.444339,203.703121 254.607815,194.398852 255.229725,180.774236 C255.852652,167.122183 256,162.763221 256,128.000254 C256,93.2372872 255.852652,88.8783247 255.229725,75.2262718 C254.607815,61.6016561 252.444339,52.2973875 249.279912,44.1551362 C246.008785,35.7380046 241.632039,28.5997527 234.516143,21.483857 C227.400247,14.3679613 220.261995,9.99121548 211.844864,6.72008828 C203.702613,3.55566141 194.398344,1.39218523 180.773728,0.770274749 C167.121675,0.147348072 162.762713,0 127.999746,0 Z M127.999746,62.2703115 C91.698262,62.2703115 62.2698034,91.69877 62.2698034,128.000254 C62.2698034,164.301738 91.698262,193.730197 127.999746,193.730197 C164.30123,193.730197 193.729689,164.301738 193.729689,128.000254 C193.729689,91.69877 164.30123,62.2703115 127.999746,62.2703115 Z M127.999746,170.667175 C104.435741,170.667175 85.3328252,151.564259 85.3328252,128.000254 C85.3328252,104.436249 104.435741,85.3333333 127.999746,85.3333333 C151.563751,85.3333333 170.666667,104.436249 170.666667,128.000254 C170.666667,151.564259 151.563751,170.667175 127.999746,170.667175 Z M211.686338,59.6734287 C211.686338,68.1566129 204.809755,75.0337031 196.326571,75.0337031 C187.843387,75.0337031 180.966297,68.1566129 180.966297,59.6734287 C180.966297,51.1902445 187.843387,44.3136624 196.326571,44.3136624 C204.809755,44.3136624 211.686338,51.1902445 211.686338,59.6734287 Z" fill="#0A0A08"></path>
+    </g>
+</svg>
+</span><span class="username">huyenchip19</span></a>
+
+          </li>
+          
+
+          
+          <li>
+            <a href="https://github.com/chiphuyen"><span class="icon icon--github"><svg viewBox="0 0 16 16" width="16px" height="16px"><path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/></svg>
+</span><span class="username">chiphuyen</span></a>
+
+          </li>
+          
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <p>I work to bring AI into production. I write about AI system design.
+</p>
+        <!-- <p><b>I&#39;m thinking about starting a newsletter. Sign up to be the first to know!
+</b></p> -->
+
+        <p>I don't have a <a href='https://chiphuyen.substack.com/'>Substack</a> yet, but if more people nudge me, I might actually start it.</p>
+        <div class="substack-box">
+        <iframe src="https://chiphuyen.substack.com/embed" width="480" height="150" style="border:0px solid #EEE; background:white;" frameborder="0" scrolling="no"></iframe>
+        </div>
+        
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"b955410eeaaf4b389e2cbb9df5c229cb","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1074,3 +1074,65 @@ Vogel, Hilprecht and Binnig (2023), [Towards Foundation Models for Relational Da
 - [Pinned source example](https://github.com/stanford-star/relational-transformer/blob/8d83590b5ae7fba9e40e8df463ed2dd9066ce5fb/scripts/example_finetune.py): 32769 steps, per-rank batch32, checkpoint saving disabled by default; original trainer selects validation metrics while also logging test.
 - [Fixed RT-v1 release card](https://huggingface.co/stanford-star/rt-v1/blob/299701dedae451f3dfa40717b831d9dc17c0e4e7/README.md): public initialization provenance; weight bytes not downloaded after scientific/budget stop.
 - [Modal pricing](https://modal.com/pricing): one reported eight-A100 1.5-hour run implies USD25.185600–29.980800 GPU-only. Full-run forecast exceeds the USD10 aggregate ceiling; no paid work authorized.
+
+## Lesson 181 · RelBench v2 autocomplete
+
+- [Gu et al., RelBench v2 v1](https://arxiv.org/html/2602.12606v1): §§2–4 and Tables2/5/14/15/21. Primary task and result source; complete two-F1-task aggregation baselines reproduced, fresh GNN NOT_RUN_TRAINING_HEALTH_GATE.
+- [Publication-date code snapshot](https://github.com/stanford-star/relbench/tree/0d47fe0c8a1a51aaf97ab485f4a028e290f97c67): task registry, AutoCompleteTask, global database column removal, baseline train+validation refit and GNN model/trainer. Snapshot identity does not establish historical training identity.
+- [Jiang, RelGT-AC v1](https://arxiv.org/html/2606.03040v1): paper-described seed masking, TF-IDF and local/global graph model. Validation comparisons and differing mask policy require care. No authenticated model/checkpoint release located in bounded search of paper/author pages and repository search; NOT_RUN_SOURCE_GAPS. Text projection dimensionality differs between general equation and experimental description.
+- Sources and exact environment: `labs/sources/l181/source-ledger.json`, `protocol-audit.json`; measured comparison `labs/evidence/l181/paper-comparison.json`.
+
+
+### Lesson 182 · RDB-PFN + composite message passing · 2026-10-02
+
+- [RDB-PFN v5 §§5–6, Appendix C and Table 9](https://arxiv.org/html/2603.03805v5): prior/predictor separation and the complete selected 512-support F1 comparison. Fresh L182 run retains fixed source/checkpoints and all 30 evaluations; whole-paper/pretraining NOT_RUN.
+- [RelGNN v2 §4, Equations 3–5](https://arxiv.org/html/2502.06784v2): atomic routes, fusion and destination attention. One-head identity specialization checked against original source and finite-difference input gradients; no new full RelGNN fit.
+- [Frozen contract](labs/l182-reproduction.md), [fresh scores](labs/evidence/l182/report.json), [independent verification](labs/_verify_l182_results.json). Three means match rounded paper values, but hybrid superiority is an unrun proposal. Label orientation, DFS provenance and historical identity limits remain explicit.
+
+## Lesson 185 · Causal & relational data
+
+- [Pearl 2009, Causal inference in statistics: An overview](https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf), DOI10.1214/09-SS057: §§2,3.2.1,3.3.1,3.4. Primary definitions and assumptions; no empirical result reproduced. Pinned bytes in `labs/sources/l185/`.
+- [Maier et al.2013, relational causal discovery](https://arxiv.org/abs/1309.6843v1): optional abstract-level context; RCD not implemented or reproduced.
+- [L185 protocol](labs/l185-reproduction.md): full original synthetic five-seed shortcut/adjustment/intervention experiment; real-world effectiveness NOT_ESTABLISHED.
+
+## Lesson 184 — GelGT
+
+- [GelGT v2, §§3 and Appendix B](https://arxiv.org/html/2605.15575v2): structural sampling, semantic refinement, Gaussian temporal bias and Table 2 driver-position target.
+- [Official pinned source](https://github.com/USTC-DataDarknessLab/GelGT/tree/1997b2c2f480ce5d3cbdb48d46f33cc303f5feb4): original sampler counterexample executed; full trainer NOT_RUN.
+- [Local protocol and evidence](labs/l184-reproduction.md): 8,712 raw labels verified; query-cache identity stop; no paper-MAE claim.
+
+
+## Lesson 186 · production constraints
+
+- [Chip Huyen: Real-time machine learning, stages 1–3](https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html): primary reading for prediction and feature refresh choices. Conceptual guidance, not a published numerical reproduction target.
+- [Chip Huyen: Data distribution shifts and monitoring](https://huyenchip.com/2022/02/07/data-distribution-shifts-and-monitoring.html): natural label delays and separate operational/predictive quality signals.
+- [Google SRE: Monitoring distributed systems](https://sre.google/sre-book/monitoring-distributed-systems/): latency, traffic, errors and saturation; tail latency motivation.
+- [L186 frozen protocol](labs/l186-reproduction.md) and [source snapshots](labs/sources/l186/source-ledger.json): all81course simulations/810000requests, separate300batch-receipt replay. Hypothetical durations; no model scores or real serving benchmark. Fresh inference/production NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
+
+## Lesson 187 · Relational contribution privacy
+
+- [Dwork and Roth, The Algorithmic Foundations of Differential Privacy](https://www.cis.upenn.edu/~aaroth/privacybook.html): Definition 2.4, global sensitivity, Laplace mechanism Theorem 3.6, basic composition Corollary 3.15. Primary reading for the ideal mechanism; finite-precision public seeded simulation is separate.
+- [GAP](https://arxiv.org/abs/2203.00949): graph-aggregation privacy proposal, cited context only; no benchmark reproduction in L187.
+- [Xiang, Wang and Wang v2](https://arxiv.org/html/2311.06888v2): Section VI critique of private instance embeddings and GAP noise accounting; attributed findings, not a locally reproduced attack.
+- RelBench F1 schema pinned at `0d47fe0c8a1a51aaf97ab485f4a028e290f97c67`, authenticated through L181; all nine tables retained. Source hashes: `labs/sources/l187/source-ledger.json`. Course experiment `L187-F1-ENTITY-PRIVACY` is complete; private-GNN paper reproduction NOT_RUN.
+
+## Lesson 183 · Graph-Transformer pretraining gap
+
+- [Dwivedi et al., RelGT v1](https://arxiv.org/html/2505.10960v1): §§3–4 and Tables1/6; five-element tokenization, local/global attention and supervised benchmark protocol. Code19e423ca3e7cac761130aba790857f2dc3a46ef7 retained from L145.
+- [Wang et al., Griffin v1](https://arxiv.org/html/2505.05568v1): §§3–4/Table12; unified cell/task interface, message passing and selected transfer protocol. Codeb9d0e1fa8d89dfb1cd8bd5976b71de8a3b515427 retained from L164.
+- [Authors' relational graph-transformer overview](https://docs.nvidia.com/sdgm/research/relational-graph-transformers): existing connection to KumoRFM prevents a broad absence/novelty claim. Bounded source review does not establish originality of the proposed experiment.
+- `labs/sources/l183/source-ledger.json` pins primary HTML; `labs/evidence/l183/input-manifest.json` authenticates inherited data and code. The notebook's complete saved replay is separate from fresh training, inference and raw-label reconstruction.
+
+
+## Lesson188 · Systematic literature tracking
+
+Primary: [arXiv API manual](https://info.arxiv.org/help/api/user-manual.html), [API terms](https://info.arxiv.org/help/api/tou.html), [RSS guide](https://info.arxiv.org/help/rss.html). Query/window/pagination and version semantics; source bytes retained in labs/evidence/l188/packet.
+
+Watch sources: [RelBench board](https://star-project.stanford.edu/relbench/leaderboard/), [TabArena board](https://huggingface.co/spaces/TabArena/leaderboard). Page retrieval is separate from score extraction; no historical rank changes established.
+
+[Q3 paper log](labs/evidence/l188/paper-log.md):30unique API records,7abstract-screened candidates,23deferred. Two failed phrase queries leave quarterly collection INCOMPLETE. Supplemental primary-page examples: [JEPA recipe](https://arxiv.org/abs/2609.25541), [physics limitations](https://arxiv.org/abs/2609.02766), [Xiaomi-TabLDM](https://arxiv.org/abs/2609.03880). Reading queue only; methods/artifacts not audited and results not reproduced. No core-paper promotion.
+
+## Lesson 189 · Research-problem selection · 2026-10-02
+
+Primary starting reading: [Dwivedi et al., RDL survey, 2506.16654v1](https://arxiv.org/html/2506.16654v1), §§2.4/5. Treat a dated survey as a map rather than a novelty certificate. Closest-work checks use [RelGNN v2](https://arxiv.org/html/2502.06784v2), [RDB-PFN v5](https://arxiv.org/html/2603.03805v5), [RT v1](https://arxiv.org/html/2510.06377v1), [Temporal Heterogeneous Graph Pretraining v1](https://arxiv.org/html/2609.35219v1), §4.4, and [RelArena-α v2](https://arxiv.org/html/2608.16319v2). The temporal paper explicitly leaves unseen-database transfer and matched computational cost open; RT means that cross-database transfer itself is not new. Selected-source coverage only; candidate novelty NOT_ESTABLISHED. Exact source bytes and retrieval receipts: `labs/evidence/l189/packet/sources.json`.

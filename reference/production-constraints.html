@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Serving constraints — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/serving-contract.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0177-compute-budget-realism.html">Compute evidence</a></nav><header><p class="subtitle">Year 5 · Quarter 3 · Lesson 186</p><h1>Serving constraints — quick reference</h1></header><p><strong>The contract:</strong> deadline, dependency information set, source-age limit, fallback, and monitor. Query identity and model/feature versions must survive to later scoring.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Clock / metric</th>
+  <th>Definition</th>
+  <th>What it cannot establish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Event time</td>
+  <td>When the observed source state applies</td>
+  <td>When it reached our service</td>
+</tr>
+<tr>
+  <td>Arrival time</td>
+  <td>When the source snapshot becomes visible</td>
+  <td>Whether all real transactions arrived</td>
+</tr>
+<tr>
+  <td>Materialization time</td>
+  <td>When a refresh is ready</td>
+  <td>How recent its source is</td>
+</tr>
+<tr>
+  <td>Request latency</td>
+  <td>Response minus request arrival</td>
+  <td>Information freshness</td>
+</tr>
+<tr>
+  <td>Observed source age</td>
+  <td>Response minus oldest required source event</td>
+  <td>Complete event-stream integrity or accuracy</td>
+</tr>
+<tr>
+  <td>Materialization age</td>
+  <td>Response minus refresh completion</td>
+  <td>Dependency event age</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Queue:</strong> start[i] = max(arrival[i], finish[i−1]); finish[i] = start[i] + service. Queue wait belongs in request latency. The simulated single 15 ms worker has nominal capacity about 66.7 requests/s; this excludes real service variability and all unmodeled resources.</p>
+<p><strong>Availability:</strong> event ≤ arrival ≤ read. Cached read occurs at a refresh tick whose tick + 20 ms has completed by service start. An older late arrival never replaces a newer snapshot. Missing dependency → unknown age → freshness failure. Reads at start may include events after request arrival; this is an explicit serving choice.</p>
+<p><strong>Monitor:</strong> last 100 completed responses, strictly more than 10 stale. No complete window → no alert. An already-active alert is not newly detected failure. The 100-response window changes elapsed duration with traffic. Labels mature separately; no scores means no quality claim.</p>
+<p><strong>Simulation limits:</strong> hypothetical fixed durations, one worker, unlimited separate refresh resources, no actual model, no cancellation or network, no fallback executed. Nominal exponential arrivals are rounded to at least 1 ms. All 81 scenarios drain all requests. The frozen 100 ms deadline and 2,000 ms source-age limits are course assumptions.</p>
+<p><strong>474.434 s</strong> of inner evaluation time + <strong>0.939 s</strong> from 12 distinct loading events sit inside <strong>491.471 s</strong> of worker time. The difference is other worker work; it is not measured cloud startup. Do not add inner timers to the outer total.</p>
+<p><strong>Executed:</strong> complete <strong>81-scenario course simulation / 810,000 responses</strong>, plus <strong>300 original batch-receipt replays</strong>. All service times are hypothetical. Live production performance, fresh model inference and paper-result reproduction are <code>NOT_RUN</code>; request latency from original batch receipts is <code>NOT_MEASURED</code>. Learner status: <code>PENDING_WRITTEN_DEFENSE</code>.</p>
+<p><a href="../lessons/0186-production-constraints.html">Lesson</a> · <a href="../labs/0186-production-constraints.ipynb">Notebook</a> · <a href="../labs/l186-reproduction.md">Protocol</a> · <a href="../labs/evidence/l186/report.json">Report</a> · <a href="https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html">Huyen: real-time ML</a> · <a href="https://huyenchip.com/2022/02/07/data-distribution-shifts-and-monitoring.html">Huyen: monitoring</a> · <a href="https://sre.google/sre-book/monitoring-distributed-systems/">Google SRE</a>.</p>
+</article></body></html>
