@@ -1,0 +1,154 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Few-shot ICL evaluation</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/few-shot-evaluation.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0175-zero-shot-evaluation.html">Lesson175</a></nav><header><p class="route-kicker">Year5 · Quarter2 · Lesson176</p><h1>Few-shot ICL evaluation</h1></header><p><strong>One win:</strong> design and audit a few-shot evaluation in which increasing the label budget preserves the examples already shown. About 20 minutes; the notebook is a separate practice session.</p>
+<p><a href="0174-fine-tuning-protocol.html">174: change parameters</a> → <a href="0175-zero-shot-evaluation.html">175: audit information access</a> → <strong>176: vary labeled context</strong> → 177: account for compute.</p>
+<div id="warmup"></div>
+
+<h2 id="1-%C2%B7-A-frozen-model-can-still-learn-from-examples">1 &#183; A frozen model can still learn from examples<a class="anchor-link" href="#1-%C2%B7-A-frozen-model-can-still-learn-from-examples">&#182;</a></h2><p>Lesson 174 adapted model parameters. Lesson 175 froze them, then found that the original RT sampler violated its declared event-time bound. That experiment stopped before model inference. Freezing weights did not make its inputs safe.</p>
+<p>Now make <strong>permitted labeled context</strong> explicit. A <em>support set</em> contains examples with known answers. A <em>query set</em> contains the cases whose answers the model must predict. In-context learning (ICL) changes predictions by changing the support input while leaving pretrained parameters fixed. “Zero gradient updates” therefore does not mean “zero labels.” <a href="https://arxiv.org/html/2603.03805v5#A3">RDB-PFN §6.1 and Appendix A.3</a>.</p>
+<p>We return to RDB-PFN's released DFS pipeline from lessons 166–169. Deep Feature Synthesis (DFS) turns relational neighborhoods into typed aggregate features. This is a separate pipeline from RT; its results do not repair lesson 175's failure. The selected tasks are F1 driver-DNF and trial study-outcome, with all <strong>702 and 825 test queries</strong> respectively.</p>
+<p>Here (k) means <strong>total labeled support rows per task</strong>, shared by all queries. It is not (k) per class, per query, or per database table. All five support sizes—64, 128, 256, 512, 1,024—are called few-shot in the source protocol. No (k=0) result is implied.</p>
+<h2 id="2-%C2%B7-Follow-one-support-label-through-the-model">2 &#183; Follow one support label through the model<a class="anchor-link" href="#2-%C2%B7-Follow-one-support-label-through-the-model">&#182;</a></h2><p><strong>Read the shapes.</strong> k is the number of support examples, F the number of features, and Q the number of queries. Thus <code>[k,F]</code> is a table with k rows and F columns. An attention operation mixes representations from allowed positions; its mask blocks the other positions. In the diagram, “keys and values” are attention's matching and content vectors, not database primary and foreign keys. GELU is the smooth nonlinear activation inside the feed-forward update; FFN abbreviates that feed-forward network.</p>
+<figure tabindex="0"><img src="../labs/figures/l176/architecture.svg" alt="Actual RDB-PFN support/query computation: support-derived feature and label encodings, six frozen attention blocks, and query decoding. TabICL is a separate comparator."><figcaption>Actual RDB-PFN support/query computation: support-derived feature and label encodings, six frozen attention blocks, and query decoding. TabICL is a separate comparator. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p>The RDB-PFN arms receive <code>X_support[k,F]</code>, <code>y_support[k]</code>, and <code>X_query[Q,F]</code>: F1 has 72 features; trial has 176. The original feature encoder normalizes using support statistics, clips standardized values, and projects each scalar to width 96. A target column carries support labels; query target placeholders use the <strong>support-label mean</strong>, not the hidden query answer. <a href="../labs/sources/l166/upstream/model_pretrain/src/models.py">Released model</a>.</p>
+<p>Six blocks alternate attention across columns within a row and attention across rows within a column. During row attention, support rows attend to support rows; query rows attend to support rows. The query label token then goes through a <code>96 → 192 → 2</code> decoder. The wrapper produces class probabilities. Both RDB-PFN checkpoints use this architecture, but their pretraining priors differ. TabICL v1.1 is a separate 32-estimator comparator on the same DFS inputs; this diagram does not describe its architecture.</p>
+<p>The wrapper's <code>fit(X_support, y_support)</code> installs context. It does not run target-task gradient descent. Adding support can change label evidence <strong>and support-fitted preprocessing</strong>. Our estimand—the quantity we intend to measure—is the complete frozen inference pipeline's response to more labeled context. It is not a pure causal estimate of label count with every intermediate representation held fixed.</p>
+<h2 id="3-%C2%B7-Keep-old-examples-when-adding-new-ones">3 &#183; Keep old examples when adding new ones<a class="anchor-link" href="#3-%C2%B7-Keep-old-examples-when-adding-new-ones">&#182;</a></h2><p>Lesson 169 reproduced the released sampler: each size used its own random draw without replacement. Reusing a seed did not make those sets nested. A 128-example result could replace many of the 64 examples, mixing a size change with a composition change.</p>
+<p>For the new <strong>L176 Nested-Support ICL Evaluation</strong>, draw an ordered set of 1,024 eligible training rows once per task and seed. Use its prefixes at every smaller size. At any size, all three models receive exactly the same ordered support identities.</p>
+<figure tabindex="0"><img src="../labs/figures/l176/supports.svg" alt="Synthetic worked trace: one ordered draw, three nested prefixes. Baseline rows remain blue; additional rows are green."><figcaption>Synthetic worked trace: one ordered draw, three nested prefixes. Baseline rows remain blue; additional rows are green. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p>A tiny synthetic trace makes the distinction visible. Suppose the ordered draw is <code>[7,2,9,4,8,1,6,3]</code>. At (k=2), use <code>[7,2]</code>; at (k=4), use <code>[7,2,9,4]</code>. Both old examples remain. An independent draw <code>[8,1,7,6]</code> retains only one. These toy identifiers explain sampling; they are not measured benchmark rows.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">nested_support</span><span class="p">(</span><span class="n">n_rows</span><span class="p">,</span> <span class="n">contexts</span><span class="p">,</span> <span class="n">seed_key</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">n_rows</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">contexts</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="ow">not</span> <span class="mi">0</span><span class="o">&lt;</span><span class="n">k</span><span class="o">&lt;=</span><span class="n">n_rows</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">contexts</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">contexts</span><span class="p">))</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">contexts</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seed_key</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">seed_key</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid support request&#39;</span><span class="p">)</span>
+    <span class="n">seed</span><span class="o">=</span><span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">seed_key</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">digest</span><span class="p">()[:</span><span class="mi">4</span><span class="p">],</span><span class="s1">&#39;big&#39;</span><span class="p">)</span>
+    <span class="n">largest</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">n_rows</span><span class="p">,</span><span class="nb">max</span><span class="p">(</span><span class="n">contexts</span><span class="p">),</span><span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">largest</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">contexts</span><span class="p">}</span>
+</pre></div>
+<p>Each prefix remains a random subset of the requested size, but the dependence <em>between</em> sizes changes. That change is declared before inference. Larger contexts can still hurt: additional examples can be misleading, preprocessing can shift, and a model's response need not be monotonic.</p>
+<div id="predict"></div>
+
+<h2 id="4-%C2%B7-Freeze-the-evaluation-contract-before-seeing-scores">4 &#183; Freeze the evaluation contract before seeing scores<a class="anchor-link" href="#4-%C2%B7-Freeze-the-evaluation-contract-before-seeing-scores">&#182;</a></h2><div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Decision</th>
+  <th>Frozen choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Queries</td>
+  <td>Every released F1/trial test key; no row cap</td>
+</tr>
+<tr>
+  <td>Support candidates</td>
+  <td>Released training split only; no query answers</td>
+</tr>
+<tr>
+  <td>Size and seeds</td>
+  <td>Five fixed sizes × seeds 0–9</td>
+</tr>
+<tr>
+  <td>Models</td>
+  <td>Two pinned RDB-PFN checkpoints; pinned TabICL v1.1</td>
+</tr>
+<tr>
+  <td>Fairness</td>
+  <td>Same ordered support and query keys across models</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>No test-based choice of model, seed, size, or checkpoint</td>
+</tr>
+<tr>
+  <td>Metric</td>
+  <td>AUROC per run, then means and sample SD across support draws</td>
+</tr>
+</tbody>
+</table></div>
+<p>Use complete <code>(entity_id, cutoff)</code> keys. An entity may appear at multiple dates; collapsing those rows can silently overwrite answers. Check unique support identities, support/query disjointness, and completed outcome windows <strong>before</strong> dispatch. The conservative inherited horizon checks are 60 days for the released F1 data and 365 for trial; these are retained compatibility checks, not a new claim about RT's 30-day task implementation. <a href="../labs/evidence/l176/preflight.json">Input preflight</a>, <a href="../labs/l166-reproduction.md">original F1 protocol</a>.</p>
+<p>The released binary labels complement the raw task labels; preserve their orientation consistently for both targets and probabilities. Existing MAX-timestamp checks cover selected DFS columns. Complete DFS regeneration, historical feature arrival, exact pretraining lineage, and historical identity remain unestablished. Successful support checks alone cannot establish every feature's legality.</p>
+<h2 id="5-%C2%B7-Pair-gains-by-support-draw">5 &#183; Pair gains by support draw<a class="anchor-link" href="#5-%C2%B7-Pair-gains-by-support-draw">&#182;</a></h2><p>For seed (s), compute Δ_s = AUROC(2k,s) − AUROC(k,s). Average these ten differences and report their <strong>sample standard deviation</strong>. Pairing by seed preserves the nested experiment's design. Do not subtract unmatched rows after sorting scores.</p>
+<p>For a synthetic three-seed trace, scores <code>[.60,.70,.80]</code> at (k) and <code>[.65,.68,.83]</code> at (2k) give gains <code>[+.05,−.02,+.03]</code>: mean <strong>+.02</strong>, sample SD <strong>.0361</strong>. The average improves even though one seed gets worse. This is an arithmetic example, not our measured result.</p>
+<p>These seeds vary support draws on a fixed task. They are not ten independent databases. A sample SD is not a confidence interval or evidence of universal superiority. We show all five sizes without selecting the highest test score as a new tuned configuration.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task / frozen model</th>
+  <th style="text-align:right">64</th>
+  <th style="text-align:right">128</th>
+  <th style="text-align:right">256</th>
+  <th style="text-align:right">512</th>
+  <th style="text-align:right">1,024</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-f1/RDBPFN</td>
+  <td style="text-align:right">0.7066</td>
+  <td style="text-align:right">0.7220</td>
+  <td style="text-align:right">0.7256</td>
+  <td style="text-align:right">0.7192</td>
+  <td style="text-align:right">0.7188</td>
+</tr>
+<tr>
+  <td>rel-f1/RDBPFN_single</td>
+  <td style="text-align:right">0.6030</td>
+  <td style="text-align:right">0.6593</td>
+  <td style="text-align:right">0.6579</td>
+  <td style="text-align:right">0.6929</td>
+  <td style="text-align:right">0.7086</td>
+</tr>
+<tr>
+  <td>rel-f1/TabICLv1.1</td>
+  <td style="text-align:right">0.6999</td>
+  <td style="text-align:right">0.7250</td>
+  <td style="text-align:right">0.7229</td>
+  <td style="text-align:right">0.7202</td>
+  <td style="text-align:right">0.7173</td>
+</tr>
+<tr>
+  <td>rel-trial/RDBPFN</td>
+  <td style="text-align:right">0.5426</td>
+  <td style="text-align:right">0.5677</td>
+  <td style="text-align:right">0.5746</td>
+  <td style="text-align:right">0.5988</td>
+  <td style="text-align:right">0.6159</td>
+</tr>
+<tr>
+  <td>rel-trial/RDBPFN_single</td>
+  <td style="text-align:right">0.5127</td>
+  <td style="text-align:right">0.5380</td>
+  <td style="text-align:right">0.5707</td>
+  <td style="text-align:right">0.5843</td>
+  <td style="text-align:right">0.5963</td>
+</tr>
+<tr>
+  <td>rel-trial/TabICLv1.1</td>
+  <td style="text-align:right">0.5272</td>
+  <td style="text-align:right">0.5610</td>
+  <td style="text-align:right">0.5797</td>
+  <td style="text-align:right">0.5947</td>
+  <td style="text-align:right">0.6087</td>
+</tr>
+</tbody>
+</table></div>
+<p>Measured mean AUROC over ten support seeds; every cell contains fresh L176 inference. Sample SD and all paired gains are in the notebook and explorer.</p>
+<figure tabindex="0"><img src="../labs/figures/l176/curves.svg" alt="Fresh measured means and sample SD across ten support draws. Both panels use the same AUROC scale. No best-k test selection."><figcaption>Fresh measured means and sample SD across ten support draws. Both panels use the same AUROC scale. No best-k test selection. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p><strong>Observed negative mean doubling gains:</strong> rel-f1/RDBPFN: 256→512 (-0.00634); rel-f1/RDBPFN: 512→1024 (-0.00048); rel-f1/RDBPFN_single: 128→256 (-0.00138); rel-f1/TabICLv1.1: 128→256 (-0.00208); rel-f1/TabICLv1.1: 256→512 (-0.00276); rel-f1/TabICLv1.1: 512→1024 (-0.00284). <strong>21 of 24 adjacent-size contrasts contain both positive and negative seed gains.</strong> These observations describe two fixed tasks and do not establish a universal effect.</p>
+<div id="support-explorer"></div><noscript>The complete measured means are in the table above. Nested supports retain all64baseline rows. Additional examples need not improve AUROC.</noscript>
+
+<p>The explorer uses the actual per-seed records. Its fixed baseline is (k=64); it shows the difference for the same seed and the retained support count. Change the seed as well as the size before explaining the curve.</p>
+<h2 id="6-%C2%B7-Keep-reproduction-and-intervention-separate">6 &#183; Keep reproduction and intervention separate<a class="anchor-link" href="#6-%C2%B7-Keep-reproduction-and-intervention-separate">&#182;</a></h2><p><strong>Track A: published-experiment replay.</strong> Independently authenticate and rescore lesson 169's full 300 selected evaluations: 229,050 saved probabilities. Its original independent support draws and source comparisons remain intact. This is fresh verification of saved evidence, not fresh inference.</p>
+<p><strong>Track B: nested-support experiment.</strong> Execute the complete new 300-evaluation grid and save keyed probabilities, support identities, source hashes, and attempt receipts. Nested sampling is a declared deviation from the released implementation. Agreement at 1,024 examples is a consistency check, not permission to call the smaller nested contexts a paper-table reproduction. <a href="../labs/l176-reproduction.md">Full contract</a>.</p>
+<p><strong>Executed:</strong> all 300 fresh nested evaluations and all 300 saved published-protocol evaluations independently rescored: <strong>458,100 probabilities across the two tracks</strong>. These are repeated predictions on the same two test populations, not 458,100 independent examples. Fresh pretraining and whole-paper reproduction remain <code>NOT_RUN</code>; learner status is <code>PENDING_WRITTEN_DEFENSE</code>.</p>
+<p>Neither track reproduces the whole paper or fresh pretraining. The inherited TabICL exact-repeatability failure remains visible; small numerical discrepancies are not silently relabeled as exact equality. The aggregate cost cap is $10, including failures and overhead. A budget or scientific failure stops execution and yields <code>INCOMPLETE</code>, rather than a smaller experiment under the same name.</p>
+<h2 id="7-%C2%B7-Lab:-build-the-support-contract,-then-defend-the-curve">7 &#183; Lab: build the support contract, then defend the curve<a class="anchor-link" href="#7-%C2%B7-Lab:-build-the-support-contract,-then-defend-the-curve">&#182;</a></h2><p><a href="../labs/html/0176-few-shot-icl-evaluation.html">Prepared notebook</a> · <a href="../labs/0176-few-shot-icl-evaluation.ipynb">Student notebook</a> · <a href="../labs/solutions/0176-few-shot-icl-evaluation.ipynb">Reference solution</a> · <a href="../reference/few-shot-icl-evaluation.html">Quick reference</a>.</p>
+<p>Complete three live functions: construct nested support, score by complete query keys, and require a complete seed grid before computing paired gains. Checks reject plausible wrong implementations. The portable notebook replays every saved prediction using your functions. Its appendices expose the original model and the full fresh-inference runner; the default does not launch paid work.</p>
+<p><strong>Exit:</strong> choose one observed negative gain or a seed reversal. State the task, model, sizes and seed evidence; explain what changed, what stayed fixed, and why the result neither proves nor disproves a universal benefit from more labels. Add the source/availability limitation that your claim still depends on.</p>
+<div id="teachback"></div>
+
+<p>Read <a href="https://arxiv.org/html/2603.03805v5#A3">RDB-PFN Appendix A.3</a>, then trace its released sampler beside the nested implementation. Ask the agent follow-up questions or paste your evaluation card for feedback. Author execution does not establish learner mastery.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/few-shot-evaluation.js"></script><script src="../assets/l176-evidence.js"></script><script src="../assets/l176-lesson.js"></script></body></html>

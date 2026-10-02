@@ -411,16 +411,16 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 170b | Three relational FM paradigms ★ | Synthesis lecture | Graph-native ICL vs synthetic pretrain vs training-free |
 
 ### Q2 · Building pre-training pipelines (171–180)
-| 171 | Corpus of databases | — | Curate or use RelBench multi-DB |
-| 172 | Schema tokenization | — | Column types as tokens |
-| 173 | Multi-task pre-training | — | Combined loss design |
-| 174 | Fine-tuning protocol | — | Freeze vs full fine-tune |
-| 175 | Evaluation: zero-shot | — | Unseen database task |
-| 176 | Evaluation: few-shot ICL | — | k labeled examples |
-| 177 | Compute budget realism | — | What's feasible at baseline vs extended sessions |
-| 178 | Compare FM vs tuned GNN vs RDBLearn | RDBLearn + RelGNN | Same task, fair budget; three paradigms |
-| 179 | Failure modes | — | Schema shift, cold start |
-| 180 | **Q2 checkpoint** | — | Fine-tune public encoder on 1 DB |
+| 171 | [Corpus of databases](lessons/0171-corpus-of-databases.html) | RelBench source corpus | [Seven-source inventory, full F1 audit and database holdouts](labs/0171-corpus-of-databases.ipynb) |
+| 172 | [Schema tokenization](lessons/0172-schema-tokenization.html) | RT §3.1 input comparison; course pipeline | [Full F1 typed-token audit; frozen fit and explicit states](labs/0172-schema-tokenization.ipynb) |
+| 173 | [Multi-task pre-training](lessons/0173-multi-task-pretraining.html) | RT objective comparison; KumoRFM-2 axes | [Six fresh F1 masked-cell fits; cell versus task weighting](labs/0173-multi-task-pretraining.ipynb) |
+| 174 | [Fine-tuning protocol](lessons/0174-fine-tuning-protocol.html) | Houlsby + RT adaptation | [Twelve fresh fits: freeze, full, adapter, scratch](labs/0174-fine-tuning-protocol.ipynb); retrospective F1 |
+| 175 | [Evaluation: zero-shot](lessons/0175-zero-shot-evaluation.html) | RT-v1 information-access audit | [Complete 2,106-context audit](labs/0175-zero-shot-evaluation.ipynb); inference blocked by temporal gate |
+| 176 | [Evaluation: few-shot ICL](lessons/0176-few-shot-icl-evaluation.html) | RDB-PFN v5 + nested intervention | [300 fresh nested evaluations + 300 saved published replays](labs/0176-few-shot-icl-evaluation.ipynb); paired support gains |
+| 177 | [Compute budget realism](lessons/0177-compute-budget-realism.html) | Full accounting replay | [300 inference receipts + 18 fit records](labs/0177-compute-budget-realism.ipynb); complete feasibility ledger |
+| 178 | [FM vs tuned GNN vs RDBLearn](lessons/0178-fair-model-comparison.html) | Complete published replay; fresh comparison stopped | [30 runs / 21,060 predictions](labs/0178-fair-model-comparison.ipynb); explicit information contract and gradient-health gate |
+| 179 | Failure modes — planned, not yet available | — | Schema shift, cold start |
+| 180 | [**Q2 checkpoint**](lessons/0180-public-encoder-checkpoint.html) | RT-v1 | Public encoder audit complete; fresh fit NOT_RUN; practical exit INCOMPLETE |
 
 ### Q3 · Research frontier mapping (181–190)
 | 181 | RelBench v2 / autocomplete tasks | RelBench v2 (2602.12606) · RelGT-AC (2606.03040) | New tasks & databases |

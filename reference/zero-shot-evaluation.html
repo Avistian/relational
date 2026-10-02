@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zero-shot evaluation — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/zero-shot-evaluation.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0174-fine-tuning-protocol.html">Lesson174</a></nav><header><p class="route-kicker">Year5 · Quarter2 · Lesson175</p><h1>Zero-shot evaluation — quick reference</h1></header><p><strong>Four access paths:</strong> target gradients; target validation selection; historical context labels; unavailable answers. RT-v1 uses “zero-shot” for a database excluded from gradient pretraining, with target validation and context-label access still possible.</p>
+<p><strong>Three clocks:</strong> event timestamp; label-window end; arrival time. For driver-dnf, a necessary label condition is <code>label_cutoff +30days &lt;= query_cutoff</code>. A scheduled future event might be known earlier; without arrival evidence, report the uncertainty.</p>
+<p><strong>Complete keys:</strong> <code>(driverId, cutoff)</code>. Reject missing/duplicate keys; align predictions before computing AUROC. AUROC counts correctly ordered positive-negative pairs, with half credit for ties. It is not classification accuracy.</p>
+<p><strong>Order of work:</strong> pin model/source/data → audit exposure and every context → project aggregate cost → run frozen evaluations → independently score → defend the claim. A failed gate stops the downstream claim.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Check</th>
+  <th style="text-align:right">Complete measured result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Contexts / cell slots</td>
+  <td style="text-align:right">2,106 / 2,156,544</td>
+</tr>
+<tr>
+  <td>Independently reconstructed query labels</td>
+  <td style="text-align:right">2,106</td>
+</tr>
+<tr>
+  <td>Exposed query targets</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>Same-time visible outcome labels</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>Visible labels with unfinished outcome windows</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>Future-dated cells / affected contexts</td>
+  <td style="text-align:right"><strong>385 / 77</strong></td>
+</tr>
+<tr>
+  <td>Visible historical label cells</td>
+  <td style="text-align:right">29,988</td>
+</tr>
+<tr>
+  <td>Historical test-period label cells</td>
+  <td style="text-align:right">12,351</td>
+</tr>
+<tr>
+  <td>Cells without a timestamp</td>
+  <td style="text-align:right">432,050</td>
+</tr>
+<tr>
+  <td>Checkpoint evaluations</td>
+  <td style="text-align:right"><strong>0 of 6 — NOT_RUN</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Counts include repeated cells across query contexts. They are not counts of unique database rows. Context seeds0/1/2 contain26/26/25affected queries respectively.</p>
+<p>All future-dated cells belong to <strong>race schedule rows</strong>: year, round, name, date and time. One query at <strong>2011-03-27 00:00 UTC</strong> includes a race dated <strong>06:00 UTC</strong> that day. The sampler reaches it through an unfiltered foreign-key-to-parent step. These attributes may have been known in advance; the snapshot contains no arrival history to prove that. We establish failure of the declared event-time filter, <strong>not demonstrated exposure to future race outcomes</strong>. The complete audit found no unmasked query target and no label with an unfinished outcome window.</p>
+<p><strong>Current boundary:</strong> complete native-context audit and local replay; checkpoint inference NOT_RUN; original historical identity/availability NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE. Scheduled rows failing the event-time bound do not prove outcome leakage.</p>
+<p><a href="../lessons/0175-zero-shot-evaluation.html">Lesson</a> · <a href="../labs/0175-zero-shot-evaluation.ipynb">Notebook</a> · <a href="../labs/l175-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2510.06377v1#S4">RT paper</a>.</p>
+</article></body></html>

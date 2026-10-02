@@ -1,0 +1,110 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Schema tokenization — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/schema-tokenization.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0171-corpus-of-databases.html">Lesson 171</a></nav><header><p class="route-kicker">Year 5 · Quarter 2 · Lesson 172</p><h1>Schema tokenization — quick reference</h1></header><p><strong>Input contract:</strong> storage dtype ≠ semantic kind ≠ database role. A column token stream carries a named schema descriptor, fitted state, N states and N payloads. It is not yet a learned embedding.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Kind</th>
+  <th>Fit on admitted nonnull rows</th>
+  <th>Transform observed values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Number</td>
+  <td>Mean, population SD; empty0/1; constant SD1</td>
+  <td>(value−mean)/SD</td>
+</tr>
+<tr>
+  <td>Category</td>
+  <td>Sorted string vocabulary; codes start1</td>
+  <td>Local code or UNKNOWN 0</td>
+</tr>
+<tr>
+  <td>Text</td>
+  <td>No learned state</td>
+  <td>Preserve Unicode string</td>
+</tr>
+<tr>
+  <td>Key</td>
+  <td>No learned state</td>
+  <td>Exact string identity; retain target table</td>
+</tr>
+<tr>
+  <td>Timestamp</td>
+  <td>No learned state in this course</td>
+  <td>UTC epoch days</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>State precedence:</strong> MASKED overrides source null; otherwise MISSING for null; UNKNOWN for out-of-vocabulary category; otherwise VALUE. Non-value payload is0 for number/category/time, empty string for key/text. Preserve the state. Never infer unknown versus missing from payload alone.</p>
+<p><strong>Fit policy:</strong> date&lt;2005-01-01 in time-bearing tables. No admitted rows in untimed tables. Their numerical defaults and empty category vocabulary are recorded, not learned. Transforming a row does not make it available to a historical query.</p>
+<p><strong>Three invariants:</strong> (1) permuting columns preserves named outputs; (2) changing heldout values preserves fitted statistics; (3) changing masked values preserves masked output. Fail on undeclared columns/types. Do not cast keys through float. Do not treat local category codes as cross-database meaning.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Table</th>
+  <th style="text-align:right">Rows transformed</th>
+  <th style="text-align:right">Columns</th>
+  <th style="text-align:right">Rows admitted to fit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>circuits</td>
+  <td style="text-align:right">77</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>constructor_results</td>
+  <td style="text-align:right">12,290</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">8,481</td>
+</tr>
+<tr>
+  <td>constructor_standings</td>
+  <td style="text-align:right">13,051</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">9,229</td>
+</tr>
+<tr>
+  <td>constructors</td>
+  <td style="text-align:right">211</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>drivers</td>
+  <td style="text-align:right">857</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>qualifying</td>
+  <td style="text-align:right">9,815</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">2,228</td>
+</tr>
+<tr>
+  <td>races</td>
+  <td style="text-align:right">1,101</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">731</td>
+</tr>
+<tr>
+  <td>results</td>
+  <td style="text-align:right">26,080</td>
+  <td style="text-align:right">15</td>
+  <td style="text-align:right">18,469</td>
+</tr>
+<tr>
+  <td>standings</td>
+  <td style="text-align:right">34,124</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">26,098</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Complete: 97,606 rows, 67 columns, 866,746 cells.</strong> All-table column reordering, all-cell mask erasure and every numerical/category held-out fit intervention pass.</p>
+<p><strong>Boundary:</strong> full selected pipeline audit COMPLETE. Learned embeddings, fresh pretraining and whole-paper reproduction NOT_RUN; historical availability NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.</p>
+<p><a href="../lessons/0172-schema-tokenization.html">Lesson</a> · <a href="../labs/0172-schema-tokenization.ipynb">Notebook</a> · <a href="../labs/l172-reproduction.md">Protocol</a> · <a href="../labs/evidence/l172/schema.json">Input schema</a> · <a href="https://arxiv.org/html/2510.06377v1#S3.SS1">Primary reading: RTv1 §3.1</a>.</p>
+</article></body></html>

@@ -1012,3 +1012,65 @@ Vogel, Hilprecht and Binnig (2023), [Towards Foundation Models for Relational Da
 - [RDB-PFN v5 Appendix A.3 / Tables 6–10](https://arxiv.org/html/2603.03805v5#A6): source protocol for the complete selected 300-evaluation evidence replay.
 - [RDBLearn v1 §§3–5](https://arxiv.org/html/2602.18495v1#S3): relational featurization plus an existing tabular ICL predictor. L170 compares the approach conceptually; the RDB-PFN DFS+TabICL arm does not reproduce its pipeline.
 - Versioned primary snapshots and SHA256: `labs/sources/l170/source-ledger.json`. Named scope, executable commands and deviations: `labs/l170-reproduction.md`.
+
+## Lesson 171 · corpus of databases
+
+- Primary reading: [RelBench v1, Robinson et al.](https://arxiv.org/html/2407.20060v1), benchmark construction and dataset descriptions. [Current project](https://star-project.stanford.edu/relbench/) is context for corpus expansion, not a replacement for the fixed lesson scope.
+- Pinned installed RelBench1.1.0 sources, registry hashes, loader semantics and complete F1 archive: [source ledger](labs/sources/l171/source-ledger.json). Seven original source definitions declare50tables/62FKcolumns; only F1 receives a complete row audit. [Protocol](labs/l171-reproduction.md).
+- [Griffin](https://arxiv.org/html/2505.05568v1) supplies pretraining-corpus motivation; no Griffin training is executed in L171. Unknown lineage, rights and availability remain separate from byte identity and key integrity.
+
+### Lesson 172 · Schema tokenization · 2026-10-02
+
+- [Relational Transformer v1 §3.1](https://arxiv.org/html/2510.06377v1#S3.SS1): primary input-representation comparison. This course audit uses deterministic typed payloads, not learned RT embeddings or a paper-performance experiment. Exact differences are pinned in labs/sources/l172/source-ledger.json.
+- [Pinned RelBench F1 source](labs/sources/l171/relbench/datasets/f1.py): key and time roles; source and complete archive reused by SHA256 from L171. L172 semantic kinds are explicit course policies.
+- [Full F1 tokenization protocol](labs/l172-reproduction.md): all67columns /866,746cells, train-only fit, all-cell masks and independent scalar verification.
+
+## Lesson 173 — multi-task pretraining objective
+
+- [Relational Transformer v1 §3.3 and §4.1](https://arxiv.org/html/2510.06377v1): datatype-specific Huber/BCE, masked-cell mean and full training protocol. The course uses a small pooled encoder and multiclass CE; it does not reproduce RT.
+- [KumoRFM-2 v1 §3](https://arxiv.org/html/2604.12596v1): row, column, FK and cross-sample information processing, not four mandatory additive losses. The course model implements bounded row/FK context only.
+- [Source ledger](labs/sources/l173/source-ledger.json), [frozen protocol](labs/l173-reproduction.md), [complete six-fit evidence](labs/evidence/l173/report.md), [reference](reference/multi-task-pretraining.html). Whole-paper reproduction NOT_RUN; fresh selected course training COMPLETE.
+
+## Lesson 174 · fine-tuning protocol · pinned 2026-10-02
+
+- Houlsby et al., [Parameter-Efficient Transfer Learning for NLP](https://proceedings.mlr.press/v97/houlsby19a.html), ICML 2019: fixed-backbone adaptation with small task modules. L174's single post-MLP residual adapter is a course mechanism, not their BERT architecture or benchmark reproduction.
+- [Relational Transformer v1 §4.2 and Appendix D](https://arxiv.org/html/2510.06377v1#S4.SS2): pretrained/untrained relational fine-tuning comparisons and validation selection. Reported 1.5 hours on eight A100 GPUs per fine-tuning run exceeds the $10 aggregate course cap at the [pinned pricing snapshot](https://modal.com/pricing).
+- Snapshots and hashes: `labs/sources/l174/source-ledger.json`. Twelve fresh course fits use all 21 inherited F1 autocomplete tasks and later temporal windows; prior L173 test exposure is explicitly retained. Full paper reproduction NOT_RUN.
+
+## Lesson175 zero-shot evaluation · 2026-10-02
+
+- [RT-v1 primary paper §4.1–4.3](https://arxiv.org/html/2510.06377v1#S4): database-held-out pretraining, target validation selection and context-label access.
+- [Original source pin](https://github.com/stanford-star/relational-transformer/tree/8d83590b5ae7fba9e40e8df463ed2dd9066ce5fb), [fixed release card](https://huggingface.co/stanford-star/rt-v1/blob/299701dedae451f3dfa40717b831d9dc17c0e4e7/README.md) and [original preprocessing revision](https://huggingface.co/datasets/hvag976/relational-transformer/tree/e8b48dc2cfb0a3c9171a8fddaaef14b6240f18ee). Current RT-J quickstart is a different model/protocol.
+- [Full contract](labs/l175-reproduction.md): complete native-context audit; six model evaluations NOT_RUN after event-time gate failure. Race schedule attributes may be known earlier; no historical arrival proof is available.
+
+
+### Lesson176 · Few-shot ICL evaluation · 2026-10-02
+
+- [RDB-PFN v5 AppendixA.3 and Tables6–10](https://arxiv.org/html/2603.03805v5#A3): global labeled support per task, five context sizes, ten support seeds. L176 replays the full selected L169 evidence, then declares nested prefixes as a separate course intervention.
+- [Original model at a953782](https://github.com/MuLabPKU/RDBPFN/blob/a95378225478daa262b85f180d482da7516b0af6/model_pretrain/src/models.py): support normalization, target-mean query placeholders, feature/row attention and context-only classifier fit. Visible inline in the notebook.
+- [Modal resource pricing](https://modal.com/pricing), checked2026-10-02: L4 .000222USD/s,CPU .0000131/core/s,memory .00000222/GiB/s. Aggregate rate .00028372USD/s; timeout reservations and overhead included.
+- [Frozen L176 contract](labs/l176-reproduction.md), [independent results](labs/evidence/l176/report.json), [shared-support consistency](labs/evidence/l176/shared-1024-comparison.json). Complete selected course experiment is distinct from whole-paper reproduction, pretraining and learner mastery.
+
+## Lesson 177 · Compute budget realism · 2026-10-02
+
+- [Modal pricing and billing FAQ](https://modal.com/pricing): base GPU/physical-CPU/GiB rates, loading/idle billing and requested-versus-used resources. Pinned HTML and rates in labs/sources/l177/; rates do not constitute an invoice.
+- [Relational Transformer v1 §4.1](https://arxiv.org/html/2510.06377v1#S4.SS1): approximate2hpretraining/1.5hfine-tuning on8A100s; used only for explicit rental-price scenarios above the course cap.
+- [RDBLearn v1 §3](https://arxiv.org/html/2602.18495v1#S3): deterministic relational featurization plus existing tabular ICL predictor; conceptual route, no L177model reproduction.
+- [PyTorch v2.5.1 CUDA memory source](https://github.com/pytorch/pytorch/blob/v2.5.1/torch/cuda/memory.py): max_memory_allocated reports allocated tensor peaks, not full VRAM requirement.
+- [L177 full reproduction contract](labs/l177-reproduction.md): authenticates300inference/18fitrecords and all3L175reservations, preserving failed attempts and missing human/memory/invoice evidence.
+
+## Lesson 178 · matched information and a stopped fresh comparison
+
+- [RDB-PFN v5 Table9](https://arxiv.org/html/2603.03805v5): complete selected published F1 replay, three arms × ten seeds ×702queries; no fresh model inference in L178.
+- [RDBLearn v1 §3/§5](https://arxiv.org/html/2602.18495v1): relational featurization plus a tabular predictor; its published depth/backend search differs from the approved L178 course protocol.
+- [RDBLearn pinned estimator](https://github.com/HKUSHXLab/rdblearn/blob/b5b03ebf8091547285a6e06cba53d2d1a40cb171/rdblearn/estimator.py): full target-history augmentation precedes downsampling. Actual FastDFS0.2.1 preflight preserved; no RDBLearn model evaluation.
+- [RelGNN source](https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b): local CPU numerical-encoder prerequisite fails with256nonfinite gradients on actual support history. Independent original-encoder and arithmetic checks agree; full graph fit and historical CUDA reproduction NOT_RUN.
+- [Pinned F1 task SQL](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/f1.py):30-day DNF target; all12679release labels are exact complements under independent raw reconstruction. Historical availability remains unestablished.
+
+
+## Lesson 180 · public encoder fine-tuning checkpoint · checked 2026-10-02
+
+- [RT-v1 paper §4.1 / Appendix D](https://arxiv.org/html/2510.06377v1): full supervised schedule, reported runtime, and per-task fine-tuning results. L180 reproduces saved context/source/cost audits only; fresh fit NOT_RUN.
+- [Pinned source example](https://github.com/stanford-star/relational-transformer/blob/8d83590b5ae7fba9e40e8df463ed2dd9066ce5fb/scripts/example_finetune.py): 32769 steps, per-rank batch32, checkpoint saving disabled by default; original trainer selects validation metrics while also logging test.
+- [Fixed RT-v1 release card](https://huggingface.co/stanford-star/rt-v1/blob/299701dedae451f3dfa40717b831d9dc17c0e4e7/README.md): public initialization provenance; weight bytes not downloaded after scientific/budget stop.
+- [Modal pricing](https://modal.com/pricing): one reported eight-A100 1.5-hour run implies USD25.185600–29.980800 GPU-only. Full-run forecast exceeds the USD10 aggregate ceiling; no paid work authorized.

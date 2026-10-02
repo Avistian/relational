@@ -1,0 +1,73 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Multi-task pre-training — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/multitask-loss.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0172-schema-tokenization.html">Lesson 172</a></nav><header><p class="route-kicker">Year 5 · Quarter 2 · Lesson 173</p><h1>Multi-task pre-training — quick reference</h1></header><p><strong>Target contract:</strong> choose an observed feature cell, hold its value separately, erase its identity from every context path. Missing cells are not targets. Keys preserve links, not magnitude. Autocomplete can use same-row fields; that is not forecasting.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Choice</th>
+  <th>Formula</th>
+  <th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Cell mean</td>
+  <td>Σ Nₜ Lₜ / N</td>
+  <td>Large tasks dominate</td>
+</tr>
+<tr>
+  <td>Equal-task mean</td>
+  <td>Σ Lₜ / T</td>
+  <td>Each task gets one scalar vote</td>
+</tr>
+<tr>
+  <td>Uniform minibatch weight</td>
+  <td>N / (T Nₜ)</td>
+  <td>Unbiased equal-task estimate using training counts</td>
+</tr>
+<tr>
+  <td>Numeric loss</td>
+  <td>Huber(normalized prediction − target), delta1</td>
+  <td>Depends on training normalization</td>
+</tr>
+<tr>
+  <td>Category loss</td>
+  <td>logsumexp(logits) − correct logit</td>
+  <td>Local classes; UNKNOWN stays explicit</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Do not</strong> renormalize weights over tasks present in one minibatch. Equal scalar contribution does not imply equal gradient norms. Select the earliest best validation macro loss; score test after selection.</p>
+<p><strong>Course architecture:</strong> B×8 context IDs → 32-wide typed tokens → separate row/FK means + query-column embedding → 96→64→32 shared MLP → local head. No column attention or cross-sample ICL. Untimed parents excluded; dated parents cannot be later than query. Event time is not an ingestion history.</p>
+<p><strong>Four conceptual axes:</strong> row, column, FK and cross-sample describe information flow, not four mandatory losses. <a href="https://arxiv.org/html/2604.12596v1#S3">KumoRFM-2 §3</a>. For a different architecture with numeric Huber and boolean BCE, read <a href="https://arxiv.org/html/2510.06377v1#S3.SS3">RT v1 §3.3</a>.</p>
+<p><strong>Complete:</strong> 370,024 targets across 21 tasks. Train / validation / test: 244,410 / 6,354 / 119,260.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Loss weighting</th>
+  <th style="text-align:right">Seed 0 test</th>
+  <th style="text-align:right">Seed 1 test</th>
+  <th style="text-align:right">Seed 2 test</th>
+  <th style="text-align:right">Mean ± sample SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>cell</td>
+  <td style="text-align:right">1.338310</td>
+  <td style="text-align:right">1.327036</td>
+  <td style="text-align:right">1.341849</td>
+  <td style="text-align:right">1.335732 ± 0.007736</td>
+</tr>
+<tr>
+  <td>task</td>
+  <td style="text-align:right">1.288805</td>
+  <td style="text-align:right">1.304340</td>
+  <td style="text-align:right">1.348481</td>
+  <td style="text-align:right">1.313875 ± 0.030960</td>
+</tr>
+</tbody>
+</table></div>
+<p>All entries are <strong>test macro task loss</strong> (lower is better), even for the cell-weighted training arm. Training-only constant baseline: <strong>1.276529</strong>. Each run scores all 119,260 test targets.</p>
+<p><strong>Measured interpretation:</strong> equal-task weighting changes test macro loss by -0.021857 on average (task minus cell). The three paired changes are -0.049505, -0.022696, +0.006632. One seed reverses the direction. <strong>Every trained run has higher test macro loss than the constant baseline.</strong> This short pretraining schedule has not established an aggregate predictive benefit, even against that simple comparator. This supports a description of these six runs, not a general claim that equal-task weighting is better. Test losses also exceed validation losses substantially; do not present the validation curve as future-period performance.</p>
+<p><strong>Boundary:</strong> complete selected course training; whole-paper reproduction NOT_RUN; transfer and historical availability NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.</p>
+<p><a href="../lessons/0173-multi-task-pretraining.html">Lesson</a> · <a href="../labs/0173-multi-task-pretraining.ipynb">Notebook</a> · <a href="../labs/l173-reproduction.md">Protocol</a>.</p>
+</article></body></html>

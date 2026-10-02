@@ -1,0 +1,186 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fine-tuning protocol</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/finetune-policy.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0173-multi-task-pretraining.html">Lesson 173</a></nav><header><p class="route-kicker">Year 5 · Quarter 2 · Lesson 174</p><h1>Fine-tuning protocol</h1></header><p><strong>One win:</strong> choose which parameters may change, prove your optimizer obeys that choice, and assess whether a pretrained start actually helps. About 20 minutes; run the lab separately.</p>
+<p><a href="0171-corpus-of-databases.html">171: choose the corpus</a> → <a href="0172-schema-tokenization.html">172: encode cells</a> → <a href="0173-multi-task-pretraining.html">173: pretrain</a> → <strong>174: adapt and compare</strong>.</p>
+<div id="warmup"></div>
+
+<h2 id="1-%C2%B7-A-checkpoint-is-a-starting-point,-not-a-promise">1 &#183; A checkpoint is a starting point, not a promise<a class="anchor-link" href="#1-%C2%B7-A-checkpoint-is-a-starting-point,-not-a-promise">&#182;</a></h2><p>Lesson 173 trained one encoder across 21 masked-cell tasks. Every trained run had worse aggregate test loss than its constant baseline. We therefore begin with an open question: <strong>when later labels arrive, does preserving this representation help, constrain, or hinder learning?</strong> Fine-tuning means updating a pretrained model using an adaptation objective. Its successful execution is not evidence that pretraining was useful.</p>
+<p>Our model predicts a hidden field from up to four same-row cells and four dated foreign-key-parent cells. Other fields can describe an already completed race. We continue this <strong>autocomplete</strong> task; we do not turn it into future-race forecasting by calling the later years “test.” The target identity stays absent from every context path.</p>
+<h2 id="2-%C2%B7-Draw-the-update-boundary-before-creating-the-optimizer">2 &#183; Draw the update boundary before creating the optimizer<a class="anchor-link" href="#2-%C2%B7-Draw-the-update-boundary-before-creating-the-optimizer">&#182;</a></h2><p>A representation <code>h</code> is the 32-wide output of the shared encoder. A task-specific head converts it to one numeric prediction or a vector of category logits. Different adaptation policies permit different changes:</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>Encoder</th>
+  <th>Residual adapter</th>
+  <th>Original heads</th>
+  <th>Initialization</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Freeze</td>
+  <td>Fixed</td>
+  <td>Absent</td>
+  <td>Train</td>
+  <td>Pretrained</td>
+</tr>
+<tr>
+  <td>Full</td>
+  <td>Train</td>
+  <td>Absent</td>
+  <td>Train</td>
+  <td>Pretrained</td>
+</tr>
+<tr>
+  <td>Adapter</td>
+  <td>Fixed</td>
+  <td>Train</td>
+  <td>Train</td>
+  <td>Pretrained + identity adapter</td>
+</tr>
+<tr>
+  <td>Scratch</td>
+  <td>Train</td>
+  <td>Absent</td>
+  <td>Train</td>
+  <td>Random</td>
+</tr>
+</tbody>
+</table></div>
+<p>“Freeze” here means head-only tuning: it is not zero-gradient inference. “Full” means all parameters may receive updates, not that every tensor necessarily changes on every batch. We retain the original heads because these are the <strong>same tasks</strong>. A new task would require a compatible new output head and a separate initialization policy.</p>
+<figure tabindex="0" style="overflow-x:auto"><img style="min-width:740px;width:100%" src="../labs/figures/l174/architecture.svg" alt="Actual L174 computation and update boundaries. The optional 32→8→32 residual adapter sits between the shared encoder and the original task heads."><figcaption>Actual L174 computation and update boundaries. The optional 32→8→32 residual adapter sits between the shared encoder and the original task heads. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p>The original encoder has <strong>18,592 parameters</strong>, and the 21 heads have <strong>9,834</strong>. The architecture remains L173's typed token embeddings, separate row/FK means, a query-column embedding, and a 96→64→32 shared MLP. The adapter adds 552 parameters after that MLP. An optimizer only receives parameters with <code>requires_grad=True</code>; the audit also compares every frozen tensor byte for byte at every saved epoch.</p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
+    <span class="n">parameter</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span>
+        <span class="n">arm</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;full&quot;</span><span class="p">,</span> <span class="s2">&quot;scratch&quot;</span><span class="p">}</span>
+        <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;heads.&quot;</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="p">(</span><span class="n">arm</span> <span class="o">==</span> <span class="s2">&quot;adapter&quot;</span> <span class="ow">and</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;adapter.&quot;</span><span class="p">))</span>
+    <span class="p">)</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">],</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span>
+<span class="p">)</span>
+</pre></div>
+<p>Setting <code>model.eval()</code> does <strong>not</strong> freeze parameters. It changes behaviors such as dropout and batch normalization; this model has neither. Conversely, a frozen encoder must still perform a forward pass. Parameter savings do not automatically imply proportional runtime savings.</p>
+<div id="policy-explorer"></div><noscript>Freeze:9,834 trainable; full:28,426; adapter:10,386; scratch:28,426. In freeze and adapter arms the 18,592 encoder parameters stay fixed.</noscript>
+
+<figure tabindex="0" style="overflow-x:auto"><img style="min-width:740px;width:100%" src="../labs/figures/l174/parameters.svg" alt="Trainable and total parameters for the actual course model. Existing heads dominate the adapter arm; parameter count is not a runtime measurement."><figcaption>Trainable and total parameters for the actual course model. Existing heads dominate the adapter arm; parameter count is not a runtime measurement. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<h2 id="3-%C2%B7-An-identity-adapter-can-start-learning">3 &#183; An identity adapter can start learning<a class="anchor-link" href="#3-%C2%B7-An-identity-adapter-can-start-learning">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> An adapter learns a correction to the existing representation. Start with a zero correction so the initial predictions stay unchanged, then let training decide what to add.</p>
+</blockquote>
+<p><strong>Read the symbols.</strong> ReLU keeps positive values and replaces negative values with zero. D and U are learned matrices that narrow and then widen the vector; b and c are learned offsets. A gradient measures how a small parameter change affects the loss. Backpropagation computes these derivatives through the model using the chain rule. The upstream gradient below is the loss derivative arriving at the adapter's output.</p>
+<p>The residual path is <code>h′ = h + U ReLU(Dh + b) + c</code>. Here D maps 32→8 and U maps 8→32. Its count is <code>(32×8 + 8) + (8×32 + 32) = 552</code>. Initialize D randomly and set U and c to zero. Then <code>h′ = h</code> exactly before any update, so the adapter arm starts with the same predictions as the frozen/full pretrained arms.</p>
+<p>For a two-dimensional worked trace, let <code>h = [2, −1]</code>, <code>D = [1, 0]</code>, and both biases and U be zero. The bottleneck activation is 2; the initial output is still <code>[2, −1]</code>. If the upstream gradient is <code>[1, −1]</code>, the gradient of U is <code>[2, −2]</code>, while the gradient of D is zero because its chain rule contains U. After U updates, D can receive gradients too. Setting <strong>both</strong> projections to zero would obstruct learning of the residual weights under ReLU.</p>
+<div id="predict"></div>
+
+<p><a href="https://proceedings.mlr.press/v97/houlsby19a.html">Houlsby et al., ICML 2019</a> is the primary reading for adapting a fixed pretrained network with small added modules. Their BERT placement and NLP benchmark results are not reproduced by our single adapter after a pooled relational MLP. This is also not LoRA: we add a nonlinear residual module rather than a low-rank update to an existing weight matrix.</p>
+<h2 id="4-%C2%B7-Freeze-the-data-and-comparison-too">4 &#183; Freeze the data and comparison too<a class="anchor-link" href="#4-%C2%B7-Freeze-the-data-and-comparison-too">&#182;</a></h2><p><strong>Named experiment: L174 F1 Temporal Adaptation.</strong> Use all 21 tasks and the complete eligible population, with no row subsampling. Keep L173's pre-2005 normalization, vocabulary, capped context and target-erasure rules. Categories unseen in that vocabulary remain UNKNOWN, including during adaptation; we do not rebuild embeddings using later labels.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Role</th>
+  <th>Period</th>
+  <th style="text-align:right">Target cells</th>
+  <th>Permitted use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Source training</td>
+  <td>Before 2005</td>
+  <td style="text-align:right">244,410</td>
+  <td>Original encoder/head fitting</td>
+</tr>
+<tr>
+  <td>Source validation</td>
+  <td>2005</td>
+  <td style="text-align:right">6,354</td>
+  <td>Choose source checkpoint</td>
+</tr>
+<tr>
+  <td>Adaptation training</td>
+  <td>2006</td>
+  <td style="text-align:right">6,429</td>
+  <td>Gradient updates and task counts</td>
+</tr>
+<tr>
+  <td>Adaptation validation</td>
+  <td>2007</td>
+  <td style="text-align:right">6,074</td>
+  <td>Select adaptation epoch</td>
+</tr>
+<tr>
+  <td>Adaptation test</td>
+  <td>2008 onward</td>
+  <td style="text-align:right">106,757</td>
+  <td>Score selected models</td>
+</tr>
+</tbody>
+</table></div>
+<p>For seeds 0, 1 and 2, load the corresponding <strong>cell-weighted</strong> source checkpoint, chosen on 2005 validation. This source arm is fixed; we do not choose between L173 loss-weighting arms using their test scores. Each of four adaptation arms runs ten complete epochs, batch 1,024, Adam at 0.001, no weight decay, and equal-task weights <code>N / (21 × N_task)</code> computed only from 2006. Each seed uses identical minibatch permutations across arms. With seven batches per epoch, every fit makes 70 optimizer updates.</p>
+<p>Select the earliest minimum 2007 validation macro loss. Score its entire test population afterward. Save all 120 epoch checkpoints, original states and full keyed predictions. This is a fixed-schedule comparison; a shared learning rate and update count do not establish equally tuned optima or equal compute. Seeds describe initialization/order variation, not three independent databases.</p>
+<p><strong>Prior exposure matters:</strong> L173 already evaluated 2006 onward, and these tasks were included in pretraining. The new split creates a useful retrospective adaptation exercise. It does not restore a pristine unseen test, establish new-task transfer, or prove historical feature availability. Event-time checks cannot recover absent ingestion histories.</p>
+<h2 id="5-%C2%B7-Read-the-control-arms-before-declaring-success">5 &#183; Read the control arms before declaring success<a class="anchor-link" href="#5-%C2%B7-Read-the-control-arms-before-declaring-success">&#182;</a></h2><p><strong>Measured: all twelve fits complete.</strong> Lower macro task loss is better; every entry uses all 106,757 test targets.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Seed 0</th>
+  <th style="text-align:right">Seed 1</th>
+  <th style="text-align:right">Seed 2</th>
+  <th style="text-align:right">Mean ± sample SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>freeze</td>
+  <td style="text-align:right">1.232717</td>
+  <td style="text-align:right">1.251662</td>
+  <td style="text-align:right">1.260463</td>
+  <td style="text-align:right">1.248281 ± 0.014178</td>
+</tr>
+<tr>
+  <td>full</td>
+  <td style="text-align:right">1.236253</td>
+  <td style="text-align:right">1.238285</td>
+  <td style="text-align:right">1.268198</td>
+  <td style="text-align:right">1.247579 ± 0.017886</td>
+</tr>
+<tr>
+  <td>adapter</td>
+  <td style="text-align:right">1.222419</td>
+  <td style="text-align:right">1.244116</td>
+  <td style="text-align:right">1.254079</td>
+  <td style="text-align:right">1.240205 ± 0.016188</td>
+</tr>
+<tr>
+  <td>scratch</td>
+  <td style="text-align:right">1.160042</td>
+  <td style="text-align:right">1.163677</td>
+  <td style="text-align:right">1.150535</td>
+  <td style="text-align:right">1.158085 ± 0.006786</td>
+</tr>
+<tr>
+  <td>Unchanged source</td>
+  <td style="text-align:right">1.416096</td>
+  <td style="text-align:right">1.405385</td>
+  <td style="text-align:right">1.420837</td>
+  <td style="text-align:right">1.414106 ± 0.007916</td>
+</tr>
+</tbody>
+</table></div>
+<p>2006 training-only constant baseline: <strong>1.175455</strong>. Parameter counts: freeze 9,834; full 28,426; adapter 10,386 (including 552 new); scratch 28,426.</p>
+<figure tabindex="0" style="overflow-x:auto"><img style="min-width:740px;width:100%" src="../labs/figures/l174/curves.svg" alt="Measured three-seed validation curves (mean ± sample SD) and complete test losses. Open circles mark selected epochs. The test control includes unchanged checkpoints and a 2006 constant baseline."><figcaption>Measured three-seed validation curves (mean ± sample SD) and complete test losses. Open circles mark selected epochs. The test control includes unchanged checkpoints and a 2006 constant baseline. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p><strong>Measured conclusion:</strong> scratch has lower test macro loss than every pretrained adaptation arm for each of the three seeds. All pretrained adaptation arms improve on their unchanged source checkpoints, yet remain worse than the constant baseline. These runs do not establish a benefit from pretraining. Adapter minus freeze averages -0.008076, with paired differences -0.010298, -0.007546, -0.006384. Scratch minus full averages -0.089494. This is a descriptive result for this exposed F1 population and fixed schedule, not a universal ranking of adaptation methods.</p>
+<p>The <strong>unchanged checkpoint</strong> measures improvement over doing nothing. The <strong>scratch arm</strong> asks whether pretraining helps under this fixed adaptation schedule. The <strong>constant baseline</strong> predicts a numerical 2006 training mean or Laplace-smoothed category frequencies. It checks whether a learned solution adds value over a very simple adaptation rule.</p>
+<p>Macro task loss averages Huber on pretraining-normalized numeric targets and categorical cross-entropy. It is a declared objective, not one common physical unit. Read all 21 task losses and the separate raw-unit MAE or accuracy before generalizing. <a href="../labs/figures/l174/per-task-curves.svg">Per-task validation curves</a> and <a href="../labs/evidence/l174/runs/report.md">the full measured report</a> expose reversals and heterogeneous behavior.</p>
+<p><a href="https://arxiv.org/html/2510.06377v1#S4.SS2">Relational Transformer v1, §4.2 and Appendix D</a> compares pretrained and untrained relational models on downstream tasks. Our corpus, architecture, task exposure, schedule and metrics differ. The paper reports about 1.5 hours on eight A100 GPUs per fine-tuning run: roughly 12 GPU-hours. At <a href="https://modal.com/pricing">the pricing snapshot</a>, that is approximately $25–30 GPU-only, exceeding the course's $10 total ceiling before other costs. <strong>Whole-paper reproduction: NOT_RUN.</strong></p>
+<h2 id="6-%C2%B7-Implement,-check,-defend">6 &#183; Implement, check, defend<a class="anchor-link" href="#6-%C2%B7-Implement,-check,-defend">&#182;</a></h2><p><a href="../labs/0174-fine-tuning-protocol.ipynb">Student notebook</a> · <a href="../labs/html/0174-fine-tuning-protocol.html">Executed solution</a> · <a href="../reference/fine-tuning-protocol.html">Quick reference</a> · <a href="../labs/l174-reproduction.md">Frozen reproduction protocol</a>.</p>
+<p>The portable notebook shows the actual encoder, adapter and trainer. Implement three live functions: the trainability policy, temporal split, and earliest-validation selection. CHECK cells reject plausible wrong answers. A fresh full adapter/seed-0 fit calls your functions; a separate gate reruns all twelve fits. The displayed author comparison is saved evidence until you run those cells yourself.</p>
+<p><strong>Exercise:</strong> before running, predict which tensors change on the first and second adapter steps. Then verify the frozen encoder, inspect the selected epoch, and compare your test loss against scratch and constant controls. Explain why the 552 new parameters do not mean only 552 parameters are trained.</p>
+<p><strong>Reproduction budget:</strong> $0 cloud/API, 3,600 aggregate numerical seconds for preparation, failures, twelve fits, verification and the fresh notebook check. A timeout leaves <code>INCOMPLETE</code>; no hidden smaller substitute. Original pretraining is reused. Browser checks, live Colab, deployment and learner mastery remain separate evidence claims.</p>
+<div id="teachback"></div>
+
+<p><strong>Exit:</strong> submit a 200–400-word defense identifying the update boundary, adapter initialization, checkpoint-selection boundary, strongest warranted result, and prior-exposure limitation. Learner status remains <strong>PENDING_WRITTEN_DEFENSE</strong>. Ask the teaching agent about any unclear step; bring your own trace or failed CHECK so we can diagnose it together.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/finetune-policy.js"></script><script src="../assets/l174-lesson.js"></script></body></html>

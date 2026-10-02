@@ -1,0 +1,73 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Few-shot ICL — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/few-shot-evaluation.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0175-zero-shot-evaluation.html">Lesson175</a></nav><header><p class="route-kicker">Year5 · Quarter2 · Lesson176</p><h1>Few-shot ICL — quick reference</h1></header><p><strong>Support</strong>: labeled examples passed into a frozen predictor. <strong>Query</strong>: a case whose hidden label is predicted. <strong>k</strong>: total support rows per task, shared across queries; not per class.</p>
+<p><strong>Nested schedule</strong>: draw1,024distinct eligible training rows once per task/seed; use prefixes64/128/256/512/1,024. Share ordered supports across models. Same seed plus independently sized draws does not ensure nesting.</p>
+<p><strong>Audit before inference</strong>: unique complete(entity_id,cutoff)keys; support from train only; no support/query overlap; completed support-label horizons; identical query population; exact source/checkpoint hashes. Feature arrival, DFS construction and pretraining lineage require separate evidence.</p>
+<p><strong>Paired contrast</strong>: Δ_s=AUROC(2k,s)−AUROC(k,s); mean over10seeds; sampleSD with denominator9. Report reversals. Seeds quantify support-draw variation on one task, not variation over databases. Do not select the best k on test scores.</p>
+<p><strong>Mechanism</strong>: source imputation and normalization are fitted to support. Query target placeholders use the support-label mean. Frozen weights do not freeze those intermediates. Measure the response of the complete pipeline.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task / frozen model</th>
+  <th style="text-align:right">64</th>
+  <th style="text-align:right">128</th>
+  <th style="text-align:right">256</th>
+  <th style="text-align:right">512</th>
+  <th style="text-align:right">1,024</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-f1/RDBPFN</td>
+  <td style="text-align:right">0.7066</td>
+  <td style="text-align:right">0.7220</td>
+  <td style="text-align:right">0.7256</td>
+  <td style="text-align:right">0.7192</td>
+  <td style="text-align:right">0.7188</td>
+</tr>
+<tr>
+  <td>rel-f1/RDBPFN_single</td>
+  <td style="text-align:right">0.6030</td>
+  <td style="text-align:right">0.6593</td>
+  <td style="text-align:right">0.6579</td>
+  <td style="text-align:right">0.6929</td>
+  <td style="text-align:right">0.7086</td>
+</tr>
+<tr>
+  <td>rel-f1/TabICLv1.1</td>
+  <td style="text-align:right">0.6999</td>
+  <td style="text-align:right">0.7250</td>
+  <td style="text-align:right">0.7229</td>
+  <td style="text-align:right">0.7202</td>
+  <td style="text-align:right">0.7173</td>
+</tr>
+<tr>
+  <td>rel-trial/RDBPFN</td>
+  <td style="text-align:right">0.5426</td>
+  <td style="text-align:right">0.5677</td>
+  <td style="text-align:right">0.5746</td>
+  <td style="text-align:right">0.5988</td>
+  <td style="text-align:right">0.6159</td>
+</tr>
+<tr>
+  <td>rel-trial/RDBPFN_single</td>
+  <td style="text-align:right">0.5127</td>
+  <td style="text-align:right">0.5380</td>
+  <td style="text-align:right">0.5707</td>
+  <td style="text-align:right">0.5843</td>
+  <td style="text-align:right">0.5963</td>
+</tr>
+<tr>
+  <td>rel-trial/TabICLv1.1</td>
+  <td style="text-align:right">0.5272</td>
+  <td style="text-align:right">0.5610</td>
+  <td style="text-align:right">0.5797</td>
+  <td style="text-align:right">0.5947</td>
+  <td style="text-align:right">0.6087</td>
+</tr>
+</tbody>
+</table></div>
+<p>Measured mean AUROC over ten support seeds; every cell contains fresh L176 inference. Sample SD and all paired gains are in the notebook and explorer.</p>
+<p><strong>Observed negative mean doubling gains:</strong> rel-f1/RDBPFN: 256→512 (-0.00634); rel-f1/RDBPFN: 512→1024 (-0.00048); rel-f1/RDBPFN_single: 128→256 (-0.00138); rel-f1/TabICLv1.1: 128→256 (-0.00208); rel-f1/TabICLv1.1: 256→512 (-0.00276); rel-f1/TabICLv1.1: 512→1024 (-0.00284). <strong>21 of 24 adjacent-size contrasts contain both positive and negative seed gains.</strong> These observations describe two fixed tasks and do not establish a universal effect.</p>
+<p><strong>Executed:</strong> all 300 fresh nested evaluations and all 300 saved published-protocol evaluations independently rescored: <strong>458,100 probabilities across the two tracks</strong>. These are repeated predictions on the same two test populations, not 458,100 independent examples. Fresh pretraining and whole-paper reproduction remain <code>NOT_RUN</code>; learner status is <code>PENDING_WRITTEN_DEFENSE</code>.</p>
+<p><strong>Reproduction boundary</strong>: full L169 selected published experiment replayed; fresh nested grid is a course intervention. Released complemented labels preserved. Original DFS regeneration/fresh pretraining/wholepaper NOT_RUN; historical availability/identity NOT_ESTABLISHED. L175 temporal failure remains unchanged. Prior TabICL exact repeatability FAIL is not converted into a pass.</p>
+<p><a href="../lessons/0176-few-shot-icl-evaluation.html">Lesson</a> · <a href="../labs/0176-few-shot-icl-evaluation.ipynb">Notebook</a> · <a href="../labs/l176-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2603.03805v5#A3">RDB-PFN Appendix A.3</a>.</p>
+</article></body></html>

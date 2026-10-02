@@ -215,6 +215,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `checklist.js` (zero-shot protocol).
 - **Bridge** — callback L168; forward to L176 few-shot.
 
+- **Prepared L175** — [lesson](../lessons/0175-zero-shot-evaluation.html), full original-sampler audit of702F1queries×3seeds.385future-dated schedule cells in77contexts fail the declared event-time bound; arrival history is absent, so this does not prove future-outcome leakage. All query labels independently reconstructed. Six checkpoint evaluations NOT_RUN; selected reproduction INCOMPLETE_TEMPORAL_GATE. Target validation and historical labels remain explicit; learner PENDING_WRITTEN_DEFENSE.
+
 ### 176 · Evaluation: few-shot ICL — *— (eval unit)*
 - **Skill** — measure few-shot in-context performance as a function of k labeled examples and characterize
   the ICL scaling curve.
@@ -224,15 +226,13 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `retrieval-viz.js` (k context examples).
 - **Bridge** — callback Y2 L062 TabPFN few-shot; forward to L179 failure modes.
 
-### 177 · Compute budget realism — *— (systems unit)*
-- **Skill** — estimate and honestly report the compute needed for relational pretraining vs fine-tuning vs
-  training-free ICL, and choose a feasible path at baseline vs extended sessions.
-- **Teach** — the compute ladder (pretrain from scratch ≫ fine-tune ≫ training-free), why RDBLearn/ICL are
-  the realistic solo-researcher path, honest budgeting.
-- **Lab** — Tier C · crucial fragment: build a compute-vs-capability table for each paradigm. Deliverable:
-  the feasibility ledger.
-- **Viz** — reuse `arch-family-viz.js` (annotated with compute).
-- **Bridge** — grounds the Y6 method choice in reality; callback L170b/Y4 L134; forward to L192–194.
+### 177 · Compute budget realism — *systems unit; full accounting replay*
+- **Skill** — build a feasibility ledger that separates elapsed/GPU/researcher time, memory, estimates, reservations and invoices.
+- **Teach** — scope-specific pretraining/adaptation/ICL costs, enclosing timer boundaries, repeated load metadata, pilot forecasts and independent scientific/budget/session gates. The compute ladder is a heuristic, not a cross-workload efficiency result.
+- **Lab** — [Full accounting replay](../labs/0177-compute-budget-realism.ipynb): all300L176inference receipts, sixL173fits, twelveL174fits and threeL175cloud reservations. USD0new cloud/API;1800local numerical seconds.
+- **Viz** — reusable compute-budget calculator, actual three-route diagram, clock/accounting figure and measured context-time/memory curves. Existing arch-family-viz.js implements HIN route matrices, so it is not appropriate to this systems lesson.
+- **Boundary** — historical reservations are not invoices; researcher time and total VRAM need remain unknown. RT published durations ground hypothetical over-cap rental scenarios, not fresh training. Wholepaper/freshtraining NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+- **Bridge** — callbacks L173–176 and Y4 L134; forward L178 matched-task budget and L192–194 research feasibility.
 
 ### 178 · Compare FM vs tuned GNN vs RDBLearn — *RDBLearn + RelGNN, ★*
 - **Skill** — run a fair, same-budget three-way comparison — supervised RelGNN vs a pretrained FM vs

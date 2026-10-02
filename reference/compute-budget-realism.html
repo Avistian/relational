@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Compute budgets — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/compute-budget.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0176-few-shot-icl-evaluation.html">Lesson 176</a></nav><header><p class="route-kicker">Year 5 · Quarter 2 · Lesson 177</p><h1>Compute budgets — quick reference</h1></header><p><strong>Worker time:</strong> the elapsed interval measured inside a process. <strong>GPU-hours:</strong> sum of GPU count × elapsed hours across jobs. <strong>Researcher time:</strong> active preparation, debugging and review; not inferable from model timers.</p>
+<p><strong>Nested clocks:</strong> use the enclosing timer for its total. Inner timers explain its contents. Deduplicate repeated metadata by the event identity. L176 has 300 evaluation records but 12 distinct task/model/phase load events.</p>
+<p><strong>Three money columns:</strong> worker estimate = measured seconds × stated resource rate; reservation = every attempt's timeout/lifecycle allowance × rate + overhead; invoice = provider-billed amount. Never add a subset estimate to an enclosing reservation. Never release a failed attempt's reservation without reconciliation.</p>
+<p><strong>Forecast:</strong> remaining count × slowest relevant pilot × declared margin + fixed work. This is a heuristic, not a confidence bound. Freeze the full grid before timing; do not drop seeds or change hardware silently.</p>
+<p><strong>Memory:</strong> host RAM, tensor allocations, reserved GPU allocator memory and total device usage are different quantities. L176's 12.052 GiB allocation peak does not prove the total required capacity.</p>
+<p><strong>Admission:</strong> reject known scientific, cost, memory or time violations. If an essential measurement is missing, return INCOMPLETE_MEASUREMENT. Serial-session scenarios conservatively add machine and active time. FEASIBLE_SCENARIO means assumptions fit, not that a future run is guaranteed.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>Work completed</th>
+  <th>Recorded time</th>
+  <th>What it supports</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>L173 · local CPU</td>
+  <td>Six small-model pretraining fits</td>
+  <td>51.837 s group; 188.416 s all local commands</td>
+  <td>Course masked-cell objective; no per-fit timer</td>
+</tr>
+<tr>
+  <td>L174 · local CPU</td>
+  <td>Twelve adaptation/control fits</td>
+  <td>19.566 s sum of fits; 107.588 s all local commands</td>
+  <td>Four adaptation policies on the course tasks</td>
+</tr>
+<tr>
+  <td>L176 · L4 GPU</td>
+  <td>All 300 checkpoint evaluations</td>
+  <td>491.471 s worker bodies</td>
+  <td>Two tasks, three models, five context sizes, ten seeds</td>
+</tr>
+<tr>
+  <td>L175 · cloud CPU</td>
+  <td>Three reserved audit attempts; stopped before GPU inference</td>
+  <td>7.641 s in two receipts; first attempt missing</td>
+  <td>Failed/stopped work still consumes reservations</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Worked money:</strong> L176 worker estimate $0.139440; reservation $5.230039; invoice NOT_ITEMIZED. L175 reserves $3.172199 including three attempts, overhead and build, but GPU inference is NOT_RUN after a temporal failure.</p>
+<p><strong>Source-based scenarios:</strong> RT v1 reports about 16 pretraining or 12 fine-tuning GPU-hours per run. At the checked A100 40 GB base rate, GPUs alone cost about $33.58/$25.19. This is a hypothetical rental calculation; it does not reproduce the model or establish its bill.</p>
+<p><strong>Executed:</strong> complete selected accounting replay: <strong>300 inference receipts, 18 fit records, three cloud attempt reservations</strong>. No new model run or cloud/API spend. Fresh training, fresh inference and whole-paper reproduction are <code>NOT_RUN</code>; learner status is <code>PENDING_WRITTEN_DEFENSE</code>. Invoice reconciliation and live Colab are <code>NOT_CHECKED</code>.</p>
+<p><a href="../lessons/0177-compute-budget-realism.html">Lesson</a> · <a href="../labs/0177-compute-budget-realism.ipynb">Notebook</a> · <a href="../labs/evidence/l177/report.json">Full report</a> · <a href="../labs/l177-reproduction.md">Protocol</a> · <a href="https://modal.com/pricing">Modal pricing</a> · <a href="https://arxiv.org/html/2510.06377v1#S4.SS1">RT v1 §4.1</a> · <a href="https://github.com/pytorch/pytorch/blob/v2.5.1/torch/cuda/memory.py">PyTorch memory source</a>.</p>
+</article></body></html>

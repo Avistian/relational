@@ -1,0 +1,261 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Corpus of databases</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/corpus-holdout.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0170-fm-design-checkpoint.html">Lesson 170</a></nav><header><p class="route-kicker">Year 5 · Quarter 2 · Lesson 171</p><h1>Corpus of databases</h1></header><p><strong>Your task:</strong> build a corpus manifest that lets another person reconstruct which databases could enter pretraining—and explain why a held-out database stayed out.</p>
+<p><strong>Reading route.</strong> Read §§1–4 for the core idea (about 20 minutes). Then inspect the measured audit and complete the notebook in a separate practice session. The optional full report exposes every table and key check.</p>
+<p><strong>Recall first.</strong> A database contains tables linked by keys. A <em>primary key</em> identifies a row within a table. A <em>foreign key</em> refers to a primary key in another table. A <em>query cutoff</em> is the moment at which a prediction must be made; information arriving later cannot support that prediction.</p>
+<div id="warmup"></div>
+
+<h2 id="1-%C2%B7-From-a-model-design-to-a-corpus-contract">1 &#183; From a model design to a corpus contract<a class="anchor-link" href="#1-%C2%B7-From-a-model-design-to-a-corpus-contract">&#182;</a></h2><p><a href="0170-fm-design-checkpoint.html">Lesson 170</a> asked you to defend a relational foundation-model design. It left a practical question open: <strong>which databases is the model allowed to learn from?</strong> A model can pass a prediction benchmark while having already seen the evaluation database during pretraining. The corpus contract must come before the first training batch.</p>
+<p>A <strong>corpus</strong> is the collection of database snapshots selected for training. A <strong>snapshot</strong> is one recorded version of a database. A <strong>manifest</strong> is a machine-readable inventory of those versions and the rules governing their use. <strong>Provenance</strong> records where a snapshot came from and how it was transformed. It lets someone challenge a claim such as “this database was unseen.”</p>
+<blockquote>
+<p><strong>In plain terms.</strong> A list of download URLs is a shopping list. A corpus manifest is a receipt plus an inclusion rule.</p>
+</blockquote>
+<p>Our mission is to test whether relational learning adds value. An undocumented overlap between training and evaluation can make that value look larger than it is. <a href="https://arxiv.org/html/2407.20060v1">RelBench</a> motivates evaluation across relational databases; <a href="https://arxiv.org/html/2505.05568v1">Griffin</a> makes the pretraining collection consequential for transfer. This lesson builds the data contract, not a new predictor.</p>
+<h2 id="2-%C2%B7-Freeze-identities-before-counting-diversity">2 &#183; Freeze identities before counting diversity<a class="anchor-link" href="#2-%C2%B7-Freeze-identities-before-counting-diversity">&#182;</a></h2><p>Use one record per database snapshot. Keep the database name, source-family identifiers, archive hash, source-code hash, declared table schema, time boundaries and audit scope together.</p>
+<p>A <strong>source family</strong> groups versions or derivatives of the same underlying source. Renaming a copy of a racing database does not create a second independent domain. A <strong>SHA256 hash</strong> is a fingerprint of exact bytes: matching hashes identify byte-identical archives. Different hashes do <em>not</em> establish different underlying data; a re-export or small edit changes the hash.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Manifest field</th>
+  <th>What it answers</th>
+  <th>What it does not establish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Database + source families</td>
+  <td>What identity and known ancestry were declared?</td>
+  <td>All undisclosed ancestry</td>
+</tr>
+<tr>
+  <td>Archive SHA256</td>
+  <td>Are these the same bytes?</td>
+  <td>Independence when hashes differ</td>
+</tr>
+<tr>
+  <td>Source hash + schema</td>
+  <td>Which code declares tables, keys and times?</td>
+  <td>Whether unseen data obey those declarations</td>
+</tr>
+<tr>
+  <td>Time boundaries</td>
+  <td>What clocks and cutoff conventions are specified?</td>
+  <td>When a historical user could actually see a value</td>
+</tr>
+<tr>
+  <td>Row audit + rights review</td>
+  <td>What was checked and what remains?</td>
+  <td>Automatic permission or training eligibility</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Our fixed scope.</strong> The notebook pins the installed RelBench <strong>1.1.0</strong> source bytes for the seven original databases. This is an explicit historical release choice; the <a href="https://star-project.stanford.edu/relbench/">current RelBench project</a> has expanded. We do not silently replace the lesson's corpus with today's registry.</p>
+<p>The source-family field starts with one curator-declared family per original database. That is a usable inventory assumption, <strong>not proof that all ancestry is known</strong>. Record newly discovered shared sources and regenerate the split. Dataset usage rights remain <code>REVIEW_REQUIRED</code>: a software-package license does not by itself settle every source dataset's terms.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Database</th>
+  <th style="text-align:right">Declared tables</th>
+  <th style="text-align:right">FK columns</th>
+  <th>Row evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>rel-amazon</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">2</td>
+  <td>Source inventory only</td>
+</tr>
+<tr>
+  <td>rel-avito</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">11</td>
+  <td>Source inventory only</td>
+</tr>
+<tr>
+  <td>rel-event</td>
+  <td style="text-align:right">5</td>
+  <td style="text-align:right">7</td>
+  <td>Source inventory only</td>
+</tr>
+<tr>
+  <td>rel-f1</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">13</td>
+  <td>Complete F1 snapshot</td>
+</tr>
+<tr>
+  <td>rel-hm</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">2</td>
+  <td>Source inventory only</td>
+</tr>
+<tr>
+  <td>rel-stack</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">12</td>
+  <td>Source inventory only</td>
+</tr>
+<tr>
+  <td>rel-trial</td>
+  <td style="text-align:right">15</td>
+  <td style="text-align:right">15</td>
+  <td>Source inventory only</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are counts of <strong>source-declared</strong> tables and foreign-key columns. Only F1 receives the full row audit below. There is no claim that all seven archives were downloaded or that all seven are ready for training.</p>
+<h2 id="3-%C2%B7-Hold-out-a-source-family,-not-just-a-name">3 &#183; Hold out a source family, not just a name<a class="anchor-link" href="#3-%C2%B7-Hold-out-a-source-family,-not-just-a-name">&#182;</a></h2><p><strong>Database-level holdout</strong> means reserving a whole database for evaluation. A random row split within one database asks a different question: can the model predict additional rows from a familiar source? It cannot establish transfer to a new database.</p>
+<p><strong>Worked example.</strong> Suppose <code>race-original</code> is held out. <code>race-copy</code> has an identical archive hash. A third corpus shares a declared family with the copy, and a fourth shares a family with that third corpus. Excluding just the original name leaves three relatives in training.</p>
+<div id="predict"></div>
+
+<p>Treat each snapshot as a node. Link two nodes when their declared source families overlap or their archive hashes match. Starting at the held-out node, repeatedly follow links until no new node is reached. This set is its <strong>connected component</strong>. The held-out database stays in evaluation; its other component members go into <strong>quarantine</strong>, meaning excluded from training pending a provenance decision.</p>
+<figure class="route-figure" tabindex="0" style="overflow-x:auto"><img style="min-width:760px;width:100%" src="../labs/figures/l171/holdout.svg" alt="Illustrative source-lineage chain. Starting with held-out F1, exclude its identical copy, then the bridge, then the tail. Six original declared families remain candidates. Synthetic additions are not actual RelBench contamination."><figcaption>Illustrative source-lineage chain. Starting with held-out F1, exclude its identical copy, then the bridge, then the tail. Six original declared families remain candidates. Synthetic additions are not actual RelBench contamination. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p>The other component members need not contain the same rows. Quarantining the entire component is a deliberately conservative policy for source isolation; it may exclude more than a narrower row-overlap policy. It protects only against links represented in the manifest.</p>
+<div id="corpus-explorer"></div><noscript>Clean inventory: each of seven declared database holdouts leaves six candidates. The synthetic copy/bridge/tail intervention adds three quarantined relatives. The portable notebook computes this without JavaScript.</noscript>
+
+<p><strong>Try it.</strong> Choose each of the seven held-out databases. In the clean declared inventory, six remain training candidates. Turn on the clearly synthetic copy-and-bridge intervention. Three additional records must be quarantined, although two are not directly linked to the original. The baseline remains visible. None of these fictional records is evidence of contamination in actual RelBench.</p>
+<div class="highlight"><pre><span></span><span class="c1"># Worked integrity example; full implementation is visible in the notebook.</span>
+<span class="n">parents</span> <span class="o">=</span> <span class="p">{</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">}</span>
+<span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">99</span><span class="p">]</span>
+<span class="n">missing</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">children</span><span class="p">)</span>
+<span class="n">dangling</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parents</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">children</span><span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">missing</span><span class="p">,</span> <span class="n">dangling</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+<p>The notebook makes you implement the full validation and connected-component rule. Its final report calls your functions, including the deliberate alias cases; a hard-coded “six training databases” will fail.</p>
+<h2 id="4-%C2%B7-A-valid-relationship-is-not-an-available-fact">4 &#183; A valid relationship is not an available fact<a class="anchor-link" href="#4-%C2%B7-A-valid-relationship-is-not-an-available-fact">&#182;</a></h2><p>A <strong>referential-integrity audit</strong> checks whether every non-null foreign key points to an existing primary key. An <strong>orphan</strong>, or dangling reference, points nowhere. Null foreign keys are counted separately: a missing optional relationship differs from a broken non-null relationship.</p>
+<p><strong>Worked example.</strong> Parent IDs are <code>[10, 20]</code>; child references are <code>[10, 10, null, 99]</code>. There are four rows, three non-null references, one missing reference and one dangling reference. The repeated <code>10</code> is valid: multiple child rows may refer to the same parent. Repeated <em>primary</em> keys would make row identity ambiguous.</p>
+<figure class="route-figure" tabindex="0" style="overflow-x:auto"><img style="min-width:760px;width:100%" src="../labs/figures/l171/foreign-keys.svg" alt="Measured full F1 snapshot. Each filled cell counts non-null references from the row table to the column table. All 13 declared FK columns resolve; 227,716 references are not 227,716 distinct entities."><figcaption>Measured full F1 snapshot. Each filled cell counts non-null references from the row table to the column table. All 13 declared FK columns resolve; 227,716 references are not 227,716 distinct entities. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p><strong>Measured scope.</strong> We audit the complete cached F1 archive, matching its SHA256 to the pinned registry and matching every extracted table byte to the archive. We bypass the loader's time filtering for this audit so that nothing in the snapshot is silently omitted. Source-declared keys and Parquet metadata agree for all nine tables. The <a href="../labs/sources/l171/relbench/base/dataset.py">pinned loader source</a> and <a href="../labs/sources/l171/relbench/base/table.py">table source</a> expose filtering and metadata semantics.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Table</th>
+  <th style="text-align:right">Rows</th>
+  <th style="text-align:right">PK nulls / duplicate excess</th>
+  <th>Time column</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>circuits</td>
+  <td style="text-align:right">77</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>constructor_results</td>
+  <td style="text-align:right">12,290</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>date</td>
+</tr>
+<tr>
+  <td>constructor_standings</td>
+  <td style="text-align:right">13,051</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>date</td>
+</tr>
+<tr>
+  <td>constructors</td>
+  <td style="text-align:right">211</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>drivers</td>
+  <td style="text-align:right">857</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>qualifying</td>
+  <td style="text-align:right">9,815</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>date</td>
+</tr>
+<tr>
+  <td>races</td>
+  <td style="text-align:right">1,101</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>date</td>
+</tr>
+<tr>
+  <td>results</td>
+  <td style="text-align:right">26,080</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>date</td>
+</tr>
+<tr>
+  <td>standings</td>
+  <td style="text-align:right">34,124</td>
+  <td style="text-align:right">0 / 0</td>
+  <td>date</td>
+</tr>
+</tbody>
+</table></div>
+<p>Across 227,716 non-null FK references: <strong>0 dangling, 0 null FK values</strong>. This is measured archive integrity; historical availability remains unestablished.</p>
+<p>A clean key audit does not say a value was available at a prediction cutoff. <strong>Event time</strong> records when something happened. <strong>Availability time</strong> records when the information could be used. A later update to an old event can have an early event date. A static table without a time column has no row-level clock to prove historical availability.</p>
+<figure class="route-figure" tabindex="0" style="overflow-x:auto"><img style="min-width:760px;width:100%" src="../labs/figures/l171/time-windows.svg" alt="Measured full F1 snapshot. Bars split each time-bearing table at 2005-01-01 and 2010-01-01. Labels show row counts. Three other tables lack time columns; event dates do not establish historical availability."><figcaption>Measured full F1 snapshot. Bars split each time-bearing table at 2005-01-01 and 2010-01-01. Labels show row counts. Three other tables lack time columns; event dates do not establish historical availability. Scroll horizontally on a narrow screen.</figcaption></figure>
+
+<p>The source defines F1 validation and test boundaries as <strong>2005-01-01</strong> and <strong>2010-01-01</strong>. Our descriptive windows are <code>date &lt; 2005</code>, <code>2005 ≤ date &lt; 2010</code>, and <code>date ≥ 2010</code>. These are snapshot row counts, <strong>not task-label train/validation/test splits</strong>. The full archive includes later records; that is expected for a stored snapshot, but feeding them to an earlier query would require an explicit information policy. The archive audit does not implement a point-in-time training sampler.</p>
+<p>Circuits, constructors and drivers contribute <strong>1,145 rows without a time column</strong>. They stay in the inventory and retain <code>availability=NOT_ESTABLISHED</code>. Do not invent an old timestamp to make them pass. A later training pipeline must separately specify feature availability, label readiness and the cutoff propagated through joins.</p>
+<h2 id="5-%C2%B7-What-the-complete-execution-establishes">5 &#183; What the complete execution establishes<a class="anchor-link" href="#5-%C2%B7-What-the-complete-execution-establishes">&#182;</a></h2><p><strong>Named execution:</strong> L171 RelBench Corpus and Holdout Audit. Fixed: seven pinned source definitions and one complete F1 archive. Varied: which database is held out, plus clearly marked synthetic identity contamination. Measured: source inventory completeness, split membership, all F1 key checks and descriptive time counts. No model is fitted.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence</th>
+  <th>Status and precise meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Seven-source inventory</td>
+  <td>Complete for the declared release scope</td>
+</tr>
+<tr>
+  <td>Seven database holdouts</td>
+  <td>Pass for declared lineage; each clean split has six candidates</td>
+</tr>
+<tr>
+  <td>F1 snapshot</td>
+  <td>All 97,606 rows, nine tables and 13 FK columns audited</td>
+</tr>
+<tr>
+  <td>Other six row audits</td>
+  <td><code>NOT_RUN</code>; source declarations are not observed rows</td>
+</tr>
+<tr>
+  <td>Historical identity and availability</td>
+  <td><code>NOT_ESTABLISHED</code></td>
+</tr>
+<tr>
+  <td>Foundation-model pretraining / whole-paper reproduction</td>
+  <td><code>NOT_RUN</code></td>
+</tr>
+<tr>
+  <td>Transfer advantage</td>
+  <td><code>NOT_ESTABLISHED</code>; no predictive experiment here</td>
+</tr>
+<tr>
+  <td>Learner defense</td>
+  <td><code>PENDING_WRITTEN_DEFENSE</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>This is the <strong>complete approved corpus audit</strong>, not a reproduction of a paper's training result. “Complete” names the finite audited scope. It does not expand the evidence to missing databases, hidden lineage or downstream accuracy.</p>
+<p><strong>Compute contract:</strong> $0 new cloud/API spend; 1,800-second aggregate local audit/check/notebook limit, including failed attempts. The command wrapper stops at the limit and retains the attempt ledger. Browser, authoring and publication-build work are separate delivery checks. <a href="../labs/l171-reproduction.md">Protocol and exact commands</a> · <a href="../labs/evidence/l171/corpus-manifest.json">Corpus manifest</a> · <a href="../labs/evidence/l171/report.json">Full report</a>.</p>
+<h2 id="6-%C2%B7-Lab:-make-the-corpus-contract-executable">6 &#183; Lab: make the corpus contract executable<a class="anchor-link" href="#6-%C2%B7-Lab:-make-the-corpus-contract-executable">&#182;</a></h2><p><a href="../labs/0171-corpus-of-databases.ipynb">Student notebook</a> · <a href="../labs/html/0171-corpus-of-databases.html">Prepared notebook with reference outputs</a> · <a href="../reference/corpus-of-databases.html">Quick reference</a>.</p>
+<ol>
+<li>Validate the manifest: reject missing lineage declarations, malformed hashes and duplicate database identities.</li>
+<li>Implement source-family/identical-archive exclusion, including the two-hop bridge.</li>
+<li>Audit the full F1 snapshot: primary-key nulls and duplicates, foreign-key orphans and nulls, and time windows. Independent checks challenge the same functions used in your final report.</li>
+<li>Write a corpus card naming an evaluation holdout, training candidates, quarantined relatives, unverified lineage and the next evidence needed before pretraining.</li>
+</ol>
+<p>The portable notebook includes exact source snapshots and the complete small F1 archive. It recomputes the report from those bytes. Synthetic checks isolate errors; they never stand in for real rows. PROVIDED means run the supplied scaffolding; TODO means implement the named behavior; CHECK gives immediate feedback; EXIT asks for your interpretation.</p>
+<p><strong>Exit standard:</strong> code checks pass and your defense explains (a) why different archive hashes cannot prove source independence, (b) why the bridge is quarantined, and (c) why clean foreign keys cannot establish historical availability. Submit the corpus card and report for teacher review. Execution alone does not establish learner mastery.</p>
+<div id="teachback"></div>
+
+<p><strong>Next:</strong> <a href="0172-schema-tokenization.html">Lesson 172</a> turns table and column declarations into schema tokens. Keep corpus identity separate from token identity: changing a database's token spelling must not create a new held-out source.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2407.20060v1">RelBench, Robinson et al., 2024</a>, the benchmark construction and dataset descriptions. Read alongside the pinned source inventory rather than borrowing unverified dataset counts from a different release. Ask the teacher any follow-up question, especially about an exclusion you think is too conservative.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/corpus-holdout.js"></script><script src="../assets/l171-evidence.js"></script><script src="../assets/l171-lesson.js"></script></body></html>

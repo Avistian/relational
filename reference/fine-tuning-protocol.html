@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fine-tuning — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/foundation-scope.css"><link rel="stylesheet" href="../assets/finetune-policy.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0173-multi-task-pretraining.html">Lesson 173</a></nav><header><p class="route-kicker">Year 5 · Quarter 2 · Lesson 174</p><h1>Fine-tuning — quick reference</h1></header><p><strong>Decision:</strong> mark trainable tensors before constructing the optimizer. Verify both <code>requires_grad</code> and saved parameter changes. <code>eval()</code> does not freeze weights.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Policy</th>
+  <th>Encoder</th>
+  <th>Heads</th>
+  <th>Added path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Freeze</td>
+  <td>Fixed</td>
+  <td>Train</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>Full</td>
+  <td>Train</td>
+  <td>Train</td>
+  <td>None</td>
+</tr>
+<tr>
+  <td>Adapter</td>
+  <td>Fixed</td>
+  <td>Train</td>
+  <td>Train residual bottleneck</td>
+</tr>
+<tr>
+  <td>Scratch</td>
+  <td>Random, train</td>
+  <td>Random, train</td>
+  <td>None</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Adapter:</strong> h′=h+U ReLU(Dh+b)+c, 32→8→32. Random D, zero U/c gives identity initialization. The first D gradient is zero; U can learn.552 new parameters;10,386 total trainable including heads.</p>
+<p><strong>Fair comparison:</strong> same input population, preprocessing, seed pairing, example order, loss weighting, update budget and validation selection. Report actual runtime too; same epochs do not mean equal compute. A common learning rate is not per-arm optimal tuning.</p>
+<p><strong>Controls:</strong> unchanged source = improvement from adaptation; scratch = benefit from pretrained initialization under the fixed schedule; training-only constant = simple baseline. Do not select the source or adaptation checkpoint on test results.</p>
+<p><strong>Frozen contract:</strong> L173 cell checkpoints selected on2005 validation; adapt2006; validate2007; score2008+; all21tasks; seeds0/1/2; ten epochs; Adam.001; batch1024; equal-task weights from2006. Existing head weights retained except scratch. Full population; no subsampling.</p>
+<p><strong>Measured: all twelve fits complete.</strong> Lower macro task loss is better; every entry uses all 106,757 test targets.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Seed 0</th>
+  <th style="text-align:right">Seed 1</th>
+  <th style="text-align:right">Seed 2</th>
+  <th style="text-align:right">Mean ± sample SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>freeze</td>
+  <td style="text-align:right">1.232717</td>
+  <td style="text-align:right">1.251662</td>
+  <td style="text-align:right">1.260463</td>
+  <td style="text-align:right">1.248281 ± 0.014178</td>
+</tr>
+<tr>
+  <td>full</td>
+  <td style="text-align:right">1.236253</td>
+  <td style="text-align:right">1.238285</td>
+  <td style="text-align:right">1.268198</td>
+  <td style="text-align:right">1.247579 ± 0.017886</td>
+</tr>
+<tr>
+  <td>adapter</td>
+  <td style="text-align:right">1.222419</td>
+  <td style="text-align:right">1.244116</td>
+  <td style="text-align:right">1.254079</td>
+  <td style="text-align:right">1.240205 ± 0.016188</td>
+</tr>
+<tr>
+  <td>scratch</td>
+  <td style="text-align:right">1.160042</td>
+  <td style="text-align:right">1.163677</td>
+  <td style="text-align:right">1.150535</td>
+  <td style="text-align:right">1.158085 ± 0.006786</td>
+</tr>
+<tr>
+  <td>Unchanged source</td>
+  <td style="text-align:right">1.416096</td>
+  <td style="text-align:right">1.405385</td>
+  <td style="text-align:right">1.420837</td>
+  <td style="text-align:right">1.414106 ± 0.007916</td>
+</tr>
+</tbody>
+</table></div>
+<p>2006 training-only constant baseline: <strong>1.175455</strong>. Parameter counts: freeze 9,834; full 28,426; adapter 10,386 (including 552 new); scratch 28,426.</p>
+<p><strong>Measured conclusion:</strong> scratch has lower test macro loss than every pretrained adaptation arm for each of the three seeds. All pretrained adaptation arms improve on their unchanged source checkpoints, yet remain worse than the constant baseline. These runs do not establish a benefit from pretraining. Adapter minus freeze averages -0.008076, with paired differences -0.010298, -0.007546, -0.006384. Scratch minus full averages -0.089494. This is a descriptive result for this exposed F1 population and fixed schedule, not a universal ranking of adaptation methods.</p>
+<p><strong>Evidence boundary:</strong> prior L173 test exposure; same-task autocomplete; whole-paper reproduction NOT_RUN; cross-database transfer and historical availability NOT_ESTABLISHED. Learner PENDING_WRITTEN_DEFENSE.</p>
+<p>Primary sources: <a href="https://proceedings.mlr.press/v97/houlsby19a.html">Houlsby et al.</a>, <a href="https://arxiv.org/html/2510.06377v1#S4.SS2">RT v1 §4.2</a>. <a href="../lessons/0174-fine-tuning-protocol.html">Lesson</a> · <a href="../labs/0174-fine-tuning-protocol.ipynb">Student notebook</a> · <a href="../labs/l174-reproduction.md">Protocol</a>.</p>
+</article></body></html>
