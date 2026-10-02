@@ -1,0 +1,9 @@
+# Lesson 184 — GelGT
+
+Approved in conversation on 2026-10-02: complete lesson, reference, interactive architecture/mechanism explanations, portable student and executed solution notebooks, visible implementation, and gated full rel-f1/driver-position reproduction of GelGT v2 Table 2 (3.7345 ± .1200 MAE).
+
+Pin paper 2605.15575v2 and official repository 1997b2c2f480ce5d3cbdb48d46f33cc303f5feb4. Resolve source/paper configuration discrepancies, authenticate data, reconstruct labels and audit query-time access before any paid training. Validation-only checkpoint selection, complete keyed predictions, independently calculated MAE and full seed accounting are prerequisites. Historical seed identities remain unknown. Do not invent them or silently repair the architecture and call it source parity.
+
+Aggregate USD10 including preparation, failures, retries, validation; planned stop USD8 with USD2 reserve. No paid dispatch while source/temporal gates unresolved. Local numerical work capped at3600seconds including notebook validation. Save precise blockers and INCOMPLETE/NOT_RUN when prerequisites fail. Whole21-task benchmark and new pretraining outside selected scope. No push/deployment or personal mastery claim.
+
+Implementation sequence: archive sources and protocol; test source/mechanism contracts before implementation; audit actual operators and data availability; execute admitted full reproduction or report scientific blockers; author lesson/reference/three meaningful learner functions with independent checks; portable architecture/sampling/attention figures; execute solution in empty directory; browser mobile/desktop/keyboard/print/noJS; manifest links and clean-index Pages checks. Preserve unrelated staged work. Writing-plans and relational-paper-mirror-lesson skills are unavailable; this document is the implementation plan.
