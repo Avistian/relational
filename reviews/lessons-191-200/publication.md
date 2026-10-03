@@ -1,6 +1,6 @@
 # Lessons 191–200 publication
 
-The individual review is in `review.md`. All ten contract suites and ten lesson delivery suites passed, covering 2,622 interactive states. Notebook code and prior executed outputs were preserved while prose was regenerated. All 19 figures were visually inspected; L196 uses a code trace and tables rather than a model architecture.
+The individual review is in `review.md`. All ten contract suites and ten lesson delivery suites passed, covering 2,622 interactive states. Notebook code and prior executed outputs were preserved while prose was regenerated. All 19 figures were visually inspected; mobile horizontal diagrams retain readable labels and keyboard scrolling. All 390 declared published manifest destinations exist; L196 uses a code trace and tables rather than a model architecture.
 
 The clean Git-index workflow-equivalent build passed and 2,002 local links resolved. The full staged site contains about 2.045 GB; deployment outcome must be checked separately. `pages.json` identifies the tested staging directory, and `site-hashes.json` pins 259 lesson, notebook, reference, figure and related files for live verification.
 
