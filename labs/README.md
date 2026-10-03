@@ -250,3 +250,21 @@ Three live tasks: key-aligned MAE/RMSE/bias, tie-aware median diagnostics and co
 ### Lesson 169 · Scaling laws & open questions
 
 [Student](0169-scaling-laws-open-questions.ipynb) · [Executed reference](html/0169-scaling-laws-open-questions.html) · [Protocol](l169-reproduction.md) · [Gap map](l169-gap-template.md). Default portable notebook independently replays all300selected evaluations:240fresh +60reused512-context runs, across two tasks/five sizes/three models/ten seeds. Three live learner contracts drive support verification, curve aggregation and evidence classification. Fresh inference is explicit and separately budgeted. Pretraining law NOT_ESTABLISHED; fresh pretraining/whole paper NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
+## Lesson 191 · KumoRFM-2 SOTA tracking
+
+[Student notebook](0191-kumorfm2-sota-tracking.ipynb) · [Executed solution](solutions/0191-kumorfm2-sota-tracking.ipynb) · [Prepared HTML](html/0191-kumorfm2-sota-tracking.html) · [Protocol](l191-reproduction.md). Complete four-table arithmetic replay; fresh model inference NOT_RUN. Standard-library offline notebook with three live learner functions.
+
+## Lesson 195 · thesis stress-test
+
+[Student](0195-thesis-stress-test.ipynb) · [Executed preview](html/0195-thesis-stress-test.html) · [Protocol](l195-reproduction.md). Portable offline NumPy replay of33,650saved predictions; three live learner contracts and a separate written falsification brief. No training or paid dispatch. Full RDBLearn model reproduction incomplete.
+
+## Lesson 197 — Year 5 landscape essay
+
+[Student](0197-year-5-essay.ipynb) · [Executed solution](html/0197-year-5-essay.html) · [Protocol](l197-reproduction.md) · [Portable audit](evidence/l197/reproducer.zip). Complete selected table reconstruction and saved-prediction replay; no fresh model runs. The three TODO functions feed coverage, evidence admission and argument readiness. Completing code checks does not complete the written defense.
+
+## Lesson 199 — Select primary direction
+
+[Student](0199-select-primary-direction.ipynb) · [Executed solution](html/0199-select-primary-direction.html) · [Protocol](l199-reproduction.md) · [Portable audit](evidence/l199/reproducer.zip). Complete L190 replay plus live priority, launch and memo contracts. The learner selects from their own L198 cards; frozen author scores are not transferred between different proposals. No new model execution; written defense remains pending.
+
+- [L200 Year 5 exit exam](0200-year-5-exit-exam.ipynb): complete fresh selected checkpoint reproduction, visible model and evidence contracts, research proposal and defense. [Protocol](l200-reproduction.md).

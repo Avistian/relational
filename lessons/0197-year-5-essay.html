@@ -1,0 +1,268 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 197 — Year 5 landscape essay</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/landscape-essay.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><p class="eyebrow">Year 5 · Q4 · Lesson 197 · Synthesis and writing</p>
+
+<h1 id="Draw-the-landscape.-Defend-one-claim.">Draw the landscape. Defend one claim.<a class="anchor-link" href="#Draw-the-landscape.-Defend-one-claim.">&#182;</a></h1><p><a href="0195-thesis-stress-test.html">Lesson 195</a> challenged the undervaluation thesis. <a href="0196-community-engagement.html">Lesson 196</a> turned one implementation finding into an answerable question. Now turn the year's evidence into an argument a skeptical reader can inspect.</p>
+<p><strong>Your win:</strong> write a foundation-model landscape essay with one defensible conclusion and a concrete condition that would change your mind. Read the core in 15 minutes, then spend 30–45 minutes drafting. This is rehearsal for choosing a Year 6 research direction, not a completed Year 5 exit exam.</p>
+<div class="landscape-status"><strong>Complete selected evidence audit.</strong> 491 published numeric cells; 33,650 saved predictions; all 21 fresh-result slots remain unrun. Full model reproduction: <code>INCOMPLETE_SOURCE_PREPROCESSING_GATE</code>. Your essay: <code>PENDING_WRITTEN_DEFENSE</code>.</div>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without looking back: What distinguishes replay from new training? Why does one score advantage fail to identify its cause? Why is a missing result different from a loss? Use the spaced questions below, then explain one answer aloud.</p>
+<div id="warmup"></div>
+<noscript><p>Write your answers to the three questions above. Check them against section 4 before continuing.</p></noscript>
+
+<h2 id="2-%C2%B7-Three-strategies,-three-different-questions">2 &#183; Three strategies, three different questions<a class="anchor-link" href="#2-%C2%B7-Three-strategies,-three-different-questions">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Ask where relational information enters, where the model learned its prior experience, and what must be trained for a new database. These are different questions.</p>
+</blockquote>
+<p>A <strong>foundation model</strong> reuses knowledge learned across tasks. <strong>Pretraining</strong> learns reusable parameters before the target task. <strong>In-context learning (ICL)</strong> conditions a prediction on labeled examples without updating those parameters. The labeled examples are the <strong>support</strong>; the unlabeled example is the <strong>query</strong>. A frozen model can still consume target labels through its support set.</p>
+<p>A <strong>foreign key</strong> points from one table row to another. A <strong>temporal cutoff</strong> specifies when a prediction is made; information must be available by that time. <strong>Deep Feature Synthesis (DFS)</strong> constructs columns by aggregating linked records, such as a customer's historical order count. A flat feature table can therefore contain relational information.</p>
+<p>The planned L170b synthesis is not yet a standalone lesson. The following map supplies its prerequisite here. Its three strategies overlap: a graph-native model could also use synthetic pretraining.</p>
+<figure class="landscape-figure"><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable architecture map"><img src="../labs/figures/l197/landscape.svg" alt="Three routes: graph-native encoding and mixing; synthetic tasks and DFS-trained predictor; relational summaries and a reused tabular model."></div><figcaption>Same query, different representation and prior. Strategies can overlap; arrows are conceptual stages, not measured latency.</figcaption></figure>
+
+<div id="landscape-map"></div>
+<noscript><p>The figure and matrix contain the complete three-strategy overview; the interactive explorer adds the same query trace one strategy at a time.</p></noscript>
+
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Strategy</th>
+  <th>Where relational information enters</th>
+  <th>What is learned beforehand</th>
+  <th>New-task adaptation</th>
+  <th>Main question to test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Graph-native learning</td>
+  <td>Row encoders and messages/attention along database links</td>
+  <td>Shared representations from pretraining tasks</td>
+  <td>Model-dependent: fine-tuning or labeled context</td>
+  <td>Do learned interactions improve on equally informed summaries?</td>
+</tr>
+<tr>
+  <td>Synthetic relational prior</td>
+  <td>Generate relational tasks, then linearize with DFS for RDB-PFN</td>
+  <td>A predictor trained on generated tasks</td>
+  <td>Labeled context with frozen weights</td>
+  <td>Does that prior transfer beyond its generated assumptions?</td>
+</tr>
+<tr>
+  <td>Reuse a tabular foundation model</td>
+  <td>Relational aggregation produces a feature table for RDBLearn</td>
+  <td>The existing tabular backend was already pretrained</td>
+  <td>Context at inference; no new relational pretraining</td>
+  <td>Are these summaries sufficient under the same information budget?</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Graph-native does not imply ICL.</strong> Griffin uses cell encoding, graph message passing and task decoders, followed by target-task fine-tuning in the selected protocol. <a href="https://arxiv.org/html/2505.05568v1">Griffin §§3–4</a>. KumoRFM-2 instead offers relational ICL and separate fine-tuning experiments; its attention spans cells, linked rows and examples. <a href="https://arxiv.org/html/2604.12596v1">KumoRFM-2 §§3–4</a>.</p>
+<p><strong>A relational prior need not mean graph-native inference.</strong> RDB-PFN trains on synthetic relational tasks and consumes DFS-linearized inputs. <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN §5</a>. RDBLearn combines aggregation with an existing tabular model. “Training-free” here does not erase that backend's pretraining, feature construction or inference costs. <a href="https://arxiv.org/html/2602.18495v1">RDBLearn §3</a>.</p>
+<p><strong>Worked query trace.</strong> Predict whether customer Ada will churn after day 30. Her orders before the cutoff are known; her future churn label is hidden. A graph model combines Ada's row with eligible order rows. A DFS pipeline may replace the orders with count and sum columns, then pass Ada and labeled support rows to a predictor. RDB-PFN and RDBLearn can share that feature representation while differing in the prior learned before this task. If the summaries discard order sequence, they cannot recover that sequence merely by using a larger predictor. This does not prove sequence matters for this target.</p>
+<p><strong>Write a prediction:</strong> which comparison would isolate the value of relational information? Hold the predictor fixed and compare target-only features with legal relational summaries. Comparing two systems that both use related rows answers a different question.</p>
+<h2 id="3-%C2%B7-%E2%80%9COpen-versus-proprietary%E2%80%9D-needs-a-comparison-contract">3 &#183; &#8220;Open versus proprietary&#8221; needs a comparison contract<a class="anchor-link" href="#3-%C2%B7-%E2%80%9COpen-versus-proprietary%E2%80%9D-needs-a-comparison-contract">&#182;</a></h2><p><strong>Openness has several axes:</strong> implementation code, model weights, training data, license, and enough protocol detail to rerun the experiment. An API provides access to predictions. An open repository provides access to code. Neither alone establishes that you can reproduce a historical model.</p>
+<p>For this essay, freeze the L191 comparison: <strong>KumoRFM-2 v1, Tables 3, 4, 7 and 8</strong>. The bounded open-code foundation pool is RDBLearn and Griffin; the supervised pool is LightGBM, GraphSAGE, RelGNN and RelGT, where present. These are inspected comparison pools, not a census of every current method. <a href="../labs/l191-reproduction.md">L191 protocol</a>.</p>
+<div id="gap-predict"></div>
+<noscript><p>Predict: does including supervised open methods shrink the Table 3 gap? Yes: 4.0533 becomes 1.5417 AUROC percentage points.</p></noscript>
+
+<p><strong>Worked example.</strong> On Table 3's 12 tasks, Kumo's mean published AUROC exceeds the best eligible single foundation method by <strong>4.0533 percentage points</strong>. Include supervised methods and that gap becomes <strong>1.5417 points</strong>, against RelGNN. The Kumo scores did not change; the eligible comparison changed. <a href="../labs/evidence/l197/report.json">Complete reconstructed report</a>.</p>
+<p><strong>AUROC</strong> measures ranking of positive examples above negative ones; higher is better. Here its table uses a 0–100 scale. <strong>MAE</strong> averages absolute prediction error; lower is better. Regression tables divide each method's error by LightGBM's error on that same task before averaging. These ratios are dimensionless. Do not average raw errors from unrelated targets or mix them with AUROC.</p>
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Table / task count</th>
+  <th>Metric units</th>
+  <th>Best foundation gap</th>
+  <th>Best combined-pool gap</th>
+  <th>Combined taskwise oracle gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>3 / 12</td>
+  <td>AUROC percentage points</td>
+  <td>RDBLearn: 4.0533</td>
+  <td>RelGNN: 1.5417</td>
+  <td>1.3333</td>
+</tr>
+<tr>
+  <td>4 / 5</td>
+  <td>AUROC percentage points</td>
+  <td>No eligible comparator</td>
+  <td>GraphSAGE: 1.5900</td>
+  <td>1.5900</td>
+</tr>
+<tr>
+  <td>7 / 9</td>
+  <td>Normalized MAE ratio</td>
+  <td>RDBLearn: 0.0835</td>
+  <td>RelGNN: 0.0392</td>
+  <td>0.0288</td>
+</tr>
+<tr>
+  <td>8 / 2</td>
+  <td>Normalized MAE ratio</td>
+  <td>No eligible comparator</td>
+  <td>GraphSAGE: 0.0244</td>
+  <td>0.0244</td>
+</tr>
+</tbody>
+</table></div>
+<p>A <strong>taskwise oracle</strong> selects the best published test result separately for each task. It is an optimistic retrospective envelope, not one deployable method. A single-method winner selected from these test tables is also descriptive; prospective selection must use validation data.</p>
+<blockquote>
+<p><strong>Scope check.</strong> All four tables are reconstructed in full: 401 task cells plus 90 published summary cells. Five aggregates fall outside the derived rounding bounds; 34 displayed mean ranks differ from the published ranks. Preserve these differences, rather than quietly substituting corrected-looking numbers. The audit uses displayed precision and cannot recover hidden precision. No eligible foundation comparator is present in Tables 4 or 8. That means missing comparison, not an infinite advantage. <a href="../labs/_verify_l197_results.json">Independent checks</a>.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Let-the-evidence-change-the-sentence">4 &#183; Let the evidence change the sentence<a class="anchor-link" href="#4-%C2%B7-Let-the-evidence-change-the-sentence">&#182;</a></h2><p>The complete L195 replay retains all five L149 seeds, all thirty L182 saved runs and the full 21-task L194 inventory. Keys include both entity and cutoff. Regression is scored in float64 against common saved targets, while retaining the original GNN float32-target discrepancy. This is a new execution of old evidence, not an independent experimental replication. <a href="../labs/l197-reproduction.md">Frozen protocol</a>.</p>
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Saved comparison</th>
+  <th>Complete measurement</th>
+  <th>What it supports</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>L149, five seeds per pipeline</td>
+  <td>Test GNN MAE 4.1231; relational-FE MAE 3.9489; GNN advantage -0.1742</td>
+  <td>FE has lower mean loss in this saved comparison.</td>
+</tr>
+<tr>
+  <td>L149 conditional uncertainty</td>
+  <td>95% driver interval [-0.4496, 0.0859]</td>
+  <td>Neither superiority nor equivalence established.</td>
+</tr>
+<tr>
+  <td>L182, three arms × ten draws</td>
+  <td>RDB-PFN minus TabICL +0.004369 AUROC; positive on 6/10 draws</td>
+  <td>Scoped saved-system comparison on one task.</td>
+</tr>
+<tr>
+  <td>L194, 21 declared tasks</td>
+  <td>0 fresh tasks; published signs 17 / 3 / 1</td>
+  <td>Complete inventory of missing fresh evidence.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Read the uncertainty correctly.</strong> The regression interval resamples whole drivers, keeping their rows together. It uses 2,000 original draws with seed 137 and holds trained models and the split fixed. It does not cover all shared race/time dependencies or generalization to new databases. An interval crossing zero establishes neither superiority nor equivalence. The ten ICL support draws reuse one test population; they are not ten independent databases.</p>
+<p><strong>Missing scores are still missing.</strong> RDBLearn's 21 published comparisons have 17 favorable, 3 unfavorable and 1 equal reference signs against AutoGluon+DFS. Every fresh score remains null behind <code>INCOMPLETE_SOURCE_PREPROCESSING_GATE</code>. The preprocessing issue is an obstacle to reproduction; it is not a measured model defeat. <a href="0194-open-fm-analysis-report.html">L194 analysis</a>.</p>
+<div id="claim-audit"></div>
+<noscript><p>Published tables support scoped published comparisons. Saved predictions support scoped replayed pipeline comparisons. Neither establishes fresh model reproduction, an architectural cause, or economic undervaluation.</p></noscript>
+
+<h2 id="5-%C2%B7-Build-one-paragraph-from-five-parts">5 &#183; Build one paragraph from five parts<a class="anchor-link" href="#5-%C2%B7-Build-one-paragraph-from-five-parts">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Give the reader a claim, the evidence behind it, and a reason the evidence bears on that claim. Then say what it cannot decide and what would change your position.</p>
+</blockquote>
+<p>A <strong>warrant</strong> is the reasoning that connects evidence to a claim. A <strong>revision condition</strong> is an observable result that would make you narrow, strengthen or abandon the claim.</p>
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Part</th>
+  <th>Worked sentence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Claim</td>
+  <td>This saved F1 comparison does not establish a practical advantage for the basic GNN.</td>
+</tr>
+<tr>
+  <td>Evidence</td>
+  <td>Across five seeds, its test MAE is 4.1231 versus 3.9489 for relational FE; the driver interval for its advantage is −0.4496 to +0.0859.</td>
+</tr>
+<tr>
+  <td>Warrant</td>
+  <td>The point estimate favors FE, and the conditional interval includes both signs.</td>
+</tr>
+<tr>
+  <td>Limitation</td>
+  <td>Both pipelines use relational information; the comparison does not isolate the value of that information or test every graph architecture.</td>
+</tr>
+<tr>
+  <td>Revision condition</td>
+  <td>A preregistered study on untouched tasks with matched information, search budgets and a justified practical margin could change this conclusion.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Repair the overclaim.</strong> “The graph model lost, so relational learning has no value.” Replace it with the worked claim above. The first sentence changes the subject from a particular pipeline to all uses of relational data.</p>
+<p><strong>The undervaluation thesis has four steps.</strong> Useful relational signal; value from learning how to use it; robust benefit under fair comparisons; and economic value underrecognized by adopters or investors. Predictive scores alone do not measure engineering cost, business utility or market expectations. Preserve the dossier's C1–C4 identities when discussing these steps. <a href="../reference/thesis-stress-test.html">Thesis stress-test reference</a>.</p>
+<div id="essay-structure"></div>
+<noscript><p>Write five fields: claim, evidence, warrant, limitation, revision. Filling all fields makes a draft ready for review; it does not grade its truth or establish mastery.</p></noscript>
+
+<h2 id="6-%C2%B7-Your-essay:-one-position,-three-strategies,-a-fair-objection">6 &#183; Your essay: one position, three strategies, a fair objection<a class="anchor-link" href="#6-%C2%B7-Your-essay:-one-position,-three-strategies,-a-fair-objection">&#182;</a></h2><p>Write <strong>800–1,200 words</strong>. Treat this as a target, not an automatic quality score. First draw the map from memory; then consult sources. Organize the essay into five short sections:</p>
+<ol>
+<li><strong>Position:</strong> state what remains plausible and what remains unestablished about the thesis.</li>
+<li><strong>Landscape:</strong> trace the three strategies for the same query. Explain their overlap and separate prior, representation and adaptation.</li>
+<li><strong>Open/proprietary gap:</strong> declare date/version, eligible pool, tasks and metric. Use a measured example and discuss reproducibility access separately from reported performance.</li>
+<li><strong>Strongest objection and response:</strong> use both favorable and unfavorable evidence, retain missing results, and limit your conclusion.</li>
+<li><strong>Revision condition:</strong> propose a fair comparison that could change your mind. Include untouched tasks, information access, validation-only selection, a practical margin and total cost.</li>
+</ol>
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Dimension</th>
+  <th>Ready for review when…</th>
+  <th>Revise when…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Mechanism</td>
+  <td>Same query traced; representation, prior and adaptation separated</td>
+  <td>Treating the strategies as disjoint or equating frozen weights with no label access</td>
+</tr>
+<tr>
+  <td>Comparison</td>
+  <td>Version, pool, task coverage and metric are explicit</td>
+  <td>Cherry-picking tasks or silently changing the eligible pool</td>
+</tr>
+<tr>
+  <td>Evidence</td>
+  <td>Published, replayed and fresh lanes are distinguished</td>
+  <td>Promoting missing scores, replay or a source diagnostic to new model results</td>
+</tr>
+<tr>
+  <td>Argument</td>
+  <td>Evidence supports the actual claim through an explicit warrant</td>
+  <td>Jumping from one pipeline comparison to all architectures or economic value</td>
+</tr>
+<tr>
+  <td>Counterargument</td>
+  <td>Strongest objection and uncertainty are addressed fairly</td>
+  <td>Treating a zero-crossing interval as proof of equivalence</td>
+</tr>
+<tr>
+  <td>Revision</td>
+  <td>A feasible comparison and result would change the conclusion</td>
+  <td>Proposing a study that cannot challenge the preferred answer</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Pass standard:</strong> a human review finds every dimension defensible, with no invented fresh scores, causal claims from uncontrolled comparisons, or equivalence claims from an interval crossing zero. Word count and field presence cannot certify this. Your current state stays <code>PENDING_WRITTEN_DEFENSE</code> until your own argument is reviewed.</p>
+<div id="teachback"></div>
+<noscript><p>Teach back: why can an API-only model lead a published table while a complete local model reproduction remains unfinished? Distinguish source-reported performance, access and local evidence.</p></noscript>
+
+<details><summary>Read the author’s worked essay after drafting yours</summary>
+
+<h1 id="A-relational-opportunity-with-unfinished-proof">A relational opportunity with unfinished proof<a class="anchor-link" href="#A-relational-opportunity-with-unfinished-proof">&#182;</a></h1><p><em>Author reference essay, dated 2 October 2026. This is not the learner's submission or a claim of mastery. Its numerical claims refer to the frozen L197 packet, not a continuously updated leaderboard.</em></p>
+<h2 id="Position">Position<a class="anchor-link" href="#Position">&#182;</a></h2><p>My Year 5 position is that relational prediction remains a promising research direction, but the stronger claim that learned relational systems are broadly superior and economically undervalued is not established by our evidence. This distinction changes what I would do next. I would invest in a fair, falsifiable comparison, rather than present selected score advantages as a completed argument. The useful conclusion is a research commitment with a stop condition: pursue the opportunity while retaining the possibility that well-designed relational summaries offer the better practical system.</p>
+<p>The mission's four steps must remain separate. Useful information in linked records does not automatically require a graph-native predictor. A good graph predictor does not automatically outperform a strong, equally informed alternative. A repeatable advantage on selected tasks does not establish robust advantage across databases. Finally, predictive performance does not by itself show that customers, engineers or investors underestimate the economic value. Each step requires additional evidence.</p>
+<h2 id="A-map-of-the-design-choices">A map of the design choices<a class="anchor-link" href="#A-map-of-the-design-choices">&#182;</a></h2><p>The landscape is clearer when organized by representation, prior experience and adaptation. A representation specifies what the predictor receives. A prior here means the patterns learned before the target task. Adaptation specifies how the new task influences predictions. These axes can vary independently; the three course strategies are useful organizing examples rather than mutually exclusive classes.</p>
+<p>In graph-native learning, rows are represented as linked objects and the predictor learns to combine information across those links. Griffin illustrates pretraining followed by target-task fine-tuning; graph-native therefore does not necessarily mean frozen in-context inference. In a synthetic relational-prior strategy, generated relational tasks supply prior experience. RDB-PFN shows that such a prior can be paired with DFS-linearized inputs. A reuse strategy such as RDBLearn aggregates related records and supplies the resulting table to an existing tabular foundation model. Its lack of new relational pretraining does not remove the backend's earlier training or the cost of constructing features. <a href="https://arxiv.org/html/2505.05568v1">Griffin</a>, <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN</a>, <a href="https://arxiv.org/html/2602.18495v1">RDBLearn</a>.</p>
+<p>Consider a customer at a fixed prediction cutoff. Linked orders can enter as individual row representations or as summary columns. Both routes use relational data. If two systems consume the same summaries but have different pretrained predictors, their comparison concerns those systems under that representation. It cannot establish that learned graph processing is necessary. Conversely, a summary's inability to distinguish two histories only matters predictively if that distinction bears on the target. Expressivity and useful accuracy are related questions, but one is not a substitute for measuring the other.</p>
+<h2 id="The-open/proprietary-gap-depends-on-the-contract">The open/proprietary gap depends on the contract<a class="anchor-link" href="#The-open/proprietary-gap-depends-on-the-contract">&#182;</a></h2><p>“Best open model” is incomplete until it identifies what is open and which methods are eligible. Implementation code, weights, training data and protocol access are different resources. A prediction API can be useful without making historical training reproducible. Open code can be inspectable while leaving a local rerun blocked. I therefore separate reported performance from reproduction access.</p>
+<p>The frozen L191 comparison uses KumoRFM-2 v1 Tables 3, 4, 7 and 8. On Table 3, including only the declared open-code foundation methods yields a 4.0533-point AUROC gap to Kumo. Including the declared supervised methods reduces it to 1.5417 points. The winner in that broader single-method pool is RelGNN. This does not make either calculation dishonest; it makes the eligible pool essential to interpreting the sentence. Both are retrospective comparisons of published test results. Neither supplies a validation-based model-selection procedure. <a href="https://arxiv.org/html/2604.12596v1">KumoRFM-2 v1</a>, <a href="../labs/evidence/l197/report.json">L197 report</a>.</p>
+<p>The audit preserves all 491 numeric cells, including summaries. Five aggregates exceed the derived rounding bounds, and 34 displayed mean ranks differ from their published counterparts. These differences limit the precision of a polished headline. They are retained as discrepancies, not interpreted as evidence of misconduct. Regression gaps are computed from taskwise ratios to the same LightGBM baseline. They cannot be pooled with AUROC or raw errors from other targets.</p>
+<h2 id="The-strongest-objection-survives-the-replay">The strongest objection survives the replay<a class="anchor-link" href="#The-strongest-objection-survives-the-replay">&#182;</a></h2><p>The strongest objection to a sweeping learned-architecture thesis is that a well-informed simpler pipeline may already recover much of the useful signal. In the complete saved F1 comparison, the basic GNN's test MAE averages 4.1231 across five seeds, versus 3.9489 for relational engineered features. The conditional driver-bootstrap interval for GNN advantage is −0.4496 to +0.0859. This crosses zero, so it establishes neither superiority nor equivalence. Both arms use relational information; the result does not show that such information lacks value. The bootstrap fixes the models and split and does not capture all race/time or new-database uncertainty. <a href="../labs/evidence/l195/falsification-brief.md">L195 replay</a>.</p>
+<p>The favorable evidence also deserves its full scope. Saved RDB-PFN predictions exceed TabICL by 0.004369 mean AUROC on the selected task, with positive differences on six of ten support draws. This makes the pretrained predictor worth investigating. The draws reuse a test population, however; they are not independent databases or proof of universal transfer. Re-executing these calculations does not create a new experimental replication.</p>
+<p>The 21-task RDBLearn report is a different kind of evidence. Its published reference signs are 17 favorable, three unfavorable and one equal against AutoGluon+DFS. All fresh scores remain missing behind the preprocessing gate. A blocked reproduction should reduce confidence in what we have independently established, but it is not a measured performance loss. Counting it as one would turn an implementation obstacle into a fabricated empirical result.</p>
+<h2 id="What-would-change-my-mind">What would change my mind<a class="anchor-link" href="#What-would-change-my-mind">&#182;</a></h2><p>I would strengthen the practical thesis after a preregistered comparison on untouched tasks that separates target-only inputs, legal relational summaries and learned relational processing. The study must fix temporal availability, validation search budgets, comparators and the unit of uncertainty before accessing test outcomes. A practically useful margin should be justified in the application's units, not chosen after seeing results. Total engineering, training and serving costs belong beside predictive benefit.</p>
+<p>If strong relational summaries meet that margin at lower total cost across the declared task population, I would narrow the claim that learned graph processing offers the best practical route. If learned systems retain a robust advantage under those controls, I would strengthen that claim. I would still need a separate measurement of utility and adoption or investment expectations to argue undervaluation. This is a testable Year 6 direction, not a completed economic conclusion.</p>
+</details>
+
+<h2 id="7-%C2%B7-Run-the-audit-and-submit-your-defense">7 &#183; Run the audit and submit your defense<a class="anchor-link" href="#7-%C2%B7-Run-the-audit-and-submit-your-defense">&#182;</a></h2><p><a href="../labs/0197-year-5-essay.ipynb">Student notebook</a> · <a href="../labs/html/0197-year-5-essay.html">Executed solution</a> · <a href="../labs/solutions/0197-year-5-essay.ipynb">Solution notebook</a> · <a href="../labs/evidence/l197/reproducer.zip">Portable audit ZIP</a> · <a href="../reference/year-5-essay.html">Reference</a>.</p>
+<p>Implement three live functions: preserve task coverage, admit only claims supported by a declared evidence lane, and check the five argument fields without pretending to grade prose. The provided source then reconstructs every selected table and rescored prediction. Wrong implementations must fail the checks; each function affects your report or submission.</p>
+<p>For a local run from the repository root:</p>
+<div class="highlight"><pre><span></span>.venv/bin/python<span class="w"> </span>labs/_budget_l197.py<span class="w"> </span>.venv/bin/python<span class="w"> </span>labs/_audit_l197.py
+.venv/bin/python<span class="w"> </span>labs/_budget_l197.py<span class="w"> </span>.venv/bin/python<span class="w"> </span>labs/_verify_l197.py
+</pre></div>
+<p>The standalone ZIP has its own instructions. The notebook embeds all frozen inputs and displays the load-bearing code. No model weights, API calls or new training are used. <strong>The author run has a $0 cloud/API budget and an aggregate 1,800-second local execution limit.</strong> <a href="../labs/evidence/l197/local-budget.json">Budget ledger</a>.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2604.12596v1">KumoRFM-2 v1, architecture and Tables 3/4/7/8</a>. Read one table caption and the context policy before using its gap. Use <a href="https://arxiv.org/html/2505.05568v1">Griffin</a>, <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN</a> and <a href="https://arxiv.org/html/2602.18495v1">RDBLearn</a> to verify the map's distinctions.</p>
+<p><strong>Bring your draft back to the agent.</strong> Ask about any unclear mechanism or inference; paste one paragraph for a claim-by-claim critique. In two days, redraw the three routes and reproduce one five-part argument without notes. Next, <a href="0198-three-research-directions.html">Lesson 198</a> turns the unresolved evidence into three ranked research proposals. This lesson prepares that decision; it does not choose your direction for you.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/arch-family-viz.js"></script><script src="../assets/landscape-essay.js"></script></body></html>

@@ -248,13 +248,26 @@ _Optional / extension (◆):_
   Expanded benchmark + autocomplete tasks. Use for: year-5+ experiments.
 - KumoRFM v1 (2025) — no arXiv; [PDF](https://kumo.ai/research/kumo_relational_foundation_model.pdf). Track via KumoRFM-2 for reproducible numbers.
 
-## Knowledge — Year 5 → 6 research bridge (September 2026)
+## Knowledge — Year 5 → 6 research bridge (updated October 2026)
 
-The [B01–B24 lecture specifications and primary readings](./plan/year-5-6-bridge.md) provide 16 core units and eight electives. The [influence audit](./plan/research-influence-audit-2026-09.md) distinguishes lineage and benchmark uptake from newly reported performance.
+The [bridge specifications and primary readings](./plan/year-5-6-bridge.md) provide 29 planned units: B01–B24 plus B04a/B07a/B18a/B19a/B19b, with 18 core units and eleven electives. The [September influence audit](./plan/research-influence-audit-2026-09.md) distinguishes lineage and benchmark uptake from newly reported performance; the [October coverage audit](./plan/tabular-foundation-coverage-audit-2026-10.md) adds a 2025–2026 gap check and an article-by-article Mindful Modeler reading map.
 
 New required families: [numerical embeddings](https://arxiv.org/abs/2203.05556), [TabDPT](https://arxiv.org/html/2410.18164v3), [Mitra](https://arxiv.org/html/2510.21204v1), [ConTextTab](https://arxiv.org/html/2506.10707v1), [TabSTAR](https://arxiv.org/html/2505.18125v2), dedicated [Relational Transformer](https://arxiv.org/html/2510.06377v1) and [PluRel](https://arxiv.org/html/2602.04029v1). Existing TabM, TabPFN, TabICL, RelGNN/RelGT and relational FM families receive comparative updates. Recent diagnostics and speculative mechanisms have explicit scope limits and elective placements.
 
 Research checked **2026-09-26** using primary papers, method/evaluation sections for major additions, official repositories and benchmark infrastructure. RT-J's full paper was inaccessible; its author page supports only the scoped update. Optional papers retained from the initial abstract-level pass still require method/code audits before lesson authoring. No experiment or learner completion is claimed.
+
+**Added/updated 2026-10-02 — primary readings by bridge placement:**
+
+- **B04a ◆, scaling axes:** [TabFlex](https://arxiv.org/html/2506.05584v1), [TabPFN-Wide](https://arxiv.org/html/2510.06162v1), [Orion-MSP](https://arxiv.org/abs/2511.02818), [Orion-Bix](https://arxiv.org/abs/2512.00181), [BETA](https://arxiv.org/abs/2502.02527); compare the already tracked [TabSwift](https://arxiv.org/abs/2606.07345). Select one mechanism for depth.
+- **B07a ◆, hypernetworks:** [MotherNet](https://arxiv.org/html/2312.08598), [HyperFast](https://arxiv.org/abs/2402.14335), [iLTM](https://arxiv.org/html/2511.15941v1). Historical anchors and the 2025 extension; all enter the family map, not mandatory training.
+- **B03/B06/B02 supporting reads:** [EquiTabPFN](https://arxiv.org/abs/2502.06684v4), [TabForestPFN](https://arxiv.org/abs/2405.13396), [APT](https://arxiv.org/abs/2502.04573), [PFN-Boost / LLM-Boost](https://arxiv.org/abs/2502.02672). Target symmetry, prior design and hybrid baselines.
+- **B07/B09 release updates:** [SAP-RPT-1-OSS model card](https://huggingface.co/SAP/sap-rpt-1-oss) documents its ConTextTab identity. [TabFM's September report](https://arxiv.org/html/2609.37959v1) separates base, + and Auto. [Seldon report](https://www.neuralk.ai/white-paper/seldon-foundation-made-tabular) and [NEXUS](https://fundamental.tech/nexus) are provider sources for comparator/access decisions.
+- **B18a ★, context systems:** [TACO](https://arxiv.org/html/2602.05649v2); revisit [TabPFN-2.5 distillation](https://arxiv.org/abs/2511.08667) and [Interpretable ML for TabPFN](https://arxiv.org/abs/2403.10923). Distinguish cached state, learned context compression and a distilled predictor.
+- **B19a ★, probability quality:** [ScoringBench](https://arxiv.org/html/2603.29928v3), [distributional regression study](https://arxiv.org/html/2603.08206v1). Proper scores, calibration, interval diagnostics and effect sizes; no universal winner implied.
+- **B19b ◆, task expansion:** [TabPFN-TS](https://arxiv.org/html/2501.02945v4), [CausalPFN](https://arxiv.org/abs/2506.07918), [SurvPFN](https://arxiv.org/abs/2606.04564); [MulTaBench](https://arxiv.org/abs/2605.10616) also supports B07's modality audit. Choose one task and establish its assumptions; [CausalFM](https://arxiv.org/abs/2506.10914v3) is an optional causal-prior contrast.
+- **B17 ◆, representation comparisons:** [BOLERO](https://arxiv.org/abs/2512.12405), [task-agnostic embedding evaluation](https://arxiv.org/abs/2511.14276).
+
+**Mindful Modeler orientation:** Start with [the July research-trends post](https://mindfulmodeler.substack.com/p/trends-in-tabular-foundation-research), then [families beyond TabPFN/TabICL](https://mindfulmodeler.substack.com/p/tabpfn-and-tabicl-are-not-everything), [context](https://mindfulmodeler.substack.com/p/context-is-the-new-training), [inference speed](https://mindfulmodeler.substack.com/p/making-tabular-foundation-models), [missing values](https://mindfulmodeler.substack.com/p/how-tabicl-and-tabpfn-handle-missing), and [predictive distributions](https://mindfulmodeler.substack.com/p/regression-should-predict-full-distributions). The audit maps further posts on quantiles, interpretation, forecasting, benchmarks and Thinking mode to specific exercises. Blog claims are traced to primary sources; [the enterprise-data paper](https://arxiv.org/html/2606.30452v1) was recovered on arXiv and added at B19, while Beyond Accuracy remains an access-blocked follow-up.
 
 ## Wisdom (Communities)
 
@@ -1074,3 +1087,121 @@ Vogel, Hilprecht and Binnig (2023), [Towards Foundation Models for Relational Da
 - [Pinned source example](https://github.com/stanford-star/relational-transformer/blob/8d83590b5ae7fba9e40e8df463ed2dd9066ce5fb/scripts/example_finetune.py): 32769 steps, per-rank batch32, checkpoint saving disabled by default; original trainer selects validation metrics while also logging test.
 - [Fixed RT-v1 release card](https://huggingface.co/stanford-star/rt-v1/blob/299701dedae451f3dfa40717b831d9dc17c0e4e7/README.md): public initialization provenance; weight bytes not downloaded after scientific/budget stop.
 - [Modal pricing](https://modal.com/pricing): one reported eight-A100 1.5-hour run implies USD25.185600–29.980800 GPU-only. Full-run forecast exceeds the USD10 aggregate ceiling; no paid work authorized.
+
+## Lesson 181 · RelBench v2 autocomplete
+
+- [Gu et al., RelBench v2 v1](https://arxiv.org/html/2602.12606v1): §§2–4 and Tables2/5/14/15/21. Primary task and result source; complete two-F1-task aggregation baselines reproduced, fresh GNN NOT_RUN_TRAINING_HEALTH_GATE.
+- [Publication-date code snapshot](https://github.com/stanford-star/relbench/tree/0d47fe0c8a1a51aaf97ab485f4a028e290f97c67): task registry, AutoCompleteTask, global database column removal, baseline train+validation refit and GNN model/trainer. Snapshot identity does not establish historical training identity.
+- [Jiang, RelGT-AC v1](https://arxiv.org/html/2606.03040v1): paper-described seed masking, TF-IDF and local/global graph model. Validation comparisons and differing mask policy require care. No authenticated model/checkpoint release located in bounded search of paper/author pages and repository search; NOT_RUN_SOURCE_GAPS. Text projection dimensionality differs between general equation and experimental description.
+- Sources and exact environment: `labs/sources/l181/source-ledger.json`, `protocol-audit.json`; measured comparison `labs/evidence/l181/paper-comparison.json`.
+
+
+### Lesson 182 · RDB-PFN + composite message passing · 2026-10-02
+
+- [RDB-PFN v5 §§5–6, Appendix C and Table 9](https://arxiv.org/html/2603.03805v5): prior/predictor separation and the complete selected 512-support F1 comparison. Fresh L182 run retains fixed source/checkpoints and all 30 evaluations; whole-paper/pretraining NOT_RUN.
+- [RelGNN v2 §4, Equations 3–5](https://arxiv.org/html/2502.06784v2): atomic routes, fusion and destination attention. One-head identity specialization checked against original source and finite-difference input gradients; no new full RelGNN fit.
+- [Frozen contract](labs/l182-reproduction.md), [fresh scores](labs/evidence/l182/report.json), [independent verification](labs/_verify_l182_results.json). Three means match rounded paper values, but hybrid superiority is an unrun proposal. Label orientation, DFS provenance and historical identity limits remain explicit.
+
+## Lesson 185 · Causal & relational data
+
+- [Pearl 2009, Causal inference in statistics: An overview](https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf), DOI10.1214/09-SS057: §§2,3.2.1,3.3.1,3.4. Primary definitions and assumptions; no empirical result reproduced. Pinned bytes in `labs/sources/l185/`.
+- [Maier et al.2013, relational causal discovery](https://arxiv.org/abs/1309.6843v1): optional abstract-level context; RCD not implemented or reproduced.
+- [L185 protocol](labs/l185-reproduction.md): full original synthetic five-seed shortcut/adjustment/intervention experiment; real-world effectiveness NOT_ESTABLISHED.
+
+## Lesson 184 — GelGT
+
+- [GelGT v2, §§3 and Appendix B](https://arxiv.org/html/2605.15575v2): structural sampling, semantic refinement, Gaussian temporal bias and Table 2 driver-position target.
+- [Official pinned source](https://github.com/USTC-DataDarknessLab/GelGT/tree/1997b2c2f480ce5d3cbdb48d46f33cc303f5feb4): original sampler counterexample executed; full trainer NOT_RUN.
+- [Local protocol and evidence](labs/l184-reproduction.md): 8,712 raw labels verified; query-cache identity stop; no paper-MAE claim.
+
+
+## Lesson 186 · production constraints
+
+- [Chip Huyen: Real-time machine learning, stages 1–3](https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html): primary reading for prediction and feature refresh choices. Conceptual guidance, not a published numerical reproduction target.
+- [Chip Huyen: Data distribution shifts and monitoring](https://huyenchip.com/2022/02/07/data-distribution-shifts-and-monitoring.html): natural label delays and separate operational/predictive quality signals.
+- [Google SRE: Monitoring distributed systems](https://sre.google/sre-book/monitoring-distributed-systems/): latency, traffic, errors and saturation; tail latency motivation.
+- [L186 frozen protocol](labs/l186-reproduction.md) and [source snapshots](labs/sources/l186/source-ledger.json): all81course simulations/810000requests, separate300batch-receipt replay. Hypothetical durations; no model scores or real serving benchmark. Fresh inference/production NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
+
+## Lesson 187 · Relational contribution privacy
+
+- [Dwork and Roth, The Algorithmic Foundations of Differential Privacy](https://www.cis.upenn.edu/~aaroth/privacybook.html): Definition 2.4, global sensitivity, Laplace mechanism Theorem 3.6, basic composition Corollary 3.15. Primary reading for the ideal mechanism; finite-precision public seeded simulation is separate.
+- [GAP](https://arxiv.org/abs/2203.00949): graph-aggregation privacy proposal, cited context only; no benchmark reproduction in L187.
+- [Xiang, Wang and Wang v2](https://arxiv.org/html/2311.06888v2): Section VI critique of private instance embeddings and GAP noise accounting; attributed findings, not a locally reproduced attack.
+- RelBench F1 schema pinned at `0d47fe0c8a1a51aaf97ab485f4a028e290f97c67`, authenticated through L181; all nine tables retained. Source hashes: `labs/sources/l187/source-ledger.json`. Course experiment `L187-F1-ENTITY-PRIVACY` is complete; private-GNN paper reproduction NOT_RUN.
+
+## Lesson 183 · Graph-Transformer pretraining gap
+
+- [Dwivedi et al., RelGT v1](https://arxiv.org/html/2505.10960v1): §§3–4 and Tables1/6; five-element tokenization, local/global attention and supervised benchmark protocol. Code19e423ca3e7cac761130aba790857f2dc3a46ef7 retained from L145.
+- [Wang et al., Griffin v1](https://arxiv.org/html/2505.05568v1): §§3–4/Table12; unified cell/task interface, message passing and selected transfer protocol. Codeb9d0e1fa8d89dfb1cd8bd5976b71de8a3b515427 retained from L164.
+- [Authors' relational graph-transformer overview](https://docs.nvidia.com/sdgm/research/relational-graph-transformers): existing connection to KumoRFM prevents a broad absence/novelty claim. Bounded source review does not establish originality of the proposed experiment.
+- `labs/sources/l183/source-ledger.json` pins primary HTML; `labs/evidence/l183/input-manifest.json` authenticates inherited data and code. The notebook's complete saved replay is separate from fresh training, inference and raw-label reconstruction.
+
+
+## Lesson188 · Systematic literature tracking
+
+Primary: [arXiv API manual](https://info.arxiv.org/help/api/user-manual.html), [API terms](https://info.arxiv.org/help/api/tou.html), [RSS guide](https://info.arxiv.org/help/rss.html). Query/window/pagination and version semantics; source bytes retained in labs/evidence/l188/packet.
+
+Watch sources: [RelBench board](https://star-project.stanford.edu/relbench/leaderboard/), [TabArena board](https://huggingface.co/spaces/TabArena/leaderboard). Page retrieval is separate from score extraction; no historical rank changes established.
+
+[Q3 paper log](labs/evidence/l188/paper-log.md):30unique API records,7abstract-screened candidates,23deferred. Two failed phrase queries leave quarterly collection INCOMPLETE. Supplemental primary-page examples: [JEPA recipe](https://arxiv.org/abs/2609.25541), [physics limitations](https://arxiv.org/abs/2609.02766), [Xiaomi-TabLDM](https://arxiv.org/abs/2609.03880). Reading queue only; methods/artifacts not audited and results not reproduced. No core-paper promotion.
+
+## Lesson 189 · Research-problem selection · 2026-10-02
+
+Primary starting reading: [Dwivedi et al., RDL survey, 2506.16654v1](https://arxiv.org/html/2506.16654v1), §§2.4/5. Treat a dated survey as a map rather than a novelty certificate. Closest-work checks use [RelGNN v2](https://arxiv.org/html/2502.06784v2), [RDB-PFN v5](https://arxiv.org/html/2603.03805v5), [RT v1](https://arxiv.org/html/2510.06377v1), [Temporal Heterogeneous Graph Pretraining v1](https://arxiv.org/html/2609.35219v1), §4.4, and [RelArena-α v2](https://arxiv.org/html/2608.16319v2). The temporal paper explicitly leaves unseen-database transfer and matched computational cost open; RT means that cross-database transfer itself is not new. Selected-source coverage only; candidate novelty NOT_ESTABLISHED. Exact source bytes and retrieval receipts: `labs/evidence/l189/packet/sources.json`.
+
+## Lesson 190 · research-gap checkpoint
+
+- [RDB-PFN v5](https://arxiv.org/html/2603.03805v5): read the method and Table 9 to distinguish the released DFS/checkpoint comparison from a proposed structural hybrid. L190 replays all selected L182 predictions; it performs no new model inference.
+- [RelGNN v2](https://arxiv.org/html/2502.06784v2): composite message passing is existing work; a proposed foundation-model interaction requires a matched control and separate novelty argument.
+- [RelBench v2](https://arxiv.org/abs/2602.12606): autocomplete task framing; availability histories and a healthy predictor remain admission requirements for the proposed L190 study.
+- [Worked five-page document](reference/research-gap-document.html) and [field guide](reference/research-gap-checkpoint.html): claims, evidence, alternatives, falsifiers and honest limits. Quarterly discovery remains incomplete.
+
+## Lesson 191 · KumoRFM-2 comparison audit
+
+- [KumoRFM-2 v1, §3 and Tables 3/4/7/8](https://arxiv.org/html/2604.12596v1): frozen architecture description and 401 task scores. [Full reconstruction](labs/evidence/l191/report.json); [source manifest](labs/evidence/l191/input-manifest.json).
+- [OpenRFM v1](https://arxiv.org/html/2606.04320v1) and [RDBLearn v1.1 paper](https://arxiv.org/html/2607.05476v1): later sources logged separately, not spliced into April comparisons.
+- [Retrieval/access receipts](labs/sources/l191/current-retrieval.json): inspect bounded code-access pool; failed Kumo repository and leaderboard requests do not certify absence. [Protocol and reproduction limits](labs/l191-reproduction.md).
+
+## Lesson192 · RDBLearn selected-task setup and source admission
+
+- [Toolkit paper v1 §5 and AppendixA](https://arxiv.org/html/2602.18495v1#S5): selected study-outcome0.7167AUROC; full depth/backend validation grid. Historical seeds remain unspecified.
+- [Pinned v0.1.2 preprocessing](https://github.com/HKUSHXLab/rdblearn/blob/b5b03ebf8091547285a6e06cba53d2d1a40cb171/rdblearn/preprocessing.py): executed full synthetic code-stability intervention. It does not establish task-level AUROC effect or historical run identity.
+- [Pinned estimator](https://github.com/HKUSHXLab/rdblearn/blob/b5b03ebf8091547285a6e06cba53d2d1a40cb171/rdblearn/estimator.py): target-history insertion before downsampling and preprocessing/backend routing.
+- [Source and evidence contract](labs/l192-reproduction.md): original source, full task-key/window-end audit, clean environment and source-gated unrun model grid.
+
+## Lesson 193 · full RDBLearn task-set protocol
+
+- [RDBLearn toolkit paper, exact v1](https://arxiv.org/html/2602.18495v1), §5 and AppendixA Tables1–4:21tasks, backend/depth search and published targets. L193 verifies table arithmetic, not inference; regression normalization remains unresolved.
+- [RDBLearn0.1.2 pinned source](https://github.com/HKUSHXLab/rdblearn/tree/b5b03ebf8091547285a6e06cba53d2d1a40cb171): original complete preprocessing diagnostic and full protocol admission. Source failure is environment-qualified and does not measure real-task score impact.
+- [L193 evidence ledger](labs/l193-reproduction.md), [field guide](reference/open-fm-full-task-set.html), [student lab](labs/0193-open-fm-full-task-set.ipynb). Three explicit repeatability seeds; historical identity NOT_ESTABLISHED; no model run after shared source failure.
+
+- **L194 primary reading:** [RDBLearn v1](https://arxiv.org/html/2602.18495v1), §§3/5 and Tables 1–3; verified 2026-10-02. Fixed AutoGluon+DFS comparison is reference arithmetic; study plans are course proposals, not published causal results.
+
+## Lesson 195 · thesis stress-test
+
+[RDBLearn v1 §3 and Tables1–3](https://arxiv.org/html/2602.18495v1): aggregation plus tabular ICL as a strong alternative to learned relational encoders. [RelBench v1 Table7](https://arxiv.org/html/2407.20060v1): basic GNN protocol, distinct from the boosted user-study comparator. [RDB-PFN v5 Table9](https://arxiv.org/html/2603.03805v5): selected F1 released-checkpoint context. [Open-environment evaluation](https://arxiv.org/abs/2505.16226): further prediction-contract challenges, cited only here. Primary pages verified2026-10-02; replay data are frozen inherited evidence. [Complete protocol](labs/l195-reproduction.md) and [falsification brief](labs/evidence/l195/falsification-brief.md).
+
+## Lesson 196 · community engagement
+
+- [Original RDBLearn v0.1.2 preprocessing](https://github.com/HKUSHXLab/rdblearn/blob/b5b03ebf8091547285a6e06cba53d2d1a40cb171/rdblearn/preprocessing.py): primary reading for the known-category counterexample; full original preprocessor rerun for all four cases.
+- [RDBLearn issues](https://github.com/HKUSHXLab/rdblearn/issues), [RelBench README](https://github.com/stanford-star/relbench), [RelBench community](https://huggingface.co/relbench), [PyG discussions](https://github.com/pyg-team/pytorch_geometric/discussions): checked 2026-10-02 for ownership/routing; no posting performed.
+- [Protocol](labs/l196-reproduction.md), [local question draft](labs/evidence/l196/question-draft.md), [response log](labs/evidence/l196/response-log.md). Fresh diagnostic and saved replay are distinct; historical model effects remain unestablished.
+
+## Lesson 197 — Year 5 landscape essay (2026-10-02)
+
+Primary reading: [KumoRFM-2 v1](https://arxiv.org/html/2604.12596v1), §§3–4 and Tables 3/4/7/8; distinguish published comparisons and protocol access. Mechanism sources: [Griffin v1](https://arxiv.org/html/2505.05568v1), [RDB-PFN v5](https://arxiv.org/html/2603.03805v5), [RDBLearn v1](https://arxiv.org/html/2602.18495v1). Versioned primary pages checked in this session; the numerical audit preserves prior frozen HTML, not a refreshed leaderboard. [L197 protocol](labs/l197-reproduction.md) and [complete report](labs/evidence/l197/report.json) connect 491 numeric cells, 33,650 predictions and all 21 missing fresh tasks to the essay.
+
+## Lesson 199 — Research direction and preregistration
+
+- [COS: Preregistration](https://www.cos.io/initiatives/prereg) — primary methods guidance distinguishing planned from exploratory analysis. Frozen HTML and SHA256 in labs/evidence/l199/packet/sources; accessed 2026-10-02. A local memo is not registry submission.
+- [RDB-PFN v5](https://arxiv.org/html/2603.03805v5) — inherited Table 9 released-artifact replay; complete source identity retained in L190 packet.
+- [RelBench v2](https://arxiv.org/abs/2602.12606) — primary autocomplete context; does not certify availability histories in a selected data archive.
+
+## Lesson 198 — three research directions (2026-10-02)
+
+Primary reading: [Temporal Heterogeneous Graph Pretraining §4.4](https://arxiv.org/html/2609.35219v1#S4.SS4), explicitly distinguishing within-database results from unseen-database transfer and matched-cost questions. Closest-work comparisons use the six versioned primary texts frozen in L189 (survey, RelGNN, RDB-PFN, RT, temporal pretraining, RelArena), with hashes preserved in L198. Supplementary abstract-level leads [Curriculum Matters](https://arxiv.org/abs/2607.29120) and [PluRel-to-RDB-PFN](https://arxiv.org/abs/2607.29129) were opened; neither is a reproduced result or a completed novelty review. [Source-review ledger](labs/evidence/l198/source-review.md), [three full proposal cards](labs/evidence/l198/ranked-proposals.md), [complete reproduction contract](labs/l198-reproduction.md). All model experiments NOT_RUN and novelty NOT_ESTABLISHED.
+
+## Lesson 200 · Year 5 exit exam
+
+RDB-PFN v5 Table 9 (https://arxiv.org/html/2603.03805v5): fixed released checkpoint experiment. RelBench v2 (https://arxiv.org/abs/2602.12606): relational task context. COS preregistration (https://www.cos.io/initiatives/prereg): separate exploratory proposal from a registered future plan. Sources checked 2026-10-02; complete L200 protocol retains prior provenance limitations.

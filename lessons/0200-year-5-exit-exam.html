@@ -1,0 +1,155 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 200 — Year 5 exit exam</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/year-five-exit.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><h1 id="200-%C2%B7-Defend-the-result.-Defend-the-next-experiment.">200 &#183; Defend the result. Defend the next experiment.<a class="anchor-link" href="#200-%C2%B7-Defend-the-result.-Defend-the-next-experiment.">&#182;</a></h1><p class="eyebrow">Year 5 exit exam · 20-minute review + notebook + written defense</p>
+
+<p><strong>Your win:</strong> produce one auditable FM reproduction and one research proposal that could prove your favorite explanation wrong. The mission is to establish when relational learning adds value. A close benchmark score is evidence for a specific computation; your proposal must explain what question remains.</p>
+<div class="exit-status"><strong>Fresh selected reproduction:</strong> COMPLETE_SELECTED_REPRODUCTION. 30 evaluations · 21,060 predictions. <strong>Year 5 exit:</strong> INCOMPLETE; proposal and defense pending. <strong>RDBLearn:</strong> INCOMPLETE_SOURCE_PREPROCESSING_GATE.</div>
+
+<h2 id="1-%C2%B7-Close-the-books-first">1 &#183; Close the books first<a class="anchor-link" href="#1-%C2%B7-Close-the-books-first">&#182;</a></h2><div id="warmup"></div>
+
+<p>Write three answers before scrolling: What distinguishes released-checkpoint inference from pretraining? Why are ten support draws not ten independent replications? Why does an old event timestamp fail to prove that a feature was available?</p>
+<details><summary>Retrieve, then check</summary><p>Checkpoint inference uses existing learned weights. Pretraining learns those weights across tasks. The ten draws share one test population. Event time records when something happened; arrival time records when a predictor could access it. Neither score agreement nor an event timestamp establishes historical availability.</p></details>
+
+<p><strong>The bridge to this exam.</strong> <a href="0197-year-5-essay.html">L197</a> assembled claims and limitations. <a href="0198-three-research-directions.html">L198</a> made three proposal cards; <a href="0199-select-primary-direction.html">L199</a> separated priority, feasibility and launch authorization. Now you must connect a measured result to one testable question. Bring your own cards and selection memo into this exam; the author's worked choice is an example to challenge, not a substitute for your decision.</p>
+<p>If you have not finished those cards, complete the <a href="../labs/evidence/l200/proposal-template.md">self-contained worksheet</a> here. Ranking candidates is authoring a plan; it does not establish novelty or learner mastery.</p>
+<h2 id="2-%C2%B7-State-exactly-what-you-reproduced">2 &#183; State exactly what you reproduced<a class="anchor-link" href="#2-%C2%B7-State-exactly-what-you-reproduced">&#182;</a></h2><p>A <strong>foundation model</strong> here is a model pretrained across tasks and reused on a new task. An <strong>in-context</strong> prediction uses labeled support examples as input without updating the model's weights on the new task. A <strong>checkpoint</strong> is a saved set of learned weights. A <strong>support draw</strong> is a sampled set of training examples that the model may read.</p>
+<p>Our named target is <strong>RDB-PFN v5, Table 9, rel-f1/driver-dnf, 512 support examples</strong>, with the relational-prior checkpoint, the single-table-prior checkpoint, and TabICL v1.1. Read the <a href="https://arxiv.org/html/2603.03805v5#A6">primary paper and appendix</a>, then the <a href="../labs/l200-reproduction.md">frozen execution protocol</a>.</p>
+<div class="exit-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Held fixed</th>
+  <th>Full approved scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Released rows</td>
+  <td>11,411 train; 566 validation; 702 test</td>
+</tr>
+<tr>
+  <td>Support</td>
+  <td>512 training rows without replacement, seeds 0–9</td>
+</tr>
+<tr>
+  <td>Pairing</td>
+  <td>Each configuration receives the same support for a given draw</td>
+</tr>
+<tr>
+  <td>Checkpoints</td>
+  <td>Released fixed checkpoints; no test-based selection</td>
+</tr>
+<tr>
+  <td>Preprocessing</td>
+  <td>Support medians; all-missing becomes zero; support normalization</td>
+</tr>
+<tr>
+  <td>Evaluation</td>
+  <td>All 3 × 10 runs; all 702 queries per run</td>
+</tr>
+<tr>
+  <td>Comparison</td>
+  <td>Mean AUROC within 0.02 of the named rounded target</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Why no task training loop?</strong> RDB-PFN has already learned its weights in synthetic pretraining. The released evaluation places support features and labels beside query features. Calling the classifier's <code>fit</code> prepares that context; this lane does not optimize RDB-PFN weights on F1. Reproducing this experiment means performing fresh inference from the released weights. It does not mean repeating synthetic pretraining.</p>
+<p><strong>Scope check.</strong> The source checkpoint uses width 96; the paper appendix says 128. We preserve checkpoint-compatible width 96. The released binary label complements the currently reconstructed DNF label. Keep released labels and probabilities for table comparison; complement <strong>both</strong> for current DNF interpretation. Full raw feature reconstruction, historical identity and complete feature arrival provenance remain unresolved. Numerical closeness is not a leakage certificate. The separate RDBLearn reproduction remains <code>INCOMPLETE_SOURCE_PREPROCESSING_GATE</code>.</p>
+<h2 id="3-%C2%B7-Trace-the-model-before-trusting-the-score">3 &#183; Trace the model before trusting the score<a class="anchor-link" href="#3-%C2%B7-Trace-the-model-before-trusting-the-score">&#182;</a></h2><p><strong>Predict:</strong> can changing one query's hidden label change another query's output? It must not: query labels never enter the model, and row attention reads support rows only.</p>
+<figure class="exit-figure"><img src="../labs/figures/l200/architecture.svg" alt="RDB-PFN portrait architecture: feature mixing then support-only row attention in six blocks, followed by query target decoding."><figcaption>Which paths could carry a held-out label? None: only support labels enter. The miniature mask illustrates the rule; the actual run has 512 support and 702 query rows. TabICL is a separate released comparator.</figcaption></figure>
+
+<p><strong>Inputs.</strong> The released task has numeric DFS features. DFS means feature aggregation across related tables; those flat columns already contain relational information. The relational prior describes synthetic training tasks, not a graph traversed by this predictor at evaluation time. Both RDB-PFN checkpoints see the same released task features, so their difference is not a clean “graph versus no relations” comparison.</p>
+<p><strong>Feature tokens.</strong> Normalize each scalar feature with support statistics, clamp to ±100, then project it into 96 coordinates. Add a target token: observed support labels for support rows, the support-label mean for query rows. The tensor has shape <code>batch × rows × (features + 1) × 96</code>.</p>
+<p><strong>Two attention axes.</strong> Each of six blocks first mixes feature tokens within each row. It then mixes rows separately for each feature position. Every receiver reads keys and values from support rows only. Four attention heads divide the width into four 24-coordinate parts. Residual additions keep the previous representation; layer normalization rescales it. A <code>96 → 192 → 96</code> feed-forward network follows.</p>
+<p><strong>Output.</strong> A <code>96 → 192 → 2</code> decoder reads each query's target token. Softmax converts the two logits into class probabilities. We save the probability of released label 1 beside its complete <code>(driverId, date)</code> key. The <a href="../labs/evidence/l200/packet/rdbpfn_visible.py">visible model source</a> is reproduced inline in the notebook. Its course prior helper is illustrative; it is not the released pretraining generator. Author verification compares the visible forward computation against both real checkpoint models in float64; the fresh full evaluator uses the unchanged float32 source path.</p>
+<h2 id="4-%C2%B7-Work-the-score-by-hand">4 &#183; Work the score by hand<a class="anchor-link" href="#4-%C2%B7-Work-the-score-by-hand">&#182;</a></h2><p><strong>AUROC</strong> is the fraction of positive–negative pairs in which the positive receives the higher score, with half credit for a tie. It measures ranking, not calibrated probabilities or operational benefit.</p>
+<p><strong>Worked example.</strong> Positive scores are <code>[0.5, 0.8]</code>; negative scores are <code>[0.1, 0.5]</code>. The four comparisons earn <code>1, 0.5, 1, 1</code>: AUROC is <code>3.5 / 4 = 0.875</code>. Ties matter. A row permutation should change nothing after joining predictions to labels by complete keys.</p>
+<p><strong>Two keys, not one.</strong> Driver 1 at cutoff 10 and driver 1 at cutoff 20 are different queries. Joining only on driver ID can silently attach the wrong outcome. The notebook asks you to implement the full-key join and reject duplicates, missing identities, nonfinite probabilities and incomplete run grids.</p>
+<div id="predict200"></div>
+
+<div class="exit-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Configuration</th>
+  <th style="text-align:right">Fresh mean AUROC ± sample SD</th>
+  <th style="text-align:right">Paper target</th>
+  <th>Comparison</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>RDBPFN</td>
+  <td style="text-align:right">0.721938 ± 0.019983</td>
+  <td style="text-align:right">0.7219</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>RDBPFN_single</td>
+  <td style="text-align:right">0.663990 ± 0.034177</td>
+  <td style="text-align:right">0.6640</td>
+  <td>CLOSE</td>
+</tr>
+<tr>
+  <td>TabICLv1.1</td>
+  <td style="text-align:right">0.717568 ± 0.009770</td>
+  <td style="text-align:right">0.7176</td>
+  <td>CLOSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>RDB-PFN minus TabICL: <strong>+0.004369</strong> mean paired difference, positive in <strong>6/10</strong> support draws. <a href="../labs/evidence/l200/report.json">Every draw and full report</a>. These are new L200 predictions.</p>
+<p>The standard deviation describes variation over ten support draws on <strong>one fixed test set</strong>. It is not a confidence interval over databases. The tolerance of 0.02 is a predeclared descriptive acceptance rule, not a statistical equivalence test. A paired difference uses matching support draws; it still cannot establish broad superiority or an independent replication.</p>
+<p><strong>Execution and agreement are separate.</strong> All 30 valid runs can be complete while a target remains <code>OUTSIDE_TOLERANCE</code>. Report both. Never remove an awkward draw, switch label orientation on one side only, or use test performance to pick a checkpoint.</p>
+<h2 id="5-%C2%B7-A-passing-result-does-not-pass-the-exam-for-you">5 &#183; A passing result does not pass the exam for you<a class="anchor-link" href="#5-%C2%B7-A-passing-result-does-not-pass-the-exam-for-you">&#182;</a></h2><p>Change each evidence state below. The baseline is a verified reproduction with proposal and defense pending. Notice that filling all fields only produces <strong>ready for teacher review</strong>. The widget is a planning aid; it neither grades your reasoning nor writes a mastery record.</p>
+<div id="exit200"></div>
+<noscript><p>Baseline: reproduction PASS; proposal PENDING; defense PENDING → INCOMPLETE. All three PASS → READY_FOR_TEACHER_REVIEW. Any missing or failed requirement keeps the exam incomplete.</p></noscript>
+
+<p>The reproduction gate requires authenticated inputs, complete runs, independent scoring, comparison and a written account of deviations. The proposal gate requires a falsifiable question, controls, data availability, uncertainty and a complete cost estimate. The defense gate requires your explanation of why the evidence supports only the stated claim. These are distinct deliverables.</p>
+<h2 id="6-%C2%B7-Turn-a-result-into-a-falsifiable-proposal">6 &#183; Turn a result into a falsifiable proposal<a class="anchor-link" href="#6-%C2%B7-Turn-a-result-into-a-falsifiable-proposal">&#182;</a></h2><p><strong>A hypothesis</strong> is a statement that could be weakened by an observation. <strong>A control</strong> holds competing explanations steady. <strong>A falsification rule</strong> states beforehand which observation would make you revise the hypothesis. <strong>A practical threshold</strong>, δ, is the smallest effect worth acting on; justify it before collecting the proposed study's outcomes.</p>
+<p>Complete three cards using the <a href="../labs/evidence/l200/proposal-template.md">worksheet</a>. For each, state the question, required evidence, baseline, cost and first blocking condition. Rank them with explicitly justified criteria, discuss sensitivity to those judgments, then select one. Do not copy L199's ordinal ratings onto L198's different experiments.</p>
+<p><strong>Worked author example — not an approved new experiment.</strong> Ask whether a model's apparent benefit from related-row context shrinks when features must have actually arrived by prediction time. In one fixed learner family, compare target-row-only input against added relational context under both event-time and measured-arrival policies. Keep labels, query identities, splits and tuning budget matched.</p>
+<p>Let <code>D = (context − control)event − (context − control)arrival</code>, using the same higher-is-better metric in every cell. With illustrative AUROCs <code>0.75, 0.70, 0.71, 0.69</code>, <code>D = 0.05 − 0.02 = 0.03</code>. These four numbers are invented arithmetic, not experimental measurements. The formula asks how much the context advantage shrinks; it does not isolate graph architecture.</p>
+<p>Predeclare δ and an uncertainty method appropriate to the experimental units. An interval entirely above δ supports practically meaningful shrinkage; an interval overlapping δ is inconclusive; an interval entirely below δ weakens that claim. Correlated support draws do not supply independent databases. The existing RDB-PFN score does not estimate D because it lacks the four matched information-policy conditions.</p>
+<p><strong>First feasibility question:</strong> can measured arrival histories be obtained and aligned to query cutoffs? If not, stop or explicitly redesign the question. Artificial delays would test a simulation claim. A budget estimate for future training is still required; this lesson's reproduction approval does not authorize that future study. Novelty remains <code>NOT_ESTABLISHED</code> until a relevant literature search and argument support it.</p>
+<h2 id="7-%C2%B7-Your-submission-and-defense">7 &#183; Your submission and defense<a class="anchor-link" href="#7-%C2%B7-Your-submission-and-defense">&#182;</a></h2><p>Submit the notebook, complete run report with raw predictions and provenance, and a <strong>1,000–1,500 word proposal</strong>. Use this rubric; presence checks cannot grade scientific quality.</p>
+<div class="exit-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Criterion</th>
+  <th>What a defensible submission shows</th>
+  <th style="text-align:right">Points</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Reproduction</td>
+  <td>Exact target, full grid, pinned inputs, independent scores, deviations</td>
+  <td style="text-align:right">0–2</td>
+</tr>
+<tr>
+  <td>Explanation</td>
+  <td>Support/query information flow, label semantics, evidence limits</td>
+  <td style="text-align:right">0–2</td>
+</tr>
+<tr>
+  <td>Research design</td>
+  <td>One falsifiable hypothesis, matched controls, metric and δ</td>
+  <td style="text-align:right">0–2</td>
+</tr>
+<tr>
+  <td>Feasibility</td>
+  <td>Available data, complete cost, stop rule and alternative</td>
+  <td style="text-align:right">0–2</td>
+</tr>
+<tr>
+  <td>Defense</td>
+  <td>Counter-evidence, uncertainty, revision condition, own reasoning</td>
+  <td style="text-align:right">0–2</td>
+</tr>
+</tbody>
+</table></div>
+<p>The teacher reviews all five criteria; a total alone cannot compensate for an invalid reproduction or unfalsifiable design. Required proposal sections: three alternatives, selected question, hypothesis, evidence, data/availability, baselines, splits, metric/threshold, uncertainty, full budget, stop rule and revision condition.</p>
+<div id="teachback200"></div>
+
+<p><strong>Defense prompts.</strong> Explain why a fresh checkpoint rerun is useful without being fresh pretraining. Identify one conclusion these scores cannot support. Describe one observation that would overturn your selected direction. Explain what remains missing before Year 6 execution.</p>
+<p><strong>Exit state:</strong> author artifacts can be verified while your Year 5 exit remains <code>INCOMPLETE</code> and <code>PENDING_WRITTEN_DEFENSE</code>. Earlier incomplete exits are not cleared here. After teacher review, proceed to the <a href="../reference/curriculum.html#research-bridge">Year 5 → 6 bridge</a>, updating the proposal as stronger baselines or architecture evidence warrant.</p>
+<p>Revisit the three retrieval questions after <strong>1, 7 and 30 days</strong>. Ask the agent about any unclear step, or paste your proposal for rubric-based feedback. For practitioner feedback, prepare one bounded question with a minimal reproducer for the relevant project community; sending it is your choice.</p>
+<p><strong>Resources:</strong> <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN v5</a>, <a href="https://arxiv.org/abs/2602.12606">RelBench v2</a>, <a href="https://www.cos.io/initiatives/prereg">COS preregistration guidance</a>, <a href="../labs/l200-reproduction.md">protocol</a>, <a href="../reference/year-5-exit-exam.html">reference</a>, <a href="../labs/0200-year-5-exit-exam.ipynb">student notebook</a>, <a href="../labs/html/0200-year-5-exit-exam.html">executed solution</a>.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/year-five-exit.js"></script></body></html>

@@ -1,0 +1,127 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 184 — GelGT: choose context, then weight time</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/gelgt-viz.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><header><p class="route-kicker">Year5 · Quarter3 · Lesson 184</p><h1>GelGT: choose context, then weight time</h1></header><h2 id="One-skill:-separate-access,-selection-and-attention">One skill: separate access, selection and attention<a class="anchor-link" href="#One-skill:-separate-access,-selection-and-attention">&#182;</a></h2><p>A larger neighborhood helps only when it supplies useful information that was available for the query. By the end, you should be able to trace one GelGT prediction through those three decisions and reject a reproduction that confuses them.</p>
+<p>This serves our mission: make relational-model gains defensible through visible computation and a valid experiment. <a href="0145-relational-graph-transformer.html">Lesson 145</a> introduced the relational Transformer family; use the <a href="../reference/curriculum.html">course map</a> if that lesson's title has changed. <a href="0183-graph-transformer-pretraining.html">Lesson 183</a>'s proposed pretraining experiment asks a different question: GelGT is trained directly on its downstream task. You do not need an unfinished previous lesson to follow this one.</p>
+<p><strong>Recall first.</strong> A primary key identifies a row. A foreign key connects it to a row in another table. A query cutoff is the time at which a prediction must be possible. An attention weight tells us how much an already-admitted value contributes; it does not grant access to that value.</p>
+<div id="warmup"></div>
+
+<blockquote>
+<p><strong>Scope check.</strong> Selected GelGT reproduction <strong>INCOMPLETE_SOURCE_TEMPORAL_GATE</strong>. Fresh training <strong>NOT_RUN</strong>. Local source/mechanism audit and all <strong>8,712 labels PASS</strong>. Cloud/API <strong>$0</strong>. Learner <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+</blockquote>
+<h2 id="Why-reach-alone-is-insufficient">Why reach alone is insufficient<a class="anchor-link" href="#Why-reach-alone-is-insufficient">&#182;</a></h2><p><strong>In plain terms.</strong> Imagine predicting a driver's next finishing position. One nearby race may connect the driver to a constructor, then to other drivers. A message-passing network transports information through these edges in successive layers. Compressing many paths into fixed-size vectors can lose distinctions. Attention can connect sampled tokens directly, but cannot use a useful row that the sampler discarded.</p>
+<p>A <strong>token</strong> is a vector representing a sampled row for this query. A <strong>hop</strong> is one graph edge. GelGT addresses three bottlenecks: retain the local relational structure, choose useful distant nodes, then learn which time differences matter. It does not prove that every long-range problem disappears. Read the <a href="https://arxiv.org/html/2605.15575v2#S3">primary paper §§3.1–3.2</a>.</p>
+<h2 id="Model-architecture:-database-to-one-number">Model architecture: database to one number<a class="anchor-link" href="#Model-architecture:-database-to-one-number">&#182;</a></h2><figure class="route-figure" tabindex="0"><img src="../labs/figures/l184/architecture.svg" alt="Paper/release GelGT architecture. The released outer hybrid loop has one block; published depth remains unresolved. No full model fit ran."><figcaption>Paper/release GelGT architecture. The released outer hybrid loop has one block; published depth remains unresolved. No full model fit ran.</figcaption></figure>
+
+<p><strong>Start with a query.</strong> For regression, the published sampling budgets are 500 candidates and 300 retained tokens. <code>B</code> denotes a batch of queries, <code>K</code> the token count, and 512 the hidden width. Each token receives representations of its table type, hop distance, relative time, table fields and structural position. Normalization puts each channel on a controlled scale; concatenation joins channels side by side; a small multilayer perceptron mixes them into one vector.</p>
+<p><strong>Choose context after encoding.</strong> The seed is the query's own row. Nearby nodes are protected; more distant candidates are ranked using their dot product with the seed vector. A dot product multiplies matching coordinates and sums them. It is a learned compatibility score, not a guarantee of relevance.</p>
+<p><strong>Compute two summaries.</strong> Three GraphSAGE layers aggregate along retained edges, keeping local topology visible. In parallel, multi-head attention compares retained tokens and adds a time-dependent bias to each comparison. A head is a separate learned comparison subspace. The attention branch combines the query representation with a weighted neighbor summary.</p>
+<p><strong>Fuse and predict.</strong> The release learns a sigmoid gate: <code>g = 1/(1+exp(-w))</code>, between zero and one. It mixes <code>g × GNN + (1−g) × attention</code>; a two-layer head predicts one finishing-position value. The full released model and trainer appear in the notebook appendix. The paper/source depth discrepancy remains explicit in the <a href="../labs/l184-reproduction.md">protocol ledger</a>.</p>
+<h2 id="Mechanism-1:-preserve-a-legal-relational-route">Mechanism 1: preserve a legal relational route<a class="anchor-link" href="#Mechanism-1:-preserve-a-legal-relational-route">&#182;</a></h2><p><strong>Worked example.</strong> Driver 0 connects to races on days 5 and 15. At cutoff day 10, only day 5 is available under a strict prior-time rule. At day 20, both are available. These are different queries, even though the driver is unchanged.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l184/cache.svg" alt="Synthetic original-source cache counterexample: raw days5and15, cutoffs10and20. The early query incorrectly reuses the late context."><figcaption>Synthetic original-source cache counterexample: raw days5and15, cutoffs10and20. The early query incorrectly reuses the late context.</figcaption></figure>
+
+<p><strong>Breadth-first sampling</strong> visits all one-hop neighbors before expanding two-hop neighbors. With a finite budget, it favors broad local coverage. The retained <strong>induced graph</strong> includes the original edges whose two endpoints survived. An invalid future node must be rejected before traversal; merely hiding its target is insufficient.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The teaching sampler uses sorted ties, strict <code>&lt; cutoff</code>, and excludes untimed rows. The release uses <code>&lt;=</code> and admits untimed rows. The paper contains both strict and non-strict descriptions. These policies are recorded separately, not silently equated. The course policy still needs ingestion histories before it establishes real deployment availability.</p>
+</blockquote>
+<h2 id="Mechanism-2:-rank-distant-candidates-without-losing-the-seed">Mechanism 2: rank distant candidates without losing the seed<a class="anchor-link" href="#Mechanism-2:-rank-distant-candidates-without-losing-the-seed">&#182;</a></h2><p><strong>Worked example.</strong> Let the seed embedding be <code>[1,0]</code>. One-hop node A has embedding <code>[0,1]</code>; distant nodes B and C have <code>[0.1,0]</code> and <code>[2,0]</code>. Their seed dot products are 0, 0.1 and 2. With room for three tokens, protect seed and A, then retain C. B loses its slot.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Token</th>
+  <th style="text-align:right">Hop</th>
+  <th style="text-align:right">Score</th>
+  <th>Three-token outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Seed</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">1</td>
+  <td>Protected</td>
+</tr>
+<tr>
+  <td>A</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0</td>
+  <td>Protected</td>
+</tr>
+<tr>
+  <td>B</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">0.1</td>
+  <td>Removed</td>
+</tr>
+<tr>
+  <td>C</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">2</td>
+  <td>Retained</td>
+</tr>
+</tbody>
+</table></div>
+<p>This isolates semantic ranking: candidate graph, embeddings and budget stay fixed; only the distant score determines the last slot. If there are more protected nodes than slots, the course implementation raises an error. The release uses large sentinel scores and top-k; ties require care. After selection, remap edge indices to the new token positions.</p>
+<p><strong>Try before the lab.</strong> Reverse B and C's embeddings. Predict which edge disappears. Then decrease the budget to one: explain why quietly removing the seed would corrupt the prediction readout.</p>
+<h2 id="Mechanism-3:-learn-a-preferred-temporal-band">Mechanism 3: learn a preferred temporal band<a class="anchor-link" href="#Mechanism-3:-learn-a-preferred-temporal-band">&#182;</a></h2><p><strong>In plain terms.</strong> Useful evidence need not be the newest evidence. A model may prefer a band of lags, such as roughly two days ago. The center says where that band sits; the width says how quickly preference falls away.</p>
+<p>For a pair of tokens, <code>Δt</code> is their absolute time difference. A Gaussian feature is:</p>
+<p><code>r(Δt) = exp(−((Δt − μ)/σ)²)</code></p>
+<p>Here <code>μ</code> is the center and <code>σ</code> is a positive width. The release uses <code>abs(raw_sigma)+0.00001</code>. There is no factor of one-half in this kernel. Several such features are passed through a learned linear projection to obtain one bias per attention head. Projection weights may be negative, so a large Gaussian feature need not increase attention.</p>
+<p><strong>Worked example.</strong> With lags <code>[0,2,4]</code>, center 2 and width 2, the squared normalized distances are <code>[1,0,1]</code>. Exponentiation gives <code>[0.368,1,0.368]</code>. For an illustrative identity projection and equal content scores, softmax converts these biases into weights that sum to one. Softmax exponentiates each score and divides by the sum of the exponentials.</p>
+<figure class="route-figure" tabindex="0"><img src="../labs/figures/l184/attention.svg" alt="Synthetic Gaussian feature and one-head attention trace. Equal content scores and identity projection; not a trained performance result."><figcaption>Synthetic Gaussian feature and one-head attention trace. Equal content scores and identity projection; not a trained performance result.</figcaption></figure>
+
+<p><strong>The complete operation.</strong> Learned query and key vectors produce content scores <code>QKᵀ/√d_head</code>; <code>d_head</code> is the width of one head. Add the temporal bias, apply softmax, and take the weighted sum of the value vectors <code>V</code>. This changes contribution, not temporal legality. The source-executed lab checks this entire attention layer against explicit matrix arithmetic and compares input gradients.</p>
+<div id="gelgt-viz"></div><noscript>At cutoff 10, day 15 is excluded. With lags 0, 2, 4, center 2 and width 2, the feature is 0.368, 1, 0.368. A zero projection restores uniform attention; a negative projection reverses the preference.</noscript>
+
+<p><strong>Predict an intervention.</strong> Set projection to zero. The temporal contribution should disappear. Set it to minus one: the preference reverses. This is why a special-case scalar kernel calculation cannot establish an unconditional performance gain or a universal attention-ratio theorem for every trained projection.</p>
+<h2 id="Reproduction:-a-failed-prerequisite-is-evidence">Reproduction: a failed prerequisite is evidence<a class="anchor-link" href="#Reproduction:-a-failed-prerequisite-is-evidence">&#182;</a></h2><div id="predict"></div>
+
+<p><strong>Named target.</strong> GelGT v2 Table 2, <code>rel-f1/driver-position</code>: reported test MAE <strong>3.7345 ± 0.1200</strong>. Mean absolute error averages the absolute distance between predictions and labels; lower is better. We have not produced a new model MAE. The <a href="https://github.com/USTC-DataDarknessLab/GelGT/tree/1997b2c2f480ce5d3cbdb48d46f33cc303f5feb4">official source</a> is pinned, rather than following a moving branch.</p>
+<p><strong>What ran.</strong> All nine cached database tables and all three task splits are authenticated. SQL reconstructs every target from raw race-result rows. Original sampling functions execute on a temporal counterexample. Original attention executes on controlled tensors; independent arithmetic checks outputs and gradients. These checks have different evidence boundaries.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Split</th>
+  <th style="text-align:right">Complete queries</th>
+  <th style="text-align:right">Entity-only entries</th>
+  <th style="text-align:right">Lost distinct entries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>train</td>
+  <td style="text-align:right">7,453</td>
+  <td style="text-align:right">771</td>
+  <td style="text-align:right">6,682</td>
+</tr>
+<tr>
+  <td>val</td>
+  <td style="text-align:right">499</td>
+  <td style="text-align:right">47</td>
+  <td style="text-align:right">452</td>
+</tr>
+<tr>
+  <td>test</td>
+  <td style="text-align:right">760</td>
+  <td style="text-align:right">56</td>
+  <td style="text-align:right">704</td>
+</tr>
+</tbody>
+</table></div>
+<p>All labels reconstruct with maximum error <strong>0</strong>. Original attention: maximum forward error <strong>4.44×10⁻¹⁶</strong> and input-gradient error <strong>2.15×10⁻¹⁵</strong> in a float64, dropout-zero controlled test. Synthetic source probe: <strong>2 queries → 1 cache entry</strong>, admitting one future node to the early query.</p>
+<p><strong>Why the gate fails.</strong> The release's context dictionary uses <code>S[table][entity]</code>, then retrieves that entry for every matching entity in a 10,000-row chunk. Each complete F1 split fits within one chunk. The later query overwrites the earlier entry. The synthetic source execution demonstrates that this can pass a future race to an earlier query. The stored lag is relative to the later cutoff, so it may still look nonnegative.</p>
+<p><strong>What the counts mean.</strong> Cache collisions count lost distinct query entries, not observed future-row occurrences across the complete database. We did not run the full graph materialization, training, or full-population context audit after this blocker. Correct labels do not imply correct features.</p>
+<p><strong>What would permit a future experiment.</strong> Preserve full query keys through sampling and caching; authenticate per-query raw timestamps; settle padding, fitting scope, evaluation dropout, source/paper configuration and seed aggregation; then measure the full cost before dispatch. A repaired release defines a new declared protocol. It cannot be described as an unchanged historical reproduction.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The aggregate ceiling is $10 including retries and verification, with a planned stop at $8 and $2 reserve. No paid pilot ran because the scientific gate failed earlier. Full reproduction remains <strong>INCOMPLETE</strong>. Nothing here changes the learner's mastery record or claims deployment.</p>
+</blockquote>
+<h2 id="Lab:-implement,-intervene,-defend">Lab: implement, intervene, defend<a class="anchor-link" href="#Lab:-implement,-intervene,-defend">&#182;</a></h2><p>Download the <a href="../labs/0184-gelgt-temporal-attention.ipynb">student notebook</a>, inspect the <a href="../labs/html/0184-gelgt-temporal-attention.html">executed solution</a>, or use the <a href="../reference/gelgt-temporal-attention.html">quick reference</a>. The portable notebook embeds the data, source and figures. It needs Python, NumPy, pandas, PyArrow, DuckDB and PyTorch; live Colab is <strong>NOT_CHECKED</strong>.</p>
+<ol>
+<li>Implement strict two-hop temporal sampling; test earlier and equal cutoffs.</li>
+<li>Implement the Gaussian feature; compare it against the actual release's bias and attention arithmetic.</li>
+<li>Implement complete-key MAE; reject duplicate, missing and nonfinite predictions.</li>
+<li>Run the source counterexample and all 8,712 label reconstructions. Change one assumption and explain the boundary it affects.</li>
+</ol>
+<p>The synthetic attention output is not a prediction benchmark. The notebook deliberately leaves fresh training gated off. Inspect the <a href="../labs/l184-reproduction.md">full protocol and exact commands</a> and <a href="../labs/evidence/l184/report.json">machine-readable evidence</a>.</p>
+<div id="teachback"></div>
+
+<p><strong>Bridge forward.</strong> A temporally valid prediction is still not a causal intervention. <a href="0185-causal-relational-data.html">Lesson 185</a> asks whether acting on a prediction changes an outcome. First make the information contract correct; then ask what decision the model supports.</p>
+<p>Ask the teaching agent about any unclear step, or paste your written defense for feedback. Preparing this lesson does not count as completing it.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/gelgt-viz.js"></script><script src="../assets/l184-lesson.js"></script></body></html>

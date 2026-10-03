@@ -1,0 +1,97 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 196 — Community engagement</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/multitask-reproduction.css"><link rel="stylesheet" href="../assets/community-question.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><p class="eyebrow">Year 5 · Lesson 196 · community engagement</p>
+
+<h1 id="Turn-a-finding-into-an-answerable-question">Turn a finding into an answerable question<a class="anchor-link" href="#Turn-a-finding-into-an-answerable-question">&#182;</a></h1><p><strong>Your win:</strong> prepare one technical question that another researcher can run, answer, and help you investigate. About 15 minutes for the lesson; the external conversation has its own timescale.</p>
+<p><a href="0195-thesis-stress-test.html">Lesson 195</a> narrowed our thesis to claims supported by evidence. It could not tell us which preprocessing revision the RDBLearn authors used. That is a good reason to ask the people who own the code. Your mission is to make relational ML evidence persuasive to skeptics; an explicit uncertainty is a useful starting point for collaboration.</p>
+<div class="repro-status"><strong>Author preparation:</strong> all four approved original-preprocessor cases reproduced. Model-score effect NOT_ESTABLISHED. Full RDBLearn reproduction remains INCOMPLETE_SOURCE_PREPROCESSING_GATE. Question DRAFT_ONLY; learner defense pending.</div>
+
+<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without opening the old report, write one sentence for each: What did the preprocessing audit observe? What did it leave unmeasured? Who could clarify the intended behavior?</p>
+<details><summary>Compare your recall</summary><p>Known category codes changed after some unseen categories. We did not measure benchmark score impact or establish the historical paper environment. The RDBLearn maintainers own this implementation. A RelBench dataset maintainer cannot necessarily explain a separate model package.</p></details>
+
+<p>A <strong>support set</strong> is the labeled set supplied to an in-context predictor. A <strong>query</strong> is an example to predict. A categorical encoder assigns integer codes to category names. If support has already been encoded, changing a name's code later can make the same name look different across support and query. That motivates a check; it does not measure what any particular predictor does with those codes.</p>
+<h2 id="2-%C2%B7-Start-with-the-smallest-complete-observation">2 &#183; Start with the smallest complete observation<a class="anchor-link" href="#2-%C2%B7-Start-with-the-smallest-complete-observation">&#182;</a></h2><p>We fit the released full TabularPreprocessor on twelve rows: b,c,d repeated four times, plus numeric values 0–11. We cache the encoded support, transform known categories, transform one unseen category, and transform the known categories again. Every case gets a fresh fitted pipeline.</p>
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Unseen row</th>
+  <th>Known codes before</th>
+  <th>Known codes after</th>
+  <th>Query b alone / batched</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>a</td>
+  <td>[0, 1, 2]</td>
+  <td>[1, 2, 3]</td>
+  <td>0 / 1</td>
+</tr>
+<tr>
+  <td>z</td>
+  <td>[0, 1, 2]</td>
+  <td>[0, 1, 2]</td>
+  <td>0 / 0</td>
+</tr>
+<tr>
+  <td>0</td>
+  <td>[0, 1, 2]</td>
+  <td>[1, 2, 3]</td>
+  <td>0 / 1</td>
+</tr>
+<tr>
+  <td>e</td>
+  <td>[0, 1, 2]</td>
+  <td>[0, 1, 2]</td>
+  <td>0 / 0</td>
+</tr>
+</tbody>
+</table></div>
+<p>Numeric controls stay [1,2,3] in every case. A separate fresh-pipeline check encodes query b alone and together with the unseen row. Its code is 0 alone; it is 1 alongside a or 0, and 0 alongside z or e. This shows dependence on another row in these synthetic query batches.</p>
+<p><strong>Worked trace:</strong> sorting b,c,d,a yields a,b,c,d. Now b has index 1, while the cached support still uses index 0. z sorts after the fitted categories, so their codes do not move. Keeping both controls prevents an overstatement such as “every unseen category changes known codes.”</p>
+<p>Read the <a href="https://github.com/HKUSHXLab/rdblearn/blob/b5b03ebf8091547285a6e06cba53d2d1a40cb171/rdblearn/preprocessing.py">exact original implementation</a>, especially DynamicLabelEncoder.transform. The diagnostic uses the full original pipeline, including AutoGluon, rather than replacing it with the sorting explanation. <a href="../labs/l196-reproduction.md">Executable protocol</a>.</p>
+<details><summary>Predict, then reveal: has AUROC decreased?</summary><p>No AUROC was computed. The observation is a code-consistency counterexample. Task frequency, backend sensitivity and historical experiment impact remain unmeasured. A model might treat these integers differently; only an appropriate model comparison can establish an effect.</p></details>
+
+<h2 id="3-%C2%B7-Send-the-question-to-its-owner">3 &#183; Send the question to its owner<a class="anchor-link" href="#3-%C2%B7-Send-the-question-to-its-owner">&#182;</a></h2><div class="repro-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Question concerns</th>
+  <th>Start here</th>
+  <th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>RDBLearn preprocessing</td>
+  <td><a href="https://github.com/HKUSHXLab/rdblearn/issues">RDBLearn issues</a></td>
+  <td>The implementation lives in that project</td>
+</tr>
+<tr>
+  <td>RelBench task or data contract</td>
+  <td><a href="https://huggingface.co/relbench">RelBench community hub</a></td>
+  <td>Find the relevant dataset or Space community tab</td>
+</tr>
+<tr>
+  <td>PyG sampling or message passing</td>
+  <td><a href="https://github.com/pyg-team/pytorch_geometric/discussions">PyG Q&amp;A discussions</a></td>
+  <td>Framework-specific support and discussion</td>
+</tr>
+</tbody>
+</table></div>
+<p>These destinations were checked on 2026-10-02. The <a href="https://github.com/stanford-star/relbench">RelBench README</a> now points to Hugging Face; the curriculum's older “mailing list” wording is a historical pointer. The <a href="https://github.com/pyg-team/pytorch_geometric/discussions">PyG forum</a> has a Q&amp;A category. This is a map of topic ownership, not a guarantee of response or posting access.</p>
+<p>Before posting, search open and closed threads for DynamicLabelEncoder, unseen category and the release version. Inspect any existing fix and its commit. If it addresses the same question, use that thread. Preserve the old pinned result even if current main changes. Ask once in the most relevant venue, then allow time for a reply.</p>
+<h2 id="4-%C2%B7-Give-a-maintainer-something-they-can-answer">4 &#183; Give a maintainer something they can answer<a class="anchor-link" href="#4-%C2%B7-Give-a-maintainer-something-they-can-answer">&#182;</a></h2><p>An effective question contains <strong>goal → version → tiny reproducer → expected/observed result → one decision</strong>. Explain the expectation as your understanding, so it can be corrected. Include unchanged controls, environment versions and the narrow evidence boundary. Avoid asking maintainers to audit your entire research thesis.</p>
+<div class="community-draft"><p><strong>Goal:</strong> reproduce the published RDBLearn experiments using v0.1.2.</p><p><strong>Observation:</strong> after unseen a or 0, known codes change from [0,1,2] to [1,2,3]; z/e and numeric controls are unchanged.</p><p><strong>Question:</strong> how should support/query encodings stay aligned when the vocabulary expands, and which preprocessing revision/environment matches the published experiments?</p><p><strong>Boundary:</strong> this synthetic check measures no benchmark effect. A correction to the expectation or setup is welcome.</p></div>
+
+<p>The <a href="../labs/evidence/l196/question-draft.md">complete local draft</a> includes the minimal code and measured environment. It is ready for your review; no message has been sent. You can change its wording while preserving the evidence.</p>
+<p><strong>Try a revision:</strong> replace “This proves the paper is wrong” with a question that names the release, the observation, and what you need to learn. Compare your revision with the draft after writing it. Exact historical implementation provenance and a tested code fix would answer different parts of the uncertainty.</p>
+<h2 id="5-%C2%B7-A-reply-becomes-evidence-only-after-a-check">5 &#183; A reply becomes evidence only after a check<a class="anchor-link" href="#5-%C2%B7-A-reply-becomes-evidence-only-after-a-check">&#182;</a></h2><p>A reply might identify an intended contract, a fixed revision, an environment difference, or a mistake in our reproduction. Record the actual link and wording, then translate it into a test. If a new commit is proposed, freeze it and rerun the same four cases alongside the original. A claim that historical results are unaffected needs historical execution evidence or a relevant comparison; a current fix alone cannot establish that.</p>
+<div id="community-feedback"></div>
+<noscript><p>Feedback states: no thread → DRAFT_ONLY; posted without response → AWAITING_RESPONSE; response without a completed check → RESPONSE_UNVERIFIED; response plus documented check → FEEDBACK_CHECKED. These describe workflow, not whether a scientific claim is true.</p></noscript>
+
+<p>The widget is practice, not your actual participation record. A checked reply may refute your initial interpretation. Log the evidence either way. With no reply, retain the uncertainty; silence is neither agreement nor disagreement.</p>
+<h2 id="6-%C2%B7-Practice,-then-make-the-real-world-step">6 &#183; Practice, then make the real-world step<a class="anchor-link" href="#6-%C2%B7-Practice,-then-make-the-real-world-step">&#182;</a></h2><p>Open the <a href="../labs/0196-community-engagement.ipynb">student notebook</a>. Implement three small contracts: summarize the complete case set, route a question by ownership, and track feedback without inventing completion. The <a href="../labs/solutions/0196-community-engagement.ipynb">solution</a> runs the original full diagnostic and displays its source. It also carries a portable offline replay of the measured observation; the two modes are explicitly separate.</p>
+<p>Use the <a href="../labs/evidence/l196/question-draft.md">question draft</a> and <a href="../labs/evidence/l196/response-log.md">response log</a> to prepare your real thread. Posting is your external action, or a separately authorized agent action. The lesson package being complete does not mean that action has happened.</p>
+<p><strong>Exit:</strong> explain the code trace without looking, choose the owner, provide a real thread URL when posted, and document either a checked response or an honest awaiting-response state. Finish with: “I changed ___ because ___; I still cannot claim ___.” The community-engagement milestone remains incomplete until feedback is assessed; local exercises establish neither participation nor mastery.</p>
+<p><strong>Return tomorrow:</strong> reconstruct why a and z differ, then draft a similarly scoped question about a different uncertainty from Lesson 195. Ask the agent follow-up questions whenever the source behavior, community choice or evidence boundary is unclear.</p>
+<p><strong>Next:</strong> <a href="0197-year-5-essay.html">Lesson 197</a> uses your checked findings and still-open questions in a landscape essay. You can write it while awaiting a reply; preserve that unanswered state in your argument.</p>
+<p><a href="../reference/community-engagement.html">Quick reference</a> · <a href="../labs/l196-reproduction.md">Reproduction protocol</a> · <a href="0157-open-source-contribution.html">Lesson 157: reproducible contribution</a> · <a href="0195-thesis-stress-test.html">Previous: thesis stress-test</a></p>
+</article><script src="../assets/community-question.js"></script></body></html>

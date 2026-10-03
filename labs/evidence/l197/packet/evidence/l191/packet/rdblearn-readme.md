@@ -1,0 +1,248 @@
+# RDBLearn 🚀
+
+> Relational Database Learning with Foundation Models.
+
+📈 Latest benchmark results (**RDBLearn v1.1**) are reported in [*Parameter-Free Encoders Remain Viable for RDB Foundation Models*](https://arxiv.org/abs/2607.05476).
+
+---
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Core API Reference](#core-api-reference)
+- [Papers & Configurations](#papers--configurations)
+- [License](#license)
+
+---
+
+<a id="introduction"></a>
+
+## Introduction 🎯
+
+**RDBLearn** is a framework designed to apply single-table foundation models to multi-table relational database tasks. It automates the process of flattening relational data into a single feature-rich table using Deep Feature Synthesis (DFS) and then leverages powerful single-table estimators (like TabPFN) for prediction.
+
+### Core Components
+
+* 🔧 **FastDFS** - Efficient Deep Feature Synthesis for automated multi-table flattening.
+* 🤖 **RDBLearn Estimators** - Scikit-learn compatible `RDBLearnClassifier` and `RDBLearnRegressor` that integrate DFS and single-table models.
+* ⚡ **Foundation Models** - Seamless integration with TabPFN and other foundation models for single table prediction tasks.
+
+---
+
+<a id="installation"></a>
+
+## Installation ⚙️
+
+
+Requires **Python 3.12**.
+
+```bash
+pip install rdblearn
+```
+
+This installs `fastdfs` and other PyPI dependencies. For **flash-attn** (CUDA / LimiX-style GPU workloads), install separately — PyPI packages cannot declare direct URL dependencies:
+
+```bash
+pip install -r requirements-gpu.txt
+```
+
+Or install from source:
+
+```bash
+git clone https://github.com/HKUSHXLab/rdblearn.git
+cd rdblearn
+git checkout v0.1.2
+pip install -e .
+# optional GPU wheel:
+pip install -r requirements-gpu.txt
+```
+
+---
+
+<a id="usage"></a>
+
+## Usage 🚀
+
+### Basic Example (RelBench rel-avito)
+
+RDBLearn includes two features enabled by default that improve prediction quality:
+
+- **Target History Augmentation** (`enable_target_augmentation`): Injects the full training data (`X` and `y`) as a history table into the RDB before downsampling, allowing DFS to derive entity-level aggregate features from historical target values (e.g., mean past CTR per ad). Temporal cutoffs are respected to prevent data leakage. Requires `cutoff_time_column` to be provided.
+- **Temporal Difference Features** (`temporal_diff`): Converts absolute epoch-time columns produced by DFS into relative temporal differences from the cutoff time (i.e., `cutoff_time - epochtime`), so the model sees how recently events occurred rather than raw timestamps.
+
+```python
+from rdblearn.datasets import RDBDataset
+from rdblearn.estimator import RDBLearnRegressor
+from tabpfn import TabPFNRegressor
+
+# 1. Load RelBench dataset and task
+dataset = RDBDataset.from_relbench("rel-avito")
+task = dataset.tasks["ad-ctr"]
+
+# 2. Initialize the estimator with a base model (e.g., TabPFN)
+#    Both enable_target_augmentation and temporal_diff are enabled by default.
+reg = RDBLearnRegressor(
+    base_estimator=TabPFNRegressor(device="cpu"), # or "cuda"
+    config={
+        "dfs": {"max_depth": 2},
+        "enable_target_augmentation": True,
+        "temporal_diff": {"enabled": True},
+        "max_train_samples": 1000
+    }
+)
+
+# 3. Fit on relational data
+X_train = task.train_df.drop(columns=[task.metadata.target_col])
+y_train = task.train_df[task.metadata.target_col]
+
+reg.fit(
+    X=X_train,
+    y=y_train,
+    rdb=dataset.rdb,
+    key_mappings=task.metadata.key_mappings,
+    cutoff_time_column=task.metadata.time_col
+)
+
+# 4. Predict
+X_test = task.test_df.drop(columns=[task.metadata.target_col])
+predictions = reg.predict(X=X_test)
+```
+
+See `examples/` for more detailed usage.
+
+---
+
+<a id="core-api-reference"></a>
+
+## Core API Reference
+
+### `RDBDataset`
+The central class for managing relational data and task-specific tables.
+
+- **`from_relbench(dataset_name: str) -> RDBDataset`**: Load a dataset from the RelBench benchmark.
+- **`from_hf_salt(for_task: Optional[str] = None) -> RDBDataset`**: Load Hugging Face [SALT](https://huggingface.co/datasets/sap-ai-research/SALT) with eight classification tasks. All task label columns are stripped from the shared RDB so DFS cannot leak labels across tasks; labels remain in each task's `train_df` / `test_df`.
+- **`from_4dbinfer(dataset_name: str) -> RDBDataset`**: Load a dataset from the 4DBInfer benchmark.
+- **`save(path: str)`**: Save the RDB and all associated tasks to disk.
+- **`load(path: str) -> RDBDataset`**: Load a previously saved dataset from disk.
+
+### `RDBLearnClassifier` / `RDBLearnRegressor`
+Scikit-learn compatible estimators for relational learning.
+
+- **`__init__(base_estimator, config: Optional[dict] = None)`**:
+    - `base_estimator`: A single-table estimator (e.g., `TabPFNClassifier`, `AutoGluonClassifier`).
+    - `config`: Optional dictionary to override default DFS or sampling settings. Key options:
+        - `dfs`: DFS configuration (e.g., `{"max_depth": 2}`).
+        - `max_train_samples` (int, default 10000): Maximum training samples before downsampling.
+        - `stratified_sampling` (bool, default False): Use stratified sampling for classification tasks.
+        - `enable_target_augmentation` (bool, default True): Augment the RDB with the full training target history table, enabling DFS to derive entity-level target aggregate features (e.g., entity mean). Requires `cutoff_time_column` to be set during `fit`.
+        - `temporal_diff` (dict or TemporalDiffConfig, default `{"enabled": True}`): Convert DFS-generated epoch-time columns into temporal difference features relative to the cutoff time. Supports `enabled` (bool) and `exclude_columns` (list of column names to skip).
+        - `predict_batch_size` (int, default 5000): Batch size for prediction.
+- **`fit(X, y, rdb, key_mappings, cutoff_time_column=None, **kwargs)`**:
+    - `X`: Training features (DataFrame).
+    - `y`: Training labels (Series).
+    - `rdb`: The relational database context (`fastdfs.RDB`).
+    - `key_mappings`: Dictionary mapping columns in `X` to `table.primary_key` in the RDB.
+    - `cutoff_time_column`: Optional column name in `X` representing the time of the observation.
+- **`predict(X, rdb=None, **kwargs)`**:
+    - `X`: Test features.
+    - `rdb`: Optional RDB context (uses the one from `fit` if not provided).
+- **`predict_proba(X, rdb=None, **kwargs)`**: (Classifier only) Predict class probabilities.
+
+**Multiclass (>10 classes):** For classification tasks with more than 10 training classes, `RDBLearnClassifier` automatically uses **base-10-hierarchical** inference: the label space is decomposed into decimal digit heads (each head has at most 10 classes, compatible with TabPFN), then digit probabilities are fused into a full `(n_samples, C)` matrix. No extra configuration is required. Tasks with **C ≤ 10** use a single model on the original target.
+
+### `TaskMetadata`
+Data structure containing task-specific information.
+- `key_mappings`: Dict[str, str]
+- `target_col`: str
+- `time_col`: Optional[str]
+- `task_type`: Optional[str]
+- `evaluation_metric`: Optional[str]
+
+### LimiX Integration
+`rdblearn.utils` provides wrappers to adapt LimiX predictors into scikit-learn compatible estimators.
+
+- **`LimiXWrapperClassifier(predictor)`**: Wrapper for classification tasks.
+    - `predictor`: An initialized `LimiXPredictor` instance.
+    - `fit(X, y)`: Stores training data for in-context inference.
+    - `predict(X)`: Returns class labels.
+    - `predict_proba(X)`: Returns class probabilities.
+
+- **`LimiXWrapperRegressor(predictor)`**: Wrapper for regression tasks.
+    - `predictor`: An initialized `LimiXPredictor` instance.
+    - `fit(X, y)`: Stores training data.
+    - `predict(X)`: Returns predicted values.
+
+**Note**: You must install LimiX separately and provide an initialized `LimiXPredictor` to these wrappers.
+
+### TabFM Integration
+`rdblearn.utils` also provides wrappers for Google's **TabFM 1.0.0** (`google/tabfm-1.0.0-pytorch`), a 1.6B-parameter in-context tabular foundation model.
+
+- **`TabFMWrapperClassifier(checkpoint_path=None, device="cuda", n_estimators=8, max_num_features=None, chunk_size="auto", dtype="float32")`**: Wrapper for classification tasks (max 10 classes, an architectural TabFM limit).
+    - `checkpoint_path`: local directory holding the `classification/` + `regression/` subfolders of the HF repo; `None` downloads from Hugging Face.
+    - `chunk_size="auto"`: enables TabFM's activation chunking (off by default in `tabfm==1.0.0`) with a constant cells-per-chunk budget, so wide DFS feature sets fit on 32 GB GPUs without dropping features.
+    - `dtype="bfloat16"`: halves activation memory via an fp32↔bf16 IO adapter (bf16 is TabFM's upstream design dtype); use for very wide/deep feature sets.
+    - `fit(X, y)` / `predict(X)` / `predict_proba(X)`: standard scikit-learn contract.
+- **`TabFMWrapperRegressor(...)`**: same options, for regression. Note TabFM's regression head emits a single scalar per row — unlike TabPFN there is no predictive distribution (no median/quantiles).
+
+Install TabFM without disturbing the pinned torch build:
+
+```bash
+pip install "jaxtyping<0.3" "typeguard<3" absl-py safetensors
+pip install tabfm --no-deps
+```
+
+The HF repo ships `model.safetensors` only, while the `tabfm==1.0.0` wheel loads `pytorch_model.bin`; the wrapper converts once automatically on first use. See `examples/rdblearn_tabfm_example.py`.
+
+---
+
+<a id="papers--configurations"></a>
+
+## Papers & Configurations 📚
+
+The continual development of RDBLearn has contributed to the following papers. Experiment configurations used in each paper are documented in **[docs/PAPER_CONFIGS.md](docs/PAPER_CONFIGS.md)**.
+
+| Paper | Venue | Configs |
+| --- | --- | --- |
+| [No Need to Train Your RDB Foundation Model](https://arxiv.org/abs/2602.13697) | ICML 2026 | [PAPER_CONFIGS.md §1](docs/PAPER_CONFIGS.md#1-icml-2026--no-need-to-train-your-rdb-foundation-model) |
+| [RDBLearn: Simple In-Context Prediction Over Relational Databases](https://arxiv.org/abs/2602.18495) | arXiv | [PAPER_CONFIGS.md §2](docs/PAPER_CONFIGS.md#2-package-paper--rdblearn-simple-in-context-prediction-over-relational-databases) |
+| [Parameter-Free Encoders Remain Viable for RDB Foundation Models](https://arxiv.org/abs/2607.05476) | 2nd ICML Workshop on Foundation Models for Structured Data, 2026 | [PAPER_CONFIGS.md §3](docs/PAPER_CONFIGS.md#3-icml-workshop-2026--parameter-free-encoders-remain-viable-for-rdb-foundation-models) |
+
+### BibTeX
+
+```bibtex
+@inproceedings{xu2026no,
+title={No Need to Train Your {RDB} Foundation Model},
+author={Linjie Xu and Yanlin Zhang and Quan Gan and Minjie Wang and David Wipf},
+booktitle={Forty-third International Conference on Machine Learning},
+year={2026},
+url={https://openreview.net/forum?id=hrtEiSftwk}
+}
+
+@misc{zhang2026rdblearn,
+  title         = {{RDBLearn}: Simple In-Context Prediction Over Relational Databases},
+  author        = {Zhang, Yanlin and Xu, Linjie and Gan, Quan and Wipf, David and Wang, Minjie},
+  year          = {2026},
+  eprint        = {2602.18495},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.DB},
+  url           = {https://arxiv.org/abs/2602.18495}
+}
+
+@inproceedings{xu2026parameterfree,
+title={Parameter-Free Encoders Remain Viable for {RDB} Foundation Models},
+author={Linjie Xu and David Wipf},
+booktitle={2nd ICML Workshop on Foundation Models for Structured Data},
+year={2026},
+url={https://openreview.net/forum?id=wRWaegFYMx}
+}
+```
+
+---
+
+<a id="license"></a>
+
+## License 📜
+
+This project is licensed under the Apache 2.0 [License](LICENSE).

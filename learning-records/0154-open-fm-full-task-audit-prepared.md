@@ -1,0 +1,3 @@
+# Full-task reporting prepared; model reproduction stopped at source admission
+
+Author preparation for Lesson193, not a record of learner mastery. The approved21task RDBLearn experiment retains all567validation and63test slots, but fresh original preprocessing interventions fail the shared code-stability invariant; real-task occurrence and score effects are unestablished. Model inference remains NOT_RUN, full reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE. The portable audit teaches complete seed/task accounting and preserves unknown regression normalization. Learner TODO implementation and written defense remain PENDING_WRITTEN_DEFENSE; L194 must not infer win/loss evidence from blank scores.

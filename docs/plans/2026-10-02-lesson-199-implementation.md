@@ -13,3 +13,5 @@
 7. Update manifest/curriculum/resources/notes/preparation record and narrowly add Pages copy block. Seal artifacts and execute actual Pages build from temporary index including needed predecessor packages. Report exact statuses and elapsed execution without claiming deployment or learner mastery.
 
 Execution proceeds locally under existing user approval. No additional handoff or permission step is required. Preserve the shared index; only the approved planning documents are committed.
+
+Integration note: L198 appeared after the L199 freeze. Add a prerequisite link and explicitly map its different hypotheses; do not replace the approved packet or transfer L190 ordinal scores to L198. Learner uses their own L198 cards for the final memo.

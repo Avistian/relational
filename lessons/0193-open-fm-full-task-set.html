@@ -1,0 +1,223 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 193 — Open FM reproduction: full task set</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/multitask-reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><h1>A result table that keeps every task</h1><div class="eyebrow">YEAR 5 · LESSON 193 · REPRODUCTION PRACTICE</div>
+
+<p><strong>One skill:</strong> report a multi-task experiment without letting missing runs, incompatible units or selection decisions disappear inside an average. Read the core in about 15 minutes; do the notebook separately.</p>
+<div class="repro-status"><strong>Full model reproduction: INCOMPLETE.</strong> Fresh source diagnostic and complete ledger audit are finished. Model inference: NOT_RUN, 0/21 tasks. Cloud/API spend: $0. Learner: PENDING_WRITTEN_DEFENSE.</div>
+
+<h2 id="1-%C2%B7-From-one-task-to-a-task-set">1 &#183; From one task to a task set<a class="anchor-link" href="#1-%C2%B7-From-one-task-to-a-task-set">&#182;</a></h2><p>Our mission is to test whether relational structure adds value. A good result on one convenient task cannot carry that claim across databases. <a href="0192-open-fm-setup-data.html">Lesson 192's setup work</a> chose RDBLearn and inspected one task. Here we keep the same paper and released pipeline, but expand the <strong>contract</strong> to every reported task. L192 completed its setup audit, while model inference remained blocked. Its single-task protocol and saved preprocessing audit motivated the <a href="../labs/evidence/l193/packet/preprocessing.json">fresh L193 check</a> that forms the bridge here.</p>
+<p><strong>Retrieve first:</strong> What identifies a temporal query? Which split chooses a model? What does another support seed replicate?</p>
+<details><summary>Check after answering</summary><p>A complete key includes entity and cutoff; the same entity can recur. Validation selects a configuration. Another support seed repeats within-task sampling; it does not create another independent database.</p></details>
+
+<p><a href="0178-fair-model-comparison.html">Lesson 178</a> introduced this relational-features-plus-tabular-model approach. <a href="0190-research-gap-checkpoint.html">Lesson 190</a> separated evidence from a research claim. Today's new difficulty is accounting: the denominator is part of the experiment.</p>
+<h2 id="2-%C2%B7-Model-architecture:-where-the-shared-risk-lives">2 &#183; Model architecture: where the shared risk lives<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-where-the-shared-risk-lives">&#182;</a></h2><p>RDBLearn turns related rows into a fixed-width table, then supplies examples and queries to a pretrained tabular predictor. The relational feature generator has no learned encoder weights. The backend weights stay frozen during in-context prediction; fitting support/preprocessing is still data-dependent. Depth and backend are selected on validation. See the <a href="https://arxiv.org/html/2602.18495v1#S3">primary paper, §§3–5</a>.</p>
+<figure class="repro-figure"><picture><source media="(max-width:520px)" srcset="../labs/figures/l193/architecture-mobile.svg"><img src="../labs/figures/l193/architecture.svg" alt="RDBLearn computation and admission boundaries. Intended per-query temporal filtering requires its own audit. The shared preprocessing gate stopped the declared experiment before backend inference."></picture><figcaption>RDBLearn computation and admission boundaries. Intended per-query temporal filtering requires its own audit. The shared preprocessing gate stopped the declared experiment before backend inference.</figcaption></figure>
+
+<p>Read one path: a query is <code>(entity, cutoff)</code> → restrict reachable rows to the allowed history → aggregate along join paths → produce one feature vector → apply the fitted preprocessing map → predict using labeled support. Support labels must also be available by the relevant prediction time. This is the intended contract; the drawing does not certify the released pipeline's temporal validity.</p>
+<p><strong>Predict:</strong> if preprocessing changes a fitted category's code after seeing a new query category, can every task safely reuse that pipeline?</p>
+<p>We freshly ran the original full preprocessor on synthetic inputs. Fitting categories <code>b,c,d</code> gives codes <code>0,1,2</code>. Introducing <code>a</code> produces a sorted class list <code>a,b,c,d</code>, so the same known categories become <code>1,2,3</code>. The frozen support matrix still contains the earlier codes. The same query <code>b</code> is encoded differently alone and beside <code>a</code>.</p>
+<figure class="repro-figure"><img src="../labs/figures/l193/codes.svg" alt="Measured code changes for the same known categories after an unseen category is transformed. The diagram reports a synthetic source diagnostic, not task-level model accuracy."><figcaption>Measured code changes for the same known categories after an unseen category is transformed. The diagram reports a synthetic source diagnostic, not task-level model accuracy.</figcaption></figure>
+
+<div id="category-explorer"></div>
+<noscript>Measured diagnostic: unseen a or 0 shifts all three known codes; unseen z or e shifts none. Numeric controls stay unchanged. Benchmark score impact is NOT_ESTABLISHED.</noscript>
+
+<p>This establishes a <strong>source preprocessing invariant failure under the recorded environment</strong>. It does not establish how often real tasks encounter the condition, how a backend reacts, or whether a paper score changes. We stop the declared suite at this shared admission check. Patching the encoder and claiming the original experiment would change the protocol. <a href="../labs/evidence/l193/packet/preprocessing.json">Fresh observations</a> · <a href="../labs/_preflight_l193.py">original-source diagnostic</a>.</p>
+<h2 id="3-%C2%B7-Freeze-the-whole-experiment-before-measuring">3 &#183; Freeze the whole experiment before measuring<a class="anchor-link" href="#3-%C2%B7-Freeze-the-whole-experiment-before-measuring">&#182;</a></h2><p>The chosen target is <strong>RDBLearn, arXiv 2602.18495v1, Tables 1–3</strong>: eight RelBench classification tasks, eight RelBench regression tasks and five 4DBInfer classification tasks. The full scope is the RDBLearn column; retraining every comparator or pretraining the tabular backends is outside it. <a href="https://arxiv.org/html/2602.18495v1#A1">Paper §5 and Appendix A</a>.</p>
+<p>For each task and each course seed <code>0,1,2</code>, search depths <code>2,3,4</code> × backends <code>TabPFN-v2, TabPFN-v2.5, LimiX-16M</code>. Keep the published 10,000-example support cap and official splits. Three repeatability seeds are a disclosed extension: the original seeds are not recovered. Source release 0.1.2 and FastDFS 0.2.1 are pinned; checkpoint bytes, full data identities and the historical environment remain unestablished.</p>
+<p><strong>Count it:</strong> <code>21 × 3 × 9 = 567</code> validation candidates, then <code>21 × 3 = 63</code> selected test evaluations. A failed candidate is not permission to select among eight. A missing seed is not permission to report a two-seed result as three-seed reproduction.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">choose_config</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">metric</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Require the complete declared candidate set; use validation only, stable ties.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;AUROC&#39;</span><span class="p">,</span><span class="s1">&#39;MAE&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">order</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">order</span><span class="p">))</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid metric or candidate order&#39;</span><span class="p">)</span>
+    <span class="n">scores</span><span class="o">=</span><span class="p">{}</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;score&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;split&#39;</span><span class="p">]</span><span class="o">!=</span><span class="s1">&#39;val&#39;</span> <span class="ow">or</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">scores</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Duplicate, nonfinite or non-validation candidate&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span><span class="o">&lt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">metric</span><span class="o">==</span><span class="s1">&#39;AUROC&#39;</span> <span class="ow">and</span> <span class="n">value</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">):</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid score&#39;</span><span class="p">)</span>
+        <span class="n">scores</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]]</span><span class="o">=</span><span class="n">value</span>
+    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span><span class="o">!=</span><span class="nb">set</span><span class="p">(</span><span class="n">order</span><span class="p">):</span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incomplete candidate set&#39;</span><span class="p">)</span>
+    <span class="n">direction</span><span class="o">=-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">metric</span><span class="o">==</span><span class="s1">&#39;AUROC&#39;</span> <span class="k">else</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">order</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">name</span><span class="p">:</span><span class="n">direction</span><span class="o">*</span><span class="n">scores</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+</pre></div>
+<p>The function refuses incomplete candidate sets and test-split scores. It breaks equal validation scores using the order frozen before execution. Classification maximizes AUROC; regression minimizes MAE. Fresh scoring would align complete query identities and independently recalculate metrics before admitting any <code>COMPLETE</code> row.</p>
+<p><strong>Admission and budget:</strong> $10 total, planned stop at $8 with $2 reserve, including preparation, retries and verification. The full-run forecast remains <code>NOT_ESTABLISHED</code>: the source gate failed before a model pilot. No paid run was launched. The <a href="../labs/_reproduce_l193.py">executable admission operator</a> exits with a documented stop; its downstream GPU executor is <strong>not implemented or validated</strong>. The full <a href="../labs/evidence/l193/validation-schedule.json">validation schedule</a> and <a href="../labs/evidence/l193/test-schedule.json">test schedule</a> remain available for continuation.</p>
+<h2 id="4-%C2%B7-Two-denominators-before-one-mean">4 &#183; Two denominators before one mean<a class="anchor-link" href="#4-%C2%B7-Two-denominators-before-one-mean">&#182;</a></h2><p>First summarize <strong>within each task</strong> over its complete seed set. Then summarize <strong>across tasks</strong> within a comparable metric group. These are different sources of variation. For synthetic seed scores <code>[0.60,0.70,0.80]</code>, the mean is <code>0.70</code> and sample SD is <code>0.10</code>, using denominator <code>3−1</code>. A missing third run leaves the full-seed mean blank. Seed SD is not uncertainty across databases.</p>
+<figure class="repro-figure"><img src="../labs/figures/l193/aggregation.svg" alt="Authored missingness example and the two levels of aggregation. Support-seed variation and variation across tasks answer different questions."><figcaption>Authored missingness example and the two levels of aggregation. Support-seed variation and variation across tasks answer different questions.</figcaption></figure>
+
+<p>The browser exercise below is synthetic. Its eight task scores are <code>[.9,.9,.9,.5,.5,.5,.5,.5]</code>. Each checked box stands for a task with all three seeds complete. Start with only the three easy tasks. The observed-subset mean is <code>.900</code>; restoring all eight gives <code>.650</code>. Dropping difficult tasks creates a more flattering answer to a different question.</p>
+<div id="coverage-explorer"></div>
+<noscript>Synthetic example: three selected tasks average .900; all eight average .650. Until all eight are present, the full-suite mean is withheld. Actual L193 model coverage remains 0/21.</noscript>
+
+<p><strong>Equal task weighting:</strong> average each task's seed mean once. Do not pool every prediction row; large tasks would dominate. Tasks within one database may also be dependent, so an across-task SD is descriptive rather than a database-transfer confidence interval.</p>
+<p><strong>Units matter:</strong> AUROC is dimensionless. Raw MAEs for money, counts and rates are not commensurate. Given verified baseline errors <code>b_t</code>, normalized MAE is <code>MAE_t / b_t</code>, then averaged across tasks. Example: errors <code>[5,.2]</code> and baseline errors <code>[10,.1]</code> yield normalized errors <code>[.5,2]</code>, mean <code>1.25</code>. The smaller raw error can be worse relative to its baseline.</p>
+<p>The paper's §5 describes normalization using a no-relational-context baseline, but Table 2 labels its values MAE and does not supply an unambiguous normalization recipe and denominators. The AutoGluon-without-RDB column is not automatically that baseline. We retain raw per-task targets and leave aggregate regression parity <strong>NOT_ESTABLISHED</strong>. The lab rejects missing or nonpositive denominators rather than silently substituting a target standard deviation.</p>
+<div id="multitask-quiz"></div>
+<noscript>Choose: “Keep every missing task visible.” This preserves the declared denominator. Averaging only successful tasks changes the population.</noscript>
+
+<h2 id="5-%C2%B7-The-full-results-table,-including-absence">5 &#183; The full results table, including absence<a class="anchor-link" href="#5-%C2%B7-The-full-results-table,-including-absence">&#182;</a></h2><div class="repro-table" tabindex="0" role="region" aria-label="Scrollable results table"><table>
+<thead>
+<tr>
+  <th>Task</th>
+  <th>Metric</th>
+  <th style="text-align:right">Paper target</th>
+  <th>Fresh mean ± SD</th>
+  <th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>relbench/rel-amazon/item-churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8188</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-amazon/user-churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.6823</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-avito/user-clicks</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.6709</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-avito/user-visits</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.6569</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-hm/user-churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.6802</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-stack/user-badge</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8430</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-stack/user-engagement</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8935</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-trial/study-outcome</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.7167</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-amazon/item-ltv</td>
+  <td>MAE</td>
+  <td style="text-align:right">48.5044</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-amazon/user-ltv</td>
+  <td>MAE</td>
+  <td style="text-align:right">14.5290</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-avito/ad-ctr</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.0341</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-event/user-attendance</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.2393</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-hm/item-sales</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.0630</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-stack/post-votes</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.0676</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-trial/site-success</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.4179</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>relbench/rel-trial/study-adverse</td>
+  <td>MAE</td>
+  <td style="text-align:right">44.5186</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>4dbinfer/amazon/churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.7777</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>4dbinfer/outbrain/ctr-100k</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.5499</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>4dbinfer/retailrocket/cvr</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8609</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>4dbinfer/stackexchange/post-upvote</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8736</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+<tr>
+  <td>4dbinfer/stackexchange/user-churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8774</td>
+  <td>— NOT_RUN</td>
+  <td>0/3 seeds</td>
+</tr>
+</tbody>
+</table></div>
+<p>Every row retains the published target beside a blank fresh result. The paper numbers are reference scalars; they are not saved predictions or fresh measurements. For compactness, the table shows one task row; the <a href="../labs/evidence/l193/packet/runs.json">run ledger</a> retains all 63 seed slots and reasons. Every row has the same suite-level stop reason, not an asserted task-specific defect.</p>
+<p>Arithmetic on the rounded published classification values gives <strong>0.7452875</strong> over the eight RelBench tasks and <strong>0.7879000</strong> over the five 4DBInfer tasks. We independently parsed and checked all 21 table entries. Those two means reproduce a calculation on printed numbers, not the experiments that generated them; seed variance cannot be recovered from these single scalars.</p>
+<p>Actual fresh model evaluations: <strong>0 / 630</strong>. Actual completed task results: <strong>0 / 21</strong>. The diagnostic is complete; full model reproduction is <strong>INCOMPLETE_SOURCE_PREPROCESSING_GATE</strong>. <a href="../labs/evidence/l193/report.json">Report</a> · <a href="../labs/_verify_l193_results.json">independent verification</a>.</p>
+<h2 id="6-%C2%B7-Implement,-challenge,-defend">6 &#183; Implement, challenge, defend<a class="anchor-link" href="#6-%C2%B7-Implement,-challenge,-defend">&#182;</a></h2><p><a href="../labs/0193-open-fm-full-task-set.ipynb">Student notebook</a> · <a href="../labs/solutions/0193-open-fm-full-task-set.ipynb">executed solution</a> · <a href="../labs/html/0193-open-fm-full-task-set.html">readable lab</a> · <a href="../reference/open-fm-full-task-set.html">field guide</a>.</p>
+<p>Implement three live contracts: <code>choose_config</code>, <code>summarize_task</code>, <code>aggregate_suite</code>. Each feeds the checks or complete packet report. Reject a test-split candidate; mark one seed missing; try averaging two regression tasks without their denominators. The portable replay authenticates evidence and recomputes the report without downloading models. It replays recorded diagnostic observations; the original-source diagnostic is a separate environment-dependent command.</p>
+<p><strong>EXIT:</strong> write a paragraph containing (1) the named 21-task target, (2) the strongest completed evidence, (3) the precise reason model inference stopped, (4) the denominator and uncertainty you would report after a valid complete run, and (5) what must be established before continuation. Explain why fixing the encoder creates a new experimental variant. <a href="0194-open-fm-analysis-report.html">Lesson 194</a> turns this ledger into a per-task analysis and report; blank scores cannot support win/loss attribution.</p>
+<p>Ask the tutor about any unclear step, or submit your implementation and defense for review. This prepared package does not establish learner mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+</article><script id="multitask-data" type="application/json">{"status": "FAIL", "scope": "Fresh synthetic full released preprocessing; no benchmark data or backend", "train_categories": ["b", "c", "d"], "known_categories": ["b", "c", "d"], "observations": [{"unseen": "a", "before": [0, 1, 2], "after": [1, 2, 3], "numeric_before": [1, 2, 3], "numeric_after": [1, 2, 3], "query_alone": [0], "query_with_other": [0, 1], "classes_after": ["a", "b", "c", "d"], "changed_codes": 3}, {"unseen": "z", "before": [0, 1, 2], "after": [0, 1, 2], "numeric_before": [1, 2, 3], "numeric_after": [1, 2, 3], "query_alone": [0], "query_with_other": [3, 0], "classes_after": ["b", "c", "d", "z"], "changed_codes": 0}, {"unseen": "0", "before": [0, 1, 2], "after": [1, 2, 3], "numeric_before": [1, 2, 3], "numeric_after": [1, 2, 3], "query_alone": [0], "query_with_other": [0, 1], "classes_after": ["0", "b", "c", "d"], "changed_codes": 3}, {"unseen": "e", "before": [0, 1, 2], "after": [0, 1, 2], "numeric_before": [1, 2, 3], "numeric_after": [1, 2, 3], "query_alone": [0], "query_with_other": [3, 0], "classes_after": ["b", "c", "d", "e"], "changed_codes": 0}], "source_sha256": "87fa6f9fe7d441fbcd5fd4e6119fd97b35a13c6d2ad6dd3e4195beb9c3229371", "model_evaluations": 0, "task_impact": "NOT_ESTABLISHED", "historical_environment": "NOT_ESTABLISHED", "packages": {"numpy": "2.5.0", "pandas": "2.3.3", "scikit-learn": "1.9.0", "autogluon.features": "1.5.0", "autogluon.common": "1.5.0", "pydantic": "2.11.7", "fastdfs": "0.2.1"}}</script><script src="../assets/quiz.js"></script><script src="../assets/multitask-reproduction.js"></script></body></html>

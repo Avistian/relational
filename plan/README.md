@@ -57,7 +57,7 @@ update the entry if the paper's live reproduction reveals a better framing (as w
 | 3 | Graph ML — message passing → hetero → temporal → mastery (081–120) | [year-3.md](./year-3.md) |
 | 4 | Relational deep learning — REG → baselines → next-gen → expertise (121–160) | [year-4.md](./year-4.md) |
 | 5 | Foundation relational models — concepts → pretraining → frontier → synthesis (161–200) | [year-5.md](./year-5.md) |
-| 5 → 6 | Influential tabular/relational architectures → failures → reproduction → defense (B01–B24; planned) | [year-5-6-bridge.md](./year-5-6-bridge.md) |
+| 5 → 6 | Influential tabular/relational architectures → failures → reproduction → defense (29 planned units: B01–B24 + five suffix units) | [year-5-6-bridge.md](./year-5-6-bridge.md) |
 | 6 | Novel research — hypothesis → execution → communication → launch (201–240) | [year-6.md](./year-6.md) |
 
 **Design principles carried through every year** (from `CURRICULUM.md` critical framing):
@@ -67,3 +67,5 @@ update the entry if the paper's live reproduction reveals a better framing (as w
   Y5–Y6 research-dominated (a numbered unit is a *unit*, not a day).
 
 September 2026 bridge selection evidence: [influence and coverage audit](./research-influence-audit-2026-09.md).
+
+October 2026 update: [2025–2026 tabular-FM coverage and Mindful Modeler review](./tabular-foundation-coverage-audit-2026-10.md). Adds scale axes, hypernetworks, context systems, distributional evaluation and task extensions; source-access limits and optional dispositions are explicit.

@@ -14,3 +14,22 @@ function mount(el){
 }
 g.ArchFamilyViz={mount,calculate};
 })(window);
+
+/* Three overlapping FM strategies. Separate mount preserves the HIN explorer above. */
+(function(g){
+'use strict';
+const strategies={
+ graph:{name:'Graph-native learning',steps:['Eligible linked rows','Cell / row encoder','Messages or attention on links','Task prediction'],prior:'Shared representations learned before the target task.',adapt:'Griffin fine-tunes; relational ICL systems can instead use support examples.',trace:'Ada remains connected to eligible order rows. Learned messages can retain distinctions absent from a chosen summary.',risk:'A performance difference alone cannot isolate architecture from data, tuning or pretraining.'},
+ synthetic:{name:'Synthetic relational prior',steps:['Generate relational tasks','DFS feature construction','Pretrain context predictor','New support + query → prediction'],prior:'RDB-PFN learns from synthetic relational tasks.',adapt:'Frozen predictor consumes DFS-linearized support and query rows.',trace:'Ada becomes a feature row. Synthetic relational experience is in the predictor weights, not explicit graph messages at inference.',risk:'A generated prior may fail to cover a new database or target.'},
+ reuse:{name:'Reuse a tabular foundation model',steps:['Eligible linked rows','Relational aggregation','Existing tabular model','Support + query → prediction'],prior:'Backend tabular pretraining already happened.',adapt:'No new relational pretraining; aggregation and context inference still cost work.',trace:'Ada becomes a feature row for an existing predictor. Summaries can carry useful relational signal.',risk:'Information discarded by the selected feature map cannot be recovered from that map alone.'}
+};
+function mountLandscape(el){
+ el.classList.add('landscape-panel');
+ el.innerHTML='<div class="controls"><label>Follow one strategy <select aria-label="Foundation model strategy"><option value="graph">Graph-native learning</option><option value="synthetic">Synthetic relational prior</option><option value="reuse">Reuse a tabular foundation model</option></select></label><button type="button">Reset map</button></div><div class="landscape-route" aria-live="polite"></div>';
+ const select=el.querySelector('select'),out=el.querySelector('.landscape-route');
+ function update(){const s=strategies[select.value];el.dataset.strategy=select.value;out.innerHTML='<h3>'+s.name+'</h3><ol class="route-steps">'+s.steps.map(x=>'<li>'+x+'</li>').join('')+'</ol><p><strong>Prior:</strong> '+s.prior+'</p><p><strong>Adaptation:</strong> '+s.adapt+'</p><p><strong>Trace Ada:</strong> '+s.trace+'</p><p><strong>Test next:</strong> '+s.risk+'</p>';}
+ select.addEventListener('change',update);el.querySelector('button').addEventListener('click',()=>{select.value='graph';update();});update();
+}
+g.ArchFamilyViz.mountLandscape=mountLandscape;
+g.ArchFamilyViz.landscapeStrategies=strategies;
+})(window);

@@ -1,0 +1,276 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 194 — Open FM analysis & report</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/multitask-reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><p class="eyebrow">YEAR 5 · LESSON 194 · ANALYSIS & REPORT</p>
+
+<h1 id="Explain-what-the-evidence-can-support">Explain what the evidence can support<a class="anchor-link" href="#Explain-what-the-evidence-can-support">&#182;</a></h1><p><strong>Your tangible win:</strong> write a reproduction report that distinguishes a result, a possible explanation, and the experiment needed to test that explanation. This closes the reporting step of lessons 192–194; the model reproduction itself remains incomplete.</p>
+<div class="repro-status"><strong>Full reproduction: INCOMPLETE_SOURCE_PREPROCESSING_GATE.</strong> 0/21 measured tasks; 0/630 model evaluations. This lesson completes evidence analysis, not inference. $0 new cloud/API.</div>
+
+<h2 id="1-%C2%B7-Recall-before-reading">1 &#183; Recall before reading<a class="anchor-link" href="#1-%C2%B7-Recall-before-reading">&#182;</a></h2><p>From <a href="0192-open-fm-setup-data.html">L192</a>, what must stay consistent between support and query preprocessing? From <a href="0193-open-fm-full-task-set.html">L193</a>, what happens to a task mean if one required seed is missing? Looking ahead to analysis: what evidence would turn a suspected failure mode into a tested explanation?</p>
+<div id="warmup"></div>
+<details><summary>Check your recall</summary><p>A fitted category must keep its meaning. Missing seeds leave the full-seed result incomplete. A controlled comparison must change the suspected factor while holding relevant alternatives fixed; a score alone does not identify a cause.</p></details>
+
+<p><strong>Mission connection.</strong> A persuasive case for relational learning needs explanations a skeptic could test. A polished report that hides missing results weakens that case. Today's skill is deciding which sentence the evidence permits.</p>
+<h2 id="2-%C2%B7-Trace-the-model-before-explaining-it">2 &#183; Trace the model before explaining it<a class="anchor-link" href="#2-%C2%B7-Trace-the-model-before-explaining-it">&#182;</a></h2><p>RDBLearn builds features by following relationships between database rows, then passes those features to a pretrained tabular predictor. <strong>Support</strong> means the labeled examples supplied at prediction time. A <strong>query</strong> is a row whose label must be predicted. A <strong>cutoff</strong> is the time beyond which information is unavailable for that prediction. <strong>DFS</strong>, deep feature synthesis, composes aggregations along relationship paths. The backend uses support examples without updating its pretrained weights. <a href="https://arxiv.org/html/2602.18495v1#S3">Primary reading: RDBLearn v1, §3 and §5</a>.</p>
+<figure class="repro-figure"><img src="../labs/figures/l194/architecture-mobile.svg" alt="RDBLearn recap from L193: relational records → DFS features → fitted map → frozen tabular predictor → validation selection and test scoring. Admission stopped at the fitted map."><figcaption>RDBLearn recap from L193: relational records → DFS features → fitted map → frozen tabular predictor → validation selection and test scoring. Admission stopped at the fitted map.</figcaption></figure>
+
+<p>Follow one customer query: select records permitted by its cutoff; summarize linked transactions; encode support and query with the same fitted map; supply both to the frozen predictor; score its prediction. Depth selects how far feature construction follows relationships. Validation chooses depth and backend; the test split evaluates that choice. This is the intended pipeline, not a certification that all temporal checks have passed.</p>
+<p><strong>Worked example — recorded source diagnostic.</strong> Fit categories <code>b,c,d</code> as <code>0,1,2</code>. In the recorded environment, adding query category <code>a</code> expands and sorts the class list, shifting the known codes to <code>1,2,3</code>. Stored support still has the earlier meaning. Numeric controls remain unchanged. This identifies a representation consistency failure. It does not tell us whether any benchmark query triggers it or how a predictor's score changes. <a href="../labs/evidence/l194/packet/preprocessing.json">Recorded observations</a>.</p>
+<p><strong>Held fixed:</strong> known categories, fitted support and numeric controls. <strong>Varied:</strong> the unseen query category. <strong>Measured:</strong> codes, not predictions. L194 authenticates and replays this saved diagnostic; it does not rerun the upstream preprocessor.</p>
+<h2 id="3-%C2%B7-A-difference-is-a-question,-not-its-explanation">3 &#183; A difference is a question, not its explanation<a class="anchor-link" href="#3-%C2%B7-A-difference-is-a-question,-not-its-explanation">&#182;</a></h2><div id="prediction"></div>
+<noscript>Predict: does a favorable published difference prove that relational structure caused the improvement? No. The compared pipelines differ in more than one component.</noscript>
+
+<p><strong>In plain terms.</strong> First ask which score is better. Then ask what else changed between the two systems. These are different questions.</p>
+<p><strong>Comparator fixed before analysis:</strong> AutoGluon+DFS, the supervised pipeline with relational feature synthesis, in all 21 rows of Tables 1–3. This comparison asks how two complete pipelines rank in the published table. It does not isolate the value of adding relational structure: both already use it. The paper describes its comparison families in <a href="https://arxiv.org/html/2602.18495v1#S5">§5</a>.</p>
+<p><strong>AUROC</strong> measures how well a binary predictor ranks positives above negatives; larger is better. <strong>MAE</strong>, mean absolute error, averages absolute prediction errors in the target's units; smaller is better. Define an <strong>oriented gap</strong> so positive always favors RDBLearn:</p>
+<ul>
+<li>AUROC gap = RDBLearn score − comparator score.</li>
+<li>MAE gap = comparator error − RDBLearn error.</li>
+</ul>
+<p><strong>Worked examples from the printed table.</strong> Item churn: <code>.8188 − .7953 = +.0235</code> AUROC. Item lifetime value: <code>57.0000 − 48.5044 = +8.4956</code> target units of MAE reduction. The signs have the same interpretation; the magnitudes have different units. Neither supplies a causal explanation.</p>
+<figure class="repro-figure"><img src="../labs/figures/l194/gaps.svg" alt="Published reference examples only. Item churn: +0.0235 AUROC. Item lifetime value: +8.4956 target units of MAE reduction. Positive gaps favor RDBLearn; units cannot be pooled."><figcaption>Published reference examples only. Item churn: +0.0235 AUROC. Item lifetime value: +8.4956 target units of MAE reduction. Positive gaps favor RDBLearn; units cannot be pooled.</figcaption></figure>
+
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">oriented_gap</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">comparator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Positive means model better; missing results stay missing.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">&#39;AUROC&#39;</span><span class="p">,</span> <span class="s1">&#39;MAE&#39;</span><span class="p">}:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown metric&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">comparator</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Scores must be finite numbers or null&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">metric</span> <span class="o">==</span> <span class="s1">&#39;AUROC&#39;</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Score outside metric domain&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">comparator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">model</span> <span class="o">-</span> <span class="n">comparator</span> <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s1">&#39;AUROC&#39;</span> <span class="k">else</span> <span class="n">comparator</span> <span class="o">-</span> <span class="n">model</span>
+</pre></div>
+<p>A missing result returns <code>None</code> (an explicit absence), not zero. A zero gap means equal displayed scores; it is not evidence of equivalence. Rounded scalars cannot recover seed variability, paired prediction errors, or a significance test. Three tasks from one database are not three independent databases.</p>
+<h2 id="4-%C2%B7-The-complete-report,-including-what-did-not-run">4 &#183; The complete report, including what did not run<a class="anchor-link" href="#4-%C2%B7-The-complete-report,-including-what-did-not-run">&#182;</a></h2><p>The target remains the <strong>RDBLearn v1 column across all 21 tasks</strong>, with the released source pinned to commit <code>b5b03ebf8091547285a6e06cba53d2d1a40cb171</code>, release 0.1.2 and FastDFS 0.2.1. Per task, course seeds <code>0,1,2</code> each search depths <code>2,3,4</code> × TabPFNv2/TabPFNv2.5/LimiX-16M, official splits, and a 10,000-example support cap. These seeds extend repeatability; they are not recovered historical seeds. See the <a href="../labs/evidence/l194/packet/protocol.json">inherited protocol</a>.</p>
+<p>That is <code>21 × 3 × 9 = 567</code> validation candidates and <code>21 × 3 = 63</code> selected tests. The source admission failure stopped all 630 model evaluations. The downstream model executor has not been implemented or validated. The full raw-data, feature availability, checkpoint and regression-normalization audits also remain unfinished. No new inference is authorized in this lesson.</p>
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Task</th>
+  <th>Metric</th>
+  <th style="text-align:right">Published RDBLearn</th>
+  <th style="text-align:right">Published AutoGluon+DFS</th>
+  <th style="text-align:right">Oriented gap</th>
+  <th>Fresh result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>relbench/rel-amazon/item-churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8188</td>
+  <td style="text-align:right">0.7953</td>
+  <td style="text-align:right">+0.0235</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-amazon/user-churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.6823</td>
+  <td style="text-align:right">0.6666</td>
+  <td style="text-align:right">+0.0157</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-avito/user-clicks</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.6709</td>
+  <td style="text-align:right">0.6191</td>
+  <td style="text-align:right">+0.0518</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-avito/user-visits</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.6569</td>
+  <td style="text-align:right">0.6064</td>
+  <td style="text-align:right">+0.0505</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-hm/user-churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.6802</td>
+  <td style="text-align:right">0.6802</td>
+  <td style="text-align:right">+0.0000</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-stack/user-badge</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8430</td>
+  <td style="text-align:right">0.8470</td>
+  <td style="text-align:right">-0.0040</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-stack/user-engagement</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8935</td>
+  <td style="text-align:right">0.8928</td>
+  <td style="text-align:right">+0.0007</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-trial/study-outcome</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.7167</td>
+  <td style="text-align:right">0.6740</td>
+  <td style="text-align:right">+0.0427</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-amazon/item-ltv</td>
+  <td>MAE</td>
+  <td style="text-align:right">48.5044</td>
+  <td style="text-align:right">57.0000</td>
+  <td style="text-align:right">+8.4956</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-amazon/user-ltv</td>
+  <td>MAE</td>
+  <td style="text-align:right">14.5290</td>
+  <td style="text-align:right">16.2047</td>
+  <td style="text-align:right">+1.6757</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-avito/ad-ctr</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.0341</td>
+  <td style="text-align:right">0.0460</td>
+  <td style="text-align:right">+0.0119</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-event/user-attendance</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.2393</td>
+  <td style="text-align:right">0.2590</td>
+  <td style="text-align:right">+0.0197</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-hm/item-sales</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.0630</td>
+  <td style="text-align:right">0.0678</td>
+  <td style="text-align:right">+0.0048</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-stack/post-votes</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.0676</td>
+  <td style="text-align:right">0.0709</td>
+  <td style="text-align:right">+0.0033</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-trial/site-success</td>
+  <td>MAE</td>
+  <td style="text-align:right">0.4179</td>
+  <td style="text-align:right">0.4396</td>
+  <td style="text-align:right">+0.0217</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>relbench/rel-trial/study-adverse</td>
+  <td>MAE</td>
+  <td style="text-align:right">44.5186</td>
+  <td style="text-align:right">43.6232</td>
+  <td style="text-align:right">-0.8954</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>4dbinfer/amazon/churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.7777</td>
+  <td style="text-align:right">0.7291</td>
+  <td style="text-align:right">+0.0486</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>4dbinfer/outbrain/ctr-100k</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.5499</td>
+  <td style="text-align:right">0.5494</td>
+  <td style="text-align:right">+0.0005</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>4dbinfer/retailrocket/cvr</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8609</td>
+  <td style="text-align:right">0.7343</td>
+  <td style="text-align:right">+0.1266</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>4dbinfer/stackexchange/post-upvote</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8736</td>
+  <td style="text-align:right">0.8849</td>
+  <td style="text-align:right">-0.0113</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>4dbinfer/stackexchange/user-churn</td>
+  <td>AUROC</td>
+  <td style="text-align:right">0.8774</td>
+  <td style="text-align:right">0.8396</td>
+  <td style="text-align:right">+0.0378</td>
+  <td>NOT_RUN</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Published reference signs: 17 favorable, 3 unfavorable, 1 equal at printed precision.</strong> These are descriptive signs from rounded published values. Every fresh mean and sample standard deviation (variation across required seeds) stays blank. The <a href="../labs/evidence/l194/report.md">complete report</a> includes all task rows, limitations and continuation requirements; the <a href="../labs/evidence/l194/report.json">JSON report</a> is generated by the same visible functions used in the notebook.</p>
+<p><strong>Scope check.</strong> Do not average AUROC with MAE, or raw MAEs measured in different target units. Regression normalization requires a verified reference error per task; those denominators remain <code>NOT_ESTABLISHED</code>. Missing benchmark results establish neither that the model wins nor that it loses.</p>
+<h2 id="5-%C2%B7-Turn-each-explanation-into-a-test">5 &#183; Turn each explanation into a test<a class="anchor-link" href="#5-%C2%B7-Turn-each-explanation-into-a-test">&#182;</a></h2><p>A <strong>mechanistic explanation</strong> names an operation that could change the result. An <strong>intervention</strong> deliberately changes a specified input or operation. A <strong>confounder</strong> is another varying factor that could explain the observed difference. We can write testable plans now; executing them needs valid model results and a separately approved protocol.</p>
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Suspected reason</th>
+  <th>Vary or stratify</th>
+  <th>Hold fixed</th>
+  <th>Measure and limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Label coverage</td>
+  <td>Nested support sizes using only labels available by each cutoff</td>
+  <td>Query set, checkpoint, features, depth, preprocessing and paired seeds</td>
+  <td>Per-task score changes. Tests context sensitivity, not pretraining scale.</td>
+</tr>
+<tr>
+  <td>Schema information</td>
+  <td>Remove one specified relationship path</td>
+  <td>Support, queries, checkpoint, remaining paths and preprocessing policy</td>
+  <td>Paired change after the feature intervention. Tests that path in this pipeline, not arbitrary schema transfer.</td>
+</tr>
+<tr>
+  <td>Cold start</td>
+  <td>Prespecify entities seen/unseen in allowed support history</td>
+  <td>Same fitted predictor, cutoff policy and scorer</td>
+  <td>Sizes, label counts and separate scores. An observational subgroup gap may reflect degree, time or label differences.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Worked hypothesis.</strong> “Sparse support hurts” predicts improvement when support grows while queries and the predictor stay fixed. Use nested samples so the smaller support is contained in the larger set. Freeze the comparison before viewing test results. If the predicted improvement does not appear, the result challenges this hypothesis for the tested conditions. If it appears, it still does not explain all 21 tasks.</p>
+<p><strong>Cold-start caution.</strong> An entity unseen in labeled support can still have historical neighbors. State which kind of novelty you mean. AUROC is undefined for a subgroup containing only one class; keep its label counts and do not invent a score. These plans are course analysis proposals, not experiments reported by the paper or completed here.</p>
+<p><strong>Predict before changing the evidence selector:</strong> what additional claim does a source counterexample permit compared with a missing benchmark result?</p>
+<div id="evidence-explorer"></div>
+<noscript>Published table → descriptive comparison. Saved source diagnostic → code-invariant failure. Unrun benchmark → no performance conclusion. Proposed intervention → untested hypothesis.</noscript>
+
+<h2 id="6-%C2%B7-Build,-challenge,-defend">6 &#183; Build, challenge, defend<a class="anchor-link" href="#6-%C2%B7-Build,-challenge,-defend">&#182;</a></h2><p><a href="../labs/0194-open-fm-analysis-report.ipynb">Student notebook</a> · <a href="../labs/solutions/0194-open-fm-analysis-report.ipynb">executed solution</a> · <a href="../labs/html/0194-open-fm-analysis-report.html">readable lab</a> · <a href="../reference/open-fm-analysis-report.html">field guide</a>.</p>
+<p>Implement <code>oriented_gap</code>, <code>evidence_license</code> and <code>summarize_comparisons</code>. Each function feeds the full 21-task report. Then delete a task, insert a nonfinite score, or try an unsupported evidence type: the checks must refuse the claim. The portable notebook embeds its evidence and uses only Python's standard library for replay; no account, download or model is needed.</p>
+<p><strong>Your report has six parts:</strong> question and frozen protocol; complete per-task results; uncertainty; diagnostic and competing explanations; limitations; the next decisive experiment. Write an abstract that says the source diagnostic is informative while benchmark attribution is unestablished. Explain why the 17 favorable published signs do not complete the Year 5 reproduction exit.</p>
+<div id="teachback"></div>
+<noscript>Write your own explanation before checking: the source diagnostic establishes code instability under recorded conditions; the published table supplies descriptive comparisons; no fresh predictions exist to measure benchmark effects.</noscript>
+
+<p><strong>Execution budget:</strong> $0 new cloud/API spend, 1,800 aggregate local execution seconds including failed attempts and delivery checks. <a href="../labs/l194-reproduction.md">Reproduction contract and commands</a>. A repaired pipeline needs a separately named protocol, data and checkpoint audits, a validated runner and a complete-grid cost forecast; silently reducing tasks, seeds or candidates would change the target.</p>
+<p>The report is prepared; your written defense remains <code>PENDING_WRITTEN_DEFENSE</code>. Ask me about any unclear step, or send your abstract for feedback. <a href="0195-thesis-stress-test.html">Lesson 195</a> stress-tests the thesis using the strongest available evidence. Author checks, learner mastery, full reproduction, live Colab and deployment are separate claims.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/reproduction-report.js"></script></body></html>

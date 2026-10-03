@@ -1,0 +1,5 @@
+# Three research directions prepared
+
+Author preparation, not learner mastery. Lesson 198 progresses from L189's candidate gaps and L197's landscape argument to three complete, falsifiable research proposals. Temporal-policy sensitivity, prior × encoder interaction and compute-matched transfer are provisionally ranked, with final selection deferred to L199.
+
+The learner implements matched contrasts, interval decisions and Cartesian experiment matrices, then writes three 250–400 word proposals and defends a revised ranking. The complete original 27-setting rubric and all L197 evidence replay; this reuses evidence rather than creating an independent replication. The composite design explicitly counts three support draws:24checkpoint/task combinations become72primary batches, plus6released and18tree batches. All future model experiments NOT_RUN; novelty NOT_ESTABLISHED; full RDBLearn reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE. Learner PENDING_WRITTEN_DEFENSE; earlier incomplete exits unchanged. USD0cloud/API,1800aggregate local execution-second cap. No deployment or external posting.

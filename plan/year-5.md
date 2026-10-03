@@ -294,6 +294,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `tokenizer-viz.js` + `arch-family-viz.js`.
 - **Bridge** — callback Y4 L145/L146, L164; a candidate Y6 direction; forward to L189.
 
+- **Prepared L183** — [lesson](../lessons/0183-graph-transformer-pretraining.html), [lab](../labs/0183-graph-transformer-pretraining.ipynb), [full protocol](../labs/l183-reproduction.md). All7554saved L146 predictions replay; full RelGT/Griffin reproductions retain temporal/budget blockers. Narrow the gap to backbone×pretraining interaction; broader novelty NOT_ESTABLISHED. Hybrid training NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
 ### 184 · Latest relational Graph-Transformers — *GelGT `2605.15575` ◆*
 - **Skill** — explain GelGT's fixes for long-range dependencies — structure-semantic collaborative sampling +
   a Gaussian graph-attention bias for temporal dynamics — and where information decay bites vanilla RDL MP.
@@ -303,6 +305,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
   Deliverable: long-range gain table.
 - **Viz** — reuse `temporal-embed-viz.js` + `atomic-route-viz.js`.
 - **Bridge** — the frontier of relational graph-transformers; callback Y3 over-squashing, L145; forward to L189.
+
+- **Prepared L184:** [lesson](../lessons/0184-gelgt-temporal-attention.html), portable lab, full8712label audit and original-source temporal counterexample. Selected GelGT reproduction INCOMPLETE_SOURCE_TEMPORAL_GATE; fresh training NOT_RUN. [Protocol](../labs/l184-reproduction.md). No downstream gain table is claimed.
 
 ### 185 · Causal & relational data — *— (causality unit)*
 - **Skill** — distinguish predictive correlation from a deployable/causal strategy on relational data and
@@ -314,15 +318,12 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — reuse `leakage-viz.js` (confounding path).
 - **Bridge** — matures the thesis beyond benchmark numbers; callback Y1 leakage, Y2 L069b; forward to L195.
 
-### 186 · Production constraints — *Huyen (Designing ML Systems)*
-- **Skill** — enumerate production constraints for relational models (latency, feature/data freshness,
-  monitoring, retraining) and their effect on architecture choice.
-- **Teach** — serving an RDL/FM model, freshness of the REG, drift monitoring (callback Y2 L068), the
-  training-free-ICL serving advantage.
-- **Lab** — Tier C · crucial fragment: write a serving-constraints spec for one paradigm. Deliverable: the
-  production checklist.
-- **Viz** — reuse `checklist.js`.
-- **Bridge** — grounds the thesis in deployability; callback L166b/L177; forward to Y6 L236 pilot.
+### 186 · Production constraints — *Huyen + Google SRE*
+- **Skill** — write a relational serving contract that separates request latency, source age, materialization age and delayed quality feedback.
+- **Teach** — FIFO queueing, legal source/refresh reads, precomputed versus cached versus request-time policies, and already-active versus newly triggered alerts. Training-free inference alone does not establish a serving advantage.
+- **Lab** — complete81-cell course simulation/810000responses with three live learner functions; separate300original batch-receipt replay. Hypothetical durations; fresh model inference and production performance NOT_RUN.
+- **Viz** — reusable serving-contract explorer, relational serving routes, four-clock witness and complete normal-arrival trade-off plots.
+- **Bridge** — causal action justification (185) → serving contract → privacy obligations (187); callback175–177; forward to Y6 pilot. Learner PENDING_WRITTEN_DEFENSE.
 
 ### 187 · Ethics & privacy on REG — *— (ethics unit)*
 - **Skill** — analyze node-level privacy and leakage risks in a REG (linkage across tables, membership
@@ -344,6 +345,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 - **Viz** — none (workflow artifact).
 - **Bridge** — keeps Y5–Y6 current on a monthly-moving frontier; callback the `curriculum-currency` skill.
 
+- **Prepared L188** — [lesson](../lessons/0188-systematic-literature-tracking.html), portable lab,30-paper log and importable RSS configuration. All31retrieved records replay;2/4queries complete, quarterly collectionINCOMPLETE. Seven abstract-screened candidates;23deferred. Model resultsNOT_RUN; historical ranksNOT_ESTABLISHED. Author preparation only;learnerPENDING_WRITTEN_DEFENSE.
+
 ### 189 · Identify 3 open problems — *RDL survey `2506.16654`*
 - **Skill** — select and rank three tractable open problems by expected impact × feasibility for a solo
   researcher at baseline compute.
@@ -352,6 +355,8 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
   ranked shortlist.
 - **Viz** — reuse `checklist.js` (tractability rubric).
 - **Bridge** — the direct input to the Q3 gap doc + Y6 hypothesis; callback L169/L182/L183; forward to L190.
+
+- **L189 delivery (2026-10-02):** three source-grounded candidate gaps and complete 27-setting authored-rubric replay. Source/report audit only; proposed model runs NOT_RUN; novelty and full-run cost NOT_ESTABLISHED. Portable lab, interactive rubric and ranked shortlist feed L190.
 
 ### 190 · **Q3 checkpoint** — *Deliverable-based*
 - **Deliverable** — a **5-page research-gap document** with ≥3 tractable open problems, each with related
@@ -364,25 +369,21 @@ range `192–194 · Reproduce best open FM baseline` is decomposed into three le
 
 The `CURRICULUM.md` range `192–194 · Reproduce best open FM baseline` is decomposed into three lessons below.
 
-### 191 · KumoRFM-2 SOTA tracking — *KumoRFM-2 `2604.12596`, ★*
-- **Skill** — record the current RelBench v1+v2 SOTA (KumoRFM-2) and quantify the proprietary-vs-open gap the
-  thesis must reason about.
-- **Teach** — KumoRFM-2's four pretraining axes + early task injection, first few-shot FM to beat *supervised*
-  on common tasks, billion-scale, cold-start/noise robustness; why it's a ceiling, not a baseline.
-- **Lab** — Tier C · crucial fragment: tabulate KumoRFM-2 vs best-open (OpenRFM/RDBLearn) numbers.
-  Deliverable: the SOTA-vs-open gap table.
-- **Viz** — reuse `arch-family-viz.js` (proprietary vs open) + `checklist.js`.
-- **Bridge** — sets the honest ceiling for Y6 claims; callback L165/L165b; forward to L195.
+### 191 · KumoRFM-2 SOTA tracking — *KumoRFM-2 `2604.12596v1`, ★*
+- **Skill** — defend a dated, bounded proprietary-versus-open comparison.
+- **Teach** — early task-conditioned table attention, foreign-key and cross-sample attention; source versions, complete task coverage, single-method versus taskwise-oracle selection, metric direction and rounding audits.
+- **Lab** — Tier C: complete reconstruction of Tables 3/4/7/8 (401 task cells; 45 method rows), visible parser/calculations, three learner functions and executed offline solution.
+- **Evidence** — five aggregates outside displayed-rounding bounds; 34 ranks differ under displayed-row midranks. Fresh inference NOT_RUN; historical reproduction/current global SOTA NOT_ESTABLISHED. April table pool excludes later OpenRFM and RDBLearn updates; missing V2 foundation rows stay missing.
+- **Viz** — responsive model-specific schematic and comparison-pool explorer; portable notebook figures.
+- **Bridge** — L190's research question → defensible comparison → L192's separately costed open-model reproduction.
 
-### 192 · Open FM reproduction — setup & data — *OpenRFM or RDBLearn, ★*
-- **Skill** — stand up the chosen open FM's code/weights + data pipeline and reproduce its reported number on
-  one task.
-- **Teach** — the reproduction contract at FM scale (env, weights, data, seeds), sanity-checking against the
-  paper.
-- **Lab** — Tier B · crucial fragment (paper-repro): reproduce one reported task number. Deliverable: matched
-  number + env note.
-- **Viz** — reuse `checklist.js`.
-- **Bridge** — begins the exit-required reproduction; callback Y4 L143; forward to L193.
+### 192 · Open FM reproduction — setup & data — *RDBLearn toolkit v1, ★*
+- **Skill** — freeze a named open-baseline reproduction and decide whether its released source/data pipeline is admissible.
+- **Target** — rel-trial/study-outcome0.7167AUROC; complete depths2/3/4 × TabPFNv2/v2.5/LimiX search. Three declared repeatability seeds mean27validation candidates and3selected tests, all NOT_RUN.
+- **Teach** — source/data/checkpoint identity; complete query keys; label availability; stable support/query preprocessing; validation-only selection and aggregate cost.
+- **Lab** — TierB real task-key audit plus synthetic original-source intervention.13779official queries authenticated; zero unfinished past training windows under the annual window-end policy. Full original preprocessor shifts known category codes after unseen a; independent primitive replay confirms100generated cases. Selected reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE;USD0cloud/API. Full raw-label/feature audit and task AUROC impact not established.
+- **Deliverable** — complete admission record, portable student/executed solution, visible release source, interactive encoding/clock traces and source/deviation/budget ledger. Author preparation is not learner mastery.
+- **Bridge** — follows L178/L190 and L191 table tracking; L193 full-task continuation must preserve this failed prerequisite, not declare the exit reproduction complete.
 
 ### 193 · Open FM reproduction — full task set — *OpenRFM or RDBLearn, ★*
 - **Skill** — extend the reproduction across the paper's task set and report aggregate + per-task results with
@@ -393,6 +394,8 @@ The `CURRICULUM.md` range `192–194 · Reproduce best open FM baseline` is deco
 - **Viz** — reuse `checklist.js` + a results table.
 - **Bridge** — the core exit artifact; callback L178; forward to L194.
 
+**L193 prepared (2026-10-02):** Approved complete RDBLearn v1 Tables1–3 scope (21tasks;567validation/63test slots). Fresh full original preprocessing diagnostic fails; model reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE,0model runs. Every task/seed retained with null scores. Three visible contracts and portable audit teach selection, variance and aggregation; classification table arithmetic verified, regression normalizer NOT_ESTABLISHED. [Lesson](../lessons/0193-open-fm-full-task-set.html) · [Protocol](../labs/l193-reproduction.md). Author preparation only; learner PENDING_WRITTEN_DEFENSE.
+
 ### 194 · Open FM reproduction — analysis & report — *OpenRFM or RDBLearn, ★*
 - **Skill** — analyze *why* the FM wins/loses per task (label coverage, schema, cold start) and write the
   reproduction report.
@@ -400,7 +403,9 @@ The `CURRICULUM.md` range `192–194 · Reproduce best open FM baseline` is deco
 - **Lab** — Tier B · crucial fragment: per-task win/lose attribution + report. Deliverable: the reproduction
   report.
 - **Viz** — reuse `retrieval-viz.js` + `checklist.js`.
-- **Bridge** — completes the exit reproduction; callback L192/L193; forward to L200.
+- **Bridge** — completes the report stage; model reproduction remains an unmet exit requirement. Callback L192/L193; forward to L195/L200.
+
+**L194 prepared (2026-10-02):** [Lesson](../lessons/0194-open-fm-analysis-report.html) and complete executable report retain all 21 tasks; published RDBLearn versus AutoGluon+DFS signs are17 favorable/3 unfavorable/1 equal, with no causal claim. All fresh results and attributions remain absent. Recorded source evidence is replayed; full model reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE. Three follow-up plans NOT_RUN, USD 0 cloud/API,1800 local execution seconds. Learner PENDING_WRITTEN_DEFENSE.
 
 ### 195 · Thesis stress-test — *— (falsification unit)*
 - **Skill** — actively try to *falsify* the thesis: find the strongest evidence that relational FMs are *not*
@@ -412,6 +417,8 @@ The `CURRICULUM.md` range `192–194 · Reproduce best open FM baseline` is deco
 - **Viz** — reuse `checklist.js` + `ott-viz.js`.
 - **Bridge** — the intellectual honesty the Y6 project requires; callback Y2 L069b/L056b, Y4 L149; forward to L198.
 
+**L195 prepared (2026-10-02):** [Lesson](../lessons/0195-thesis-stress-test.html), portable lab and complete saved-evidence falsification brief. All33,650L149/L182predictions rescored; all21L194task rows retained. Complete selected replay is not independent replication. Full RDBLearn model reproduction remains INCOMPLETE_SOURCE_PREPROCESSING_GATE. USD0cloud/API;1800aggregate local seconds. Learner PENDING_WRITTEN_DEFENSE. The planned L056b/L069b/L179 callbacks have no authored lesson files in this checkout; relevant ideas are defined inline, with existing L069/L149 references.
+
 ### 196 · Community engagement — *RelBench mailing list / forum*
 - **Skill** — ask one well-formed technical question in a high-reputation relational-ML community and
   incorporate the feedback.
@@ -422,6 +429,8 @@ The `CURRICULUM.md` range `192–194 · Reproduce best open FM baseline` is deco
 - **Viz** — none (community action).
 - **Bridge** — the wisdom leg of the teach philosophy; callback Y4 L157; forward to Y6 external review.
 
+**L196 prepared (2026-10-02):** [Lesson](../lessons/0196-community-engagement.html), portable full original-preprocessor diagnostic, local question draft and response log. All four a/z/0/e cases retained; query batching and numeric controls checked. Model effect NOT_ESTABLISHED; full model reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE. RelBench now points to Hugging Face; implementation-specific RDBLearn questions route to its maintainers. Actual participation DRAFT_ONLY and learner PENDING_WRITTEN_DEFENSE. USD0 cloud/API;1800 aggregate local seconds.
+
 ### 197 · Year 5 essay — *— (writing unit)*
 - **Skill** — write the FM landscape map: the three paradigms, the open/proprietary gap, and where the
   undervaluation thesis stands after Year 5.
@@ -429,6 +438,8 @@ The `CURRICULUM.md` range `192–194 · Reproduce best open FM baseline` is deco
 - **Lab** — writing deliverable: the landscape-map essay.
 - **Viz** — reuse `arch-family-viz.js`.
 - **Bridge** — exit rehearsal; callback L170b/L191/L195.
+
+**L197 prepared (2026-10-02):** [Lesson](../lessons/0197-year-5-essay.html), complete L191 tables 3/4/7/8 reconstruction and L195 prediction replay, full L194 missing-result inventory, portable notebooks and worked essay. 491 numeric cells and 33,650 saved predictions; fresh model reproduction remains INCOMPLETE_SOURCE_PREPROCESSING_GATE. Three overlapping strategies are explained inline because L170b is not yet authored. Learner PENDING_WRITTEN_DEFENSE; USD0 cloud/API, 1800 aggregate local execution seconds.
 
 ### 198 · Propose 3 novel directions — *— (proposal unit)*
 - **Skill** — write three ranked, falsifiable research proposals (hypothesis, baselines, expected result,
@@ -446,6 +457,8 @@ The `CURRICULUM.md` range `192–194 · Reproduce best open FM baseline` is deco
   hypothesis.
 - **Viz** — reuse `checklist.js`.
 - **Bridge** — locks the Year-6 project; callback L198; forward to Y6 L201.
+
+**L199 prepared (2026-10-02):** [Lesson](../lessons/0199-select-primary-direction.html), complete frozen L190 replay (30 runs / 21,060 predictions), 27 weight scenarios and 21 one-rating perturbations, mandatory gates, portable notebooks and selection memo. L198 appeared after freeze; its different shortlist is explicitly mapped and no scores are transferred. Later L194/L197 status receipts authenticated only. USD0 cloud/API; 1800 aggregate local execution seconds. Proposed study DO_NOT_LAUNCH; full model reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE; learner PENDING_WRITTEN_DEFENSE.
 
 ### 200 · **Year 5 exit exam** — *all Y5 papers · Deliverable-based*
 - **Deliverable** — a **written research proposal** backed by RelBench experiments **+ one reproduced

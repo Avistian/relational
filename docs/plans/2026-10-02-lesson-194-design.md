@@ -1,0 +1,9 @@
+# Lesson 194 — approved analysis and report
+
+Approved in conversation: complete analysis/report of frozen L193 evidence, all 21 tasks, no new cloud/API spending, 1800 aggregate local execution seconds. Preserve the full RDBLearn v1 Tables 1–3 target (567 validation/63 test slots), pinned source, official splits, support cap, complete depth/backend grid and course-seed deviation. Original reproduction remains INCOMPLETE_SOURCE_PREPROCESSING_GATE. No repair, model inference, deployment or mastery claim.
+
+Compare the published RDBLearn and AutoGluon+DFS columns across all 21 tasks as descriptive reference arithmetic only. Fix this comparator before computing gaps. Teach metric direction, absence versus loss, and why score differences do not identify a cause. Build a complete task report, observed preprocessing trace, and three unexecuted controlled-study plans (label coverage, schema information, cold start). Source diagnosis is recorded evidence replay, not a new original-source run.
+
+Deliver lesson/reference, portable inline-code student and executed solution, full JSON/Markdown report, packet hashes, architecture recap and worked contrast diagram, interactive claim exercise, retrieval and teach-back, independent arithmetic/coverage/tamper checks, browser/mobile/keyboard/no-JS/print checks and local publication build. Full paper inference remains NOT_RUN; historical identity and benchmark mechanism attribution NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.
+
+The other considered approach was repair plus fresh separately named experiment; that changes protocol and exceeds this approval. Memory's old paper-mirror skill and writing-plans skill are unavailable; current repository pedagogy/lab/visual skills and this explicit plan supply the workflow. Existing unrelated work and index entries are preserved.

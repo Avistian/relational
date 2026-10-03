@@ -1,0 +1,13 @@
+# Causal & relational data prepared · 2026-10-02
+
+Author preparation, not learner mastery. User approved the complete original synthetic experiment `L185 relational-shortcut-intervention-v1`. Curriculum185 is a causal shortcut unit, not a named paper benchmark. Pearl2009 supplies definitions and assumptions; Maier2013 is optional context only.
+
+Five seeds ×1,000 companies ×20 customers; company-disjoint600/200/200 splits, pre-outcome features and full(customer_id,cutoff) identities. Badge test AUROC0.898645±0.009651 (sample SD across seeds), but badge paired effect and all-badged policy gain exactly0. Observed action gap0.730164±0.008386; adjusted effect0.048060±0.007057; paired action effect0.049150±0.004141 against analytic ATE0.05. All-treated gain over observed assignments0.024100; this is a different estimand from ATE.
+
+Independent audit recomputed120,000held-out prediction rows and20,000paired customers; exact fresh complete rerun of all tables/report PASS. Three live tasks implement relational assembly, intervention and standardization. Standalone15-code-cell solution runs from an empty directory and reproduces the full report exactly. Portable diagrams, reference, eight browser intervention states, desktop/mobile, keyboard/reset, print/no-JS,40local links and manifest navigation PASS. All author numerical jobs, including RED and failed first replay comparison, are in the600-second ledger; USD0cloud/API. First replay failure was an omitted nonsemantic pandas row index; semantic keys were verified and comparison normalized the index. No protocol reduction.
+
+Complete synthetic experiment does not establish real-world causal effectiveness, published-paper reproduction, RCD learning, historical identity, live Colab, deployment or learner mastery. Causal graph assumptions are declared, U is observed, E is evaluator-only, and no spillover mechanism is included. Avoid IID customer uncertainty claims; companies create dependence.
+
+Retrieval: distinguish observing from assigning a badge; derive73points of confounding versus5points of action effect; explain why policy gain differs from ATE; name identification/overlap/interference assumptions before proposing a real action. Learner PENDING_WRITTEN_DEFENSE; no earlier exit gate changed.
+
+Publication: full Git-index Pages workflow blocked by unrelated staged frontier-lesson artifact references (first L186, then L187); separate L185 staged-byte package/links audit is recorded as PASS_PACKAGE_ONLY, not a whole-site success. Visual review compares SCM arrow surgery with the earlier generic intervention widgets: it exposes which mechanism is cut, keeps baseline probabilities visible, and carries the same numeric example into portable notebook diagrams.

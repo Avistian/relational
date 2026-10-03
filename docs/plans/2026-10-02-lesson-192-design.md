@@ -1,0 +1,9 @@
+# Lesson 192: RDBLearn selected-task reproduction
+
+Approved in conversation: complete rel-trial/study-outcome search, arXiv2602.18495v1 Tables1/4, target0.7167 AUROC, depths2/3/4 × TabPFNv2/TabPFNv2.5/LimiX, 10000 support limit, official temporal splits. Paper historical seeds unreported. Freeze release v0.1.2 and FastDFS0.2.1, checkpoint identities and exact configuration before inference. Three new seeds0/1/2 are a disclosed repeatability extension, not recovered historical seeds. Select each seed's winning configuration only on validation, fixed listed order breaks ties, then score full test once. No test-driven tuning; compare each score and mean to0.7167, descriptive tolerance0.02 does not prove historical identity.
+
+USD10 aggregate including preparation, all attempts/retries/checks and validation; planned stopUSD8/reserve2. Measured forecast and temporal/source gates before paid dispatch. No silent downsampling, seed reduction, alternate backend or repaired-pipeline substitution. Full task set belongs toL193; pretraining is outside selected inference scope. Local numerical safety cap3600seconds including failed attempts and delivery. No cloud/API spend before justified forecast.
+
+Deliver HTML and reference, three substantive live learner functions, portable student/solution notebooks, visible source, model-specific figures and interactive causal trace, authenticated source/evidence, complete protocol and execution/deviation ledger. If a source or temporal gate fails, finish the setup/audit teaching package, mark the selected reproduction INCOMPLETE, retain unrun candidate schedule and explain exactly what continuation requires. No inference fabricated from saved scores.
+
+Existing unrelated work is preserved. No push/deployment authorized. Separate author preparation, liveColab, historical reproduction, model inference and learner mastery.

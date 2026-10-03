@@ -1,0 +1,183 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Production constraints</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/serving-contract.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0177-compute-budget-realism.html">Compute evidence</a></nav><header><p class="subtitle">Year 5 · Quarter 3 · Lesson 186</p><h1>Production constraints</h1></header><p class="mission-tag">From benchmark evidence to a serving contract</p>
+
+<p>A relational model can score well offline and still return an answer too late—or return a quick answer based on old related rows. Your tangible win today: <strong>write a contract that checks response time and relational information age separately</strong>.</p>
+<p><strong>Route:</strong> 15-minute core reading, then a 35–45-minute lab. You need query identity and temporal cutoffs from <a href="0175-zero-shot-evaluation.html">Lesson 175</a>, context and batch evaluation from <a href="0176-few-shot-icl-evaluation.html">Lesson 176</a>, and nested timers from <a href="0177-compute-budget-realism.html">Lesson 177</a>. Each is recapped below. <a href="0185-causal-relational-data.html">Lesson 185</a> asks whether a prediction justifies an action; this lesson asks whether the required information can arrive in time. You do not need that lesson’s simulator to follow this one. No previous practical exit is marked complete here.</p>
+<p><strong>Executed:</strong> complete <strong>81-scenario course simulation / 810,000 responses</strong>, plus <strong>300 original batch-receipt replays</strong>. All service times are hypothetical. Live production performance, fresh model inference and paper-result reproduction are <code>NOT_RUN</code>; request latency from original batch receipts is <code>NOT_MEASURED</code>. Learner status: <code>PENDING_WRITTEN_DEFENSE</code>.</p>
+<div id="warmup"></div>
+
+<h2 id="1-%C2%B7-The-missing-contract">1 &#183; The missing contract<a class="anchor-link" href="#1-%C2%B7-The-missing-contract">&#182;</a></h2><p>In an offline benchmark, features and predictions can already be on disk. At serving time, a customer request must find the customer’s orders, connect payments to those orders, form the model input, and return an answer. The slowest or least current dependency can determine whether that answer is usable.</p>
+<p>Huyen distinguishes precomputed predictions, online prediction with historical features, and prediction using fresh features. These offer different ways to move work off the request path. Our lesson makes those choices executable with a deliberately small relational simulation. <a href="https://huyenchip.com/2022/01/02/real-time-machine-learning-challenges-and-solutions.html">Primary reading: Huyen, stages 1–3</a>.</p>
+<figure tabindex="0"><img src="../labs/figures/l186/serving.svg" alt="Relational serving routes. All three policies read the same customer-linked dependencies; only their legal read time and assumed request cost differ."><figcaption>Relational serving routes. All three policies read the same customer-linked dependencies; only their legal read time and assumed request cost differ. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<p>This is a <strong>serving architecture</strong>, not a new model architecture. Twenty customer IDs join two upstream snapshot streams, orders and payments. We model when their state is available, not their business values or prediction accuracy. Production systems need additional measurements for network hops, real joins, model execution, shared refresh resources, failures and capacity.</p>
+<h2 id="2-%C2%B7-Follow-four-clocks">2 &#183; Follow four clocks<a class="anchor-link" href="#2-%C2%B7-Follow-four-clocks">&#182;</a></h2><p><strong>Event time</strong> says when a source snapshot describes the world. <strong>Arrival time</strong> says when our service can see it. <strong>Materialization time</strong> says when a derived feature or precomputed prediction becomes ready. <strong>Response time</strong> says when the caller receives the answer. Knowing an event’s timestamp does not prove we had received it then.</p>
+<p>At service start, the request can read only dependency snapshots that have arrived. For cached policies, it sees only a refresh that has completed. Within each source, a late older snapshot cannot replace a newer one. For this fixture, each source update is a state snapshot: accepting the latest observed snapshot does <strong>not</strong> prove that every real transaction arrived.</p>
+<p>We define:</p>
+<ul>
+<li><strong>Request latency</strong> = response time − request arrival.</li>
+<li><strong>Observed source age</strong> = response time − the oldest event time among required dependency snapshots.</li>
+<li><strong>Materialization age</strong> = response time − materialization completion.</li>
+</ul>
+<p>These definitions are course policy, with units of milliseconds. The source-age limit is conservative for this fixture; it is not proof of feature correctness. A missing dependency produces unknown source age and fails the freshness contract.</p>
+<figure tabindex="0"><img src="../labs/figures/l186/clocks.svg" alt="A complete saved request trace. Event, refresh and response clocks show why a 1 ms response violates a 2,000 ms source-age limit."><figcaption>A complete saved request trace. Event, refresh and response clocks show why a 1 ms response violates a 2,000 ms source-age limit. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<div id="predict"></div>
+
+<p>A fast cache can contain stale data. Conversely, a request can wait a long time in a queue, then read a recent snapshot at service start: its features are fresh at response but its answer is late. The chosen read point matters; a product requiring a snapshot as of <strong>request arrival</strong> needs a different information contract.</p>
+<h2 id="3-%C2%B7-Freeze-the-entire-experiment">3 &#183; Freeze the entire experiment<a class="anchor-link" href="#3-%C2%B7-Freeze-the-entire-experiment">&#182;</a></h2><p>The executable target is <strong>L186 Relational Serving Contract</strong>, a course experiment. Huyen’s reading supplies design concepts, not numerical results to replicate. We run every cell in the frozen grid: <strong>3 policies × 3 request rates × 3 arrival conditions × 3 seeds = 81 scenarios</strong>, each with <strong>10,000 requests</strong>.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Policy</th>
+  <th style="text-align:right">Foreground service</th>
+  <th style="text-align:right">Refresh</th>
+  <th>What waits on the caller’s path?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Precomputed prediction</td>
+  <td style="text-align:right">1 ms</td>
+  <td style="text-align:right">Every 5,000 ms</td>
+  <td>Prediction lookup</td>
+</tr>
+<tr>
+  <td>Cached features</td>
+  <td style="text-align:right">5 ms</td>
+  <td style="text-align:right">Every 1,000 ms</td>
+  <td>Feature lookup and nominal scoring</td>
+</tr>
+<tr>
+  <td>Request-time features</td>
+  <td style="text-align:right">15 ms</td>
+  <td style="text-align:right">At service start</td>
+  <td>Nominal feature assembly and scoring</td>
+</tr>
+</tbody>
+</table></div>
+<p>All durations are <strong>hypothetical constants</strong>. Background refresh takes 20 ms on independent, unconstrained resources. No trained model runs. A single first-in, first-out (<strong>FIFO</strong>) foreground worker serves requests in arrival order. It serves every request to completion; there are no silent drops, retries, cancellation or autoscaling. Nominal rates are 10, 50 and 100 requests/s, with seeded, rounded exponential gaps. All three policies get exactly the same trace within each condition and seed. Bootstrap snapshots remain in the reported metrics; no warm-up responses are discarded.</p>
+<p>Orders and payments publish state snapshots every 500 ms. Normal arrivals lag by 0–100 ms. In the middle third of the request horizon, payments either add 2,000 ms of delay or are held until the interruption ends. Orders continue. The simulation generates enough future source updates to drain the foreground queue. It cannot access those updates before their arrival.</p>
+<p>The fixed limits are <strong>100 ms request latency</strong> and <strong>2,000 ms source age</strong>; equality passes. p99 uses the nearest-rank definition: sort 10,000 latencies and take the 9,900th. This is a finite-trace statistic, not an estimate with a calibrated production confidence bound. The three seeds expose trace variation; they do not cover hardware uncertainty.</p>
+<figure tabindex="0"><img src="../labs/figures/l186/tradeoffs.svg" alt="Complete normal-arrival subset: three rates, three policies and all three seeds. Hypothetical worker times; these are simulated finite-trace results."><figcaption>Complete normal-arrival subset: three rates, three policies and all three seeds. Hypothetical worker times; these are simulated finite-trace results. Scroll horizontally on narrow screens.</figcaption></figure>
+
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Policy · normal arrivals · seed 0</th>
+  <th style="text-align:right">Requests/s</th>
+  <th style="text-align:right">p99 latency</th>
+  <th style="text-align:right">Deadline misses</th>
+  <th style="text-align:right">Stale responses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>precomputed</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">1 ms</td>
+  <td style="text-align:right">0.00%</td>
+  <td style="text-align:right">70.05%</td>
+</tr>
+<tr>
+  <td>cached</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">9 ms</td>
+  <td style="text-align:right">0.00%</td>
+  <td style="text-align:right">0.08%</td>
+</tr>
+<tr>
+  <td>request</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">31 ms</td>
+  <td style="text-align:right">0.00%</td>
+  <td style="text-align:right">0.00%</td>
+</tr>
+<tr>
+  <td>precomputed</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">1 ms</td>
+  <td style="text-align:right">0.00%</td>
+  <td style="text-align:right">70.20%</td>
+</tr>
+<tr>
+  <td>cached</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">13 ms</td>
+  <td style="text-align:right">0.00%</td>
+  <td style="text-align:right">0.43%</td>
+</tr>
+<tr>
+  <td>request</td>
+  <td style="text-align:right">50</td>
+  <td style="text-align:right">127 ms</td>
+  <td style="text-align:right">2.87%</td>
+  <td style="text-align:right">0.04%</td>
+</tr>
+<tr>
+  <td>precomputed</td>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">1 ms</td>
+  <td style="text-align:right">0.00%</td>
+  <td style="text-align:right">70.47%</td>
+</tr>
+<tr>
+  <td>cached</td>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">21 ms</td>
+  <td style="text-align:right">0.00%</td>
+  <td style="text-align:right">1.00%</td>
+</tr>
+<tr>
+  <td>request</td>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">47,983 ms</td>
+  <td style="text-align:right">99.71%</td>
+  <td style="text-align:right">0.06%</td>
+</tr>
+</tbody>
+</table></div>
+<p>This worked table shows seed 0; the figure includes all three seeds and the full report retains all 81 cells. No best seed or policy was selected.</p>
+<p><strong>Utilization</strong> compares arriving work with available worker time. At 100 requests/s, each request needs 0.015 seconds, so a 15 ms worker receives <code>100 × 0.015 = 1.5</code> worker-seconds of work per second: work arrives faster than that one worker can finish it. The observed finite-trace queue grows. Freshly reading dependencies cannot recover the already spent waiting time. Independent background refresh capacity favors cached policies in this experiment; measuring that cost is required before making a deployment decision.</p>
+<h2 id="4-%C2%B7-Change-an-assumption,-predict,-then-inspect">4 &#183; Change an assumption, predict, then inspect<a class="anchor-link" href="#4-%C2%B7-Change-an-assumption,-predict,-then-inspect">&#182;</a></h2><p>Before selecting a new cell, predict whether the change affects queueing, source age, or both. Reset returns to cached features, 50 requests/s, normal arrivals, seed 0. The explorer displays complete saved cells; it does not interpolate a new result.</p>
+<div id="serving-explorer"></div><noscript>The complete seed-0 baseline table above remains readable. Cached features at 50 requests/s have p99 13 ms but cannot repair an interrupted payment stream.</noscript>
+
+<p><strong>Try:</strong> hold rate and seed fixed, switch from normal to interrupted payments. Then switch policy. Can any policy make an unavailable payment snapshot arrive sooner? Why can the request-time policy have a lower stale-response fraction at high load? Check that it drains after the incident ends; this aggregate mixes different response times and is not evidence of better incident handling.</p>
+<h2 id="5-%C2%B7-Monitor-what-you-can-actually-observe">5 &#183; Monitor what you can actually observe<a class="anchor-link" href="#5-%C2%B7-Monitor-what-you-can-actually-observe">&#182;</a></h2><p>Monitor latency, traffic, errors and saturation to understand the service. Here, deadline misses and queue wait expose operational trouble. Real error rates and resource saturation need instrumentation absent from this simulation. <a href="https://sre.google/sre-book/monitoring-distributed-systems/">Google SRE, monitoring distributed systems</a>.</p>
+<p>Our freshness monitor examines the last 100 completed responses. It triggers only when <strong>more than ten</strong> are stale, after a complete window exists. This is a response-count window: at lower traffic, accumulating 100 observations takes longer. It is not a fixed-duration detector.</p>
+<p>Report whether an alert was already active at the injected onset. “First alert response after onset” can be almost immediate for a policy that was stale all along. That is not new fault detection. The report also records new false-to-true episodes. Recovery bursts, sparse observations and this fixed threshold limit what either time means.</p>
+<p>Quality needs a separate clock. In the simulation, labels become available 30,500 ms after each request’s arrival. We count their availability at the final response but compute no accuracy: no scores or labels were generated. This artificial delay illustrates the contract; it is not an F1 target window. Production scoring needs mature labels joined to the exact original request and model version. A latency or freshness alert alone does not establish model degradation. <a href="https://huyenchip.com/2022/02/07/data-distribution-shifts-and-monitoring.html">Huyen, natural labels and monitoring</a>.</p>
+<h2 id="6-%C2%B7-The-real-batch-evidence-answers-a-narrower-question">6 &#183; The real batch evidence answers a narrower question<a class="anchor-link" href="#6-%C2%B7-The-real-batch-evidence-answers-a-narrower-question">&#182;</a></h2><p>We authenticate all <strong>300 original L176 run receipts</strong> and check the full two-task, three-model, five-context, ten-seed grid. Their batches contain 702 F1 or 825 trial queries. We compare individual JSON records with the phase receipts and reconstruct their timers independently using SQL.</p>
+<p><strong>474.434 s</strong> of inner evaluation time + <strong>0.939 s</strong> from 12 distinct loading events sit inside <strong>491.471 s</strong> of worker time. The difference is other worker work; it is not measured cloud startup. Do not add inner timers to the outer total.</p>
+<p>Dividing a batch duration by its query count can describe amortized batch throughput cost. It cannot recover queueing, network or individual request latency. There are no per-request samples here, so request p99 remains <strong>NOT_MEASURED</strong>. This lane reads timing metadata, not checkpoint weights or saved prediction values. Hashes establish unchanged bytes, not the physical accuracy of the original clocks.</p>
+<h2 id="7-%C2%B7-Lab:-implement-three-contracts-that-control-the-result">7 &#183; Lab: implement three contracts that control the result<a class="anchor-link" href="#7-%C2%B7-Lab:-implement-three-contracts-that-control-the-result">&#182;</a></h2><p>Open the <a href="../labs/0186-production-constraints.ipynb">student notebook</a>, <a href="../labs/html/0186-production-constraints.html">rendered executed solution</a>, or <a href="../labs/solutions/0186-production-constraints.ipynb">solution notebook</a>. The portable notebook embeds the receipt packet and visible simulator. It runs offline using the Python standard library, with no cloud call or model download.</p>
+<ol>
+<li><strong>FIFO schedule:</strong> include time spent waiting behind earlier requests. Return every start and finish time.</li>
+<li><strong>Dependency source age:</strong> use the oldest required snapshot; keep missing information unknown.</li>
+<li><strong>Freshness alert:</strong> require the full trailing window and the strict threshold.</li>
+</ol>
+<p>All three functions are called by the full 81-scenario run. An independent author check reconstructs every response using indexed prefix maxima and a different queue recurrence. Passing notebook checks is preparation for the written defense, not proof of learner mastery.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">schedule</span><span class="p">(</span><span class="n">arrivals</span><span class="p">,</span> <span class="n">service_ms</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Single FIFO worker, no cancellation: return every (start, finish).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">service_ms</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="n">service_ms</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Positive integer service duration required&#39;</span><span class="p">)</span>
+    <span class="n">prior</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">free</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">arrival</span> <span class="ow">in</span> <span class="n">arrivals</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">arrival</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="n">arrival</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">arrival</span> <span class="o">&lt;</span> <span class="n">prior</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Nonnegative ordered integer arrivals required&#39;</span><span class="p">)</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">arrival</span><span class="p">,</span> <span class="n">free</span><span class="p">)</span>
+        <span class="n">free</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">service_ms</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">free</span><span class="p">))</span>
+        <span class="n">prior</span> <span class="o">=</span> <span class="n">arrival</span>
+    <span class="k">return</span> <span class="n">result</span>
+</pre></div>
+<p><strong>CHECK:</strong> serve arrivals <code>[0, 2, 30]</code> with 10 ms service. Starts are <code>[0, 10, 30]</code>, finishes <code>[10, 20, 40]</code>, latencies <code>[10, 18, 10]</code>. Then change one dependency event from 90 to 60 at response time 100: the source age must increase from 20 to 40 if the other dependency is 80.</p>
+<h2 id="8-%C2%B7-Exit:-write-the-fallback,-not-just-the-threshold">8 &#183; Exit: write the fallback, not just the threshold<a class="anchor-link" href="#8-%C2%B7-Exit:-write-the-fallback,-not-just-the-threshold">&#182;</a></h2><p>Write a six-sentence serving contract: required relational keys, snapshot/read point, response deadline, freshness limit, fallback action, and monitoring/label policy. Choose whether stale or missing dependencies cause abstention, a baseline response, or an explicitly marked stale answer. The simulation reports breaches; it does not execute or prove the quality of your proposed fallback.</p>
+<p>Defend one choice under interrupted payments and another under overloaded request-time service. State the real measurements still needed before deployment. Tomorrow, recall the four clocks without looking. In a week, explain why batch throughput cannot establish request p99.</p>
+<div id="teachback"></div>
+
+<p><strong>Ask the teacher</strong> about any unclear trace, metric or assumption. Bring your written contract for feedback.</p>
+<p><a href="../reference/production-constraints.html">Quick reference</a> · <a href="../labs/l186-reproduction.md">Frozen protocol and commands</a> · <a href="../labs/evidence/l186/report.json">Complete report</a> · <a href="../labs/_verify_l186_results.json">Independent verification</a> · <a href="../labs/sources/l186/source-ledger.json">Source ledger</a> · <a href="../reference/curriculum.html">Curriculum and the next privacy lesson</a></p>
+<p><strong>Next: <a href="0187-ethics-privacy-reg.html">Lesson 187</a>.</strong> A response can meet its deadline and freshness limit while exposing a person’s information. Extend the serving contract with a protected unit and a precise release rule.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/serving-contract.js"></script><script src="../assets/l186-evidence.js"></script><script src="../assets/l186-lesson.js"></script></body></html>

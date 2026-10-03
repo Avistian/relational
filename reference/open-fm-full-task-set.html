@@ -1,0 +1,48 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Full-task reproduction field guide</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/multitask-reproduction.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><h1 id="Full-task-reproduction-%C2%B7-field-guide">Full-task reproduction &#183; field guide<a class="anchor-link" href="#Full-task-reproduction-%C2%B7-field-guide">&#182;</a></h1><p><strong>Freeze first:</strong> paper version, task IDs, model/source/checkpoint/data hashes, support policy, splits, candidate order, seeds, metrics, budget and stop rule.</p>
+<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable results table"><table>
+<thead>
+<tr>
+  <th>Stage</th>
+  <th>Contract</th>
+  <th>Failure rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Source admission</td>
+  <td>Same support/query preprocessing meaning; valid temporal access</td>
+  <td>Stop and identify the defect</td>
+</tr>
+<tr>
+  <td>Validation selection</td>
+  <td>Every candidate; validation only; fixed tie order</td>
+  <td>Missing candidate: no selection</td>
+</tr>
+<tr>
+  <td>Seed summary</td>
+  <td>Every seed has a completed or explicitly missing record</td>
+  <td>Missing score: full-seed mean withheld</td>
+</tr>
+<tr>
+  <td>Task aggregation</td>
+  <td>Every declared task; one weight per task</td>
+  <td>Incomplete coverage: full-suite mean withheld</td>
+</tr>
+<tr>
+  <td>Regression scaling</td>
+  <td>Verified positive baseline denominator per task</td>
+  <td>Unknown denominator: no normalized aggregate</td>
+</tr>
+<tr>
+  <td>Claim</td>
+  <td>Fresh inference, reference arithmetic and source audit distinguished</td>
+  <td>No substitution between evidence types</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Equations:</strong> task mean = sum of seed scores / S; sample variance = sum of squared deviations / (S−1). Macro score = sum of task means / T. Normalized MAE_t = MAE_t / verified baseline MAE_t. Never average AUROC with MAE or raw MAEs in different units.</p>
+<p><strong>Worked trace:</strong> seed scores .6/.7/.8 → mean .7, sample SD .1. Missing one seed → incomplete, not a two-seed full result. Synthetic errors5/.2 with baseline errors10/.1 → .5/2 → mean1.25.</p>
+<p><strong>L193:</strong> 21 tasks × 3 seeds × 9 validation candidates = 567; 63 selected-test slots. All model slots NOT_RUN. Original preprocessing diagnostic fails under the recorded environment; all 21 task rows retain null fresh results. Published classification reference means .7452875 and .7879 are arithmetic on rounded table scalars. Regression aggregate identity NOT_ESTABLISHED. No backend executor was validated after the source stop.</p>
+<p><strong>Continue only after:</strong> resolve source correctness and version identity; audit raw features/query keys/temporal availability; pin checkpoints and normalizers; measure the full-grid cost; validate the backend runner. A repaired pipeline needs a separately identified experiment. Complete the learner defense independently of engineering checks.</p>
+<p><a href="../lessons/0193-open-fm-full-task-set.html">Lesson</a> · <a href="../labs/0193-open-fm-full-task-set.ipynb">Student notebook</a> · <a href="../labs/l193-reproduction.md">Protocol</a> · <a href="../labs/evidence/l193/report.json">Full report</a> · <a href="https://arxiv.org/html/2602.18495v1">Primary source</a>.</p>
+</article></body></html>

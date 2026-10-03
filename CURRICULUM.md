@@ -42,7 +42,7 @@ A common, correct objection: *240 lessons ÷ 365 days ≈ 0.66 years — so at o
 So the 6 years are paced by **skill acquisition (labs/reproduction) and the final research project**, not by lesson count. If you only consumed the 240 lessons at 2–3/week, you'd "finish reading" in ~2 years — and still not be able to reproduce RelBench or run a fair benchmark. The extra four years are where expertise actually forms.
 
 **Lesson numbering:** Year N → units `(N-1)*40 + 001` … `(N-1)*40 + 040` (approx.)  
-**Added frontier block:** The planned B01–B24 bridge sits between L200 and L201, with its own additional time budget; the original 240-unit spine and existing suffix units keep their identifiers. See [detailed bridge specifications](./plan/year-5-6-bridge.md).
+**Added frontier block:** The planned 29-unit bridge (B01–B24 plus five suffix units) sits between L200 and L201, with its own additional time budget; the original 240-unit spine and existing suffix units keep their identifiers. See [detailed bridge specifications](./plan/year-5-6-bridge.md).
 **Rule:** Finish each quarter checkpoint before advancing. Papers are read in publication order within each year. A unit is "done" when its lab runs and its quiz/checkpoint is passed — not when the reading is skimmed.
 
 > **Critical framing (read first).** This is a *fast-moving* field. Two truths must coexist in your head the whole way:
@@ -423,26 +423,26 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | 180 | [**Q2 checkpoint**](lessons/0180-public-encoder-checkpoint.html) | RT-v1 | Public encoder audit complete; fresh fit NOT_RUN; practical exit INCOMPLETE |
 
 ### Q3 · Research frontier mapping (181–190)
-| 181 | RelBench v2 / autocomplete tasks | RelBench v2 (2602.12606) · RelGT-AC (2606.03040) | New tasks & databases |
-| 182 | RDB-PFN + composite message passing | RDB-PFN × RelGNN | Hypothesis generation |
-| 183 | Graph-Transformer + pre-training | RelGT × Griffin | Architecture research gap |
-| 184 | Latest relational Graph-Transformers | GelGT (2605.15575) | Long-range dependency fixes |
-| 185 | Causal & relational data | — | When correlation ≠ deployable strategy |
-| 186 | Production constraints | Huyen | Latency, freshness, monitoring |
-| 187 | Ethics & privacy on REG | — | Node-level privacy, leakage |
-| 188 | Systematic literature tracking | — | arXiv alerts, RelBench leaderboard, paper log |
-| 189 | Identify 3 open problems | Survey 2025 | Rank by tractability |
-| 190 | **Q3 checkpoint** | — | Research gap document (5 pages) |
+| 181 | [**RelBench v2 / autocomplete tasks**](lessons/0181-relbench-v2-autocomplete.html) | RelBench v2 (2602.12606) · RelGT-AC (2606.03040) | Full F1 baselines reproduced; fresh GNN stopped at gradient gate; selected experiment INCOMPLETE |
+| 182 | [RDB-PFN + composite message passing](lessons/0182-rdb-pfn-composite-message-passing.html) | RDB-PFN × RelGNN | Fresh full selected checkpoint reproduction; composite mechanism; hybrid hypothesis NOT_RUN |
+| 183 | [Graph-Transformer + pre-training](lessons/0183-graph-transformer-pretraining.html) | RelGT × Griffin | [Complete saved replay; four-arm gap brief; full paper lanes INCOMPLETE](labs/0183-graph-transformer-pretraining.ipynb) |
+| 184 | [GelGT: context and temporal attention](lessons/0184-gelgt-temporal-attention.html) | GelGT v2 (2605.15575) | [Lab](labs/0184-gelgt-temporal-attention.ipynb): source audit PASS; full reproduction INCOMPLETE |
+| 185 | [Causal & relational data](lessons/0185-causal-relational-data.html) | Pearl 2009; original synthetic experiment | [Five-seed shortcut/intervention reproduction](labs/0185-causal-relational-data.ipynb); paper/real-world causal claims NOT_ESTABLISHED |
+| 186 | [Production constraints](lessons/0186-production-constraints.html) | Huyen + Google SRE | [Complete 81-scenario serving simulation + 300 batch-receipt replays](labs/0186-production-constraints.ipynb); live production NOT_RUN |
+| 187 | [Ethics & privacy on REG](lessons/0187-ethics-privacy-reg.html) | Dwork/Roth + graph-privacy critique | [Full 857-driver audit; 270 bounded histogram simulations](labs/0187-ethics-privacy-reg.ipynb); production DP not established |
+| 188 | [Systematic literature tracking](lessons/0188-systematic-literature-tracking.html) | arXiv API/RSS | 30-paper replay; quarterly collection INCOMPLETE |
+| 189 | Identify 3 open problems — under construction | Survey 2025 | Draft ranking by tractability |
+| 190 | **[Q3 research-gap checkpoint](lessons/0190-research-gap-checkpoint.html)** | — | [Five-page document](reference/research-gap-document.html); selected replay complete, learner defense pending |
 
 ### Q4 · Year 5 synthesis (191–200)
 | 191 | KumoRFM-2 SOTA tracking ★ | Fey et al. 2026 (2604.12596) | RelBench v1+v2 numbers; proprietary vs open gap |
 | 192–194 | Reproduce best **open** FM baseline | OpenRFM or RDBLearn | Full reproduction |
-| 195 | Thesis stress-test | — | Where is thesis wrong? |
-| 196 | Community engagement | RelBench mailing list | Ask one technical question |
-| 197 | Year 5 essay | — | FM landscape map |
-| 198 | Propose 3 novel directions | — | Ranked research proposals |
-| 199 | Select primary direction | — | One hypothesis to pursue |
-| 200 | **Year 5 exit exam** | All Y5 papers | FM reproduction + proposal |
+| 195 | [Thesis stress-test](lessons/0195-thesis-stress-test.html) | Frozen L149/L182/L194 evidence | Complete replay + falsification brief; full RDBLearn reproduction incomplete |
+| 196 | [Community engagement](lessons/0196-community-engagement.html) | Project community / maintainers | Prepare one reproducible question; participation pending |
+| 197 | [Year 5 essay](lessons/0197-year-5-essay.html) | Frozen Year 5 evidence | FM landscape essay and complete evidence audit; defense pending |
+| 198 | [Propose 3 novel directions](lessons/0198-three-research-directions.html) | Frozen Year 5 evidence and closest primary work | Three ranked, falsifiable proposals; complete audit; defense pending |
+| 199 | [Select primary direction](lessons/0199-select-primary-direction.html) | COS preregistration; frozen L190 evidence | [Complete decision audit](labs/0199-select-primary-direction.ipynb) + provisional memo; launch blocked |
+| 200 | **[Year 5 exit exam](lessons/0200-year-5-exit-exam.html)** | RDB-PFN v5 Table 9 + Year 5 evidence | [Fresh complete selected reproduction](labs/0200-year-5-exit-exam.ipynb); learner proposal and defense pending |
 
 **Year 5 exit criterion:** Written research proposal with evidence from RelBench experiments; reproduced one FM-related baseline.
 
@@ -454,15 +454,17 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 
 <a id="research-bridge"></a>
 
-## Year 5 → 6 bridge — Influential Architectures & Current Research (B01–B24)
+## Year 5 → 6 bridge — Influential Architectures & Current Research (29 planned units)
 
 **Goal:** Update the Year 5 proposal against consequential architecture families and current evidence before Year 6 experiments. Which relational gains survive stronger tabular baselines, alternative representations and realistic failure modes?
 
 **Research cutoff: 2026-09-26.** The [influence audit](./plan/research-influence-audit-2026-09.md) records architectural lineage, benchmark uptake, released artifacts and coverage gaps. It distinguishes established families, current baseline updates, coverage-critical mechanisms and exploratory papers. Core status is a teaching decision, not a citation ranking. Main additions were checked against method/evaluation sections and official repositories; source-access limits are recorded in the audit.
 
-**Placement and status:** After L200, before L201. All 24 units are **planned**; no bridge HTML lessons, experiments or learner mastery are claimed. Existing 001–240 and suffix identifiers remain stable. The [detailed specifications](./plan/year-5-6-bridge.md) include primary readings, retrieval prompts, teaching mechanisms, exercises, checks and future visual designs. This topical bridge is an explicit exception to the earlier publication-order rule.
+**October coverage pass:** [2025–2026 research and Mindful Modeler audit](./plan/tabular-foundation-coverage-audit-2026-10.md), checked 2026-10-02. Adds B04a/B07a/B18a/B19a/B19b and focused checks in existing units, including the July workshop-trends post.
 
-**Workload:** 70–110 learner hours for core, including one bounded reproduction; 16–24 additional hours for all electives. Total 86–134 hours, roughly 12–19 weeks at one hour/day, beyond the original six-year estimate. Compute has a separate budget. Extend the calendar or reallocate optional time without cutting Year 6 research or exit gates.
+**Placement and status:** After L200, before L201. All 29 units are **planned**; no bridge HTML lessons, experiments or learner mastery are claimed. Existing 001–240 and suffix identifiers remain stable. The [detailed specifications](./plan/year-5-6-bridge.md) include primary readings, retrieval prompts, teaching mechanisms, exercises, checks and future visual designs. This topical bridge is an explicit exception to the earlier publication-order rule.
+
+**Workload:** 80–126 learner hours for core, including one bounded reproduction; 25–39 additional hours for all electives. Total 105–165 hours, roughly 15–24 weeks at one hour/day, beyond the original six-year estimate. Compute has a separate budget. Extend the calendar or reallocate optional time without cutting Year 6 research or exit gates.
 
 **Entry and method:** Pass L200. Use closed-book retrieval → primary-source input → exercise → written defense, with 1/7/30-day revisits. Earlier influential-model lessons are prerequisites; revisits require a new comparison artifact.
 
@@ -472,9 +474,11 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | B02 ★ | [Numerical embeddings, TabM and TabPack](./plan/year-5-6-bridge.md#b02) | Embedding/ensemble ablation with selection and cost ledger. |
 | B03 ★ | [PFN and the TabPFN generations](./plan/year-5-6-bridge.md#b03) | Version, variant and access matrix. |
 | B04 ★ | [TabICL and scalable two-stage ICL](./plan/year-5-6-bridge.md#b04) | Row-to-context computation trace and scale stress test. |
+| B04a ◆ | [Scaling rows, features and classes](./plan/year-5-6-bridge.md#b04a) | Row/feature/class stress matrix and matched operating points. |
 | B05 ★ | [TabDPT: real-data pretraining and retrieval](./plan/year-5-6-bridge.md#b05) | Real-data episode, retrieval and contamination audit. |
 | B06 ★ | [Mitra: the prior is part of the model](./plan/year-5-6-bridge.md#b06) | Prior-mixture ablation with fixed learner and budget. |
 | B07 ★ | [Semantic transfer: CARTE, ConTextTab and TabSTAR](./plan/year-5-6-bridge.md#b07) | Semantic-name ablation and adaptation comparison. |
+| B07a ◆ | [Hypernetworks: generate a predictor from a table](./plan/year-5-6-bridge.md#b07a) | Support-to-weights trace and query-volume cost comparison. |
 | B08 ◆ | [LimiX: alternative structured-data objectives](./plan/year-5-6-bridge.md#b08) | Feature/target attention and objective ablation. |
 | B09 ◆ | [Current cost frontier: TabFM, EXAONE and Nori](./plan/year-5-6-bridge.md#b09) | Matched latency, memory and quality protocol. |
 | B10 ★ | [Relational Transformer: cells, tasks and relational attention](./plan/year-5-6-bridge.md#b10) | Cell-level relational attention and visibility trace. |
@@ -486,18 +490,21 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | B16 ◆ | [AutoGrable: selecting or declining a graph](./plan/year-5-6-bridge.md#b16) | Graph-construction selection including abstention. |
 | B17 ◆ | [FlexTab and GTAlign: reusable representations](./plan/year-5-6-bridge.md#b17) | Shared representation or graph-to-table transfer trace. |
 | B18 ★ | [Context-window failure and sufficient evidence](./plan/year-5-6-bridge.md#b18) | Degree-stratified truncation versus aggregation diagnostic. |
+| B18a ★ | [Context as deployed model state](./plan/year-5-6-bridge.md#b18a) | Context/update/cost contract, missingness and explanation checks. |
 | B19 ★ | [BeyondArena, contamination and moving benchmarks](./plan/year-5-6-bridge.md#b19) | Version-aware contamination and non-IID evidence audit. |
+| B19a ★ | [Predictive distributions, calibration and proper scores](./plan/year-5-6-bridge.md#b19a) | Metric-and-calibration contract with paired distributional evaluation. |
+| B19b ◆ | [Beyond ordinary regression: forecasting, survival or causal effects](./plan/year-5-6-bridge.md#b19b) | One task contract and assumption-violation example. |
 | B20 ◆ | [Curriculum Matters: ordering versus scale](./plan/year-5-6-bridge.md#b20) | Order-versus-scale pretraining experiment specification. |
 | B21 ◆ | [Privacy or structural robustness](./plan/year-5-6-bridge.md#b21) | Privacy ledger or integrity-preserving structural stress test. |
 | B22 ◆ | [Newest mechanisms: RefineICL or tabular JEPA](./plan/year-5-6-bridge.md#b22) | One mechanism intervention with matched controls. |
 | B23 ★ | [Reproduce one declared comparison](./plan/year-5-6-bridge.md#b23) | One named published comparison, provenance and deviation ledger. |
 | B24 ★ | [Defend the architecture and the thesis](./plan/year-5-6-bridge.md#b24) | Defended proposal, baseline decisions and falsification tests. |
 
-**Core route:** B01–B07 → B10–B14 → B18–B19 → B23–B24 (16 units). The eight ◆ electives deepen a selected research direction. Recent exploratory methods are not promoted solely because they report a new best score.
+**Core route:** B01–B07 → B10–B14 → B18 → B18a → B19 → B19a → B23–B24 (18 units). The eleven ◆ electives deepen a selected research direction; insert selected suffix electives after their parent. Recent exploratory methods are not promoted solely because they report a new best score.
 
 **Exit:** Submit a 3–5-page proposal, architecture coverage map, baseline inclusion/exclusion decisions, one named published comparison with a reproducibility ledger, and two falsification tests. A teaching fixture leaves the reproduction gate pending. Score protocol validity, baseline fairness, reproducibility, evidence interpretation and falsifiability 0–2 each; pass at 8/10 with no zero and no unresolved leakage. Status remains `PENDING_WRITTEN_DEFENSE` until learner evidence is assessed. B24 supplies L201–204 and L219.
 
-**Baseline inventory:** Consider tuned trees + time-safe feature engineering, numerical MLPs/ensembles, retrieval, TabPFN/TabICL/TabDPT/Mitra, semantic transfer where text matters, flattening + ICL, RelGNN/RelGT and accessible relational FMs. Audit current candidates (LimiX, TabFM, EXAONE, Nori, RT-J) even when electives are skipped. This requires justified decisions, not training every model. Pin versions, access, information and selection/inference budgets; proprietary models are comparators, not upper bounds.
+**Baseline inventory:** Consider tuned trees + time-safe feature engineering, numerical MLPs/ensembles, tree/FM hybrids, hypernetworks, retrieval, TabPFN/TabICL/TabDPT/Mitra, semantic transfer where text matters, flattening + ICL, RelGNN/RelGT and accessible relational FMs. Audit current candidates (LimiX, TabFM, EXAONE, Nori, RT-J, TabFlex/Wide/Orion/TabSwift, Seldon and NEXUS) even when electives are skipped. This requires justified decisions, not training every model. Pin versions, access, information and selection/inference budgets; proprietary models are comparators, not upper bounds.
 
 ---
 
@@ -687,7 +694,29 @@ This supplements the July registry below. The [research audit](./plan/research-i
 - Context Window Failures — `2609.00460v1` ★ B18; BeyondArena revisited at B19. Required failure studies do not imply established broad influence.
 - Other retained frontier candidates and their elective status: B15–B17 and B20–B22 in the reading register.
 
-**Currency rule:** This index is a snapshot (July 2026 registry, supplemented by the **2026-09-26 influence audit**). Before each new quarter, run an arXiv search for the quarter's topic sorted by `submitted` and add any paper that (a) sets new SOTA on RelBench/TabArena/BeyondArena, (b) exposes a failure mode, or (c) is a baseline you'll be measured against. Do not add papers that merely apply an existing method.
+### October 2026 tabular-FM coverage supplement
+
+Sources and review depth are recorded in the [coverage audit](./plan/tabular-foundation-coverage-audit-2026-10.md); additions are planned readings, not reproduced results.
+
+| Primary reading / release | Verified identifier | Placement |
+|---|---|---|
+| TabFlex; TabPFN-Wide | `2506.05584v1`; `2510.06162v1` | ◆ B04a scale axes |
+| Orion-MSP; Orion-Bix; BETA | `2511.02818`; `2512.00181`; `2502.02527` | ◆ B04a candidate comparisons |
+| MotherNet; HyperFast; iLTM | `2312.08598`; `2402.14335`; `2511.15941v1` | ◆ B07a; family inventory in core B01/B24 |
+| EquiTabPFN | `2502.06684v4` | B03 target-permutation failure check |
+| TabForestPFN; APT; PFN-Boost/LLM-Boost | `2405.13396`; `2502.04573`; `2502.02672` | Supporting reads B06 / B02 |
+| SAP-RPT-1-OSS | Official model card; ConTextTab alias | B07 release identity; no extra architecture |
+| TabFM report | `2609.37959v1` (29 September) | ◆ B09; base / + / Auto separated |
+| Seldon; NEXUS | Provider report / official product page | B09/B24 access and exclusion decisions |
+| TACO; existing TabPFN distillation and interpretation readings | `2602.05649v2`; `2511.08667`; `2403.10923` | ★ B18a context, cost and explanation contract |
+| ScoringBench; distributional regression | `2603.29928v3`; `2603.08206v1` | ★ B19a probabilistic evaluation |
+| TabPFN-TS; CausalPFN; SurvPFN; MulTaBench | `2501.02945v4`; `2506.07918`; `2606.04564`; `2605.10616` | ◆ B19b choose one task; modality check at B07 |
+| Enterprise data versus public benchmarks; CausalFM | `2606.30452v1`; `2506.10914v3` | B19 representativeness / B19b optional causal-prior contrast |
+| BOLERO; task-agnostic embeddings | `2512.12405`; `2511.14276` | ◆ B17 supporting comparisons |
+
+Mindful Modeler's [July research-trends post](https://mindfulmodeler.substack.com/p/trends-in-tabular-foundation-research) is explicitly mapped into B18a/B19a/B19b. Its [enterprise/public benchmark paper](https://arxiv.org/abs/2606.30452v1) is added at B19 after recovering an arXiv copy; the other highlighted paper, Beyond Accuracy, remains `FULL_TEXT_NOT_CHECKED`. See the audit for the broader blog reading map and exclusions.
+
+**Currency rule:** This index is a snapshot (July 2026 registry, supplemented by the **2026-09-26 influence audit and 2026-10-02 coverage pass**). Before each new quarter, run an arXiv search for the quarter's topic sorted by `submitted` and add any paper that (a) sets new SOTA on RelBench/TabArena/BeyondArena, (b) exposes a failure mode, or (c) is a baseline you'll be measured against. Do not add papers that merely apply an existing method.
 
 ---
 

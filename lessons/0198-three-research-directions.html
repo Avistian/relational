@@ -1,0 +1,241 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 198 — Three research directions</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/research-priority.css"><link rel="stylesheet" href="../assets/proposal-decisions.css"></head><body><article class="l198"><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><p class="eyebrow">Year 5 · Research proposals · Lesson 198</p>
+
+<h1 id="Three-directions-worth-trying-to-disprove">Three directions worth trying to disprove<a class="anchor-link" href="#Three-directions-worth-trying-to-disprove">&#182;</a></h1><p><strong>Your win:</strong> turn the landscape essay into three ranked research proposals that a skeptical collaborator could assess. Each proposal must say what changes, what stays fixed, what would count against it, and what must be resolved before running it. Work through the core in about 20 minutes, then spend a separate session drafting your cards and completing the lab.</p>
+<p>The mission is to test whether learned relational models add value beyond strong tabular approaches. A useful negative result also advances that mission: it tells us where a more complicated model is unnecessary.</p>
+<p><a href="0189-identify-open-problems.html">Lesson 189</a> collected candidate gaps. <a href="0197-year-5-essay.html">Lesson 197</a> separated a defensible claim from its evidence. <strong>The new step here is experimental commitment:</strong> turn each gap into a complete comparison and an explicit decision rule. <a href="0199-select-primary-direction.html">Lesson 199</a> supplies the method for choosing a primary direction; the ranking here remains provisional.</p>
+<div class="evidence-status"><strong>Author audit: COMPLETE_SELECTED_PROPOSAL_AUDIT.</strong> All three proposals, all 27 ranking settings and the complete L197 evidence packet replayed. New model experiments: <code>NOT_RUN</code>. Novelty: <code>NOT_ESTABLISHED</code>. Your defense: <code>PENDING_WRITTEN_DEFENSE</code>.</div>
+
+<h2 id="Warm-up-before-looking-back">Warm up before looking back<a class="anchor-link" href="#Warm-up-before-looking-back">&#182;</a></h2><div id="warmup"></div>
+<noscript><p>Recall: why is (entity_id, cutoff) a complete query key? Why does a released-model comparison not identify an encoder's causal effect? Why is a confidence interval crossing zero not proof of equivalence?</p></noscript>
+
+<p><strong>Prerequisite recap.</strong> A <em>query</em> is an entity at a prediction time. Its label may describe an outcome during a later window. <em>Availability</em> asks whether an input was actually knowable then. A <em>baseline</em> is the comparison method under the same information and selection rules. <em>Pretraining</em> learns from source tasks before the target task. A <em>prior</em> is the distribution of tasks used to teach a foundation predictor. An <em>encoder</em> turns rows and relationships into representations used by that predictor.</p>
+<p><em>AUROC</em> measures how often a positive example ranks above a negative one, with half credit for ties. It ranges from 0 to 1; higher is better. Here 0.01 means one AUROC percentage point. The proposed margin is a planning choice, not a universal standard of practical importance.</p>
+<h2 id="1-%C2%B7-A-topic-is-not-yet-a-contribution">1 &#183; A topic is not yet a contribution<a class="anchor-link" href="#1-%C2%B7-A-topic-is-not-yet-a-contribution">&#182;</a></h2><p>“Use graph structure” names an interest. A proposal needs five connected statements:</p>
+<ol>
+<li><strong>Known result:</strong> what the nearest work already establishes.</li>
+<li><strong>Candidate contribution:</strong> the specific unanswered comparison.</li>
+<li><strong>Hypothesis:</strong> the change you predict in a defined population.</li>
+<li><strong>Experiment:</strong> intervention, matched control, complete run matrix and scoring rule.</li>
+<li><strong>Decision:</strong> a result that supports, weakens or leaves the hypothesis unresolved.</li>
+</ol>
+<blockquote>
+<p><strong>In plain terms.</strong> Give someone who disagrees with you a fair way to prove your idea unhelpful.</p>
+</blockquote>
+<p><strong>Worked narrowing.</strong> “Temporal pretraining helps” is already studied. The <a href="https://arxiv.org/html/2609.35219v1#S4.SS4">temporal-pretraining paper, §4.4</a>, leaves unseen-database transfer and matched computational cost open. Narrow the proposal to those conditions. <a href="https://arxiv.org/html/2510.06377v1">Relational Transformer</a> already studies transfer across relational data, so “cross-database” alone is not the novelty argument.</p>
+<p><strong>Novelty is a comparison with the nearest work.</strong> Read methods and limitations, not just titles. Write down which axis differs: population, information policy, operator, objective, comparator or evaluation. If the closest work answers the same question under the same conditions, revise or retire the proposal.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The six frozen primary texts are selected evidence, not an exhaustive review. Two additional abstract-level leads—<a href="https://arxiv.org/abs/2607.29120">Curriculum Matters</a> and <a href="https://arxiv.org/abs/2607.29129">PluRel-to-RDB-PFN</a>—make broad claims about “new synthetic relational pretraining” particularly unsafe. Their results are not reproduced here. Novelty remains <code>NOT_ESTABLISHED</code> for all three proposals.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Direction-one:-do-availability-assumptions-change-the-comparison?">2 &#183; Direction one: do availability assumptions change the comparison?<a class="anchor-link" href="#2-%C2%B7-Direction-one:-do-availability-assumptions-change-the-comparison?">&#182;</a></h2><p><strong>Question.</strong> On <code>rel-f1/driver-dnf</code> and <code>rel-trial/study-outcome</code>, does the RDB-PFN versus flattened-tree contrast change when timestamp filtering is replaced by an explicit availability policy?</p>
+<p>A timestamp records an event time. An availability policy records when an input can be used. These may differ: an outcome whose window ends next month is not known merely because its row begins today. If true arrival times are unavailable, state the assumptions you vary. Do not call an assumption-driven difference proof of historical leakage.</p>
+<p><strong>Hold fixed:</strong> full query identities, targets, data release, model settings, validation-only selection, and the paired labeled-support schedule. Both models receive the same permissible labeled information within a policy. Only the eligibility policy changes. If that contract cannot be maintained, stop before running models.</p>
+<figure><div class="diagram-scroll" tabindex="0" role="region" aria-label="Scrollable temporal experiment"><img src="../labs/figures/l198/temporal.svg" alt="Invented scores isolate the change in a model contrast. Query identities and labeled information stay paired."></div><figcaption>Invented scores isolate the change in a model contrast. Query identities and labeled information stay paired.</figcaption></figure>
+
+<p><strong>Worked example — invented AUROC values.</strong> Under timestamp filtering, tree = 0.70 and PFN = 0.74: PFN advantage = 0.04. Under the availability policy, tree = 0.71 and PFN = 0.72: advantage = 0.01. The policy changes the advantage by <strong>0.01 − 0.04 = −0.03</strong>. This is a <em>difference of differences</em>: one model contrast minus the corresponding contrast under another condition.</p>
+<p><strong>What would refute material sensitivity?</strong> A justified interval wholly inside (−0.01, +0.01). An interval wholly above +0.01 or below −0.01 supports a material change. Crossing or touching a boundary is inconclusive under our conservative teaching rule. The uncertainty procedure is still an execution-protocol requirement; the picture does not supply one.</p>
+<p><a href="https://arxiv.org/html/2608.16319v2">RelArena</a> already provides standardized relational comparisons. The candidate contribution is a measured sensitivity study with documented information assumptions, not benchmarking itself or fixing one cache key.</p>
+<h2 id="3-%C2%B7-Direction-two:-separate-the-prior-from-the-encoder">3 &#183; Direction two: separate the prior from the encoder<a class="anchor-link" href="#3-%C2%B7-Direction-two:-separate-the-prior-from-the-encoder">&#182;</a></h2><p><strong>Question.</strong> Does composite message passing add a useful benefit under a relational prior, and is that benefit larger than under a single-table prior?</p>
+<p><a href="https://arxiv.org/html/2502.06784v2">RelGNN</a> already introduces composite message passing. <a href="https://arxiv.org/html/2603.03805v5">RDB-PFN</a> already learns from synthetic relational tasks and uses DFS-derived features. Here <em>DFS</em> means deep feature synthesis: constructing flat features by aggregating related rows. Changing the synthetic generator changes the learning experience; changing the encoder changes the predictor. Changing both at once hides which change mattered.</p>
+<p><strong>A factorial design crosses two interventions.</strong> Train every combination of two priors and two encoders. Keep the prediction head, labeled supports, permissible path endpoints, selection budget and compute accounting matched. A conventional two-hop encoder must see the same reachable information. The proposed graph encoder and ICL head need training from compatible initialization; fitting an embedding width does not make a released checkpoint valid.</p>
+<div id="interaction-predict"></div>
+<noscript><p>Predict: does a positive composite gain under the relational prior guarantee positive interaction? No; its gain may be larger under the other prior.</p></noscript>
+
+<figure><div class="diagram-scroll" tabindex="0" role="region" aria-label="Scrollable composite experiment"><img src="../labs/figures/l198/composite.svg" alt="Invented scores show positive conditional gains but negative interaction. The full proposed evaluation counts all support draws."></div><figcaption>Invented scores show positive conditional gains but negative interaction. The full proposed evaluation counts all support draws.</figcaption></figure>
+
+<p><strong>Worked example — invented AUROC values.</strong> The composite gain is 0.74 − 0.70 = 0.04 under the flat prior and 0.73 − 0.72 = 0.01 under the relational prior. The <em>interaction</em> is <strong>0.01 − 0.04 = −0.03</strong>. Composite helps both, but this example does not support extra benefit from combining it with the relational prior.</p>
+<p>Two questions therefore remain separate: is the relational-prior conditional gain usefully positive, and is the interaction positive? A positive interaction alone is insufficient if both encoders perform worse. Show all four absolute scores and both contrasts.</p>
+<p><strong>Complete accounting.</strong> Two priors × two encoders × three initialization seeds gives 12 checkpoints. Evaluate each on two tasks and three support draws: <strong>72 primary prediction batches</strong>, corresponding to 24 checkpoint/task combinations. Add six released-checkpoint comparator batches and 18 tree fits/batches. A <em>support draw</em> chooses labeled examples for in-context prediction; it is not another independent database. These units count different operations and must be costed separately.</p>
+<h2 id="4-%C2%B7-Direction-three:-does-pretraining-beat-spending-the-budget-on-the-target?">4 &#183; Direction three: does pretraining beat spending the budget on the target?<a class="anchor-link" href="#4-%C2%B7-Direction-three:-does-pretraining-beat-spending-the-budget-on-the-target?">&#182;</a></h2><p><strong>Question.</strong> Do historical-relation or future-activity objectives improve a wholly held-out database beyond an equally expensive supervised baseline?</p>
+<p>A <em>historical-relation objective</em> learns to recover eligible past links. A <em>future-activity objective</em> learns outcomes over a later window using only source examples whose label windows are complete. A <em>database holdout</em> excludes the entire target database from source training and source preprocessing. Excluding target labels alone is insufficient.</p>
+<figure><div class="diagram-scroll" tabindex="0" role="region" aria-label="Scrollable transfer experiment"><img src="../labs/figures/l198/transfer.svg" alt="Invented scores show why extra-compute scratch is the decisive control. The target database is excluded from source preprocessing and training."></div><figcaption>Invented scores show why extra-compute scratch is the decisive control. The target database is excluded from source preprocessing and training.</figcaption></figure>
+
+<p><strong>Worked example — invented AUROC values.</strong> Ordinary scratch training scores 0.70. Extra-compute scratch scores 0.73. A pretrained arm scores 0.74. Its apparent 0.04 gain over ordinary scratch becomes <strong>0.01 over the decisive control</strong>. Source training, adaptation, preprocessing and selection all belong in the total budget. Equal update counts do not guarantee equal computational cost.</p>
+<p><strong>Complete accounting.</strong> Two held-out databases × two objectives × three seeds requires 12 source fits. Two target tasks × four arms × three seeds requires 24 target fits. The four arms are scratch, extra-compute scratch, historical-pretrained and future-pretrained. Report each objective/task separately; freeze any multiple-comparison policy before seeing outcomes.</p>
+<p>An upper uncertainty bound below the proposed +0.01 useful-gain margin rules out that useful benefit in the declared setting. An interval crossing the margin remains inconclusive. A failed exclusion or cost audit invalidates the comparison before statistical interpretation. Two databases still form a narrow study.</p>
+<h2 id="5-%C2%B7-Decide-what-an-interval-actually-says">5 &#183; Decide what an interval actually says<a class="anchor-link" href="#5-%C2%B7-Decide-what-an-interval-actually-says">&#182;</a></h2><p>An <em>estimand</em> is the quantity the experiment intends to estimate: here a paired gain or difference of differences. An <em>interval</em> describes uncertainty under a specified procedure and sampling unit. A sampling unit might be a driver or a database; choosing it incorrectly can make certainty misleading.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> First decide what would matter. Then ask whether the evidence is precise enough to distinguish it from what would not matter.</p>
+</blockquote>
+<div id="interval-explorer"></div>
+<noscript><p>Illustrative gain interval [−0.005, 0.025], useful margin 0.01: INCONCLUSIVE. Illustrative sensitivity interval [−0.005, 0.005]: BELOW_USEFUL_MARGIN. These are invented intervals, not fitted results.</p></noscript>
+
+<p>The explorer classifies supplied intervals; it does not estimate them. For the future studies, specify paired resampling, dependency groups, confidence level and multiplicity before execution. Do not treat three seeds as three databases. L197's driver bootstrap belongs to its original regression comparison and cannot be borrowed as the uncertainty model for these new tasks.</p>
+<h2 id="6-%C2%B7-Rank-the-next-useful-decision,-not-a-promised-breakthrough">6 &#183; Rank the next useful decision, not a promised breakthrough<a class="anchor-link" href="#6-%C2%B7-Rank-the-next-useful-decision,-not-a-promised-breakthrough">&#182;</a></h2><p>Impact means how much answering the question could change a research decision, including a negative answer. Feasibility concerns the <strong>next informative step</strong>, scored separately for data access, implementation and compute. These are authored judgments on a 1–5 scale, not measured probabilities.</p>
+<p>The existing rubric is <strong>impact × weighted mean feasibility</strong>. With equal weights, temporal = 4 × (5+4+5)/3 = 18.67; composite = 5 × (4+3+2)/3 = 15; transfer = 5 × (3+2+1)/3 = 10.</p>
+<div id="proposal-priority"></div>
+<noscript><p>Default priority: temporal 18.67, composite 15, transfer 10. Reduce temporal impact from 4 to 3: temporal becomes 14 and composite leads. All full-run cost bounds remain unverified.</p></noscript>
+
+<p>All 27 weight triples from {1,2,3}³ retain temporal as the leader at the original scores. This does not establish robustness to every assumption: reducing temporal impact to 3 changes the equal-weight leader to composite. Ties must remain ties.</p>
+<p><strong>Why these scores?</strong> Temporal uses existing local audit paths, although arrival history remains uncertain. Composite needs a new trainable interface and twelve pretrained checkpoints. Transfer also needs a source corpus and auditable whole-database exclusions. The complete cards record the original rationale and preparation-effort estimates; these are estimates, not measured runtimes.</p>
+<p><strong>Priority does not establish affordability.</strong> Include preparation, training, selection, evaluation, retries and validation. Every full experiment currently has unknown phases, so all remain <code>NOT_ESTABLISHED</code> against the standing $10 cap. Unknown expense is not zero. L198 itself executes only the approved $0 proposal/evidence audit.</p>
+<h2 id="7-%C2%B7-Inspect-the-complete-proposal-cards">7 &#183; Inspect the complete proposal cards<a class="anchor-link" href="#7-%C2%B7-Inspect-the-complete-proposal-cards">&#182;</a></h2><p>Each card preserves its original evidence, explains what the later lessons add, and lists exact execution gaps. A complete proposal can honestly contain unresolved implementation details. That makes it reviewable, not ready to dispatch.</p>
+<details class="proposal-card"><summary>1 · Temporal-policy sensitivity · proposed / unrun</summary><h3 id="Temporal-policy-sensitivity">Temporal-policy sensitivity<a class="anchor-link" href="#Temporal-policy-sensitivity">&#182;</a></h3><p><strong>Question.</strong> Across rel-f1/driver-dnf and rel-trial/study-outcome, does replacing timestamp-only filtering with an explicit availability contract change paired model contrasts?</p>
+<p><strong>What is already known.</strong> Chronological evaluation and temporal-aware models already exist. L184 reports repeated-entity cache collisions in one source snapshot. L169 context curves do not measure pretraining scaling.</p>
+<p><strong>Candidate contribution.</strong> The new contribution would be a measured change in matched model contrasts under declared availability policies, not the discovery of temporal filtering or a cache repair.</p>
+<p><strong>What L197 adds and leaves open.</strong> L197 provides a complete saved evidence inventory; it contains no results for these two availability policies. L196 shows why a source diagnostic alone cannot estimate accuracy harm.</p>
+<p><strong>Refined hypothesis.</strong> On each declared task, the absolute policy-induced change in the RDB-PFN minus tree AUROC contrast exceeds 0.01.</p>
+<p><strong>Matched controls.</strong> Same cached data release, targets, splits, feature definitions and validation-only selection for RDB-PFN and a flattened tree baseline; two visibility policies. Reuse identical support rows and seeds across policies, with any ineligible support reported before running.</p>
+<p><strong>Estimand.</strong> For each task and seed, compute (AUROC_PFN − AUROC_tree)_strict − (AUROC_PFN − AUROC_tree)_timestamp. Report each task separately; seed spread is not database uncertainty.</p>
+<p><strong>Falsifier.</strong> A justified paired interval strictly inside (-0.01, 0.01) rules out the proposed material change for that task. Entirely beyond either margin supports sensitivity. All boundary-crossing or boundary-touching intervals remain inconclusive.</p>
+<p><strong>Complete accounting.</strong> 24 model/policy/task/seed evaluations, each on complete validation and test populations. RDB-PFN is checkpoint inference; tree arms require fitting. Seed pairs share a frozen support schedule; all models use the same eligible labeled information within each policy.</p>
+<p><strong>Cheapest next artifact.</strong> Availability ledger for all query and feature identities, distinguishing known, assumed and unknown observation times.</p>
+<p><strong>Declared matrix.</strong> Every combination is listed in the machine-readable report; each axis below is frozen as a proposal.</p>
+<ul>
+<li>model evaluations: task ∈ {rel-f1/driver-dnf, rel-trial/study-outcome} × model ∈ {RDB-PFN, flattened-tree} × policy ∈ {timestamp, availability} × seed ∈ {0, 1, 2} = <strong>24</strong>.</li>
+</ul>
+<p><strong>Unresolved before execution:</strong></p>
+<ul>
+<li>Exact source/data hashes and target reconstruction</li>
+<li>Full (entity_id, cutoff) train/validation/test manifests</li>
+<li>One validation-only selection rule and fixed search budget</li>
+<li>Per-task uncertainty resampling unit and coverage rationale</li>
+<li>Timed all-in cost bound including retries and validation</li>
+<li>Availability lineage for every feature and support label; historical arrival times may be unavailable</li>
+<li>Exact tree config, PFN checkpoint and shared label-budget/support policy</li>
+<li>Stop if paired eligible supports cannot be maintained; do not silently drop queries</li>
+</ul>
+<p><strong>Original priority rationale:</strong></p>
+<ul>
+<li>Data 5: local full-key snapshots and audit receipts exist; actual historical arrival times remain unknown.</li>
+<li>Implementation 4: policy masks and keyed scoring are bounded; full DFS availability lineage still needs audit.</li>
+<li>Compute 5: first useful decision is a CPU key/availability audit, not new pretraining; complete model comparison cost is unverified.</li>
+</ul>
+<p><strong>Preparation effort:</strong> 8–16 human hours (authored planning estimate). All six full-run cost phases are unknown; budget NOT_ESTABLISHED.</p>
+<p><strong>Closest work:</strong> <a href="https://arxiv.org/html/2506.16654v1">survey</a>, <a href="https://arxiv.org/html/2608.16319v2">relarena</a>, <a href="https://arxiv.org/html/2609.35219v1">temporal</a>.</p>
+<p><strong>Original receipts (reports only):</strong> <a href="../labs/evidence/l198/packet/evidence/l189/packet/inherited/l184-report.json">l184-report.json</a>, <a href="../labs/evidence/l198/packet/evidence/l189/packet/inherited/l169-report.json">l169-report.json</a>, <a href="../labs/evidence/l198/packet/evidence/l189/packet/inherited/l177-report.json">l177-report.json</a>. These receipts are authenticated; their raw experiments are not all replayed. The full L197 packet is replayed separately.</p>
+<p><strong>State:</strong> PROPOSAL_NOT_EXECUTION_READY; models NOT_RUN; novelty NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.</p>
+</details>
+<details class="proposal-card"><summary>2 · Prior × encoder interaction · proposed / unrun</summary><h3 id="Prior-%C3%97-encoder-interaction">Prior &#215; encoder interaction<a class="anchor-link" href="#Prior-%C3%97-encoder-interaction">&#182;</a></h3><p><strong>Question.</strong> Does a composite encoder improve a schema-shared graph encoder plus ICL head beyond a conventional two-hop encoder when priors, labels, information and total compute are matched?</p>
+<p><strong>What is already known.</strong> RelGNN already contributes composite message passing. RDB-PFN uses synthetic relational priors and DFS before its predictor. L182 re-evaluates released predictors, not a trained composite hybrid.</p>
+<p><strong>Candidate contribution.</strong> Isolate the predictor-side composite operator and its interaction with a relational prior. RelGNN already supplies the operator, and RDB-PFN already supplies relational synthetic pretraining.</p>
+<p><strong>What L197 adds and leaves open.</strong> L197 replays a small released-system advantage on study-outcome; that is neither a trained hybrid nor evidence that changing the encoder causes the advantage.</p>
+<p><strong>Refined hypothesis.</strong> The composite encoder gives a useful (&gt;0.01 AUROC) conditional gain under the relational prior, and its gain exceeds its gain under the single-table prior.</p>
+<p><strong>Matched controls.</strong> Four factorial arms share task counts, hidden width/parameter accounting, optimizer/selection budgets, schema-sharing rules, labeled supports and permissible neighbors. Conventional two-hop control sees the same path endpoints. Add a flattened strong baseline before interpreting practical value.</p>
+<p><strong>Estimand.</strong> Within each task/seed, (composite_relational − conventional_relational) − (composite_flat − conventional_flat). Also report composite_relational − conventional_relational. A positive interaction alone is insufficient if both architectures get worse.</p>
+<p><strong>Falsifier.</strong> For useful benefit, an upper interval endpoint below 0.01 rules out the proposed gain; a lower endpoint above 0.01 supports it. Separately test synergy against zero: an upper interaction endpoint ≤0 fails the positive-interaction claim. Uncertain or boundary-touching benefit intervals remain inconclusive.</p>
+<p><strong>Complete accounting.</strong> 12 new checkpoints; 24 checkpoint/task combinations × 3 support draws = 72 primary batches. Also 6 frozen-checkpoint comparator batches and 18 tree fits/batches. Each batch scores the complete declared validation and test populations. Counts name different units and must not be summed as identical training jobs.</p>
+<p><strong>Cheapest next artifact.</strong> Written tensor/interface contract and an explicitly proposed finite-gradient probe, followed by a complete training cost forecast. The probe itself is not run in L198.</p>
+<p><strong>Declared matrix.</strong> Every combination is listed in the machine-readable report; each axis below is frozen as a proposal.</p>
+<ul>
+<li>pretraining checkpoints: prior ∈ {single-table, relational} × encoder ∈ {conventional, composite} × seed ∈ {0, 1, 2} = <strong>12</strong>.</li>
+<li>primary prediction batches: prior ∈ {single-table, relational} × encoder ∈ {conventional, composite} × seed ∈ {0, 1, 2} × task ∈ {rel-f1/driver-dnf, rel-trial/study-outcome} × support_draw ∈ {0, 1, 2} = <strong>72</strong>.</li>
+<li>released prediction batches: model ∈ {released-DFS-RDB-PFN} × task ∈ {rel-f1/driver-dnf, rel-trial/study-outcome} × support_draw ∈ {0, 1, 2} = <strong>6</strong>.</li>
+<li>tree fit prediction batches: model ∈ {flattened-tree} × task ∈ {rel-f1/driver-dnf, rel-trial/study-outcome} × seed ∈ {0, 1, 2} × support_draw ∈ {0, 1, 2} = <strong>18</strong>.</li>
+</ul>
+<p><strong>Unresolved before execution:</strong></p>
+<ul>
+<li>Exact source/data hashes and target reconstruction</li>
+<li>Full (entity_id, cutoff) train/validation/test manifests</li>
+<li>One validation-only selection rule and fixed search budget</li>
+<li>Per-task uncertainty resampling unit and coverage rationale</li>
+<li>Timed all-in cost bound including retries and validation</li>
+<li>Trainable graph/head interface, finite gradients and compatible initialization</li>
+<li>Exact generator/source exclusions, task curriculum, schedules and parameter/compute matching</li>
+<li>Meaningful same-shape control for single-table prior; do not change both graph access and encoder capacity</li>
+<li>Separate task/initialization uncertainty from repeated support draws</li>
+</ul>
+<p><strong>Original priority rationale:</strong></p>
+<ul>
+<li>Data 4: public task releases and generators exist, but target-schema exclusion must be audited.</li>
+<li>Implementation 3: route mechanism is demonstrated; a trainable schema-shared encoder/head and adapters are new work.</li>
+<li>Compute 2: twelve new pretrained checkpoints plus controls have no verified total under $10.</li>
+</ul>
+<p><strong>Preparation effort:</strong> 24–48 human hours (authored planning estimate). All six full-run cost phases are unknown; budget NOT_ESTABLISHED.</p>
+<p><strong>Closest work:</strong> <a href="https://arxiv.org/html/2502.06784v2">relgnn</a>, <a href="https://arxiv.org/html/2603.03805v5">rdbpfn</a>, <a href="https://arxiv.org/html/2608.16319v2">relarena</a>.</p>
+<p><strong>Original receipts (reports only):</strong> <a href="../labs/evidence/l198/packet/evidence/l189/packet/inherited/l182-report.json">l182-report.json</a>, <a href="../labs/evidence/l198/packet/evidence/l189/packet/inherited/l177-report.json">l177-report.json</a>. These receipts are authenticated; their raw experiments are not all replayed. The full L197 packet is replayed separately.</p>
+<p><strong>State:</strong> PROPOSAL_NOT_EXECUTION_READY; models NOT_RUN; novelty NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.</p>
+</details>
+<details class="proposal-card"><summary>3 · Compute-matched transfer · proposed / unrun</summary><h3 id="Compute-matched-transfer">Compute-matched transfer<a class="anchor-link" href="#Compute-matched-transfer">&#182;</a></h3><p><strong>Question.</strong> Do historical-relation and future-activity objectives improve performance on unseen databases beyond scratch and extra-compute supervised controls at the same all-in cost?</p>
+<p><strong>What is already known.</strong> Temporal pretraining with supervised controls is already studied within databases. RT already studies cross-database transfer. L183 saved supervised predictions cannot establish a pretraining gain.</p>
+<p><strong>Candidate contribution.</strong> Evaluate temporal objectives under whole-database exclusion and matched end-to-end cost. Cross-database transfer and temporal pretraining each already exist.</p>
+<p><strong>What L197 adds and leaves open.</strong> A supervised or published leaderboard advantage cannot isolate a pretraining benefit. Extra-compute scratch is the decisive comparator; source plus target cost belongs in the comparison.</p>
+<p><strong>Refined hypothesis.</strong> Each temporal objective improves the held-out task by more than 0.01 AUROC over extra-compute scratch at the same all-in budget.</p>
+<p><strong>Matched controls.</strong> Scratch, extra-compute supervised scratch, historical-objective pretraining and future-objective pretraining use the same target information and evaluation policy. Match total cost, not just update count. Report per-objective cost and adaptation cost separately.</p>
+<p><strong>Estimand.</strong> For each held-out database, AUROC_pretrained − AUROC_extra_compute_scratch at matched all-in cost. Report the two databases separately and treat them as a narrow feasibility study, not a general scaling law.</p>
+<p><strong>Falsifier.</strong> For each objective/task, an upper paired interval endpoint below 0.01 rules out the useful gain; a lower endpoint above 0.01 supports it. Otherwise inconclusive. Database contamination or unmatched costs invalidate interpretation before statistical scoring.</p>
+<p><strong>Complete accounting.</strong> 12 source pretraining fits plus 24 target fits. Each target fit evaluates its complete validation/test task. All source preprocessing excludes the entire target database; objectives cannot borrow target schema statistics.</p>
+<p><strong>Cheapest next artifact.</strong> Database exclusion manifest and separate source/target cost envelope. A same-database result cannot substitute.</p>
+<p><strong>Declared matrix.</strong> Every combination is listed in the machine-readable report; each axis below is frozen as a proposal.</p>
+<ul>
+<li>source pretraining fits: holdout ∈ {rel-f1, rel-trial} × objective ∈ {historical, future} × seed ∈ {0, 1, 2} = <strong>12</strong>.</li>
+<li>target fits: task ∈ {rel-f1/driver-dnf, rel-trial/study-outcome} × arm ∈ {scratch, extra-compute-scratch, historical-pretrained, future-pretrained} × seed ∈ {0, 1, 2} = <strong>24</strong>.</li>
+</ul>
+<p><strong>Unresolved before execution:</strong></p>
+<ul>
+<li>Exact source/data hashes and target reconstruction</li>
+<li>Full (entity_id, cutoff) train/validation/test manifests</li>
+<li>One validation-only selection rule and fixed search budget</li>
+<li>Per-task uncertainty resampling unit and coverage rationale</li>
+<li>Timed all-in cost bound including retries and validation</li>
+<li>Explicit source database corpus, target holdouts and preprocessing exclusion audit</li>
+<li>Exact shared backbone, adapters, objectives and learning schedules</li>
+<li>Dollar and runtime matching policy, hardware prices and amortization convention</li>
+<li>Multiplicity policy for two objective claims on each task</li>
+</ul>
+<p><strong>Original priority rationale:</strong></p>
+<ul>
+<li>Data 3: releases exist, but a decontaminated source/target corpus contract is unfinished.</li>
+<li>Implementation 2: source objectives, adapters and semantic sharing need a full integrated trainer.</li>
+<li>Compute 1: 12 source fits plus 24 target fits have no verified $10 bound; historical blocked runs caution against optimism.</li>
+</ul>
+<p><strong>Preparation effort:</strong> 40–80 human hours (authored planning estimate). All six full-run cost phases are unknown; budget NOT_ESTABLISHED.</p>
+<p><strong>Closest work:</strong> <a href="https://arxiv.org/html/2609.35219v1">temporal</a>, <a href="https://arxiv.org/html/2510.06377v1">rt</a>, <a href="https://arxiv.org/html/2506.16654v1">survey</a>.</p>
+<p><strong>Original receipts (reports only):</strong> <a href="../labs/evidence/l198/packet/evidence/l189/packet/inherited/l183-report.json">l183-report.json</a>, <a href="../labs/evidence/l198/packet/evidence/l189/packet/inherited/l177-report.json">l177-report.json</a>. These receipts are authenticated; their raw experiments are not all replayed. The full L197 packet is replayed separately.</p>
+<p><strong>State:</strong> PROPOSAL_NOT_EXECUTION_READY; models NOT_RUN; novelty NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.</p>
+</details>
+
+<h2 id="8-%C2%B7-What-the-complete-reproduction-establishes">8 &#183; What the complete reproduction establishes<a class="anchor-link" href="#8-%C2%B7-What-the-complete-reproduction-establishes">&#182;</a></h2><div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable research table"><table>
+<thead>
+<tr>
+  <th>Reproduced evidence</th>
+  <th>Complete scope</th>
+  <th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Original research ranking</td>
+  <td>Three candidates, all 27 weight triples</td>
+  <td>Temporal leads 27/27 at original scores; changing impact can reverse this.</td>
+</tr>
+<tr>
+  <td>Published tables</td>
+  <td>401 task cells + 90 summaries</td>
+  <td>Original 5 aggregate discrepancies and 34 rank differences retained.</td>
+</tr>
+<tr>
+  <td>L149 saved comparison</td>
+  <td>Five seeds per pipeline; all val/test keys</td>
+  <td>GNN advantage -0.174155 MAE; original conditional interval [-0.449621, 0.085850].</td>
+</tr>
+<tr>
+  <td>L182 saved comparison</td>
+  <td>Three arms × ten draws × 702 queries</td>
+  <td>RDB-PFN minus TabICL +0.004369 AUROC; positive 6/10 draws.</td>
+</tr>
+<tr>
+  <td>L194 full task inventory</td>
+  <td>All 21 published reference rows</td>
+  <td>Zero fresh tasks; every fresh score remains null.</td>
+</tr>
+<tr>
+  <td>New proposal matrices</td>
+  <td>All three complete planned designs</td>
+  <td>Counts are planning artifacts; no new model run occurred.</td>
+</tr>
+</tbody>
+</table></div>
+<p><a href="../labs/evidence/l198/report.json">Complete report</a> · <a href="../labs/_verify_l198_results.json">Independent verification</a> · <a href="../labs/evidence/l198/source-review.md">Source review</a>.</p>
+<p>The audit starts from original frozen inputs, not summary scores. It re-parses every selected published table cell, recomputes comparison pools and ranks, re-scores every saved prediction using complete query keys, and preserves original intervals. Independent checks use different arithmetic and joins. All prior discrepancies and missing fresh scores survive.</p>
+<blockquote>
+<p><strong>Scope check.</strong> This is full reproduction of the declared <strong>proposal/evidence audit</strong>. It is not fresh model training, independent replication, whole-paper reproduction, or proof of novelty. The RDBLearn result remains <code>INCOMPLETE_SOURCE_PREPROCESSING_GATE</code>. Earlier incomplete learner exits remain incomplete.</p>
+</blockquote>
+<h2 id="Lab-%C2%B7-make-the-proposal-executable-as-a-decision">Lab &#183; make the proposal executable as a decision<a class="anchor-link" href="#Lab-%C2%B7-make-the-proposal-executable-as-a-decision">&#182;</a></h2><p><a href="../labs/0198-three-research-directions.ipynb">Student notebook</a> · <a href="../labs/html/0198-three-research-directions.html">Executed walkthrough</a> · <a href="../labs/solutions/0198-three-research-directions.ipynb">Solution</a> · <a href="../labs/evidence/l198/reproducer.zip">Portable reproducer</a> · <a href="../reference/three-research-directions.html">Printable reference</a> · <a href="../labs/l198-reproduction.md">Exact protocol</a>.</p>
+<p>Implement three live functions: paired contrasts, interval decisions and complete matrix expansion. Your functions feed the proposal audit; incomplete matrices and unsupported conclusions fail checks. All load-bearing replay code is visible. The portable packet contains the full original evidence and independent verifiers.</p>
+<p><strong>Your writing task.</strong> Draft three 250–400 word proposals using the <a href="../labs/evidence/l198/proposal-template.md">blank template</a>. For each, cite the closest work; distinguish the candidate contribution; state a falsifiable hypothesis, matched controls, full run count, uncertainty plan, unresolved fields and next decision. Rank them with one justified change to the authored assumptions. Name an observation that would reverse your ranking. Do not select the final direction yet.</p>
+<div id="proposal-teachback"></div>
+
+<p><strong>Exit evidence:</strong> your three cards, a reproduced audit report, your revised ranking and a written defense. Automated checks verify arithmetic and structure, not scientific originality or understanding. Your status stays <code>PENDING_WRITTEN_DEFENSE</code> until your work is reviewed.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2609.35219v1#S4.SS4">Temporal Heterogeneous Graph Pretraining, §4.4</a>. Explain exactly how its stated limitation differs from the transfer experiment above. Then read the closest source for your preferred candidate before defending it.</p>
+<p><strong>Ask the agent follow-up questions.</strong> Bring one proposal or an unclear control for critique. Tomorrow, reconstruct the three contrasts without notes. In a week, find the strongest primary-source objection and revise one card. Practitioner feedback can help test the novelty argument later; this lesson sends no external messages.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/research-priority.js"></script><script src="../assets/proposal-decisions.js"></script><script src="../assets/l198-lesson.js"></script></body></html>

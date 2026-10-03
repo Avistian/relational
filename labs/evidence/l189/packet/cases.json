@@ -1,0 +1,162 @@
+[
+  {
+    "id": "temporal",
+    "title": "Which availability assumptions change the model comparison?",
+    "impact": 4,
+    "feasibility": [
+      5,
+      4,
+      5
+    ],
+    "question": "Across rel-f1/driver-dnf and rel-trial/study-outcome, does replacing timestamp-only filtering with an explicit availability contract change paired model contrasts?",
+    "hypothesis": "A material comparison change persists after preserving every (entity_id, cutoff) query and auditing when each feature and label becomes observable.",
+    "related_work": [
+      "survey",
+      "relarena",
+      "temporal"
+    ],
+    "evidence": [
+      "l184-report.json",
+      "l169-report.json",
+      "l177-report.json"
+    ],
+    "known": "Chronological evaluation and temporal-aware models already exist. L184 reports repeated-entity cache collisions in one source snapshot. L169 context curves do not measure pretraining scaling.",
+    "gap": "The proposed contribution is sensitivity of a matched comparison to documented availability assumptions across tasks. Fixing a cache key alone is an engineering repair, not the research claim.",
+    "approach": "Represent every query by its complete key; attach evidence for each context cell availability and label-window completion; compare strict known-availability inclusion against timestamp-only inclusion. Treat unknown arrival histories as explicit assumptions.",
+    "baseline": "Same cached data release, targets, splits, feature definitions and validation-only selection for RDB-PFN and a flattened tree baseline; two visibility policies. Reuse identical support rows and seeds across policies, with any ineligible support reported before running.",
+    "minimum_design": "2 tasks \u00d7 2 models \u00d7 2 visibility policies \u00d7 3 seeds = 24 complete fits/evaluations. Full validation/test populations; predeclare one configuration per model, no test tuning. Seal train/validation/test key universes and support schedules before scoring. Independently reconstruct targets first.",
+    "estimand": "For each task and seed, compute (AUROC_PFN \u2212 AUROC_tree)_strict \u2212 (AUROC_PFN \u2212 AUROC_tree)_timestamp. Report each task separately; seed spread is not database uncertainty.",
+    "failure": "A preregistered useful absolute change is 0.01 AUROC per task. An interval wholly inside [\u22120.01,0.01] argues against material sensitivity for that task; overlap is inconclusive. A missing arrival history prevents a historical leakage conclusion, even if policy sensitivity is large.",
+    "feasibility_reasons": [
+      "Data 5: local full-key snapshots and audit receipts exist; actual historical arrival times remain unknown.",
+      "Implementation 4: policy masks and keyed scoring are bounded; full DFS availability lineage still needs audit.",
+      "Compute 5: first useful decision is a CPU key/availability audit, not new pretraining; complete model comparison cost is unverified."
+    ],
+    "human_hours": [
+      8,
+      16
+    ],
+    "next_step": "Audit every query key and classify context timestamps as known, assumed or unknown; stop before model runs if the comparison cannot preserve a defensible information contract.",
+    "budget": {
+      "phases_usd": {
+        "preparation": null,
+        "training": null,
+        "selection": null,
+        "evaluation": null,
+        "retries": null,
+        "validation": null
+      },
+      "bound_verified": false,
+      "protocol_frozen": false,
+      "source_audit": "NOT_CHECKED"
+    },
+    "novelty": "NOT_ESTABLISHED",
+    "full_experiment": "NOT_RUN"
+  },
+  {
+    "id": "composite",
+    "title": "When does a composite operator help a relational foundation learner?",
+    "impact": 5,
+    "feasibility": [
+      4,
+      3,
+      2
+    ],
+    "question": "Does a composite encoder improve a schema-shared graph encoder plus ICL head beyond a conventional two-hop encoder when priors, labels, information and total compute are matched?",
+    "hypothesis": "The composite encoder has positive incremental benefit under a relational prior, beyond any benefit due to switching the pretraining prior itself.",
+    "related_work": [
+      "relgnn",
+      "rdbpfn",
+      "relarena"
+    ],
+    "evidence": [
+      "l182-report.json",
+      "l177-report.json"
+    ],
+    "known": "RelGNN already contributes composite message passing. RDB-PFN uses synthetic relational priors and DFS before its predictor. L182 re-evaluates released predictors, not a trained composite hybrid.",
+    "gap": "Separate a predictor-side operator intervention from a generator-side change. A new operator inserted into a released checkpoint is not automatically compatible or a valid experiment.",
+    "approach": "Train a graph encoder plus common ICL head from initialization. Cross single-table versus relational priors with conventional two-hop versus composite encoder; keep a separate released DFS+RDB-PFN comparator.",
+    "baseline": "Four factorial arms share task counts, hidden width/parameter accounting, optimizer/selection budgets, schema-sharing rules, labeled supports and permissible neighbors. Conventional two-hop control sees the same path endpoints. Add a flattened strong baseline before interpreting practical value.",
+    "minimum_design": "2 priors \u00d7 2 encoders \u00d7 3 initialization seeds = 12 new pretraining checkpoints; each evaluated on 2 held-out real database tasks = 24 primary evaluations, plus the separately costed released and flattened baselines. Freeze target-schema exclusions, three support draws and every validation/test key; validate finite gradients before dispatch.",
+    "estimand": "Within each task/seed, (composite_relational \u2212 conventional_relational) \u2212 (composite_flat \u2212 conventional_flat). Also report composite_relational \u2212 conventional_relational. A positive interaction alone is insufficient if both architectures get worse.",
+    "failure": "Predeclare 0.01 AUROC as the useful conditional gain on each classification task. No positive conditional gain falsifies the claimed benefit in this setting; interaction \u22640 fails the stronger synergy claim. Uncertain estimates remain inconclusive; three seeds do not establish cross-domain superiority.",
+    "feasibility_reasons": [
+      "Data 4: public task releases and generators exist, but target-schema exclusion must be audited.",
+      "Implementation 3: route mechanism is demonstrated; a trainable schema-shared encoder/head and adapters are new work.",
+      "Compute 2: twelve new pretrained checkpoints plus controls have no verified total under $10."
+    ],
+    "human_hours": [
+      24,
+      48
+    ],
+    "next_step": "Freeze the insertion point and one exact graph/head interface, then run a local forward/gradient and parameter-budget probe; do not report that probe as an accuracy result.",
+    "budget": {
+      "phases_usd": {
+        "preparation": null,
+        "training": null,
+        "selection": null,
+        "evaluation": null,
+        "retries": null,
+        "validation": null
+      },
+      "bound_verified": false,
+      "protocol_frozen": false,
+      "source_audit": "NOT_CHECKED"
+    },
+    "novelty": "NOT_ESTABLISHED",
+    "full_experiment": "NOT_RUN"
+  },
+  {
+    "id": "transfer",
+    "title": "Do temporal objectives transfer under database holdout and equal cost?",
+    "impact": 5,
+    "feasibility": [
+      3,
+      2,
+      1
+    ],
+    "question": "Do historical-relation and future-activity objectives improve performance on unseen databases beyond scratch and extra-compute supervised controls at the same all-in cost?",
+    "hypothesis": "Source-only temporal pretraining improves a held-out target task after accounting for source training, adaptation, tuning and preprocessing cost.",
+    "related_work": [
+      "temporal",
+      "rt",
+      "survey"
+    ],
+    "evidence": [
+      "l183-report.json",
+      "l177-report.json"
+    ],
+    "known": "Temporal pretraining with supervised controls is already studied within databases. RT already studies cross-database transfer. L183 saved supervised predictions cannot establish a pretraining gain.",
+    "gap": "The temporal paper \u00a74.4 explicitly leaves unseen-database transfer and matched computational cost open. This is a source-stated limitation, not proof that no other paper addresses the combined question.",
+    "approach": "Use a shared schema-independent backbone; hold out each target database from all source objectives and source preprocessing. Contrast historical relation recovery and horizon-aware future activity; ensure every source label window finishes before its permitted horizon.",
+    "baseline": "Scratch, extra-compute supervised scratch, historical-objective pretraining and future-objective pretraining use the same target information and evaluation policy. Match total cost, not just update count. Report per-objective cost and adaptation cost separately.",
+    "minimum_design": "2 whole target-database holdouts (F1 and trial) \u00d7 3 seeds \u00d7 4 arms = 24 target fits, plus 2 objectives \u00d7 2 holdouts \u00d7 3 seeds = 12 source pretraining fits. Source corpus, adapter, full task/query manifests, schedules and prices must be frozen before approval. No same-database transfer substituted.",
+    "estimand": "For each held-out database, AUROC_pretrained \u2212 AUROC_extra_compute_scratch at matched all-in cost. Report the two databases separately and treat them as a narrow feasibility study, not a general scaling law.",
+    "failure": "Predeclare useful gain 0.01 AUROC on each task. No gain over extra-compute scratch fails the useful-transfer claim there. Unverifiable database exclusion or cost matching invalidates interpretation; a positive seed mean alone is insufficient.",
+    "feasibility_reasons": [
+      "Data 3: releases exist, but a decontaminated source/target corpus contract is unfinished.",
+      "Implementation 2: source objectives, adapters and semantic sharing need a full integrated trainer.",
+      "Compute 1: 12 source fits plus 24 target fits have no verified $10 bound; historical blocked runs caution against optimism."
+    ],
+    "human_hours": [
+      40,
+      80
+    ],
+    "next_step": "Audit source/target database exclusion and construct an all-in cost envelope; reject the run if a complete target cannot fit the cap. A small mechanism example cannot replace the declared experiment.",
+    "budget": {
+      "phases_usd": {
+        "preparation": null,
+        "training": null,
+        "selection": null,
+        "evaluation": null,
+        "retries": null,
+        "validation": null
+      },
+      "bound_verified": false,
+      "protocol_frozen": false,
+      "source_audit": "NOT_CHECKED"
+    },
+    "novelty": "NOT_ESTABLISHED",
+    "full_experiment": "NOT_RUN"
+  }
+]

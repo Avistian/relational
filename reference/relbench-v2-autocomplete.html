@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 181 — Autocomplete task contract — quick reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"><link rel="stylesheet" href="../assets/lab-access.css"><link rel="stylesheet" href="../assets/autocomplete-visibility.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0180-public-encoder-checkpoint.html">Lesson 180</a></nav><header><p class="route-kicker">Year 5 · Quarter 3 · Lesson 181</p><h1>Autocomplete task contract — quick reference</h1></header><p><strong>Task contract:</strong> identify table, primary key, query time, target, excluded proxies, context availability, fitting population, selection metric and evaluation split. Autocomplete predicts a hidden existing value; forecasting derives a future target. Neither implies foundation-model transfer.</p>
+<p><strong>Masking:</strong> the released RelBench v2 baseline removes target/proxies throughout the target table. RelGT-AC describes masking only the query row. Temporal filtering is independent: a masked future row can still expose future metadata. Correlation alone does not establish leakage; record availability and the task's declared exclusions.</p>
+<p><strong>F1:</strong> results-position uses resultId; qualifying-position uses qualifyId. These are not driver IDs. Complete keys are (row ID, time). Counts are train/validation/test: results 8,997/1,400/4,798; qualifying 2,228/1,854/5,733. Source intervals exclude the lower bound and include the upper bound; retain the exact boundary details in the protocol.</p>
+<p><strong>Baseline fit:</strong> train for validation; train plus validation for test. Global mean/median are constants. Entity mean/median aggregate by task row identity, then fall back to zero for unseen keys. All validation/test keys are new here. A driver-history join would be another model.</p>
+<p><strong>Metrics:</strong> MAE is mean absolute error; lower is better. R² = 1 − SSE/SST, where SSE is squared prediction error and SST is squared distance from the evaluation truth mean. Negative R² is possible. Align full keys before scoring. Deterministic recipes need no artificial seed error bars.</p>
+<p><strong>GNN source:</strong> typed ResNet row encoders of width 128 → two sum-aggregating GraphSAGE layers → query linear head. Adam learning rate 0.005, batch 512, ten epochs, fanouts 128/64, L1 loss. Validation MAE selects the checkpoint; training percentiles 2/98 clip predictions. Source graph statistics use all dates; later temporal sampling does not undo fitting-scope exposure.</p>
+<p><strong>RelGT-AC paper:</strong> seed masking → typed/text features → five additive row terms → local GraphSAGE → global Transformer → task head. TF-IDF has 64 features; the experiment setup specifies text projection width 32 (the general equation instead writes hidden width). Hidden width 128, two Transformer layers, eight heads. Source not authenticated; keep paper claims separate. Its quoted comparisons are validation-based, not reproduced test results.</p>
+<p><strong>Observed:</strong> all 25,010 labels and 68,925 predictions checked independently; 40 paper baseline metric comparisons within 0.001. The numerical encoder component fails gradients on real missing values under current CPU dependencies. No repaired full model, GPU pilot or GNN fit. The selected experiment remains INCOMPLETE; learner PENDING_WRITTEN_DEFENSE.</p>
+<div class="route-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Task / test recipe</th>
+  <th style="text-align:right">Measured R²</th>
+  <th style="text-align:right">Measured MAE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>results-position / global mean</td>
+  <td style="text-align:right">-0.175775</td>
+  <td style="text-align:right">4.822495</td>
+</tr>
+<tr>
+  <td>results-position / global median</td>
+  <td style="text-align:right">-0.218592</td>
+  <td style="text-align:right">4.876615</td>
+</tr>
+<tr>
+  <td>results-position / entity mean</td>
+  <td style="text-align:right">-3.148348</td>
+  <td style="text-align:right">9.504377</td>
+</tr>
+<tr>
+  <td>qualifying-position / global mean</td>
+  <td style="text-align:right">-0.001576</td>
+  <td style="text-align:right">5.357594</td>
+</tr>
+<tr>
+  <td>qualifying-position / global median</td>
+  <td style="text-align:right">-0.000525</td>
+  <td style="text-align:right">5.342055</td>
+</tr>
+<tr>
+  <td>qualifying-position / entity mean</td>
+  <td style="text-align:right">-3.214357</td>
+  <td style="text-align:right">11.142334</td>
+</tr>
+</tbody>
+</table></div>
+<p>Entity median equals entity mean here; both equal global zero. The full validation/test table is in the measured report.</p>
+<p><strong>Observed:</strong> complete two-task aggregation-baseline reproduction. Fresh GNN training <strong>NOT_RUN_TRAINING_HEALTH_GATE</strong>; the approved baseline-plus-GNN experiment <strong>INCOMPLETE</strong>. RelGT-AC numerical reproduction <strong>NOT_RUN_SOURCE_GAPS</strong>. New cloud/API spend <strong>$0</strong>. Learner: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><a href="../lessons/0181-relbench-v2-autocomplete.html">Lesson</a> · <a href="../labs/0181-relbench-v2-autocomplete.ipynb">Student lab</a> · <a href="../labs/l181-reproduction.md">Protocol</a> · <a href="../labs/evidence/l181/report.json">Measured report</a> · <a href="https://arxiv.org/html/2602.12606v1">RelBench paper</a> · <a href="https://arxiv.org/html/2606.03040v1">RelGT-AC paper</a>.</p>
+</article></body></html>

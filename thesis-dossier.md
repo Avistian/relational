@@ -73,6 +73,7 @@ Legend: **[FOR]** supports a sub-claim · **[BAR]** raises the honest baseline t
 | L049 | Source claims, copied-weight fidelity, fixed-budget scores and temporal transfer are separate evidence. Neither a close score nor a local rank reversal reproduces a published benchmark. | BAR | C3 |
 | L050 | A fixed three-task, two-candidate comparison gives FT-T two wins and XGBoost one; Friedman p=.368. Model parity and protocol discipline establish a baseline bar, not relational superiority. | BAR | C3 |
 | L051 | On three released numeric tasks, fixed-recipe rotation changes model ranks while information remains invertible; noise has finite-sample exceptions. Original ranks have Friedman p=.717. Controlled interventions strengthen baseline diagnosis; they do not establish relational superiority or reproduce the paper search curves. | BAR | C3 |
+| L195 | Complete replay of 33,650 stored predictions; strong engineered-relational comparator, conditional uncertainty crossing zero, small task-specific RDB-PFN gain, and all 21 unrun RDBLearn task results preserved. Distinguishes relational signal, learned processing, fair robustness and economic undervaluation. | AGAINST universal necessity + BAR | C1–C4 |
 
 ---
 
@@ -109,7 +110,17 @@ Assembled from Q1–Q2. To make the thesis legible to a skeptic, an RDL result m
 
 ---
 
-## Current verdict (updated 2026-07-29, after L040 / Year 1 exit exam)
+## Current verdict — L195 stress-test (2026-10-02)
+
+**Narrow the claim; broad superiority and undervaluation remain unestablished.** Complete saved-evidence replay rescored all 33,650 L149/L182 predictions and authenticated all 21 L194 task rows. L149's basic GNN has test MAE 4.123071 versus 3.948917 for relational feature engineering; GNN advantage −0.174155, conditional 95% driver interval [−0.449621,+0.085850]. This crosses zero and establishes neither superiority nor equivalence. L182's RDB-PFN minus TabICL mean is +.004369 AUROC, positive 6/10 support draws on one task. Both comparisons use relational information in both arms. Replaying them creates no independent replication. L194 has zero fresh task results; its preprocessing gate is a reproducibility obstacle, not measured performance counter-evidence.
+
+Retain C1 as a task- and representation-dependent possibility. C2 remains a testable hypothesis, not a claim that learned relational encoders are necessary. C3 needs matched information, strong baselines and new held-out tasks/times. C4 requires cost, utility and adoption evidence absent from these scores. Earlier language below asserting exhausted single-table returns from a few ties, or inevitable useful loss from flattening, is too broad; retain it as historical reasoning rather than the current conclusion. Mission unchanged; learner defense pending.
+
+[Full falsification brief](labs/evidence/l195/falsification-brief.md) · [Lesson](lessons/0195-thesis-stress-test.html).
+
+---
+
+## Historical verdict (updated 2026-07-29, after L040 / Year 1 exit exam)
 
 **Undecided, and honestly so.** Q3 completed the *instrument* rather than the *case*: the dossier now
 owns the full honest bar (C3) — not just a strong incumbent (Q2) but the whole apparatus that certifies
@@ -674,3 +685,45 @@ The complete fixed-schedule F1 comparison has twelve fresh fits across freeze/fu
 ### L175: zero-shot claims need an input-access audit
 
 Complete RT-v1 F1 sampler audit:2,106contexts,385future-dated schedule cells in77contexts. Strict event-time filter fails; historical schedule availability is unknown, so this does not prove future-outcome leakage. Six approved checkpoint evaluations remain NOT_RUN; there is no new zero-shot AUROC or evidence of relational-FM superiority. Target validation and context labels are separate from gradient training. [Contract](labs/l175-reproduction.md).
+
+| 2026-10-02 | L181 | BAR | Complete F1 autocomplete aggregation baselines reproduce all40 rounded paper MAE/R² entries over68,925 predictions. This establishes task/baseline fidelity, not relational-model superiority. Fresh GNN stopped at real missing-value numerical encoder gradients under current CPU dependencies; no repair or paid fit. RelGT-AC validation and mask-policy comparisons require matched-information/source audits. |
+
+### L185 · Decision claim boundary · 2026-10-02
+
+**BAR:** a complete five-seed synthetic counterexample gives badge-only AUROC0.898645±0.009651 but exactly zero badge intervention effect. Observed action association0.730164 becomes0.048060 after demand adjustment; simulator action ATE0.05. Legal joins and held-out ranking do not establish a deployable causal strategy. This illustrates a logical boundary, not evidence against RDL predictive value or real-world policy efficacy. [Evidence](labs/evidence/l185/report.json). Learner PENDING_WRITTEN_DEFENSE.
+
+| L184 GelGT | BAR | Original source loses cutoff identity in context caching; executable temporal counterexample. All 8,712 F1 labels reconstructed and attention arithmetic checked, but selected reproduction INCOMPLETE_SOURCE_TEMPORAL_GATE, fresh training NOT_RUN. No evidence for downstream gain from this lesson. [Protocol](labs/l184-reproduction.md) |
+
+- **L182 · FOR (bounded) / BAR:** Fresh full selected RDB-PFN Table 9 F1 comparison completed, 30 evaluations and 21,060 predictions; all three means match rounded paper targets. Relational PFN exceeds its single-table checkpoint in all ten support draws; its TabICL difference is mixed (6 positive / 4 negative). Same test population as L166, not independent dataset replication. Composite-message specialization and derivative checks pass, but a prior×composite-encoder hybrid and four-arm interaction remain NOT_RUN. Released label orientation, DFS provenance, historical availability, prior training-health stops and learner defense remain explicit limits. [Protocol](labs/l182-reproduction.md).
+
+
+### L187 · Useful relationships expand privacy obligations · 2026-10-02
+
+**BAR:** complete F1 audit covers 857 drivers, 70,876 declared owned records and 175,933 incident edges. The largest contribution has 1,096 records; a profile-node deletion leaves 1,095 child records. Shared constructor aggregates retain 24,501 driver/aggregate links, which are not proven attacks. Complete 270-release public simulation demonstrates clipping/noise tradeoffs; it establishes neither production DP nor GNN privacy or superiority. The ideal bounded-histogram proof is limited to the declared owner adjacency and fixed public domain. [Evidence](labs/evidence/l187/report.json). Learner PENDING_WRITTEN_DEFENSE.
+
+
+### L186 · Predictive evidence needs a serving contract · 2026-10-02
+
+**BAR:** complete81-cell course simulation/810000responses demonstrates distinct latency and source-age constraints under explicitly hypothetical service times. At100requests/s the15ms single worker overloads; a1ms precomputed lookup can still return old dependency snapshots. This is no empirical hardware/model speed ranking. Separate300original batch-receipt replay confirms enclosing timer accounting but cannot establish request p99. No real serving benchmark, fresh inference or fallback-quality evaluation. [Evidence](labs/evidence/l186/report.json). Learner PENDING_WRITTEN_DEFENSE.
+
+| 2026-10-02 | L183 | BAR | All7554saved L146 predictions independently replayed: reduced RelGT wins validation, course GNN wins test in allthreepairs. Neither arm has pretraining; no transfer interaction follows. Original RelGT temporal/budget and Griffin budget gates retained. Four-arm hybrid probe is a falsifiable unrun proposal; broad novelty and transfer superiority NOT_ESTABLISHED. |
+
+### L189 · Ranked research decisions, not validated contributions
+
+The approved source/report audit and complete 27-setting rubric replay rank temporal comparison sensitivity, composite structure in an ICL predictor, and temporal-objective transfer under database holdout. The ranking uses authored impact/feasibility judgments; it does not measure scientific value. All proposed full experiments remain NOT_RUN and their complete costs unverified. Selected current primary texts narrow the gaps, especially temporal pretraining §4.4, but novelty and complete literature coverage remain NOT_ESTABLISHED. Source reports are authenticated without rerunning their predictions. The shortlist is input to L190’s research-gap document; it does not complete that checkpoint or establish learner mastery. See `labs/evidence/l189/shortlist.md` and `labs/l189-reproduction.md`.
+
+- **BAR · L192 (2026-10-02):** an open implementation is not automatically an admissible comparison. Original RDBLearn preprocessing fails a synthetic support/query representation invariant; clean original-source execution and100independent generated cases confirm.13779task rows authenticate and their annual window-end schedule passes, but full model search remains INCOMPLETE_SOURCE_PREPROCESSING_GATE. No model score, benchmark harm, historical-paper failure or repaired-run superiority inferred.USD0cloud/API; learnerPENDING_WRITTEN_DEFENSE.
+
+### L193 · full-task coverage before model claims (2026-10-02)
+
+The approved RDBLearn full21task reproduction stopped at a freshly verified shared preprocessing invariant: new query categories can renumber fitted support codes. No benchmark model inference ran; this is not evidence that RDBLearn loses on any task. All567validation and63selected-test slots remain visible and NOT_RUN. The lesson can substantiate source behavior, published table arithmetic and missingness-safe reporting. It cannot substantiate fresh accuracy, database transfer, regression aggregate parity or whole-paper historical reproduction. A repaired pipeline is a distinct experiment. See [L193 ledger](labs/l193-reproduction.md).
+
+- **BAR · L194:** complete 21-task report preserves0/21 fresh results. Published RDBLearn versus AutoGluon+DFS signs 17/3/1 are descriptive; both pipelines use relational features, so this does not identify the benefit of relational structure. Original-source preprocessing failure remains a reproduction barrier, not evidence of benchmark inferiority. [Report](labs/evidence/l194/report.md).
+
+### L197 evidence-ledger addition — 2026-10-02
+
+**BAR / AGAINST broad claims:** Complete selected evidence reconstruction/replay reuses L191/L195 and does not add independent model replication. The strongest open-code comparator depends on the declared pool; L149's conditional interval crosses zero; L182 is one task with support-draw variation; L194 retains all 21 null fresh scores. Preserve C1–C4 separately. No causal architecture attribution or economic undervaluation established. [Landscape essay](lessons/0197-year-5-essay.html) gives an author defense and explicit revision conditions, not learner mastery.
+
+- **2026-10-02 · L198 · BAR:** Complete proposal/evidence audit reconstructs all27 original priority settings and full L197 evidence (491 published numeric cells,33,650 saved predictions,21-task missing-result inventory). Three ranked candidates now expose full matrices, useful-effect criteria, controls and execution gaps. This narrows testable research rather than supplying new support for economic undervaluation. Default temporal/composite/transfer scores18.67/15/10 are authored judgments; temporal impact3 reverses the first two. All future models NOT_RUN, novelty NOT_ESTABLISHED; RDBLearn reproduction INCOMPLETE_SOURCE_PREPROCESSING_GATE. Reused evidence is not independent replication. Learner PENDING_WRITTEN_DEFENSE.
+
+- L200 · FOR/BAR: fresh full selected RDB-PFN checkpoint run,30evaluations/21,060predictions; meanAUROC .721938 vs TabICL .717568,positive6/10paired draws. Supports selected numerical result,not broad superiority,independent replication or historical availability. RDBLearn source gate and learner proposal/defense remain unresolved.

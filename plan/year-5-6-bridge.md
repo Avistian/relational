@@ -1,6 +1,6 @@
 # Year 5 → 6 bridge: influential architectures and the current frontier
 
-**Planned B01–B24 · research cutoff 2026-09-26.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [Influence and coverage audit](./research-influence-audit-2026-09.md).
+**29 planned units: B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
 
 The audit distinguishes established families, current baseline updates, coverage-critical mechanisms and exploratory ideas. Core means required for this mission; it does not label every recent paper equally influential. Existing lessons are prerequisites: a bridge revisit requires a new comparative artifact, not repetition of the entire earlier lesson.
 
@@ -8,7 +8,7 @@ The audit distinguishes established families, current baseline updates, coverage
 
 Pass the Year 5 exit gate first. Each unit follows **closed-book retrieval → primary-source input → exercise → written defense**. Use the CHECK as feedback, repair the explanation with a fresh example, and revisit after 1, 7 and 30 days. Ask the teaching agent follow-up questions about unclear assumptions. Do not mark agent-prepared work as learner mastery.
 
-Core route: **B01–B07 → B10–B14 → B18–B19 → B23–B24** (16 units). Electives: B08–B09, B15–B17, B20–B22 (8 units), selected after core requirements. The plan budgets **70–110 learner hours for core, including one bounded reproduction; 16–24 additional hours for all electives**. Total 86–134 hours, roughly 12–19 weeks at one hour/day. Extend the original calendar or reallocate optional time explicitly; do not cut Year 6 research or exit gates. Compute may run unattended and is a separate budget.
+Core route: **B01–B07 → B10–B14 → B18 → B18a → B19 → B19a → B23–B24** (18 units). Electives: B04a, B07a, B08–B09, B15–B17, B19b, B20–B22 (11 units); insert selected suffix electives after their parent. The plan budgets **80–126 learner hours for core, including one bounded reproduction; 25–39 additional hours for all electives**. Total 105–165 hours, roughly 15–24 weeks at one hour/day. This includes the new checks and short supporting readings; deeper optional audits need extra time. Extend the original calendar or reallocate optional time explicitly; do not cut Year 6 research or exit gates. Compute may run unattended and is a separate budget.
 
 Every core defense must explain the mechanism, its closest competing explanation and one limitation. For future HTML/lab authoring, reuse shared assets, show model-specific inputs/operations/shapes/training/inference, provide visible implementation and TODO/CHECK/EXIT tasks, and link primary sources. Visual suggestions below describe future work, not delivered widgets.
 
@@ -23,7 +23,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Retrieve / skill:** Why can two correct leaderboards disagree? Define the comparison unit.
 - **Teach:** Separate trained predictors, pretrained models, feature-engineering pipelines and AutoML systems. Benchmark participation is uptake evidence, not universal superiority.
 - **Exercise:** Build a family map with pretraining source, representation, adaptation, task scope and information budget. Retrieve L060/L170b before adding new families.
-- **CHECK:** Include tuned trees, numerical MLPs, retrieval, synthetic/real-data ICL, semantic transfer, graph-native and flattened relational approaches. Missing families must be justified.
+- **CHECK:** Include tuned trees, numerical MLPs, retrieval, synthetic/real-data ICL, semantic transfer, hypernetworks that emit predictor weights, graph-native and flattened relational approaches. Distinguish a zero-gradient adaptation step from having no labeled context. Missing families must be justified; B07a supplies hypernetwork depth when relevant.
 - **Visual / bridge:** A family-by-design matrix using `arch-family-viz.js`; freeze the comparison questions for B23.
 
 <a id="b02"></a>
@@ -35,6 +35,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Exercise:** Specify embedding on/off and ensemble on/off controls with matched selection budgets. Include a tuned tree and RealMLP baseline.
 - **CHECK:** Count validation-driven member selection and inference cost; do not call one training run selection-free.
 - **Visual / bridge:** Embedding → member computation → selection → averaged prediction; reuse `ensemble-viz.js`. Revisit L053–054.
+- **2025 coverage check:** Consider [PFN-Boost / LLM-Boost](https://arxiv.org/abs/2502.02672) as a hybrid baseline, with out-of-fold prediction features and a complete selection budget. Abstract verified; method/code audit required before a run. A tree and a foundation model can be complementary.
 
 <a id="b03"></a>
 
@@ -45,6 +46,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Exercise:** Produce a version/variant matrix: inputs, context cap, access, benchmark split, selection and inference budget.
 - **CHECK:** Do not transfer historical scores or licenses across generations; mark unavailable artifacts explicitly.
 - **Visual / bridge:** Reuse `l061-pfn-viz.js`; carry a frozen variant choice into B19/B23.
+- **Failure checks:** Read [EquiTabPFN](https://arxiv.org/abs/2502.06684v4) for target-permutation equivariance: remap class IDs, invert the probability-column permutation and compare predictions. Record tolerances and class-cap workarounds. Add missing-value encoding to the version matrix; accepting NaNs does not prove robustness to changed missingness. Thinking-mode internals stay unknown unless supported by a primary source.
 
 <a id="b04"></a>
 
@@ -55,6 +57,17 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Exercise:** Trace N rows × F features through row representations to support/query predictions. Specify a context-length stress test at fixed checkpoint and an isolated attention change.
 - **CHECK:** Report memory and accuracy; ensure query labels are absent and query batching does not silently change information access.
 - **Visual / bridge:** Extend `l066-tabicl-viz.js`; connect to OpenRFM's use of a tabular ICL stage in B12.
+- **Preprocessing check:** Locate missing-value handling in the pinned paper/release. Compare numeric mean imputation with an explicit missingness indicator using training-fitted transforms; do not generalize one version's behavior to every TabICL release. Carry the missingness-shift question to B18a.
+
+<a id="b04a"></a>
+
+### B04a ◆ · Scaling rows, features and classes
+- **Read:** [TabFlex §5 and attention-cost analysis](https://arxiv.org/html/2506.05584v1), [TabPFN-Wide §§2–4](https://arxiv.org/html/2510.06162v1). Compare one of [Orion-MSP](https://arxiv.org/abs/2511.02818), [Orion-Bix](https://arxiv.org/abs/2512.00181), [BETA](https://arxiv.org/abs/2502.02527) or the already tracked [TabSwift](https://arxiv.org/abs/2606.07345); those comparison protocols need a method/code audit before execution.
+- **Retrieve / skill:** Why is a million-row table unlike a fifty-thousand-feature table? Identify which dimension dominates computation and which information is discarded.
+- **Teach:** Linear attention, sparse attention, row compression, feature reduction and a width-adapted prior change different parts of the pipeline. TabFlex is not B17's FlexTab.
+- **Exercise:** Choose one mechanism; specify a row-count × feature-count stress matrix plus a class-count boundary check. For Wide, add irrelevant and correlated copies of features at fixed sample count; compare with train-fitted feature reduction. For attention, trace dense versus linear/sparse operations at fixed embedding width.
+- **CHECK:** Include preprocessing, warm/cold latency, peak memory, ensemble size, failures and predictive quality. Compare the paper-era baseline separately from a current one. Large stated capacity is not a measured quality guarantee; attention importance is not causal attribution.
+- **Visual / bridge:** Separate row, feature and class axes beside the actual attention/encoding path. Reuse B04 shapes and feed B09's operating-point comparison. Budget 3–5 hours, one detailed mechanism rather than four reproductions.
 
 <a id="b05"></a>
 
@@ -75,6 +88,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Exercise:** Specify SCM-only, tree-only and mixed-prior arms at matched architecture/data/update budgets; record development datasets used to choose the mixture.
 - **CHECK:** A benchmark used to select a prior is not an untouched test of generality. Released fine-tuning code does not prove pretraining reproducibility.
 - **Visual / bridge:** Generator mixture → episodes → fixed learner → held-out tasks. Extend the L063 prior diagram; prepare B13.
+- **Prior lineage:** Optional [TabForestPFN](https://arxiv.org/abs/2405.13396) and [APT](https://arxiv.org/abs/2502.04573) add forest and adversarial-pretraining alternatives. Record original preprint dates separately from later publication. Choose a prior control; these abstract-verified pointers do not require two more model runs.
 
 <a id="b07"></a>
 
@@ -85,6 +99,17 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Exercise:** Design meaningful-name, anonymized-name and text-removed arms, preserving splits and numeric inputs. Track encoder updates and all training costs.
 - **CHECK:** All competitors must receive comparable text information or the difference must be declared. Target identity is not a query's unknown target value.
 - **Visual / bridge:** Two paths showing frozen/context adaptation versus gradient updates; reuse `frame-encoder-viz.js`. This repairs the semantic-model coverage gap.
+- **Release and modality check:** [SAP-RPT-1-OSS](https://huggingface.co/SAP/sap-rpt-1-oss) is the renamed ConTextTab checkpoint according to its model card; commercial SAP-RPT variants are separate entries. Use [MulTaBench](https://arxiv.org/abs/2605.10616) to frame equal text/image availability. Recall the Year 2 TabLLM boundary instead of assuming all semantic transfer uses serialized LLM prompts.
+
+<a id="b07a"></a>
+
+### B07a ◆ · Hypernetworks: generate a predictor from a table
+- **Read:** [MotherNet](https://arxiv.org/html/2312.08598), [HyperFast](https://arxiv.org/abs/2402.14335), [iLTM §3](https://arxiv.org/html/2511.15941v1). The first two are historical anchors; iLTM is the 2025 addition. Use the [blog family overview](https://mindfulmodeler.substack.com/p/tabpfn-and-tabicl-are-not-everything) for orientation only.
+- **Retrieve / skill:** Does task adaptation have to mean gradient descent or query-to-support attention? Trace support → generated weights → predictions.
+- **Teach:** Separate amortized weight generation, optional fine-tuning and retrieval. MotherNet/HyperFast and iLTM do not have identical inference paths; iLTM's retrieval component can retain support dependence.
+- **Exercise:** Draw the model-specific path and write a cost equation: predictor construction plus Q predictions. Compare with direct ICL and a task-trained MLP; identify the break-even query volume under explicitly stated timing assumptions.
+- **CHECK:** Include predictor regeneration when support changes, all retained support state and adaptation cost. “One forward pass” does not mean no pretraining or no labeled support. Keep the primary experiment's data overlap and task scope visible.
+- **Visual / bridge:** A hypernetwork emitting actual weight matrices beside ICL's support/query attention path. Connect B02's MLPs to B18a serving choices. Budget 3–5 hours; choose one detailed implementation for later authoring.
 
 <a id="b08"></a>
 
@@ -98,11 +123,12 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b09"></a>
 
 ### B09 ◆ · Current cost frontier: TabFM, EXAONE and Nori
-- **Read:** [Google TabFM release](https://www.research.google/blog/introducing-tabfm-a-zero-shot-foundation-model-for-tabular-data/), [EXAONE §2](https://arxiv.org/html/2608.25774v1), [Nori model card](https://huggingface.co/Synthefy/Nori/blob/main/README.md).
+- **Read:** [TabFM report §§3–5, posted 2026-09-29](https://arxiv.org/html/2609.37959v1) and [official release](https://www.research.google/blog/introducing-tabfm-a-zero-shot-foundation-model-for-tabular-data/), [EXAONE §2](https://arxiv.org/html/2608.25774v1), [Nori model card](https://huggingface.co/Synthefy/Nori/blob/main/README.md).
 - **Retrieve / skill:** Do fewer parameters guarantee cheaper predictions? Compare complete operating points.
 - **Teach:** Use EXAONE's repeated cross-axis processing as the mechanism example; audit support size, caching, ensembling, task coverage and access for all three.
 - **Exercise / CHECK:** Build a latency/memory/quality protocol on identical prediction rows. Do not compare regression-only and mixed-task aggregates or treat model cards as peer-reviewed papers.
 - **Visual / bridge:** Reuse `benchmark-budget-viz.js`. These models enter B24's decision inventory even if this elective is skipped.
+- **System boundary:** Separate TabFM base, TabFM+ and TabFM-Auto, including calibration/feature engineering and LLM selection cost. Add [Seldon's provider report](https://www.neuralk.ai/white-paper/seldon-foundation-made-tabular) and [NEXUS's official page](https://fundamental.tech/nexus) to the access/exclusion inventory. Provider-reported results are not independent verification; no paid access is required. Blog speculation about proprietary Thinking mode is not an implementation specification.
 
 ## B · Influential relational directions, compared
 
@@ -182,6 +208,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Teach:** Contrast target-agnostic row representations with graph-to-table alignment and community-guided episodes. Choose one paper for the exercise.
 - **Exercise / CHECK:** Trace two tasks through a shared encoder, or ablate community supervision with equal support labels. Target-domain adaptation cannot be relabeled zero-shot; promised code release is not verified availability.
 - **Visual / bridge:** Extend `frame-encoder-viz.js`; connect B07 semantics and B11 structural encoding. Neither paper is designated broadly influential by this audit.
+- **Supporting comparisons:** [BOLERO](https://arxiv.org/abs/2512.12405) tests a feature/value-anchor graph head; [task-agnostic embedding evaluation](https://arxiv.org/abs/2511.14276) broadens the representation question. Both are abstract-verified options pending detailed audit. An induced single-table graph is not an FK graph, and predictive embeddings do not automatically support anomaly detection.
 
 ## C · Stress-test the claimed gains
 
@@ -195,6 +222,16 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **CHECK:** Keep future records excluded and report degree-stratified errors. Distinguish a course fixture from reproduction of Animus.
 - **Visual / bridge:** Extend `temporal-visibility.js`; identify one falsification test for B24. Core by mission relevance, not demonstrated citation influence.
 
+<a id="b18a"></a>
+
+### B18a ★ · Context as deployed model state
+- **Read:** [TACO §§3–4](https://arxiv.org/html/2602.05649v2), the distillation discussion in [TabPFN-2.5](https://arxiv.org/abs/2511.08667), and recall [Interpretable ML for TabPFN](https://arxiv.org/abs/2403.10923). Orientation: [Context is the new training](https://mindfulmodeler.substack.com/p/context-is-the-new-training), [interpretability tax](https://mindfulmodeler.substack.com/p/tabular-foundation-models-break-the), and the [July trends post](https://mindfulmodeler.substack.com/p/trends-in-tabular-foundation-research).
+- **Retrieve / skill:** Can predictions change with fixed weights? Define the complete predictor as weights, preprocessing, support data, retrieval, cache and inference recipe. Recall L186's serving contract before adding TFM-specific state.
+- **Teach:** Reusing cached activations, selecting support rows, learning compressed context and distilling outputs are distinct interventions. TACO jointly trains a compressor and predictor; it is not established as a universal plug-in for frozen weights.
+- **Exercise:** Specify one fixed-query comparison of full context, selected context and one compression/distillation route. Record cold setup, repeated prediction, update/rebuild and explanation costs. Keep a chronology/identity ledger for support additions, deletions and label availability. Student targets must be generated without the row's own label in the teacher context; use time-respecting folds when required.
+- **CHECK:** Demonstrate when a context/preprocessing change invalidates a cache or distilled student. Add a missingness-shift fixture to B03/B04's preprocessing audit. For interpretation, separately vary query features, predictive support and explanation background; state the estimand and charge the extra forward passes. A context edit is not a causal intervention on the data-generating process.
+- **Visual / bridge:** Versioned support → preprocessing → cache/compressor → predictor, with a separate teacher-to-student branch. Reuse L186's serving diagram, extend it with context invalidation and the explanation call path. Deliver a serving-and-explanation contract plus one falsifiable quality/cost hypothesis for B23/B24. Budget 5–8 hours; all comparisons are specifications until an approved experiment is executed.
+
 <a id="b19"></a>
 
 ### B19 ★ · BeyondArena, contamination and moving benchmarks
@@ -204,6 +241,27 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Exercise:** Build a cross-paper comparability matrix, then pre-register one untouched temporal/grouped dataset comparison with identical accessible information.
 - **CHECK:** Separate measured scores from imputation. Use dataset-level uncertainty; seeds do not increase the number of independent datasets.
 - **Visual / bridge:** Reuse `drift-viz.js`; forward to L203/L219. No blanket “trees always win” or “TFMs solved non-IID” conclusion.
+- **Coverage check:** Add task mix, categorical fraction, imbalance, missingness and provider involvement to the matrix; [TabBench](https://huggingface.co/spaces/Neuralk-AI/tabbench) supplies another benchmark to audit, not universal threshold rules. Read [Enterprise Data versus Public Benchmarks §§3–5](https://arxiv.org/html/2606.30452v1), recovered through arXiv from the July trends post: audit task curation, semantic types and internal-data access before transferring ranks to an enterprise problem. The [other highlighted paper](./tabular-foundation-coverage-audit-2026-10.md#the-july-trends-posts-two-highlighted-papers), Beyond Accuracy, remains `FULL_TEXT_NOT_CHECKED`.
+
+<a id="b19a"></a>
+
+### B19a ★ · Predictive distributions, calibration and proper scores
+- **Read:** [ScoringBench §3, Appendix A and experimental protocol](https://arxiv.org/html/2603.29928v3), [distributional regression study](https://arxiv.org/html/2603.08206v1); orientation: [Regression should predict full distributions](https://mindfulmodeler.substack.com/p/regression-should-predict-full-distributions). Recall earlier probability, calibration and conformal-prediction concepts before comparing models.
+- **Retrieve / skill:** Can two predictors have the same mean error but different uncertainty quality? State the quantity a score evaluates.
+- **Teach:** Separate point error, proper scoring rules, interval coverage and sharpness. A wide interval may cover often but be uninformative. A model tuned for one score need not lead another finite-sample comparison.
+- **Exercise:** Construct two predictive distributions with the same mean; hand-compute an interval score and compare coverage/width on a small outcome set. Then specify a paired TFM versus probabilistic/quantile-tree comparison with RMSE, CRPS and interval diagnostics, frozen splits and equal tuning budgets.
+- **CHECK:** Keep calibration data separate from the final evaluation. Report dataset-level effects as well as ranks, units/normalization, quantile extraction and tail treatment. Empirical coverage is not a conformal guarantee; any claimed guarantee needs its exchangeability/shift assumptions. Do not infer one universal winner from ScoringBench.
+- **Visual / bridge:** Same mean, different predictive CDFs and intervals; show where each score penalizes error. Deliver a metric-and-calibration contract for B23; a point-only thesis must explicitly justify its metric scope in B24. Budget 5–8 hours.
+
+<a id="b19b"></a>
+
+### B19b ◆ · Beyond ordinary regression: forecasting, survival or causal effects
+- **Read:** Choose [TabPFN-TS](https://arxiv.org/html/2501.02945v4), [SurvPFN](https://arxiv.org/abs/2606.04564), or [CausalPFN](https://arxiv.org/abs/2506.07918). Optional causal-prior contrast: [CausalFM](https://arxiv.org/abs/2506.10914v3), which covers different identification settings and is not a synonym for CausalPFN. Optional modality contrast: [MulTaBench](https://arxiv.org/abs/2605.10616). The [July trends post](https://mindfulmodeler.substack.com/p/trends-in-tabular-foundation-research) motivates this task map; each chosen paper still needs a full protocol/code audit before reproduction.
+- **Retrieve / skill:** When does reframing a task as regression change the estimand or make labels unavailable? Recall temporal splits (forecasting), censoring (survival), or L185's identification assumptions (causal effects); supply a worked prerequisite example before proceeding.
+- **Teach:** A forecasting wrapper changes features and evaluation; a survival prior/loss handles censoring; causal-effect estimation requires identification assumptions. These are different adaptations and are not capabilities inherited by every pretrained regressor.
+- **Exercise:** Select one route and build a task contract plus one failure case: unavailable future covariates; censored outcomes mistaken for event times; or hidden confounding violating the simulated causal assumptions. State task-specific baselines and metrics.
+- **CHECK:** Use rolling-origin evaluation for forecasts, an explicit censoring mechanism for survival, or treatment/positivity/ignorability assumptions for causal effects. Keep prediction, imputation, generation and causal identification separate. A text/image task must preserve equal modality access across competitors.
+- **Visual / bridge:** A task-specific observed/hidden-variable timeline or causal diagram. Deliver an inclusion/exclusion decision for L201 and a task-validity falsification test. Budget 3–5 hours for one route, not all three.
 
 <a id="b20"></a>
 
@@ -229,6 +287,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 - **Retrieve / skill:** Can an internal mechanism change without improving downstream generalization? Design a discriminating intervention.
 - **Exercise / CHECK:** Specify a controlled support-state intervention, or value-only versus JEPA at fixed compute and at convergence. Separate benchmark-informed continuation from untouched tests; one run per arm cannot characterize seed uncertainty.
 - **Visual / bridge:** Attention-state trace or paired learning curves. These are explicitly exploratory September preprints, not established influential architectures.
+- **Mechanistic interpretation option:** Revisit the already tracked [Closer Look at TabPFN v2](https://arxiv.org/abs/2502.17361v2) before a layer/representation intervention. Specify a matched control and a changed prediction that would falsify the mechanism claim; a successful representation probe or an attention plot alone is not a causal explanation. This connects the July trends post to mechanistic work without confusing it with B18a's model-agnostic explanations.
 
 ## D · Reproduction and research handoff
 
@@ -246,6 +305,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 ### B24 ★ · Defend the architecture and the thesis
 - **Deliverable:** A 3–5-page proposal, B23 evidence folder, coverage map and baseline inclusion/exclusion table.
 - **Required inventory:** Tuned trees + time-safe feature engineering; RealMLP/TabM/TabPack; retrieval (TabR/ModernNCA when relevant); TabPFN, TabICL, TabDPT and Mitra families; semantic transfer when text is material; RDBLearn/TabPFN-Rel; RelGNN/RelGT; accessible RT/relational FM. Audit LimiX, TabFM, EXAONE, Nori and RT-J as current candidates even if their electives were skipped. This is a decision inventory, not a requirement to train every model.
+- **October additions:** Justify inclusion/exclusion of hypernetworks, a scaling alternative (TabFlex/Wide/Orion/TabSwift), and provider comparators Seldon/NEXUS; treat SAP-RPT-1-OSS as the documented ConTextTab alias. Submit B18a's context/update/cost contract and B19a's metric/calibration contract. Task expansion from B19b is required only when relevant to the chosen thesis.
 - **Falsification:** Specify a simpler-baseline win and a failure on an untouched database/task that would change the proposal. Preserve matched information and budget, and distinguish public from proprietary systems.
 - **Rubric:** Protocol validity, baseline fairness, reproducibility, evidence interpretation and falsifiability score 0–2 each. Pass at 8/10 with no zero and no unresolved leakage. Missing reproduction keeps that gate pending regardless of score. Learner status stays `PENDING_WRITTEN_DEFENSE` until assessed.
 - **Handoff:** L201 gets the hypothesis, L202 the source matrix, L203 the protocol, L204 the baseline decisions and L219 the stress tests. Optional-paper knowledge is required only for the chosen thesis direction.
@@ -257,3 +317,5 @@ This replaces the initial B01–B16 proposal, which had no authored or completed
 New coverage: numerical embeddings, TabDPT, Mitra, ConTextTab/TabSTAR, dedicated RT, PluRel, and current comparison candidates. Existing influential families receive retrieval and comparative exercises; they are not falsely presented as newly discovered. Recent diagnostics retain explicit exploratory status. The accompanying audit records evidence of uptake, source-access limits and rationale for core versus elective placement.
 
 Before teaching, recheck versions and releases. Method sections above were inspected for major additions; optional papers retained from the initial pass still need full method/code audits. RT-J is supported by its author page because OpenReview access was blocked. No claim of independent replication, full-paper parity or learner mastery is made.
+
+**2026-10-02 addendum:** Five suffix units extend the 24-unit plan to 29 without moving B23 reproduction or B24 defense. The [coverage audit](./tabular-foundation-coverage-audit-2026-10.md) records the 2025–2026 search scope, Mindful Modeler reading map, source depth, industrial-paper access limits, and explicit candidate dispositions. All additions remain planned; no new model runs or learner completion are claimed.
