@@ -42,7 +42,7 @@ Reviewed 3 October 2026 for continuity, prerequisite assumptions, clarity, infor
 
 **Finding:** Synthesizes prior evidence without treating each replay as a new independent experiment. The three-route visual, matching matrix and shared Ada query distinguish learned graph processing, a synthetic relational prior and reuse of a tabular FM. Defines pretraining, ICL, support, query, DFS and the evidence-to-claim warrant. The worked five-part paragraph and essay rubric give useful scaffolding without grading field presence as mastery.
 
-**Revision:** Linked the immediate L198 handoff. Retained the distinction between graph-native adaptation and ICL, the dated comparison pool, and the economic evidence missing from an undervaluation claim.
+**Revision:** Linked the immediate L198 handoff and added a visible mobile scroll hint to its keyboard-accessible architecture map. Retained the distinction between graph-native adaptation and ICL, the dated comparison pool, and the economic evidence missing from an undervaluation claim.
 
 ## 198 · Three research directions
 

@@ -39,6 +39,15 @@ with sync_playwright() as pw:
      assert figure.evaluate('(x)=>x.scrollLeft>0')
      figure.screenshot(path=str(screens/f'{n}-{width}-figure-{i}-end.png'))
      figure.evaluate('(x)=>x.scrollLeft=0')
+   if width==375:
+    for region in page.locator('figure [role="region"]').all():
+     if region.evaluate('(x)=>x.scrollWidth>x.clientWidth+1'):
+      assert region.get_attribute('tabindex')=='0',(n,'scroll region not keyboard accessible')
+      region.focus();region.press('ArrowRight')
+      page.wait_for_timeout(200)
+      assert region.evaluate('(x)=>x.scrollLeft>0'),(n,'keyboard scrolling failed')
+      region.evaluate('(x)=>x.scrollLeft=x.scrollWidth')
+      region.screenshot(path=str(screens/f'{n}-mobile-scroll-end.png'))
    rows.append(dict(lesson=n,width=width,status='PASS',figures=page.locator('figure img').count()))
   page.emulate_media(media='print')
   assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete&&x.naturalWidth>0)')
