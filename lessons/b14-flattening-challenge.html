@@ -1,0 +1,176 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B14 · The flattening challenge</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/flattening.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B14-%C2%B7-The-flattening-challenge">B14 &#183; The flattening challenge<a class="anchor-link" href="#B14-%C2%B7-The-flattening-challenge">&#182;</a></h1><p><strong>RDBLearn and TabPFN-Rel · research bridge · core lesson</strong></p>
+<p><a href="b13-synthetic-relational-data.html">B13: synthetic relational data</a> → <strong>B14: construct the representation</strong> → <a href="../plan/year-5-6-bridge.md#b23">B23: defend a research baseline</a></p>
+<p>In B13, a parent-mean feature made a held-out synthetic schema surprisingly easy. That leaves a question: <strong>before learning a relational encoder, how much can a careful feature builder already solve?</strong> Your mission is to make the case for relational learning with evidence. That requires giving this alternative a fair chance.</p>
+<p><strong>Your win:</strong> trace a prediction back to the exact records it may read, then design a predictor swap that changes only the predictor. Read sections 1–4 first; the lab and reproduction contract are a separate work session.</p>
+<div id="b14-warmup"></div>
+
+<h2 id="1-%C2%B7-Flattening-can-retain-relational-information">1 &#183; Flattening can retain relational information<a class="anchor-link" href="#1-%C2%B7-Flattening-can-retain-relational-information">&#182;</a></h2><p>A <strong>foreign key</strong> links a child record to an entity in another table. A <strong>relational aggregate</strong> summarizes linked records: for example, the mean value of a driver's earlier race results. <strong>Flattening</strong> constructs one fixed-length feature row for each prediction query. It need not discard every relationship: the joins used to construct the features already encode some of them.</p>
+<p><strong>Deep feature synthesis (DFS)</strong> composes joins and aggregations along allowed key paths. Its <strong>depth</strong> limits composition. A deeper setting adds candidate operations; it does not add neural layers. A <strong>backbone</strong> is the predictive model consuming the resulting feature table.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Put the relevant history into useful columns, then ask a strong table model to predict. Whether this is sufficient is an empirical question.</p>
+</blockquote>
+<p><a href="https://arxiv.org/html/2602.18495v1#S3">RDBLearn §3</a> describes this recipe. The <a href="https://arxiv.org/html/2602.13697v2">companion encoder analysis</a> is a different paper about the role of encoders in in-context prediction. Its assumptions are not a universal proof that learning relational representations is unnecessary.</p>
+<h3 id="Model-architecture-%C2%B7-RDBLearn">Model architecture &#183; RDBLearn<a class="anchor-link" href="#Model-architecture-%C2%B7-RDBLearn">&#182;</a></h3><figure class="flat-figure flat-wide"><img src="../labs/figures/b14/rdblearn.png" alt="RDBLearn: deterministic relational features feed a selected tabular ICL backbone."><figcaption>RDBLearn: deterministic relational features feed a selected tabular ICL backbone.</figcaption></figure><div class="flat-mobile"><strong>RDBLearn: deterministic relational features feed a selected tabular ICL backbone.</strong><ol><li><strong>Visible database</strong><br>Query = (entity, time) · Keys + typed values · Pin visibility rules</li><li><strong>Compose DFS</strong><br>Follow foreign keys · Aggregate linked values · Depth 2 / 3 / 4</li><li><strong>Materialize table</strong><br>Support: Nₛ × F · Queries: Nq × F · Same feature definitions</li><li><strong>Choose backbone</strong><br>TabPFN v2 / v2.5 · or LimiX-16M · Support cap 10,000</li><li><strong>In-context inference</strong><br>Feature tokens + labels · Pretrained attention · Query labels hidden</li><li><strong>Select → score</strong><br>Nine validation candidates · Selected configuration · → held-out predictions</li></ol></div>
+
+<p>The feature builder is deterministic once the database, transformations and depth are fixed. The <strong>in-context learning (ICL)</strong> predictor reads labeled support rows and unlabeled query rows. Its pretrained parameters supply prior knowledge; fitting support does not imply retraining that foundation model from scratch.</p>
+<p>For the original toolkit experiment, depth ∈ {2,3,4} and backend ∈ {TabPFN v2, TabPFN v2.5, LimiX-16M} give nine validation candidates. Each uses at most 10,000 support examples. Validation chooses the configuration; test labels score the selected configuration. <a href="https://arxiv.org/html/2602.18495v1#S5">Toolkit §5</a></p>
+<p><strong>Implementation scope.</strong> B14 implements the key temporal and aggregation mechanisms visibly. It also includes the original harness and backend source for inspection. The small ridge/kernel predictors below are course diagnostics, not reimplementations of either foundation model. Original backbone pretraining is outside this lesson's executed scope.</p>
+<h2 id="2-%C2%B7-A-timestamp-is-an-information-contract">2 &#183; A timestamp is an information contract<a class="anchor-link" href="#2-%C2%B7-A-timestamp-is-an-information-contract">&#182;</a></h2><p>A <strong>query key</strong> is the pair <code>(entity_id, prediction_time)</code>. A driver can occur at several times, so joining or scoring by driver ID alone can silently mix predictions.</p>
+<p>A <strong>database snapshot cutoff</strong> limits the newest database state available to an evaluation phase. A record's <strong>event time</strong> says when the event occurred. Its <strong>available time</strong> says when the record became usable. These may differ: yesterday's result can arrive tomorrow.</p>
+<h3 id="Worked-example-%C2%B7-one-query,-four-candidate-records">Worked example &#183; one query, four candidate records<a class="anchor-link" href="#Worked-example-%C2%B7-one-query,-four-candidate-records">&#182;</a></h3><p>Query: entity A at day 14. Database snapshot: day 10. Local feature:4.</p>
+<table>
+<thead>
+<tr>
+  <th>Record</th>
+  <th style="text-align:right">Event day</th>
+  <th style="text-align:right">Available day</th>
+  <th style="text-align:right">Value</th>
+  <th>Visible at boundary 10?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>A1</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">2</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>A2</td>
+  <td style="text-align:right">6</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">6</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>A3</td>
+  <td style="text-align:right">7</td>
+  <td style="text-align:right">12</td>
+  <td style="text-align:right">100</td>
+  <td>No: arrived later</td>
+</tr>
+<tr>
+  <td>A4</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">10</td>
+  <td style="text-align:right">20</td>
+  <td>No: event at strict boundary</td>
+</tr>
+</tbody>
+</table>
+<p>The effective boundary is <code>min(14,10)=10</code>. The course rule requires <code>event_time &lt; boundary</code> and <code>available_time ≤ boundary</code>. We read values <code>[2,6]</code>: count 2, mean 4, last 6. The feature row is <code>[local4, count 2, mean 4, last 6]</code>. A late record cannot enter merely because its event date is old.</p>
+<div class="flat-board" data-flat-time><h3>Predict the mean before changing the cutoff</h3><p>Query A/day14 and values [2,6,100,20] remain fixed.</p><label>Database snapshot<select name="snapshot"><option value="8">Day8</option><option value="10" selected>Day10: fixed default</option><option value="14">Day14: rolling</option></select></label><label>Arrival policy<select name="arrival"><option value="check">Check available time</option><option value="ignore">Ignore available time</option></select></label><button type="button">Reset trace</button><output aria-live="polite">At fixed day10, read A1 and A2: count 2, mean 4, last 6.</output><noscript><p>Controls need JavaScript. At day 14 all four records are visible; mean 32. Ignoring arrival at day 10 wrongly includes A3: mean 36.</p></noscript></div>
+
+<p>This two-clock course rule is deliberately explicit. <strong>The historical benchmark supplies event timestamps, not a complete arrival-time ledger.</strong> Matching a release's temporal code does not prove operational availability for every field. The code's exact <code>&lt;</code>/<code>≤</code> behavior must also be pinned; changing equality conventions is a protocol change.</p>
+<h3 id="Inner-and-outer-snapshots">Inner and outer snapshots<a class="anchor-link" href="#Inner-and-outer-snapshots">&#182;</a></h3><p>During <strong>inner validation</strong>, fit on training labels and choose settings using validation labels. Freeze the database at the validation cutoff. During <strong>outer evaluation</strong>, use the test cutoff and the declared final-fit support policy. <strong>Refit</strong> means fitting the selected predictor again on its permitted final support; TabPFN-Rel adds validation examples to that support.</p>
+<p>For the selected F1 task, the verified release cutoffs are <strong>2005-01-01 for validation and 2010-01-01 for test</strong>. There are 11,411 training queries, 566 validation queries and 702 test queries. Later test query dates do not unlock later database events. Anchor-derived features such as time-since-event may still change even when the database is frozen. <a href="https://github.com/PriorLabs/relarena/blob/e89002200e18be6d8d7a55f8a5ab50c993ce4d5d/docs/temporal-validation.md">RelArena temporal protocol</a></p>
+<figure class="flat-figure flat-wide"><img src="../labs/figures/b14/snapshot.png" alt="The inner and outer phases use separate frozen database states."><figcaption>The inner and outer phases use separate frozen database states.</figcaption></figure><div class="flat-mobile"><strong>The inner and outer phases use separate frozen database states.</strong><ol><li><strong>Inner support</strong><br>Freeze the inner database at 2005; train on 11,411 queries.</li><li><strong>Inner queries</strong><br>Score three depths on 566 validation queries.</li><li><strong>Select once</strong><br>Select by validation AUROC only.</li><li><strong>Outer support</strong><br>Refit on 11,977 train + validation queries; freeze the outer database at 2010.</li><li><strong>Outer queries</strong><br>Predict all 702 test queries without advancing the database.</li><li><strong>Score independently</strong><br>Match full (driverId, date) keys before independently scoring.</li></ol></div>
+
+<p><strong>Target history needs its own clock.</strong> A label for a 30-day prediction window is not necessarily known at the window's start. B14 checks the full F1 support schedule for unfinished earlier windows under <code>available_at = anchor + 30days</code>. That schedule check does not reconstruct actual label publication times or prove all database fields safe.</p>
+<h2 id="3-%C2%B7-TabPFN-Rel-changes-several-things-at-once">3 &#183; TabPFN-Rel changes several things at once<a class="anchor-link" href="#3-%C2%B7-TabPFN-Rel-changes-several-things-at-once">&#182;</a></h2><h3 id="Model-architecture-%C2%B7-TabPFN-Rel-OSS">Model architecture &#183; TabPFN-Rel OSS<a class="anchor-link" href="#Model-architecture-%C2%B7-TabPFN-Rel-OSS">&#182;</a></h3><figure class="flat-figure flat-wide"><img src="../labs/figures/b14/tabpfnrel.png" alt="TabPFN-Rel OSS: phase-aware DFS, context construction and TabPFN-3 prediction."><figcaption>TabPFN-Rel OSS: phase-aware DFS, context construction and TabPFN-3 prediction.</figcaption></figure><div class="flat-mobile"><strong>TabPFN-Rel OSS: phase-aware DFS, context construction and TabPFN-3 prediction.</strong><ol><li><strong>Freeze the phase</strong><br>Inner DB → val cutoff · Outer DB → test cutoff · DFS depths 2 / 3 / 4</li><li><strong>Build contexts</strong><br>Text-free feature frame · Recent pool M = 4K · K = 100,000; 8 estimators</li><li><strong>Encode distributions</strong><br>TabPFN-3 column groups · Induced attention reads · value distributions</li><li><strong>Aggregate features</strong><br>Per-row feature attention · Summary tokens combine · column-group information</li><li><strong>Read support labels</strong><br>ICL attention over rows · Known support labels · Hidden query labels</li><li><strong>Decode → average</strong><br>Class probabilities · Combine estimator outputs · Validation selects depth</li></ol></div>
+
+<p>TabPFN-Rel keeps the relational-feature-to-table interface. Its release uses TabPFN-3, a larger support budget, a recency-aware context strategy and train-plus-validation final support. Its benchmark also corrects the inner database snapshot. The hosted variant adds entity text; the local OSS variant is text-free. <a href="https://arxiv.org/html/2608.16319v2#S2.SS2">RelArena §2.2</a></p>
+<p>The pinned source sets a per-estimator context cap <strong>K=100,000</strong>, a recent pool cap <strong>M=4K</strong>, and an ensemble default of eight estimators. If the support has at most M rows, the hard-pool implementation returns to the backbone's ordinary subsampling path. <strong>On this F1 task, 11,977 final support rows are below K:</strong> the recency-pool branch is inactive. Do not explain a measured F1 gain using a branch the task never takes. <a href="https://github.com/PriorLabs/relarena/blob/e89002200e18be6d8d7a55f8a5ab50c993ce4d5d/src/relarena/models/tabpfn_rel/context.py">Original context code</a></p>
+<p><strong>A model comparison is not automatically a backbone ablation.</strong> If the new pipeline changes features, contexts, database cutoffs, refitting and the predictor, its score measures the joint change. To isolate the predictor, materialize one feature matrix, freeze support/query identities and preprocessing, and feed those exact arrays to both backbones.</p>
+<div class="flat-board" data-flat-swap><h3>What did the comparison change?</h3><label>Change alongside the predictor<select><option value="backbone">Nothing: predictor only</option><option value="features">More relational features</option><option value="context">More labeled support rows</option><option value="snapshot">More recent database events</option></select></label><button type="button">Reset comparison</button><output aria-live="polite">Only the predictor changes: a controlled backbone comparison.</output><noscript><p>Changing features, support or snapshots prevents attributing the whole difference to the predictor.</p></noscript></div>
+
+<p>RelArena's original RDBLearn comparison has six candidates: three depths and two TabPFN backends. It omits LimiX. The toolkit paper had nine. RelArena separates <strong>models</strong>, which use the framework's declared tuning process, from <strong>systems</strong>, which can use a custom tuning procedure. Its release leaderboard uses one seed, not a multi-seed stability study. <a href="https://arxiv.org/html/2608.16319v2#S3.SS1">RelArena §§2.1/3.1 and Appendix B</a></p>
+<h2 id="4-%C2%B7-Hold-the-table-fixed,-then-change-the-predictor">4 &#183; Hold the table fixed, then change the predictor<a class="anchor-link" href="#4-%C2%B7-Hold-the-table-fixed,-then-change-the-predictor">&#182;</a></h2><div id="b14-predict"></div>
+
+<p><strong>Course experiment, frozen before fitting.</strong> Generate 128 entities and timestamped events for each of seeds 0/1/2. Each entity has a local numeric attribute independent of its history signal. Support contains four query dates per entity (512 rows); test has two dates (256 rows). Features freeze at day 100. Final support includes day 80 labels, whose declared ten-day windows have finished by day 90.</p>
+<p>The constructed outcome is <code>0.4×local + 1.5×sin(history_mean) + 0.15×last_value + noise</code>, with noise SD 0.1. This deliberately favors a relational summary and allows a nonlinear predictor to help. It tests whether the implementation isolates these effects; it does not estimate their frequency in real databases.</p>
+<p><strong>Vary two factors.</strong> Use entity-only <code>[local]</code> or relational <code>[local,count,mean,last]</code> features. Within each representation, compare linear ridge regression with RBF kernel ridge regression. Both have fixed regularization α = 1 and support-only standardization. The RBF similarity is <code>exp(−squared_distance / feature_count)</code>. Neither predictor tunes on the test set.</p>
+<p><strong>Read the code.</strong> Ridge solves a regularized linear system for coefficients. Kernel ridge solves for weights on similarities to support rows. The latter is nonlinear in the feature values, but neither model is a pretrained ICL transformer. The same live <code>flatten</code>, <code>standardize</code> and <code>predict</code> functions power the notebook's experiment.</p>
+<table>
+<thead>
+<tr>
+  <th>Features</th>
+  <th>Predictor</th>
+  <th style="text-align:right">Fixed-snapshot MSE, mean ± SD</th>
+  <th style="text-align:right">Rolling-policy MSE, mean ± SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>entity-only</td>
+  <td>ridge</td>
+  <td style="text-align:right">1.69207 ± 0.07121</td>
+  <td style="text-align:right">1.69207 ± 0.07121</td>
+</tr>
+<tr>
+  <td>entity-only</td>
+  <td>rbf</td>
+  <td style="text-align:right">1.60746 ± 0.03372</td>
+  <td style="text-align:right">1.60746 ± 0.03372</td>
+</tr>
+<tr>
+  <td>relational</td>
+  <td>ridge</td>
+  <td style="text-align:right">0.41460 ± 0.03703</td>
+  <td style="text-align:right">0.40847 ± 0.03518</td>
+</tr>
+<tr>
+  <td>relational</td>
+  <td>rbf</td>
+  <td style="text-align:right">0.19634 ± 0.00654</td>
+  <td style="text-align:right">0.31005 ± 0.01111</td>
+</tr>
+</tbody>
+</table>
+<p>Author measurements: 12 fits; 3,072 fixed + 3,072 rolling predictions. Lower MSE is better. Rolling uses later events and is a different information policy; it reuses fitted support.</p>
+<figure class="flat-figure flat-wide"><img src="../labs/figures/b14/results.png" alt="All three seeds, paired across predictors; both panels use the same MSE scale."><figcaption>All three seeds, paired across predictors; both panels use the same MSE scale.</figcaption></figure><div class="flat-mobile" data-mobile-results><strong>Every fixed-snapshot MSE</strong><ul><li>Seed0 · entity-only · ridge: 1.61246</li><li>Seed0 · entity-only · rbf: 1.57140</li><li>Seed0 · relational · ridge: 0.37383</li><li>Seed0 · relational · rbf: 0.19922</li><li>Seed1 · entity-only · ridge: 1.71411</li><li>Seed1 · entity-only · rbf: 1.61274</li><li>Seed1 · relational · ridge: 0.42380</li><li>Seed1 · relational · rbf: 0.20095</li><li>Seed2 · entity-only · ridge: 1.74966</li><li>Seed2 · entity-only · rbf: 1.63822</li><li>Seed2 · relational · ridge: 0.44616</li><li>Seed2 · relational · rbf: 0.18886</li></ul></div>
+
+<p><strong>What the result permits.</strong> Relational features improve both course predictors on every seed. The nonlinear predictor improves further on the identical relational table. This supports the controlled demonstration; it does not establish RDBLearn or TabPFN-Rel superiority, whole-paper parity, or a result on unseen real databases. SD is across three synthetic seeds, not a confidence interval or uncertainty across benchmark databases.</p>
+<p><strong>Falsification checks.</strong> Append a huge post-snapshot event: legal features and predictions must stay fixed. Change held-out labels: features and fitted predictions must stay fixed. Deliberately let later queries read later events: that changes the information policy, so any resulting improvement is not a fair backbone gain. The saved packet includes all fixed and rolling-policy predictions, not just favorable examples.</p>
+<h2 id="5-%C2%B7-The-full-reproduction-contract">5 &#183; The full reproduction contract<a class="anchor-link" href="#5-%C2%B7-The-full-reproduction-contract">&#182;</a></h2><p><strong>Named target: B14-TABPFNREL-OSS-F1-DNF.</strong> Reproduce the complete selected task from RelArena v2 Table 4: all three depth candidates, seed0, complete official splits, and default/selected refits. The published target is AUROC 0.7145. <strong>AUROC</strong> is the probability that a randomly selected positive gets a higher score than a negative, with ties contributing one half.</p>
+<p><strong>COMPLETE_SELECTED_RELEASE_CLOSE</strong> · Fresh complete three-depth search and both final refits. Validation selects depth 3. Selected test AUROC: 0.712838530 versus the published 0.7145 (absolute difference 0.001661470). All five evaluations and 3,102 predictions were independently scored. Historical checkpoint byte identity remains NOT_ESTABLISHED; the full suite and pretraining remain NOT_RUN.</p>
+<table>
+<thead>
+<tr>
+  <th style="text-align:right">Depth</th>
+  <th style="text-align:right">Fresh validation AUROC</th>
+  <th style="text-align:right">Fresh test AUROC</th>
+  <th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">0.606422</td>
+  <td style="text-align:right">0.712848</td>
+  <td>unselected / default</td>
+</tr>
+<tr>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">0.624671</td>
+  <td style="text-align:right">0.712839</td>
+  <td>selected</td>
+</tr>
+<tr>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">0.614177</td>
+  <td style="text-align:right">NOT_EVALUATED</td>
+  <td>unselected</td>
+</tr>
+</tbody>
+</table>
+<p>Fresh single-seed released-checkpoint inference. No uncertainty across seeds is estimated. Unselected nondefault settings have no test score by design.</p>
+<p>The tagged source records validation scores 0.608200 / 0.619438 / 0.614395 for depths 2/3/4. Validation selects depth 3, whose recorded test AUROC is 0.714468355. These are <strong>released reference results</strong>, not B14 measurements. We do not select depth 3 in advance just because the reference reports it. <a href="https://github.com/PriorLabs/relarena/blob/e89002200e18be6d8d7a55f8a5ab50c993ce4d5d/baseline_results/results.csv">Source result table</a></p>
+<p><strong>Budget:</strong> $10 aggregate; stop at $8, reserve $2. Preparation, feature construction, failed attempts, inference and verification count. Local execution has a 3,600-second aggregate limit. Missing dependencies, source failures, mismatched data, unauthenticated checkpoints or an unaffordable complete run stop the reproduction. They never authorize reducing the depth grid or support budget silently.</p>
+<h3 id="RDBLearn's-separate-source-issue">RDBLearn's separate source issue<a class="anchor-link" href="#RDBLearn's-separate-source-issue">&#182;</a></h3><p>Fresh execution of the original full RDBLearn preprocessor reproduces the known-category inconsistency in the recorded environment. After fitting b/c/d, an unseen a changes known codes from 0/1/2 to 1/2/3; numeric controls remain unchanged. This is a synthetic source diagnostic, not a measured F1 score effect. The original toolkit reproduction retains its separate source gate.</p>
+<p>The original toolkit's preprocessing and RelArena's adapted RDBLearn wrapper are distinct implementations. The latter passes categorical columns to the backbone rather than using the original label encoder. An issue in one cannot be transferred to the other by name alone. Conversely, a corrected pipeline is a new declared release comparison, not retrospective proof of historical identity.</p>
+<p>Read the <a href="../labs/b14-reproduction.md">full protocol and deviation ledger</a> for exact versions, commands, outcomes and unrun work. Full 21-task reproduction, hosted text-enabled inference, backbone pretraining and historical identity are separate claims.</p>
+<h2 id="6-%C2%B7-Build-it,-break-it,-defend-it">6 &#183; Build it, break it, defend it<a class="anchor-link" href="#6-%C2%B7-Build-it,-break-it,-defend-it">&#182;</a></h2><p><a href="../labs/b14-flattening-challenge.ipynb">Student notebook</a> · <a href="../labs/html/b14-flattening-challenge.html">Executed solution</a> · <a href="../reference/b14-flattening-challenge.html">Printable reference</a></p>
+<ol>
+<li>Implement the time-visible aggregate without duplicating a physical event or reading the target.</li>
+<li>Fit normalization on support only. Explain what goes wrong if a future query changes those statistics.</li>
+<li>Complete the predictor swap and verify that both arms received identical keys and arrays.</li>
+<li>Predict each intervention's effect before running it. Explain why a future-row test is stronger evidence than a function named <code>safe_features</code>.</li>
+</ol>
+<div id="b14-teachback"></div>
+
+<p><strong>Exit defense:</strong> Name the one factor your ablation isolates. Give one counterexample where your features lose necessary information. Explain why a benchmark's fixed snapshot and a production arrival-time policy are different contracts. State exactly which reproduction evidence was collected and which claim is still unsupported.</p>
+<p><strong>Revisit after 1, 7 and 30 days.</strong> Draw the full path from memory, recover the four-record calculation, and explain the difference between feature construction and backbone improvement. Bring your answers or any unclear step back to the agent for feedback. Author verification does not complete your written defense.</p>
+<p><strong>Next connection.</strong> B23 should compare a proposed relational model against this strong, explicitly scoped alternative. A win matters only after checking the same features, labels, snapshots, support budget and tuning opportunity. <a href="../plan/year-5-6-bridge.md#b15">B15</a> optionally examines the assumptions behind parameter-free encoders.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/flattening.js"></script></body></html>

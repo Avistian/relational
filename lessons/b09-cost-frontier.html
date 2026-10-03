@@ -1,0 +1,176 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B09 · Current cost frontier</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/cost-frontier.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B09-%C2%B7-What-does-a-prediction-really-cost?">B09 &#183; What does a prediction really cost?<a class="anchor-link" href="#B09-%C2%B7-What-does-a-prediction-really-cost?">&#182;</a></h1><p><strong>Current cost frontier · TabFM, EXAONE and Nori · one skill:</strong> defend a latency–memory–quality comparison on identical prediction rows.</p>
+<p><a href="b08-structured-objectives.html">B08: structured objectives</a> · <a href="../labs/b09-cost-frontier.ipynb">Student lab</a> · <a href="../labs/html/b09-cost-frontier.html">Executed solution</a> · <a href="../reference/b09-cost-frontier.html">Field guide</a></p>
+<h2 id="Begin-with-the-gap">Begin with the gap<a class="anchor-link" href="#Begin-with-the-gap">&#182;</a></h2><p>B08 separated the errors a model learns to predict. It did not tell us what serving those predictions costs. A smaller checkpoint can require more preprocessing, more passes, or a larger support set. A fast warm call can hide expensive preparation.</p>
+<p>This matters for our relational-learning mission: a learned relational model needs a credible single-table baseline. If the baseline receives less context or is timed differently, an apparent relational advantage may just be an evaluation artifact. B10 will ask how the model can use database relationships; today we establish how to compare an operating point.</p>
+<p><strong>Operating point</strong> means the entire prediction configuration: checkpoint, input rows, preprocessing, support size, ensemble, cache, hardware and precision. <strong>Latency</strong> is elapsed time for a declared unit of work. <strong>Peak memory</strong> is the largest observed memory footprint during a declared interval. <strong>Quality</strong> here is root mean squared error (RMSE), in the target's units; lower is better.</p>
+<h2 id="Retrieve-before-reading">Retrieve before reading<a class="anchor-link" href="#Retrieve-before-reading">&#182;</a></h2><p>Without notes: What changes during in-context learning? Which rows may supply target labels? Why did B08's extra objective fail to improve every seed? What would make a validation comparison leak test outcomes?</p>
+<div id="b09-warmup"></div>
+
+<p><strong>Prerequisite recap.</strong> A support set contains known features and targets. A query contains features whose target is withheld. An embedding turns a cell into a vector. Attention constructs weighted sums of other vectors. Frozen inference changes representations and context, but does not update learned weights with gradients. A wrapper may still fit scalers or ensemble weights.</p>
+<h2 id="1-%C2%B7-First-define-the-request">1 &#183; First define the request<a class="anchor-link" href="#1-%C2%B7-First-define-the-request">&#182;</a></h2><p><strong>Worked example.</strong> System A spends 6 seconds preparing support and 0.02 seconds per request. System B spends 1 second preparing support and 0.08 seconds per request. Both predict the same 100 rows per request at the same quality. Predict the winner before revealing the calculation.</p>
+<div id="b09-predict"></div>
+
+<p>For R repeated requests using the same prepared support, total time is <strong>T = load + preparation + R × prediction</strong>. Loading is omitted only in this illustrative example. If preparation cannot be reused, pay it again. The crossover solves 6 + 0.02R = 1 + 0.08R, or R ≈ 83.3. At one request B wins; at 100 cached requests A wins.</p>
+<div class="b09-board" data-b09="cost"><h3>When does preparation pay off?</h3><p>Illustrative fixed quality and hardware. Predict the crossover.</p><label>Requests R: <strong data-value>1</strong><input type="range" min="1" max="100" value="1"></label><label><input type="checkbox" checked> Reuse B’s prepared support</label><button type="button">Reset cost example</button><output aria-live="polite">Baseline, one request: A=6.02 seconds; B=1.08 seconds. At 100 cached requests: A=8, B=9.</output></div>
+
+<p><strong>Cold start</strong> begins without a loaded model. <strong>Warm inference</strong> reuses a loaded model and any declared support cache. A download, model load, support fit, first call, and warm call are different intervals. Lazy initialization may move work from <code>fit</code> into the first <code>predict</code>. Report all intervals instead of relying on the method name.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The slider uses invented times to isolate amortization. It is not a measurement of TabFM, EXAONE or Nori. The older benchmark-budget widget plots hyperparameter search, so it is not reused as an inference-timing chart.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Model-architecture:-follow-the-information,-then-count-the-work">2 &#183; Model architecture: follow the information, then count the work<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-follow-the-information,-then-count-the-work">&#182;</a></h2><p>The <a href="https://arxiv.org/html/2608.25774v1#S2">EXAONE technical report §2</a> is the primary reading. Compare it with the <a href="../labs/sources/b09/exaone-README.md">pinned release implementation</a>: a current runtime is not automatically the publication-era configuration.</p>
+<div class="b09-desktop-architecture"><figure class="b09-figure"><img src="../labs/figures/b09/exaone-architecture.png" alt="Current EXAONE release path; shapes omit only the variable number of encoded feature slots. Pretrained weights remain frozen."><figcaption>Current EXAONE release path; shapes omit only the variable number of encoded feature slots. Pretrained weights remain frozen.</figcaption></figure></div><div class="b09-mobile-architecture"><ol><li><strong>Encode evidence.</strong> 353 support rows with targets;89 queries with hidden targets. Each cell becomes a 192-coordinate vector.</li><li><strong>Across columns.</strong> Three item-summary tokens gather features within each row.</li><li><strong>Across support rows.</strong> Thirty-two feature-summary tokens gather examples for each feature.</li><li><strong>Exchange across axes.</strong> Cells read opposite-axis summaries, then mix within an axis. Repeat 12 layers; feature attention twice per layer.</li><li><strong>Read queries.</strong> The head emits 999 quantiles, then the wrapper reverses target transforms and aggregates views. No gradient updates.</li></ol><p>Equal-score access trace: Q1 reads support values2and6 → weights ½, ½ → readout 4. Forbidden Q2=30 cannot change this readout.</p></div>
+
+<p><strong>Two axes.</strong> Feature attention mixes columns within one row. Item attention mixes examples within one column. EXAONE's Cross-Axis Summary Transformer (CAST) also carries learned summary tokens. An item-summary token gathers evidence across features for one row. A feature-summary token gathers evidence across support rows for one feature. Cells read summaries from the opposite axis before axis-wise attention. Repeated exchange lets a cell use both kinds of context.</p>
+<p><strong>Current release identity.</strong> The runtime specifies width 192, 12 layers, six attention heads, three item-summary tokens and 32 feature-summary tokens. Feature attention repeats twice per layer. Regression decodes 999 quantiles—predicted values at ordered probability levels—and the wrapper converts them into a point prediction. These are release-code specifications, not proof that the paper's historical checkpoint is identical.</p>
+<p><strong>Why this changes cost.</strong> Storing P parameters in float32 requires about 4P bytes for weights alone. Intermediate cell states scale with rows × feature slots × width. Attention work depends on sequence lengths and repetition. Ensemble members repeat work. Caching may trade memory for less repeated computation. Therefore parameter count alone cannot determine either runtime or peak memory.</p>
+<p><strong>Visibility trace.</strong> Suppose support value states are 2 and 6, with equal attention scores. A query reading only those states receives (2+6)/2=4. A second query's value should not enter this support-only readout. This primitive illustrates an access boundary, not EXAONE's full SSMax attention normalization.</p>
+<div class="b09-board" data-b09="attention"><h3>Change a forbidden value</h3><p>Equal-score primitive. Support values [2,6]; Q1=10.</p><label>Q2 value: <strong data-value>30</strong><input type="range" min="10" max="30" step="10" value="30"></label><label><input type="checkbox"> Incorrectly permit query keys</label><button type="button">Reset attention example</button><output aria-live="polite">Legal query readout=(2+6)/2=4. With all four keys it becomes (2+6+10+30)/4=12.</output></div>
+
+<p><strong>SSMax</strong> is the release's attention normalization. Its source scales attention scores using a stored per-head coefficient and the logarithm of context length, so its weighting rule is not the fixed-scale primitive below. Our small dot-product exercise deliberately teaches visibility separately. Query-independent attention also does not guarantee an entire wrapper is query-batch invariant: preprocessing that fits on unlabeled query features can introduce another dependency.</p>
+<h3 id="Other-paths-through-the-same-task">Other paths through the same task<a class="anchor-link" href="#Other-paths-through-the-same-task">&#182;</a></h3><figure class="b09-figure"><img src="../labs/figures/b09/other-architectures.png" alt="Current released inference paths, not a claim of historical checkpoint identity. TabFM collapses the cell grid into row vectors; Nori retains alternating feature/sample processing."><figcaption>Current released inference paths, not a claim of historical checkpoint identity. TabFM collapses the cell grid into row vectors; Nori retains alternating feature/sample processing.</figcaption></figure>
+
+<div class="b09-grid"><div class="b09-card"><strong>TabFM base</strong><p>Numeric cells → Fourier embeddings and feature groups → column-induced and row attention → row-summary pooling → in-context predictor → regression head.</p></div><div class="b09-card"><strong>TabFM+ / Auto</strong><p>The frozen predictor receives multiple engineered views. Plus adds ensemble/calibration work. Auto adds LLM-driven feature construction and selection. Count those costs too.</p></div><div class="b09-card"><strong>Nori-6M</strong><p>Feature pairs and numeric embeddings → alternating feature/sample attention → 999-quantile output → point estimate. Its wrapper also transforms and ensembles inputs.</p></div></div>
+
+<p><a href="https://arxiv.org/html/2609.37959v1">TabFM report §§3–5</a> distinguishes base, + and Auto. The <a href="https://huggingface.co/Synthefy/Nori/blob/main/README.md">Nori model card</a> describes a regression model and reports benchmark results; a model card is provider evidence, not independent replication. Our exact downloaded configurations and SHA256 hashes are in the <a href="../labs/sources/b09/weights.json">source ledger</a>. The pinned TabFM regression file contains <strong>1,647,783,213 tensor elements</strong>, including any stored buffers, with width 256. The paper describes a400M checkpoint at width 128. These are different artifact identities. Nori stores both ordinary and exponential-moving-average weights; the release loader selects the latter. Do not copy a paper's parameter count onto different release weights.</p>
+<p><strong>Training vocabulary.</strong> Pinball loss penalizes under- and over-prediction differently for each quantile level. An exponential moving average (EMA) smooths parameter values over training steps; a release may store both raw and EMA weights. Selecting EMA weights is a checkpoint choice, not new training.</p>
+<p><strong>Numeric encodings.</strong> Fourier features map a scalar to sinusoidal coordinates at several frequencies. Radial-basis features respond to its distance from centers. Inducing points are learned summary vectors that mediate attention across many rows. These encodings alter intermediate work even when the original input table is identical.</p>
+<p><strong>Wrapper vocabulary.</strong> An ensemble combines several predictions. SVD (singular value decomposition) constructs projected feature directions. NNLS (non-negative least squares) fits ensemble weights constrained to be nonnegative. Calibration adjusts a prediction distribution using held-out evidence. None of these operations is free merely because the backbone weights are frozen.</p>
+<h2 id="3-%C2%B7-Freeze-a-comparison-before-seeing-scores">3 &#183; Freeze a comparison before seeing scores<a class="anchor-link" href="#3-%C2%B7-Freeze-a-comparison-before-seeing-scores">&#182;</a></h2><p><strong>B09-MATCHED-COST</strong> uses scikit-learn's real diabetes regression data: 442 rows and ten features. We request raw features (<code>scaled=False</code>) so a dataset-wide scaling transform is not silently applied before splitting. Each seed 0, 1 and 2 creates an 80/20 split: 353 support rows and 89 query rows. All three models receive exactly those rows, in the same order, and all ten original features.</p>
+<p>On a narrow screen, the architecture becomes a readable sequence with the same shapes and information path.</p>
+<p><strong>Held fixed:</strong> dataset bytes, split identities, full support, query order, target metric, CPU, float32 model compute and four Torch threads. <strong>Varied:</strong> the checkpoint and its declared prediction system. Native preprocessing is retained and documented; this is a system comparison, not an isolated architectural ablation. No test-score tuning is allowed.</p>
+<p>TabFM base uses one estimator, no cross/SVD features, no NNLS, and no support cache. EXAONE and Nori use the selected release wrapper settings; their ensembles and transforms must be counted. EXAONE has eight estimators and a separate SVD-augmented ensemble. Its NNLS weighting requires at least 2000 internal validation rows; 353 support rows trigger the declared uniform-weight fallback. This automatic source behavior is recorded, not an author-selected speedup. Nori retains eight native pipelines and its default internal predictor seed 0 across all outer splits. Nori's release preprocessing includes unlabeled-query distribution information. That is transductive feature access, not target-label access, and prevents an equal-preprocessing causal claim.</p>
+<p>Each model/seed runs in a fresh process. We time loading after download, <code>fit</code>, first prediction, two warmups and ten warm predictions. Warm median and 90th percentile summarize ten repeated calls, not ten independent datasets. Absolute peak resident memory includes the Python runtime and native allocations; it is not tensor-only or incremental model memory. CPU measurements do not yield GPU memory estimates.</p>
+<p><strong>RMSE calculation.</strong> For n queries, subtract the true target from each prediction, square, average, then take the square root: RMSE = √(Σ(prediction − target)²/n). For errors [0,2], RMSE=√2≈1.414. Always align by query identity first. A shuffled prediction file can otherwise look valid while scoring the wrong rows.</p>
+<h2 id="4-%C2%B7-Read-the-measured-evidence">4 &#183; Read the measured evidence<a class="anchor-link" href="#4-%C2%B7-Read-the-measured-evidence">&#182;</a></h2><p>Before opening the table, predict which interval will dominate. Would your prediction change for one request versus a service handling 100 requests?</p>
+<p><strong>Course status: INCOMPLETE; 6/9 model–seed runs completed.</strong></p>
+<table>
+<thead>
+<tr>
+  <th>Model</th>
+  <th style="text-align:right">Seed</th>
+  <th style="text-align:right">RMSE ↓</th>
+  <th style="text-align:right">Load s</th>
+  <th style="text-align:right">Fit s</th>
+  <th style="text-align:right">First call s</th>
+  <th style="text-align:right">Warm median s</th>
+  <th style="text-align:right">Peak RSS MiB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>tabfm</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">INCOMPLETE_RESOURCE_GATE</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+</tr>
+<tr>
+  <td>tabfm</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">INCOMPLETE_RESOURCE_GATE</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+</tr>
+<tr>
+  <td>tabfm</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">INCOMPLETE_RESOURCE_GATE</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">—</td>
+</tr>
+<tr>
+  <td>exaone</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">57.952</td>
+  <td style="text-align:right">0.413</td>
+  <td style="text-align:right">0.011</td>
+  <td style="text-align:right">30.724</td>
+  <td style="text-align:right">39.619</td>
+  <td style="text-align:right">3599.941</td>
+</tr>
+<tr>
+  <td>exaone</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">55.997</td>
+  <td style="text-align:right">0.592</td>
+  <td style="text-align:right">0.002</td>
+  <td style="text-align:right">32.166</td>
+  <td style="text-align:right">35.299</td>
+  <td style="text-align:right">3604.105</td>
+</tr>
+<tr>
+  <td>exaone</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">55.462</td>
+  <td style="text-align:right">0.348</td>
+  <td style="text-align:right">0.001</td>
+  <td style="text-align:right">33.319</td>
+  <td style="text-align:right">36.120</td>
+  <td style="text-align:right">3605.309</td>
+</tr>
+<tr>
+  <td>nori</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">58.058</td>
+  <td style="text-align:right">1.538</td>
+  <td style="text-align:right">0.005</td>
+  <td style="text-align:right">5.903</td>
+  <td style="text-align:right">6.616</td>
+  <td style="text-align:right">710.551</td>
+</tr>
+<tr>
+  <td>nori</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">56.767</td>
+  <td style="text-align:right">1.433</td>
+  <td style="text-align:right">0.001</td>
+  <td style="text-align:right">6.316</td>
+  <td style="text-align:right">5.949</td>
+  <td style="text-align:right">711.105</td>
+</tr>
+<tr>
+  <td>nori</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">55.988</td>
+  <td style="text-align:right">1.274</td>
+  <td style="text-align:right">0.000</td>
+  <td style="text-align:right">5.970</td>
+  <td style="text-align:right">5.646</td>
+  <td style="text-align:right">710.520</td>
+</tr>
+</tbody>
+</table>
+<p>Times are seconds per <strong>89 query rows</strong>, not per 1,000. Warm = median of ten timed calls after first call and two warmups. Process peak RSS includes all stages. Downloads are excluded from the load column and charged to preparation. The first saved prediction array is scored; timed repetitions measure repeatability separately.</p>
+<p>exaone: RMSE <strong>56.470 ± 1.311</strong>, mean ± sample SD over three splits. nori: RMSE <strong>56.938 ± 1.046</strong>, mean ± sample SD over three splits.</p>
+<p><strong>Incomplete arms:</strong> tabfm/0, tabfm/1, tabfm/2. Consult the attempt log and budget ledger; missing results are not zero-cost or low-error points. TabFM stopped at a conservative resource preflight: its unmodified-loader memory allowance exceeds available RAM. No measured out-of-memory failure is claimed.</p>
+<p>Paired <strong>Nori minus EXAONE RMSE</strong> by split: +0.106, +0.770, +0.526. Negative favors Nori. These are paired dataset splits, not independent datasets. The missing TabFM arm prevents a complete three-model frontier. Support-mean RMSE by split: 71.657, 73.260, 74.795. This baseline uses only support targets.</p>
+<figure class="b09-figure"><img src="../labs/figures/b09/results.png" alt="Fresh CPU predictions and timings. Numbers beside points identify seeds. Missing arms have no points."><figcaption>Fresh CPU predictions and timings. Numbers beside points identify seeds. Missing arms have no points.</figcaption></figure>
+
+<p>A <strong>Pareto frontier</strong> contains operating points that no other point improves on every reported axis while improving strictly on at least one. For costs (latency, memory, error), smaller is better on every axis. Equal points do not dominate one another. A model can stay on the frontier by trading memory for accuracy.</p>
+<p><strong>Worked example.</strong> A=(1 second, 2 GiB, error 4), B=(2 seconds, 3 GiB, error 5), C=(2 seconds, 1 GiB, error 4). A dominates B; neither A nor C dominates the other. Calculate this in the notebook. Do not collapse the three axes into a winner without stating the user's constraints.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Three overlapping splits of one dataset do not establish a model-family ranking or generalization across datasets. Across-seed sample standard deviation is descriptive, not a confidence interval. Missing arms must remain visible; a partial matrix cannot support a complete three-model frontier.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Full-reproduction-has-an-exact-target">5 &#183; Full reproduction has an exact target<a class="anchor-link" href="#5-%C2%B7-Full-reproduction-has-an-exact-target">&#182;</a></h2><p>The published target is <strong>EXAONE 2608.25774v1 Figure 3(b): regression accuracy–latency frontier</strong>. Its baselines use released TabArena timings and a broader comparison pool. Elo is a relative rating derived from comparisons against that pool, not an absolute regression error.</p>
+<p><strong>INCOMPLETE_SOURCE_PROTOCOL.</strong> Unresolved: publication-era checkpoint/code mapping for every plotted variant; complete original outer-fold query/support identities and preprocessing; original measured hardware, precision, batching, warmup and caching per method; original TabArena baseline timing records and complete Elo comparison pool; regression-only timing aggregation matching Figure 3 rather than overall leaderboard cost.</p>
+<p>The course's Nori-6M is also distinct from the Nori-30M comparator in the current EXAONE release table. CPU timing is distinct from published accelerator timing. Equal-looking decimal scores cannot repair those protocol differences. The operator below reports the missing contracts and refuses to substitute diabetes for the historical suite:</p>
+<div class="highlight"><pre><span></span>.venv/bin/python<span class="w"> </span>labs/_reproduce_b09.py
+.venv/bin/python<span class="w"> </span>labs/_reproduce_b09.py<span class="w"> </span>--execute
+</pre></div>
+<p>The second command intentionally stops while historical inputs are unresolved. This is an executable audit gate, <strong>not a completed full-figure reproducer</strong>. Full pretraining, TabFM+/Auto execution, the full benchmark, and deployment remain NOT_RUN. See the <a href="../labs/b09-reproduction.md">complete reproduction ledger</a>.</p>
+<p><strong>Access inventory.</strong> <a href="https://www.neuralk.ai/white-paper/seldon-foundation-made-tabular">Seldon</a> is a provider report; <a href="https://fundamental.tech/nexus">NEXUS</a> is an official product page. They belong in B24's access and exclusion inventory. Neither is an independently measured arm here. Product availability, licenses, inference costs and historical benchmark identity are separate questions. No paid proprietary access is used.</p>
+<h2 id="6-%C2%B7-Implement,-check,-defend">6 &#183; Implement, check, defend<a class="anchor-link" href="#6-%C2%B7-Implement,-check,-defend">&#182;</a></h2><p>Open the <a href="../labs/b09-cost-frontier.ipynb">student notebook</a>. It includes the portable architecture, source-visible inference code, three live tasks, immediate checks, and author-reference evidence. Implement identity-safe RMSE, Pareto dominance, and support-only attention. The checks deliberately permute keys, inject a duplicate, and change a forbidden query value.</p>
+<p><strong>EXIT:</strong> report which arms completed; identify one cost omitted by a warm-only comparison; defend whether the evidence supports a frontier; and name the exact missing condition for reproducing Figure 3. Passing author tests does not complete this defense.</p>
+<div id="b09-teachback"></div>
+
+<p>Return after 1, 7 and 30 days to reconstruct the cost equation and the visibility trace without notes. Ask your tutor follow-up questions whenever a timing boundary, tensor path or evidence label is unclear. Learner status: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/cost-frontier.js"></script></body></html>

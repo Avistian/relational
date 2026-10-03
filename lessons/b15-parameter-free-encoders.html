@@ -1,0 +1,153 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B15 · Parameter-free encoders</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/label-visibility.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B15-%C2%B7-Parameter-free-encoders:-limits-and-assumptions">B15 &#183; Parameter-free encoders: limits and assumptions<a class="anchor-link" href="#B15-%C2%B7-Parameter-free-encoders:-limits-and-assumptions">&#182;</a></h1><p class="subtitle">Research bridge · elective · one skill: identify what an encoder can know.</p>
+
+<p><a href="b14-flattening-challenge.html">B14</a> showed why strong relational features deserve a fair baseline. It left a question open: <strong>if a learned encoder sees neighboring labels, must it gain an advantage?</strong> Today you will construct two indistinguishable worlds and identify the observation that separates them. That is a useful test for your Year 6 proposal: specify what information the learned component adds before paying to train it.</p>
+<p><strong>Route:</strong> read and trace for 20 minutes; implement the lab for 25–40 minutes; return after 1, 7 and 30 days. Prerequisites are a table row, a binary label and the idea of a held-out query; each is restated below. <a href="../labs/b15-parameter-free-encoders.ipynb">Student notebook</a> · <a href="../labs/html/b15-parameter-free-encoders.html">Executed solution</a> · <a href="../reference/b15-parameter-free-encoders.html">Reference</a></p>
+<h2 id="Recall-before-reading">Recall before reading<a class="anchor-link" href="#Recall-before-reading">&#182;</a></h2><div id="b15-warmup"></div>
+<noscript><p>Recall B14: which information must remain fixed when comparing two predictors? Why can an old event have a label that is not yet available?</p></noscript>
+
+<h2 id="1-%C2%B7-Draw-the-information-boundary">1 &#183; Draw the information boundary<a class="anchor-link" href="#1-%C2%B7-Draw-the-information-boundary">&#182;</a></h2><p>A <strong>query</strong> is the row whose label we want to predict. A <strong>label</strong> is the outcome, such as whether a study succeeds. <strong>Support</strong> consists of other examples with labels we are allowed to observe. A row may be related to the query yet still have an unavailable label.</p>
+<p>An <strong>encoder</strong> turns a database neighborhood into a feature vector. A <strong>parameter-free encoder</strong> uses fixed operations, such as counts, means or column-preserving summaries, without learned encoder weights. The downstream <strong>prediction head</strong> may still be a very large pretrained model. Parameter-free encoding does not mean that the whole system has no learned parameters.</p>
+<p>An <strong>H-hop neighborhood</strong> contains rows reachable from the query through at most H key relationships. It is a boundary on access, not a guarantee that every row inside it is usable. A known neighboring label can enter as an encoder feature. Separately, a head can read labeled support examples through <strong>in-context learning</strong>: predictions change with examples supplied at inference while model weights stay fixed. <a href="https://arxiv.org/html/2607.05476v2#S2">Paper §§2–3</a></p>
+<p><strong>Worked example.</strong> Predict query Q at day 10. A remote support row happened on day 2 and its outcome was available on day 4. A second row happened on day 3 but its outcome only becomes available on day 11. The first label is usable if the declared context admits that row. The second is unavailable even though its event is older than the query. Q's own label is always hidden.</p>
+<section class="lv-board" data-label-visibility><h3>Trace which labels can cross the boundary</h3><div class="lv-path"><div class="lv-node"><strong>Remote support</strong>event 2 → available 4<small>Input 0, task label theta</small></div><div class="lv-node"><strong>Late support</strong>event 3 → available 11<small>Old event; unfinished label</small></div><div class="lv-node lv-hidden"><strong>Query Q</strong>anchor day 10<small>Own label always hidden</small></div></div><label>Declared support boundary <select name="scope"><option value="expanded">Include external support</option><option value="local">Local neighborhood only</option></select></label><label>Information cutoff <select name="cutoff"><option value="3">Day 3</option><option value="10" selected>Day 10: baseline</option><option value="11">Day 11: retrospective access</option></select></label><button type="button">Reset visibility</button><p class="lv-baseline">Baseline day 10: remote visible, late hidden, query hidden. Day 11 is retrospective access and is invalid for a day-10 prediction.</p><output aria-live="polite">Day 10: remote label visible; late label and query label hidden.</output><noscript><p>At day 3 neither support label is available. At day 11 both are available, but this changes the prediction-time contract.</p></noscript></section>
+
+<p><strong>Predict:</strong> does widening the context help if the new label arrives tomorrow? Change one control, state which row becomes visible, then inspect the result. The fixed baseline is remote support permitted and cutoff day 10.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The lab explicitly models event time and available-at time. This is our teaching contract. It does not establish the publication time of every historical field in the paper's benchmarks.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Two-worlds,-one-local-observation">2 &#183; Two worlds, one local observation<a class="anchor-link" href="#2-%C2%B7-Two-worlds,-one-local-observation">&#182;</a></h2><p>Suppose the query's neighborhood contains a label <strong>b = 1</strong>. Two task rules remain possible:</p>
+<table>
+<thead>
+<tr>
+  <th>World</th>
+  <th>Query rule</th>
+  <th style="text-align:right">Query label when b = 1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Copy</td>
+  <td>Use b</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>Flip</td>
+  <td>Use the opposite of b</td>
+  <td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<p>The local observation is identical. A fixed encoder receives the same input in both worlds, so its representation cannot tell them apart. A fixed prediction head receiving only that representation has the same problem, regardless of how many parameters it has.</p>
+<p>The local neighbor label b is <strong>not</strong> a complete training example of this query rule: we have not observed that neighbor's own generating context. Treating b as a pair <code>(input=b, target=b)</code> would quietly assume the answer is “Copy.”</p>
+<p>We denote the world by <strong>theta</strong>:0 for Copy and1 for Flip. The operation <strong>XOR</strong> returns 1 when its two binary inputs differ. Thus the query rule is <code>y = b XOR theta</code>. If both worlds are equally likely, the local head assigns probability 0.5 to label 1.</p>
+<div id="b15-predict"></div>
+
+<p>Now permit a separate support example with input 0. Its observed label is theta: 0 in Copy,1in Flip. The head can identify the rule and predict the query. The support label teaches the task relationship; it does not reveal the query label itself.</p>
+<section class="lv-board" data-label-rules><h3>Can you identify the world from the visible input?</h3><div class="lv-path"><div class="lv-node"><strong>Local observation</strong>Neighbor label b = 1<small>Identical in both worlds</small></div><div class="lv-node"><strong>Head context</strong><span data-support>External support hidden</span><small>Encoding of b stays fixed</small></div><div class="lv-node"><strong>Compatible rules</strong>Copy: 1 → 1<br>Flip: 1 → 0<small>Discard only with legal evidence</small></div></div><label>World generating the truth <select name="world"><option value="0">Copy: theta = 0</option><option value="1">Flip: theta = 1</option></select></label><label>Head information <select name="access"><option value="local">Local observation only</option><option value="expanded">Add permitted support</option></select></label><button type="button">Reset worlds</button><p class="lv-baseline">Baseline: both worlds equally likely, P(query label = 1) = 0.5. The world control is shown to you, not passed to the local predictor.</p><output aria-live="polite">Copy world, local-only input: probability 0.5.</output><noscript><p>External input 0 has label 0 in Copy and 1 in Flip; it identifies the rule. Local input alone does not.</p></noscript></section>
+
+<p><strong>Fixed in this comparison:</strong> same worlds, query values and rule family. <strong>Changed:</strong> whether the head can observe the distinguishing external support. <strong>Measured:</strong> query probabilities and errors. This isolates an information-access change, not a benefit from learned encoder weights.</p>
+<h3 id="What-Proposition-3.1-actually-says">What Proposition 3.1 actually says<a class="anchor-link" href="#What-Proposition-3.1-actually-says">&#182;</a></h3><blockquote>
+<p><strong>In plain terms.</strong> Knowing some local labels need not tell you how a new database's task works. Information outside the local view may determine the answer.</p>
+</blockquote>
+<p>Proposition 3.1 constructs distributions over the rest of the database for a given nonempty label-bearing neighborhood. The full database determines the query label, yet any fixed encoder and head restricted to that neighborhood face a chance-level lower bound under the paper's divergence criterion. Its second part establishes the existence of a task-specific predictor using a parameter-free representation and a finite ReLU network. A <strong>ReLU</strong> replaces a negative input with zero. Existence does not guarantee efficient learning from a small sample. <a href="https://arxiv.org/html/2607.05476v2#S3">Proposition 3.1 and Appendix D.1</a></p>
+<p>The crucial quantifier is <strong>“there exist distributions.”</strong> It rules out a universal guarantee. It does not say every real task is adversarial, every pretrained model performs at chance, or learned encoders are useless. Our four-world lab illustrates indistinguishability; the paper proves its statement with a richer parity-based graph construction. An in-context head given broader support has a different input boundary from the restricted head in the lower bound.</p>
+<h2 id="3-%C2%B7-Labels-can-agree-while-feature-relevance-stays-ambiguous">3 &#183; Labels can agree while feature relevance stays ambiguous<a class="anchor-link" href="#3-%C2%B7-Labels-can-agree-while-feature-relevance-stays-ambiguous">&#182;</a></h2><p>A label can also be used to decide <strong>which feature column matters</strong>. That is different from using the label itself as a predictive feature.</p>
+<p><strong>Worked example.</strong> Two columns A and B agree on all local labeled examples:</p>
+<table>
+<thead>
+<tr>
+  <th>Row</th>
+  <th style="text-align:right">A</th>
+  <th style="text-align:right">B</th>
+  <th style="text-align:right">Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Local support 1</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>Local support 2</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>Query</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">hidden</td>
+</tr>
+</tbody>
+</table>
+<p>Both rules—“label equals A” and “label equals B”—fit the observed support perfectly. They disagree on the query. More copies of the same local rows cannot decide between them. A permitted external row <code>(A=0,B=1)</code> with label 0 identifies A; with label 1it identifies B.</p>
+<section class="lv-board" data-label-columns><h3>Which observation distinguishes A from B?</h3><table><thead><tr><th>Observation</th><th>A</th><th>B</th><th>Label</th></tr></thead><tbody><tr><td>Local 1</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Local 2</td><td>1</td><td>1</td><td>1</td></tr><tr><td>Query</td><td>0</td><td>1</td><td>Hidden</td></tr></tbody></table><label>True relevant column <select name="column"><option value="0">Column A</option><option value="1">Column B</option></select></label><label>Visible labeled examples <select name="examples"><option value="local">Two local examples</option><option value="expanded">Add external (0,1)</option></select></label><button type="button">Reset columns</button><p class="lv-baseline">Baseline: both columns remain compatible; 0 bits about S. The true column is used only to generate labels and score predictions.</p><output aria-live="polite">Two local examples: query probability 0.5; information about S = 0 bits.</output><noscript><p>External (0,1) with label 0 identifies A; with label 1 identifies B. Either observation supplies one bit.</p></noscript></section>
+
+<p>Let <strong>S</strong> be the relevant column, either A or B. <strong>Mutual information</strong>, measured in bits, quantifies how much observing one variable reduces uncertainty about another. Under our equal-weight worlds, the local observations provide <strong>0 bits</strong> about S. The distinguishing external label provides <strong>1 bit</strong>, enough to resolve two equally likely alternatives. This says nothing about how many bits a real database needs.</p>
+<p>Proposition 4.1 gives an analogous existence result: labels can be deterministic functions of a relevant feature set while the visible neighborhood labels provide no additional information about that set. The paper's construction is broader than the two-column table here. Its statement conditions on an ego-network with nonempty feature columns and observed labels; it does not prohibit informative local labels on other distributions. <a href="https://arxiv.org/html/2607.05476v2#S4">Proposition 4.1 and Appendix D.2</a></p>
+<p><strong>Important distinction:</strong> failing to identify S does not always prevent predicting y. When a query has A=B, either rule gives the same answer. Across all eight <code>(S,A,B)</code> worlds, the local predictor achieves 75% accuracy even though information about S remains zero.</p>
+<h2 id="4-%C2%B7-Run-the-complete-finite-experiment">4 &#183; Run the complete finite experiment<a class="anchor-link" href="#4-%C2%B7-Run-the-complete-finite-experiment">&#182;</a></h2><p>The lab enumerates every declared world; there is no stochastic training run. A probability of at least 0.5 is classified as1. The <strong>Brier score</strong> is the average squared difference between predicted probability and binary truth; smaller is better.</p>
+<table>
+<thead>
+<tr>
+  <th>Fixture / access</th>
+  <th style="text-align:right">Worlds</th>
+  <th style="text-align:right">Accuracy</th>
+  <th style="text-align:right">Brier score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Rule / local</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">0.50</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+<tr>
+  <td>Rule / expanded</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">1.00</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>Rule / leaky</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">1.00</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>Column / local</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.75</td>
+  <td style="text-align:right">0.125</td>
+</tr>
+<tr>
+  <td>Column / expanded</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">1.00</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+</tbody>
+</table>
+<p>The leaky control looks perfect because it reads the answer. We therefore overwrite both the hidden query label and the future label in all four possible ways per rule world. Legal predictions stay unchanged across all 16 interventions; the leaky output follows the overwritten query label. Correct numbers alone are insufficient: audit the inputs that produced them.</p>
+<blockquote>
+<p><strong>Evidence boundary.</strong> These are exact results on a tiny constructed distribution, with no sampling uncertainty to estimate. They are neither a learned-versus-fixed model ranking nor reproduced real-data AUROC. Broad conclusions require representative tasks and a matched information budget.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Paper-reproduction:-inspect-the-executed-system">5 &#183; Paper reproduction: inspect the executed system<a class="anchor-link" href="#5-%C2%B7-Paper-reproduction:-inspect-the-executed-system">&#182;</a></h2><p>The primary reading is <a href="https://arxiv.org/html/2607.05476v2">Parameter-Free Encoders Remain Viable for RDB Foundation Models, v2</a>. Read §§3–4 for the argument, then Appendix A and Table 5 to separate it from the empirical pipeline.</p>
+<p>Our selected target is <strong>Table 5, RDBLearn v1.1, rel-trial/study-outcome: AUROC 0.7271</strong>. <strong>AUROC</strong> measures how often a randomly chosen positive example receives a higher score than a negative, with half credit for ties. It is not the finite lab's accuracy.</p>
+<p>The paper's empirical RDBLearn pipeline creates relational features and passes them to tabular foundation models. Appendix A says its encoder does not yet receive neighborhood labels. This means its strong benchmark performance does not directly measure the benefit of label-aware encoding discussed in the theory. <a href="https://arxiv.org/html/2607.05476v2#A1">Appendix A</a></p>
+<h3 id="A-concrete-source-discrepancy">A concrete source discrepancy<a class="anchor-link" href="#A-concrete-source-discrepancy">&#182;</a></h3><p>The released README claims target-history augmentation defaults ON. At pinned commit <code>78561f0</code>, the actual configuration sets <code>enable_target_augmentation=False</code>. The estimator stores and inserts target history only behind this flag. The <strong>code default</strong> agrees with the paper; the README does not. However, a default is not evidence of the exact configuration used for Table 5. <a href="https://github.com/HKUSHXLab/rdblearn/blob/78561f0a9c1dd231d44659e761d5d85e18c82f6e/rdblearn/config.py">Pinned config</a></p>
+<p><strong>Selected paper status: <code>INCOMPLETE_SOURCE_PROTOCOL_GATE</code>.</strong> No fresh paper inference ran; cloud spend is <strong>$0</strong>. Exact candidate/seed/checkpoint/refit mapping remains unavailable in the pinned release. A runnable generic example is not an authenticated experiment receipt.</p>
+<p>The 25-file authenticated source packet includes the paper and all 24 tracked release files. The released classification example uses F1 defaults. We will not replace its dataset name with “trial,” guess the remaining settings, and call the result Table 5 reproduction. The <a href="../labs/b15-reproduction.md">contract</a> lists each missing detail; the <a href="../labs/_reproduce_b15.py">audit operator</a> checks hashes and refuses a paper run while they are unresolved. Full six-benchmark results and backbone pretraining remain NOT_RUN. B14's successful selected TabPFN-Rel experiment remains a different experiment.</p>
+<h2 id="6-%C2%B7-Your-lab-and-written-defense">6 &#183; Your lab and written defense<a class="anchor-link" href="#6-%C2%B7-Your-lab-and-written-defense">&#182;</a></h2><p>Open the <a href="../labs/b15-parameter-free-encoders.ipynb">student lab</a>. Implement three mechanisms with immediate checks: filter legal labels using full query identities and clocks; retain compatible task rules; retain compatible feature columns. The solution contains visible implementation and reruns from an empty directory.</p>
+<p><strong>Before revealing an answer:</strong> explain why a fixed encoder cannot distinguish identical local observations. Then identify a legal support observation that changes that conclusion. Finally describe an input intervention that distinguishes the legal predictor from the perfect leaky control.</p>
+<div id="b15-teachback"></div>
+<noscript><p>Write four sentences: state the theorem's existence quantifier; explain the copy/flip ambiguity; describe legal external support; explain why query-label leakage is invalid.</p></noscript>
+
+<p><strong>Exit ticket:</strong> submit your three passing implementations, the two finite result tables, and a 150-word defense distinguishing local encoder labels, head support labels and hidden query labels. Passing author checks does not complete your defense: status is <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><strong>Return in 1 day:</strong> recreate the copy/flip table from memory. <strong>In 7 days:</strong> build a different ambiguous feature pair. <strong>In 30 days:</strong> audit the information boundary in your proposed learned model. Ask the agent follow-up questions whenever a definition, proof step or implementation is unclear.</p>
+<p><strong>Next:</strong> use <a href="../plan/year-5-6-bridge.md#b16">B16's interpretability questions</a> or return to the <a href="../reference/curriculum.html#research-bridge">core bridge route</a>. The research consequence is precise: justify the learned encoder using matched inputs, and test whether a simpler representation plus a capable head already has the information needed.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/label-visibility.js"></script></body></html>

@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B10 · Cell attention field guide</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/relational-cell-attention.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B10-%C2%B7-Cell-attention-field-guide">B10 &#183; Cell attention field guide<a class="anchor-link" href="#B10-%C2%B7-Cell-attention-field-guide">&#182;</a></h1><p><strong>Question:</strong> Which information can reach a masked task cell?</p>
+<table>
+<thead>
+<tr>
+  <th>Sublayer</th>
+  <th>Permission from reader i to source j</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Column</td>
+  <td>table_i = table_j AND column_i = column_j</td>
+</tr>
+<tr>
+  <td>Feature</td>
+  <td>row_i = row_j OR row_j is a referenced parent of row_i</td>
+</tr>
+<tr>
+  <td>Neighbor</td>
+  <td>row_i is a referenced parent of row_j</td>
+</tr>
+<tr>
+  <td>Full</td>
+  <td>both cells are in the admitted context</td>
+</tr>
+</tbody>
+</table>
+<p>Apply non-padding to both ends. An empty allowed set has zero update. IDs express relations, not ordinal magnitudes. Cell-order permutation must move values and metadata together.</p>
+<p><strong>Forward path:</strong> eligible row context → typed value or mask vector + name vector → [column, feature, neighbor, full attention, SwiGLU] × blocks → final RMSNorm → datatype decoder. Each sublayer uses a residual addition. BCE supervises booleans; Huber supervises numbers/datetimes. Average over masked cells. Original release does not support masked-text loss.</p>
+<p><strong>Three boundaries:</strong> context selection decides which facts enter; attention decides which admitted cells mix; the loss reads target truth that inference may not encode. Full attention cannot repair unsafe context selection.</p>
+<p><strong>Three clocks:</strong> event timestamp, recorded availability, label-window completion. A scheduled event can be future-dated yet known. Unknown arrival prevents an availability proof. The course policy requires all three conditions; it is not the released RT sampler.</p>
+<p><strong>Three zero-shot questions:</strong> Was the task trained on? Was the database trained on? Can labeled task rows enter the context? Also declare validation selection and historical test-label policy.</p>
+<p><strong>Evidence:</strong> source-shaped CPU fixture checks COMPLETE; full saved-context replay COMPLETE; RT-v1 Table1 driver-dnf inference NOT_RUN because INCOMPLETE_TEMPORAL_GATE. Paper82.0% AUROC is cited, not measured. Pretraining, whole-paper reproduction, CUDA/bfloat16 parity and historical identity are not established by these checks. RT-J is a distinct release.</p>
+<p><a href="../lessons/b10-relational-transformer.html">Lesson</a> · <a href="../labs/b10-relational-transformer.ipynb">Student lab</a> · <a href="../labs/b10-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2510.06377v1">Primary paper</a></p>
+</article></body></html>

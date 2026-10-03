@@ -1,0 +1,228 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B12 · Adaptation mechanisms</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/adaptation-paths.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B12-%C2%B7-Where-does-a-new-task-enter-the-model?">B12 &#183; Where does a new task enter the model?<a class="anchor-link" href="#B12-%C2%B7-Where-does-a-new-task-enter-the-model?">&#182;</a></h1><p class="eyebrow">Research bridge · Griffin / OpenRFM / KumoRFM</p>
+
+<p><a href="b11-supervised-relational-baselines.html">Previous: B11</a> · <a href="../labs/b12-adaptation-mechanisms.ipynb">Student lab</a> · <a href="../labs/html/b12-adaptation-mechanisms.html">Executed solution</a> · <a href="../reference/b12-adaptation-mechanisms.html">Reference card</a></p>
+<p>B11 compared models trained for a particular task. It left a practical question open: must a new prediction task require another training run? Here you will follow <strong>how labeled examples change a prediction</strong>. Your tangible win is a defensible adaptation matrix and a test that distinguishes a missing information path from an unhelpful one.</p>
+<p><strong>Route through the lesson.</strong> Recall the terms, trace three architectures, calculate one prediction, then run the corruption experiment. The source appendix is for auditing the reproduction boundary.</p>
+<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without reopening B10/B11: what is the complete identity of a temporal query? Why can correct attention still consume forbidden information? What does validation select in a supervised model?</p>
+<div id="b12-warmup"></div>
+
+<p>A <strong>query</strong> is the example to predict. Here its identity is <code>(entity, cutoff)</code>, because the same entity at a later time has different available evidence. A <strong>support example</strong> is an example with an observed label supplied as context. A <strong>label</strong> is the answer to a prediction task. A <strong>parameter</strong> is a stored numerical weight learned during training. An <strong>activation</strong> is an intermediate value recomputed for the current input.</p>
+<p><strong>Pretraining</strong> learns reusable parameters across source data or tasks. <strong>Fine-tuning</strong> updates parameters for a downstream task. <strong>In-context learning</strong>, abbreviated ICL, changes predictions by supplying examples at inference; the stored parameters can remain fixed. A <strong>checkpoint</strong> saves those parameters. Frozen weights do not imply fixed predictions.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Learning a new rule by changing your notes resembles fine-tuning. Working through new examples using the same notes resembles contextual adaptation. The analogy concerns where the information is stored, not how human learning works.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Model-architecture:-three-places-for-task-information">2 &#183; Model architecture: three places for task information<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-three-places-for-task-information">&#182;</a></h2><p>Read each path from database input to prediction. <strong>D</strong> denotes hidden vector width; <strong>S</strong> the number of support examples; <strong>L</strong> the sampled cell count. Different implementations need not share these values.</p>
+<h3 id="Griffin-%C2%B7-update-the-task-model">Griffin &#183; update the task model<a class="anchor-link" href="#Griffin-%C2%B7-update-the-task-model">&#182;</a></h3><p>Cells use shared encoders and metadata. Task-conditioned cell attention rereads them during relational message passing; neighbor aggregation and a decoder produce the target. The selected release fine-tunes pretrained weights on downstream labels. The readable release model, trainer and sampling code are included in the lab archive. <a href="https://proceedings.mlr.press/v267/wang25da.html">Primary reading: Griffin, model and transfer experiments</a>.</p>
+<figure class="adapt-figure adapt-wide"><img src="../labs/figures/b12/griffin.png" alt="Griffin selected release: labels train parameters; source model and trainer preserved."><figcaption>Griffin selected release: labels train parameters; source model and trainer preserved.</figcaption></figure><div class="adapt-mobile"><strong>Architecture path</strong><ol><li>Cells + metadata → shared cell encoders.</li><li>Task-conditioned cell reads → relational aggregation.</li><li>Decoder → task loss → optimizer updates weights.</li><li>Validation selects checkpoint; inference uses updated weights.</li></ol><p>Griffin selected release: labels train parameters; source model and trainer preserved.</p></div>
+
+<p><strong>Follow one label.</strong> A training label contributes to the loss; the optimizer changes weights. A later query uses those changed weights. This is distinct from making that label an input value beside the query. The release's few-shot neighbor sampler is not, by itself, proof of label-based ICL.</p>
+<h3 id="OpenRFM-%C2%B7-add-an-example-to-example-path">OpenRFM &#183; add an example-to-example path<a class="anchor-link" href="#OpenRFM-%C2%B7-add-an-example-to-example-path">&#182;</a></h3><p>The paper diagnoses sparse labeled context in a relational transformer. Its dual-stage design adds a tabular ICL stage to relational representations. Its pretraining study varies synthetic diversity, real data and a prototype objective. The latter encourages useful class representations. <a href="https://arxiv.org/html/2606.04320v1">Primary reading: OpenRFM §§3–5</a>.</p>
+<figure class="adapt-figure adapt-wide"><img src="../labs/figures/b12/openrfm.png" alt="OpenRFM conceptual path: relational processing plus cross-example ICL; no B12 checkpoint execution."><figcaption>OpenRFM conceptual path: relational processing plus cross-example ICL; no B12 checkpoint execution.</figcaption></figure><div class="adapt-mobile"><strong>Architecture path</strong><ol><li>Eligible cells sampled for each example.</li><li>Relational blocks → example representations.</li><li>Tabular ICL stage reads support representations and labels.</li><li>Distant support can enter outside the query walk; query readout produces prediction.</li></ol><p>OpenRFM conceptual path: relational processing plus cross-example ICL; no B12 checkpoint execution.</p></div>
+
+<p><strong>Follow one label.</strong> A distant support example may be absent from the query's sampled neighborhood yet available to the second-stage ICL computation. Relation-level interaction and cross-example interaction are different paths. The pictured <strong>detached variant</strong> pools relational-transformer representations and feeds them to a tabular ICL model. An <strong>interleaved variant</strong> inserts ICL layers between relational blocks; learned linear adapters match their vector widths. These are distinct integration choices. A mean of two scalar predictions is only our diagnostic, not either architecture.</p>
+<h3 id="KumoRFM-2-%C2%B7-task-information-enters-early">KumoRFM-2 &#183; task information enters early<a class="anchor-link" href="#KumoRFM-2-%C2%B7-task-information-enters-early">&#182;</a></h3><p>Known context targets enter table representation construction. Alternating row/column attention is followed by foreign-key and cross-sample interaction. The report describes synthetic and real pretraining; its main evaluations use frozen inference, while a separate setting fine-tunes weights. <a href="https://arxiv.org/html/2604.12596v1#S3">Primary reading: KumoRFM-2 §3</a>.</p>
+<figure class="adapt-figure adapt-wide"><img src="../labs/figures/b12/kumo.png" alt="KumoRFM-2 report architecture: context labels enter table encoding; optional fine-tuning separate."><figcaption>KumoRFM-2 report architecture: context labels enter table encoding; optional fine-tuning separate.</figcaption></figure><div class="adapt-mobile"><strong>Architecture path</strong><ol><li>Known context targets enter table inputs early.</li><li>Column/row attention builds task-conditioned row vectors.</li><li>Foreign-key and cross-sample attention mix evidence.</li><li>Prediction head reads the query; optional fine-tuning separately updates weights.</li></ol><p>KumoRFM-2 report architecture: context labels enter table encoding; optional fine-tuning separate.</p></div>
+
+<p><strong>Follow one label.</strong> A context target can affect intermediate table representations before the final prediction. This differs from always attaching labels only to a final readout. An accessible service is a comparator, not a theoretical upper bound. The report's architecture description does not supply authenticated historical weights.</p>
+<h3 id="Fill-the-adaptation-matrix">Fill the adaptation matrix<a class="anchor-link" href="#Fill-the-adaptation-matrix">&#182;</a></h3><table>
+<thead>
+<tr>
+  <th>Selected mode</th>
+  <th>Pretraining changes weights?</th>
+  <th>New task changes weights?</th>
+  <th>Inference reads labeled context?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Griffin selected SFT release</td>
+  <td>Yes</td>
+  <td>Yes</td>
+  <td>Do not infer label ICL from sampled neighbors</td>
+</tr>
+<tr>
+  <td>OpenRFM frozen ICL</td>
+  <td>Yes</td>
+  <td>No</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>KumoRFM-2 main ICL evaluation</td>
+  <td>Yes</td>
+  <td>No</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>KumoRFM-2 optional fine-tuning</td>
+  <td>Yes</td>
+  <td>Yes</td>
+  <td>Context can still be used</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SFT</strong> means supervised fine-tuning: gradient updates using labeled examples. The rows classify selected modes, not permanent properties of a model family. The sources above support the architecture/mode descriptions; the table is a teaching synthesis.</p>
+<h2 id="3-%C2%B7-Worked-example:-a-label-needs-a-path">3 &#183; Worked example: a label needs a path<a class="anchor-link" href="#3-%C2%B7-Worked-example:-a-label-needs-a-path">&#182;</a></h2><p><strong>Support reachability</strong> means whether a query's sampled relational context contains an eligible labeled example. A foreign key identifies a related row. A multi-table path can bring that row into context, but the sampler may omit it.</p>
+<p><strong>Worked example.</strong> Two support labels are 0 and 1. Give them similarity logits 0 and log(3). A <strong>logit</strong> here is an unnormalized attention score. Exponentiating gives weights 1 and 3; dividing by their sum gives 1/4 and 3/4. Their weighted label average is <strong>0.75</strong>.</p>
+<p>If the relational walk reaches neither support, our course reader returns a declared fallback of <strong>0.5</strong>. A second channel that can access both returns 0.75. Our diagnostic averages the channels: <code>(0.5 + 0.75) / 2 = 0.625</code>. Shuffle the labels to 1 and 0: the batch reader becomes 0.25 and the combined value becomes <strong>0.375</strong>. No parameter changed.</p>
+<figure class="adapt-figure"><img src="../labs/figures/b12/trace.png" alt="Two-label worked example; course kernel, not a published model."><figcaption>Two-label worked example; course kernel, not a published model.</figcaption></figure>
+
+<p>Predict first: when there is no relational label path, can shuffling support labels change the relational-only output? Can it change the dual output?</p>
+<div id="b12-predict"></div>
+<div class="adapt-board" data-adaptation-paths><h3>Change the route, then change the labels</h3><label>Relational reachability <select name="reach"><option value="low">Low: no label path</option><option value="high">High: both labels</option></select></label><label>Support labels <select name="mode"><option value="intact">Intact: 0, 1</option><option value="shuffled">Shuffled: 1, 0</option><option value="hidden">Hidden: neither visible</option></select></label><button type="button">Reset example</button><output aria-live="polite">Relational reader = 0.500. Batch reader = 0.750. Dual average = 0.625. Weights stay fixed.</output><noscript><p>Controls require JavaScript; the worked arithmetic remains visible.</p></noscript></div>
+
+<h3 id="Turn-arithmetic-into-an-operator">Turn arithmetic into an operator<a class="anchor-link" href="#Turn-arithmetic-into-an-operator">&#182;</a></h3><p>Let <code>q</code> be a query vector of width D, <code>k_i</code> a support vector, and <code>y_i</code> its label. Compute similarity <code>q · k_i / sqrt(D)</code>, where the dot is a sum of coordinate products. Apply a boolean permission mask before normalizing exponentials. The resulting weights sum to one over admitted supports. Multiply each admitted label by its weight and sum.</p>
+<p>An empty permission set needs an explicit policy; ordinary softmax over only negative infinity is undefined. We choose 0.5 for this binary-label fixture. This is a stated course rule, not a recovered paper default. A missing forbidden label must be removed before multiplication: in floating-point arithmetic, <code>0 × NaN</code> remains <code>NaN</code>.</p>
+<p><strong>Temporal admission.</strong> A label is available only if its event time and arrival time are no later than the query cutoff, and its outcome window has ended. An event at day 8 with a two-day target window becomes eligible at day 10 if it has arrived. A day-8 label arriving at day 12 is unavailable at day 10. This course fixture uses inclusive boundaries and known timestamps; historical availability in real data needs its own evidence.</p>
+<h2 id="4-%C2%B7-Experiment:-hold-the-examples-fixed,-change-their-access">4 &#183; Experiment: hold the examples fixed, change their access<a class="anchor-link" href="#4-%C2%B7-Experiment:-hold-the-examples-fixed,-change-their-access">&#182;</a></h2><figure class="adapt-figure"><img src="../labs/figures/b12/experiment.png" alt="Eight-support, twelve-query diagnostic; used label counts differ by channel."><figcaption>Eight-support, twelve-query diagnostic; used label counts differ by channel.</figcaption></figure>
+
+<p><strong>Held fixed within each seed:</strong> eight support rows, twelve queries, four numeric features per row, one parent feature vector per row, the complete query identities, fixed projection weights and label values before intervention. No optimizer runs. A row embedding is <code>(row features + 0.25 × parent features) × W</code>, where W is a fixed 4-by-4 matrix. The parent aggregation makes the feature path explicit.</p>
+<p><strong>Varied:</strong> three fixture seeds (0/1/2), high versus low relational reachability, intact/shuffled/hidden support labels, and relational-only versus dual channels. High reachability admits four supports per query; low admits zero. Both arms have the same eight eligible support examples available to their input protocol. The dual channel reads all eight. Thus the intervention deliberately changes effective access; it is not an equal-used-label comparison.</p>
+<p>There are <code>3 × 2 × 3 × 2 = 36</code> conditions and <code>36 × 12 = 432</code> predictions. Shuffling permutes labels over fixed support identities, preserving their multiset. Hiding removes every label from both channels. Query labels never enter the predictor. The shuffle is one seeded draw per fixture, not a statistical test over corruption draws.</p>
+<p><strong>Measured:</strong> mean absolute prediction change from the intact condition and Brier score, the mean of <code>(prediction − binary target)²</code>. Lower Brier is better on this fixture. The target comes from the sign of the first preprojection feature coordinate. It defines an arithmetic diagnostic, not real-world accuracy or calibration evidence.</p>
+<table>
+<thead>
+<tr>
+  <th>Reachability</th>
+  <th>Channel</th>
+  <th>Labels</th>
+  <th style="text-align:right">Brier mean ± SD</th>
+  <th style="text-align:right">Mean absolute change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>low</td>
+  <td>relational</td>
+  <td>intact</td>
+  <td style="text-align:right">0.2500 ± 0.0000</td>
+  <td style="text-align:right">0.0000</td>
+</tr>
+<tr>
+  <td>low</td>
+  <td>relational</td>
+  <td>shuffled</td>
+  <td style="text-align:right">0.2500 ± 0.0000</td>
+  <td style="text-align:right">0.0000</td>
+</tr>
+<tr>
+  <td>low</td>
+  <td>relational</td>
+  <td>hidden</td>
+  <td style="text-align:right">0.2500 ± 0.0000</td>
+  <td style="text-align:right">0.0000</td>
+</tr>
+<tr>
+  <td>low</td>
+  <td>dual</td>
+  <td>intact</td>
+  <td style="text-align:right">0.2089 ± 0.0445</td>
+  <td style="text-align:right">0.0000</td>
+</tr>
+<tr>
+  <td>low</td>
+  <td>dual</td>
+  <td>shuffled</td>
+  <td style="text-align:right">0.2685 ± 0.0835</td>
+  <td style="text-align:right">0.0944</td>
+</tr>
+<tr>
+  <td>low</td>
+  <td>dual</td>
+  <td>hidden</td>
+  <td style="text-align:right">0.2500 ± 0.0000</td>
+  <td style="text-align:right">0.1237</td>
+</tr>
+<tr>
+  <td>high</td>
+  <td>relational</td>
+  <td>intact</td>
+  <td style="text-align:right">0.2702 ± 0.1040</td>
+  <td style="text-align:right">0.0000</td>
+</tr>
+<tr>
+  <td>high</td>
+  <td>relational</td>
+  <td>shuffled</td>
+  <td style="text-align:right">0.4753 ± 0.1884</td>
+  <td style="text-align:right">0.2938</td>
+</tr>
+<tr>
+  <td>high</td>
+  <td>relational</td>
+  <td>hidden</td>
+  <td style="text-align:right">0.2500 ± 0.0000</td>
+  <td style="text-align:right">0.2973</td>
+</tr>
+<tr>
+  <td>high</td>
+  <td>dual</td>
+  <td>intact</td>
+  <td style="text-align:right">0.2284 ± 0.0944</td>
+  <td style="text-align:right">0.0000</td>
+</tr>
+<tr>
+  <td>high</td>
+  <td>dual</td>
+  <td>shuffled</td>
+  <td style="text-align:right">0.3783 ± 0.1671</td>
+  <td style="text-align:right">0.2296</td>
+</tr>
+<tr>
+  <td>high</td>
+  <td>dual</td>
+  <td>hidden</td>
+  <td style="text-align:right">0.2500 ± 0.0000</td>
+  <td style="text-align:right">0.2619</td>
+</tr>
+</tbody>
+</table>
+<p>SD is sample standard deviation over three fixture seeds, not a confidence interval. Change is relative to the same seed/reachability/channel with intact labels.</p>
+<figure class="adapt-figure"><img src="../labs/figures/b12/results.png" alt="Measured prediction changes for all 36 conditions, three points per cell."><figcaption>Measured prediction changes for all 36 conditions, three points per cell.</figcaption></figure>
+
+<p><strong>Check the intervention itself.</strong> The shuffle changes four label assignments in seed 0, zero in seed 1, and six in seed 2. Seed 1 permutes IDs only within equal-label groups. Its zero effect is retained; it cannot diagnose whether the model ignores labels. A future corruption study should report the realized intervention strength alongside its intended operation.</p>
+<p><strong>Interpretation.</strong> In the low-reachability relational-only arm, label corruption cannot affect a prediction because the label path is absent. The dual arm can react through its other path. Invariance with a path present has several possible causes: equal attention, identical labels, a model that ignores labels, or redundant information. Therefore one corruption result does not identify a training regime or establish useful adaptation. Look at effect sizes, the path, and the task loss together.</p>
+<blockquote>
+<p><strong>Scope check.</strong> These are complete results for a fixed-kernel course experiment. They are not OpenRFM inference, a Griffin training run, or a Kumo implementation. A sensitive untrained kernel also demonstrates why sensitivity alone cannot prove learned feature adaptation. No architectural performance ranking follows.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Reproduction:-what-is-complete,-what-is-blocked?">5 &#183; Reproduction: what is complete, what is blocked?<a class="anchor-link" href="#5-%C2%B7-Reproduction:-what-is-complete,-what-is-blocked?">&#182;</a></h2><p><a href="../labs/b12-reproduction.md">Full reproduction contract</a> · <a href="../labs/sources/b12/source-ledger.json">Frozen source ledger</a> · <a href="../labs/evidence/b12/diagnostic.json">All keyed predictions</a> · <a href="../labs/_verify_b12_results.json">Independent checks</a></p>
+<table>
+<thead>
+<tr>
+  <th>Target</th>
+  <th>B12 evidence</th>
+  <th>Remaining work</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>36-condition course diagnostic</td>
+  <td>Complete; all 432 keyed predictions independently checked</td>
+  <td>Learner implementation and defense</td>
+</tr>
+<tr>
+  <td>Griffin v1 Table 12, Others-2 versus no-pretrain</td>
+  <td>Full inherited release model/trainer, pinned inputs and 20-fit contract preserved</td>
+  <td>Full fits stopped by inherited budget gate; no new training</td>
+</tr>
+<tr>
+  <td>OpenRFM v1 Table 5</td>
+  <td>Frozen six-row source table and artifact/protocol audit</td>
+  <td>Author code/checkpoint identity and full training/evaluation protocol unresolved; NOT_RUN</td>
+</tr>
+<tr>
+  <td>KumoRFM-2 main evaluation</td>
+  <td>Architecture and access audit</td>
+  <td>Historical model/service identity and complete executable protocol unresolved; NOT_RUN</td>
+</tr>
+</tbody>
+</table>
+<p>Griffin retains 512/4096 labeled subsets, five subset seeds (42–46), and two arms: twenty fits. Its earlier conservative compute projection was about $63.89 before existing reservations; this is an inherited scenario estimate, not today's price quote or observed full-run cost. B12 spends **$0** on paid execution and does not silently reduce the protocol.</p>
+<p>The repository named <code>T-Lab/OpenRFM</code> describes an independent Kumo reproduction. It is not authenticated as the author release for the OpenRFM paper. A failed repository lookup also does not prove that no release exists. These source identity checks prevent accidental substitution.</p>
+<p>For the earlier detailed treatments, revisit <a href="0164-griffin-graph-centric-rdb-fm.html">L164 Griffin</a> and <a href="0191-kumorfm2-sota-tracking.html">L191 KumoRFM-2 evaluation</a>.</p>
+<p><strong>Next real experiment.</strong> Authenticate one accessible checkpoint and freeze preprocessing, support draws, query keys, label visibility, validation selection and full cost. Then test corruption on actual low/high-reachability tasks with matched support budgets. Declare any departure from a paper protocol before measuring. Until then, full-paper reproduction is <code>NOT_RUN</code>.</p>
+<h2 id="6-%C2%B7-Lab-and-defense">6 &#183; Lab and defense<a class="anchor-link" href="#6-%C2%B7-Lab-and-defense">&#182;</a></h2><p>The portable notebook exposes three live tasks: temporal label eligibility, masked label attention, and label intervention. The complete experiment calls your functions directly. The blank student notebook fails; the executed solution passes an independent scalar oracle and forbidden-input tests.</p>
+<div id="b12-teachback"></div>
+
+<p><strong>EXIT.</strong> Draw the adaptation matrix from memory. Trace a support label to a query in each architecture. Explain why the low-reachability result is expected, why unchanged weights do not imply unchanged predictions, and why label sensitivity does not prove accuracy. Propose a falsifier: for example, an apparent improvement that disappears after fixing support arrival times.</p>
+<p>Revisit the matrix tomorrow, in seven days and in thirty days. Ask the teaching agent about any unclear step, or paste your implementation and written defense for feedback. Author checks do not grade your understanding: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/adaptation-paths.js"></script></body></html>

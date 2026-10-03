@@ -1252,3 +1252,42 @@ Primary: [TabDPT v3 §3 and Appendix B.1](https://arxiv.org/html/2410.18164v3), 
 ## B07a · Hypernetworks (2026-10-03)
 
 [MotherNet v2 §§3.1–3.2](https://arxiv.org/html/2312.08598v2#S3), [HyperFast v1 model/Appendix A/Table7](https://arxiv.org/html/2402.14335v1), [iLTM v1 §3](https://arxiv.org/html/2511.15941v1#S3). Full HyperFast source current d1f1c3b0c45572dc09173733b194c0e7384cd696 and publication-era9a25ed34edf1d9896efde32500707fb8689e1005 archived. Checkpoint43484094 authenticated by SHA256 in labs/sources/b07a/checkpoint.json. Model generation does not remove optional retrieval/context costs.
+
+## B08 · LimiX objectives (2026-10-03)
+
+[LimiX v2 §§2–3 and Table23](https://arxiv.org/html/2509.03505v2), [LimiX-2M v2](https://arxiv.org/abs/2606.04485v2), [LimiX-2 v1 §§2–3](https://arxiv.org/html/2609.17488v1#S2), [official release](https://github.com/limix-ldm-ai/LimiX). Snapshots and source/checkpoint identities under labs/sources/b08. LimiX-2M and LimiX-2 are distinct releases. Current checkpoint license archived separately from code; the older abstract is not current licensing evidence.
+
+
+## B09 · Cost frontier primary sources
+
+[EXAONE §2 and Figure3](https://arxiv.org/html/2608.25774v1), [TabFM §§3–5](https://arxiv.org/html/2609.37959v1), [Nori model card](https://huggingface.co/Synthefy/Nori/blob/main/README.md). Sources, current code commits and weight revisions pinned in `labs/sources/b09/`. Published GPU/TabArena claims remain distinct from current-release CPU diabetes inference. Seldon and NEXUS are provider-only access inventory entries.
+
+
+## B10 · Relational Transformer primary sources
+
+[RT-v1 §§3–5, Table1, AppendixH](https://arxiv.org/html/2510.06377v1), [original implementation](https://github.com/stanford-star/relational-transformer/tree/8d83590b5ae7fba9e40e8df463ed2dd9066ce5fb), [RT-J author update](https://star-project.stanford.edu/rt-j/). Original source/preprocessing/checkpoint revisions and inherited input hashes are in `labs/sources/b10/source-ledger.json`; CPU adapter and fixture deviations are in `labs/b10-reproduction.md`. Current RT-J is not a substitute for the original Table1 target.
+
+
+## B11 · Supervised relational baseline comparison
+
+[RelGNN v2 §3 and Table2](https://arxiv.org/html/2502.06784v2), [RelGT v1 §3 and Tables1/6](https://arxiv.org/html/2505.10960v1). Sources pinned to cffdb8b54627e92c7dd112c1243dde739c90d35b and19e423ca3e7cac761130aba790857f2dc3a46ef7 respectively. Full source, licenses, frozen protocols and saved evidence authenticated by `labs/sources/b11/source-ledger.json`; no current-SOTA claim.
+
+
+## B12 · Adaptation mechanisms
+
+[Griffin ICML2025](https://proceedings.mlr.press/v267/wang25da.html), [OpenRFM v1 §§3–5](https://arxiv.org/html/2606.04320v1), [KumoRFM-2 v1 §3](https://arxiv.org/html/2604.12596v1). Frozen source ledger: `labs/sources/b12/source-ledger.json`. OpenRFM author release identity unresolved; T-Lab/OpenRFM is an independent Kumo reproduction. Kumo main ICL evaluation and optional fine-tuning are separate modes.
+
+
+## B13 · Synthetic relational data
+
+[RDB-PFN v1](https://arxiv.org/html/2603.03805v1) for curriculum lineage; [v5 Table 9](https://arxiv.org/html/2603.03805v5) for the inherited selected numerical target. [PluRel v1 §§2–3/Table 1](https://arxiv.org/html/2602.04029v1), [official generator](https://github.com/stanford-star/plurel), [paper tag](https://github.com/stanford-star/plurel/tree/2a273cfd21933ee4893dfcb862a3edaed45ac665), [Hub paper card](https://huggingface.co/stanford-star/rt-plurel/blob/0cac262c0fc95353372b2cf1d5c1b0a1e649a449/paper/README.md). Later leaderboard checkpoints use regression NMAE selection and do not supply the original three-seed Table 1 evidence. Sources/identity inventory: `labs/sources/b13/`; full protocol: `labs/b13-reproduction.md`.
+
+
+## B14 · The flattening challenge
+
+[RDBLearn toolkitv1](https://arxiv.org/html/2602.18495v1), [distinct encoder-analysisv2](https://arxiv.org/html/2602.13697v2), [RelArena/TabPFN-Relv2](https://arxiv.org/html/2608.16319v2), [releasee890022](https://github.com/PriorLabs/relarena/tree/e89002200e18be6d8d7a55f8a5ab50c993ce4d5d). Primary source bytes, original source and checkpoint metadata are under`labs/sources/b14/`. Model/system comparisons, API/OSS variants, single-seed evidence and omitted LimiX remain distinct.
+
+
+## B15 · Parameter-free encoders: limits and assumptions
+
+[Paper v2](https://arxiv.org/html/2607.05476v2), §§3–4, Appendices A/D, Table 5; [RDBLearn v1.1 source](https://github.com/HKUSHXLab/rdblearn/tree/78561f0a9c1dd231d44659e761d5d85e18c82f6e). Actual default target-history flag is False; README says True. Code default agrees with paper, but exact run configuration is not established. Complete source packet and missing protocol ledger under labs/sources/b15 and labs/evidence/b15.

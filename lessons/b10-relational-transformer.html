@@ -1,0 +1,171 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B10 · Relational Transformer</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/relational-cell-attention.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B10-%C2%B7-Let-database-cells-talk">B10 &#183; Let database cells talk<a class="anchor-link" href="#B10-%C2%B7-Let-database-cells-talk">&#182;</a></h1><p><strong>Relational Transformer · one skill:</strong> construct the information paths that let a masked task cell use a relational database.</p>
+<p><a href="b09-cost-frontier.html">B09: cost frontier</a> · <a href="../labs/b10-relational-transformer.ipynb">Student lab</a> · <a href="../labs/html/b10-relational-transformer.html">Executed solution</a> · <a href="../reference/b10-relational-transformer.html">Field guide</a></p>
+<h2 id="Begin-with-the-gap">Begin with the gap<a class="anchor-link" href="#Begin-with-the-gap">&#182;</a></h2><p>B07 showed how table and column meanings can inform a predictor. B09 showed that a prediction's cost depends on the complete operating configuration. Neither single-table view tells us how to preserve a customer–order relationship when one customer has many orders. Flattening can duplicate customer values or discard which order belongs to whom.</p>
+<p>Relational Transformer (RT) makes each <strong>cell</strong> a token and uses database relationships to control attention. A token is a vector representing one input item. Attention reads other token vectors through weighted sums. Today you will trace a particular prediction all the way from a task row to its output, then identify which evidence it was permitted to use. That is a prerequisite for the mission's claim that relational structure adds value.</p>
+<p>The primary reading is <a href="https://arxiv.org/html/2510.06377v1">RT-v1 §§3–5 and Appendix H</a>. Use the <a href="../labs/sources/b10/upstream/rt/model.py">pinned original model</a> alongside it. The current repository's default example uses RT-J; that is a different release and recipe.</p>
+<h2 id="Retrieve-before-reading">Retrieve before reading<a class="anchor-link" href="#Retrieve-before-reading">&#182;</a></h2><p>Without notes: Why is a query target hidden? How can a model make a zero-gradient prediction while still using labels? Why does an event timestamp alone fail to prove what was known at prediction time?</p>
+<div id="b10-warmup"></div>
+
+<p><strong>Prerequisite recap.</strong> A primary key identifies a row. A foreign key points to another table's primary key. A parent is the referenced row; a child is a row containing that reference. A task table stores the prediction examples, their entity references, their cutoffs, and their labels. A cutoff is the time at which the prediction must be made. A label's outcome window may finish later than that cutoff.</p>
+<h2 id="1-%C2%B7-Turn-a-task-into-another-table">1 &#183; Turn a task into another table<a class="anchor-link" href="#1-%C2%B7-Turn-a-task-into-another-table">&#182;</a></h2><p><strong>Worked example.</strong> Customer C0 is customer 10. Order O0 belongs to C0 and has amount 6 at day 7. A task row T0 asks whether C0 will churn after day 10. Its target is hidden. Another task row T1 records a completed, earlier outcome for the same customer.</p>
+<table>
+<thead>
+<tr>
+  <th>Table / row</th>
+  <th>Cells in our worked context</th>
+  <th>Link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Task T0, row 100</td>
+  <td>hidden y, time 10</td>
+  <td>customer 10</td>
+</tr>
+<tr>
+  <td>Customer C0, row 10</td>
+  <td>age 42, name embedding</td>
+  <td>none</td>
+</tr>
+<tr>
+  <td>Order O0, row 20</td>
+  <td>amount 6, time 7</td>
+  <td>customer 10</td>
+</tr>
+<tr>
+  <td>Task T1, row 101</td>
+  <td>observed y = 1, time 2</td>
+  <td>customer 10</td>
+</tr>
+<tr>
+  <td>Customer C1, row 11</td>
+  <td>age 20</td>
+  <td>none</td>
+</tr>
+</tbody>
+</table>
+<p>There are three tables, five rows, and nine feature cells. The lab adds one padding slot to check that padding cannot become evidence. IDs are relationship metadata; the model does not learn that customer 11 is “larger” than customer 10. Name embeddings are vectors encoding text, not numerical row IDs.</p>
+<p><strong>Why integrate the task?</strong> A forecasting target is not usually an existing feature cell. Adding a task table gives it a cell address. Masking that cell turns forecasting into the same kind of prediction interface as filling in a missing database value. Past task labels can remain visible if the evaluation policy permits them.</p>
+<p><strong>Sampling comes first.</strong> A context is the bounded set of cells admitted for one prediction. RT-v1 expands from a seed task row along foreign-key links; it bounds child expansion and caps the cell count. A relevant row outside this context cannot influence this prediction. The temporal rule belongs here, before attention. <a href="https://arxiv.org/html/2510.06377v1#S3.SS1">Paper §3.1</a></p>
+<h2 id="2-%C2%B7-Model-architecture:-follow-one-hidden-cell">2 &#183; Model architecture: follow one hidden cell<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-follow-one-hidden-cell">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Give every cell a value/type representation and a name representation. Let cells exchange information along four kinds of permission. Read the updated hidden cell through the decoder for its datatype.</p>
+</blockquote>
+<div class="b10-desktop-architecture"><figure class="b10-figure"><img src="../labs/figures/b10/architecture.png" alt="RT-v1 end-to-end path. The measured lab uses reduced dimensions and an explicit CPU backend; no pretrained benchmark prediction is shown."><figcaption>RT-v1 end-to-end path. The measured lab uses reduced dimensions and an explicit CPU backend; no pretrained benchmark prediction is shown.</figcaption></figure></div><div class="b10-mobile-architecture"><ol><li><strong>Question:</strong> customer10 → task row100 → hidden y at day10.</li><li><strong>Context:</strong> sample linked rows, enforce visibility, replace the target value.</li><li><strong>Tokens:</strong> type-specific value or mask vector + name vector → S×D states.</li><li><strong>Block:</strong> column → feature → neighbor → full attention, with normalization and residual additions; then SwiGLU. Paper:12blocks.</li><li><strong>Output:</strong> final normalization → typed decoder → target probability.</li><li><strong>Objective:</strong> masked BCE/Huber for training; fixed-weight, keyed scoring for evaluation.</li></ol></div>
+
+<p><strong>Encode.</strong> A numeric, boolean or datetime value enters its own learned linear projection. A text value enters a projection of its frozen language-model embedding. The name representation is projected separately. A linear projection multiplies a vector by a weight matrix and adds a bias. RT-v1 normalizes these streams before adding them. For a hidden cell, a learned type-specific mask vector replaces the value stream; its name remains available.</p>
+<p><strong>Names and identities differ.</strong> Column attention uses table/column identities, while the encoder receives semantic name vectors. The source calls the latter <code>col_name_values</code>; the preprocessing supplies name text that includes context such as “year of races.” Matching integer column IDs across different tables is insufficient to grant column attention.</p>
+<p><strong>Mix.</strong> In each block, column attention runs first, then feature, neighbor and full attention. Each sublayer normalizes its input and adds its update back to the running state. This <strong>residual addition</strong> preserves an existing representation while learning a correction. <strong>RMSNorm</strong> divides by a root-mean-square scale and applies learned coordinate weights. A final feed-forward transformation changes each cell vector separately. RT-v1 uses <strong>SwiGLU</strong>: one projected stream, passed through a smooth activation, multiplies another projected stream before projection back to the hidden width.</p>
+<p><strong>Decode.</strong> After the final normalization, a datatype-specific linear head produces a scalar for numeric/datetime/boolean values. A boolean head emits a <strong>logit</strong>, an unrestricted real number. The sigmoid function, 1/(1+exp(−z)), turns logit z into a probability. The model returns outputs at many cells; evaluation selects the target cell. <a href="../labs/sources/b10/upstream/rt/model.py">Source model</a></p>
+<p><strong>Train.</strong> Binary cross-entropy penalizes wrong boolean probabilities. Huber loss is quadratic near a numeric target and linear for larger errors, reducing extreme residual influence. The source averages losses over masked cells, not over all context cells. Its text decoder exists, but this release rejects masked-text supervision. The lab shows the forward path, loss and an optimization step; its measured work is output/gradient verification, not training a foundation model.</p>
+<h2 id="3-%C2%B7-Four-masks,-four-questions">3 &#183; Four masks, four questions<a class="anchor-link" href="#3-%C2%B7-Four-masks,-four-questions">&#182;</a></h2><p>An <strong>attention mask</strong> is a Boolean matrix. Row i is the cell doing the reading; column j is a possible information source. True means that pair is allowed. The mask does not specify how much attention a permitted source receives.</p>
+<table>
+<thead>
+<tr>
+  <th>Sublayer</th>
+  <th>Reader may read</th>
+  <th>Worked path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Column</td>
+  <td>same column <strong>and</strong> same table</td>
+  <td>T0.y → T1.y</td>
+</tr>
+<tr>
+  <td>Feature</td>
+  <td>own row and linked parent rows</td>
+  <td>T0.y → C0.age and C0.name</td>
+</tr>
+<tr>
+  <td>Neighbor</td>
+  <td>linked child rows</td>
+  <td>C0.age → O0.amount and T0.y</td>
+</tr>
+<tr>
+  <td>Full</td>
+  <td>every admitted, non-padding cell</td>
+  <td>T0.y → O0.amount directly</td>
+</tr>
+</tbody>
+</table>
+<p>Arrows here mean “reader reads source,” not the direction a value travels. Feature and neighbor attention are directed opposites for linked rows. Neighbor attention does <strong>not</strong> automatically include the reader's own row. An empty neighbor set should contribute the zero vector.</p>
+<div id="b10-predict"></div>
+
+<div class="b10-board" data-b10="masks"><h3>Who can this cell read?</h3><p>Choose a reader and a permission. Blue outline marks the reader; “Allowed” marks readable sources.</p><label>Attention <select name="kind"><option value="col">Column</option><option value="feat" selected>Feature</option><option value="nbr">Neighbor</option><option value="full">Full</option></select></label><label>Reader <select name="reader"><option value="0">T0.y</option><option value="1">T0.time</option><option value="2">C0.age</option><option value="3">C0.name</option><option value="4">O0.amount</option><option value="5">O0.time</option><option value="6">T1.y</option><option value="7">T1.time</option><option value="8">C1.age</option></select></label><button type="button">Reset cell example</button><div class="b10-cells"></div><output aria-live="polite">Default feature attention: T0.y reads its own row and parent C0. Equal-score coordinate: (0+10+42+1)/4 = 13.25. Neighbor attention at T0.y has no children and returns zero.</output></div>
+
+<p>The interactive readout uses one illustrative value coordinate: [0,10,42,1,6,7,1,2,20]. Zero at T0.y represents a mask coordinate, not a leaked target. The “1” at C0.name is one invented embedding coordinate, not a numeric encoding of a person's name.</p>
+<p><strong>Worked attention arithmetic.</strong> With equal logits, T0.y's feature attention reads T0.y, T0.time, C0.age and C0.name. The coordinate average is (0+10+42+1)/4 = 13.25. Neighbor attention at that same task row reads no children and returns zero. This shows permission and normalization; it is not the model's churn probability.</p>
+<p><strong>From equal weights to learned weights.</strong> The model projects hidden vectors into queries Q, keys K and values V. Each query–key dot product is divided by √d, where d is the per-head width. Softmax exponentiates the permitted scores and normalizes them to sum to one. Multiplying those weights by V produces the update. Multiple heads perform this with separate coordinate groups. A fully forbidden row needs special handling because softmax of only negative infinities is undefined.</p>
+<figure class="b10-figure"><img src="../labs/figures/b10/masks.png" alt="Same context, four directed permission matrices. Readers are rows, sources are columns. Padding is omitted from the picture and forbidden in code."><figcaption>Same context, four directed permission matrices. Readers are rows, sources are columns. Padding is omitted from the picture and forbidden in code.</figcaption></figure>
+
+<p><strong>Why keep relational masks if full attention exists?</strong> Permissions alone do not describe an entire architecture. Separate sublayers apply different projections and normalizations to different relation patterns in a particular order. The full sublayer then mixes their results. RT's ablations test the usefulness of this structure. Our fixture checks its implementation; it does not estimate its accuracy benefit.</p>
+<h2 id="4-%C2%B7-A-mask-cannot-undo-evidence-admitted-too-early">4 &#183; A mask cannot undo evidence admitted too early<a class="anchor-link" href="#4-%C2%B7-A-mask-cannot-undo-evidence-admitted-too-early">&#182;</a></h2><blockquote>
+<p><strong>In plain terms.</strong> Hiding the answer is necessary, but it does not hide every clue that arrived after the prediction time. Once a future cell enters the context, full attention can spread it to the target.</p>
+</blockquote>
+<p>Three clocks matter. <strong>Event time</strong> says when the recorded event happens. <strong>Availability time</strong> says when the information could actually be used. <strong>Outcome completion</strong> says when enough future has elapsed to determine an earlier task label. They need not coincide.</p>
+<p><strong>Worked example.</strong> At day 10, an order at day 7 is eligible. A task label anchored at day 8 with a three-day outcome window is not yet known. A race scheduled for day 12 may have been announced at day 9: it is future-dated but potentially already known. A strict event-time policy still excludes it; a historically valid availability policy would need trustworthy arrival records before allowing it.</p>
+<div class="b10-board" data-b10="time"><h3>Three clocks, one context</h3><label>Prediction cutoff: day <strong data-value>10</strong><input type="range" min="8" max="14" step="1" value="10"></label><button type="button">Reset cutoff</button><output aria-live="polite">At day10: the day7 order is eligible; the day8 label needs day11; the day12 schedule remains outside the strict event-time policy even if announced on day9.</output></div>
+
+<figure class="b10-figure"><img src="../labs/figures/b10/visibility.png" alt="Illustrative days: event, arrival and completed-outcome clocks can disagree. This figure is not measured F1 evidence."><figcaption>Illustrative days: event, arrival and completed-outcome clocks can disagree. This figure is not measured F1 evidence.</figcaption></figure>
+
+<p>The notebook's <code>eligible_rows</code> enforces event time, recorded availability and completed label windows together. Unknown timestamps fail closed. This is a deliberately strict <strong>course policy</strong>, separate from the original RT sampler. The query task row is constructed as the prediction question and its target is hidden; <code>eligible_rows</code> filters candidate evidence rows, not the question itself.</p>
+<p><strong>The actual reproduction blocker.</strong> B10 independently replays all three authenticated L175 saved-context seeds: 702 queries each, 2,156,544 cell slots total. It reconstructs each target from raw F1 results and checks complete <code>(driverId, cutoff)</code> keys. There are <strong>385 future-dated cells in 77 contexts</strong>, all inherited race schedule fields. There are <strong>zero exposed query targets</strong> and <strong>zero visible task labels whose outcome windows are unfinished</strong>. Another <strong>432,050 cells have unknown timestamps</strong>.</p>
+<p>Those findings are compatible: hiding the target worked while the stated event-time boundary failed. The future fields might have been announced earlier; no arrival logs establish that. Unknown time also does not mean proven future leakage. Read the <a href="../labs/evidence/b10/temporal-audit.json">fresh B10 audit receipt</a> and <a href="../labs/l175-reproduction.md">original detailed contract</a>.</p>
+<h2 id="5-%C2%B7-What-did-we-actually-reproduce?">5 &#183; What did we actually reproduce?<a class="anchor-link" href="#5-%C2%B7-What-did-we-actually-reproduce?">&#182;</a></h2><p><strong>B10-MECHANISM</strong> fixes one three-table relationship fixture and uses seeds 0/1/2 for illustrative input vectors and model weights. Numeric and datetime cells are additionally masked in the parity fixture to exercise all supported loss heads. It copies weights into the course mirror and original source, then compares every output, loss, parameter gradient and floating input gradient. The source uses an explicitly substituted CPU attention backend. Twenty additional graph fixtures check the masks against independent scalar loops.</p>
+<table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Max output error</th>
+  <th style="text-align:right">Max parameter-gradient error</th>
+  <th style="text-align:right">Permutation error</th>
+  <th style="text-align:right">Hidden-target prediction change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">3.33e-16</td>
+  <td style="text-align:right">2.22e-16</td>
+  <td style="text-align:right">4.44e-16</td>
+  <td style="text-align:right">0.0</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">4.44e-16</td>
+  <td style="text-align:right">9.71e-17</td>
+  <td style="text-align:right">6.66e-16</td>
+  <td style="text-align:right">0.0</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">3.33e-16</td>
+  <td style="text-align:right">2.78e-16</td>
+  <td style="text-align:right">6.66e-16</td>
+  <td style="text-align:right">0.0</td>
+</tr>
+</tbody>
+</table>
+<p>All three pass the predeclared <strong>1e-9 absolute tolerance</strong>. Loss and floating-input gradients also pass. The 8,400 pair checks include padding; three wrong learner functions are rejected. These are numerical verification errors, not benchmark metric improvements.</p>
+<p><strong>Permutation test.</strong> Reordering all cells and their metadata together must reorder the output cells without changing their meaning. This is equivariance. The prediction attached to the same query key is invariant. Shuffling names alone is different: it changes semantic input. Our untrained fixture responds to that intervention, but this does not demonstrate that pretrained name semantics improve accuracy.</p>
+<p><strong>Hidden-target test.</strong> Changing the held-out value must not change predictions, because its value stream was replaced. The supervised loss should change, because the target remains the answer used for scoring. Input access and loss access are different pathways.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Checks use two blocks, width 16, four heads, FF width 32, six-coordinate illustrative name vectors and CPU float64. The paper model uses 12 blocks, width 256, eight heads, FF width 1024, MiniLM width 384 and bfloat16. Passing finite-fixture CPU checks does not establish CUDA-kernel parity, pretrained behavior, fresh benchmark inference, or whole-paper reproduction.</p>
+</blockquote>
+<p><strong>Named paper lane.</strong> RT-v1 Table 1 reports <strong>82.0% AUROC</strong> for database-held-out <code>rel-f1/driver-dnf</code>. B10 pins its original source/data/checkpoint identity and preserves a three-seed, full-702-query inference operator. Because the input gate fails, checkpoint bytes remain unauthenticated and inference is <strong>NOT_RUN</strong>. The wrapper refuses before loading a model. The remaining GPU execution path is unvalidated. <a href="../labs/b10-reproduction.md">Reproduction protocol and commands</a></p>
+<h2 id="6-%C2%B7-Zero-shot-has-several-boundaries">6 &#183; Zero-shot has several boundaries<a class="anchor-link" href="#6-%C2%B7-Zero-shot-has-several-boundaries">&#182;</a></h2><p><strong>Unseen task</strong> means that task was excluded from the declared training stage. <strong>Unseen database</strong> means the entire target database was excluded. <strong>No target gradients</strong> means no model parameter updates on the target task. None of these phrases alone guarantees no target labels in the context, no target validation during checkpoint selection, or a historically sealed test set.</p>
+<p>RT-v1 can exploit past task rows for the target entity. Its contextual labels make a “zero-shot” prediction different from a prediction with no labeled evidence. The paper's self-label ablation is useful precisely because it asks how much this pathway matters. State the label-access policy before interpreting a score. <a href="https://arxiv.org/html/2510.06377v1#S5.SS1">Paper §5.1</a></p>
+<p><strong>RT-J update.</strong> The author project retains a cell-based relational backbone but changes the surrounding corpus, supervision and retrieval recipe. The current quickstart uses RT-J; its checkpoint and preprocessing cannot substitute for RT-v1's Table 1. Treat it as a separate candidate with separate provenance. <a href="https://star-project.stanford.edu/rt-j/">Author page</a> · <a href="https://github.com/stanford-star/relational-transformer">Official repository</a></p>
+<h2 id="Lab-%C2%B7-build,-falsify,-explain">Lab &#183; build, falsify, explain<a class="anchor-link" href="#Lab-%C2%B7-build,-falsify,-explain">&#182;</a></h2><p>Open the <a href="../labs/b10-relational-transformer.ipynb">student notebook</a>. Complete three live functions: table-qualified directed masks, safe masked attention, and temporal eligibility. The visible model calls your mask and attention functions. The visibility function controls which evidence reaches an intervention prediction. Immediate checks reject common wrong implementations. The solution includes author-reference evidence with honest labels; you have not completed the lab merely by viewing it.</p>
+<ol>
+<li>Predict T0.y's allowed sources under all four masks before using the widget.</li>
+<li>Implement the three functions and pass the checks. Explain why the empty-neighbor result is zero.</li>
+<li>Change a hidden target, permute cell order, then change name vectors. Explain why the first two preserve the keyed prediction and the third need not.</li>
+<li>Defend the temporal gate. Distinguish an event-time violation from proof of unavailable historical information.</li>
+</ol>
+<div id="b10-teachback"></div>
+
+<p><strong>Exit ticket.</strong> Submit your functions, check outputs, and a 150-word explanation of one task-cell path. Include one counterexample to “zero-shot means no labels” and one reason the 82.0% paper result is not reproduced here. Status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until assessed.</p>
+<p>Revisit the four masks after 1, 7 and 30 days without the diagram. Ask the teaching agent follow-up questions about any unclear step. B11 will compare supervised RelGNN and RelGT on matched relational evidence: preserve the distinction between a row graph, a row token and a cell token.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/relational-cell-attention.js"></script></body></html>

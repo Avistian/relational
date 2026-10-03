@@ -1,0 +1,71 @@
+{
+  "name": "B08-OBJECTIVE-ABLATION",
+  "frozen_before_results": true,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "objectives": [
+    "target",
+    "feature",
+    "combined"
+  ],
+  "train": {
+    "steps": 120,
+    "batch": 4,
+    "support": 24,
+    "query": 8,
+    "features": 4,
+    "optimizer": "AdamW",
+    "lr": 0.001,
+    "weight_decay": 0.01,
+    "objective": "Ly; Lx; Ly+Lx",
+    "selection": "fixed final step; no validation/HPO"
+  },
+  "model": {
+    "blocks": 2,
+    "width": 16,
+    "task_slots": 4,
+    "feature_identity_rank": 4,
+    "head": "scalar MSE",
+    "precision": "float32 CPU one thread deterministic"
+  },
+  "evaluation": {
+    "episodes": 16,
+    "queries_per_episode": 8,
+    "metric": "query target MSE and masked feature MSE",
+    "mask": "one of four features per query; support fully observed",
+    "aggregation": "pool equal-sized episodes; show per-seed points and sample SD",
+    "baseline": "support mean for target and each feature"
+  },
+  "data_files": {
+    "data/b08/train-0.npz": "85ae4038b8931cc61a0b1be382700782c359daf8c7346c9cdca2527b712e3f3c",
+    "data/b08/test-0.npz": "183f18e2f9dd7db725327b111e6f7f547f37cd6bea95b4b28c083115d859afcc",
+    "data/b08/train-1.npz": "12dff3bdc4ce6cbf3dd1c82f4854ab4b40d152463689d25c1665f713f99296ec",
+    "data/b08/test-1.npz": "73b053e336b72158beb3820954a54b01caddb03710831006aea322468384d198",
+    "data/b08/train-2.npz": "698122f0315561c35c9793356bdbac7b241813ebd39ba745ac5516c915c0afc7",
+    "data/b08/test-2.npz": "763f02a1ec7222c6e23aeb9c0d46db74b231c8fd27f2a873a82eeac02b3739cb"
+  },
+  "code_sha256": "ed6a46e6ab6e50b8c6dfa2e09e5fab5d2be4aec3897d4a08879ccfc21759b9f5",
+  "versions": {
+    "torch": "2.13.0+cpu",
+    "numpy": "2.5.0",
+    "nbformat": "5.10.4",
+    "nbclient": "0.11.0"
+  },
+  "python": "3.12.3",
+  "budget": {
+    "local_seconds": 3600,
+    "usd_cap": 10,
+    "planned_usd": 8,
+    "reserve_usd": 2
+  },
+  "deviations": [
+    "Synthetic same-family tasks; no real-dataset generalization claim",
+    "Small two-block single-head model, LayerNorm, scalar heads and fixed mask pattern; not released LimiX architecture",
+    "No mixture-density decoder, mask-indicator prediction or published pretraining corpus",
+    "Combined loss is an unweighted sum; gradient magnitude may differ",
+    "Reconstruction-only leaves final target head untrained; poor target performance is not surprising"
+  ]
+}

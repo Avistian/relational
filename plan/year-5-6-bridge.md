@@ -1,6 +1,6 @@
 # Year 5 → 6 bridge: influential architectures and the current frontier
 
-**29 units (B01–B07, B04a and B07a prepared; 20 planned): B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
+**29 units (B01–B08, B04a and B07a prepared; 19 planned): B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
 
 The audit distinguishes established families, current baseline updates, coverage-critical mechanisms and exploratory ideas. Core means required for this mission; it does not label every recent paper equally influential. Existing lessons are prerequisites: a bridge revisit requires a new comparative artifact, not repetition of the entire earlier lesson.
 
@@ -134,6 +134,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b08"></a>
 
 ### B08 ◆ · LimiX: alternative structured-data objectives
+
+**Prepared 2026-10-03:** [lesson](../lessons/b08-structured-objectives.html) · [lab](../labs/b08-structured-objectives.ipynb). Complete nine-fit objective ablation: combined target error improves in one seed and worsens in two. Original Table23 Analcatdata imputation remains INCOMPLETE_SOURCE_PROTOCOL; full pretraining NOT_RUN; learner defense pending.
+
 - **Read:** [LimiX](https://arxiv.org/abs/2509.03505), [LimiX-2M](https://arxiv.org/abs/2606.04485v2), [LimiX-2 §2](https://arxiv.org/html/2609.17488v1); [release terms](https://github.com/limix-ldm-ai/LimiX).
 - **Retrieve / skill:** Is feature reconstruction the same task as predicting a target? Trace their separate paths.
 - **Teach:** Compare feature/task processing and reconstruction objectives; LimiX-2M and LimiX-2 are distinct releases.
@@ -143,6 +146,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b09"></a>
 
 ### B09 ◆ · Current cost frontier: TabFM, EXAONE and Nori
+
+**B09 prepared 2026-10-03:** [lesson](../lessons/b09-cost-frontier.html) · [lab](../labs/b09-cost-frontier.ipynb). Six fresh EXAONE/Nori runs; TabFM resource-gated; historical Figure3 source-gated. Full three-model frontier remains incomplete; learner defense pending.
+
 - **Read:** [TabFM report §§3–5, posted 2026-09-29](https://arxiv.org/html/2609.37959v1) and [official release](https://www.research.google/blog/introducing-tabfm-a-zero-shot-foundation-model-for-tabular-data/), [EXAONE §2](https://arxiv.org/html/2608.25774v1), [Nori model card](https://huggingface.co/Synthefy/Nori/blob/main/README.md).
 - **Retrieve / skill:** Do fewer parameters guarantee cheaper predictions? Compare complete operating points.
 - **Teach:** Use EXAONE's repeated cross-axis processing as the mechanism example; audit support size, caching, ensembling, task coverage and access for all three.
@@ -155,6 +161,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b10"></a>
 
 ### B10 ★ · Relational Transformer: cells, tasks and relational attention
+
+**Prepared 2026-10-03:** [lesson](../lessons/b10-relational-transformer.html) · [lab](../labs/b10-relational-transformer.ipynb) · [protocol](../labs/b10-reproduction.md). Complete three-seed CPU source-shaped mechanism checks and 2106-context saved replay; Table1 inference INCOMPLETE_TEMPORAL_GATE / NOT_RUN. Learner PENDING_WRITTEN_DEFENSE.
+
 - **Read:** [RT §§3–5](https://arxiv.org/html/2510.06377v1); update: [RT-J author page](https://star-project.stanford.edu/rt-j/), with its linked paper pending full-text access.
 - **Retrieve / skill:** How does a cell-token model know which database relationships matter? Construct its attention masks.
 - **Teach:** Trace task-table integration, typed cell tokens, row/column/FK attention and masked prediction. RT-J changes the corpus, supervision and retrieval recipe around the backbone.
@@ -165,6 +174,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b11"></a>
 
 ### B11 ★ · RelGNN versus RelGT: supervised relational baselines
+
+**Prepared 2026-10-03:** [lesson](../lessons/b11-supervised-relational-baselines.html) · [lab](../labs/b11-supervised-relational-baselines.ipynb) · [protocol](../labs/b11-reproduction.md). Three-seed reduced source-block checks and complete11-run/13,849-prediction replay. Fresh matched benchmark NOT_RUN; full RelGT search INCOMPLETE_TEMPORAL_AND_BUDGET_GATE. Learner PENDING_WRITTEN_DEFENSE.
+
 - **Read:** Recall L141–146; [RelGNN §3](https://arxiv.org/html/2502.06784v1), [RelGT §3](https://arxiv.org/html/2505.10960v1); [RelArena implementation inventory](https://github.com/PriorLabs/relarena).
 - **Retrieve / skill:** Is a multi-hop graph path the same computational operation as an atomic route? Trace the difference.
 - **Teach:** Contrast composite message passing with row tokens carrying relational/temporal structure. Compare mechanisms, not incompatible historical leaderboard cells.
@@ -175,6 +187,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b12"></a>
 
 ### B12 ★ · Griffin, OpenRFM and KumoRFM: adaptation mechanisms
+
+**Prepared 2026-10-03:** [lesson](../lessons/b12-adaptation-mechanisms.html) · [lab](../labs/b12-adaptation-mechanisms.ipynb) · [contract](../labs/b12-reproduction.md). Complete36-condition fixed-kernel diagnostic,432keyed predictions, three architecture paths. Griffin20fit protocol preserved; full model runs NOT_RUN behind budget/source/identity gates. USD0 paid execution; learner PENDING_WRITTEN_DEFENSE.
+
 - **Read:** Recall L164/165b/191; [Griffin](https://proceedings.mlr.press/v267/wang25da.html), [OpenRFM §§3–5](https://arxiv.org/html/2606.04320v1), [KumoRFM-2 §3](https://arxiv.org/html/2604.12596v1).
 - **Retrieve / skill:** What changes between two tasks: parameters, contextual labels, or both? Classify adaptation precisely.
 - **Teach:** Compare shared encoders/decoders, relational support reachability, and relation-level versus cross-example interaction. Industrial comparisons have different artifact-access boundaries.
@@ -185,6 +200,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b13"></a>
 
 ### B13 ★ · RDB-PFN and PluRel: two roles for relational synthetic data
+
+**Prepared 2026-10-03:** [lesson](../lessons/b13-synthetic-relational-data.html) · [lab](../labs/b13-synthetic-relational-data.ipynb) · [contract](../labs/b13-reproduction.md). Complete 12-fit course schema holdout and 30-evaluation/21,060-prediction saved RDB-PFN replay. PluRel paper code and checkpoints located; complete three-seed Table 1 training remains source/protocol/budget gated. USD0 paid execution; learner PENDING_WRITTEN_DEFENSE.
+
 - **Read:** Recall L166; [RDB-PFN §§4–6 and Fig. 1](https://arxiv.org/html/2603.03805v1), [PluRel §§2–3](https://arxiv.org/html/2602.04029v1).
 - **Retrieve / skill:** Does generating a relational database imply graph-native inference? Separate generator, representation and learner.
 - **Teach:** Compare relational-prior generation plus linearization with synthetic databases used to pretrain RT. Schema diversity and row count are different scaling axes.
@@ -195,6 +213,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b14"></a>
 
 ### B14 ★ · RDBLearn and TabPFN-Rel: the flattening challenge
+
+**Prepared2026-10-03:** [lesson](../lessons/b14-flattening-challenge.html) · [lab](../labs/b14-flattening-challenge.ipynb) · [reproduction contract](../labs/b14-reproduction.md). Complete12-fit course ablation; selected paper status: COMPLETE_SELECTED_RELEASE_CLOSE. Learner PENDING_WRITTEN_DEFENSE.
+
 - **Read:** [RDBLearn toolkit paper](https://arxiv.org/abs/2602.18495v1), [companion encoder analysis](https://arxiv.org/html/2602.13697v2), [RelArena/TabPFN-Rel §§1–3](https://arxiv.org/html/2608.16319v2).
 - **Retrieve / skill:** Where is relational information learned versus constructed? Trace feature synthesis and the ICL backend separately.
 - **Teach:** Explicitly distinguish the toolkit paper from its theoretical companion, historical backends from current versions, and local text-free from hosted text-enabled variants.
@@ -205,6 +226,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b15"></a>
 
 ### B15 ◆ · Parameter-free encoders: limits and assumptions
+
+**Prepared 2026-10-04:** [lesson](../lessons/b15-parameter-free-encoders.html) · [lab](../labs/b15-parameter-free-encoders.ipynb) · [contract](../labs/b15-reproduction.md). Complete finite 4-rule/8-column worlds and 16 interventions; Table 5 RDBLearn trial target INCOMPLETE_SOURCE_PROTOCOL_GATE, inference NOT_RUN. Learner PENDING_WRITTEN_DEFENSE. Dedicated label-visibility widgets replace the generic label-count visual because access, not just quantity, is the mechanism.
+
 - **Read:** [Parameter-Free Encoders Remain Viable](https://arxiv.org/abs/2607.05476v2).
 - **Retrieve / skill:** Which labels are permitted in an encoder? State the theorem's domain.
 - **Teach:** Study the label-as-input setting; do not conclude that learned encoders can never help.

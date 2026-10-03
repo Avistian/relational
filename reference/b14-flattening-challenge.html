@@ -1,0 +1,110 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B14 · Flattening reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/flattening.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B14-%C2%B7-Time-safe-flattening-and-fair-predictor-swaps">B14 &#183; Time-safe flattening and fair predictor swaps<a class="anchor-link" href="#B14-%C2%B7-Time-safe-flattening-and-fair-predictor-swaps">&#182;</a></h1><p><strong>Recipe:</strong> query key → permitted database rows → key-path aggregates → support/query feature table → predictor → keyed scores.</p>
+<table>
+<thead>
+<tr>
+  <th>Item</th>
+  <th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Query identity</td>
+  <td>Complete(entity_id,prediction_time), never entity alone</td>
+</tr>
+<tr>
+  <td>Visibility</td>
+  <td>Course:event time&lt;min(query,snapshot);arrival time≤that boundary</td>
+</tr>
+<tr>
+  <td>Inner phase</td>
+  <td>Training support; validation-censored database; validation selects</td>
+</tr>
+<tr>
+  <td>Outer phase</td>
+  <td>Declared final support; test-censored database; hidden test labels</td>
+</tr>
+<tr>
+  <td>Backbone ablation</td>
+  <td>Same feature bytes, support/query keys, preprocessing and label access</td>
+</tr>
+<tr>
+  <td>Pipeline comparison</td>
+  <td>May change several components; cannot identify one component's effect</td>
+</tr>
+</tbody>
+</table>
+<p>**Worked trace:**event/arrival/value=(2,3,2),(6,7,6),(7,12,100),(10,10,20). Query14,snapshot10 reads[2,6], so count2,mean4,last6. Arrival checks exclude100; strict event boundary excludes20.</p>
+<p>**RDBLearn original:**depths2/3/4 × TabPFNv2/v2.5/LimiX=9candidates;10k support cap. **RelArena RDBLearn:**six candidates, omits LimiX, adapted preprocessing. **TabPFN-Rel OSS:**three depths,TabPFN-3,no text,100k context cap,train+validation refit. API text-enabled scores are separate.</p>
+<p>**F1 release:**seed0;11,411train/566validation/702test;inner2005/outer2010;reference target0.7145AUROC. Recent-pool branch inactive on11,977final support rows. A matched code/data release is not historical checkpoint identity.</p>
+<p><strong>COMPLETE_SELECTED_RELEASE_CLOSE</strong> · Fresh complete three-depth search and both final refits. Validation selects depth 3. Selected test AUROC: 0.712838530 versus the published 0.7145 (absolute difference 0.001661470). All five evaluations and 3,102 predictions were independently scored. Historical checkpoint byte identity remains NOT_ESTABLISHED; the full suite and pretraining remain NOT_RUN.</p>
+<table>
+<thead>
+<tr>
+  <th style="text-align:right">Depth</th>
+  <th style="text-align:right">Fresh validation AUROC</th>
+  <th style="text-align:right">Fresh test AUROC</th>
+  <th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">0.606422</td>
+  <td style="text-align:right">0.712848</td>
+  <td>unselected / default</td>
+</tr>
+<tr>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">0.624671</td>
+  <td style="text-align:right">0.712839</td>
+  <td>selected</td>
+</tr>
+<tr>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">0.614177</td>
+  <td style="text-align:right">NOT_EVALUATED</td>
+  <td>unselected</td>
+</tr>
+</tbody>
+</table>
+<p>Fresh single-seed released-checkpoint inference. No uncertainty across seeds is estimated. Unselected nondefault settings have no test score by design.</p>
+<table>
+<thead>
+<tr>
+  <th>Features</th>
+  <th>Predictor</th>
+  <th style="text-align:right">Fixed-snapshot MSE, mean ± SD</th>
+  <th style="text-align:right">Rolling-policy MSE, mean ± SD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>entity-only</td>
+  <td>ridge</td>
+  <td style="text-align:right">1.69207 ± 0.07121</td>
+  <td style="text-align:right">1.69207 ± 0.07121</td>
+</tr>
+<tr>
+  <td>entity-only</td>
+  <td>rbf</td>
+  <td style="text-align:right">1.60746 ± 0.03372</td>
+  <td style="text-align:right">1.60746 ± 0.03372</td>
+</tr>
+<tr>
+  <td>relational</td>
+  <td>ridge</td>
+  <td style="text-align:right">0.41460 ± 0.03703</td>
+  <td style="text-align:right">0.40847 ± 0.03518</td>
+</tr>
+<tr>
+  <td>relational</td>
+  <td>rbf</td>
+  <td style="text-align:right">0.19634 ± 0.00654</td>
+  <td style="text-align:right">0.31005 ± 0.01111</td>
+</tr>
+</tbody>
+</table>
+<p>Author measurements: 12 fits; 3,072 fixed + 3,072 rolling predictions. Lower MSE is better. Rolling uses later events and is a different information policy; it reuses fitted support.</p>
+<p>**Evidence checks:**future-row and held-out-label interventions; exact keyed coverage; independent scoring; complete candidate grid and validation-only selection; source/data/checkpoint hashes; aggregate budget accounting. Full suite, pretraining and learner mastery are separate.</p>
+<p><a href="../lessons/b14-flattening-challenge.html">Lesson</a> · <a href="../labs/b14-flattening-challenge.ipynb">Student lab</a> · <a href="../labs/b14-reproduction.md">Full contract</a> · <a href="https://arxiv.org/html/2602.18495v1">RDBLearn paper</a> · <a href="https://arxiv.org/html/2608.16319v2">RelArena paper</a></p>
+</article></body></html>

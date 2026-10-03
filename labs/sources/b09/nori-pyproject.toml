@@ -1,0 +1,155 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "synthefy-nori"
+version = "0.21.0"
+description = "Nori foundation model training, inference, and evaluation"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "licenses/*"]
+authors = [{ name = "Synthefy" }]
+keywords = [
+    "tabular",
+    "foundation-model",
+    "machine-learning",
+    "deep-learning",
+    "regression",
+    "pytorch",
+    "synthetic-data",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "eval-type-backport>=0.2; python_version < '3.10'",
+    "einops>=0.7",
+    # transformers, tokenizers and sentence-transformers all require huggingface-hub<2.
+    # Left unbounded, a resolver that takes huggingface-hub 2.x first backtracks
+    # sentence-transformers to 2.2.2, whose tokenizers 0.10.3 no longer builds.
+    "huggingface-hub>=1.0,<2",
+    "kditransform>=1.0",
+    "numba>=0.60",
+    "numpy>=2.0",
+    "pandas>=2.0",
+    "pyarrow>=14",
+    "pydantic>=2.0",
+    "pyvinecopulib>=0.7.1",
+    "pyyaml>=6.0",
+    "scikit-learn>=1.4",
+    "scipy>=1.13",
+    # torch.compile/Inductor imports setuptools during backend discovery.
+    "setuptools>=68,<81",
+    "synthefy>=7,<8",
+    "torch>=2.8,<2.14",
+    "tqdm>=4.65",
+    "typing-extensions>=4.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/Synthefy/synthefy-nori"
+Repository = "https://github.com/Synthefy/synthefy-nori"
+Issues = "https://github.com/Synthefy/synthefy-nori/issues"
+Changelog = "https://github.com/Synthefy/synthefy-nori/releases"
+
+[project.optional-dependencies]
+forecasting = ["synthefy[forecasting]>=7,<8"]
+# Backward-compatible spelling; new documentation uses the broader forecasting extra.
+timeseries = ["synthefy[forecasting]>=7,<8"]
+train = ["wandb>=0.15.0", "xgboost"]
+eval = ["matplotlib", "openml"]
+interpretability = ["shapiq>=1.0", "matplotlib"]
+# Explainability: Nori feature importance (permutation / SHAP) -> distill to a glass-box EBM.
+# The SHAP path additionally needs the `interpretability` extra (shapiq).
+explainability = ["interpret-core>=0.6", "joblib", "matplotlib", "scipy>=1.13"]
+# Zero-shot text features: embed free-text columns and append them as numeric
+# columns (NoriRegressor.fit(..., text_columns=...)). sentence-transformers is
+# imported lazily, so numeric-only use never needs it.
+text = ["synthefy[text]>=7,<8"]
+dev = [
+    "build",
+    "pytest",
+    "ruff",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+# uv dependency groups are per-package, so the client's own dev group
+# (libs/synthefy/pyproject.toml) is not addressable when running from the workspace root.
+# This group carries the two things the client's tests need beyond the root dev extra
+# (pytest is already there), with the member's dev group as the source of truth for the pins.
+[dependency-groups]
+client-test = [
+    "boto3>=1.34.0,<2.0.0",
+    "pytest-socket>=0.7.0",
+]
+
+[project.scripts]
+synthefy-nori-train = "synthefy_nori.training.cli:main"
+synthefy-nori-eval = "synthefy_nori.evaluation.cli:main"
+synthefy-nori-download = "synthefy_nori.hf:download_cli"
+synthefy-nori-upload = "synthefy_nori.hf:upload_cli"
+
+# Resolve and lock every supported runtime platform, including macOS for MPS.
+#
+# torch is intentionally NOT pinned to a PyTorch wheel index here. It resolves
+# from PyPI, whose default wheel is a CUDA 12.8 build on Linux (CPU on Windows),
+# so `uv sync` still reproduces a CUDA build for dev/CI without a manual step.
+# Pinning an index (`[tool.uv.sources] torch = { index = ... }`) would leak into
+# any project that depends on this repo via git/path and collide with *their*
+# torch index (uv reads a git/path dependency's sources; see astral-sh/uv#9942).
+# Leaving the index unpinned lets consumers — and the repo's own dev env —
+# choose the torch build. See the README for an isolated CUDA 13 environment;
+# its `uv pip --no-config` commands bypass the development-only constraint below.
+[tool.uv]
+environments = [
+    "sys_platform == 'linux'",
+    "sys_platform == 'win32'",
+    "sys_platform == 'darwin'",
+]
+# Dev/CI lock pin (this repo only — constraints are NOT read from a git/path
+# dependency, unlike sources, so this does not constrain consumers): hold the
+# locked torch at the CUDA-12.8 build the benchmarks were run on. The published
+# dependency remains bounded to the explicitly tested 2.8-2.13 range. Bump both
+# ranges deliberately, not as a side effect of re-locking.
+constraint-dependencies = ["torch<2.9"]
+
+[tool.uv.workspace]
+members = ["libs/synthefy"]
+
+[tool.uv.sources]
+synthefy = { workspace = true }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["synthefy_nori*"]
+
+[tool.setuptools.package-data]
+"synthefy_nori.configs" = ["*.json"]
+"synthefy_nori.evaluation.benchmark_lists" = ["*.csv"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not slow'"
+markers = [
+    "slow: opt-in end-to-end tests — download checkpoints + run real inference, or run a real training step (run with `pytest -m slow`)",
+]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+extend-exclude = ["*.ipynb"]   # notebooks are formatted deliberately, not by the tree-wide gate
+
+[tool.ruff.lint]
+select = ["E9", "F821", "F822", "F823"]

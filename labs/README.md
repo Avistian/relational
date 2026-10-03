@@ -305,3 +305,42 @@ Three live tasks: key-aligned MAE/RMSE/bias, tie-aware median diagnostics and co
 ### B07a · Hypernetworks
 
 [Student](b07a-hypernetworks.ipynb) · [Executed solution](html/b07a-hypernetworks.html) · [Protocol](b07a-reproduction.md). Three live functions, full visible HyperFast generation/inference and optional downstream optimizer. Nine full-dimensional predictors,18paired arms and one refresh; original Table7 source-gated. Fresh lane downloads5.09GB checkpoint; offline evidence lane needs no checkpoint.
+
+### B08 · LimiX objectives
+
+[Student](b08-structured-objectives.ipynb) · [Executed solution](html/b08-structured-objectives.html) · [Contract](b08-reproduction.md). Three live functions, visible dual-axis course model/trainer, nine fresh objective fits and full original release source appendix. Table23 Analcatdata source-gated. Portable packet includes frozen inputs and source pins; no paid service required.
+
+
+### B09 · Current cost frontier
+
+[Student](b09-cost-frontier.ipynb) · [Executed solution](html/b09-cost-frontier.html) · [Protocol](b09-reproduction.md). Identity-safe metrics, Pareto dominance and support visibility; separate current-release CPU inference, saved-evidence replay and historical Figure3 source gate.
+
+
+### B10 · Relational Transformer
+
+[Student](b10-relational-transformer.ipynb) · [Executed solution](html/b10-relational-transformer.html) · [Protocol](b10-reproduction.md). Visible typed model, directed cell attention, CPU source output/gradient checks and complete saved-context replay. Paper inference is blocked by the temporal gate.
+
+
+### B11 · Supervised relational baselines
+
+[Student](b11-supervised-relational-baselines.ipynb) · [Executed solution](html/b11-supervised-relational-baselines.html) · [Protocol](b11-reproduction.md). Visible source blocks, three live functions and complete11-run saved-prediction audit. Fresh matched RelGNN/RelGT benchmark NOT_RUN.
+
+
+### B12 · Adaptation mechanisms
+
+[Student](b12-adaptation-mechanisms.ipynb) · [Executed solution](html/b12-adaptation-mechanisms.html) · [Protocol](b12-reproduction.md). Three live operations, full36-condition/432-prediction course diagnostic, complete inherited Griffin source and explicit OpenRFM/Kumo gates.
+
+
+### B13 · Synthetic relational data
+
+[Student](b13-synthetic-relational-data.ipynb) · [Executed solution](html/b13-synthetic-relational-data.html) · [Contract](b13-reproduction.md). Three live mechanisms; 12 course fits, independent complete L200 replay, two paper architecture paths and pinned model/trainer source.
+
+
+### B14 · Flattening challenge
+
+[Student](b14-flattening-challenge.ipynb) · [Executed solution](html/b14-flattening-challenge.html) · [Contract](b14-reproduction.md). Three live mechanisms; two architecture paths; complete12-fit course ablation; exact source-backed selected TabPFN-Rel paper lane.
+
+
+### B15 · Parameter-free encoders
+
+[Student](b15-parameter-free-encoders.ipynb) · [Executed solution](html/b15-parameter-free-encoders.html) · [Contract](b15-reproduction.md). Three live mechanisms; complete finite information experiment; pinned source/default audit and explicitly blocked Table 5 inference.

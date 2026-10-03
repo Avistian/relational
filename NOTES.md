@@ -2354,3 +2354,48 @@ B07 final delivery: portable18-code-cell solution and separate extracted CLI eac
 Full released dimensions/checkpoint retained. Three numeric tables×three fresh split/model seeds×retrieval off/on;18paired prediction arms share9generated predictors. One extra banknote support refresh is timing-only. Original Table7 banknote requires10mini-test repetitions/300s each; original split/subsample/search identities remain missing:INCOMPLETE_SOURCE_PROTOCOL. Code/current checkpoint parity does not establish historical paper reproduction. Whole-paper/meta-training/MotherNet/iLTM executions NOT_RUN. No learner mastery inferred.
 
 B07a final author evidence:18arms/9,060predictions passed independent output-head and two-space neighbor reconstruction. Retrieval mean balanced accuracy:banknote80.38→100.00%,phoneme74.61→77.34%,diabetes69.59→65.72%; one phoneme split and all diabetes splits deteriorate. Portable19-code-cell solution regenerates all9predictors plus1refresh and matches exact per-split metrics. Seven corruption interventions rejected; desktop/mobile controls, keyboard/reset, noJS and print pass. Original Table7 remains INCOMPLETE_SOURCE_PROTOCOL despite equal banknote score. CPU-only, USD0paid resources. Command-session interruption preserved/charged before full rerun; no outcome-based protocol changes. No deployment/liveColab or learner mastery claim.
+
+## B08 · approved objective ablation (2026-10-03)
+
+B08-OBJECTIVE-ABLATION: three objectives×three seeds, same inputs/masks/initialization/120 steps within seed. Complete nine fits; target MSE0.6704 target-only versus0.7536 combined. Paired target differences+0.00384,−0.04761,+0.29332; mixed effects. Feature-only leaves the final target head untrained. Two-block width16 scalar-head mechanism is explicitly separate from full released LimiX architectures. Selected Table23 Analcatdata RMSE0.194 remains INCOMPLETE_SOURCE_PROTOCOL: original data/split/mask/scaler/repetitions/historical weights unestablished. No paid dispatch, full pretraining, deployment or learner mastery claim.
+
+B08 final author checks:17 portable solution code cells reproduce every fresh prediction array exactly;36 desktop/mobile control states, keyboard/reset, print/noJS, blank-student refusal and34local links pass. Original/current source and candidate BroadwayMult split bytes are pinned; historical5% masks and Table23 identity remain missing. The interrupted notebook-parent cleanup is preserved and charged; isolated kernel session fixes it. Local numerical accounting252.818/3600seconds including conservative allowances, USD0paid services. No deployment/liveColab or learner completion.
+
+
+## B09 · approved matched cost protocol (2026-10-03)
+
+Six of nine declared current-release CPU runs completed: EXAONE/Nori seeds0/1/2;534 keyed predictions audited. TabFM current1.65B-element checkpoint stopped at conservative memory preflight (INCOMPLETE_RESOURCE_GATE). EXAONE historical Figure3(b) remains INCOMPLETE_SOURCE_PROTOCOL. No substitution of smaller weights/precision/support. Aggregate accounting3096.876/3600seconds including preparation/retries/validation reserve; USD0paid services. Portable notebook is saved-evidence replay, separate from fresh inference. Learner PENDING_WRITTEN_DEFENSE; no deployment/liveColab claim.
+
+
+## B10 · approved RT-v1 mechanism and reproduction gate (2026-10-03)
+
+User approved a full lesson/lab plus selected Table1 driver-dnf protocol. Three-seed CPU dense source-shaped mirror passes outputs/gradients/permutation/hidden-target checks; complete saved-context replay reconstructs2106labels and2,156,544slots.385future-dated cells in77contexts preserve INCOMPLETE_TEMPORAL_GATE. Benchmark inference, fresh pretraining and whole-paper reproduction NOT_RUN. Original checkpoint bytes unauthenticated. Local3600second aggregate budget, USD0paid; no silent RT-J substitution. Learner PENDING_WRITTEN_DEFENSE; no deployment or live Colab claim.
+
+
+## B11 · approved supervised baseline comparison (2026-10-03)
+
+Approved USD0 scope: three-seed source block/gradient checks, complete saved11-run/13,849-prediction audit, visible model code and student/solution notebooks. L146 typed-mean GNN is not RelGNN; no cross-protocol ranking. RelGT full nine-config search remains INCOMPLETE_TEMPORAL_AND_BUDGET_GATE; inherited projection aboutUSD80.41 is not new pricing. Fresh B11 benchmark fits NOT_RUN, whole-paper NOT_RUN, learner PENDING_WRITTEN_DEFENSE. See reviews/lesson-b11/review.md.
+
+
+## B12 · Approved adaptation mechanisms (2026-10-03)
+
+USD0 paid scope. Complete36-condition fixed-kernel diagnostic (seeds0/1/2, high/lowreachability, intact/shuffled/hiddenlabels, relational/dualchannels),432keyed predictions. Not an OpenRFM model reproduction. Full Griffin20fit source/contract retained with inherited budget STOP; OpenRFM author artifacts and Kumo historical model identity unresolved. Frozen weights do not mean fixed predictions; sensitivity does not establish accuracy or feature learning. Learner PENDING_WRITTEN_DEFENSE.
+
+
+## B13 · Approved synthetic relational data (2026-10-03)
+
+USD0 paid scope; 3600 aggregate local execution seconds. Complete 12-fit equal-feature-cell course schema holdout, 3072 intact + 3072 shuffled-FK predictions; a sufficient-statistic readout transfers, and schema diversity does not consistently improve the relational arm. Independent full L200 replay: 30 evaluations/21060 predictions, no fresh B13 checkpoint inference. PluRel source and paper tag are available; later leaderboard checkpoints differ from original three-seed R²-selected Table1. Full Table1 training/source identity remains gated; no claim of missing all code, paper pretraining, broad transfer or learner mastery.
+
+B13 final delivery:16-code-cell solution from an empty directory reproduces both reports exactly;24 browser states, mobile per-seed results, keyboard/reset, no-JS/print and32links PASS. Extracted source packet authenticates359files. Actual temporary-index Pages build verifies120copied files and preserves the user index. Final local accounting 370.101/3600seconds includes failures/retries and180seconds preparation allowance; USD0paid. No deployment or liveColab claim; learner defense pending. See reviews/lesson-b13/README.md.
+
+
+## B14 · Approved flattening challenge (2026-10-03)
+
+Complete12-fit course ablation;3072fixed+3072rolling predictions; time/arrival and hidden-label interventions. Relational features help both course predictors; nonlinear predictor improves on the same table. Full original RDBLearn preprocessing diagnostic repeats category-code inconsistency; not automatically inherited by RelArena. Selected TabPFN-Rel target0.7145: COMPLETE_SELECTED_RELEASE_CLOSE. Fresh complete three-depth search and both final refits; validation selects depth 3. Test AUROC 0.712838530 versus published 0.7145; five evaluations and 3,102 predictions independently scored. Historical checkpoint identity remains NOT_ESTABLISHED; full suite and pretraining NOT_RUN. Learner defense pending; no deployment.
+
+B14 final delivery (2026-10-04): 14-code-cell portable solution exactly regenerates course and complete selected-paper replay reports; 20browser states,375px/keyboard/reset/print/no-JS and27links PASS. Temporary-index Pages build authenticates505copied files, preserves user index. Local numerical accounting1175.794/3600seconds; conservative cloud envelopeUSD3.2954816; all apps stopped. Learner PENDING_WRITTEN_DEFENSE; no deployment.
+
+
+## B15 · Approved information-boundary lesson (2026-10-04)
+
+Complete finite 4-rule/8-column worlds and 16 hidden/future-label interventions. Legal external support resolves designed ambiguity; this changes available information, not encoder training. Three live student functions and portable executed solution. RDBLearn v1.1 actual history default OFF resolves README mismatch; exact Table 5 trial candidates/seeds/checkpoints/refit unknown, so selected inference INCOMPLETE_SOURCE_PROTOCOL_GATE/NOT_RUN. Cloud USD0; full suite/pretraining NOT_RUN. Learner PENDING_WRITTEN_DEFENSE. User authorized push and Pages deployment.

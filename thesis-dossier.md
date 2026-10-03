@@ -733,3 +733,26 @@ The approved RDBLearn full21task reproduction stopped at a freshly verified shar
 - **B07 · BAR (2026-10-03):** complete 27-fit semantic-name ablation has mixed effects on three related wine tables. A matched information contract is required before assigning gains to relational structure. The frozen CARTE probe does not establish semantic or relational superiority. Original ConTextTab Table 2 source-gated. [Evidence](labs/evidence/b07/course-audit.json) · [Protocol](labs/b07-reproduction.md).
 
 - **B07a · BAR (2026-10-03):** generated predictor weights do not alone specify serving cost; RF/PCA, retrieval and support refreshes matter. Paired HyperFast query paths on three numeric tables do not establish a relational advantage or a model-family ranking. Original Table7 target source-gated. [Audit](labs/evidence/b07a/course-audit.json) · [Protocol](labs/b07a-reproduction.md).
+
+- **B08 · BAR (2026-10-03):** more reconstruction supervision does not guarantee better target prediction. Nine paired synthetic course fits gave combined target MSE0.7536 versus0.6704, with one improving seed and two worsening seeds. No real-dataset or relational advantage inferred. Table23 selected historical target source-gated. [Audit](labs/evidence/b08/course-audit.json) · [Contract](labs/b08-reproduction.md).
+
+
+- **B09 · BAR:** A credible relational advantage requires matched end-to-end baseline costs. Current release identities, ensembles and transductive preprocessing complicate comparisons. The course CPU matrix cannot establish the published regression Elo frontier or a general model ranking; see `labs/b09-reproduction.md`.
+
+
+- **B10 · BAR:** Cell-level relational structure can be implemented and independently checked without establishing a performance advantage. Three-seed CPU RT-v1 output/gradient checks pass, while complete saved-context replay preserves the temporal blocker (385 future-dated cells in77contexts). Paper82.0%AUROC is not reproduced; historical availability and architecture benefit remain unestablished. See `labs/b10-reproduction.md`.
+
+
+- **B11 · BAR:** Matching local context alone does not align global training state. Reduced RelGNN/RelGT source blocks agree numerically; the11-run replay does not establish a matched architecture advantage. Full RelGT temporal/budget blockers persist. `labs/b11-reproduction.md` separates executable evidence from the unrun matched study.
+
+
+- **B12 · BAR:** Controlled support access shows how fixed-weight predictions can depend on labels outside a relational walk. An untrained kernel can also be sensitive; this does not prove useful feature learning or an RFM advantage. Complete36-condition course diagnostic; Griffin/OpenRFM/Kumo full targets remain budget/source/identity gated.
+
+
+- **B13 · BAR:** An engineered parent-mean feature solves a held-out synthetic topology without learned graph reasoning. Equal generated-feature-cell budget, 12 fits, mixed tiny diversity changes; shuffled FKs worsen relational errors. Complete RDB-PFN replay adds audit confidence, not independent training evidence. PluRel Table1 full target remains source/protocol/budget gated despite available paper code and synthetic weights.
+
+
+- **B14 · BAR:** Strong constructed relational features and tabular predictors are a necessary comparison for a learned relational encoder. Controlled synthetic experiment separates representation and predictor effects; it cannot establish real-database superiority. Selected TabPFN-Rel F1 evidence: COMPLETE_SELECTED_RELEASE_CLOSE. Fresh complete three-depth search and both final refits; validation selects depth 3. Test AUROC 0.712838530 versus published 0.7145; five evaluations and 3,102 predictions independently scored. Historical checkpoint identity remains NOT_ESTABLISHED; full suite and pretraining NOT_RUN.
+
+
+- **B15 · BAR:** Learned parameters cannot universally recover task information absent from the input. Exact finite counterexamples show ambiguity and a legal expanded-support rescue, not universal uselessness of learned encoders. RDBLearn v1.1 Table 5 trial target0.7271 remains source-gated; no fresh paper score or real-data superiority inferred.

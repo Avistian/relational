@@ -1,0 +1,17 @@
+/* B14: 6 time-boundary states and 4 ablation controls. Default fixed10 + arrivals checked;
+   backbone-only swap remains comparable. Reset and keyboard use native controls. */
+(function(){'use strict';
+ const events=[{id:'A1',t:2,a:3,v:2},{id:'A2',t:6,a:7,v:6},{id:'A3',t:7,a:12,v:100},{id:'A4',t:10,a:10,v:20}];
+ document.querySelectorAll('[data-flat-time]').forEach(root=>{
+  const snapshot=root.querySelector('[name=snapshot]'),arrival=root.querySelector('[name=arrival]'),out=root.querySelector('output');
+  function draw(){const bound=Math.min(14,Number(snapshot.value));const rows=events.filter(e=>e.t<bound&&(arrival.value==='ignore'||e.a<=bound));const sum=rows.reduce((s,e)=>s+e.v,0),mean=rows.length?sum/rows.length:0;out.dataset.mean=String(mean);out.dataset.count=String(rows.length);out.textContent=`Boundary ${bound}; read ${rows.map(e=>e.id).join(', ')||'nothing'}. Count ${rows.length}; mean ${mean.toFixed(2)}; last ${rows.length?rows[rows.length-1].v:0}. ${arrival.value==='ignore'?'Arrival times ignored: an information-policy change.':snapshot.value==='14'?'Rolling snapshot: a different information set.':'Fixed snapshot with arrivals checked.'}`;}
+  root.addEventListener('change',draw);root.querySelector('button').addEventListener('click',()=>{snapshot.value='10';arrival.value='check';draw();});draw();
+ });
+ document.querySelectorAll('[data-flat-swap]').forEach(root=>{
+  const factor=root.querySelector('select'),out=root.querySelector('output');const cases={backbone:['true','Same features, support, normalization and snapshot. This isolates the predictor change.'],features:['false','Different feature matrices. This compares representations as well as predictors.'],context:['false','Different support examples. Context access can explain the difference.'],snapshot:['false','More recent database records. Information access can explain the difference.']};
+  function draw(){const row=cases[factor.value];out.dataset.controlled=row[0];out.textContent=row[1];}root.addEventListener('change',draw);root.querySelector('button').addEventListener('click',()=>{factor.value='backbone';draw();});draw();
+ });
+ if(window.RetrievalBank)RetrievalBank.mount(document.getElementById('b14-warmup'),{upTo:200.14,count:3});
+ if(window.Predict)Predict.mount(document.getElementById('b14-predict'),{prompt:'Predict before revealing: can a stronger predictor improve on the same constructed relational table?',options:[{label:'Yes, nonlinear structure remains',value:'yes'},{label:'No, aggregation determines predictions',value:'no'}],correct:'yes',reveal:'In this designed task, nonlinear kernel ridge improves over linear ridge on the same relational features in all three seeds. This is a course mechanism result.'});
+ if(window.Teachback)Teachback.mount(document.getElementById('b14-teachback'),{prompt:'Explain how you would distinguish better relational features from a better tabular backbone.',points:['Freeze full query and support keys.','Hold feature arrays and preprocessing fixed.','Match snapshots, labels and refit policy.','Separate controlled effects from complete pipeline results.'],model:'Materialize one legal feature table, freeze the support/query rows and support-fitted transformations, then change only the predictor. Changing contexts, text, snapshots or tuning would measure a joint pipeline change. A separate feature ablation can test constructed relational signal.'});
+})();
