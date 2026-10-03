@@ -1205,3 +1205,50 @@ Primary reading: [Temporal Heterogeneous Graph Pretraining §4.4](https://arxiv.
 ## Lesson 200 · Year 5 exit exam
 
 RDB-PFN v5 Table 9 (https://arxiv.org/html/2603.03805v5): fixed released checkpoint experiment. RelBench v2 (https://arxiv.org/abs/2602.12606): relational task context. COS preregistration (https://www.cos.io/initiatives/prereg): separate exploratory proposal from a registered future plan. Sources checked 2026-10-02; complete L200 protocol retains prior provenance limitations.
+
+## B01 · Architecture coverage and honest comparison (2026-10-03)
+
+Primary reading: [TabArena v1 §2 evaluation protocol](https://arxiv.org/html/2506.16791v1). Companion: [Fair benchmarking of deep RDB models v1 §3](https://arxiv.org/html/2607.03659v1). Used for comparison units, eligible relational context and budget accounting; their benchmark experiments were not rerun. [RDB-PFN v5](https://arxiv.org/html/2603.03805v5) supplies the inherited L200 selected experiment. Model-family primary sources are linked in `labs/evidence/b01/families.json`; these are configuration examples, not current rankings. B01's full selected audit replays all 30 L200 saved evaluations without fresh inference.
+
+## B02 · numerical representation and ensemble design
+
+[Numerical embeddings](https://arxiv.org/abs/2203.05556), [TabM v1 §3](https://arxiv.org/html/2410.24210v1#S3), [TabPack v1](https://arxiv.org/html/2607.05380v1), [pinned release](https://github.com/yandex-research/tabpack/tree/05a89e21b955f12de84889d662e15ca534019aaa). Read TabPack Figure 2, §§3.3–3.6, Appendices B/F/G. Source audit distinguishes shared matrices, independent packed weights, validation selection and cosine encoding. Full selected California release protocol completed; paper ten-seed caption versus five-seed release remains unresolved. [Protocol](labs/b02-reproduction.md).
+
+## B03 · PFN generation and access contracts (2026-10-03)
+
+### Knowledge
+
+- [PFNs](https://arxiv.org/abs/2112.10510) and [TabPFN v1](https://arxiv.org/abs/2207.01848): task priors and posterior-predictive approximation; use to distinguish conditioning from fresh optimization.
+- [Nature v2](https://www.nature.com/articles/s41586-024-08328-6) and [v2 archive](https://zenodo.org/records/13981285): alternating attention and historical evaluation. The archived evaluator imports an absent dataset loader; do not infer exact paper splits from a current example.
+- [2.5 v1](https://arxiv.org/html/2511.08667v1), [3 v2](https://arxiv.org/html/2605.13986v2), [3.5 v2](https://arxiv.org/html/2609.17895v2): generation-specific architecture, preprocessing, operating envelopes and base/Plus/Thinking distinctions. Reach for the exact report before transferring a claim.
+- [EquiTabPFN v4](https://arxiv.org/html/2502.06684v4): target-permutation equivariance; motivates class-remapping probability tests, not just accuracy comparisons.
+- [Pinned current release](https://github.com/PriorLabs/TabPFN/blob/15f5e6b2b629b905879b9be907261416f20d0df5/README.md): current access and operating limits, separate from historical protocol evidence.
+
+### Evidence gap
+
+[Local protocol](labs/b03-reproduction.md) records source hashes, the missing archived loader and unauthenticated historical split/configuration/checkpoint linkage. The six-permutation Iris diagnostic is separate fresh checkpoint inference; neither EquiTabPFN nor the blood benchmark is reproduced.
+
+
+## B04 · TabICL, compression and attention scaling (2026-10-03)
+
+Primary reading: [TabICLv2 v1 §§3–7 and Appendix A](https://arxiv.org/html/2602.11139v1#S3). Use [Figure 3](https://arxiv.org/html/2602.11139v1#S3.F3) for the named source-gated attention-fading experiment; original generator/grid/seeds and three matched checkpoint identities remain unauthenticated. [Pinned source](https://github.com/soda-inria/tabicl/tree/0dbff3ec8fc68c123c87af77b0ea8b25cd2d23f3) supplies current inference/prior/pretraining code; the README records the cautious-weight-decay discrepancy with paper v1. [Author checkpoint release](https://huggingface.co/jingang/TabICL/tree/4dcd344ece2c00be9e831fdd35bed57b5ad83e19) supplies the verified v2 classifier for six separate course diagnostics. See [protocol](labs/b04-reproduction.md) and [archived source manifest](labs/sources/b04/manifest.json). No full-paper reproduction or learner mastery inferred.
+
+## B04a · Scaling rows, features and classes (2026-10-03)
+
+Primary: [TabFlex v1 §5 and Appendix C.1](https://arxiv.org/html/2506.05584v1), [pinned release](https://github.com/microsoft/ticl/tree/3c36d9c1785844d5e983b0baf0ef4116670aa809), [TabPFN-Wide v1 §4](https://arxiv.org/html/2510.06162v1), [BETA](https://arxiv.org/html/2502.02527v1). Lesson contrasts attention reassociation, width-adapted pretraining and encoder/bagging adaptation. Figure9 source protocol remains incomplete. Complete course kernel stress matrix is separate; no pretrained model ranking inferred.
+
+## B05 · TabDPT episodes, retrieval and contamination (2026-10-03)
+
+Primary: [TabDPT v3 §3 and Appendix B.1](https://arxiv.org/html/2410.18164v3), [training release](https://github.com/layer6ai-labs/TabDPT-training/tree/af0340c5cdebe2ceb6b94c09d6f9564ee80b89df), [Turbo v1](https://arxiv.org/html/2608.01400v1). B05 pins original and later checkpoint provenance separately. Released use_knn retrieves before target removal; the paper-order course function removes it first. Complete local counterexample is not historical training or benchmark-effect evidence.
+
+## B06 · Mitra prior design (2026-10-03)
+
+[Mitra v1 §§3–4, Appendix B.3 and Table 12](https://arxiv.org/html/2510.21204v1), [Mitra-v2 §2](https://arxiv.org/html/2609.04540v1), [classifier release](https://huggingface.co/autogluon/mitra-classifier/tree/c425e9fa0910a6be1c494321792e7ba2a1367b1a), [v2 fine-tuning release](https://huggingface.co/autogluon/mitra-finetune/tree/b4701e8148dc33b00ed15d7086ff59816957cde4). Archived source files and release inventories under labs/sources/b06. Original six-arm Table 12 protocol not authenticated. Course proxy experiment and version boundaries are explicit.
+
+## B07 · Semantic transfer (2026-10-03)
+
+[CARTE v2 §§3.1–3.3](https://arxiv.org/html/2402.16785v2#S3), [ConTextTab v1 §§3–5/Table 2](https://arxiv.org/html/2506.10707v1#S5.T2), [TabSTAR v2 §3/Appendices A.2,B.2](https://arxiv.org/html/2505.18125v2#S3), [SAP-RPT-1-OSS model card](https://huggingface.co/SAP/sap-rpt-1-oss). Original June ConTextTab source f1e4560e28c59dd632a41affb0a6ed4f30af9ebe archived alongside current source and TabSTAR files in labs/sources/b07. Current wrapper bagging differs from original; binning checkpoint and exact original evaluator/splits remain unauthenticated.
+
+## B07a · Hypernetworks (2026-10-03)
+
+[MotherNet v2 §§3.1–3.2](https://arxiv.org/html/2312.08598v2#S3), [HyperFast v1 model/Appendix A/Table7](https://arxiv.org/html/2402.14335v1), [iLTM v1 §3](https://arxiv.org/html/2511.15941v1#S3). Full HyperFast source current d1f1c3b0c45572dc09173733b194c0e7384cd696 and publication-era9a25ed34edf1d9896efde32500707fb8689e1005 archived. Checkpoint43484094 authenticated by SHA256 in labs/sources/b07a/checkpoint.json. Model generation does not remove optional retrieval/context costs.

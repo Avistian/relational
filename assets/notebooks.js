@@ -11,7 +11,7 @@
   var REPO = "Avistian/relational";
   var BRANCH = "main";
 
-  function padId(n) { return String(n).padStart(4, "0"); }
+  function padId(n) { return /^B/.test(String(n)) ? String(n) : String(n).padStart(4, "0"); }
 
   function htmlPathFor(labPath) {
     // labs/0012-foo.ipynb -> labs/html/0012-foo.html
@@ -73,7 +73,7 @@
       .then(function (data) {
         var labs = (data.lessons || [])
           .filter(function (l) { return l.published && l.labPath; })
-          .sort(function (a, b) { return b.id - a.id; }); // newest first
+          .sort(function (a, b) { return (b.sortOrder || Number(b.id)) - (a.sortOrder || Number(a.id)); }); // newest first
         if (!labs.length) { el.innerHTML = "<p class=\"nav-error\">No notebooks yet.</p>"; return; }
         var ul = document.createElement("ul");
         ul.className = "nb-gallery";

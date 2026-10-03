@@ -1,0 +1,104 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Scalable ICL field guide</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/scalable-icl.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="Scalable-ICL-%C2%B7-field-guide">Scalable ICL &#183; field guide<a class="anchor-link" href="#Scalable-ICL-%C2%B7-field-guide">&#182;</a></h1><p><strong>Trace:</strong> support X/y + query X → support-fitted wrapper → repeated feature groups and early support-label embeddings → induced column attention → within-row feature attention and4 CLS tokens →512-wide row vectors → dataset ICL with support targets → class head → wrapper probabilities. Query targets enter the scorer only.</p>
+<p><strong>Pinned classification shapes:</strong> N=S+Q; feature representation N×F×128;3 column blocks with128 inducing vectors;3 row blocks;4×128 CLS outputs;12 ICL blocks,512 width,8 heads; ten-class head, task-specific outputs. Repeated grouping size3 with <code>same</code> mode preserves F positions. This is checkpoint-specific.</p>
+<p>**One-query cost example:**128 support scores after compression versus30×128 repeated per-feature scores. This isolates a single attention operation; it is not total model FLOPs or measured memory.</p>
+<p><strong>Attention oracle:</strong> one logit gap g among n keys gives p_anchor=exp(g)/(exp(g)+n−1). H_normalized=−Σp log(p)/log(n), range[0,1] for n&gt;1. For n=1 define the teaching entropy as0. Low entropy does not imply correctness.</p>
+<p><strong>QASSMax:</strong> q × base_MLP(log S) × [1+tanh(gate_MLP(q))], then scaled dot-product attention. Learned query scaling is not the toy's fixed log multiplier.</p>
+<div class="b04-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Comparison</th>
+  <th>What changes</th>
+  <th>What it can establish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Nested support, fixed checkpoint</td>
+  <td>Evidence and context length</td>
+  <td>Behavior on those paired operating points</td>
+</tr>
+<tr>
+  <td>Fixed Q/K/V, scaling only</td>
+  <td>Local numerical operator</td>
+  <td>The isolated attention calculation</td>
+</tr>
+<tr>
+  <td>Matched pretrained variants</td>
+  <td>One training-time choice</td>
+  <td>Conditional architectural attribution, with matched prior and budget</td>
+</tr>
+<tr>
+  <td>Mean vs mean + flags</td>
+  <td>Information representation and width</td>
+  <td>Paired outcome for the declared missingness process</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Information contract:</strong> record support/query row identities, checkpoint/source hashes, seed, input type, preprocessing fit scope, view count, batch size, cache, selection and resource budget. Refit on query data only if the protocol explicitly allows it; label such a protocol separately. Hold scoring labels outside inference. Test actual batching behavior.</p>
+<p><strong>Measured B04:</strong> all384 course predictions scored. Batch delta0 at atol1e-6. MCAR flags preserve62/64 accuracy; log loss improves slightly and Brier worsens. Timings are one CPU observation per setting and RSS includes the whole worker. No large-context scaling or missingness-shift robustness claim.</p>
+<div class="b04-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Configuration</th>
+  <th style="text-align:right">Support</th>
+  <th style="text-align:right">Correct / 64</th>
+  <th style="text-align:right">Log loss</th>
+  <th style="text-align:right">Predict seconds</th>
+  <th style="text-align:right">Peak RSS MiB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>clean-32</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">61</td>
+  <td style="text-align:right">0.174837</td>
+  <td style="text-align:right">0.505</td>
+  <td style="text-align:right">664.58</td>
+</tr>
+<tr>
+  <td>clean-128</td>
+  <td style="text-align:right">128</td>
+  <td style="text-align:right">63</td>
+  <td style="text-align:right">0.095919</td>
+  <td style="text-align:right">0.609</td>
+  <td style="text-align:right">677.20</td>
+</tr>
+<tr>
+  <td>clean-384</td>
+  <td style="text-align:right">384</td>
+  <td style="text-align:right">63</td>
+  <td style="text-align:right">0.044251</td>
+  <td style="text-align:right">1.236</td>
+  <td style="text-align:right">680.25</td>
+</tr>
+<tr>
+  <td>batch-128</td>
+  <td style="text-align:right">128</td>
+  <td style="text-align:right">63</td>
+  <td style="text-align:right">0.095919</td>
+  <td style="text-align:right">1.975</td>
+  <td style="text-align:right">677.64</td>
+</tr>
+<tr>
+  <td>mean-128</td>
+  <td style="text-align:right">128</td>
+  <td style="text-align:right">62</td>
+  <td style="text-align:right">0.132061</td>
+  <td style="text-align:right">0.652</td>
+  <td style="text-align:right">674.66</td>
+</tr>
+<tr>
+  <td>indicator-128</td>
+  <td style="text-align:right">128</td>
+  <td style="text-align:right">62</td>
+  <td style="text-align:right">0.127319</td>
+  <td style="text-align:right">1.135</td>
+  <td style="text-align:right">693.95</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Reproduction gate:</strong> Figure3 INCOMPLETE_SOURCE_PROTOCOL: original generator/seeds/full grid, matched ablation checkpoints and exact references are not authenticated. Executable preflight refuses dispatch. Fresh course inference COMPLETE; pretraining/full benchmark NOT_RUN; historical identity NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.</p>
+<p><strong>Three learner functions:</strong> stable attention + entropy; support-only means; frozen imputation + flags. Revisit the shape trace, an attention calculation and a failure case after1/7/30 days. Ask the agent for feedback.</p>
+<p><a href="../lessons/b04-tabicl-scalable-icl.html">Lesson</a> · <a href="../labs/b04-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2602.11139v1#S3">Primary paper</a> · <a href="https://github.com/soda-inria/tabicl/tree/0dbff3ec8fc68c123c87af77b0ea8b25cd2d23f3">Pinned source</a>.</p>
+</article></body></html>

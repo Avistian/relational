@@ -1,0 +1,167 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson B07 — Semantic transfer: CARTE, ConTextTab and TabSTAR</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/semantic-transfer.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="Semantic-transfer:-when-names-become-inputs">Semantic transfer: when names become inputs<a class="anchor-link" href="#Semantic-transfer:-when-names-become-inputs">&#182;</a></h1><p><strong>B07 · Research bridge · One skill:</strong> design a semantic-name ablation that changes information without changing the evaluation population.</p>
+<p><a href="../labs/b07-semantic-transfer.ipynb">Student notebook</a> · <a href="../labs/html/b07-semantic-transfer.html">Executed solution</a> · <a href="../reference/b07-semantic-transfer.html">Field guide</a> · <a href="../labs/b07-reproduction.md">Reproduction contract</a></p>
+<h2 id="1-%C2%B7-The-gap-after-B06">1 &#183; The gap after B06<a class="anchor-link" href="#1-%C2%B7-The-gap-after-B06">&#182;</a></h2><p><a href="b06-mitra-prior-mixtures.html">B06</a> varied the distribution of training tasks while keeping the learner fixed. But a numerical task generator does not automatically teach a model what “country,” “wine,” or “price” means. A column of numbers has statistical structure; a column name can add a clue about what those numbers describe.</p>
+<p><strong>Semantic transfer</strong> means reusing meaning learned elsewhere when predicting on a new table. Here, names and text values enter a pretrained representation. They can help with little labeled data. They can also be irrelevant, ambiguous, or misleading. Our job is to measure their contribution rather than assume it.</p>
+<p>This connects to the mission: before crediting a relational model for using database structure, check whether it simply received useful text that its competitors never saw. A foreign-key relationship and a meaningful column name are different information channels.</p>
+<p><strong>Recall before reading.</strong> A <em>feature</em> is a known input. A <em>target</em> is the value to predict. An <em>embedding</em> maps an input into a vector of numbers. <em>Pretraining</em> learns reusable parameters before the present task. <em>Fine-tuning</em> changes parameters using the present task's training data. <em>In-context learning</em> changes the labeled examples supplied to a frozen model.</p>
+<div id="b07-warmup"></div>
+<noscript><p>Recall B06: what must stay fixed when comparing priors? Recall L074: what do row-graph edges represent? Recall B05: may a query label enter its retrieved context?</p></noscript>
+
+<h2 id="2-%C2%B7-What-exactly-will-we-remove?">2 &#183; What exactly will we remove?<a class="anchor-link" href="#2-%C2%B7-What-exactly-will-we-remove?">&#182;</a></h2><p><strong>Worked example.</strong> A wine row has <code>volume = 2</code> after numerical scaling and <code>country = France</code>. Its target is price. Renaming the headers to <code>6</code> and <code>7</code> preserves every cell value. Removing the country column changes which facts are available. Those are different interventions.</p>
+<table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>Headers</th>
+  <th>Numeric values</th>
+  <th>Text and categorical values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Meaningful</td>
+  <td>Original names</td>
+  <td>Preserved</td>
+  <td>Preserved</td>
+</tr>
+<tr>
+  <td>Anonymous</td>
+  <td>Fixed digit names</td>
+  <td>Preserved</td>
+  <td>Preserved</td>
+</tr>
+<tr>
+  <td>Numeric-only</td>
+  <td>Same digit names</td>
+  <td>Preserved</td>
+  <td>Removed</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>In plain terms.</strong> The first comparison asks what happens when we remove the natural names. The second asks what happens when we also take away text-valued predictors. Neither question asks which architecture is best.</p>
+</blockquote>
+<p>A model can still learn from “France” when its header is anonymous. Digit labels also have embeddings; anonymous does not mean zero information. Our numeric-only arm removes categorical and free-text columns together. It changes both information and graph size, so a score change cannot be attributed solely to a language model's quality.</p>
+<div class="b07-board" data-b07="intervention"><h3>Predict the center after hiding names</h3><p>Illustrative 2D vectors. Keep row identity and numeric value 2 fixed.</p><div class="b07-pair"><div><strong>Baseline row</strong><p>volume: 2; country: France</p><p>center = [1, 0.5]</p></div><div><strong>Changed row</strong><p data-changed>volume: 2; country: France</p></div></div><label>Information arm<select><option value="meaningful">Meaningful headers</option><option value="anonymous">Anonymous headers</option><option value="numeric_only">Numeric features only</option></select></label><button type="button">Reset intervention</button><output aria-live="polite">Numeric leaf=[2,0]; text leaf=[0,1]. Mean center=[1,0.5]. Anonymous headers produce [0.36,0.94]; numeric-only produces [0.72,1.28]. These are illustrative vectors.</output></div>
+
+<p>The board uses <strong>illustrative two-dimensional vectors</strong>, not measured FastText vectors. With meaningful names, the numeric leaf is <code>2 × (1,0) = (2,0)</code>. The text leaf is <code>(0,1)</code>. CARTE's course center averages elementwise edge–leaf products: <code>((2,0)+(0,1))/2 = (1,0.5)</code>. Changing only the header vectors changes this computation even though the cells stay fixed. Trace both coordinates before moving the control.</p>
+<h2 id="3-%C2%B7-Model-architecture:-CARTE-makes-one-graph-per-row">3 &#183; Model architecture: CARTE makes one graph per row<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-CARTE-makes-one-graph-per-row">&#182;</a></h2><p><a href="0074-carte-cross-table-transfer.html">Recall L074</a>. A <strong>row graph</strong> has a center representing one row and leaves representing its observed cells. A column-name embedding labels each edge. Text values get language embeddings; a numerical value scales its column vector. No explicit correspondence between different tables' schemas is needed to apply shared parameters.</p>
+<p><strong>Follow the operation.</strong> The B07 course encoder uses 300-dimensional vectors. Learned initial maps transform nodes and edges. For each edge, its vector multiplies the sending node vector element by element. Twelve attention heads assign weights to incoming messages; each head uses 25 coordinates. The center gathers these weighted messages. Normalization and a small feedforward network produce one 300-dimensional row representation. The visible code identifies receiver and sender indices explicitly.</p>
+<figure class="b07-figure"><img src="../labs/figures/b07/carte.svg" alt="Course CARTE: visible row graph, edge-conditioned messages, frozen selected encoder and fitted ridge head."><figcaption>Course CARTE: visible row graph, edge-conditioned messages, frozen selected encoder and fitted ridge head.</figcaption></figure>
+
+<p><strong>Adaptation.</strong> CARTE transfers graph-pretrained weights and learns a downstream predictor. In this lesson, the encoder stays frozen and we fit a ridge head: a linear predictor whose coefficient penalty is controlled by alpha. Larger alpha shrinks the fit more strongly. Training rows fit the head; validation rows choose alpha; test rows measure the chosen head.</p>
+<blockquote>
+<p><strong>Scope check.</strong> B07 reuses L074's exact selected one-readout implementation and YAGO tensors. Strict initial-map loading, no ordinary graph blocks, zero dropout, and a ridge head differ from the full published downstream procedure. This is a complete course experiment, not a new CARTE paper reproduction. See <a href="https://arxiv.org/html/2402.16785v2#S3">CARTE §§3.1–3.3</a> and the <a href="../labs/b07-reproduction.md">local contract</a>.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Model-architecture:-ConTextTab-reads-labeled-context">4 &#183; Model architecture: ConTextTab reads labeled context<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-ConTextTab-reads-labeled-context">&#182;</a></h2><p><strong>The new step.</strong> Instead of fitting a separate target head, ConTextTab receives labeled rows from the new task alongside unlabeled query rows. A <strong>support row</strong> supplies a known target. A <strong>query row</strong> supplies features, with its target hidden from the model.</p>
+<p>Column headers and text cells use a pretrained text encoder. Projected header vectors are added to cell representations. Numerical and date inputs have their own encoders. For the paper's binning variant, neighboring numerical bins share the representation smoothly; its regression head predicts probabilities over target bins and combines their representative values.</p>
+<p><strong>Attention has two jobs.</strong> Column attention mixes cells within each row. Row attention lets the model use the labeled context. The query's unknown target must never become an input. In the paper's base configuration, the hidden width is 768 and the model applies 12 alternating attention blocks, with block weights shared across depth in the default configuration.</p>
+<figure class="b07-figure"><img src="../labs/figures/b07/contexttab.svg" alt="ConTextTab paper concept: labeled support, hidden query target and alternating column/row attention. Original Table 2 run is source-gated."><figcaption>ConTextTab paper concept: labeled support, hidden query target and alternating column/row attention. Original Table 2 run is source-gated.</figcaption></figure>
+
+<p><strong>A small shape trace.</strong> Two support rows plus one query, with two features and one target column, give a conceptual <code>3 rows × 3 columns × 768</code> hidden table. Column attention combines each row's feature and target tokens. Row attention consults the two support rows. Only the query target position is decoded for our prediction. The diagram's tiny row counts explain information access; they are not the paper benchmark context size.</p>
+<p><strong>Bagging</strong> averages predictions from several sampled support sets. If two bags give class probabilities 0.2 and 0.8, the mean is 0.5. This spends more inference work and changes the supplied contexts; it does not train two new encoders. The original paper uses eight bags sampled with replacement. See <a href="https://arxiv.org/html/2506.10707v1#S3">ConTextTab §§3–4</a>.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The <a href="https://huggingface.co/SAP/sap-rpt-1-oss">current SAP model card</a> documents the ConTextTab rename. That does not make every current wrapper option a historical paper setting. B07 archives a concrete drift: the June code samples with replacement; the current wrapper samples without replacement. Original Table 2 remains source-gated.</p>
+</blockquote>
+<h2 id="5-%C2%B7-Model-architecture:-TabSTAR-adapts-the-representation">5 &#183; Model architecture: TabSTAR adapts the representation<a class="anchor-link" href="#5-%C2%B7-Model-architecture:-TabSTAR-adapts-the-representation">&#182;</a></h2><p><strong>The unresolved issue.</strong> A generic text vector may preserve words that are unhelpful for the current target. “Dry” might help predict a wine style but need a different interpretation when predicting price. TabSTAR introduces target-aware tokens and task training that can adapt its representations.</p>
+<p><strong>Verbalize.</strong> A semantic feature becomes a short string containing its name and value. A numerical feature has two paths: a standardized number retains precision, while a description of its name, bin and quantile conveys meaning. Standardization subtracts a training mean and divides by a training standard deviation; a quantile identifies a position in the training distribution.</p>
+<p><strong>Encode and fuse.</strong> The text path uses e5-small-v2. A small numerical network maps the numeric input to the same width. A one-layer, two-token attention block combines the pair for each element, then averages its two output vectors. The resulting element width is 384. Fusion happens within each element before attention across elements.</p>
+<p><strong>Introduce target candidates, not the answer.</strong> For classification, include every allowed class as a target token for every row: for example, <code>quality: low</code> and <code>quality: high</code>. Both appear whether the actual answer is low or high. For regression, use the target's name without its unknown value. Training labels supply the loss afterward.</p>
+<figure class="b07-figure"><img src="../labs/figures/b07/tabstar.svg" alt="TabSTAR paper architecture: numeric/text pair fusion, target candidates and six within-row interaction layers. No TabSTAR training executed here."><figcaption>TabSTAR paper architecture: numeric/text pair fusion, target candidates and six within-row interaction layers. No TabSTAR training executed here.</figcaption></figure>
+
+<p><strong>Interact and predict.</strong> Six transformer layers mix feature and target tokens within the row. The same prediction head scores each candidate target token; softmax turns the scores into probabilities. Sharing the head supports different class counts without a separately sized classifier for each dataset. For two features and two candidate classes, this stage processes <code>4 × 384</code> vectors. It does not require support-row attention at prediction time.</p>
+<p><strong>Adaptation.</strong> During TabSTAR pretraining, the upper text-encoder layers are trainable. Its downstream procedure uses <strong>LoRA</strong>, low-rank trainable updates to selected weight matrices, while base weights stay frozen. Those learned updates still constitute gradient-based task adaptation. The paper uses rank 32 and adapters across eligible blocks, including eligible text-encoder layers. See <a href="https://arxiv.org/html/2505.18125v2#S3">TabSTAR §3 and Appendices A.2/B.2</a>.</p>
+<div class="b07-board" data-b07="adaptation"><h3>Audit the update and target contract</h3><label>Adaptation path<select data-model><option value="carte">CARTE / course probe</option><option value="contexttab" selected>ConTextTab context</option><option value="tabstar">TabSTAR adapters</option></select></label><label>Candidate-class input<select data-target><option value="all">Every class candidate</option><option value="answer">Only the true answer</option></select></label><button type="button">Reset contract</button><output aria-live="polite">ConTextTab changes context with frozen weights. Every class candidate may identify the task; the true query answer must remain hidden. TabSTAR learns adapters; the CARTE course probe fits a ridge head.</output></div>
+
+<blockquote>
+<p><strong>Scope check.</strong> CARTE, ConTextTab and TabSTAR are an architecture comparison here, not a three-model score contest. Only the selected CARTE course lane is executed. TabSTAR is not forward-only ICL, and context-based prediction is not evidence that a system never used labeled data.</p>
+</blockquote>
+<h2 id="6-%C2%B7-Freeze-the-experiment-before-viewing-its-scores">6 &#183; Freeze the experiment before viewing its scores<a class="anchor-link" href="#6-%C2%B7-Freeze-the-experiment-before-viewing-its-scores">&#182;</a></h2><p>Three existing wine tables each contribute 384 rows. For every split seed, the same 64 rows train every arm, the same 64 choose alpha, and the same 256 evaluate it. We run seeds 0, 1 and 2. The recipe is exactly L074's, not a new favorable split.</p>
+<p><strong>Held fixed:</strong> pretrained tensors, raw numeric inputs, targets, train-only preprocessing, split identities, ridge candidates <code>[1,10,100]</code>, selection rule and test population. <strong>Varied:</strong> natural header meanings, then text-valued predictors. <strong>Measured:</strong> test R², RMSE and paired changes. All 27 fits retain their selected head and predictions.</p>
+<p><strong>R²</strong> compares squared errors with predicting the test-set mean: <code>1 − sum((prediction−target)²) / sum((target−test_mean)²)</code>. The test mean is a scoring reference, not a trained baseline. R² can be negative. <strong>RMSE</strong> is the square root of mean squared error. It is in the preserved transformed-target units here, not necessarily currency units.</p>
+<p><strong>Worked scoring example.</strong> Targets <code>[1,3]</code> have mean 2 and denominator 2. Predictions <code>[1,2]</code> have squared error 1. Therefore R² is <code>1−1/2 = 0.5</code>. Perfect predictions give 1; a negative value means worse squared error than that test-mean reference.</p>
+<p><strong>Pair before averaging.</strong> Suppose anonymous minus meaningful gives differences <code>[−0.03,+0.01,+0.02]</code> for three matched splits. Their mean is zero, but the splits disagree. Pair by <code>(table, seed)</code>; do not pair list positions or quietly drop failed runs. Report the sample standard deviation as split variability, not as a confidence interval.</p>
+<div id="b07-predict"></div>
+<noscript><p>Predict before the table: do meaningful headers help every table? Author result: no; their mean score is higher on one of three tables.</p></noscript>
+
+<details id="b07-results"><summary>Reveal the complete author experiment</summary>
+
+<table>
+<thead>
+<tr>
+  <th>Table</th>
+  <th style="text-align:right">Meaningful</th>
+  <th style="text-align:right">Anonymous</th>
+  <th style="text-align:right">Numeric-only</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>wine_pl</td>
+  <td style="text-align:right">0.162 ± 0.079</td>
+  <td style="text-align:right">0.101 ± 0.160</td>
+  <td style="text-align:right">-0.557 ± 0.515</td>
+</tr>
+<tr>
+  <td>wine_dot_com_prices</td>
+  <td style="text-align:right">-0.072 ± 0.167</td>
+  <td style="text-align:right">0.043 ± 0.273</td>
+  <td style="text-align:right">0.058 ± 0.113</td>
+</tr>
+<tr>
+  <td>wine_vivino_price</td>
+  <td style="text-align:right">0.262 ± 0.024</td>
+  <td style="text-align:right">0.318 ± 0.012</td>
+  <td style="text-align:right">0.388 ± 0.027</td>
+</tr>
+</tbody>
+</table>
+<p>Mean test R² ± sample SD across three paired split seeds. Full data: <a href="../labs/evidence/b07/course-audit.json">independent audit</a>.</p>
+<figure class="b07-figure"><img src="../labs/figures/b07/results.png" alt="Measured test R²: three split-seed points per arm, black mean bars and common vertical scale."><figcaption>Measured test R²: three split-seed points per arm, black mean bars and common vertical scale.</figcaption></figure>
+
+<p><strong>Read the mixed outcome.</strong> Removing names lowers mean R² by about 0.061 on wine_pl, raises it by 0.114 on wine_dot_com_prices, and raises it by 0.056 on wine_vivino_price. On wine_dot_com_prices, two paired splits decline and one large increase reverses the mean. Do not describe that mean as improvement on every split.</p>
+<p>Text removal is also mixed: numeric-only harms wine_pl substantially but improves mean scores on the other two. A small training set, pretrained representation mismatch and nuisance features are possible explanations; this experiment does not identify which explanation is correct.</p>
+<table>
+<thead>
+<tr>
+  <th>Table</th>
+  <th style="text-align:right">Anonymous − meaningful</th>
+  <th style="text-align:right">Numeric-only − anonymous</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>wine_pl</td>
+  <td style="text-align:right">-0.061 ± 0.081</td>
+  <td style="text-align:right">-0.658 ± 0.437</td>
+</tr>
+<tr>
+  <td>wine_dot_com_prices</td>
+  <td style="text-align:right">+0.114 ± 0.276</td>
+  <td style="text-align:right">+0.015 ± 0.234</td>
+</tr>
+<tr>
+  <td>wine_vivino_price</td>
+  <td style="text-align:right">+0.056 ± 0.012</td>
+  <td style="text-align:right">+0.070 ± 0.028</td>
+</tr>
+</tbody>
+</table>
+<p>Mean paired R² change ± sample SD; positive favors the left arm.</p>
+<p><strong>What was checked.</strong> All 6,912 test predictions are present. The independent auditor reconstructs the ridge solution from its linear equations, rechecks validation selection and scores original labels by complete row identity. Corrupted rows, labels, predictions, protocol and run coverage are rejected. The encoder tensors remain fixed. A repeat execution checks repeatability; it does not add independent seeds.</p>
+</details>
+
+<blockquote>
+<p><strong>Scope check.</strong> These are three related wine tables and a small frozen-encoder probe. The result neither establishes universal semantic benefit nor refutes larger benchmark findings. Reported mean ranks and rank-test diagnostics in the evidence file are exploratory; they cannot turn related tables into independent domains.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Full-reproduction:-what-remains-missing?">7 &#183; Full reproduction: what remains missing?<a class="anchor-link" href="#7-%C2%B7-Full-reproduction:-what-remains-missing?">&#182;</a></h2><p>The approved published target is <strong>B07-CONTEXTTAB-BAGGING</strong>: the <em>binning</em> base model versus <em>without bagging</em> on the complete CARTE subset of <a href="https://arxiv.org/html/2506.10707v1#S5.T2">ConTextTab v1 Table 2</a>. The paper reports base accuracy 76.0% and R² 71.4%; removing bagging changes each by −0.4 percentage points. These are published reference values, not B07 measurements.</p>
+<p><strong>Source gate: INCOMPLETE_SOURCE_PROTOCOL.</strong> We have original model/inference code, but have not authenticated the binning-base checkpoint, complete original dataset/split identities, or the benchmark evaluator/settings. The original wrapper defaults to direct regression; the current wrapper defaults to a later checkpoint. Substituting either would change the experiment.</p>
+<p>The <a href="../labs/_reproduce_b07.py">source preflight</a> authenticates the archive and refuses <code>--run</code>. It is not a complete original benchmark implementation. Fresh original inference, new pretraining and whole-paper reproduction remain <strong>NOT_RUN</strong>. The <a href="../labs/b07-reproduction.md">protocol</a> includes exact commands, failed attempts, deviations and remaining work. Budget: $10 total, $8 commitment stop plus $2 reserve; 3,600 aggregate local numerical seconds. No paid job was dispatched.</p>
+<h2 id="8-%C2%B7-Your-lab-and-written-defense">8 &#183; Your lab and written defense<a class="anchor-link" href="#8-%C2%B7-Your-lab-and-written-defense">&#182;</a></h2><p><a href="../labs/b07-semantic-transfer.ipynb">Open the student lab</a>. Implement three live functions: preserve row/value identities under intervention; select a head using validation only; and pair effects by complete identities. The notebook shows graph construction, attention, frozen encoder, fitting loop and independent audit. Its default run completes all 27 course fits through your functions. The <a href="../labs/html/b07-semantic-transfer.html">executed solution</a> is author-reference evidence, not your completed work.</p>
+<div id="b07-teachback"></div>
+<noscript><p>Write a defense: distinguish name removal from text removal; explain all-class target tokens; contrast context changes with parameter updates; state what the mixed wine result establishes.</p></noscript>
+
+<p><strong>Exit artifact.</strong> Submit your complete table and paired effects, then explain why the numeric-only contrast cannot isolate semantic quality. Name two falsifiers for your interpretation: for example, changing the anonymous-label scheme reverses the effect, or a matched semantic baseline using the same text erases the apparent advantage. These are proposed follow-up tests, not executed results.</p>
+<p><strong>Retrieval after completion:</strong> after 1 day, draw the three adaptation paths from memory; after 7 days, design a matched name ablation on a new schema; after 30 days, audit a benchmark that gives different text inputs to its competitors. Ask the agent whenever an operation is unclear, and bring your written defense for feedback. Learner status stays <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><strong>Next connection.</strong> <a href="../plan/year-5-6-bridge.md#b07a">B07a</a> asks whether a model can construct predictor weights from a table. The core route continues to <a href="../plan/year-5-6-bridge.md#b10">B10's relational structure</a>. In both cases, preserve this lesson's distinction between what a system knows, what it updates, and what evidence tests it.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/semantic-transfer.js"></script></body></html>

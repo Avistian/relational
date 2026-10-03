@@ -1,0 +1,166 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson B07a — Hypernetworks: generate a predictor from a table</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/hypernetworks.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B07a-%C2%B7-Generate-a-predictor-from-a-table">B07a &#183; Generate a predictor from a table<a class="anchor-link" href="#B07a-%C2%B7-Generate-a-predictor-from-a-table">&#182;</a></h1><p><strong>Research bridge · Hypernetworks · one skill:</strong> trace what the support table turns into, then decide whether that work pays off over repeated queries.</p>
+<p><a href="b07-semantic-transfer.html">B07: semantic transfer</a> · <a href="b02-numerical-embeddings-and-ensembles.html">B02: MLPs and ensembles</a> · <a href="../labs/b07a-hypernetworks.ipynb">Student lab</a> · <a href="../labs/html/b07a-hypernetworks.html">Executed solution</a> · <a href="../reference/b07a-hypernetworks.html">Field guide</a></p>
+<h2 id="Start-with-the-unresolved-question">Start with the unresolved question<a class="anchor-link" href="#Start-with-the-unresolved-question">&#182;</a></h2><p>B07 separated <strong>what information enters</strong> from <strong>what adaptation changes</strong>. ConTextTab supplies labeled context; TabSTAR learns task-specific updates. There is a third possibility: feed the labeled table into one network and ask it to <strong>write the parameters of another network</strong>.</p>
+<p>Imagine a fraud classifier serving the same table schema all afternoon. Repeating a costly support computation for every request may waste work. A hypernetwork moves some of that work into predictor construction. The catch is that preprocessing, retrieval, ensembles and support updates can remain expensive.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> The large model builds the small model. Whether the small model can work alone depends on the complete prediction path.</p>
+</blockquote>
+<p>Spend about 25 minutes on the conceptual path through the worked example and cost model. Use the lab as a separate deeper session. You do not need to run a GPU job to start learning.</p>
+<h2 id="Retrieve-before-reading">Retrieve before reading<a class="anchor-link" href="#Retrieve-before-reading">&#182;</a></h2><p>Without notes: what does an MLP layer compute? What distinguishes a frozen model receiving new context from a model taking gradient steps? Which rows may fit a scaler? Attempt these, then use the spaced warm-up.</p>
+<div id="b07a-warmup"></div>
+
+<p><strong>Prerequisite recap.</strong> A labeled <strong>support set</strong> contains feature rows and their known targets. A <strong>query</strong> has known features but an unknown target. An <strong>MLP</strong> is a sequence of matrix multiplications, biases and nonlinearities. A <strong>weight</strong> multiplies an input; a <strong>bias</strong> adds an offset. A <strong>logit</strong> is an unnormalized class score. <strong>Softmax</strong> converts scores into probabilities by exponentiating them and dividing by their sum. A <strong>gradient</strong> tells an optimizer how to change parameters to reduce a loss.</p>
+<h2 id="1-%C2%B7-Two-sets-of-weights,-two-learning-times">1 &#183; Two sets of weights, two learning times<a class="anchor-link" href="#1-%C2%B7-Two-sets-of-weights,-two-learning-times">&#182;</a></h2><p>Let S=(Xₛ,yₛ) denote labeled support. A hypernetwork h with parameters θ generates a predictor's parameters φ:</p>
+<p><strong>φ = hθ(S), then prediction = fφ(xq).</strong></p>
+<p>Here h is the generator, f is the generated predictor, and xq is a query row. θ was learned across many tasks during <strong>meta-training</strong>. φ changes when the support table changes, even if θ stays frozen. At deployment, generating φ can require no optimizer step.</p>
+<p>During meta-training, a task is split into support and queries. Generate φ from support; score query predictions against query targets; backpropagate that query loss through the generated predictor and into θ. Query labels supervise the training loss, not the generator's input. The released checkpoint packages the earlier meta-training work; it does not erase its cost.</p>
+<p>A retrieval variant instead computes <strong>fφ(xq,S)</strong>. It still consults stored support at prediction time. <a href="https://arxiv.org/html/2402.14335v1#Sx4">HyperFast, model definition and NN correction</a></p>
+<div id="b07a-predict"></div>
+
+<h2 id="2-%C2%B7-Model-architecture:-MotherNet">2 &#183; Model architecture: MotherNet<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-MotherNet">&#182;</a></h2><p><strong>Read the diagram as two phases.</strong> The transformer processes a labeled table once. Its decoder emits factors for a child MLP. A new query goes through that child, without another support-attention pass.</p>
+<figure class="b07a-figure"><img src="../labs/figures/b07a/mothernet.svg" alt="MotherNet v2: class-pooled transformer output generates rank32 factors for a two-hidden-layer child. Fixed factors were learned during meta-training. Architecture only."><figcaption>MotherNet v2: class-pooled transformer output generates rank32 factors for a two-hidden-layer child. Fixed factors were learned during meta-training. Architecture only.</figcaption></figure>
+
+<p>MotherNet encodes numeric rows and one-hot class labels. Twelve transformer layers build 512-dimensional row representations. Class-wise averaging produces a table summary. A decoder maps that summary into task-specific weight factors. The paper's child has two 512-wide hidden layers and rank 32 weight matrices. <a href="https://arxiv.org/html/2312.08598v2#S3.SS1">MotherNet v2 §3.1</a></p>
+<p><strong>Why factors?</strong> A dense 512×100 matrix contains 51,200 entries. Factoring it as P[512,32]F[32,100] uses 16,384+3,200=19,584 entries. In this model P is generated and F is learned during meta-training and fixed afterward. Compute Fx first, then P(Fx), add the bias and apply ReLU, which replaces negative values with zero. Low rank restricts the possible matrix; it is not merely a storage trick with no modeling consequence.</p>
+<p><strong>What remains?</strong> The child parameters, fixed factors and fitted preprocessing. Ensembling multiplies child construction and query work; the paper evaluates an eight-member strategy. The architecture illustration is not a MotherNet run in this lesson. <a href="https://arxiv.org/html/2312.08598v2#S3.SS2">MotherNet v2 §3.2</a></p>
+<h2 id="3-%C2%B7-Model-architecture:-HyperFast">3 &#183; Model architecture: HyperFast<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-HyperFast">&#182;</a></h2><p>HyperFast uses feedforward hypernetwork modules instead of MotherNet's support transformer. The released checkpoint is large; its role is to generate a task predictor once, then let that predictor handle queries.</p>
+<figure class="b07a-figure"><img src="../labs/figures/b07a/hyperfast.svg" alt="Full released HyperFast path: 1024 repeated support rows, 32768 random features, 784 PCA coordinates and generated layers. Retrieval retains support."><figcaption>Full released HyperFast path: 1024 repeated support rows, 32768 random features, 784 PCA coordinates and generated layers. Retrieval retains support.</figcaption></figure>
+
+<h3 id="Make-tables-with-different-widths-comparable">Make tables with different widths comparable<a class="anchor-link" href="#Make-tables-with-different-widths-comparable">&#182;</a></h3><p><strong>Standardize.</strong> Fit each feature's mean and scale on training rows. Transform support and queries with those same values.</p>
+<p><strong>Random features.</strong> A freshly sampled matrix R maps d input features to 32,768 coordinates. ReLU creates nonlinear random features. R is part of the generated predictor's state; queries reuse it.</p>
+<p><strong>PCA.</strong> Principal component analysis fits directions of variation to the support's random features. Center by the fitted mean and project to 784 coordinates. This gives a fixed-width representation for the hypernetwork, regardless of d. The release uses a full singular-value decomposition, not a learned encoder hiding inside an API. <a href="https://arxiv.org/html/2402.14335v1#Sx4">HyperFast, initial transformation layers</a></p>
+<h3 id="Write-layers,-then-use-them">Write layers, then use them<a class="anchor-link" href="#Write-layers,-then-use-them">&#182;</a></h3><p>For support row i, concatenate its 784-vector, the global 784-vector mean, its class's 784-vector mean and a 46-slot one-hot label. The first hypernetwork sees 2,398 values per row. Later modules additionally receive the preceding main-layer activations.</p>
+<p>A shared feedforward core produces per-row embeddings. Mean pooling collapses these into a table representation; a decoder emits the next 784×784 matrix and 784 biases. Generate a layer, apply it to support, then generate the following layer. The two hidden layers use a residual connection, which adds the earlier representation back before ReLU.</p>
+<p>The output module is different: it produces a 785-vector for each support row. Average those vectors within each class. Add that class's mean hidden vector to the first 784 entries. The last entry is the output bias. This produces one output column per class. <a href="../labs/sources/b07a/hyperfast/hyperfast/model.py">Pinned model source</a></p>
+<h3 id="Worked-example-%C2%B7-actual-weights,-small-numbers">Worked example &#183; actual weights, small numbers<a class="anchor-link" href="#Worked-example-%C2%B7-actual-weights,-small-numbers">&#182;</a></h3><p>Use an illustrative two-coordinate hidden state. Class 0 has two support rows; class 1 has one.</p>
+<table>
+<thead>
+<tr>
+  <th>Row</th>
+  <th style="text-align:right">Class</th>
+  <th>Generated vector: two weights + bias</th>
+  <th>Main hidden vector</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>A</td>
+  <td style="text-align:right">0</td>
+  <td>[1,2,0.1]</td>
+  <td>[2,0]</td>
+</tr>
+<tr>
+  <td>B</td>
+  <td style="text-align:right">0</td>
+  <td>[3,4,0.3]</td>
+  <td>[0,2]</td>
+</tr>
+<tr>
+  <td>C</td>
+  <td style="text-align:right">1</td>
+  <td>[5,6,0.5]</td>
+  <td>[1,1]</td>
+</tr>
+</tbody>
+</table>
+<p>For class 0, the generated-vector mean is [2,3,0.2]. Add hidden mean [1,1] to the first two entries: <strong>[3,4,0.2]</strong>. Class 1 yields <strong>[6,7,0.5]</strong>. Thus W has columns [3,4] and[6,7], and b=[0.2,0.5].</p>
+<p>A query hidden vector z=[1,2] gives zW+b=[11.2,20.5]. Class 1 wins. If a nearest-neighbor correction adds 10 to class 0, the logits become [21.2,20.5] and class 0 wins. The correction changed the prediction without changing W.</p>
+<div class="b07a-board" data-b07a="weights"><h3>Keep the generated weights; change the query path</h3><p>Toy hidden query z=[1,t]. Predict the winning class before enabling retrieval.</p><label>Hidden coordinate t: <strong data-q>2</strong><input type="range" min="-1" max="3" step="1" value="2"></label><label><input type="checkbox"> Add illustrative class 0 neighbor correction (+10)</label><button type="button">Reset weights example</button><output aria-live="polite">At z=[1,2], logits=[11.2,20.5]. One class 0 correction of10 changes logits to[21.2,20.5]. Generated weights stay fixed.</output></div>
+
+<p><strong>Two retrieval spaces.</strong> The actual release finds the nearest support row once in standardized input space and once in the penultimate hidden space. Each match adds its learned bias to the matched class's logit. It uses Euclidean distance, not iLTM's cosine-weighted label aggregate. Support duplicates can tie; the first support index wins. The widget uses one illustrative correction to make the arithmetic visible. <a href="../labs/sources/b07a/hyperfast/hyperfast/utils.py">Pinned nearest-neighbor implementation</a></p>
+<p><strong>Paper/release distinction.</strong> The paper’s ablation table names a correction using PCA features. Both archived inference wrappers instead use standardized original features for the first correction. B07a follows the actual release code and exposes that difference; it does not silently claim paper-equation parity. <a href="https://arxiv.org/html/2402.14335v1#Sx5">Paper ablations</a> · <a href="../labs/sources/b07a/original/hyperfast/hyperfast.py">Publication-era wrapper</a></p>
+<blockquote>
+<p><strong>Scope check.</strong> The code can repeat a small support batch until PCA has enough rows. Repeating a row creates no new evidence or independent observations. The course keeps the released 784-dimensional representation and explicitly records the repeated support.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Model-architecture:-iLTM">4 &#183; Model architecture: iLTM<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-iLTM">&#182;</a></h2><p>The next model combines weight generation with a richer task representation and a retained retrieval path. It is useful because it defeats the tempting shortcut “hypernetwork means support-free inference.”</p>
+<figure class="b07a-figure"><img src="../labs/figures/b07a/iltm.svg" alt="iLTM paper path: fitted tree/robust features, fixed-size projection, generated MLP and optional cosine-weighted context. Architecture only."><figcaption>iLTM paper path: fitted tree/robust features, fixed-size projection, generated MLP and optional cosine-weighted context. Architecture only.</figcaption></figure>
+
+<p><strong>Tree representation.</strong> A gradient-boosted decision tree model can be fitted on training data. Each row lands in one leaf per tree. One-hot encode those leaf identities and concatenate them; this turns learned partitions into features. iLTM also supports robustly preprocessed features and combinations of these paths. A randomized projection supplies a fixed-size representation. <a href="https://arxiv.org/html/2511.15941v1#S3.SS1">iLTM §3.1</a></p>
+<p><strong>Generated main model.</strong> Layer-by-layer hypernetwork modules generate the MLP parameters using labeled generation rows and their summaries. Optional downstream fine-tuning changes those parameters using gradients. It must be counted separately from generation. <a href="https://arxiv.org/html/2511.15941v1#S3.SS3">iLTM §§3.3–3.5</a></p>
+<p><strong>Retained context.</strong> Embed the query and labeled context into hidden vectors. Compute cosine similarity, the dot product divided by both vector lengths. Multiply the similarity matrix S by context one-hot labels Yc, divide by a positive temperature τ, and mix the resulting logits with the main logits using α. Here α=0 selects the pure main path; α&gt;0 includes retrieval. These equations describe the paper's score aggregation; do not silently replace it with a softmax attention rule. <a href="https://arxiv.org/html/2511.15941v1#S3.SS2">iLTM §3.2</a></p>
+<p><strong>Data-overlap check.</strong> Which datasets trained the generator? Which selected its checkpoint? Which evaluate transfer? HyperFast's source lists train/validation/test families; iLTM describes an exclusion pipeline. A name mismatch alone cannot prove independent datasets. Our three tables are listed as HyperFast meta-test tasks, but we have not independently reconstructed the entire historical training corpus. <a href="https://arxiv.org/html/2402.14335v1#A1">HyperFast Appendix A</a> · <a href="https://arxiv.org/html/2511.15941v1#A3">iLTM Appendix C</a></p>
+<p><strong>A useful disagreement.</strong> MotherNet v2 reports weak small-table HyperFast results without downstream optimization and contrasts different tuning regimes. Treat that as evidence tied to its benchmark and settings, not a universal verdict. Our two-path intervention does not rerun that model comparison. <a href="https://arxiv.org/html/2312.08598v2#S4">MotherNet v2 evaluation</a></p>
+<h2 id="5-%C2%B7-When-does-construction-pay-for-itself?">5 &#183; When does construction pay for itself?<a class="anchor-link" href="#5-%C2%B7-When-does-construction-pay-for-itself?">&#182;</a></h2><p><strong>First compare complete operating points.</strong> An operating point specifies the checkpoint, support size, ensembles, optional tuning, retrieval, preprocessing, cache policy, hardware and query batch size.</p>
+<p>For a simple constant-cost model, let B be construction time, c be time per query, Q be total queries, and U be the number of later support refreshes. Then:</p>
+<p><strong>T(Q,U) = (U+1)B + Qc.</strong></p>
+<p>Add fine-tuning and retrieval setup to B when used. Put per-query retrieval into c. If a refresh requires a full rebuild, charge B again. A fitted tree and an ICL cache can also have construction costs. If context changes after every request, a one-time construction story is inadequate.</p>
+<p><strong>Worked example.</strong> Assume A costs 2s to build and 0.001s per query. Assume B costs 0s to build and 0.005s per query. Solve 2+0.001Q &lt; 0.005Q: Q&gt;500. The first integer query count making A strictly cheaper is 501. At 500 they tie. Two refreshes require 6s of total construction, so the threshold becomes 1,501.</p>
+<div class="b07a-board" data-b07a="costs"><h3>Construction versus repeated work</h3><p>Illustrative assumptions: A builds in 2 s and costs 1 ms/query; B builds in 0 s and costs 5 ms/query. Hold these costs fixed.</p><label>Total queries<input data-volume type="number" min="0" max="1000000" value="500"></label><label>Support rebuilds<select data-refresh><option value="0">0 rebuilds</option><option value="1">1 rebuild</option><option value="2">2 rebuilds</option></select></label><button type="button">Reset cost example</button><output aria-live="polite">At 500 queries and 0 rebuilds, both cost 2.5 s. A is strictly cheaper from 501 queries. Two rebuilds move that threshold to 1501.</output></div>
+
+<p>For two methods, subtract their fixed costs and divide by the positive per-query saving. If A costs more to construct and its queries are no cheaper, there is no break-even. If A starts cheaper but has a steeper query cost, it may win initially and lose later. A threshold alone does not establish permanent dominance.</p>
+<p><strong>Batching matters.</strong> A 128-row call need not cost 128 times a one-row call. Our experiment measures 1,32 and 128-row calls directly. Do not extrapolate a single fitted slope across arbitrary batches. Direct ICL and a task-trained MLP appear here as comparison contracts, not measured competitors. Their construction and query costs must be measured under the same conditions before declaring a winner.</p>
+<h2 id="6-%C2%B7-The-approved-experiment,-before-the-results">6 &#183; The approved experiment, before the results<a class="anchor-link" href="#6-%C2%B7-The-approved-experiment,-before-the-results">&#182;</a></h2><p><strong>Held fixed:</strong> full released HyperFast dimensions and checkpoint; one generated predictor; no fine-tuning; each split's scaler, sampled support, random-feature matrix, PCA and generated main weights.</p>
+<p><strong>Varied:</strong> whether two nearest-neighbor logit corrections are applied. Nine generated predictors produce 18 evaluation arms: three real datasets × three split/model seeds × two query paths. A tenth construction measures one support refresh on banknote seed 0; it is not a tenth independent evaluation seed.</p>
+<p><strong>Data:</strong> full banknote (1,372 rows,4 features), phoneme (5,404,5) and diabetes (768,8). Fresh stratified 80/20 splits use seeds 0/1/2. Each generator samples 512 training rows and repeats each twice to 1,024. The scaler sees the full training partition. Test targets enter scoring only. The support-refresh example adds one previously held-out labeled row and reports construction cost only.</p>
+<p><strong>Measured:</strong> balanced accuracy, log loss, predictor construction time, repeated-query wall time, stored array bytes and refresh cost. Balanced accuracy averages recall over the two classes, weighting each class equally. Log loss averages the negative log probability assigned to the true class; confidently wrong predictions cost more.</p>
+<p><strong>Timing contract:</strong> one CPU thread; 1/32/128 query rows; one warm-up followed by three repetitions per seed and path; alternate path order. The release recomputes support hidden states on each retrieval call. A cache optimization is a different implementation and must be labeled. Retained-byte counts cover prediction arrays (including scaler mean/scale), not every fitted-object field or peak process RAM; the course adapter keeps support for both arms even though the pure path could discard it.</p>
+<p><strong>Predict first:</strong> will retrieval improve every split? Will construction dominate ten queries? Write an answer before opening the evidence.</p>
+<details id="b07a-results"><summary>Reveal measured course results</summary>
+
+<table>
+<thead>
+<tr>
+  <th>Dataset</th>
+  <th style="text-align:right">Weights only</th>
+  <th style="text-align:right">With retrieval</th>
+  <th style="text-align:right">Paired change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>banknote</td>
+  <td style="text-align:right">80.38 ± 6.20%</td>
+  <td style="text-align:right">100.00 ± 0.00%</td>
+  <td style="text-align:right">+19.62 pp</td>
+</tr>
+<tr>
+  <td>phoneme</td>
+  <td style="text-align:right">74.61 ± 1.63%</td>
+  <td style="text-align:right">77.34 ± 2.09%</td>
+  <td style="text-align:right">+2.73 pp</td>
+</tr>
+<tr>
+  <td>diabetes</td>
+  <td style="text-align:right">69.59 ± 4.07%</td>
+  <td style="text-align:right">65.72 ± 5.32%</td>
+  <td style="text-align:right">-3.88 pp</td>
+</tr>
+</tbody>
+</table>
+<p>Mean balanced accuracy ± sample SD over three paired split/model seeds. Paired change is retrieval minus weights-only, in percentage points. SD is not a confidence interval.</p>
+<figure class="b07a-figure"><img src="../labs/figures/b07a/quality.png" alt="Measured paired balanced accuracy. Lines connect the same split; all panels share a common vertical scale."><figcaption>Measured paired balanced accuracy. Lines connect the same split; all panels share a common vertical scale.</figcaption></figure>
+
+<figure class="b07a-figure"><img src="../labs/figures/b07a/timing.png" alt="Measured CPU call time: medians of9 observations per point across3 seeds and3 repeats. Construction is excluded; panel scales differ."><figcaption>Measured CPU call time: medians of9 observations per point across3 seeds and3 repeats. Construction is excluded; panel scales differ.</figcaption></figure>
+
+<p>All <strong>18 prediction arms / 9,060 query predictions</strong> passed independent row/label, output-layer, retrieval and scalar-score reconstruction. Source-wrapper prediction parity was checked for all nine generated predictors.</p>
+<p>Construction took <strong>17.01–20.90s</strong> across nine predictors (median 18.69s). Checkpoint object loading took 0.01s; authentication/download is separate. The banknote seed0 refresh took<strong>20.70s</strong>, changed the generated-state hash, and was not scored as held-out quality.</p>
+<p>For banknote, pure predictor arrays require about<strong>103.33MiB</strong>; adding stored raw support/labels gives<strong>103.35MiB</strong>. The shared hypernetwork's parameters occupy about<strong>4.74GiB</strong>; do not confuse the builder with its output. Python/temporary/allocator/peak memory is excluded. The adapter retains support in both arms; discarding it in the pure path is a possible deployment change, not something measured here.</p>
+<p>Retrieval raises mean balanced accuracy from 80.38% to 100.00% on banknote and 74.61% to 77.34% on phoneme, but lowers it from 69.59% to 65.72% on diabetes. Phoneme has one negative split effect; diabetes has three. Banknote happens to equal the published 100% number, but the original split/subsample/search identities are still missing: this numerical coincidence is not reproduction.</p>
+<p>The quality plot connects the same split across paths. Read each line before trusting a mean: retrieval is an intervention, not a guaranteed improvement. The timing plot excludes construction and shows the release's support recomputation cost. With only these three tables and one checkpoint, no broad model ranking is justified. Nearest-neighbor-only and random-generator controls were not run, so the contribution of meta-training is not isolated. Full per-split log loss and raw timings are in the audit and run report.</p>
+</details>
+
+<blockquote>
+<p><strong>Scope check.</strong> This is selected-checkpoint inference under a new course protocol. It does not establish broad hypernetwork superiority, whole-paper reproduction, independent pretraining, historical identity or learner mastery. No MotherNet/iLTM/ICL/MLP ranking was executed. A nearest-neighbor-only baseline and a random-generator control were not run, so these results do not isolate the benefit of meta-training.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Full-reproduction:-the-boundary-is-part-of-the-lesson">7 &#183; Full reproduction: the boundary is part of the lesson<a class="anchor-link" href="#7-%C2%B7-Full-reproduction:-the-boundary-is-part-of-the-lesson">&#182;</a></h2><p>The named paper target is <strong>HyperFast v1 Table 7, banknote-authentication</strong>: 100.0% balanced accuracy with 0.0 reported spread, under ten mini-test repetitions and a five-minute budget per repetition. The full table's evaluation protocol is not our nine-split ablation. <a href="https://arxiv.org/html/2402.14335v1#A1.T7">Original Table 7</a></p>
+<p>The publication-era commit and current commit expose the architecture, checkpoint URL, preprocessing and optional downstream optimizer. Their configuration files match. But the original split IDs, ten mini-test subsets, exact five-minute search/selection trajectory and original per-repeat outputs are unavailable in the inspected release. A matching score on our new split would not fix those gaps.</p>
+<p><strong>Status: INCOMPLETE_SOURCE_PROTOCOL.</strong> The original command verifies source hashes and refuses execution while those inputs are missing. It is a tested preflight, not a complete runnable reconstruction of the missing historical evaluator. Full pretraining and all-paper benchmarking remain NOT_RUN. The course command is executable independently.</p>
+<div class="highlight"><pre><span></span><span class="c1"># From the relational repository; no paid dispatch.</span>
+.venv/bin/python<span class="w"> </span>labs/_reproduce_b07a.py
+.venv/bin/python<span class="w"> </span>labs/_reproduce_b07a.py<span class="w"> </span>--run<span class="w">  </span><span class="c1"># intentionally refuses original target</span>
+.venv/bin/python<span class="w"> </span>labs/_budget_b07a.py<span class="w"> </span>.venv/bin/python<span class="w"> </span>labs/_run_b07a.py<span class="w"> </span>--output<span class="w"> </span>/tmp/b07a-fresh
+</pre></div>
+<p>The course runner needs the authenticated 5.09 GB checkpoint. The notebook includes a streaming downloader and exact hash; the checkpoint is not embedded in the webpage or notebook. The portable evidence package supports offline audit without that download. <a href="../labs/b07a-reproduction.md">Protocol and deviations</a> · <a href="../labs/evidence/b07a/source-gate.json">Source gate</a> · <a href="../labs/evidence/b07a/course-audit.json">Course audit</a></p>
+<h2 id="8-%C2%B7-Lab:-make-the-mechanism-yours">8 &#183; Lab: make the mechanism yours<a class="anchor-link" href="#8-%C2%B7-Lab:-make-the-mechanism-yours">&#182;</a></h2><p>The <a href="../labs/b07a-hypernetworks.ipynb">student notebook</a> carries all three architecture maps, the worked trace, complete visible released HyperFast architecture and optional downstream optimizer, and the complete course loop. Three live functions belong to you:</p>
+<ol>
+<li>Pool generated vectors by class and add the hidden-state residual to weights, not biases.</li>
+<li>Apply the nearest-class correction without mutating the original logits or using query labels.</li>
+<li>Compute strict break-even volume, including refreshes and cases where it never occurs.</li>
+</ol>
+<p>Each task has immediate hand-computed checks. The solution executes the fresh course lane; the student starts with blanks. Offline replay authenticates saved evidence, while <code>RUN_FRESH=True</code> regenerates predictors. These are different accomplishments.</p>
+<p><strong>EXIT: defend the claim.</strong> Explain one split where retrieval helps or hurts. Name every retained object after construction. Specify a fair measurement contract against ICL and a task-trained MLP. Give two falsification tests: changing only query labels must not change predictions; changing labeled support can change the generated predictor and forces an explicit refresh policy. Explain what original Table 7 evidence is still missing.</p>
+<div id="b07a-teachback"></div>
+
+<p><strong>Return after 1/7/30 days following completion.</strong> Draw support→weights→query from memory; derive the 501-query threshold; explain why retrieval can invalidate a “support-free” claim. Ask the agent follow-up questions or paste your written defense for feedback. Author checks leave your status <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><strong>Next connection.</strong> Carry this operating-point inventory into <a href="../plan/year-5-6-bridge.md#b18a">B18a's serving choices</a> and the <a href="../plan/year-5-6-bridge.md#b24">bridge comparison checkpoint</a>. The mission is to attribute any eventual relational-model advantage to the right mechanism and complete cost, not to a model-family label.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/hypernetworks.js"></script></body></html>

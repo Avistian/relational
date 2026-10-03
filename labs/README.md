@@ -268,3 +268,40 @@ Three live tasks: key-aligned MAE/RMSE/bias, tie-aware median diagnostics and co
 [Student](0199-select-primary-direction.ipynb) · [Executed solution](html/0199-select-primary-direction.html) · [Protocol](l199-reproduction.md) · [Portable audit](evidence/l199/reproducer.zip). Complete L190 replay plus live priority, launch and memo contracts. The learner selects from their own L198 cards; frozen author scores are not transferred between different proposals. No new model execution; written defense remains pending.
 
 - [L200 Year 5 exit exam](0200-year-5-exit-exam.ipynb): complete fresh selected checkpoint reproduction, visible model and evidence contracts, research proposal and defense. [Protocol](l200-reproduction.md).
+
+### B01 · Architecture coverage and honest comparison
+
+[Student notebook](b01-architecture-coverage-honest-comparison.ipynb) · [Executed solution](html/b01-architecture-coverage-honest-comparison.html) · [Protocol](b01-reproduction.md) · [Portable replay archive](evidence/b01/reproducer.zip). Complete saved audit: 30 runs / 21,060 predictions. Three learner functions control contracts, paired differences and claims; written defense pending. Fresh B01 model inference and full benchmark reproduction are not run.
+
+### B02 · Numerical embeddings and ensembles
+
+[Student notebook](b02-numerical-embeddings-and-ensembles.ipynb) · [Executed solution](html/b02-numerical-embeddings-and-ensembles.html) · [Protocol](b02-reproduction.md) · [Portable replay](evidence/b02/replay.zip). Full selected fresh TabPack California release experiment: original search plus five seeds; 44,586 predictions independently rescored. Three live mechanism tasks; four-cell and baseline design exercise. Paper seed discrepancy and observer deviation retained; defense pending.
+
+### B03 · PFN and the TabPFN generations
+
+[Student notebook](b03-pfn-tabpfn-generations.ipynb) · [Executed solution](html/b03-pfn-tabpfn-generations.html) · [Protocol](b03-reproduction.md) · [Portable reproducer](evidence/b03/reproducer.zip). Complete six-permutation historical v2 diagnostic, 450 probability rows; posterior/column-alignment/contract exercises and generation matrix. Blood benchmark INCOMPLETE_SOURCE_PROTOCOL; no benchmark runs or cloud spending. Learner defense pending.
+
+
+### B04 · TabICL and scalable two-stage ICL
+
+[Student notebook](b04-tabicl-scalable-icl.ipynb) · [Executed solution](solutions/b04-tabicl-scalable-icl.ipynb) · [Readable notebook](html/b04-tabicl-scalable-icl.html) · [Reproduction contract](b04-reproduction.md). Three live attention/missingness functions, complete visible upstream model, independent replay of all 384 fresh course predictions. Figure 3 INCOMPLETE_SOURCE_PROTOCOL; full pretraining/full benchmark NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
+### B04a · Scaling rows, features and classes
+
+[Student notebook](b04a-scaling-rows-features-classes.ipynb) · [Executed solution](html/b04a-scaling-rows-features-classes.html) · [Contract](b04a-reproduction.md) · [Portable packet](evidence/b04a/reproducer.zip). Complete108-setting fixed-projection/kernel diagnostic,6,912predictions independently reconstructed. Three live learner functions, TabFlex architecture, Wide/BETA comparison, cold/warm/RSS accounting and source class-boundary check. Figure9 INCOMPLETE_SOURCE_PROTOCOL; no pretrained TabFlex inference or pretraining; defense pending.
+
+### B05 · TabDPT: real-data pretraining and retrieval
+
+[Student notebook](b05-tabdpt-real-data-retrieval.ipynb) · [Executed solution](html/b05-tabdpt-real-data-retrieval.html) · [Protocol](b05-reproduction.md). Complete 18-episode / 144-prediction course audit and released-method counterexample. Banknote two-fold reproduction INCOMPLETE_SOURCE_PROTOCOL; learner defense pending.
+
+### B06 · Mitra: the prior is part of the model
+
+[Student notebook](b06-mitra-prior-mixtures.ipynb) · [Executed solution](html/b06-mitra-prior-mixtures.html) · [Protocol](b06-reproduction.md). Nine fresh course fits and 4,320 predictions; near chance, no prior benefit established. Original Table 12 INCOMPLETE_SOURCE_PROTOCOL. Learner defense pending.
+
+### B07 · Semantic transfer
+
+[Student](b07-semantic-transfer.ipynb) · [Executed solution](html/b07-semantic-transfer.html) · [Protocol](b07-reproduction.md). Complete 27-fit course CARTE ablation,6,912 predictions; meaningful headers help only one of three table means. ConTextTab Table 2 source-gated; TabSTAR architecture explained, no fresh fit. Learner defense pending.
+
+### B07a · Hypernetworks
+
+[Student](b07a-hypernetworks.ipynb) · [Executed solution](html/b07a-hypernetworks.html) · [Protocol](b07a-reproduction.md). Three live functions, full visible HyperFast generation/inference and optional downstream optimizer. Nine full-dimensional predictors,18paired arms and one refresh; original Table7 source-gated. Fresh lane downloads5.09GB checkpoint; offline evidence lane needs no checkpoint.

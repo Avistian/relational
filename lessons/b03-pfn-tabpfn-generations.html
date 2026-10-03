@@ -1,0 +1,103 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson B03 — PFN and the TabPFN generations</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/pfn-contracts.css"><link rel="stylesheet" href="../assets/l061-pfn.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Bridge</a></nav><h1 id="PFN-and-the-TabPFN-generations">PFN and the TabPFN generations<a class="anchor-link" href="#PFN-and-the-TabPFN-generations">&#182;</a></h1><p class="eyebrow">B03 · Year 5 → 6 bridge · 25-minute core + notebook investigation</p>
+
+<p><strong>Your win:</strong> trace how a fixed pretrained model learns from support rows, then decide exactly which version, inference recipe and evidence support a claim.</p>
+<p><a href="b02-numerical-embeddings-and-ensembles.html">B02</a> separated numerical representation from ensemble computation. It left a question: must every member learn new weights on your table? A PFN moves much of that learning into pretraining across tasks. At inference, the support table changes the prediction even when model weights stay fixed. For our relational mission, this matters because a flat-table foundation model is a serious baseline—but a strong flat-table result does not establish relational reasoning.</p>
+<p><strong>Retrieve before reading:</strong> What may validation labels select? Which information can a query row use? What distinguishes a checkpoint from a complete prediction pipeline? Prerequisites: conditional probability, weighted averages, attention's query/key/value roles; review <a href="0061-prior-data-fitted-networks.html">L061</a>, <a href="0062-tabpfn-v1.html">L062</a> and <a href="0064-tabpfn-v2.html">L064</a> if needed. B02 author preparation is not evidence that you have mastered it.</p>
+<h2 id="1.-Learn-an-inference-rule-before-meeting-this-table">1. Learn an inference rule before meeting this table<a class="anchor-link" href="#1.-Learn-an-inference-rule-before-meeting-this-table">&#182;</a></h2><p>Imagine two hypotheses for a coin: H₁ has success probability .25, H₂ has probability .75. Give each prior weight .5. Three observed successes have likelihoods .25³ and .75³. Multiplying by the prior and normalizing gives posterior weights <strong>1/28 and 27/28</strong>. The next-success prediction is <code>(1/28)×.25 + (27/28)×.75 = 41/56 ≈ .73214</code>. The hypothesis definitions did not change; the support evidence changed their weights.</p>
+<p>This finite calculation is an exact Bayesian teaching oracle, not TabPFN's actual prior. PFNs approximate a related posterior-predictive mapping with a neural network trained on many sampled tasks. A task generator produces features and targets; training hides query targets from the input and minimizes query prediction loss. Once θ is learned, the model computes <code>pθ(y_query | x_query, support)</code> without requiring task-specific gradient updates. Approximation error and mismatch between synthetic and real tasks remain possible. <a href="https://arxiv.org/abs/2112.10510">PFN paper</a> · <a href="https://arxiv.org/abs/2207.01848">TabPFN v1, §§2–3</a>.</p>
+<p><strong>Trace it:</strong> With no observations, the finite model predicts .5. With three failures, it predicts 15/56. More support need not push confidence in the same direction. In the notebook, implement the normalization rather than calling a classifier API.</p>
+<details><summary>Recall the earlier conditioning visual</summary><div class="l061"><div id="gp-conditioning-viz" class="pfn-widget"><p>The L061 Gaussian-process example changes the query while holding the support observation fixed. Its exact conditional is an oracle, not TabPFN. Open L061 for the full derivation.</p></div></div></details>
+
+<h2 id="2.-Model-architecture:-follow-one-prediction">2. Model architecture: follow one prediction<a class="anchor-link" href="#2.-Model-architecture:-follow-one-prediction">&#182;</a></h2><figure class="b03-architecture"><img src="../labs/figures/b03/architecture.svg" alt="Historical TabPFN v2: synthetic pretraining freezes theta; support labels and query features enter four preprocessing views, grouped cell and target tokens, twelve feature/row attention blocks, a class head, label alignment and probability averaging."><figcaption>Historical v2 computation. B03 executes the released checkpoint for a separate diagnostic; original pretraining and the named blood benchmark are unrun.</figcaption></figure>
+
+<p>The diagram makes the historical v2 path concrete. With S support rows, Q queries and F features, group pairs of feature values into G = ceil(F/2) groups and append a target token. The hidden table has shape <code>(S+Q) × (G+1) × 192</code> (omitting batch). In each of 12 blocks, feature attention mixes information inside each row; row attention transfers support information across rows; a feed-forward transformation refines the representation. Six attention heads each have width 32. Query labels are unavailable. Query tokens attend to support keys/values in the historical model, while wrapper preprocessing must be audited separately. The query target representation feeds class logits. <a href="../labs/relkit/tabpfn_l064_v2.py">Visible L064 implementation</a> · <a href="https://www.nature.com/articles/s41586-024-08328-6">Nature paper, architecture and inference Methods</a>.</p>
+<p>A wrapper adds important work: fitting transformations, choosing feature/class permutations, applying temperature, restoring class meanings and averaging views. Four views of one checkpoint are four computations, not four independently pretrained models. The notebook includes the complete L064 educational model for inspection and the pinned original-release diagnostic driver. The new learner work targets posterior weighting, output alignment and contract matching; it does not reimplement every generation.</p>
+<p><strong>What stays fixed?</strong> In base ICL, θ stays fixed; context representations, caches and predictions change. Optional fine-tuning changes θ. B02's validation-selected ensemble changes which predictors are combined. These are different adaptation mechanisms. A cache is derived state, not evidence of new pretraining.</p>
+<h2 id="3.-Generations-change-the-contract">3. Generations change the contract<a class="anchor-link" href="#3.-Generations-change-the-contract">&#182;</a></h2><p>Read the matrix as <strong>reported operating envelopes and access distinctions</strong>, not measured B03 capacities or guaranteed hard limits. Only historical v2 is executed here, in a course diagnostic. Match the exact release before transferring any claim.</p>
+<div class="b03-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Version / variant</th>
+  <th>Inputs and reported scale</th>
+  <th>Mechanism / missingness</th>
+  <th>Access boundary</th>
+  <th>Evaluation / computation contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><a href="https://arxiv.org/abs/2207.01848">v1</a></td>
+  <td>Numeric classification; ≤10 classes; 1k support rows / 100 features</td>
+  <td>Row tokens; no dedicated missingness channel</td>
+  <td>Released weights / inference</td>
+  <td>18-task numeric benchmark; 5 resamples; typically 32 views</td>
+</tr>
+<tr>
+  <td><a href="https://www.nature.com/articles/s41586-024-08328-6">v2</a></td>
+  <td>Numeric + categorical; classification (≤10 classes) / regression; 10k / 500</td>
+  <td>Grouped cells; explicit missingness signals</td>
+  <td>Released weights; historical license</td>
+  <td>Nature: 10 repetitions; default 4 classifier / 8 regressor views; tuning separate</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2511.08667v1">2.5</a></td>
+  <td>50k design; evaluated to 100k / 2k features</td>
+  <td>Deeper alternating attention; 3-feature groups; 64 learned rows; inherited missingness encoding</td>
+  <td>Released weights with separate terms; API</td>
+  <td>TabArena and additional tasks; base / fine-tuned / ensemble differ; exact run recipe NOT_AUTHENTICATED here</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2609.17895v2">2.6</a></td>
+  <td>Later interim release; summary lists 100k / 2k</td>
+  <td>Do not infer recipe from the 2.5 name</td>
+  <td>Release-specific weights / access</td>
+  <td>Inventory only: B03 does not authenticate a distinct 2.6 benchmark recipe</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2605.13986v2">3 base</a></td>
+  <td>Up to 1M rows / 2k features in report summary</td>
+  <td>Scaling, small cache, many-class decoder; missingness indicators</td>
+  <td>Released weights with separate terms; API</td>
+  <td>TabArena / TALENT; exact estimator count and split recipe NOT_AUTHENTICATED here</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2609.17895v2">3.5 base / Fast</a></td>
+  <td>Current release: up to 1M rows / 20k features; not a B03 measurement</td>
+  <td>Fourier + support ECDF and missingness signals; shared classification/regression checkpoint per variant</td>
+  <td>Base/Fast weights; separate weight terms</td>
+  <td>Report: base 8 views, Fast 4; exact benchmark recipe NOT_AUTHENTICATED here</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2609.17895v2">3 / 3.5 Plus, Thinking</a></td>
+  <td>Expanded system capabilities; version-specific modalities</td>
+  <td>Additional preprocessing / test-time computation; unreleased details stay unknown</td>
+  <td>Hosted offerings; base weights do not reproduce system</td>
+  <td>Pin API model, mode, time/selection budget; do not transfer headline scores to base</td>
+</tr>
+</tbody>
+</table></div>
+<p>The lineage is causal. V1 compresses each row into a token; v2 preserves more feature structure through alternating attention. The 2.5 report deepens this design, groups three features and adds 64 learned extra rows. Those learned rows are not the later API's Thinking mode. V3 adds scaling and many-class machinery. V3.5 moves more numerical representation into its cell encoder through Fourier and support-distribution features; its report removes earlier quantile/SVD wrapper transforms and uses eight base estimators versus four Fast estimators. This reconnects to B02: representation and ensembling still both matter. <a href="https://arxiv.org/html/2511.08667v1">2.5 §3</a> · <a href="https://arxiv.org/html/2605.13986v2">3 §2</a> · <a href="https://arxiv.org/html/2609.17895v2">3.5 §3</a>.</p>
+<p>The 2.5 report describes a 50k-row design while also evaluating up to 100k. Later summary tables list 100k. Keep intended design, evaluated range and current package guardrails separate. Similarly, accepting NaNs does not establish robustness when missingness changes between support and queries. B18a will test that shift explicitly.</p>
+<p><strong>Access is part of reproducibility.</strong> Distinguish downloadable code, weights and a hosted service. For later versions, consult each linked weight license separately from the package license; do not inherit v2 permissions. Availability of inference weights does not supply the full synthetic generator or training history. Plus and Thinking include additional inference behavior; do not invent unpublished internals. <a href="https://github.com/PriorLabs/TabPFN/blob/15f5e6b2b629b905879b9be907261416f20d0df5/README.md">Official release and access documentation</a>.</p>
+<h2 id="4.-Test-a-symmetry,-not-just-an-accuracy">4. Test a symmetry, not just an accuracy<a class="anchor-link" href="#4.-Test-a-symmetry,-not-just-an-accuracy">&#182;</a></h2><p>Class names are arbitrary. Let π map each original label to a new label. Run the same model with support labels π(y), then restore the prediction columns: <strong>aligned[:,c] = remapped[:,π(c)]</strong>. An equivariant predictor should agree with its original probabilities up to the declared numerical tolerance. This is a property to test, not a promise conferred by attention. <a href="https://arxiv.org/html/2502.06684v4">EquiTabPFN, target-permutation formulation</a>.</p>
+<p>For π=[2,0,1], a new-order probability vector <code>[.2,.1,.7]</code> becomes <code>[.7,.2,.1]</code> in the old class order. Using the inverse permutation here is a common mistake; a binary swap cannot detect it because it is its own inverse. Use a three-cycle.</p>
+<div class="b03-widget"><h3>Rename labels; preserve their meaning</h3><p>Predict whether accuracy can stay fixed while probabilities move.</p><label>Support-label permutation<select><option value="0">[0, 1, 2]</option><option value="1">[0, 2, 1]</option><option value="2">[1, 0, 2]</option><option value="3">[1, 2, 0]</option><option value="4">[2, 0, 1]</option><option value="5">[2, 1, 0]</option></select></label><button type="button">Reset</button><output aria-live="polite">Identity map: max change 0, accuracy 94.67%, log loss 0.097993. Other label maps change probabilities by up to0.071617.</output><p class="baseline">Fixed baseline: identity labels, same 75 query rows, same checkpoint and four views. Tolerance: absolute 10⁻⁶; no relative term.</p><script type="application/json">{"status": "PASS", "evidence": "COMPLETE_COURSE_DIAGNOSTIC", "permutations": 6, "prediction_rows": 450, "rows": [{"permutation": [0, 1, 2], "max_abs_delta": 0.0, "within_tolerance": true, "accuracy": 0.9466666666666667, "log_loss": 0.09799276401426749}, {"permutation": [0, 2, 1], "max_abs_delta": 0.06410855054855347, "within_tolerance": false, "accuracy": 0.9466666666666667, "log_loss": 0.09131901340111008}, {"permutation": [1, 0, 2], "max_abs_delta": 0.045050740242004395, "within_tolerance": false, "accuracy": 0.9466666666666667, "log_loss": 0.09569562970156566}, {"permutation": [1, 2, 0], "max_abs_delta": 0.07161688804626465, "within_tolerance": false, "accuracy": 0.9466666666666667, "log_loss": 0.09817505656724725}, {"permutation": [2, 0, 1], "max_abs_delta": 0.06095153093338013, "within_tolerance": false, "accuracy": 0.9466666666666667, "log_loss": 0.09358807689391832}, {"permutation": [2, 1, 0], "max_abs_delta": 0.04610711336135864, "within_tolerance": false, "accuracy": 0.9466666666666667, "log_loss": 0.10241340558029081}], "max_abs_delta": 0.07161688804626465, "repeat_max_abs_delta": 0.0, "conclusion": "Observed permutation sensitivity", "benchmark": "NOT_RUN", "equivariant_model_training": "NOT_RUN", "query_feature_independence": "NOT_ESTABLISHED"}</script></div>
+
+<p><strong>Measured:</strong> maximum aligned change <strong>0.071617</strong>; accuracy <strong>94.67%</strong> for every permutation. All five nonidentity maps exceed tolerance. Repeated identical-query prediction changes by <strong>0</strong>. The independent audit reconciles all <strong>450</strong> probability rows. <a href="../labs/evidence/b03/permutation-diagnostic.json">Raw evidence</a> · <a href="../labs/evidence/b03/diagnostic-audit.json">Scalar audit</a>.</p>
+<p>The fixed diagnostic is sklearn Iris, all 150 rows,75 support / 75 query, stratified split seed 0, model seed 0, pinned v2 classifier, four views and CPU float32. We test all six label permutations with atol 1e-6 and rtol 0, chosen before execution. There is no class-cap workaround: this task has only three classes. All 450 probability rows and the 75-row repeat are retained. This is fresh pretrained inference, <strong>not</strong> fresh pretraining, a reproduction of EquiTabPFN, or a paper benchmark result. A single fixture supplies a counterexample; it does not estimate how often this happens.</p>
+<p>A separate repeat after changing an unused copy of the scoring labels returned identical predictions. It confirms this worker passes query features only. It does not prove query-feature independence: L064 found historical preprocessing counterexamples where adding another query changes an existing prediction. Label isolation and query-batch independence are different tests.</p>
+<h2 id="5.-The-full-reproduction-gate-is-part-of-the-result">5. The full-reproduction gate is part of the result<a class="anchor-link" href="#5.-The-full-reproduction-gate-is-part-of-the-result">&#182;</a></h2><p><strong>B03-TABPFNV2-BLOOD-OFFICIAL-SPLITS: INCOMPLETE_SOURCE_PROTOCOL.</strong> The approved target was default historical v2 on blood-transfusion across all ten official benchmark splits. The archived evaluation script imports a missing dataset loader. Its helpers disagree on split defaults; multiple OpenML tasks describe the same dataset. We cannot authenticate the exact paper split/configuration/checkpoint mapping or per-split reference. <a href="../labs/evidence/b03/source-gate.json">Source gate</a> · <a href="https://zenodo.org/records/13981285">Archive record</a> · <a href="../labs/b03-reproduction.md">Reproduction protocol</a>.</p>
+<p>Consequently <strong>zero benchmark runs</strong> were dispatched. The Iris diagnostic does not fill the missing benchmark cell. The executable preflight refuses <code>--run</code>; archived source is preserved for recovery. Full original pretraining, all-dataset evaluation, tuned competitors and later-generation runs remain NOT_RUN. USD0 cloud/API spent; the approved ceiling is USD10 total, with USD2 reserved for overhead. Local numerical attempts are recorded separately under a 3600-second ceiling.</p>
+<p>To unblock, recover the original loader and roster, authenticate all ten ordered row partitions and the complete inference configuration, link the checkpoint and numeric reference, then forecast the full run cost. Choosing a plausible modern default would answer a different question.</p>
+<h2 id="6.-Practice,-defend-and-revisit">6. Practice, defend and revisit<a class="anchor-link" href="#6.-Practice,-defend-and-revisit">&#182;</a></h2><p><a href="../labs/b03-pfn-tabpfn-generations.ipynb">Open the student notebook</a> · <a href="../labs/html/b03-pfn-tabpfn-generations.html">Executed author solution</a> · <a href="../reference/b03-pfn-contracts.html">Field guide</a> · <a href="../labs/evidence/b03/reproducer.zip">Portable reproducer</a>.</p>
+<ol>
+<li><strong>TODO:</strong> implement finite-prior posterior prediction. CHECK: three successes yield 41/56; an impossible support event must fail explicitly.</li>
+<li><strong>TODO:</strong> restore probability-column meanings. CHECK: a three-cycle and every saved diagnostic row agree with an independent scalar oracle.</li>
+<li><strong>TODO:</strong> compare complete version/variant/checkpoint/recipe/data/split/budget contracts. CHECK: unknown fields yield INCOMPLETE; a known mismatch yields INCOMPARABLE. Matching is necessary, not proof of reproduced scores.</li>
+<li><strong>EXIT:</strong> explain fixed θ versus changed context; draw the historical v2 input-to-output path; interpret unchanged accuracy with changed probabilities; specify two falsification tests; name exactly what would unblock the benchmark. State why a base result cannot substantiate a Thinking claim.</li>
+</ol>
+<p>For practical comparisons, propose a tuned tree and a strong MLP, with common row identities and disclosed tuning/inference budgets. A v2-vs-v3.5 score difference would change several components at once; it is not an isolated architecture ablation. No such baseline fits are newly run in B03.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2609.17895v2">TabPFN-3.5 v2, §§3–4</a>, followed by the historical v2 architecture Methods. Highlight which statements concern the base checkpoint versus the surrounding system. After completion, revisit in 1, 7 and 30 days: reconstruct the posterior example, align a new three-cycle, and audit a new model claim without looking at this matrix.</p>
+<p>Ask the agent to check your trace or challenge your written defense. Author checks leave learner status <strong>PENDING_WRITTEN_DEFENSE</strong>. Next, <a href="../plan/year-5-6-bridge.md#b04">B04</a> asks how TabICL compresses feature information before dataset-level attention; carry the same support/query and compute contract into that comparison.</p>
+<p>Built with TabPFN. Historical v2 attribution and license: <a href="https://zenodo.org/records/13981285">archived release</a>.</p>
+</article><script src="../assets/l061-pfn-viz.js"></script><script src="../assets/pfn-contracts.js"></script></body></html>

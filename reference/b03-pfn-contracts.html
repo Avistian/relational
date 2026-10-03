@@ -1,0 +1,72 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PFN contracts field guide</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/pfn-contracts.css"><link rel="stylesheet" href="../assets/l061-pfn.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Bridge</a></nav><h1 id="PFN-contracts-%C2%B7-field-guide">PFN contracts &#183; field guide<a class="anchor-link" href="#PFN-contracts-%C2%B7-field-guide">&#182;</a></h1><p><strong>Three objects:</strong> prior over tasks, observed support, learned inference parameters θ. Base in-context adaptation changes support-dependent computation; fine-tuning changes θ. View ensembling changes computation too.</p>
+<p><strong>Posterior oracle:</strong> normalize prior × support likelihood, then average query predictions. Two hypotheses (.25,.75), equal prior, three successes → posterior(1/28,27/28), predictive 41/56. This exact finite prior is a teaching oracle, not TabPFN's synthetic generator.</p>
+<p><strong>Historical v2:</strong> paired features + missingness → grouped 192-wide tokens + target token → 12 alternating attention/FFN blocks → query target head → temperature → class alignment → average four views. Do not confuse fixed weights with fixed representations or caches.</p>
+<p><strong>Class remapping:</strong> if old c becomes π(c), restore column c from new column π(c). Use a three-cycle, because a binary swap cannot expose inverse-permutation errors. Compare probabilities at a declared tolerance; equal accuracy is insufficient.</p>
+<p><strong>Claim contract:</strong> version, variant, checkpoint hash, inference recipe, ordered data/splits, selection and inference budget. Missing → INCOMPLETE; different → INCOMPARABLE; all equal → necessary match, still not a result reproduction.</p>
+<div class="b03-scroll" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Version / variant</th>
+  <th>Inputs and reported scale</th>
+  <th>Mechanism / missingness</th>
+  <th>Access boundary</th>
+  <th>Evaluation / computation contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><a href="https://arxiv.org/abs/2207.01848">v1</a></td>
+  <td>Numeric classification; ≤10 classes; 1k support rows / 100 features</td>
+  <td>Row tokens; no dedicated missingness channel</td>
+  <td>Released weights / inference</td>
+  <td>18-task numeric benchmark; 5 resamples; typically 32 views</td>
+</tr>
+<tr>
+  <td><a href="https://www.nature.com/articles/s41586-024-08328-6">v2</a></td>
+  <td>Numeric + categorical; classification (≤10 classes) / regression; 10k / 500</td>
+  <td>Grouped cells; explicit missingness signals</td>
+  <td>Released weights; historical license</td>
+  <td>Nature: 10 repetitions; default 4 classifier / 8 regressor views; tuning separate</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2511.08667v1">2.5</a></td>
+  <td>50k design; evaluated to 100k / 2k features</td>
+  <td>Deeper alternating attention; 3-feature groups; 64 learned rows; inherited missingness encoding</td>
+  <td>Released weights with separate terms; API</td>
+  <td>TabArena and additional tasks; base / fine-tuned / ensemble differ; exact run recipe NOT_AUTHENTICATED here</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2609.17895v2">2.6</a></td>
+  <td>Later interim release; summary lists 100k / 2k</td>
+  <td>Do not infer recipe from the 2.5 name</td>
+  <td>Release-specific weights / access</td>
+  <td>Inventory only: B03 does not authenticate a distinct 2.6 benchmark recipe</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2605.13986v2">3 base</a></td>
+  <td>Up to 1M rows / 2k features in report summary</td>
+  <td>Scaling, small cache, many-class decoder; missingness indicators</td>
+  <td>Released weights with separate terms; API</td>
+  <td>TabArena / TALENT; exact estimator count and split recipe NOT_AUTHENTICATED here</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2609.17895v2">3.5 base / Fast</a></td>
+  <td>Current release: up to 1M rows / 20k features; not a B03 measurement</td>
+  <td>Fourier + support ECDF and missingness signals; shared classification/regression checkpoint per variant</td>
+  <td>Base/Fast weights; separate weight terms</td>
+  <td>Report: base 8 views, Fast 4; exact benchmark recipe NOT_AUTHENTICATED here</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2609.17895v2">3 / 3.5 Plus, Thinking</a></td>
+  <td>Expanded system capabilities; version-specific modalities</td>
+  <td>Additional preprocessing / test-time computation; unreleased details stay unknown</td>
+  <td>Hosted offerings; base weights do not reproduce system</td>
+  <td>Pin API model, mode, time/selection budget; do not transfer headline scores to base</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Measured:</strong> maximum aligned change <strong>0.071617</strong>; accuracy <strong>94.67%</strong> for every permutation. All five nonidentity maps exceed tolerance. Repeated identical-query prediction changes by <strong>0</strong>. The independent audit reconciles all <strong>450</strong> probability rows. <a href="../labs/evidence/b03/permutation-diagnostic.json">Raw evidence</a> · <a href="../labs/evidence/b03/diagnostic-audit.json">Scalar audit</a>.</p>
+<p><strong>Evidence boundary:</strong> B03-TABPFNV2-BLOOD-OFFICIAL-SPLITS remains INCOMPLETE_SOURCE_PROTOCOL: absent archived loader, unauthenticated historical split/config/checkpoint linkage and reference. No benchmark runs. Iris is a separate fresh diagnostic. Full pretraining, full suite and later-version runs NOT_RUN.</p>
+<p><strong>Missingness / class capacity:</strong> record encoding and target class count per checkpoint. NaN acceptance does not prove missingness-shift robustness. A many-class wrapper changes the method and budget. Thinking-mode internals remain unknown where unreleased.</p>
+<p><a href="../lessons/b03-pfn-tabpfn-generations.html">Lesson</a> · <a href="../labs/b03-reproduction.md">Protocol</a> · <a href="https://arxiv.org/html/2502.06684v4">EquiTabPFN</a>.</p>
+</article></body></html>

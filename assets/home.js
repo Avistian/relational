@@ -8,11 +8,11 @@
   var STORAGE_KEY = "rdl-last-lesson";
 
   function padId(n) {
-    return String(n).padStart(4, "0");
+    return /^B/.test(String(n)) ? String(n) : String(n).padStart(4, "0");
   }
 
   function quarterLabel(q) {
-    return "Q" + q;
+    return Number(q) === 5 ? "Year 5 → 6 bridge" : "Q" + q;
   }
 
   // Rendered-HTML view path for a lab notebook (renders in any browser).
@@ -90,7 +90,7 @@
       ul.className = "lesson-list";
 
       // Newest first: lessons within a quarter in descending id order.
-      qLessons.slice().sort(function (a, b) { return b.id - a.id; }).forEach(function (l) {
+      qLessons.slice().sort(function (a, b) { return (b.sortOrder || Number(b.id)) - (a.sortOrder || Number(a.id)); }).forEach(function (l) {
         var li = document.createElement("li");
         var a = document.createElement("a");
         a.href = "lessons/" + l.slug + ".html";
@@ -140,9 +140,10 @@
       })
       .then(function (data) {
         var lessons = (data.lessons || []).slice().sort(function (a, b) {
-          return a.id - b.id;
+          return (a.sortOrder || Number(a.id)) - (b.sortOrder || Number(b.id));
         });
         if (continueEl) renderContinue(continueEl, lessons);
+        navEl.innerHTML = "";
         var grouped = groupLessons(lessons);
         // Newest first: years in descending order, most recent year open.
         var years = Object.keys(grouped).sort(function (a, b) {

@@ -462,7 +462,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 
 **October coverage pass:** [2025–2026 research and Mindful Modeler audit](./plan/tabular-foundation-coverage-audit-2026-10.md), checked 2026-10-02. Adds B04a/B07a/B18a/B19a/B19b and focused checks in existing units, including the July workshop-trends post.
 
-**Placement and status:** After L200, before L201. All 29 units are **planned**; no bridge HTML lessons, experiments or learner mastery are claimed. Existing 001–240 and suffix identifiers remain stable. The [detailed specifications](./plan/year-5-6-bridge.md) include primary readings, retrieval prompts, teaching mechanisms, exercises, checks and future visual designs. This topical bridge is an explicit exception to the earlier publication-order rule.
+**Placement and status:** After L200, before L201. **B01–B07, B04a and B07a are prepared**: B01 has a selected saved-evidence audit; B02 completes a selected fresh TabPack release protocol; B03 has a complete permutation diagnostic and a source-gated historical benchmark. B04 adds a complete six-configuration TabICLv2 course diagnostic and source-gated Figure 3 reproduction. B04a adds a complete 108-setting course scaling diagnostic and source-gated TabFlex Figure 9. B05 adds 18 real-column episodes, a released-sampler counterexample and source-gated two-fold banknote target. B06 adds nine controlled prior fits with a negative result and source-gated Mitra Table 12. B07 adds a complete 27-fit semantic ablation with mixed effects and source-gated ConTextTab Table 2. B07a adds full-dimensional HyperFast course inference and a source-gated Table 7 target. The other 20 units remain planned. Learner mastery is not claimed. Existing 001–240 and suffix identifiers remain stable. The [detailed specifications](./plan/year-5-6-bridge.md) include primary readings, retrieval prompts, teaching mechanisms, exercises, checks and future visual designs. This topical bridge is an explicit exception to the earlier publication-order rule.
 
 **Workload:** 80–126 learner hours for core, including one bounded reproduction; 25–39 additional hours for all electives. Total 105–165 hours, roughly 15–24 weeks at one hour/day, beyond the original six-year estimate. Compute has a separate budget. Extend the calendar or reallocate optional time without cutting Year 6 research or exit gates.
 
@@ -470,15 +470,15 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 
 | Unit | Lecture / detailed primary readings | Required artifact |
 |------|-------------------------------------|-------------------|
-| B01 ★ | [Architecture coverage and honest comparison](./plan/year-5-6-bridge.md#b01) | Family map and matched-information comparison contract. |
-| B02 ★ | [Numerical embeddings, TabM and TabPack](./plan/year-5-6-bridge.md#b02) | Embedding/ensemble ablation with selection and cost ledger. |
-| B03 ★ | [PFN and the TabPFN generations](./plan/year-5-6-bridge.md#b03) | Version, variant and access matrix. |
-| B04 ★ | [TabICL and scalable two-stage ICL](./plan/year-5-6-bridge.md#b04) | Row-to-context computation trace and scale stress test. |
-| B04a ◆ | [Scaling rows, features and classes](./plan/year-5-6-bridge.md#b04a) | Row/feature/class stress matrix and matched operating points. |
-| B05 ★ | [TabDPT: real-data pretraining and retrieval](./plan/year-5-6-bridge.md#b05) | Real-data episode, retrieval and contamination audit. |
-| B06 ★ | [Mitra: the prior is part of the model](./plan/year-5-6-bridge.md#b06) | Prior-mixture ablation with fixed learner and budget. |
-| B07 ★ | [Semantic transfer: CARTE, ConTextTab and TabSTAR](./plan/year-5-6-bridge.md#b07) | Semantic-name ablation and adaptation comparison. |
-| B07a ◆ | [Hypernetworks: generate a predictor from a table](./plan/year-5-6-bridge.md#b07a) | Support-to-weights trace and query-volume cost comparison. |
+| B01 ★ | [Architecture coverage and honest comparison](lessons/b01-architecture-coverage-honest-comparison.html) | [Lab](labs/b01-architecture-coverage-honest-comparison.ipynb): complete 30-run saved replay, family map and comparison contract; defense pending. |
+| B02 ★ | [Numerical embeddings, TabM and TabPack](lessons/b02-numerical-embeddings-and-ensembles.html) | [Lab](labs/b02-numerical-embeddings-and-ensembles.ipynb): mechanism exercises and complete selected fresh TabPack release run; defense pending. |
+| B03 ★ | [PFN and the TabPFN generations](lessons/b03-pfn-tabpfn-generations.html) | [Lab](labs/b03-pfn-tabpfn-generations.ipynb): version/access matrix, six-permutation diagnostic; historical benchmark INCOMPLETE_SOURCE_PROTOCOL; defense pending. |
+| B04 ★ | [TabICL and scalable two-stage ICL](lessons/b04-tabicl-scalable-icl.html) | [Lab](labs/b04-tabicl-scalable-icl.ipynb): six fresh course configurations; Figure 3 INCOMPLETE_SOURCE_PROTOCOL; defense pending. |
+| B04a ◆ | [Scaling rows, features and classes](lessons/b04a-scaling-rows-features-classes.html) | [Lab](labs/b04a-scaling-rows-features-classes.ipynb): 108 course settings / 6,912 predictions; Figure 9 INCOMPLETE_SOURCE_PROTOCOL; defense pending. |
+| B05 ★ | [TabDPT: real-data pretraining and retrieval](lessons/b05-tabdpt-real-data-retrieval.html) | [Lab](labs/b05-tabdpt-real-data-retrieval.ipynb): 18 episodes / 144 predictions; banknote source gate; defense pending. |
+| B06 ★ | [Mitra: the prior is part of the model](lessons/b06-mitra-prior-mixtures.html) | [Lab](labs/b06-mitra-prior-mixtures.ipynb): nine fresh prior fits; near-chance result; Table 12 source gate; defense pending. |
+| B07 ★ | [Semantic transfer: CARTE, ConTextTab and TabSTAR](lessons/b07-semantic-transfer.html) | [Lab](labs/b07-semantic-transfer.ipynb):27 fits; mixed semantic effects; Table 2 source gate; defense pending. |
+| B07a ◆ | [Hypernetworks: generate a predictor from a table](lessons/b07a-hypernetworks.html) | [Lab](labs/b07a-hypernetworks.ipynb): 18 paired arms; query costs; Table 7 source gate. |
 | B08 ◆ | [LimiX: alternative structured-data objectives](./plan/year-5-6-bridge.md#b08) | Feature/target attention and objective ablation. |
 | B09 ◆ | [Current cost frontier: TabFM, EXAONE and Nori](./plan/year-5-6-bridge.md#b09) | Matched latency, memory and quality protocol. |
 | B10 ★ | [Relational Transformer: cells, tasks and relational attention](./plan/year-5-6-bridge.md#b10) | Cell-level relational attention and visibility trace. |

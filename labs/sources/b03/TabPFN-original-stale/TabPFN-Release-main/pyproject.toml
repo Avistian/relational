@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tabpfn"
+version = "1.0.0"
+dynamic = ["dependencies"]
+
+[tool.setuptools]
+packages = [
+    "tabpfn",
+    "tabpfn.model",
+    "tabpfn.scripts",
+    "tabpfn.scripts.tabular_metrics",
+    "tabpfn.scripts.tabular_baselines",
+    "tabpfn.scripts.estimator",
+    "tabpfn.scripts.estimator.rf_pfn",
+    "tabpfn.scripts.estimator.hpo",
+    "tabpfn.scripts.estimator.post_hoc_ensembles",
+]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements-release.txt"]}
+
+[tool.black]
+target-version = ['py310']
+line-length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]  # Where the tests are located
+markers = [
+    "non_ci: marks tests as slow (deselect with '-m \"not non_ci\"')",
+    "serial",
+]
+minversion = "7.0" # The minimum version of pytest that should be used
+empty_parameter_set_mark = "xfail"  # Prevents user error of an empty `parametrize` of a test
+log_cli = false # Display messages used from `logger.debug(...)` in output
+log_level = "DEBUG"
+# If a test is marked as expected to fail (`xfail`)
+# then pytest will report an error if it for some reason does not fail
+xfail_strict = true
+addopts = "--durations=10 -vv"  # Reports the ten slowest tests and gives more detail in the final output

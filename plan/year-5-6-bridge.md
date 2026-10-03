@@ -1,6 +1,6 @@
 # Year 5 → 6 bridge: influential architectures and the current frontier
 
-**29 planned units: B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
+**29 units (B01–B07, B04a and B07a prepared; 20 planned): B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
 
 The audit distinguishes established families, current baseline updates, coverage-critical mechanisms and exploratory ideas. Core means required for this mission; it does not label every recent paper equally influential. Existing lessons are prerequisites: a bridge revisit requires a new comparative artifact, not repetition of the entire earlier lesson.
 
@@ -19,6 +19,8 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b01"></a>
 
 ### B01 ★ · Architecture coverage and honest comparison
+
+**Prepared 2026-10-03:** [lesson](../lessons/b01-architecture-coverage-honest-comparison.html) · [lab](../labs/b01-architecture-coverage-honest-comparison.ipynb). Complete 30-run/21,060-prediction saved audit; fresh B01 inference NOT_RUN; learner PENDING_WRITTEN_DEFENSE; L200 exit remains incomplete.
 - **Read:** [TabArena](https://arxiv.org/html/2506.16791v1), evaluation design; [fair RDB benchmark](https://arxiv.org/abs/2607.03659v1), protocol and hop-depth comparison; the influence audit above.
 - **Retrieve / skill:** Why can two correct leaderboards disagree? Define the comparison unit.
 - **Teach:** Separate trained predictors, pretrained models, feature-engineering pipelines and AutoML systems. Benchmark participation is uptake evidence, not universal superiority.
@@ -29,6 +31,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b02"></a>
 
 ### B02 ★ · Numerical embeddings, TabM and TabPack
+- **Prepared:** [Lesson](../lessons/b02-numerical-embeddings-and-ensembles.html) · [Lab](../labs/b02-numerical-embeddings-and-ensembles.ipynb) · [Protocol](../labs/b02-reproduction.md). Complete selected fresh TabPack California release protocol; five-seed/paper discrepancy retained; learner defense pending.
 - **Read:** [Numerical embeddings](https://arxiv.org/abs/2203.05556), [TabM](https://arxiv.org/html/2410.24210v1), [TabPack Fig. 2 and §3](https://arxiv.org/html/2607.05380v1). Recall RealMLP/TabR; optional [ModernNCA](https://arxiv.org/abs/2407.03257).
 - **Retrieve / skill:** Is a stronger MLP result caused by its representation or its ensemble? Separate contributions.
 - **Teach:** Scalar-to-vector encoding and ensemble design are different axes. TabPack's heterogeneous packed members do not imply TabM-style weight sharing.
@@ -40,6 +43,8 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b03"></a>
 
 ### B03 ★ · PFN and the TabPFN generations
+
+**Prepared:** [lesson](../lessons/b03-pfn-tabpfn-generations.html) · [lab](../labs/b03-pfn-tabpfn-generations.ipynb). Complete six-permutation v2 course diagnostic; B03-TABPFNV2-BLOOD-OFFICIAL-SPLITS is INCOMPLETE_SOURCE_PROTOCOL, zero benchmark runs. Learner defense pending.
 - **Read:** Recall L061–065; [TabPFN-2.5](https://arxiv.org/abs/2511.08667), [TabPFN-3](https://arxiv.org/abs/2605.13986), [TabPFN-3.5 v2](https://arxiv.org/abs/2609.17895v2), variant and evaluation descriptions.
 - **Retrieve / skill:** What remains fixed when a pretrained model adapts in context? Separate learned prior, support data and test-time computation.
 - **Teach:** Follow the family through changed scale, modalities and inference recipes. A report about Plus or Thinking does not establish the same result for the local base checkpoint.
@@ -51,6 +56,7 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b04"></a>
 
 ### B04 ★ · TabICL and scalable two-stage ICL
+- **Prepared:** [Lesson](../lessons/b04-tabicl-scalable-icl.html) · [Lab](../labs/b04-tabicl-scalable-icl.ipynb) · [Protocol](../labs/b04-reproduction.md). Six fresh course configurations, 384 predictions; Figure 3 INCOMPLETE_SOURCE_PROTOCOL; learner defense pending.
 - **Read:** Recall L066/066b; [TabICLv2 §§3–7](https://arxiv.org/html/2602.11139v1); [release](https://github.com/soda-inria/tabicl).
 - **Retrieve / skill:** Why compress features before dataset-level attention? Trace where computation is saved.
 - **Teach:** Distinguish representation construction, long-context attention, prior diversity and optimization. Attribute gains through ablations rather than naming one component as the whole explanation.
@@ -62,6 +68,8 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b04a"></a>
 
 ### B04a ◆ · Scaling rows, features and classes
+
+**Prepared 2026-10-03:** [Lesson](../lessons/b04a-scaling-rows-features-classes.html) · [Lab](../labs/b04a-scaling-rows-features-classes.ipynb) · [Contract](../labs/b04a-reproduction.md). Complete108-setting course kernel diagnostic,6912predictions; TabFlex Figure9 INCOMPLETE_SOURCE_PROTOCOL; zero paid runs; learner PENDING_WRITTEN_DEFENSE.
 - **Read:** [TabFlex §5 and attention-cost analysis](https://arxiv.org/html/2506.05584v1), [TabPFN-Wide §§2–4](https://arxiv.org/html/2510.06162v1). Compare one of [Orion-MSP](https://arxiv.org/abs/2511.02818), [Orion-Bix](https://arxiv.org/abs/2512.00181), [BETA](https://arxiv.org/abs/2502.02527) or the already tracked [TabSwift](https://arxiv.org/abs/2606.07345); those comparison protocols need a method/code audit before execution.
 - **Retrieve / skill:** Why is a million-row table unlike a fifty-thousand-feature table? Identify which dimension dominates computation and which information is discarded.
 - **Teach:** Linear attention, sparse attention, row compression, feature reduction and a width-adapted prior change different parts of the pipeline. TabFlex is not B17's FlexTab.
@@ -72,6 +80,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b05"></a>
 
 ### B05 ★ · TabDPT: real-data pretraining and retrieval
+
+**Prepared 2026-10-03:** [lesson](../lessons/b05-tabdpt-real-data-retrieval.html) · [lab](../labs/b05-tabdpt-real-data-retrieval.ipynb). Complete 18-episode/144-prediction course audit and released-sampler counterexample. Banknote two-fold reproduction INCOMPLETE_SOURCE_PROTOCOL; no checkpoint inference; learner PENDING_WRITTEN_DEFENSE.
+
 - **Read:** [TabDPT v3 §§3–4 and Appendix B.1](https://arxiv.org/html/2410.18164v3); [Turbo](https://arxiv.org/abs/2608.01400v1); [version history](https://github.com/layer6ai-labs/TabDPT-inference).
 - **Retrieve / skill:** How can an unlabeled table generate prediction episodes? Trace the self-supervised target construction.
 - **Teach:** Real-data column prediction and retrieval offer an alternative to synthetic-only training. Turbo changes the context-efficiency recipe; the repository's v1.3 is a later checkpoint release.
@@ -82,6 +93,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b06"></a>
 
 ### B06 ★ · Mitra: the prior is part of the model
+
+**Prepared 2026-10-03:** [lesson](../lessons/b06-mitra-prior-mixtures.html) · [lab](../labs/b06-mitra-prior-mixtures.ipynb). Nine fresh paired course fits / 4,320 predictions; near chance and worse mean cross-entropy than uniform. Original Table 12 INCOMPLETE_SOURCE_PROTOCOL; full pretraining NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
+
 - **Read:** [Mitra §§3–4.3](https://arxiv.org/html/2510.21204v1); [Mitra-v2 §§2–4](https://arxiv.org/html/2609.04540v1); [release artifacts](https://huggingface.co/autogluon/mitra-finetune).
 - **Retrieve / skill:** Can unchanged architecture improve because the task generator changes? Isolate prior effects.
 - **Teach:** Separate an outer mixture across tasks from hybrid mechanisms within one synthetic task. Also distinguish forward-only ICL from fine-tuned configurations.
@@ -93,6 +107,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b07"></a>
 
 ### B07 ★ · Semantic transfer: CARTE, ConTextTab and TabSTAR
+
+**Prepared 2026-10-03:** [lesson](../lessons/b07-semantic-transfer.html) · [lab](../labs/b07-semantic-transfer.ipynb). Complete 27-fit CARTE semantic ablation/6,912 predictions; meaningful names help one of three table means. Original ConTextTab Table 2 INCOMPLETE_SOURCE_PROTOCOL; no three-model ranking or new pretraining. Learner PENDING_WRITTEN_DEFENSE.
+
 - **Read:** Recall CARTE at L074; [ConTextTab §§3–4](https://arxiv.org/html/2506.10707v1); [TabSTAR §§3–6](https://arxiv.org/html/2505.18125v2).
 - **Retrieve / skill:** When do column names add information beyond values? Separate semantics from numerical pattern learning.
 - **Teach:** Compare semantics-aware table-native ICL with target-aware transfer followed by fine-tuning. These are not interchangeable adaptation regimes.
@@ -104,6 +121,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b07a"></a>
 
 ### B07a ◆ · Hypernetworks: generate a predictor from a table
+
+**Prepared 2026-10-03:** [lesson](../lessons/b07a-hypernetworks.html) · [lab](../labs/b07a-hypernetworks.ipynb). Full released HyperFast course inference:9 predictors/18 paired retrieval arms plus one refresh. Original Table7 banknote INCOMPLETE_SOURCE_PROTOCOL. MotherNet/iLTM architecture comparisons only; learner defense pending.
+
 - **Read:** [MotherNet](https://arxiv.org/html/2312.08598), [HyperFast](https://arxiv.org/abs/2402.14335), [iLTM §3](https://arxiv.org/html/2511.15941v1). The first two are historical anchors; iLTM is the 2025 addition. Use the [blog family overview](https://mindfulmodeler.substack.com/p/tabpfn-and-tabicl-are-not-everything) for orientation only.
 - **Retrieve / skill:** Does task adaptation have to mean gradient descent or query-to-support attention? Trace support → generated weights → predictions.
 - **Teach:** Separate amortized weight generation, optional fine-tuning and retrieval. MotherNet/HyperFast and iLTM do not have identical inference paths; iLTM's retrieval component can retain support dependence.

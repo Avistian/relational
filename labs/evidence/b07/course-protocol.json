@@ -1,0 +1,120 @@
+{
+  "name": "B07-SEMANTIC-ABLATION",
+  "frozen_before_results": true,
+  "datasets": [
+    "wine_pl",
+    "wine_dot_com_prices",
+    "wine_vivino_price"
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "arms": [
+    "meaningful",
+    "anonymous",
+    "numeric_only"
+  ],
+  "split": {
+    "recipe": "numpy.default_rng(seed+74).permutation(384)",
+    "train": 64,
+    "validation": 64,
+    "test": 256
+  },
+  "anonymous_headers": {
+    "recipe": "original feature slots map to digit labels 6..18,20,0; preserve slots after text removal",
+    "vectors": "Exact cached FastText digit vectors; digit semantics remain, natural header meanings removed"
+  },
+  "numeric_preprocessing": "L074 train-only PowerTransformer; StandardScaler for constant training columns; omit entirely unobserved training columns",
+  "encoder": "Exact visible L074 one-readout Encoder; strict selected YAGO weights; frozen; dropout0",
+  "head": {
+    "type": "train-only StandardScaler then Ridge",
+    "alphas": [
+      1.0,
+      10.0,
+      100.0
+    ],
+    "selection": "minimum validation MSE, listed-order tie break; fit train only, no train+validation refit"
+  },
+  "target": "Preserve released transformed target; never feed target to encoder",
+  "metric": "test R2 and RMSE; per-table mean and sample SD across split seeds; anonymous-minus-meaningful and numeric_only-minus-anonymous R2",
+  "inputs": {
+    "README.md": "3821688ee85055f822c98a4da7119b688b5ddbfe701f0e14ba3fac6f880d86dd",
+    "kg_pretrained.pt": "21a08bf7d4dd29ff895ad2bf91abe24a4ddbcd0770c73f9b6ced1e016ab0c597",
+    "manifest.json": "420ca56f6ce192b5518f5f4373a457ec606e14fcb4bfa657189a7f96ef090864",
+    "vectors.npz": "d216aeea98912e16593d8d342c8118f6ef6a0ccf5cb0458771c3c33001f17589",
+    "wine_dot_com_prices.parquet": "d4ba682fc84974e270e1064168a6b635e6836f2162b0808e51eae3bd4b7de300",
+    "wine_pl.parquet": "9dc7e444a3f09affe9feecd361f1539b2e02177320c44f8cbb38e0c9cc936701",
+    "wine_vivino_price.parquet": "b026c7ac73004bde6a4906a847306843a1867cf31a3f120bcb1e0cc50b868960"
+  },
+  "implementation_hashes": {
+    "relkit/carte_b07.py": "ae9030175156cd69def7b17eb4a712ff17cc47f8f0f62e0e9e14258e8dedae07",
+    "relkit/semantic_b07.py": "1e45962cb17ae45bb8f422f0a3a829e4d034974a27beb73dbe608a0d1d015d58"
+  },
+  "versions": {
+    "numpy": "2.5.0",
+    "pandas": "3.0.3",
+    "torch": "2.13.0+cpu",
+    "scikit-learn": "1.9.0",
+    "scipy": "1.18.0",
+    "pyarrow": "24.0.0"
+  },
+  "python": "3.12.3",
+  "budget": {
+    "usd_cap": 10,
+    "commitment_stop": 8,
+    "reserve": 2,
+    "local_seconds": 3600
+  },
+  "expected_fits": 27,
+  "expected_test_predictions": 6912,
+  "limitations": [
+    "three related wine tables, no independent-database inference",
+    "frozen single-readout CARTE and ridge differ from full paper adaptation",
+    "text removal changes information and graph size; cannot isolate semantic quality alone",
+    "fixed numeric pseudonyms retain digit semantics and one arbitrary naming scheme",
+    "no ConTextTab or TabSTAR course inference; compare adaptation conceptually"
+  ],
+  "portable_inputs": {
+    "data/b07/CARTE-LICENSE.txt": "632c03b0780db0c9fda4a374a57791c3e07207eda285e0ebbdc2219106d602a7",
+    "data/b07/README.md": "3821688ee85055f822c98a4da7119b688b5ddbfe701f0e14ba3fac6f880d86dd",
+    "data/b07/manifest.json": "420ca56f6ce192b5518f5f4373a457ec606e14fcb4bfa657189a7f96ef090864",
+    "data/b07/selected_checkpoint.pt": "837697816f6999c5f92f48190ce66a94f5b5d96585068e442b114562313195be",
+    "data/b07/vectors.npz": "d216aeea98912e16593d8d342c8118f6ef6a0ccf5cb0458771c3c33001f17589",
+    "data/b07/wine_dot_com_prices.parquet": "d4ba682fc84974e270e1064168a6b635e6836f2162b0808e51eae3bd4b7de300",
+    "data/b07/wine_pl.parquet": "9dc7e444a3f09affe9feecd361f1539b2e02177320c44f8cbb38e0c9cc936701",
+    "data/b07/wine_vivino_price.parquet": "b026c7ac73004bde6a4906a847306843a1867cf31a3f120bcb1e0cc50b868960"
+  },
+  "checkpoint_derivation": {
+    "parent_sha256": "21a08bf7d4dd29ff895ad2bf91abe24a4ddbcd0770c73f9b6ced1e016ab0c597",
+    "rule": "Preserve every ft_base.+Encoder.state_dict key, tensor exactly equal",
+    "selected_keys": [
+      "ft_base.initial_x.0.weight",
+      "ft_base.initial_x.0.bias",
+      "ft_base.initial_x.2.weight",
+      "ft_base.initial_x.2.bias",
+      "ft_base.initial_e.0.weight",
+      "ft_base.initial_e.0.bias",
+      "ft_base.initial_e.2.weight",
+      "ft_base.initial_e.2.bias",
+      "ft_base.read_out_block.g_attn.lin_query.weight",
+      "ft_base.read_out_block.g_attn.lin_key.weight",
+      "ft_base.read_out_block.g_attn.lin_value.weight",
+      "ft_base.read_out_block.linear_net_x.0.weight",
+      "ft_base.read_out_block.linear_net_x.0.bias",
+      "ft_base.read_out_block.linear_net_x.3.weight",
+      "ft_base.read_out_block.linear_net_x.3.bias",
+      "ft_base.read_out_block.norm1_x.weight",
+      "ft_base.read_out_block.norm1_x.bias",
+      "ft_base.read_out_block.norm2_x.weight",
+      "ft_base.read_out_block.norm2_x.bias"
+    ],
+    "unused_tensors": "omitted from portable package"
+  },
+  "protocol_corrections": [
+    "First attempt stopped at missing cached digit 19 before any final result report/scoring; replaced anonymous-label list with verified cache keys; all fits restarted.",
+    "Second attempt stopped at all-missing numeric-only row before complete results/scoring; declared zero embedding fallback and restarted all27 fits."
+  ],
+  "empty_rows": "A row with no observed numeric features after text removal gets a zero 300-vector; no row is dropped"
+}

@@ -1,0 +1,215 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson B01 — Architecture coverage and honest comparison</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/comparison-contract.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Bridge curriculum</a></nav><h1 id="B01-%C2%B7-What-did-the-comparison-actually-compare?">B01 &#183; What did the comparison actually compare?<a class="anchor-link" href="#B01-%C2%B7-What-did-the-comparison-actually-compare?">&#182;</a></h1><p class="eyebrow">Year 5 → 6 bridge · Architecture coverage and honest comparison</p>
+
+<p><strong>Your win:</strong> write a comparison contract that makes one result interpretable. The mission is to find when relational learning adds value. A strong score helps only after you can say what information, computation and prior knowledge produced it.</p>
+<div class="b01-status"><strong>Author evidence:</strong> complete replay of 30 runs / 21,060 predictions. <strong>Learner evidence:</strong> written defense pending. L200's exit remains incomplete; this prepared lesson does not clear it.</div>
+
+<p><strong>Route:</strong> 15-minute lesson → notebook exercises → short defense. Retrieve <a href="0060-broad-model-comparison.html">L060's broad comparison</a> and <a href="0170-fm-design-checkpoint.html">L170's FM checkpoint</a>. <a href="0200-year-5-exit-exam.html">L200</a> established a selected checkpoint result. It left a harder question open: which comparisons could justify the next research decision?</p>
+<h2 id="1-%C2%B7-Predict-before-reading">1 &#183; Predict before reading<a class="anchor-link" href="#1-%C2%B7-Predict-before-reading">&#182;</a></h2><p>Close the references and answer: a graph predictor sees customers and their orders; a tree sees only customer age. The graph predictor scores higher. Have we isolated the value of graph computation?</p>
+<details><summary>Check your explanation</summary><p>No. The graph predictor also received additional information. A useful next control gives a strong tree time-safe order features, then states what each representation retains. Even that comparison can differ in tuning, pretraining and computation.</p></details>
+
+<p>A <strong>comparison unit</strong> is the complete evaluated configuration: input construction, predictor, adaptation, selection and inference recipe. A <strong>matched-information contract</strong> records what each configuration may observe. A <strong>matched-computation contract</strong> additionally fixes the relevant resource allowance. Equality on one axis does not imply equality on the other.</p>
+<h2 id="2-%C2%B7-Map-mechanisms-before-ranking-names">2 &#183; Map mechanisms before ranking names<a class="anchor-link" href="#2-%C2%B7-Map-mechanisms-before-ranking-names">&#182;</a></h2><p>A <strong>trained predictor</strong> learns from the target task. A <strong>pretrained model</strong> brings knowledge learned earlier. A <strong>pipeline</strong> includes feature construction and prediction. An <strong>AutoML system</strong> searches or combines pipelines. These levels overlap: an AutoML system may contain a pretrained predictor. Always name the level of your claim.</p>
+<p>The matrix below is a coverage checklist, not a ranking. Each row names a configuration, so “adaptation” has a concrete meaning. <strong>ICL</strong> means conditioning on support examples at prediction time. <strong>Support</strong> contains labeled examples the model is allowed to read. No task gradients does not mean no task labels.</p>
+<div class="family-explorer"><div class="family-controls"><label>Follow one computation <select aria-label="Architecture family"><option value="trees">Tuned trees</option><option value="mlp">Numerical MLPs</option><option value="retrieval">Retrieval-based predictors</option><option value="synthetic">Synthetic-data ICL</option><option value="real">Real-data ICL</option><option value="semantic">Semantic transfer</option><option value="hyper">Hypernetworks</option><option value="graph">Graph-native supervised learning</option><option value="flat">Flattened relational ICL</option><option value="automl">AutoML systems</option></select></label></div><section data-family="trees"><h3>CatBoost / LightGBM</h3><ol class="family-route"><li>Feature columns</li><li>tree decisions</li><li>prediction</li></ol><p><strong>Adaptation:</strong> Fit on task labels; select with validation</p><p><strong>Information:</strong> Given columns; relational content only if supplied</p></section><section data-family="mlp"><h3>TabM</h3><ol class="family-route"><li>Numeric embeddings</li><li>shared ensemble computation</li><li>prediction</li></ol><p><strong>Adaptation:</strong> Gradient training on task labels</p><p><strong>Information:</strong> Given feature columns; validation controls selection</p></section><section data-family="retrieval"><h3>TabR</h3><ol class="family-route"><li>Query</li><li>learned neighbors</li><li>label-aware aggregation</li><li>prediction</li></ol><p><strong>Adaptation:</strong> Train representation and predictor on task</p><p><strong>Information:</strong> Training candidate pool, labels and retrieval policy</p></section><section data-family="synthetic"><h3>TabPFN / TabICL</h3><ol class="family-route"><li>Labeled support + query</li><li>frozen contextual predictor</li><li>prediction</li></ol><p><strong>Adaptation:</strong> Support conditioning; no task gradient in this configuration</p><p><strong>Information:</strong> Labeled support, preprocessing and context budget</p></section><section data-family="real"><h3>TabDPT</h3><ol class="family-route"><li>Retrieve context</li><li>row transformer</li><li>prediction</li></ol><p><strong>Adaptation:</strong> Frozen in-context configuration</p><p><strong>Information:</strong> Pretraining overlap and retrieved support must be audited</p></section><section data-family="semantic"><h3>TabSTAR</h3><ol class="family-route"><li>Text + feature values</li><li>pretrained predictor</li><li>task prediction</li></ol><p><strong>Adaptation:</strong> Downstream fine-tuning</p><p><strong>Information:</strong> Column names and text carry additional information</p></section><section data-family="hyper"><h3>MotherNet</h3><ol class="family-route"><li>Labeled support</li><li>generated MLP weights</li><li>query prediction</li></ol><p><strong>Adaptation:</strong> Generate a predictor from support</p><p><strong>Information:</strong> Support used during predictor construction; count its cost</p></section><section data-family="graph"><h3>RelGNN</h3><ol class="family-route"><li>Eligible linked rows</li><li>composite messages</li><li>task head</li></ol><p><strong>Adaptation:</strong> Gradient training on task labels</p><p><strong>Information:</strong> FK paths, sampled rows, timestamps and permitted labels</p></section><section data-family="flat"><h3>RDB-PFN</h3><ol class="family-route"><li>Related rows</li><li>DFS features</li><li>support/query predictor</li><li>prediction</li></ol><p><strong>Adaptation:</strong> Frozen checkpoint + labeled support</p><p><strong>Information:</strong> DFS already carries relational information; arrival audit remains open</p></section><section data-family="automl"><h3>TabArena ensemble pipeline</h3><ol class="family-route"><li>Candidate pipelines</li><li>validation selection</li><li>ensemble</li><li>prediction</li></ol><p><strong>Adaptation:</strong> Search, fit and combine multiple predictors</p><p><strong>Information:</strong> Feature engineering, selection, inference and ensemble costs count</p></section></div>
+
+<div class="b01-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Family / example</th>
+  <th>Pretraining</th>
+  <th>Representation</th>
+  <th>Adaptation</th>
+  <th>Task scope / information</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><a href="https://arxiv.org/html/2506.16791v1">Tuned trees · CatBoost / LightGBM</a></td>
+  <td>No shared pretrained weights in this configuration</td>
+  <td>Feature columns → tree decisions → prediction</td>
+  <td>Fit on task labels; select with validation</td>
+  <td>Classification / regression. Given columns; relational content only if supplied</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2410.24210v1">Numerical MLPs · TabM</a></td>
+  <td>Task-trained configuration</td>
+  <td>Numeric embeddings → shared ensemble computation → prediction</td>
+  <td>Gradient training on task labels</td>
+  <td>Classification / regression. Given feature columns; validation controls selection</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2307.14338">Retrieval-based predictors · TabR</a></td>
+  <td>Task-trained retrieval model</td>
+  <td>Query → learned neighbors → label-aware aggregation → prediction</td>
+  <td>Train representation and predictor on task</td>
+  <td>Classification / regression. Training candidate pool, labels and retrieval policy</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2506.16791v1">Synthetic-data ICL · TabPFN / TabICL</a></td>
+  <td>Synthetic tasks; pin the exact release</td>
+  <td>Labeled support + query → frozen contextual predictor → prediction</td>
+  <td>Support conditioning; no task gradient in this configuration</td>
+  <td>Release-specific classification / regression limits. Labeled support, preprocessing and context budget</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2410.18164v3">Real-data ICL · TabDPT</a></td>
+  <td>Real tables and self-supervised prediction tasks</td>
+  <td>Retrieve context → row transformer → prediction</td>
+  <td>Frozen in-context configuration</td>
+  <td>Classification / regression. Pretraining overlap and retrieved support must be audited</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2505.18125v2">Semantic transfer · TabSTAR</a></td>
+  <td>Cross-table pretraining with text semantics</td>
+  <td>Text + feature values → pretrained predictor → task prediction</td>
+  <td>Downstream fine-tuning</td>
+  <td>Paper evaluation: classification with text features. Column names and text carry additional information</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2312.08598">Hypernetworks · MotherNet</a></td>
+  <td>Pretrained weight-generating transformer</td>
+  <td>Labeled support → generated MLP weights → query prediction</td>
+  <td>Generate a predictor from support</td>
+  <td>Paper's tabular classification setting. Support used during predictor construction; count its cost</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2502.06784v1">Graph-native supervised learning · RelGNN</a></td>
+  <td>Task-supervised configuration</td>
+  <td>Eligible linked rows → composite messages → task head</td>
+  <td>Gradient training on task labels</td>
+  <td>Relational prediction; task-specific heads. FK paths, sampled rows, timestamps and permitted labels</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2603.03805v5">Flattened relational ICL · RDB-PFN</a></td>
+  <td>Synthetic relational tasks; flat inference features</td>
+  <td>Related rows → DFS features → support/query predictor → prediction</td>
+  <td>Frozen checkpoint + labeled support</td>
+  <td>Selected released binary task in this lab. DFS already carries relational information; arrival audit remains open</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2506.16791v1">AutoML systems · TabArena ensemble pipeline</a></td>
+  <td>Depends on constituent models</td>
+  <td>Candidate pipelines → validation selection → ensemble → prediction</td>
+  <td>Search, fit and combine multiple predictors</td>
+  <td>Benchmark-defined tasks and supported components. Feature engineering, selection, inference and ensemble costs count</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are representative families, not an exhaustive model catalog. Semantic transfer can also use frozen encoders or ICL; TabSTAR illustrates fine-tuning. Hypernetworks generate predictor weights; their support-processing cost still counts. A relational synthetic prior and graph-native inference are different design choices. For new variants, pin a version and add a row rather than inheriting a predecessor's claims.</p>
+<p><strong>Read next:</strong> <a href="https://arxiv.org/html/2506.16791v1">TabArena §2 and §3</a> is the primary reading. It separates defaults, tuning and ensembling, evaluates models within their supported domains, and publishes a versioned benchmark. Use its protocol to explain why two leaderboards with different comparison units can disagree. Benchmark participation is evidence of uptake, not universal superiority.</p>
+<h2 id="3-%C2%B7-A-small-information-mismatch">3 &#183; A small information mismatch<a class="anchor-link" href="#3-%C2%B7-A-small-information-mismatch">&#182;</a></h2><p>At prediction time, Ada and Bo are both 40. Ada's eligible order amounts are <code>[10, 20]</code>; Bo's are <code>[20, 40]</code>. An age-only predictor sees identical inputs. A sum feature gives Ada 30 and Bo 60. A linked-row model can also read those orders. Any advantage over the age-only predictor could come from that extra information.</p>
+<p>Now replace Ada's orders with <code>[15, 15]</code>. The sum stays 30, but the individual values change. Sum features and raw linked rows have the same source records yet preserve different distinctions. <strong>Equal eligible rows is not equal representation.</strong> Name the distinction your hypothesis says matters and test it directly. These numbers are a course-designed example, not benchmark measurements.</p>
+<figure class="b01-flow"><img src="../labs/figures/b01/information-flow.svg" alt="Ada and Bo have the same age but different orders; order sums retain information absent from age-only inputs, and raw linked rows retain more than sums."><figcaption>Inputs differ before any predictor computes a score. Control that difference before attributing a gain.</figcaption></figure>
+
+<p>The <a href="https://arxiv.org/html/2607.03659v1#S3">fair relational benchmark §3</a> uses explicit hop conditions when comparing relational models and tabular baselines. Here, a hop is a traversal across a table relationship. Borrow the question “which neighbors were eligible?” without treating hop count alone as a full leakage or budget audit. We do not rerun that paper in B01.</p>
+<h2 id="4-%C2%B7-Freeze-a-contract-before-computing-a-difference">4 &#183; Freeze a contract before computing a difference<a class="anchor-link" href="#4-%C2%B7-Freeze-a-contract-before-computing-a-difference">&#182;</a></h2><div class="b01-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>Concrete question</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Task, labels and split</td>
+  <td>Same outcome definition, prediction horizon and evaluation split?</td>
+</tr>
+<tr>
+  <td>Complete query keys</td>
+  <td>Same <code>(entity, cutoff)</code> population, with no missing or duplicate queries?</td>
+</tr>
+<tr>
+  <td>Features and support</td>
+  <td>Same materialized inputs and paired labeled support where claimed?</td>
+</tr>
+<tr>
+  <td>Preprocessing and visibility</td>
+  <td>What is fitted on which rows? What labels, text and related records are visible?</td>
+</tr>
+<tr>
+  <td>Selection</td>
+  <td>Which validation choices, candidates and stopping rules were allowed?</td>
+</tr>
+<tr>
+  <td>Metric</td>
+  <td>Same direction, aggregation, ties and uncertainty unit?</td>
+</tr>
+<tr>
+  <td>Budget policy</td>
+  <td>What training, search, context, ensemble and inference costs belong to each configuration?</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Worked frozen case.</strong> L200 used released DFS feature arrays, fixed checkpoints, and 512 support rows for each of ten paired draws. DFS means aggregated features built from related tables. RDB-PFN and TabICL received relational information in those features. Their observed difference compares those fixed configurations on one test population. It does not identify a graph operator's benefit.</p>
+<p>The audit hashes actual query keys, labels, support identities and the prepared feature artifact. It checks the complete run grid before summarizing. The common budget policy declares the fixed evaluation; it does <strong>not</strong> claim equal pretraining or measured inference costs. Per-model checkpoints and recipes remain in the <a href="../labs/b01-reproduction.md">frozen protocol</a>.</p>
+<p><strong>Availability is a separate question.</strong> We can authenticate the released arrays without proving when all underlying records arrived. For a claim about historically available information, the visibility field is <code>NOT_ESTABLISHED</code>. The equality checker only checks the declared contract; source evidence must justify its values.</p>
+<div class="comparison-board"><p><strong>Baseline:</strong> matching released inputs; complete saved replay; selected-score claim. This is a declared-contract simulator.</p><div class="comparison-controls"><label>Feature arrays<select name="features"><option value="same">Matched and documented</option><option value="different">Different between arms</option><option value="unknown">Unknown / unsupported</option></select></label><label>Support identities<select name="support"><option value="same">Matched and documented</option><option value="different">Different between arms</option><option value="unknown">Unknown / unsupported</option></select></label><label>Visibility evidence<select name="visibility"><option value="same">Matched and documented</option><option value="different">Different between arms</option><option value="unknown">Unknown / unsupported</option></select></label><label>Evidence<select name="evidence"><option>COMPLETE_REPLAY</option><option>INCOMPLETE</option></select></label><label>Claim<select name="claim"><option value="selected_score">Selected score difference</option><option value="architecture_cause">Architecture caused gain</option><option value="fresh_inference">New inference completed</option><option value="learner_mastery">Learner mastered comparison</option></select></label></div><button type="button">Reset contract</button><output aria-live="polite">MATCHED → SUPPORTED_DESCRIPTIVE_REPLAY. This does not establish architecture causality.</output></div>
+
+<p>Try three repairs: restore a mismatched support draw; change visibility to unknown; then ask for an architecture-cause claim with every field matched. Explain why that last claim still lacks an intervention that isolates architecture.</p>
+<h2 id="5-%C2%B7-Reproduce-the-whole-selected-audit">5 &#183; Reproduce the whole selected audit<a class="anchor-link" href="#5-%C2%B7-Reproduce-the-whole-selected-audit">&#182;</a></h2><p><strong>Named lane: B01-MATCHED-COMPARISON-AUDIT.</strong> All three L200 configurations × ten support draws × 702 queries are included. Raw predictions are rescored with the inherited pairwise AUROC implementation and checked with an independent rank-sum implementation. Original report parity is exact. Seven altered-evidence cases are rejected in disposable copies. The <a href="../labs/evidence/b01/report.json">machine-readable report</a> separates this new replay from the original fresh inference.</p>
+<div class="b01-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Configuration</th>
+  <th style="text-align:right">Replayed mean AUROC</th>
+  <th style="text-align:right">Sample SD</th>
+  <th style="text-align:right">Original rounded target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>RDBPFN</td>
+  <td style="text-align:right">0.721938</td>
+  <td style="text-align:right">0.019983</td>
+  <td style="text-align:right">0.7219</td>
+</tr>
+<tr>
+  <td>RDBPFN_single</td>
+  <td style="text-align:right">0.663990</td>
+  <td style="text-align:right">0.034177</td>
+  <td style="text-align:right">0.6640</td>
+</tr>
+<tr>
+  <td>TabICLv1.1</td>
+  <td style="text-align:right">0.717568</td>
+  <td style="text-align:right">0.009770</td>
+  <td style="text-align:right">0.7176</td>
+</tr>
+</tbody>
+</table></div>
+<p>RDB-PFN − TabICL: <strong>+0.004369</strong> mean paired difference; positive in <strong>6/10</strong> draws. All 30 original results are retained.</p>
+<p><strong>Work one paired difference.</strong> Draw 0 gives the two configurations the same support rows. Subtract TabICL's AUROC from RDB-PFN's AUROC for that draw, then repeat for every draw and average. Never pair merely by file order. The notebook reverses one list to check this. Sample SD measures variation over support draws on one fixed test population; it is not uncertainty across databases.</p>
+<p><strong>What is actually reproduced?</strong> The saved predictions and reported aggregates, including the original experiment's full selected grid. No new model inference happens in B01. The original <a href="../labs/l200-reproduction.md">fresh-inference command</a> is available separately. Full TabArena, fair-RDB benchmark, and synthetic pretraining reproductions remain <code>NOT_RUN</code>.</p>
+<p><strong>Inherited limitations:</strong> released-label orientation is preserved; the released checkpoint width is 96 while the appendix says 128. Full DFS regeneration and historical feature-arrival proof are absent. We preserve these boundaries instead of replacing the experiment with a cleaner-looking one.</p>
+<h2 id="6-%C2%B7-Your-notebook-and-defense">6 &#183; Your notebook and defense<a class="anchor-link" href="#6-%C2%B7-Your-notebook-and-defense">&#182;</a></h2><p>Open the <a href="../labs/b01-architecture-coverage-honest-comparison.ipynb">student notebook</a>. Implement three small functions: classify a contract, join all ten draw pairs, and limit claims to available evidence. Each feeds the complete replay. A constant answer fails the CHECKs. The <a href="../labs/html/b01-architecture-coverage-honest-comparison.html">executed solution</a> includes the visible implementation and an offline evidence bundle.</p>
+<p>Then write <strong>250–400 words</strong> choosing one future B23 comparison. Include the baseline family and why it is credible, the complete comparison unit, one matched-information control, one resource policy, two falsification tests, and an observation that would change your research direction. State every unresolved contract field. This is a draft for B23, not authorization to launch it.</p>
+<div class="b01-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Teacher review</th>
+  <th>A defensible answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Mechanism</td>
+  <td>Trace input → representation → adaptation → prediction for both configurations.</td>
+</tr>
+<tr>
+  <td>Competing explanation</td>
+  <td>Explain one information or budget mismatch that could create the observed gap.</td>
+</tr>
+<tr>
+  <td>Falsification</td>
+  <td>State two checks whose failure would weaken the claim; say what happens next.</td>
+</tr>
+<tr>
+  <td>Boundary</td>
+  <td>Distinguish saved replay, fresh inference, architecture causality and learner mastery.</td>
+</tr>
+</tbody>
+</table></div>
+<p>A checklist can catch omissions; the teacher must review the reasoning. Exit status stays <strong>PENDING_WRITTEN_DEFENSE</strong>. Preparing B01 does not satisfy L200's incomplete exit.</p>
+<p><strong>Retrieve after 1, 7 and 30 days:</strong> why can correct leaderboards disagree? How can a flat feature table contain relational information? Why can two matching unknowns not establish a fair historical comparison? Ask the agent about unclear steps or submit your contract for feedback.</p>
+<p><a href="../reference/b01-comparison-contract.html">Printable field guide</a> · <a href="../plan/year-5-6-bridge.md#b02">Bridge plan and B02</a> · <a href="../labs/b01-reproduction.md">Source and deviation protocol</a>.</p>
+</article><script src="../assets/comparison-contract.js"></script></body></html>

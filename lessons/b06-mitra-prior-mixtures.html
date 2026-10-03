@@ -1,0 +1,209 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson B06 — Mitra: the prior is part of the model</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/prior-mixtures.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><p class="eyebrow">Research bridge · B06 · Design a controlled prior comparison</p>
+
+<h1 id="Mitra:-the-prior-is-part-of-the-model">Mitra: the prior is part of the model<a class="anchor-link" href="#Mitra:-the-prior-is-part-of-the-model">&#182;</a></h1><p><strong>Your tangible win:</strong> design, execute and interpret a comparison in which the training-task generator changes while the learner and its budget stay fixed. This matters to relational foundation models: synthetic databases encode assumptions about relations before a model ever sees a real customer or event.</p>
+<p><a href="b05-tabdpt-real-data-retrieval.html">B05</a> left a question open. Real-data episodes provide experience, but which tasks should a model experience when training data are generated? Mitra makes this distribution a central design choice. Read <a href="https://arxiv.org/html/2510.21204v1#S3">Mitra §§3–4 and Appendix C.3</a>, then <a href="https://arxiv.org/html/2609.04540v1#S2">Mitra-v2 §2</a> for the distinction between a mixture of tasks and mixed mechanisms inside a task.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Nine fresh course fits and 4,320 predictions are complete. All arms are near chance; none beats the uniform-probability baseline in mean cross-entropy. Original Mitra Table 12 remains <code>INCOMPLETE_SOURCE_PROTOCOL</code>. These are separate findings, not conflicting labels.</p>
+</blockquote>
+<h2 id="Retrieve-before-reading">Retrieve before reading<a class="anchor-link" href="#Retrieve-before-reading">&#182;</a></h2><div id="b06-warmup"></div>
+
+<ol>
+<li>From B05: which labels may enter a prediction-time context, and which may only score the answer?</li>
+<li>From <a href="0063-synthetic-scm-prior.html">L063</a>: how can a fixed network behave differently when its training-task distribution changes?</li>
+<li>A benchmark helps choose a mixture weight. Is it still an untouched final test?</li>
+</ol>
+<p>Write your answers before opening the explanations. Return to these prompts after one, seven and thirty days <strong>following your completion</strong>; author preparation does not count as completion.</p>
+<h2 id="1-%C2%B7-A-prior-is-a-recipe-for-tasks">1 &#183; A prior is a recipe for tasks<a class="anchor-link" href="#1-%C2%B7-A-prior-is-a-recipe-for-tasks">&#182;</a></h2><p><strong>A task</strong> is a small table together with a prediction problem. <strong>A generator</strong> creates such a task from random choices. A <strong>prior</strong> is the resulting probability distribution over tasks. It determines which relationships the learner repeatedly encounters.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> A student repeatedly taught smooth relationships and a student repeatedly taught abrupt thresholds may develop different habits, even with the same learning machinery.</p>
+</blockquote>
+<p>A <strong>structural causal model (SCM)</strong> describes variables through directed, acyclic dependencies: each variable is computed from earlier parent variables and a noise input. Acyclic means no path returns to its starting node. Sampling these equations creates dependent columns. Naming a synthetic generator “causal” does not validate causal assumptions in a real deployment.</p>
+<p>A <strong>tree prior</strong> creates piecewise relationships using threshold decisions. A tree might assign one target score when <code>x₀ &gt; 0.2</code>, another otherwise. Original Mitra uses multiple tree families; our course experiment uses a single depth-two tree proxy. The implementation and limitations appear in the <a href="../labs/b06-reproduction.md">protocol</a>.</p>
+<p><strong>Worked example.</strong> Let p=0.5 be the chance of selecting SCM and u=0.4 a draw between zero and one. Because u&lt;p, generate the entire next task from SCM. If u=0.6, generate it from the tree prior. The mixture law is <code>P(task) = p P_SCM(task) + (1−p) P_tree(task)</code>; it describes a choice between distributions, not an average of two target values.</p>
+<p><strong>Predict first:</strong> with the four fixed draws below, how many tasks switch when p changes from 0.5 to 0.75?</p>
+<div class="b06-board" data-b06="mixture"><h3>Change the prior; keep the draws</h3><label>SCM probability<select><option value="0">0</option><option value=".25">0.25</option><option value=".5" selected>0.5</option><option value=".75">0.75</option><option value="1">1</option></select></label><div class="b06-tasks"><div class="b06-task" data-family="scm">u=0.1 → SCM</div><div class="b06-task" data-family="scm">u=0.4 → SCM</div><div class="b06-task" data-family="tree">u=0.6 → TREE</div><div class="b06-task" data-family="tree">u=0.9 → TREE</div></div><button type="button">Reset mixture</button><output aria-live="polite">Baseline p=0.5: 2 SCM + 2 tree tasks. Each task comes from one generator.</output></div>
+
+<p>This miniature visual has only four tasks. The measured course experiment stratifies 640 draws per fit to give the equal mixture exactly 320 SCM and 320 tree tasks. Shuffling changes their order. Ordinary independent draws would fluctuate around the expected count; this variance-control choice is disclosed and is not the paper's sampler.</p>
+<h2 id="2-%C2%B7-Outer-mixtures-and-inner-mechanisms">2 &#183; Outer mixtures and inner mechanisms<a class="anchor-link" href="#2-%C2%B7-Outer-mixtures-and-inner-mechanisms">&#182;</a></h2><p>An <strong>outer mixture</strong> chooses one generator for each table. A <strong>hybrid mechanism</strong> combines different functional families within the process that creates one table. These are different levels of variation.</p>
+<p><strong>Worked example.</strong> An outer draw picks either an SCM score of 0.8 or a tree score of −0.2 for an illustrative input. A hypothetical inner additive hybrid computes <code>0.5×0.8 + 0.5×(−0.2) = 0.3</code> before adding noise and converting the score into a class. Averages within a task are not the same operation as choosing between whole tasks.</p>
+<table>
+<thead>
+<tr>
+  <th>Level</th>
+  <th>What the choice changes</th>
+  <th>What remains one object</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Outer task mixture</td>
+  <td>Which generator produces the next table</td>
+  <td>One complete table</td>
+</tr>
+<tr>
+  <td>Within-task hybrid</td>
+  <td>Which mechanisms generate dependent variables</td>
+  <td>One joint task distribution</td>
+</tr>
+<tr>
+  <td>Prediction ensemble</td>
+  <td>Which trained predictions are combined</td>
+  <td>One evaluation query</td>
+</tr>
+</tbody>
+</table>
+<p>Mitra-v2's Hybrid SCM uses different mechanisms within a causal graph; its outer distribution also includes the base SCM and tree generators. Our held-out “hybrid” family is only an additive course proxy. It is never used for pretraining here. See the <a href="https://arxiv.org/html/2609.04540v1#S2.SS3">versioned specification</a> before equating the names.</p>
+<h2 id="3-%C2%B7-Model-architecture:-where-the-generated-task-goes">3 &#183; Model architecture: where the generated task goes<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-where-the-generated-task-goes">&#182;</a></h2><p><strong>Support rows</strong> are labeled examples supplied as context. <strong>Query rows</strong> are examples whose targets the model must predict. A <strong>token</strong> is a vector representing a cell; its <strong>width</strong> is the number of coordinates. An <strong>attention head</strong> computes weighted combinations of other tokens; several heads learn different projections. A <strong>logit</strong> is an unnormalized class score; softmax turns logits into probabilities that sum to one.</p>
+<p>Original Mitra uses cell-level attention across columns and rows, with twelve layers of width 512 and four heads. Our visible course learner retains these two attention directions but uses two blocks of width 32 and simplified embeddings. The architecture picture explicitly labels the course dimensions. Original support preprocessing includes a quantile transform that the course does not implement. <a href="https://arxiv.org/html/2510.21204v1#A2.SS3">Original architecture and preprocessing</a></p>
+<figure class="b06-figure"><img src="../labs/figures/b06/architecture.svg" alt="Mitra concept with explicit course dimensions; original scale is shown separately."><figcaption>Mitra concept with explicit course dimensions; original scale is shown separately.</figcaption></figure>
+
+<p><strong>Follow one query.</strong> Its four numeric features become four vectors. A fifth token says its target is missing. Column attention combines these tokens within that row. Row attention then reads the support representations of the corresponding columns. Repeating both operations lets feature relationships and labeled context meet. The head reads the query's target token and produces two class probabilities.</p>
+<p><strong>The attention calculation.</strong> Each token is linearly projected into a query vector q, key vector k and value vector v. We compute scores <code>q·k/√d</code>, where d is the per-head width, and softmax these scores over allowed keys. The output is the weighted sum of values. In row attention the keys and values contain support rows only. Thus changing another query cannot change this query's result. A residual connection adds the incoming representation to the attention update. A small multilayer perceptron (MLP) applies a learned nonlinear transformation afterward.</p>
+<figure class="b06-figure"><img src="../labs/figures/b06/mask.svg" alt="Illustrative S=4,Q=2 read permissions. Filled cells allow attention; crosses forbid it."><figcaption>Illustrative S=4,Q=2 read permissions. Filled cells allow attention; crosses forbid it.</figcaption></figure>
+
+<p><strong>Worked shape trace.</strong> Twenty-four support rows plus eight queries give 32 rows. Four features plus one target token give five columns. The hidden tensor is <code>[batch,32,5,32]</code>. Column scores for one row have shape <code>[4,5,5]</code>. Row scores for one column have shape <code>[4,32,24]</code>. Each head has width <code>32/4=8</code>. The final output is <code>[batch,8,2]</code>.</p>
+<p>The course standardizes each feature with support mean μ and population standard deviation σ: <code>(x−μ)/max(σ,10⁻⁶)</code>. For support <code>[1,3]</code>, μ=2 and σ=1, so query 5 becomes 3. A query value cannot alter μ or σ. The label token accepts support labels only; query labels are passed separately to cross-entropy during training.</p>
+<p><strong>Cross-entropy</strong> is the negative logarithm of the probability assigned to the true class. Assigning probability 0.5 gives loss <code>−ln(0.5)≈0.693147</code>. Lower is better. During pretraining, its gradients update weights. During forward-only in-context learning (ICL), the weights stay fixed and the supplied support changes. Fine-tuning updates the weights on the downstream task; it requires a separate comparison contract.</p>
+<h2 id="4-%C2%B7-Why-%E2%80%9Cmore-diverse%E2%80%9D-is-not-sufficient">4 &#183; Why &#8220;more diverse&#8221; is not sufficient<a class="anchor-link" href="#4-%C2%B7-Why-%E2%80%9Cmore-diverse%E2%80%9D-is-not-sufficient">&#182;</a></h2><p>Mitra analyzes how models trained on one generator perform on tasks from other generators. A <strong>generalizability matrix</strong> records training generators as rows and evaluation generators as columns. Its diagonal measures within-generator behavior; off-diagonal entries expose possible coverage gaps. A separate performance vector records behavior on real datasets. The paper uses these observations to motivate prior selection. <a href="https://arxiv.org/html/2510.21204v1#S3.SS2">Mitra §3.2</a></p>
+<p>A low diagonal score could also reflect a difficult task or inadequate optimization. It is not by itself proof that a prior is useful. The course run below makes this caution concrete: near-chance scores cannot support a rich story about learned diversity.</p>
+<p>A <strong>development set</strong> may guide mixture choice. A <strong>final evaluation set</strong> estimates behavior after that choice has been frozen. Once final results influence the choice, that set has become development evidence. This applies even if no raw benchmark row enters gradient training.</p>
+<p><strong>Predict first:</strong> which p will the development losses choose? What changes if selection instead uses the final column?</p>
+<div class="b06-board" data-b06="selection"><h3>Which evidence chooses p?</h3><p>Hypothetical cross-entropy; lower is better.</p><table><thead><tr><th>SCM p</th><th>Development</th><th>Final</th></tr></thead><tbody><tr><td>0.3</td><td>0.42</td><td>0.41</td></tr><tr><td>0.5</td><td>0.40</td><td>0.39</td></tr><tr><td>0.7</td><td>0.38</td><td>0.43</td></tr></tbody></table><label>Mixture selection<select><option value="none">Prespecified</option><option value="development">Development results</option><option value="final">Final results</option></select></label><button type="button">Reset selection</button><output aria-live="polite">Prespecified p=0.5: no benchmark selected the mixture.</output></div>
+
+<p>The numbers in this selector are deliberately hypothetical, not paper or course scores. No dataset selected our course weight: p=0.5 was fixed before execution. That preserves the declared comparison but does not make three synthetic task families representative of the world.</p>
+<h2 id="5-%C2%B7-The-complete-controlled-course-experiment">5 &#183; The complete controlled course experiment<a class="anchor-link" href="#5-%C2%B7-The-complete-controlled-course-experiment">&#182;</a></h2><p><strong>Held fixed:</strong> learner, loss, optimizer, preprocessing, 640 training episodes per fit, final-step checkpoint rule and all evaluation tasks. For each seed, all arms start with byte-identical parameter tensors. <strong>Varied:</strong> the training generator distribution. <strong>Measured:</strong> accuracy and cross-entropy on twenty SCM, twenty tree and twenty hybrid tasks. All fits predict the same eight query identities per task.</p>
+<p>The three arms and three seeds produce nine fresh fits, 1,440 updates and 5,760 training tasks. Evaluation produces 4,320 saved query predictions. The hybrid family is absent from training, but shares construction code and functional components with the other families: it is a bounded mechanism check, not an independent database transfer test.</p>
+<div class="b06-board" data-b06="quiz"><h3>Isolate the generator effect</h3><p>Which intervention belongs in the prior comparison?</p><label><input type="radio" name="contract" value="prior">Change prior only</label><label><input type="radio" name="contract" value="learner">Change learner also</label><label><input type="radio" name="contract" value="test">Change queries also</label><button type="button">Reset answer</button><output aria-live="polite">Choose before revealing feedback.</output><noscript><p>Answer: change prior only; keep the matched learner and evaluation contract.</p></noscript></div>
+
+<p><strong>Commit a prediction before revealing:</strong> will mixed pretraining beat both single-prior arms? What result would prevent that conclusion?</p>
+<details><summary>Reveal the measured course results</summary>
+
+<table>
+<thead>
+<tr>
+  <th>Evaluation family</th>
+  <th>Training prior</th>
+  <th style="text-align:right">Accuracy</th>
+  <th style="text-align:right">Cross-entropy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>scm</td>
+  <td>scm</td>
+  <td style="text-align:right">0.5021 ± 0.0072</td>
+  <td style="text-align:right">0.697096 ± 0.001416</td>
+</tr>
+<tr>
+  <td>scm</td>
+  <td>tree</td>
+  <td style="text-align:right">0.5062 ± 0.0217</td>
+  <td style="text-align:right">0.699938 ± 0.007442</td>
+</tr>
+<tr>
+  <td>scm</td>
+  <td>mixed</td>
+  <td style="text-align:right">0.4958 ± 0.0036</td>
+  <td style="text-align:right">0.697108 ± 0.002839</td>
+</tr>
+<tr>
+  <td>tree</td>
+  <td>scm</td>
+  <td style="text-align:right">0.4896 ± 0.0219</td>
+  <td style="text-align:right">0.701129 ± 0.004675</td>
+</tr>
+<tr>
+  <td>tree</td>
+  <td>tree</td>
+  <td style="text-align:right">0.5125 ± 0.0000</td>
+  <td style="text-align:right">0.698061 ± 0.003541</td>
+</tr>
+<tr>
+  <td>tree</td>
+  <td>mixed</td>
+  <td style="text-align:right">0.5083 ± 0.0072</td>
+  <td style="text-align:right">0.697556 ± 0.002302</td>
+</tr>
+<tr>
+  <td>hybrid</td>
+  <td>scm</td>
+  <td style="text-align:right">0.4979 ± 0.0237</td>
+  <td style="text-align:right">0.700928 ± 0.005638</td>
+</tr>
+<tr>
+  <td>hybrid</td>
+  <td>tree</td>
+  <td style="text-align:right">0.4771 ± 0.0036</td>
+  <td style="text-align:right">0.705181 ± 0.007191</td>
+</tr>
+<tr>
+  <td>hybrid</td>
+  <td>mixed</td>
+  <td style="text-align:right">0.4937 ± 0.0325</td>
+  <td style="text-align:right">0.700395 ± 0.006333</td>
+</tr>
+</tbody>
+</table>
+<p>Each cell reports the mean ± sample standard deviation across three training seeds, conditional on the same fixed evaluation tasks. This is descriptive variability, not a confidence interval over real datasets. Per-seed points and paired contrasts are preserved in the <a href="../labs/evidence/b06/course-audit.json">audit</a>.</p>
+<figure class="b06-results"><img src="../labs/figures/b06/results.png" alt="Measured course losses: points are training seeds; black bars are means; dashed line is uniform prediction."><figcaption>Measured course losses: points are training seeds; black bars are means; dashed line is uniform prediction.</figcaption></figure>
+
+<p><strong>What happened.</strong> Every arm's family-mean cross-entropy exceeds the analytical uniform baseline 0.693147. Accuracy stays near 50%. Mixed-prior loss changes slightly relative to the single-prior arms, but this does not establish useful generalization. The experiment faithfully executed its fixed short training budget; its adequacy for learning useful ICL remains unestablished.</p>
+<p><strong>What not to repair after seeing the test.</strong> Do not increase updates, choose a seed or adjust p until the final matrix looks favorable and report it as the original experiment. A follow-up requires a new protocol and development evidence. The negative result is valuable: controls make an experiment interpretable; they do not guarantee a capable learner.</p>
+</details>
+
+<p><strong>Paired interpretation.</strong> For each seed s, define Δₛ = loss(mixed,s) − loss(SCM,s) on the same queries. Negative favors mixed. Match identities before subtraction; never zip two dictionaries by accidental iteration order. We report each Δ and its descriptive seed spread. Synthetic families are not three independent real datasets, so we make no benchmark-ranking significance claim.</p>
+<h2 id="6-%C2%B7-Full-reproduction:-the-exact-boundary">6 &#183; Full reproduction: the exact boundary<a class="anchor-link" href="#6-%C2%B7-Full-reproduction:-the-exact-boundary">&#182;</a></h2><p>The named paper target is <strong>B06-MITRA-TABLE12</strong>, all six p settings on original TabRepo ten-fold classification. Changing generators means training different checkpoints. A single released predictor cannot establish the effect of that change.</p>
+<table>
+<thead>
+<tr>
+  <th>Lane</th>
+  <th>Current evidence</th>
+  <th>Remaining boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Course generator comparison</td>
+  <td>Nine fresh fits, complete predictions, independent scoring</td>
+  <td>Near chance; no original-source parity</td>
+</tr>
+<tr>
+  <td>Saved course checkpoints</td>
+  <td>Predictions re-executed and matched</td>
+  <td>Replay is not new training</td>
+</tr>
+<tr>
+  <td>Original Table 12</td>
+  <td>Paper and release identities archived</td>
+  <td>Six checkpoints/training histories, split and evaluator identities unresolved</td>
+</tr>
+<tr>
+  <td>Original full pretraining</td>
+  <td>Paper reports 60 hours on eight A100s for its main run</td>
+  <td><code>NOT_RUN</code>; outside this lesson budget</td>
+</tr>
+<tr>
+  <td>Mitra-v2 fine-tuning release</td>
+  <td>Source snapshot archived separately</td>
+  <td>Does not establish original Table 12 reproducibility</td>
+</tr>
+</tbody>
+</table>
+<p>The inspected classifier and regressor releases list one checkpoint each. The linked fine-tuning repository currently targets v2. We cannot authenticate a complete original six-arm reproduction pipeline from these artifacts. The <a href="../labs/_reproduce_b06.py">operator</a> therefore provides an executable evidence preflight and refuses <code>--run</code> while missing identities remain. It is <strong>not</strong> advertised as a complete runnable paper trainer. <a href="../labs/evidence/b06/source-gate.json">Release evidence</a></p>
+<blockquote>
+<p><strong>Scope check.</strong> The small course code is fully visible and runnable. Larger dimensions would still leave missing original generators, histories and evaluation provenance. Budget limits never justify silently claiming that a different experiment reproduces the paper.</p>
+</blockquote>
+<h2 id="Lab-%C2%B7-implement-the-contract,-then-defend-the-conclusion">Lab &#183; implement the contract, then defend the conclusion<a class="anchor-link" href="#Lab-%C2%B7-implement-the-contract,-then-defend-the-conclusion">&#182;</a></h2><p><a href="../labs/b06-mitra-prior-mixtures.ipynb">Student notebook</a> · <a href="../labs/html/b06-mitra-prior-mixtures.html">Executed solution</a> · <a href="../labs/evidence/b06/reproducer.zip">Portable source/evidence archive</a> · <a href="../reference/b06-prior-mixtures.html">Reference card</a></p>
+<ol>
+<li>Implement the whole-task prior choice, including endpoint and invalid-input behavior.</li>
+<li>Implement support-only normalization and pass a query-intervention check.</li>
+<li>Match seed identities before computing paired effects.</li>
+<li>Run the visible learner, load each saved checkpoint and regenerate all held-out predictions. The notebook also performs one fresh update with your live functions. Its default replay is labeled separately from the author's nine fresh fits.</li>
+<li>Explain why these measurements do not demonstrate the claimed benefit of Mitra's prior design. Name the missing inputs for Table 12.</li>
+</ol>
+<div id="b06-teachback"></div>
+
+<p><strong>Exit ticket:</strong> submit your passing checks and a written defense covering the fixed/varied/measured contract, outer versus inner mixing, benchmark-selection exposure, the uniform baseline and reproduction gaps. Status remains <code>PENDING_WRITTEN_DEFENSE</code> until your work is reviewed.</p>
+<p><strong>Relational bridge.</strong> A synthetic relational generator also chooses distributions over keys, links, degrees, dates and missingness. The same architecture can inherit different habits from those choices. B13 will revisit that design problem; today earns the ability to isolate a prior change before attributing a gain to it.</p>
+<p>Ask the agent follow-up questions about any shape, source boundary or surprising result. For discussion with practitioners, bring a concrete reproducible counterexample to the <a href="https://github.com/autogluon/autogluon/discussions">AutoGluon discussions</a>; a benchmark headline alone is not enough.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/teachback.js"></script><script src="../assets/prior-mixtures.js"></script></body></html>

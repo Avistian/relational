@@ -1,0 +1,176 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson B05 — TabDPT: real-data pretraining and retrieval</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/retrieval-episodes.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><p class="eyebrow">Research bridge · B05 · core</p>
+
+<h1 id="TabDPT:-turn-a-real-table-into-prediction-episodes">TabDPT: turn a real table into prediction episodes<a class="anchor-link" href="#TabDPT:-turn-a-real-table-into-prediction-episodes">&#182;</a></h1><p><strong>Your win:</strong> construct an episode whose retrieval cannot see its target, trace it through TabDPT, and defend what a dataset-overlap audit actually proves. Read the core in 25–35 minutes; complete the notebook and written defense in a separate session.</p>
+<p><a href="b04-tabicl-scalable-icl.html">B04</a> compressed rows before dataset attention; <a href="b04a-scaling-rows-features-classes.html">B04a</a> changed the attention operator. Both leave a question: <strong>which rows should enter context, and where do training tasks come from?</strong> TabDPT combines real-table column prediction with neighborhoods. For our relational mission, it offers a strong flat-table modeling route, but similarity search alone does not enforce entity cutoffs, legal joins or feature arrival times.</p>
+<p><a href="../labs/b05-tabdpt-real-data-retrieval.ipynb">Student notebook</a> · <a href="../labs/html/b05-tabdpt-real-data-retrieval.html">Executed solution</a> · <a href="../reference/b05-retrieval-episodes.html">Reference</a> · <a href="../labs/b05-reproduction.md">Reproduction contract</a></p>
+<h2 id="1.-Retrieve-first,-then-read">1. Retrieve first, then read<a class="anchor-link" href="#1.-Retrieve-first,-then-read">&#182;</a></h2><p>Without reopening notes: what changes during in-context learning if weights stay fixed? What is the difference between a support label and a query label? Why can a different context change a prediction? Prerequisites are row/column indexing, standardization, nearest neighbors and the attention Q/K/V roles. Revisit <a href="b03-pfn-tabpfn-generations.html">B03</a> for the frozen-model contract. Ask the agent for a worked distance calculation if needed.</p>
+<p>An <strong>episode</strong> is a small prediction task: labeled support rows plus queries to predict. An unlabeled table still contains observed columns. Temporarily designate one as the target, predict its query values from the other columns, and use the observed values to compute a training loss. The target is hidden from model inputs, not absent from the training system. Varying the chosen column and feature subset creates many tasks from the same table; it does not create independent datasets. <a href="https://arxiv.org/html/2410.18164v3#S3.SS2">TabDPT §3.2</a>.</p>
+<h2 id="2.-Remove-the-target-before-choosing-neighbors">2. Remove the target before choosing neighbors<a class="anchor-link" href="#2.-Remove-the-target-before-choosing-neighbors">&#182;</a></h2><p>Consider six rows with one feature x and a candidate target y. We want a three-row neighborhood around row0. If the distance includes y, even a later deletion of y cannot erase its effect on which rows were chosen. The selection itself carries information.</p>
+<p><strong>Predict:</strong> with x fixed, should changing only y change the chosen row IDs? Try both orders below. Green rows enter the neighborhood; the anchor is included in this pretraining illustration. A subsequent disjoint support/query split is a separate operation.</p>
+<div class="b05-board" data-b05="retrieval"><h3>Choose neighbors before seeing the answer</h3><label>Distance features<select name="policy"><option value="excluded">Target removed</option><option value="included">Target included</option></select></label><label>Target values<select name="target"><option value="original">Original values</option><option value="changed">Changed values</option></select></label><label>Neighborhood size<select name="count"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select></label><button type="button">Reset neighborhood</button><output aria-live="polite">Selected row IDs: [0, 1, 2]. Target removed, k=3. Changing only target values leaves this selection unchanged.</output><table><thead><tr><th>Row ID</th><th>Feature x</th><th>Target y</th><th>d²</th></tr></thead><tbody><tr data-picked="true"><td>0 · anchor</td><td>0</td><td>0</td><td>0.0000</td></tr><tr data-picked="true"><td>1</td><td>0.1</td><td>100</td><td>0.0201</td></tr><tr data-picked="true"><td>2</td><td>0.2</td><td>0</td><td>0.0805</td></tr><tr data-picked="false"><td>3</td><td>0.3</td><td>100</td><td>0.1812</td></tr><tr data-picked="false"><td>4</td><td>1</td><td>0</td><td>2.0134</td></tr><tr data-picked="false"><td>5</td><td>2</td><td>100</td><td>8.0537</td></tr></tbody></table><p>Pretraining illustration: the anchor belongs to the candidate population. Standard deviations are fit to that population. Downstream inference fits statistics to eligible support instead.</p></div>
+
+<p>Work one distance: without y, the raw squared distance from row0 to row2 is <code>(0.2−0)² = 0.04</code>. Standardizing x divides every squared distance by the same positive variance, preserving this one-feature order. Adding standardized y introduces another distance term and can change the ranking. In multiple features, support-fitted scaling changes their relative contributions.</p>
+<p>Paper Algorithm1 selects the target, removes it, retrieves a neighborhood, then splits its rows into support and query. The notebook implements that order. At downstream inference, candidates come from eligible training rows and queries retrieve from them. These are different uses of retrieval. <a href="https://arxiv.org/html/2410.18164v3#S3.SS3">Algorithm1 and §3.4</a>.</p>
+<div class="b05-board" data-b05="quiz"><h3>Where must the target go?</h3><p>Before constructing a target-safe retrieval index:</p><label><input type="radio" name="target-quiz" value="keep">Targets enter retrieval</label><label><input type="radio" name="target-quiz" value="remove">Targets leave retrieval</label><label><input type="radio" name="target-quiz" value="predict">Targets become predictions</label><button type="button">Reset answer</button><output aria-live="polite">Choose before revealing feedback.</output><noscript><p>Feedback: targets leave retrieval. Deleting the target after selection cannot remove its influence on selected rows.</p></noscript></div>
+
+<h2 id="3.-Follow-the-tensors-through-the-model">3. Follow the tensors through the model<a class="anchor-link" href="#3.-Follow-the-tensors-through-the-model">&#182;</a></h2><figure class="b05-figure"><img src="../labs/figures/b05/architecture.svg" alt="TabDPT original architecture: target-free paper episode order, support label embeddings, support-only attention keys and values, classification and regression heads. Released training order differs."><figcaption>Original architecture and paper-order episode construction; the released sampler discrepancy is shown separately. Batch dimension omitted.</figcaption></figure>
+
+<p>For S=24 support rows, Q=8 queries and F=12 remaining features, the table has shape <code>[32,12]</code>. Width handling supplies100 input slots per row. A shared linear encoder produces <code>[32,768]</code> row vectors, followed by RMS normalization in the original release. Support rows receive an additional embedding of their targets. Query rows do not.</p>
+<p>In each of16 blocks, all 32 rows form attention queries, while only24 support rows form keys and values. Four heads give192 coordinates per head and score matrices <code>[4,32,24]</code>. The feed-forward sublayer maps768→1536→768. A task-specific head reads the final query vectors. Support rows cannot attend to query rows, and query rows cannot attend to each other through this attention path. <a href="../labs/sources/b05/original/src/tabdpt/model.py">Complete original model source</a>.</p>
+<p><strong>Trace CHECK:</strong> which slice constructs K and V? Find <code>h[:, :eval_pos]</code> in the notebook's complete source appendix. Explain why using all rows there would change the information contract. The original model normalizes features across the whole episode during training but uses support statistics at inference; attention isolation alone does not prove isolation of every preprocessing operation. Its regression output is restored to support-target units.</p>
+<p>Pretraining updates model weights from query losses. Frozen inference uses support labels as inputs without gradient updates. Our four-neighbor mean readout exercises episode construction only; it is not a small trained TabDPT.</p>
+<h2 id="4.-A-paper-and-its-release-can-disagree">4. A paper and its release can disagree<a class="anchor-link" href="#4.-A-paper-and-its-release-can-disagree">&#182;</a></h2><p>The released training code builds an index from all standardized columns. Its <code>use_knn</code> method retrieves first and deletes the randomly selected target afterward. This differs from the paper-order algorithm above. We preserve the release, expose the discrepancy, and keep the course implementation separate. <a href="../labs/sources/b05/training/dataset.py">Pinned training source</a>.</p>
+<p>The executed probe extracts the <strong>unchanged released method</strong> and supplies an exact L2 index oracle in place of FAISS. Changing only target values moves its selected IDs from <code>[0,2,4]</code> to <code>[0,1,3]</code>; target-safe selection stays <code>[0,1,2]</code> both times. This confirms a dependency in this sampler under the constructed input. It does <strong>not</strong> establish which private training run produced a published checkpoint or how much a benchmark score changes. <a href="../labs/_source_probe_b05.py">Probe code</a> · <a href="../labs/evidence/b05/sampler-probe.json">Recorded result</a>.</p>
+<p><strong>TODO:</strong> implement target removal and support-only retrieval. <strong>CHECK:</strong> reverse the target column and require identical selected IDs; add a second query with extreme features and require the first query's neighbors to stay fixed. <strong>EXIT:</strong> explain why deleting y after selection is too late, without claiming that every target-dependent pretraining sampler leaks downstream test labels.</p>
+<h2 id="5.-Real-data-requires-an-overlap-audit">5. Real data requires an overlap audit<a class="anchor-link" href="#5.-Real-data-requires-an-overlap-audit">&#182;</a></h2><p>A different dataset ID or file hash cannot rule out a renamed, reordered or derived copy. The paper's contamination procedure compares names, hashes, dimensions, target/feature statistics and suspicious pairs manually. Those are complementary checks, not a single universal certificate. <a href="https://arxiv.org/html/2410.18164v3#A2.SS1">Appendix B.1</a>.</p>
+<p>Our complete <strong>declared-ID</strong> check covers123 training IDs against72 classification test IDs: zero exact intersections, and banknote1462 is absent from training IDs. We did not download and compare every table's contents; independence remains <code>NOT_ESTABLISHED</code>. The notebook asks you to distinguish exact overlap, related datasets and insufficient evidence. For a relational dataset, extend the audit to entity identity and time windows; a future snapshot of the same entities can be related despite changed bytes.</p>
+<h2 id="6.-Inspect-all-the-measured-course-evidence">6. Inspect all the measured course evidence<a class="anchor-link" href="#6.-Inspect-all-the-measured-course-evidence">&#182;</a></h2><p>The frozen course experiment uses all178 Wine feature rows and creates18 episodes: three target columns × three seeds × two neighborhood sizes. Each has8 queries; a four-neighbor support-target mean supplies144 predictions. An independent scalar implementation verifies every selected neighbor, query identity, target and prediction. All18 target-reversal interventions leave selection unchanged. <a href="../labs/evidence/b05/course-protocol.json">Protocol</a> · <a href="../labs/evidence/b05/course-audit.json">Complete audit</a>.</p>
+<table>
+<thead>
+<tr>
+  <th>Target column</th>
+  <th style="text-align:right">Seed</th>
+  <th style="text-align:right">Episode rows</th>
+  <th style="text-align:right">Queries</th>
+  <th style="text-align:right">MSE (target units²)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Alcohol</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.231489</td>
+</tr>
+<tr>
+  <td>Alcohol</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.348168</td>
+</tr>
+<tr>
+  <td>Alcohol</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.137604</td>
+</tr>
+<tr>
+  <td>Alcohol</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.276418</td>
+</tr>
+<tr>
+  <td>Alcohol</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.160409</td>
+</tr>
+<tr>
+  <td>Alcohol</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.062337</td>
+</tr>
+<tr>
+  <td>Flavanoids</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.123504</td>
+</tr>
+<tr>
+  <td>Flavanoids</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.161327</td>
+</tr>
+<tr>
+  <td>Flavanoids</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.085609</td>
+</tr>
+<tr>
+  <td>Flavanoids</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.075273</td>
+</tr>
+<tr>
+  <td>Flavanoids</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.089549</td>
+</tr>
+<tr>
+  <td>Flavanoids</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">0.085677</td>
+</tr>
+<tr>
+  <td>Proline</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">14240.625000</td>
+</tr>
+<tr>
+  <td>Proline</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">32653.609375</td>
+</tr>
+<tr>
+  <td>Proline</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">65699.875000</td>
+</tr>
+<tr>
+  <td>Proline</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">22968.687500</td>
+</tr>
+<tr>
+  <td>Proline</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">32</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">39331.640625</td>
+</tr>
+<tr>
+  <td>Proline</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">96</td>
+  <td style="text-align:right">8</td>
+  <td style="text-align:right">18290.976562</td>
+</tr>
+</tbody>
+</table>
+<p>These MSEs have target-specific units. A bigger neighborhood also changes which rows become queries here. Do not pool MSE across targets or interpret these rows as a paired context-size ablation. To study support size causally, fix the target, query IDs, eligible candidate population, checkpoint and preprocessing policy before changing support. Full TabDPT training and inference remain separate evidence.</p>
+<h2 id="7.-Original-TabDPT,-Turbo-and-v1.3-are-separate-artifacts">7. Original TabDPT, Turbo and v1.3 are separate artifacts<a class="anchor-link" href="#7.-Original-TabDPT,-Turbo-and-v1.3-are-separate-artifacts">&#182;</a></h2><p>The original recovered checkpoint has4 heads. The later v1.1 header has8 heads; the paper-era evaluator automatically loads that later file. A version name and a matching hidden width do not establish historical identity. The original checkpoint download matches its published Git LFS hash, which proves artifact identity only. <a href="../labs/evidence/b05/source-gate.json">Version ledger</a>.</p>
+<p>Turbo changes the recipe more substantially: longer-context training, thinking rows, per-layer target conditioning and reusable context computation. In its architecture, target embeddings enter attention values rather than simply being added to row embeddings. Its described inference uses one shared context without per-query kNN retrieval, removing repeated neighborhood processing. Its reported speedups must be evaluated with its complete fitting, context and inference settings. The September v1.3 release is another checkpoint update, not another name for the original paper. <a href="https://arxiv.org/html/2608.01400v1#S3">Turbo §3</a> · <a href="../labs/sources/b05/current-readme.md">Pinned release history</a>. Neither newer model is executed here.</p>
+<div class="b05-status"><strong>Full reproduction status: INCOMPLETE_SOURCE_PROTOCOL.</strong> The selected banknote target retains both official folds, context 2048 and eight ensemble members. Original-paper checkpoint/evaluator mapping, exact fold artifacts and selected reference results remain unresolved. The executable preflight refuses benchmark dispatch; no random split or current checkpoint was substituted. Full pretraining and the full benchmark remain NOT_RUN. USD 0 cloud/API spent. Read the reproduction contract before interpreting any “PASS.”</div>
+
+<p>Banknote's entire dataset is smaller than2,048 rows. Even a successful selected run would test a frozen checkpoint evaluation, not prove the benefit of neighbor pruning. The separate episode lab supplies the active-retrieval exercise.</p>
+<h2 id="8.-Defend-the-information-path">8. Defend the information path<a class="anchor-link" href="#8.-Defend-the-information-path">&#182;</a></h2><p>In the notebook, complete three live functions: <code>feature_view</code>, <code>neighbors</code> and <code>overlap_status</code>. The checks call your functions; the written defense remains your work. Submit: (1) a hand distance trace, (2) support/query shapes and attention boundaries, (3) a renamed-dataset audit, and (4) the narrowest justified claim for the released sampler probe. Author checks leave <code>PENDING_WRITTEN_DEFENSE</code>.</p>
+<p>After completion, revisit the target intervention after 1 day, reconstruct the architecture after 7 days, and audit a new table pair after 30 days. Ask the agent follow-up questions or request a hint before looking at the solution. Start primary reading with <a href="https://arxiv.org/html/2410.18164v3#S3">TabDPT §3 and Appendix B.1</a>.</p>
+<p><strong>Next:</strong> <a href="../plan/year-5-6-bridge.md#b06">B06: Mitra</a> asks how the distribution of pretraining tasks changes the learned predictor. Carry the distinction between a task generator, learned weights and inference context into that comparison.</p>
+</article><script src="../assets/retrieval-episodes.js"></script></body></html>

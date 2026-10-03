@@ -10,11 +10,19 @@ ROOT = Path(__file__).resolve().parents[1]
 LESSONS = ROOT / "lessons"
 MANIFEST = LESSONS / "manifest.json"
 
-TITLE_RE = re.compile(r"<title>Lesson \d+ — (.+?)</title>")
+TITLE_RE = re.compile(r"<title>Lesson (?:\d+|B\d+[a-z]?) — (.+?)</title>")
 H1_RE = re.compile(r"<h1>(?:Q\d Checkpoint: )?(.+?)</h1>")
 
 
 def slug_meta(slug: str) -> dict:
+    if re.match(r"^b\d{2}(?:[a-z])?-", slug):
+        identifier = "B" + slug.split("-", 1)[0][1:]
+        previous = next((e for e in json.loads(MANIFEST.read_text())["lessons"] if e["id"] == identifier), {})
+        base_order = 200 + int(identifier[1:3]) / 100
+        suffix_order = (ord(identifier[3]) - 96) / 10000 if len(identifier) > 3 else 0
+        return {"id": identifier, "slug": slug, "year": 5, "quarter": 5,
+                "sortOrder": previous.get("sortOrder", base_order + suffix_order),
+                "checkpoint": False, "labPath": "labs/" + slug + ".ipynb" if (ROOT / "labs" / (slug + ".ipynb")).exists() else None}
     n = int(slug[:4])
     year = (n - 1) // 40 + 1
     pos_in_year = (n - 1) % 40
