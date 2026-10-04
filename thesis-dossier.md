@@ -756,3 +756,14 @@ The approved RDBLearn full21task reproduction stopped at a freshly verified shar
 
 
 - **B15 · BAR:** Learned parameters cannot universally recover task information absent from the input. Exact finite counterexamples show ambiguity and a legal expanded-support rescue, not universal uselessness of learned encoders. RDBLearn v1.1 Table 5 trial target0.7271 remains source-gated; no fresh paper score or real-data superiority inferred.
+
+- **B16 · BAR:** A schema-derived graph must earn its communication routes. Finite partition diagnostics separate key memorization, occupancy cost, a greedy XOR trap and justified empty selection. These do not establish real-data GNN gains. Three AutoGrable paper/release discrepancies keep the 400-run Table 1 target source-gated.
+
+- **B17 · BAR:** Reusing an encoder is an explicit dependency contract. The course proves label exclusion and query isolation for a reduced contextual architecture, not useful pretrained transfer. GTAlign's target encoder updates prevent treating its whole pipeline as zero-shot. Selected FlexTab-Multi F1-DNF source gate remains unresolved; no empirical relational advantage is established here.
+
+- **B19 · BAR (2026-10-04):** A relational-model gain must survive a deployment-matched split, comparable accessible information, version/exposure audit and measured-score provenance. Complete synthetic12-arm evidence and9,540 released grouped score records do not establish full BeyondArena Figure F.2 or a general relational advantage.
+
+- **B19a · BAR (2026-10-04):** A mean-prediction gain does not establish distribution quality. Preregister primary score, calibration partition, distribution conversion/tails, units and paired dataset effects. Complete selected published-table reconstruction of ScoringBench Tables1/4/5 is saved-score evidence; it is not fresh-model or raw-distribution verification. Submit [metric contract](./labs/b19a-metric-contract.md) before B23; defend point-only scope in B24.
+
+
+- **BAR · B19b (2026-10-04):** a forecasting wrapper requires an as-of information contract. Complete324-prediction synthetic diagnostic shows oracle-weather gains that do not support deployment; legal regression loses to seasonal naive on one seed. Complete13×97 released-score reconstruction does not establish Figure4.1 parity (2/39 printed fields match, both baseline identities). Fresh TabPFN inference and learner mastery remain unestablished. [Evidence](labs/b19b-reproduction.md).

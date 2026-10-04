@@ -1,0 +1,126 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B16 · Construction selection reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/partition-selection.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B16-%C2%B7-Construction-selection-reference">B16 &#183; Construction selection reference<a class="anchor-link" href="#B16-%C2%B7-Construction-selection-reference">&#182;</a></h1><p><strong>Decision:</strong> choose communication routes only when validation gain pays for fragmentation. An empty graph still permits row-local prediction.</p>
+<div class="ps-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Term</th>
+  <th>Operational meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Projection partition</td>
+  <td>Rows share a block iff all selected column values agree</td>
+</tr>
+<tr>
+  <td>Block predictor</td>
+  <td>Training label proportion in that cell; unseen cells use the training marginal</td>
+</tr>
+<tr>
+  <td>Occupancy Ω</td>
+  <td>Sum of square roots of training block sizes, divided by training row count</td>
+</tr>
+<tr>
+  <td>J(S)</td>
+  <td>Validation risk + λΩ; smaller is better</td>
+</tr>
+<tr>
+  <td>Forward / backward</td>
+  <td>Start empty / full; accept one-column changes with improvement &gt; τ</td>
+</tr>
+<tr>
+  <td>Search gap</td>
+  <td>Returned J minus minimum J across every candidate</td>
+</tr>
+<tr>
+  <td>Abstention</td>
+  <td>Select empty; no cross-row edges, not no prediction</td>
+</tr>
+<tr>
+  <td>1-WL</td>
+  <td>Refine colours using own colour and typed neighbor-colour multiset</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Eight rows:</strong> Ω(one block)=0.354, Ω(two blocks of four)=0.5, Ω(singletons)=1. Signal y=A at λ=0.5: J(empty)=0.427, J(A)=0.250, J(K)=0.750. Unseen keys cannot reuse training labels.</p>
+<p><strong>XOR:</strong> at λ=0.5, A/B alone cost more than empty but A+B costs less. Forward gets stuck; backward reaches the pair. At λ=1, empty wins the objective. This does not establish downstream GNN performance.</p>
+<p><strong>Lemma boundary:</strong> projection = structural row colours only with row features erased and typed value identities exposed. Full row features can refine it; anonymous value nodes can merge it. Blocks are not connected components.</p>
+<p><strong>Information:</strong> fit counts on training labels → select on validation → freeze → evaluate test. Test labels never influence construction. Candidate features are fixed before validation.</p>
+<div class="ps-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th>World · λ=0.5</th>
+  <th>Search</th>
+  <th>Selected</th>
+  <th style="text-align:right">Validation J</th>
+  <th style="text-align:right">Test Brier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>signal</td>
+  <td>exhaustive</td>
+  <td>A</td>
+  <td style="text-align:right">0.250</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>signal</td>
+  <td>forward</td>
+  <td>A</td>
+  <td style="text-align:right">0.250</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>signal</td>
+  <td>backward</td>
+  <td>A</td>
+  <td style="text-align:right">0.250</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>xor</td>
+  <td>exhaustive</td>
+  <td>A + B</td>
+  <td style="text-align:right">0.354</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>xor</td>
+  <td>forward</td>
+  <td>∅</td>
+  <td style="text-align:right">0.427</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+<tr>
+  <td>xor</td>
+  <td>backward</td>
+  <td>A + B</td>
+  <td style="text-align:right">0.354</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>null</td>
+  <td>exhaustive</td>
+  <td>∅</td>
+  <td style="text-align:right">0.427</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+<tr>
+  <td>null</td>
+  <td>forward</td>
+  <td>∅</td>
+  <td style="text-align:right">0.427</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+<tr>
+  <td>null</td>
+  <td>backward</td>
+  <td>∅</td>
+  <td style="text-align:right">0.427</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Source audit:</strong> pinned backward search cannot drop its last column; training/frequency counts differ from validation counts; value-node x is zero. The finite scorer matches 144 aligned primitive comparisons, not whole-source behavior. Table 1 requires 400 selection runs; missing driver/settings leave <code>INCOMPLETE_SOURCE_PROTOCOL_GATE</code>, execution <code>NOT_RUN</code>. Cloud $0; learner <code>PENDING_WRITTEN_DEFENSE</code>.</p>
+<p><a href="../lessons/b16-autograble-graph-selection.html">Lesson</a> · <a href="../labs/b16-autograble-graph-selection.ipynb">Lab</a> · <a href="../labs/b16-reproduction.md">Contract</a> · <a href="https://arxiv.org/html/2608.11431v1">Paper</a></p>
+</article></body></html>

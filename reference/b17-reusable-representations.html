@@ -1,0 +1,102 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B17 · Representation reuse reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/representation-boundary.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B17-%C2%B7-Representation-reuse-reference">B17 &#183; Representation reuse reference<a class="anchor-link" href="#B17-%C2%B7-Representation-reuse-reference">&#182;</a></h1><p><strong>Rule:</strong> reuse a cached result only while every input to its function stays unchanged.</p>
+<div class="rb-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Term</th>
+  <th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Target-agnostic at inference</td>
+  <td>Current target labels do not enter the encoder</td>
+</tr>
+<tr>
+  <td>Contextual row embedding</td>
+  <td>A row representation that also depends on permitted support features</td>
+</tr>
+<tr>
+  <td>Adaptation boundary</td>
+  <td>Which parameters/state change for a new task or domain</td>
+</tr>
+<tr>
+  <td>Single-key attention</td>
+  <td>Softmax over one score is1; output is the transformed value</td>
+</tr>
+<tr>
+  <td>Multi-layer row aggregation</td>
+  <td>Apply a separate projection to each layer, sum, then final projection</td>
+</tr>
+<tr>
+  <td>Pseudo-label</td>
+  <td>A training label constructed from another signal, here graph community</td>
+</tr>
+<tr>
+  <td>Prototype</td>
+  <td>Mean support embedding for one class</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>FlexTab path:</strong> numeric/semantic cells → column/row attention → layerwise [ROW] projections → Z → task decoder with support labels. Current labels bypass E; historical pretraining targets still influenced its weights. A different target column can change the feature set and invalidate reuse.</p>
+<p><strong>Attention trace:</strong> one V=[2,−1] gives[2,−1] for any score. Two values [2,−1],[0,3] and scores[0,log3] give weights[.25,.75], output[.5,2]. Residual and learned value/output projections still matter.</p>
+<p><strong>Cache key:</strong> features + ordered IDs + support membership + encoder weights + preprocessing + implementation/mask version + precision. Decoder caches additionally depend on support labels. A conservative key may miss on harmless reorderings; correctness matters before hit rate.</p>
+<p><strong>GTAlign stages:</strong> contrastive GNN pretraining → community episode alignment updates GNN and TFM → target-label prototype adaptation updates GNN with TFM frozen → recompute embeddings → in-context prediction. This is not a wholly zero-shot pipeline.</p>
+<p><strong>Temporal check:</strong> inspect shared encoder context and preprocessing as well as directly retrieved neighbors. Earlier BFS neighbors alone cannot prove no future information enters Z.</p>
+<div class="rb-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th style="text-align:right">Seed</th>
+  <th>Task</th>
+  <th style="text-align:right">Label edit: max ΔZ</th>
+  <th style="text-align:right">Label edit: max Δprobability</th>
+  <th>Cache</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">0</td>
+  <td>A</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00001811</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">0</td>
+  <td>B</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00002052</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">1</td>
+  <td>A</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00004662</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">1</td>
+  <td>B</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00000773</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">2</td>
+  <td>A</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00002694</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">2</td>
+  <td>B</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00002176</td>
+  <td>HIT</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Evidence:</strong> complete 36 random-network forward records, independent NumPy replay. No learned accuracy claim. Selected FlexTab Table 5 F1-DNF target AUROC74.6% remains INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN. Full pretraining and GTAlign experiments NOT_RUN. PaidUSD 0; learner defense pending.</p>
+<p><a href="../lessons/b17-reusable-representations.html">Lesson</a> · <a href="../labs/b17-reusable-representations.ipynb">Notebook</a> · <a href="../labs/b17-reproduction.md">Contract</a> · <a href="https://arxiv.org/html/2606.30336v2">FlexTab</a> · <a href="https://arxiv.org/html/2607.11374v1">GTAlign</a></p>
+</article></body></html>

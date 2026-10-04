@@ -2,8 +2,11 @@
 import ast,base64,hashlib,html,io,json,zipfile
 from pathlib import Path
 import nbformat as nb
+from _source_b05 import source_gate
 from nbconvert.filters.markdown import markdown2html_mistune as render
 P=Path(__file__).resolve().parent;R=P.parent;E=P/'evidence/b05';S='b05-tabdpt-real-data-retrieval'
+# Refuse to package contaminated source even if its checksum was updated.
+source_gate(P/'sources/b05')
 report=json.loads((E/'course-audit.json').read_text())
 table='| Target column | Seed | Episode rows | Queries | MSE (target units²) |\n|---|---:|---:|---:|---:|\n'+''.join(f"| { {0:'Alcohol',6:'Flavanoids',12:'Proline'}[r['target']] } | {r['seed']} | {r['size']} | 8 | {r['mse']:.6f} |\n" for r in report['rows'])
 widget='''<div class="b05-board" data-b05="retrieval"><h3>Choose neighbors before seeing the answer</h3><label>Distance features<select name="policy"><option value="excluded">Target removed</option><option value="included">Target included</option></select></label><label>Target values<select name="target"><option value="original">Original values</option><option value="changed">Changed values</option></select></label><label>Neighborhood size<select name="count"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select></label><button type="button">Reset neighborhood</button><output aria-live="polite">Selected row IDs: [0, 1, 2]. Target removed, k=3. Changing only target values leaves this selection unchanged.</output><table><thead><tr><th>Row ID</th><th>Feature x</th><th>Target y</th><th>d²</th></tr></thead><tbody><tr><td>0 · anchor</td><td>0</td><td>0</td><td>0</td></tr><tr><td>1</td><td>0.1</td><td>100</td><td>0.0200</td></tr><tr><td>2</td><td>0.2</td><td>0</td><td>0.0800</td></tr></tbody></table><p>Pretraining illustration: the anchor belongs to the candidate population. Standard deviations are fit to that population. Downstream inference fits statistics to eligible support instead.</p></div>'''

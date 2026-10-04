@@ -1,0 +1,196 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B17 · Reusable representations</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/representation-boundary.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B17-%C2%B7-FlexTab-and-GTAlign:-what-can-a-representation-reuse?">B17 &#183; FlexTab and GTAlign: what can a representation reuse?<a class="anchor-link" href="#B17-%C2%B7-FlexTab-and-GTAlign:-what-can-a-representation-reuse?">&#182;</a></h1><p class="subtitle">Research bridge · elective · trace the adaptation boundary.</p>
+
+<p><a href="b16-autograble-graph-selection.html">B16</a> asked which graph to construct for a task. Once we have chosen useful inputs, another question appears: <strong>can we encode them once and reuse the result for another task?</strong> This matters to the mission because a relational foundation model must justify both its predictive benefit and the work required to adapt it.</p>
+<p>Your tangible win: trace two target tasks through one encoder, identify exactly when its cache becomes stale, and explain which GTAlign weights change on a new domain. Recall <a href="b07-semantic-transfer.html">B07’s semantic features</a>, <a href="b11-supervised-relational-baselines.html">B11’s structural encoders</a>, and <a href="b12-adaptation-mechanisms.html">B12’s adaptation boundary</a>. FlexTab is a different paper from B04a’s <strong>TabFlex</strong>.</p>
+<p><strong>Route:</strong> 25–35 minutes for the lesson, then 35–50 minutes for the lab. Prerequisites are vectors, weighted averages and support/query separation, restated below. <a href="../labs/b17-reusable-representations.ipynb">Student notebook</a> · <a href="../labs/html/b17-reusable-representations.html">Executed solution</a> · <a href="../reference/b17-reusable-representations.html">Printable reference</a></p>
+<h2 id="Recall-before-reading">Recall before reading<a class="anchor-link" href="#Recall-before-reading">&#182;</a></h2><div id="b17-warmup"></div>
+<noscript><p>Recall without notes: can fixed weights produce changing predictions? Why can validation choose a graph while test labels cannot? What information is lost when rows are averaged?</p></noscript>
+
+<h2 id="1-%C2%B7-Reusable-does-not-mean-independent-of-everything">1 &#183; Reusable does not mean independent of everything<a class="anchor-link" href="#1-%C2%B7-Reusable-does-not-mean-independent-of-everything">&#182;</a></h2><p>An <strong>embedding</strong> is a vector representing an input. An <strong>encoder</strong> computes that vector. A <strong>decoder</strong> combines it with task information to produce a prediction. <strong>Support rows</strong> are examples whose permitted labels help predict <strong>query rows</strong>, whose labels must remain hidden during prediction. A support/query episode is one such prediction problem.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Keep the description of the rows separate from the question you ask about them.</p>
+</blockquote>
+<p>Let X denote the feature table and S the support-row membership. An encoder with weights θ produces Z = Eθ(X, S). A decoder with weights φ computes query probabilities Dφ(Z, yS), where yS contains only support labels. Changing yS cannot change Z if it never enters E. It can still change the answer from D. This is an <strong>inference information boundary</strong>, not a claim that the encoder was trained without prediction targets.</p>
+<p><strong>Worked example.</strong> Four support rows have features (−1,0), (0,1), (1,0), (0,−1). Two query rows have (.5,.5) and (−.5,−.5). Task A labels the support [0,0,1,1]; task B labels it [0,1,0,1]. The feature input is identical for both tasks. The same encoder output is therefore reusable. If task B instead promotes one of those feature columns to the target, that column must be removed from X. You no longer have the same encoder input.</p>
+<div id="b17-predict"></div>
+<noscript><p>Predict: complement all four support labels with X fixed. Embeddings stay fixed; decoder probabilities may change.</p></noscript>
+
+<h2 id="2-%C2%B7-Model-architecture:-FlexTab-separates-the-streams">2 &#183; Model architecture: FlexTab separates the streams<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-FlexTab-separates-the-streams">&#182;</a></h2><p>FlexTab places feature processing in an encoder and task conditioning in decoders. Its row tokens collect information from cells; projected row outputs from successive encoder layers are combined. The target stream reads those outputs separately. <a href="https://arxiv.org/html/2606.30336v2#S2.SS2">FlexTab §2.2 and Appendix A</a></p>
+<section class="rb-board" aria-label="FlexTab model architecture"><h3>Two tasks, one feature stream</h3><div class="rb-flow"><div class="rb-step"><strong>1 · Features only → cell tokens + [ROW]</strong>4 support + 2 query rows; 2 columns; width 16.<small>6 × 2 numeric values → 6 × 3 × 16 tokens. Target labels bypass this path.</small></div><div class="rb-step"><strong>2 · Alternate attention across columns and rows</strong>[ROW] reads feature keys; cross-row keys come only from support.<small>Two layers; residual, normalization and feed-forward operations preserve each row’s own path.</small></div><div class="rb-step"><strong>3 · Collect every depth → shared representation</strong>P₁(r₁) + P₂(r₂) → final projection W → Z, shape 6 × 16.<small>One layer-specific projection per depth. Cache this result only while encoder dependencies are unchanged.</small></div><div class="rb-step rb-target"><strong>4 · Separate target stream → decoder</strong>Support label embeddings + query MASK; inject row values via cross-attention.<small>Then attend along the target stream to support rows; binary head returns two query probabilities.</small></div><div class="rb-branches"><div class="rb-step rb-target"><strong>Task A</strong>Labels [0,0,1,1] + same Z → predictions A</div><div class="rb-step rb-target"><strong>Task B</strong>Labels [0,1,0,1] + same Z → predictions B</div></div></div><p class="rb-baseline">Pictured dimensions belong to the reduced untrained lab. Published default: 12-layer encoder, width 768, 12 heads. Pretraining/decoder-training paths are explained below.</p></section>
+
+<h3 id="Follow-one-row">Follow one row<a class="anchor-link" href="#Follow-one-row">&#182;</a></h3><p><strong>Tokenize.</strong> A cell token is a vector encoding a cell’s value. With R rows, C columns and hidden width D, the cell tensor has shape R×C×D; a tensor is simply an array with named axes. Add one learned <strong>[ROW]</strong> token per row to collect its features: R×(C+1)×D. Our six-row, two-column, width 16 example starts as 6×3×16. The full paper also has a batch axis, omitted here for one table.</p>
+<p><strong>Across columns.</strong> Each token issues a query vector Q to compare with key vectors K. Similarity scores become nonnegative weights summing to one through <strong>softmax</strong>, then mix the associated value vectors V. The [ROW] token reads feature keys. Feature tokens cannot read [ROW] as a key in the course implementation.</p>
+<p><strong>Across rows.</strong> Each column position can read only support rows as keys/values. A query still retains its own features through its residual path: a <strong>residual</strong> adds the block input back to its update. But it cannot read a different query row. This makes query batching irrelevant to each other query under this particular mask.</p>
+<p><strong>Across layers.</strong> A layer applies these operations plus a feed-forward transformation. <strong>Layer normalization</strong> rescales a vector using its coordinate mean and variance; the feed-forward network transforms each vector independently. Different depths can encode different information. We collect each depth’s row vector rℓ, apply its own learned linear map Pℓ, sum, then apply a final map W:</p>
+<p><code>z = W( P₁(r₁) + P₂(r₂) + … + Pₗ(rₗ) )</code></p>
+<p>The code you read in the notebook implements each operation explicitly. The paper’s larger model uses richer tokenizers and multiple attention heads. The lab’s single-head numeric network isolates the information path; it is not the released model.</p>
+<h3 id="Why-one-key-attention-is-a-special-case">Why one-key attention is a special case<a class="anchor-link" href="#Why-one-key-attention-is-a-special-case">&#182;</a></h3><p><strong>Worked example.</strong> Give a target token exactly one row-value vector V=[2,−1]. Whatever its query/key similarity score, softmax over a single number equals [1]. The attention output is therefore [2,−1]. The learned value and output projections can transform that vector, and the residual preserves the target token. With two row values [2,−1] and [0,3], scores [0, log 3] instead give weights [.25,.75] and output [.5,2]. Now the query can select among different rows.</p>
+<section class="rb-board" data-single-key><h3>Can a query choose among one key?</h3><label>Number of row values <select><option value="one">One row value</option><option value="two">Two row values</option></select></label><p data-keys>KV length 1: changing Q or K cannot change the attention weight.</p><output aria-live="polite">Any single score → weight [1]. Output [2, −1].</output><button type="button">Reset attention</button><p class="rb-baseline">Baseline: one row value [2,−1]. Exact illustrative arithmetic before value/output projections.</p><noscript><p>With two values [2,−1],[0,3] and scores[0,log3], weights[.25,.75] produce[.5,2].</p></noscript></section>
+
+<p>For a single table, the decoder can inject a row embedding through this one-key case and then mix support information along its target stream. For relational prediction, several related row embeddings can become the keys. Their relative weights can matter. <a href="https://arxiv.org/html/2606.30336v2#A1.SS2">FlexTab Appendix A.2</a></p>
+<p><strong>Training boundary.</strong> FlexTab first trains its encoder with the classification/regression decoder, then freezes the encoder while training additional task decoders. Its relational decoder learns from partitioned single tables. At inference, related database rows supply its inputs. A feature encoder that excludes the current labels can still have learned from many earlier prediction tasks. <a href="https://arxiv.org/html/2606.30336v2#S3">FlexTab §3</a></p>
+<blockquote>
+<p><strong>Scope check.</strong> No such training occurs in B17. We inspect random networks at seeds 0/1/2. Their tiny probability changes reveal dependencies, not predictive skill, transfer, anomaly-detection quality or source parity.</p>
+</blockquote>
+<h2 id="3-%C2%B7-Predict-the-intervention,-then-inspect-the-measured-path">3 &#183; Predict the intervention, then inspect the measured path<a class="anchor-link" href="#3-%C2%B7-Predict-the-intervention,-then-inspect-the-measured-path">&#182;</a></h2><p>Everything in this control comes from saved float64 forward passes. <strong>Held fixed:</strong> model weights, numeric preprocessing, support size and architecture. <strong>Varied:</strong> exactly the selected labels, features or row order. <strong>Measured:</strong> maximum absolute embedding change and probability change, after aligning rows by ID. A maximum is the largest change across coordinates or query probabilities, not a mean accuracy.</p>
+<section class="rb-board" data-representation-boundary><h3>What changes, and what can be reused?</h3><label>Initialization seed <select name="seed"><option>0</option><option>1</option><option>2</option></select></label><label>Task <select name="task"><option>A</option><option>B</option></select></label><label>Intervention <select name="mode"><option value="baseline">No change</option><option value="support-labels">Complement support labels</option><option value="support-feature">Change one support feature</option><option value="other-query">Change only the other query</option><option value="support-order">Permute support with labels</option><option value="query-order">Permute query rows</option></select></label><p data-path>Same feature encoding → reuse Z → decode current support labels</p><output aria-live="polite">Maximum embedding change:0. Maximum probability change:0. Encoder cache:HIT.</output><p data-meaning>Reference state: no inputs changed.</p><button type="button">Reset boundary</button><p class="rb-baseline">Baseline is always the unmodified input for the selected seed and task. Outputs align by row ID. Only q1 is edited in “other query”; inspect the q0 readout separately.</p><noscript><p>Label-only changes preserve Z. Support-feature changes invalidate Z. Query1 edits do not affect query0. The table below records each seed’s measured label sensitivity.</p></noscript></section>
+
+<p>Changing support labels can reuse the feature cache. Changing support features can alter all contextual row representations. Editing q1 alone may change q1; q0 stays unchanged. Reordering support rows together with their labels preserves outputs up to floating-point rounding. Our conservative cache key still changes because it includes order; a cache miss can be harmless extra work.</p>
+<div class="rb-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th style="text-align:right">Seed</th>
+  <th>Task</th>
+  <th style="text-align:right">Label edit: max ΔZ</th>
+  <th style="text-align:right">Label edit: max Δprobability</th>
+  <th>Cache</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">0</td>
+  <td>A</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00001811</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">0</td>
+  <td>B</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00002052</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">1</td>
+  <td>A</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00004662</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">1</td>
+  <td>B</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00000773</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">2</td>
+  <td>A</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00002694</td>
+  <td>HIT</td>
+</tr>
+<tr>
+  <td style="text-align:right">2</td>
+  <td>B</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.00002176</td>
+  <td>HIT</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are per-seed mechanism measurements, with no confidence interval: the seeds initialize random wiring, rather than sampling trained model performance. Independent NumPy replay checks all 36 forward records,3456 embedding coordinates and 72 keyed query probabilities. All four possible externally held query-label assignments are checked for each seed/task. Query-label exclusion is enforced structurally by the inference interfaces; those external labels are never arguments to either encoder or decoder.</p>
+<h3 id="A-cache-is-a-claim-about-unchanged-dependencies">A cache is a claim about unchanged dependencies<a class="anchor-link" href="#A-cache-is-a-claim-about-unchanged-dependencies">&#182;</a></h3><p>A <strong>cache key</strong> names the inputs under which a saved result remains valid. For this encoder include feature bytes, ordered row IDs, support membership, preprocessing identity and encoder weights. Include implementation/mask version and precision too. Exclude support labels only because this specific encoder does not read them. A decoder cache would need those labels.</p>
+<p>The lab’s <code>cache_identity</code> function builds this contract. It hashes complete feature and state bytes rather than only tensor shapes. A <strong>hash</strong> is a compact fingerprint; matching fingerprints are an integrity check, not evidence of good predictions. Changing preprocessing, encoder weights or the support population must invalidate the cached embeddings. Frozen weights alone are insufficient.</p>
+<p>For timestamped database predictions, audit <strong>all</strong> information paths. Restricting BFS neighbors to earlier timestamps is insufficient if the table encoder or preprocessing still sees future records. <strong>BFS</strong>, breadth-first search, visits graph neighbors by increasing hop distance. Every cutoff needs a legal feature-context population as well as legal direct neighbors.</p>
+<h2 id="4-%C2%B7-Model-architecture:-GTAlign-adapts-a-different-boundary">4 &#183; Model architecture: GTAlign adapts a different boundary<a class="anchor-link" href="#4-%C2%B7-Model-architecture:-GTAlign-adapts-a-different-boundary">&#182;</a></h2><p>GTAlign converts structural graph representations into inputs for a tabular foundation model. <strong>PCA</strong> projects differing feature widths into a common space; a <strong>GCN</strong> repeatedly mixes neighboring node features. A <strong>community</strong> is a graph partition found from connectivity. Community IDs act as <strong>pseudo-labels</strong>—training targets inferred from structure rather than supplied class annotations. <a href="https://arxiv.org/html/2607.11374v1#S2">GTAlign §2</a></p>
+<section class="rb-board" aria-label="GTAlign model architecture"><h3>Follow the trainable component</h3><div class="rb-flow"><div class="rb-step"><strong>1 · Graph pretraining</strong>Node features → PCA width 50 → 3-layer GCN width 256.<small>Perturbed graph views; contrastive objective updates the graph encoder.</small></div><div class="rb-step"><strong>2 · Graph-to-table alignment</strong>Graph embeddings become table rows. Louvain communities supply pseudo-labels.<small>Support/query episodes → LimiX-16M → pseudo-label cross-entropy. Both encoder and TFM update.</small></div><div class="rb-step rb-target"><strong>3 · Target-domain adaptation</strong>Labeled target support → class prototypes → prototype loss.<small>Graph encoder UPDATES; tabular predictor stays FROZEN. Recompute support and query embeddings afterward.</small></div><div class="rb-step"><strong>4 · In-context prediction</strong>Adapted embeddings + support labels → frozen TFM → query class.<small>Node embeddings or pooled graph embeddings enter the same prediction interface.</small></div></div><p class="rb-baseline">Paper architecture only; GTAlign training and evaluation are NOT_RUN in B17.</p></section>
+
+<p>First, contrastive pretraining encourages related graph views to have similar representations. Next, community-based episodes jointly adapt the graph encoder and tabular predictor. Finally, labeled target-domain examples adapt the graph encoder while the tabular predictor stays frozen. The adapted encoder must recompute the embeddings before prediction. <a href="https://arxiv.org/html/2607.11374v1#S2.SS4">GTAlign §§2.2–2.4</a></p>
+<p><strong>A prototype</strong> is the mean embedding of a class’s labeled support examples. The target-stage objective encourages embeddings to agree with their class prototypes. This target-label use is adaptation, even though the final predictor uses in-context inference. In-context inference does not imply the entire preceding pipeline was zero-shot.</p>
+<div class="rb-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Boundary</th>
+  <th>FlexTab reuse question</th>
+  <th>GTAlign adaptation question</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Representation input</td>
+  <td>Table features and encoder context</td>
+  <td>Node features and graph adjacency</td>
+</tr>
+<tr>
+  <td>Reusable object</td>
+  <td>Target-free contextual row embeddings</td>
+  <td>Graph embeddings under a particular encoder</td>
+</tr>
+<tr>
+  <td>Target labels</td>
+  <td>Enter decoder at inference</td>
+  <td>Also update graph encoder during adaptation</td>
+</tr>
+<tr>
+  <td>Frozen part</td>
+  <td>Encoder during specialized decoder training</td>
+  <td>Tabular predictor during target adaptation</td>
+</tr>
+<tr>
+  <td>Required cache action</td>
+  <td>Rebuild if features/context/encoder change</td>
+  <td>Rebuild after encoder adaptation</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Predict before checking.</strong> If a GTAlign implementation freezes the tabular model but updates the graph encoder, can it reuse embeddings computed before adaptation?</p>
+<details><summary>Check your explanation</summary><p>No. The encoder is part of the cached function. Updating its weights changes that function, even when raw node features stay fixed. Recompute support and query embeddings using the adapted encoder.</p></details>
+
+<p>A fair future community-supervision ablation would hold real support labels, source graphs, episode budget and target adaptation fixed while changing only community supervision. B17 does not execute that study. A citation graph and a foreign-key database graph also encode different relationships; success on one cannot establish the other.</p>
+<h2 id="5-%C2%B7-Full-reproduction:-a-named-target-and-a-real-stop">5 &#183; Full reproduction: a named target and a real stop<a class="anchor-link" href="#5-%C2%B7-Full-reproduction:-a-named-target-and-a-real-stop">&#182;</a></h2><p>The selected target is <strong>B17-FLEXTAB-MULTI-TABLE5-F1-DNF</strong>: the complete <code>rel-f1/driver-dnf</code> test task, published AUROC <strong>74.6%</strong>. AUROC measures how often a randomly chosen positive receives a higher score than a negative, with half credit for ties. This is a cited target, not a B17 measurement. <a href="https://arxiv.org/html/2606.30336v2#S4.T5">FlexTab Table 5</a></p>
+<p>The archived author-linked repository probe returned404; the FlexTab model search returned no matches. We have not authenticated original weights, preprocessing, sampling/seeds, the complete evaluation population or its temporal encoding policy. The gate checks saved source hashes, then refuses a paper run. It cannot create a missing evaluator. GTAlign’s promised release is likewise not authenticated by the name-search results. <a href="../labs/sources/b17/manifest.json">Source receipts</a> · <a href="../labs/b17-reproduction.md">Full reproduction contract</a></p>
+<div class="rb-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Evidence lane</th>
+  <th>B17 status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Reduced mechanism: three seeds × two tasks × six interventions</td>
+  <td>COMPLETE_MECHANISM_DIAGNOSTIC</td>
+</tr>
+<tr>
+  <td>Full NumPy forward replay</td>
+  <td>PASS; independent arithmetic, same saved weights</td>
+</tr>
+<tr>
+  <td>Released-source or historical checkpoint identity</td>
+  <td>NOT_ESTABLISHED</td>
+</tr>
+<tr>
+  <td>Selected Table 5 F1-DNF inference</td>
+  <td>INCOMPLETE_SOURCE_PROTOCOL_GATE; NOT_RUN</td>
+</tr>
+<tr>
+  <td>Full pretraining / other paper experiments / GTAlign experiments</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>Live Colab / deployment</td>
+  <td>NOT_CHECKED / NOT_REQUESTED</td>
+</tr>
+<tr>
+  <td>Learner mastery</td>
+  <td>PENDING_WRITTEN_DEFENSE</td>
+</tr>
+</tbody>
+</table></div>
+<p>The original context and sampling settings remain in the contract; no smaller model, shorter context or synthetic result replaces the paper run. Approved paid execution is $0. The local numerical budget is 3600 aggregate seconds including retries and checks, under the standing $10 ceiling.</p>
+<h2 id="Lab-%C2%B7-make-the-boundaries-executable">Lab &#183; make the boundaries executable<a class="anchor-link" href="#Lab-%C2%B7-make-the-boundaries-executable">&#182;</a></h2><p>Open the <a href="../labs/b17-reusable-representations.ipynb">portable student notebook</a>. It contains the full reduced forward path, immediate checks and three live tasks:</p>
+<ol>
+<li>Compute scaled attention and handle the one-key case correctly.</li>
+<li>Aggregate row outputs with a different projection for each depth.</li>
+<li>Build a cache identity that rejects changes to encoder dependencies.</li>
+</ol>
+<p>The notebook executes your functions inside the complete grid. Predict the label-edit result before running it. Then compare the measured cache hits and deltas with your explanation. The <a href="../labs/html/b17-reusable-representations.html">executed solution</a> is author evidence, not your completed work.</p>
+<div id="b17-teachback"></div>
+<noscript><p>Explain in 150–200 words why target-agnostic embeddings may still be context-dependent. Identify two cache invalidators and the trainable GTAlign component on a new domain. Bring your answer to the teacher.</p></noscript>
+
+<p><strong>Exit ticket.</strong> Include one measured intervention, the single-key attention derivation, and why B17 has not reproduced the paper score. Ask the teacher about any unclear operation; paste your code and explanation for feedback. Revisit from memory after 1, 7 and 30 days. Next, B18 asks whether the available context contains enough evidence at all.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2606.30336v2#S2.SS2">FlexTab §2.2 and Appendix A</a>, then <a href="https://arxiv.org/html/2607.11374v1#S2.SS4">GTAlign §2.4</a>. Treat their benchmark claims as paper evidence until the corresponding experiments are independently reproduced.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/b17-evidence.js"></script><script src="../assets/representation-boundary.js"></script></body></html>

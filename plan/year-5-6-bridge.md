@@ -1,6 +1,6 @@
 # Year 5 → 6 bridge: influential architectures and the current frontier
 
-**29 units (B01–B08, B04a and B07a prepared; 19 planned): B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
+**29 units (B01–B19, B04a/B07a/B18a/B19a/B19b prepared; 5 planned): B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
 
 The audit distinguishes established families, current baseline updates, coverage-critical mechanisms and exploratory ideas. Core means required for this mission; it does not label every recent paper equally influential. Existing lessons are prerequisites: a bridge revisit requires a new comparative artifact, not repetition of the entire earlier lesson.
 
@@ -238,6 +238,8 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b16"></a>
 
 ### B16 ◆ · AutoGrable: selecting or declining a graph
+
+**Prepared 2026-10-04:** [lesson](../lessons/b16-autograble-graph-selection.html) · [lab](../labs/b16-autograble-graph-selection.ipynb) · [contract](../labs/b16-reproduction.md). Full finite 72-score/27-selection diagnostic, 24 graph checks, 256 test-label interventions and 144 upstream primitive comparisons. Three measured paper/code discrepancies; 400-run Table 1 target INCOMPLETE_SOURCE_PROTOCOL_GATE, execution NOT_RUN. Learner PENDING_WRITTEN_DEFENSE.
 - **Read:** [AutoGrable](https://arxiv.org/abs/2608.11431v1), partition-based graph construction.
 - **Retrieve / skill:** Can distinct graphs be indistinguishable to message passing? Reason with row partitions.
 - **Teach:** Task alignment and block occupancy motivate construction selection and abstention.
@@ -247,6 +249,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b17"></a>
 
 ### B17 ◆ · FlexTab and GTAlign: reusable representations
+
+**Prepared 2026-10-04:** [lesson](../lessons/b17-reusable-representations.html) · [lab](../labs/b17-reusable-representations.ipynb). Complete36-case fixed-seed mechanism diagnostic and independent full forward replay; no trained accuracy claim. Selected FlexTab Table5 F1-DNF remains INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN. GTAlign adaptation is a source-grounded contrast; learner defense pending.
+
 - **Read:** [FlexTab](https://arxiv.org/abs/2606.30336v2), [GTAlign](https://arxiv.org/abs/2607.11374v1).
 - **Retrieve / skill:** What must remain invariant for a representation to transfer? Identify the adaptation boundary.
 - **Teach:** Contrast target-agnostic row representations with graph-to-table alignment and community-guided episodes. Choose one paper for the exercise.
@@ -259,6 +264,8 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b18"></a>
 
 ### B18 ★ · Context-window failure and sufficient evidence
+
+**Prepared:** [lesson](../lessons/b18-context-sufficiency.html) · [lab](../labs/b18-context-sufficiency.ipynb) · [contract](../labs/b18-reproduction.md). Complete historical-sum diagnostic; full Animus reproduction source/protocol-gated. Learner defense pending.
 - **Read:** [Context Window Failures](https://arxiv.org/abs/2609.00460v1); revisit RT's context ablations.
 - **Retrieve / skill:** Can a bounded sample preserve a target determined by all historical events? Diagnose information loss.
 - **Teach:** Animus provides a specific counterexample to relying on raw sampled context; it is not an industry-wide prevalence estimate.
@@ -269,6 +276,8 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b18a"></a>
 
 ### B18a ★ · Context as deployed model state
+
+Prepared: [lesson](../lessons/b18a-context-state.html), [lab](../labs/b18a-context-state.ipynb), [reproduction contract](../labs/b18a-reproduction.md). Author preparation does not establish learner mastery.
 - **Read:** [TACO §§3–4](https://arxiv.org/html/2602.05649v2), the distillation discussion in [TabPFN-2.5](https://arxiv.org/abs/2511.08667), and recall [Interpretable ML for TabPFN](https://arxiv.org/abs/2403.10923). Orientation: [Context is the new training](https://mindfulmodeler.substack.com/p/context-is-the-new-training), [interpretability tax](https://mindfulmodeler.substack.com/p/tabular-foundation-models-break-the), and the [July trends post](https://mindfulmodeler.substack.com/p/trends-in-tabular-foundation-research).
 - **Retrieve / skill:** Can predictions change with fixed weights? Define the complete predictor as weights, preprocessing, support data, retrieval, cache and inference recipe. Recall L186's serving contract before adding TFM-specific state.
 - **Teach:** Reusing cached activations, selecting support rows, learning compressed context and distilling outputs are distinct interventions. TACO jointly trains a compressor and predictor; it is not established as a universal plug-in for frozen weights.
@@ -279,6 +288,8 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b19"></a>
 
 ### B19 ★ · BeyondArena, contamination and moving benchmarks
+
+**Prepared 2026-10-04:** [lesson](../lessons/b19-benchmark-evidence.html), [lab](../labs/b19-benchmark-evidence.ipynb), [contract](../labs/b19-reproduction.md). Complete 12-arm/672-prediction course diagnostic and 9,540-record released grouped score-table audit. Full Figure F.2 remains INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN; fresh benchmark fits NOT_RUN; learner defense pending.
 - **Read:** Recall L055/056b; [BeyondArena protocol](https://arxiv.org/html/2606.30410v1), B03/B06 current reports and TabDPT's contamination appendix.
 - **Retrieve / skill:** Can a new model solve a previously reported failure without contradicting the old study? Align evidence versions.
 - **Teach:** Distinguish IID, grouped and temporal splits, development-set reuse, dataset overlap and imputed missing runs.
@@ -290,6 +301,8 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b19a"></a>
 
 ### B19a ★ · Predictive distributions, calibration and proper scores
+
+**Prepared 2026-10-04:** [lesson](../lessons/b19a-predictive-distributions.html) · [lab](../labs/b19a-predictive-distributions.ipynb) · [contract](../labs/b19a-reproduction.md). Complete finite scoring/calibration diagnostic and selected published ScoringBench Tables 1/4/5 reconstruction: 38 models, 97 retained datasets, 798 displayed fields match. Fresh fits/raw-prediction rescoring/whole paper NOT_RUN; learner defense pending.
 - **Read:** [ScoringBench §3, Appendix A and experimental protocol](https://arxiv.org/html/2603.29928v3), [distributional regression study](https://arxiv.org/html/2603.08206v1); orientation: [Regression should predict full distributions](https://mindfulmodeler.substack.com/p/regression-should-predict-full-distributions). Recall earlier probability, calibration and conformal-prediction concepts before comparing models.
 - **Retrieve / skill:** Can two predictors have the same mean error but different uncertainty quality? State the quantity a score evaluates.
 - **Teach:** Separate point error, proper scoring rules, interval coverage and sharpness. A wide interval may cover often but be uninformative. A model tuned for one score need not lead another finite-sample comparison.
@@ -300,6 +313,9 @@ Exercises are course-designed unless B23 pins a named published experiment. Reco
 <a id="b19b"></a>
 
 ### B19b ◆ · Beyond ordinary regression: forecasting, survival or causal effects
+
+**Prepared forecasting route:** [Lesson](../lessons/b19b-forecasting-contracts.html) · [Notebook](../labs/b19b-forecasting-contracts.ipynb) · [Task contract](../labs/b19b-task-contract.md). Complete324-prediction course diagnostic and13×97 released-score reconstruction; Figure4.1 historical identity/intervals remain incomplete. Fresh model inference NOT_RUN; learner defense pending. Other routes remain optional.
+
 - **Read:** Choose [TabPFN-TS](https://arxiv.org/html/2501.02945v4), [SurvPFN](https://arxiv.org/abs/2606.04564), or [CausalPFN](https://arxiv.org/abs/2506.07918). Optional causal-prior contrast: [CausalFM](https://arxiv.org/abs/2506.10914v3), which covers different identification settings and is not a synonym for CausalPFN. Optional modality contrast: [MulTaBench](https://arxiv.org/abs/2605.10616). The [July trends post](https://mindfulmodeler.substack.com/p/trends-in-tabular-foundation-research) motivates this task map; each chosen paper still needs a full protocol/code audit before reproduction.
 - **Retrieve / skill:** When does reframing a task as regression change the estimand or make labels unavailable? Recall temporal splits (forecasting), censoring (survival), or L185's identification assumptions (causal effects); supply a worked prerequisite example before proceeding.
 - **Teach:** A forecasting wrapper changes features and evaluation; a survival prior/loss handles censoring; causal-effect estimation requires identification assumptions. These are different adaptations and are not capabilities inherited by every pretrained regressor.

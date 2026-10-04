@@ -1,9 +1,10 @@
 """Authenticate source evidence and expose unresolved original-paper protocol identities."""
-import csv,hashlib,json
+import csv,hashlib,json,re
 from pathlib import Path
 
 def source_gate(root):
     root=Path(root);manifest=json.loads((root/'manifest.json').read_text())
+    assert not re.search(rb'AIza[0-9A-Za-z_-]{35}',(root/'tabzilla-drive.html').read_bytes()), 'Google API key in saved Drive page'
     for name,digest in manifest['files'].items():
         assert hashlib.sha256((root/name).read_bytes()).hexdigest()==digest,'Source hash: '+name
     original=json.loads((root/'original-checkpoint-config.json').read_text())

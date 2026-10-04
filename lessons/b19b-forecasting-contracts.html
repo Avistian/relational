@@ -1,0 +1,181 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B19b · Forecasting contracts</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/benchmark-evidence.css"><link rel="stylesheet" href="../assets/forecast-availability.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebook gallery</a></nav><h1 id="B19b-%C2%B7-Forecasting:-what-is-known-when?">B19b &#183; Forecasting: what is known when?<a class="anchor-link" href="#B19b-%C2%B7-Forecasting:-what-is-known-when?">&#182;</a></h1><p class="subtitle">Research bridge · Elective ◆ · One win: turn a regressor into a forecast without giving it tomorrow's observations</p>
+
+<p><a href="b19a-predictive-distributions.html">B19a</a> showed why a good mean is not necessarily a good predictive distribution. Now move the prediction into time. A beautiful distribution is useless if its inputs arrive after the decision. For the relational-learning mission, a customer’s future transactions or tomorrow’s observed weather must not enter today’s forecast through a join.</p>
+<p><a href="../labs/b19b-forecasting-contracts.ipynb">Student notebook</a> · <a href="../labs/html/b19b-forecasting-contracts.html">Executed solution</a> · <a href="../labs/solutions/b19b-forecasting-contracts.ipynb">Download solution</a> · <a href="../reference/b19b-forecasting-contracts.html">Printable reference</a> · <a href="../labs/b19b-reproduction.md">Reproduction contract</a> · <a href="../labs/b19b-task-contract.md">L201 task worksheet</a></p>
+<h2 id="1-%C2%B7-First-reconstruct-the-decision">1 &#183; First reconstruct the decision<a class="anchor-link" href="#1-%C2%B7-First-reconstruct-the-decision">&#182;</a></h2><p>A <strong>forecast origin</strong> is the boundary between observed history and the horizon we must predict. This lesson uses zero-based time: origin 96 means history0,…,95 and the first forecast at96. The issue time is95. A <strong>horizon</strong> of12 means predicting96,…,107 together. A <strong>covariate</strong> is any input other than the target: a calendar date, planned promotion or weather measurement. Its event time says when it describes the world; its availability time says when the decision maker could access it.</p>
+<p><strong>Worked prerequisite:</strong> at issue time 10, predict sales at 12. The weekday of12 was already known. An advertisement for12 announced at 8 is also legal. Observed temperature at 12 arrives at 12 and is unavailable. Even a measurement from8 that is delivered at 11 is unavailable at 10. Event time alone cannot enforce this boundary. A weather <em>forecast issued by 10</em> could be legal, but it is a different input from the realized weather at 12. Historical data must preserve the appropriate vintage.</p>
+<p>Before continuing, retrieve: can future calendar values be legal? Can an old record still arrive too late? Does low WQL establish that either input was legal?</p>
+<div id="b19b-warmup"></div>
+
+<section class="evidence-board" data-forecast-availability><h3>Which cells exist for this decision?</h3><p>Predict the legal inputs before changing the issue time or weather arrival.</p><div class="evidence-controls"><label>Issue time <select name="issue"><option>10</option><option>11</option><option>12</option></select></label><label>Weather input available at <select name="weather"><option value="12">12 · observed later</option><option value="8">8 · hypothetical early input</option></select></label><button type="button">Reset</button></div><div class="forecast-cells"></div><output aria-live="polite">At issue time10: calendar and promotion available; observed weather and delayed measurement unavailable.</output><noscript><p>At issue11 the delayed measurement becomes available; at12 observed weather also arrives. The target remains hidden in this feature-access example.</p></noscript></section>
+
+<p>The control changes arrival information, not the event being forecast. Legal access follows <strong>available_at ≤ issue_time</strong>. Target observations for the forecast horizon are always withheld from model construction. A database’s current rows are not necessarily its historical state; use an as-of snapshot or an arrival/revision log.</p>
+<h2 id="2-%C2%B7-Model-architecture:-TabPFN-TS-is-a-wrapper-around-a-regressor">2 &#183; Model architecture: TabPFN-TS is a wrapper around a regressor<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-TabPFN-TS-is-a-wrapper-around-a-regressor">&#182;</a></h2><p>Read <a href="https://arxiv.org/html/2501.02945v4">From Tables to Time, §§3–4 and Appendix A.3</a>. TabPFN-TS represents each time step as a row, constructs temporal features, and asks a pretrained TabPFN-v2 regressor to predict future rows. It does not require time-series-specific pretraining. This is a particular forecasting construction, not a capability automatically inherited by every tabular model.</p>
+<figure class="evidence-figure forecast-figure" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="From historical observations to future feature rows and predictive distributions."><img src="../labs/figures/b19b/architecture.png" alt="From historical observations to future feature rows and predictive distributions." style="display:block;width:100%;min-width:680px;max-width:100%;height:auto"><figcaption>From historical observations to future feature rows and predictive distributions. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>Let <strong>C</strong> be the number of retained context observations, <strong>H</strong> the forecast horizon and <strong>D</strong> the input-feature count. History is <code>X_context[C,D]</code> with observed <code>y_context[C]</code>; future inputs are <code>X_query[H,D]</code> with hidden labels. The full paper feature recipe has a running index,17 calendar columns,10 automatic-seasonality columns and any legal covariates: D=28 plus the covariate count. Missing seasonal slots are zero-filled. These are numerical features, not words tokenized by an LLM.</p>
+<p>The running index marks progression. Calendar features encode known cycles with sine/cosine pairs. Automatic seasonal features estimate periods <strong>from history</strong>, then evaluate their sine/cosine coordinates at both historical and future positions. For period 12, the pair is <code>(sin(2πt/12), cos(2πt/12))</code>. At t=0 and12 it is(0,1); at t=3 it is(1,0). The pair distinguishes phases that sine alone merges. Knowing the future phase does not reveal its target.</p>
+<p>Inside the pretrained regressor, grouped feature values and the target slot become vectors of width d. The schematic tensor is <code>(C+H) × (G+1) × d</code>, where G is the checkpoint’s feature-group count. Repeated feature-attention blocks exchange information within a row; row attention transfers information from observed support rows to query representations; feed-forward layers transform those representations. The query target representation feeds probabilities over target bins. This is the v2 mechanism recalled from <a href="b03-pfn-tabpfn-generations.html">B03</a>; exact group size, depth and ensemble settings belong to the authenticated checkpoint/configuration, not to our diagram.</p>
+<p><strong>Forward-pass trace:</strong> history determines the temporal feature fit and the support labels; the same frozen feature map builds H future rows; the regressor returns H predictive distributions. Read a median for absolute error and quantiles for uncertainty scores. No earlier predicted target is fed back as the next input in this non-autoregressive construction. It produces marginal forecasts at each horizon position; do not assume a coherent joint distribution over whole future paths.</p>
+<p><strong>Visible implementation boundary:</strong> the notebook implements forecast contracts and the archived wrapper's seasonal extraction. It provides the full original wrapper source packet and an optional complete97-task operator. Its small ridge experiment below is explicitly a course mechanism. It does not implement or run pretrained TabPFN attention.</p>
+<h2 id="3-%C2%B7-Learning-the-period-is-also-fitting">3 &#183; Learning the period is also fitting<a class="anchor-link" href="#3-%C2%B7-Learning-the-period-is-also-fitting">&#182;</a></h2><p>A seasonal pattern means that a component repeats with a period. <strong>Detrending</strong> removes a fitted linear component before searching for repeated oscillations. A <strong>Fourier transform</strong> expresses the resulting signal as frequencies; a spectral peak suggests a repeating component. A <strong>Hann window</strong> reduces abrupt edge effects before that transform. Zero-padding samples the spectrum more finely; it does not add new observations or establish a true period.</p>
+<figure class="evidence-figure forecast-figure" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="Historical signal → spectral periods → future coordinates."><img src="../labs/figures/b19b/seasonality.png" alt="Historical signal → spectral periods → future coordinates." style="display:block;width:100%;min-width:680px;max-width:100%;height:auto"><figcaption>Historical signal → spectral periods → future coordinates. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>The visible source mirror follows the archived default pipeline: fit a line on history, subtract it, multiply by a Hann window, append zeros to double its length, compute Fourier magnitudes, remove the zero-frequency component, retain peaks above 5% of the maximum, take up to 5, round inverse frequencies to periods, deduplicate and sort by magnitude. Then construct future sine/cosine columns from those periods. <a href="../labs/sources/b19b/wrapper/tabpfn_time_series/features/auto_features.py">Archived implementation</a></p>
+<p><strong>Audit result:</strong> four source-parity cases pass, including period 12 and mixed periods 12/8. A constant input can still yield peaks from tiny numerical residuals. Agreement with released code is not proof that every detected seasonality is meaningful. The paper pseudocode describes a convolution/symmetric padding, whereas this source uses multiplication/right padding. We expose the difference rather than quietly change the implementation.</p>
+<p><strong>CHECK:</strong> why is concatenating future timestamps acceptable, but using future targets to choose spectral peaks invalid? The archived transformer explicitly requires missing query targets. If a future-label intervention changes learned periods, the boundary is broken. Dropping missing observations also changes the index geometry; preserve and audit its interaction with calendar timestamps.</p>
+<h2 id="4-%C2%B7-Evaluate-the-forecast-you-could-have-issued">4 &#183; Evaluate the forecast you could have issued<a class="anchor-link" href="#4-%C2%B7-Evaluate-the-forecast-you-could-have-issued">&#182;</a></h2><p>In <strong>rolling-origin evaluation</strong>, the issue time advances. Refit any data-dependent preprocessing on that origin’s history; predict the entire declared horizon without seeing its targets; then score. At the next origin, targets that have now arrived may become history. This is an expanding context here, not a random row split.</p>
+<figure class="evidence-figure forecast-figure" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="Three expanding histories and complete twelve-step horizons."><img src="../labs/figures/b19b/origins.png" alt="Three expanding histories and complete twelve-step horizons." style="display:block;width:100%;min-width:680px;max-width:100%;height:auto"><figcaption>Three expanding histories and complete twelve-step horizons. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>Our fixed origins96,120,144 each predict12 steps. Their forecast windows do not overlap, but their training histories do. They are not independent datasets. In a larger study, keep validation origins for model/feature selection separate from the final evaluation origins. If labels arrive late, the historical prefix itself also needs an availability filter; the course generator assumes immediate target arrival.</p>
+<p>A <strong>seasonal-naive</strong> point forecast copies the last observed value at the same seasonal phase. With period 12, the point forecast at96 copies84. This is a useful first baseline. A stronger baseline should have the same legal covariates and selection budget as the challenger: for example, a tuned feature-based tree or an appropriate statistical model. The course’s fixed ridge predictor is illustrative, not an exhaustive baseline comparison.</p>
+<p><strong>MASE</strong> divides mean absolute median-forecast error by the mean historical error of a seasonal-naive predictor. For history y₀,…,yC−1 and seasonal lag s:</p>
+<p><code>scale = mean(|y_t − y_(t−s)|, t=s,…,C−1)</code></p>
+<p><code>MASE = mean(|future_y − forecast_median|) / scale</code>.</p>
+<p>For history[1,3,2,4] and s=1, scale=(2+1+2)/3=5/3. Future observations[2,4] and medians[1,5] have mean absolute error1, so MASE=0.6. MASE&lt;1 means lower error than the <strong>historical scaling error</strong>; it does not guarantee beating seasonal naive on the held-out horizon. A constant history gives scale0; our teaching scorer refuses the undefined ratio. A benchmark must declare its own zero policy.</p>
+<p><strong>Weighted quantile loss (WQL)</strong> evaluates forecast quantiles. A q-quantile puts q of the probability at or below it. With error e=y−prediction, pinball loss is <code>max(qe,(q−1)e)</code>. WQL doubles the sum of pinball losses, divides by the sum of absolute target values, then averages over q=0.1,…,0.9. Underprediction costs more at a high quantile. At q=.5, doubled pinball loss is absolute error. For the two median predictions above, WQL=2/6=1/3.</p>
+<p>WQL is a quantile-grid approximation related to B19a’s CRPS; it is not full-CDF evaluation or proof of calibration. Its denominator weights large-magnitude series when pooled. Our lab averages origin scores within seeds; a benchmark evaluator may pool differently. Zero total absolute target magnitude is explicitly rejected here. <a href="../labs/sources/b19b/wrapper/gift_eval/evaluate.py">GIFT evaluation code</a></p>
+<h2 id="5-%C2%B7-A-better-score-from-forbidden-information">5 &#183; A better score from forbidden information<a class="anchor-link" href="#5-%C2%B7-A-better-score-from-forbidden-information">&#182;</a></h2><p>**Frozen course experiment:**3 seeds × 3 origins × 3 arms;156 generated steps per seed;12-step horizons. Demand is20 plus a period 12 sine, a scheduled promotion,4×weather and noise. Promotion is announced24steps ahead; weather is independent and observed only at its event time. The three arms use seasonal naive, fixed ridge with legal seasonal/promotion features, and the same ridge with future observed weather. All origins, coefficients, seeds and regularization were fixed without outcome-based selection.</p>
+<p>The ridge arms minimize squared training error plus a fixed coefficient penalty. We add empirical training-residual quantiles to their point predictions. The seasonal arm adds median-centered historical seasonal-difference quantiles to its seasonal point forecast. These are simple distribution heuristics; neither has a formal coverage guarantee. This manufactured problem isolates information access and provides no general TabPFN performance evidence.</p>
+<div id="b19b-predict"></div>
+
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Mean MASE ↓</th>
+  <th style="text-align:right">Mean WQL ↓</th>
+  <th>WQL by seed0 /1 /2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>seasonal_naive</td>
+  <td style="text-align:right">0.9159</td>
+  <td style="text-align:right">0.1556</td>
+  <td>0.1794 / 0.1594 / 0.1281</td>
+</tr>
+<tr>
+  <td>legal_regression</td>
+  <td style="text-align:right">0.7385</td>
+  <td style="text-align:right">0.1251</td>
+  <td>0.1309 / 0.1111 / 0.1333</td>
+</tr>
+<tr>
+  <td>oracle_weather</td>
+  <td style="text-align:right">0.0797</td>
+  <td style="text-align:right">0.0136</td>
+  <td>0.0137 / 0.0114 / 0.0157</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="evidence-figure forecast-figure" style="max-width:100%;overflow-x:auto" tabindex="0" role="region" aria-label="All three seeds retained; oracle weather is unavailable at forecast issue time."><img src="../labs/figures/b19b/scores.png" alt="All three seeds retained; oracle weather is unavailable at forecast issue time." style="display:block;width:100%;min-width:680px;max-width:100%;height:auto"><figcaption>All three seeds retained; oracle weather is unavailable at forecast issue time. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>The illegal oracle’s improvement answers a different question: how well could we predict if we already knew future weather? It cannot justify deployment. Legal regression also does not beat seasonal naive on every seed; keep that negative result. Across 9 paired origin/seed interventions, changing unavailable weather leaves legal inputs and forecasts fixed, while the oracle changes. All 324 prediction keys and 27 metric calculations are independently checked.</p>
+<p><strong>Falsification test:</strong> replace all unavailable future covariates and labels, preserving the historical inputs. Legal feature fits and forecasts must remain fixed. This test can expose an information path; passing it does not prove that every possible leak has been removed.</p>
+<h2 id="6-%C2%B7-Full-reproduction-attempt:-the-score-file-is-part-of-the-experiment">6 &#183; Full reproduction attempt: the score file is part of the experiment<a class="anchor-link" href="#6-%C2%B7-Full-reproduction-attempt:-the-score-file-is-part-of-the-experiment">&#182;</a></h2><p>The approved target is the complete <strong>v4 Figure 4.1</strong>, not one convenient dataset. We recovered all 97 task records for each of its 13 plotted models: <strong>1,261 released records</strong>. The model roster comes from the actual figure, which includes Sundial/PatchTST and omits AutoETS despite the surrounding prose. The notebook recomputes equal-task geometric score ratios and tied WQL ranks from the complete matrix.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Model</th>
+  <th style="text-align:right">WQL rank: released / paper</th>
+  <th style="text-align:right">Relative WQL: released / paper</th>
+  <th style="text-align:right">Relative MASE: released / paper</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>TiRex</td>
+  <td style="text-align:right">2.526 / 2.515</td>
+  <td style="text-align:right">0.488 / 0.413</td>
+  <td style="text-align:right">0.716 / 0.642</td>
+</tr>
+<tr>
+  <td>Toto-1.0</td>
+  <td style="text-align:right">4.247 / 4.237</td>
+  <td style="text-align:right">0.517 / 0.437</td>
+  <td style="text-align:right">0.750 / 0.673</td>
+</tr>
+<tr>
+  <td>Moirai-2</td>
+  <td style="text-align:right">4.485 / 4.464</td>
+  <td style="text-align:right">0.516 / 0.436</td>
+  <td style="text-align:right">0.728 / 0.654</td>
+</tr>
+<tr>
+  <td>TabPFN-TS</td>
+  <td style="text-align:right">5.402 / 5.392</td>
+  <td style="text-align:right">0.544 / 0.460</td>
+  <td style="text-align:right">0.771 / 0.692</td>
+</tr>
+<tr>
+  <td>TimesFM-2.0</td>
+  <td style="text-align:right">5.474 / 5.454</td>
+  <td style="text-align:right">0.550 / 0.465</td>
+  <td style="text-align:right">0.758 / 0.680</td>
+</tr>
+<tr>
+  <td>Chronos-Bolt-Base</td>
+  <td style="text-align:right">5.887 / 5.866</td>
+  <td style="text-align:right">0.574 / 0.485</td>
+  <td style="text-align:right">0.808 / 0.725</td>
+</tr>
+<tr>
+  <td>Sundial-Base</td>
+  <td style="text-align:right">6.412 / 6.402</td>
+  <td style="text-align:right">0.559 / 0.472</td>
+  <td style="text-align:right">0.750 / 0.673</td>
+</tr>
+<tr>
+  <td>PatchTST</td>
+  <td style="text-align:right">6.985 / 6.943</td>
+  <td style="text-align:right">0.587 / 0.496</td>
+  <td style="text-align:right">0.849 / 0.762</td>
+</tr>
+<tr>
+  <td>TFT</td>
+  <td style="text-align:right">7.253 / 7.222</td>
+  <td style="text-align:right">0.605 / 0.511</td>
+  <td style="text-align:right">0.915 / 0.822</td>
+</tr>
+<tr>
+  <td>DeepAR</td>
+  <td style="text-align:right">9.706 / 9.624</td>
+  <td style="text-align:right">0.853 / 0.721</td>
+  <td style="text-align:right">1.343 / 1.206</td>
+</tr>
+<tr>
+  <td>Auto-Arima</td>
+  <td style="text-align:right">10.474 / 10.284</td>
+  <td style="text-align:right">0.912 / 0.770</td>
+  <td style="text-align:right">1.074 / 0.964</td>
+</tr>
+<tr>
+  <td>Auto-Theta</td>
+  <td style="text-align:right">10.985 / 10.923</td>
+  <td style="text-align:right">1.244 / 1.051</td>
+  <td style="text-align:right">1.090 / 0.978</td>
+</tr>
+<tr>
+  <td>Seasonal-Naive</td>
+  <td style="text-align:right">11.165 / 11.675</td>
+  <td style="text-align:right">1.000 / 1.000</td>
+  <td style="text-align:right">1.000 / 1.000</td>
+</tr>
+</tbody>
+</table></div>
+<p>Only <strong>2 of 39</strong> displayed values match to 3 decimals: SeasonalNaive’s two relative scores equal1 by construction. The released matrix is completely reconstructed, but the historical figure remains <strong>INCOMPLETE_SOURCE_PROTOCOL_GATE</strong>. The confidence intervals are not reconstructed: their original resampling procedure and unit have not been authenticated. We do not create substitute error bars and call them the paper’s.</p>
+<p>The dated repository contains a January2025 TabPFN score file, whereas GIFT updated its file in May2025; we use the same pinned GIFT snapshot for all 13 models. GIFT also documents a July2025 baseline correction. Its pre-correction repository file contains only4tasks and cannot fill the97-task contract. The historical candidates’ dependencies, backend choices and checkpoint names differ. These are concrete source/version questions, not permission to select the file that produces the desired rank. <a href="../labs/evidence/b19b/reproduction.json">Complete audit</a> · <a href="../labs/sources/b19b/figure4-1.svg">Original figure</a> · <a href="https://github.com/SalesforceAIResearch/gift-eval/tree/2c13c6ff6fd7557c4353674c800d41995f280233">GIFT snapshot</a></p>
+<p><strong>Evidence ledger:</strong> course diagnostic and source-seasonality checks complete; released-score reconstruction complete; original figure identity/intervals incomplete; fresh benchmark inference, raw-prediction rescoring and pretraining NOT_RUN. Paid spendUSD 0. The portable notebook replays saved scores, not pretrained model predictions. The optional full evaluation operator is provided but its model execution is untested. <a href="../labs/b19b-reproduction.md">Full contract and commands</a></p>
+<h2 id="7-%C2%B7-Lab-and-research-decision">7 &#183; Lab and research decision<a class="anchor-link" href="#7-%C2%B7-Lab-and-research-decision">&#182;</a></h2><ol>
+<li>Implement the arrival-time filter; changing an unavailable cell must leave its output unchanged. A future event may still have a legally known feature.</li>
+<li>Implement complete rolling horizons; do not silently shorten the final horizon or include a query label in context.</li>
+<li>Implement MASE and WQL with explicit denominators, dimensions, quantile ordering and zero handling. Reproduce the hand trace before the full experiment.</li>
+<li>Run the visible source seasonal extraction and the complete released-score replay. Explain why both can pass while Figure 4.1 remains incomplete.</li>
+<li>Complete the <a href="../labs/b19b-task-contract.md">forecasting task contract</a>. Include this route in L201 only if forecasting is relevant to your thesis and you can establish the historical information state. Otherwise write an exclusion decision and the evidence that would change it.</li>
+</ol>
+<p>Forecasting is not imputation of arbitrary missing cells. A sales forecast conditional on promotion is also not the causal effect of assigning promotion: that requires identification assumptions beyond this wrapper. Survival outcomes introduce censoring and a different observation process. Those other B19b routes remain optional separate work.</p>
+<div id="b19b-teachback"></div>
+
+<p><strong>Ask the teacher follow-up questions</strong>, especially about a failed availability test or a source discrepancy. In1,7 and30 days, reconstruct the sales-at 12 example without notes and explain why a better score may correspond to a different decision problem. Author execution does not establish learner mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>. Carry your contract into <a href="../plan/year-5-6-bridge.md#b23">B23/B24</a> and then <a href="../reference/curriculum.html">L201</a>.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/forecast-availability.js"></script></body></html>

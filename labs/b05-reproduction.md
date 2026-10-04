@@ -39,3 +39,8 @@ The123declared training IDs and72classification test IDs have no exact intersect
 ## Resources and scope
 
 USD10 total cap; stop commitments atUSD8 withUSD2reserve. Local numerical cap3600s including preparation, errors and verification, enforced by `_budget_b05.py`. USD0cloud/API; no paid dispatch while source gate is closed. Full pretraining, full benchmark, Turbo andv1.3 inference NOT_RUN. Saved replay, fresh course mechanisms, original weight identity, paper-result parity and learner mastery are separate. Learner PENDING_WRITTEN_DEFENSE. No deployment; liveColab NOT_CHECKED.
+
+
+## Archived-page sanitization (2026-10-04)
+
+The saved Google Drive folder page contains Google web-application configuration. Eleven API-key occurrences were redacted before repackaging the source archive and portable notebooks. `sources/b05/manifest.json` records the original and sanitized page hashes and the replacement policy. This page is now explicitly a sanitized capture, not byte-exact original HTML. No dataset, prediction, metric or reproduction status changed. The source gate and notebook builder reject a reintroduced Google API-key pattern even with an updated checksum.

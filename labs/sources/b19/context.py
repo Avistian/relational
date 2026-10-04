@@ -1,0 +1,278 @@
+"""``BeyondArenaContext`` — the data-foundry counterpart to :class:`TabArenaContext`.
+
+One of the pluggable evaluation contexts under :mod:`tabarena.contexts`; subclasses
+:class:`~tabarena.contexts.abstract_arena_context.AbstractArenaContext` directly (it needs
+nothing from ``TabArenaContext``, whose only addition over the base is the TabArena-paper
+``evaluate_all`` workflow). BeyondArena differs from TabArena v0.1 in three ways:
+
+* **Subset predicates** — size buckets keyed on ``max_train_rows``, plus split-regime
+  (``iid``/``temporal``/``grouped``, with ``grouped`` further split by label granularity into
+  ``grouped_lpg``/``grouped_lps``), feature-dimensionality, text, high-cardinality and
+  numerical-only subsets.
+* **Task metadata** — the committed BeyondArena reference CSV, loaded as a
+  :class:`~tabarena.benchmark.task.metadata.BeyondArenaTaskMetadataCollection` (whose tasks already
+  carry the warehouse fields inline, so no separate ``warehouse_metadata.csv`` merge is needed). The
+  collection keeps a materializable Data Foundry source so ``run_jobs`` can download the
+  selected tasks.
+* **Method metadata** — the ``"BeyondArena"`` preset selects the Beyond-IID benchmark's method
+  collection (artifact ``beyond_iid_benchmark_2026``; see
+  :mod:`tabarena.contexts.beyondarena.methods`).
+* **Validation protocol** — 8 folds x 1 set with 5x5 at or below 500 training group instances,
+  task-specific (group / time-aware) inner splits and class-adaptive folds
+  (:data:`~tabarena.benchmark.validation_protocol.BEYONDARENA_VALIDATION_PROTOCOL`), enforced on the
+  bagged experiments the context runs unless built with ``official_validation_protocol=False``.
+
+Everything else (method handling, plotting, leaderboard logic) is inherited unchanged.
+"""
+
+from __future__ import annotations
+
+import copy
+from functools import lru_cache
+from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar
+
+import pandas as pd
+
+from tabarena.benchmark.task.subset_predicate import SubsetPredicate, tasks_in_frame
+from tabarena.benchmark.validation_protocol import BEYONDARENA_VALIDATION_PROTOCOL
+from tabarena.contexts import AbstractArenaContext
+
+if TYPE_CHECKING:
+    from tabarena.benchmark.task.metadata import TaskMetadataCollection
+    from tabarena.benchmark.validation_protocol import ValidationProtocol
+    from tabarena.caching import CacheConfig
+    from tabarena.models._method_metadata import MethodMetadata
+
+#: Committed CSV of the BeyondArena "core" subset's valid ``(dataset, split)`` tasks: the first
+#: ``folds_to_use`` splits of each dataset, where ``folds_to_use = min(folds_needed_for_stability,
+#: num_folds)`` from the fold-similarity analysis.
+CORE_TASKS_CSV = Path(__file__).parent / "data" / "BeyondArena_core_tasks.csv"
+
+
+#: Committed CSV of the BeyondArena "core2k" subset's ``(dataset, split)`` tasks: the first ``n_d`` splits of each
+#: dataset from the cost-weighted split allocation (:mod:`tabarena.evaluation.split_allocation`) started from Lite and
+#: run to 2,000 splits, written by ``examples/!experimental/run_generate_beyondarena_core2k_subset.py``.
+CORE2K_TASKS_CSV = Path(__file__).parent / "data" / "BeyondArena_core2k_tasks.csv"
+
+
+@lru_cache(maxsize=1)
+def _core_subset_predicate() -> SubsetPredicate:
+    """The committed-CSV-backed ``"core"`` predicate (loaded once, on first use)."""
+    return tasks_in_frame(pd.read_csv(CORE_TASKS_CSV))
+
+
+@lru_cache(maxsize=1)
+def _core2k_subset_predicate() -> SubsetPredicate:
+    """The committed-CSV-backed ``"core2k"`` predicate (loaded once, on first use)."""
+    return tasks_in_frame(pd.read_csv(CORE2K_TASKS_CSV))
+
+
+class BeyondArenaContext(AbstractArenaContext):
+    """Evaluation context for the data-foundry BeyondArena benchmark."""
+
+    benchmark_name: str = "BeyondArena"
+    OFFICIAL_VALIDATION_PROTOCOL: ClassVar[ValidationProtocol | None] = BEYONDARENA_VALIDATION_PROTOCOL
+    OFFICIAL_BUNDLE_HINT: ClassVar[str | None] = "BeyondArenaExperimentBundle"
+
+    SUBSET_PREDICATES: dict[str, SubsetPredicate] = {
+        "all": SubsetPredicate(lambda df: pd.Series(True, index=df.index)),
+        # problem_type
+        "binary": SubsetPredicate(lambda df: df["problem_type"] == "binary", ("problem_type",)),
+        "multiclass": SubsetPredicate(lambda df: df["problem_type"] == "multiclass", ("problem_type",)),
+        "classification": SubsetPredicate(
+            lambda df: df["problem_type"].isin(["binary", "multiclass"]), ("problem_type",)
+        ),
+        "regression": SubsetPredicate(lambda df: df["problem_type"] == "regression", ("problem_type",)),
+        # size buckets keyed on training rows
+        # upper bound +350 over 1M due to the AMEX grouped dataset's split sizing
+        "large": SubsetPredicate(lambda df: df["max_train_rows"].between(100_001, 1_000_350), ("max_train_rows",)),
+        "medium": SubsetPredicate(lambda df: df["max_train_rows"].between(10_001, 100_000), ("max_train_rows",)),
+        "small": SubsetPredicate(lambda df: df["max_train_rows"].between(1_001, 10_000), ("max_train_rows",)),
+        "tiny": SubsetPredicate(lambda df: df["max_train_rows"].between(101, 1_000), ("max_train_rows",)),
+        # split / task type
+        "iid": SubsetPredicate(lambda df: df["task_type"] == "random", ("task_type",)),
+        # backward-compatible alias of "iid"; remove in the future
+        "random": SubsetPredicate(lambda df: df["task_type"] == "random", ("task_type",)),
+        "temporal": SubsetPredicate(lambda df: df["task_type"] == "temporal", ("task_type",)),
+        "grouped": SubsetPredicate(lambda df: df["task_type"] == "grouped", ("task_type",)),
+        # grouped tasks split by label granularity: whether the group_on column carries a
+        # label per group (lpg) or per sample (lps).
+        "grouped_lpg": SubsetPredicate(
+            lambda df: (df["task_type"] == "grouped") & (df["group_labels"] == "per_group"),
+            ("task_type", "group_labels"),
+        ),
+        "grouped_lps": SubsetPredicate(
+            lambda df: (df["task_type"] == "grouped") & (df["group_labels"] == "per_sample"),
+            ("task_type", "group_labels"),
+        ),
+        # feature dimensionality / type
+        "low-dim": SubsetPredicate(
+            lambda df: df["num_cols_after_preprocessing"] <= 100, ("num_cols_after_preprocessing",)
+        ),
+        "high-dim": SubsetPredicate(
+            lambda df: df["num_cols_after_preprocessing"] > 100, ("num_cols_after_preprocessing",)
+        ),
+        "dim_above_500": SubsetPredicate(
+            lambda df: df["num_cols_after_preprocessing"] > 500, ("num_cols_after_preprocessing",)
+        ),
+        "text": SubsetPredicate(lambda df: df["num_text_cols"] > 0, ("num_text_cols",)),
+        "high-cardinality": SubsetPredicate(
+            lambda df: df["num_high_cardinality_cats"] > 0, ("num_high_cardinality_cats",)
+        ),
+        # purely numerical feature space: no categorical, datetime, or text columns (binary 0/1
+        # columns count as numerical — they are only excluded when typed as categorical).
+        "numerical": SubsetPredicate(
+            lambda df: (
+                ~df["has_categorical"].astype(bool) & ~df["has_datetime"].astype(bool) & (df["num_text_cols"] == 0)
+            ),
+            ("has_categorical", "has_datetime", "num_text_cols"),
+        ),
+        # target distribution: classification by the majority / minority class ratio, regression
+        # by the target's skewness (thresholds in `tabarena.benchmark.task.metadata.balance`).
+        # Datasets whose statistics are unknown (`None`) fall in neither half.
+        "imbalanced": SubsetPredicate(lambda df: df["target_imbalanced"].eq(True), ("target_imbalanced",)),
+        "balanced": SubsetPredicate(lambda df: df["target_imbalanced"].eq(False), ("target_imbalanced",)),
+        # the extreme end of `imbalanced` (a class ratio of 50:1 or more; classification only)
+        "extreme": SubsetPredicate(lambda df: df["target_extreme"].eq(True), ("target_extreme",)),
+        # split-level filter: keeps split 0 == (fold 0, repeat 0); a results frame's "fold"
+        # column is the split, so this maps to fold == 0 there (matching the original
+        # results-frame "lite" lambda and the base context's convention).
+        "lite": SubsetPredicate(lambda df: df["split"] == 0, ("split",)),
+        # data-dependent: keeps each dataset's first `folds_to_use` splits (the committed
+        # `(dataset, split)` tasks in CORE_TASKS_CSV). Lazily loaded on first evaluation.
+        "core": SubsetPredicate(lambda df: _core_subset_predicate().predicate(df), ("dataset", "split")),
+        # data-dependent: keeps each dataset's first splits from the 2,000-split cost-weighted allocation (the
+        # committed `(dataset, split)` tasks in CORE2K_TASKS_CSV). Lazily loaded on first evaluation.
+        "core2k": SubsetPredicate(lambda df: _core2k_subset_predicate().predicate(df), ("dataset", "split")),
+    }
+
+    #: Shortcuts for the standard BeyondArena subslices: each name maps to a list of subset
+    #: expressions AND-ed together (atoms are :attr:`SUBSET_PREDICATES` names; a leading ``!``
+    #: negates one). Every shortcut is intersected with ``"core"`` so the standard slices share
+    #: the committed core task set. Read via :attr:`subset_shortcuts`.
+    SUBSET_SHORTCUTS: dict[str, list[str]] = {
+        "large": ["core", "large"],
+        "high_dim": ["core", "high-dim"],
+        "low_dim": ["core", "low-dim"],
+        "high_cardinality": ["core", "high-cardinality"],
+        "grouped": ["core", "grouped"],
+        "temporal": ["core", "temporal"],
+        "iid": ["core", "iid"],
+        "random": ["core", "random"],
+        "text": ["core", "text"],
+        "numerical": ["core", "numerical"],
+        "balanced": ["core", "balanced"],
+        "imbalanced": ["core", "imbalanced"],
+        "extreme": ["core", "extreme"],
+        # high-cardinality slice with the large size bucket removed (all splits / lite split 0)
+        "hc_nolarge": ["core", "high-cardinality", "!large"],
+        "hc_nolarge_lite": ["core", "lite", "high-cardinality", "!large"],
+    }
+
+    def __init__(
+        self,
+        methods: str | list[MethodMetadata] = "BeyondArena",
+        task_metadata: str | TaskMetadataCollection = "BeyondArena",
+        *,
+        extra_methods: list[MethodMetadata] | None = None,
+        backend: str = "ray",
+        fillna_method: str | None = "RF (default)",
+        calibration_method: str | None = "XGB (default)",
+        only_valid_tasks: bool = False,
+        subset: str | list[str] | None = None,
+        cache_config: CacheConfig | None = None,
+        validation_protocol: ValidationProtocol | dict | None = None,
+        official_validation_protocol: bool = True,
+    ) -> None:
+        """Build a BeyondArena context.
+
+        Args:
+            methods: ``"BeyondArena"`` (the Beyond-IID method collection) or an explicit
+                ``list[MethodMetadata]``.
+            task_metadata: ``"BeyondArena"`` (the committed reference CSV as a
+                :class:`~tabarena.benchmark.task.metadata.BeyondArenaTaskMetadataCollection`, which
+                retains a materializable Data Foundry source) or a ready ``TaskMetadataCollection``.
+            extra_methods: Additional ``MethodMetadata`` appended to the resolved methods.
+            backend: ``"ray"`` or ``"native"``, forwarded to :class:`AbstractArenaContext`.
+            fillna_method: Imputed-method name forwarded to :class:`AbstractArenaContext`.
+            calibration_method: Calibration-method name forwarded to :class:`AbstractArenaContext`.
+            only_valid_tasks: Forwarded to :class:`AbstractArenaContext`; when ``True``,
+                pre-filter ``task_metadata`` to the registered in-memory methods' tasks.
+            subset: Scope the whole context to one slice of the tasks, as a subset expression,
+                an AND-list of them or a :attr:`subset_shortcuts` name (e.g. ``"core2k"``):
+                ``task_metadata`` keeps only the matching tasks, so "all" is that slice and the
+                subsets of ``compare`` / ``generate_all_figs`` are evaluated within it
+                (``["classification"]`` instead of ``["core2k", "classification"]``).
+            cache_config: Optional :class:`~tabarena.caching.CacheConfig` declaring the OpenML /
+                HuggingFace / data-foundry / TabArena cache locations (and how to apply them — see
+                its ``apply_on_run`` / ``scope_openml`` flags). Applied on construction and
+                re-applied inside ``run_jobs``. Relevant here because BeyondArena's ``materialize()``
+                downloads its raw datasets from HuggingFace into the data-foundry cache (honoring
+                ``cache_config.data_foundry``, i.e. ``DATA_FOUNDRY_CACHE`` — not ``HF_HOME``) before
+                converting them into the OpenML cache.
+            validation_protocol: The inner validation protocol to run experiments under. ``None`` (the
+                default) is BeyondArena's official protocol; another one is refused unless
+                ``official_validation_protocol`` is ``False``.
+            official_validation_protocol: Whether to assert the protocol on every bagged experiment run
+                through this context (the default). ``False`` allows custom protocols at the context,
+                bundle or experiment level; such results are recorded and marked as a custom protocol.
+        """
+        super().__init__(
+            methods=methods,
+            task_metadata=task_metadata,
+            extra_methods=extra_methods,
+            backend=backend,
+            fillna_method=fillna_method,
+            calibration_method=calibration_method,
+            only_valid_tasks=only_valid_tasks,
+            subset=subset,
+            cache_config=cache_config,
+            validation_protocol=validation_protocol,
+            official_validation_protocol=official_validation_protocol,
+        )
+
+    def _official_task_metadata_collection(self) -> TaskMetadataCollection:
+        from tabarena.benchmark.task.metadata import TaskMetadataCollection
+
+        return TaskMetadataCollection.from_preset("BeyondArena")
+
+    def _resolve_task_metadata_preset(self, name: str) -> TaskMetadataCollection:
+        """``"BeyondArena"`` -> the committed reference CSV, with a Data Foundry source retained.
+
+        Returns a :class:`BeyondArenaTaskMetadataCollection` (== ``from_preset("BeyondArena")``):
+        the metadata still loads offline from the committed reference CSV (no dataset downloads at
+        construction), but unlike a plain directly-built collection it keeps a materializable
+        ``DataFoundryTaskMetadataSource``. That lets ``context.run_jobs(...)`` materialize
+        (download + convert) the selected tasks — which would otherwise be a silent no-op, since a
+        sourceless collection's :meth:`~TaskMetadataCollection.materialize` does nothing.
+
+        Note: building the source imports the optional ``data-foundry`` dependency at construction.
+        """
+        if name != "BeyondArena":
+            raise ValueError(f"Unknown task_metadata preset {name!r}; expected 'BeyondArena'.")
+        from tabarena.benchmark.task.metadata import BeyondArenaTaskMetadataCollection
+
+        return BeyondArenaTaskMetadataCollection()
+
+    def _resolve_methods_preset(self, name: str) -> list[MethodMetadata]:
+        """``"BeyondArena"`` -> the Beyond-IID method collection."""
+        if name != "BeyondArena":
+            raise ValueError(f"Unknown methods preset {name!r}; expected 'BeyondArena'.")
+        from tabarena.contexts.beyondarena.methods import beyond_method_metadata_collection
+
+        return copy.deepcopy(beyond_method_metadata_collection.method_metadata_lst)
+
+    @property
+    def _default_subsets(self):
+        return [
+            [],
+            ["binary"],
+            ["multiclass"],
+            ["classification"],
+            ["regression"],
+            ["tiny"],
+            ["small"],
+            ["medium"],
+            ["large"],
+        ]

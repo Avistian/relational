@@ -1,0 +1,248 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B19 · Benchmark evidence</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/benchmark-evidence.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebook gallery</a></nav><h1 id="B19-%C2%B7-BeyondArena,-contamination-and-moving-benchmarks">B19 &#183; BeyondArena, contamination and moving benchmarks<a class="anchor-link" href="#B19-%C2%B7-BeyondArena,-contamination-and-moving-benchmarks">&#182;</a></h1><p class="subtitle">Research bridge · Core ★ · One win: decide whether two results answer the same question</p>
+
+<p><a href="b18a-context-state.html">B18a</a> showed that fixed weights do not fix a predictor: support, preprocessing and inference settings also matter. Now imagine a leaderboard improves next month. Did the model improve, did the test change, or did the evaluation replace missing runs? Before interpreting the score, identify the experiment.</p>
+<p>This serves our mission directly. A relational model must beat a strong baseline under the information and split rules of its intended deployment. A high rank on unrelated public tables does not settle that comparison.</p>
+<p><a href="../labs/b19-benchmark-evidence.ipynb">Student notebook</a> · <a href="../labs/html/b19-benchmark-evidence.html">Executed solution</a> · <a href="../labs/solutions/b19-benchmark-evidence.ipynb">Download solution</a> · <a href="../reference/b19-benchmark-evidence.html">Printable reference</a> · <a href="../labs/b19-reproduction.md">Reproduction contract</a> · <a href="../labs/evidence/b19/source-audit.json">Source audit</a></p>
+<h2 id="1-%C2%B7-Start-with-the-question,-then-choose-the-split">1 &#183; Start with the question, then choose the split<a class="anchor-link" href="#1-%C2%B7-Start-with-the-question,-then-choose-the-split">&#182;</a></h2><p>Recall <a href="0004-grouped-nested-cv.html">grouped validation</a> and <a href="b18a-context-state.html">B18a's predictor identity</a>. Without looking back: what may be fitted using test labels? Does changing the support change the predictor? Are two rows from the same person independent evidence about performance on a new person?</p>
+<div id="b19-warmup"></div>
+
+<p><strong>In plain terms.</strong> A test split is a promise about what will be unfamiliar at deployment. A random split with familiar customers tests a different promise from holding out whole customers.</p>
+<p>An <strong>IID</strong> assumption treats observations as independent draws from the same distribution. A <strong>grouped split</strong> keeps every row of each group together, so test groups are absent from training. A <strong>temporal split</strong> puts the test period after training. Choose according to the intended prediction, not according to which split produces the best score. Grouped and temporal structure may coexist: a future-customer task may need both boundaries. All features and labels must also have been available at the query's cutoff. <a href="https://arxiv.org/html/2606.30410v1#S2">BeyondArena §2</a></p>
+<p><strong>Worked example.</strong> Customer A has eight visits and one customer-level label. If six visits enter training and two enter test, remembering A's training label can succeed without learning how to predict for a new customer. That may be useful for a familiar-customer task if those labels are legally available. It is the wrong evaluation for unseen customers.</p>
+<section class="evidence-flow" aria-label="Evaluation computation"><div class="evidence-step"><strong>1 · Declare deployment</strong>Will the next customer be familiar or unseen? This fixes the test population.</div><div class="evidence-arrow" aria-hidden="true">↓</div><div class="evidence-step"><strong>2 · Split before fitting</strong>Outer training → inner selection and preprocessing. Outer test labels remain outside both.</div><div class="evidence-arrow" aria-hidden="true">↓</div><div class="evidence-step"><strong>3 · Produce keyed evidence</strong>Train-only predictor + legal test features → (dataset, split, row ID, probability). Join labels only for scoring.</div><div class="evidence-arrow" aria-hidden="true">↓</div><div class="evidence-step"><strong>4 · State what was measured</strong>Record measured / missing / substituted cells. Pair comparable support, average seeds within dataset, then summarize datasets.</div></section>
+
+<p><strong>Outer versus inner.</strong> The outer split protects the final test. An inner split uses only outer-training data to select settings. Holding out customers outside while randomly splitting their visits inside can still choose the wrong settings for new-customer deployment. Preprocessing must be fitted within the appropriate training partition too. Our diagnostic has fixed predictors and no inner selection, so it isolates only the outer boundary.</p>
+<h2 id="2-%C2%B7-Trace-a-complete-split-diagnostic">2 &#183; Trace a complete split diagnostic<a class="anchor-link" href="#2-%C2%B7-Trace-a-complete-split-diagnostic">&#182;</a></h2><p>We generated 24 groups with eight rows each. Each group has a binary label, and each row has a noisy binary signal. A <strong>group-memory predictor</strong> looks up the average training label for a known group; for an unseen group it uses overall training prevalence. A <strong>signal predictor</strong> emits probability 0.8 for signal 1 and 0.2 for signal 0. These are deliberately simple rules, not trained foundation models.</p>
+<p>Held fixed: the generated table, both rules, and their accessible feature columns. Varied: test selection. Random testing holds out two rows per group; grouped testing holds out eight entire groups. We repeat the construction with seeds 0, 1 and 2 and retain every outcome.</p>
+<p>The <strong>Brier loss</strong> is the mean squared probability error: <code>mean((p − y)²)</code>. Here <code>p</code> is the predicted positive probability and <code>y</code> is 0 or 1. Lower is better. A probability 0.8 for a positive row contributes <code>(0.8 − 1)² = 0.04</code>; for a negative row it contributes <code>0.64</code>.</p>
+<div id="b19-predict"></div>
+
+<section class="evidence-board" data-split-board><h3>Who is familiar at test time?</h3><div class="evidence-controls"><label>Seed <select name="seed"><option value="0" selected>0</option><option value="1">1</option><option value="2">2</option></select></label><label>Test population <select name="regime"><option value="random">Familiar groups</option><option value="grouped" selected>Unseen groups</option></select></label><button type="button">Reset</button></div><div class="evidence-groups" aria-label="24 groups; train and test row counts"></div><output aria-live="polite">Enable JavaScript to explore saved measurements. The adjacent table and figure remain available without it.</output><noscript><p>Read the complete static worked example below.</p></noscript></section>
+
+<figure class="evidence-figure" tabindex="0" role="region" aria-label="Measured course diagnostic: shared groups yield perfect memory; unseen-group results vary by seed." style="overflow-x:auto"><img src="../labs/figures/b19/split.png" alt="Measured course diagnostic: shared groups yield perfect memory; unseen-group results vary by seed." style="min-width:560px;max-width:100%;height:auto"><figcaption>Measured course diagnostic: shared groups yield perfect memory; unseen-group results vary by seed. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th style="text-align:right">Seed</th>
+  <th style="text-align:right">Random: memory</th>
+  <th style="text-align:right">Random: signal</th>
+  <th style="text-align:right">Grouped: memory</th>
+  <th style="text-align:right">Grouped: signal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0.000000</td>
+  <td style="text-align:right">0.240000</td>
+  <td style="text-align:right">0.250000</td>
+  <td style="text-align:right">0.255625</td>
+</tr>
+<tr>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0.000000</td>
+  <td style="text-align:right">0.240000</td>
+  <td style="text-align:right">0.269531</td>
+  <td style="text-align:right">0.227500</td>
+</tr>
+<tr>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">0.000000</td>
+  <td style="text-align:right">0.240000</td>
+  <td style="text-align:right">0.250000</td>
+  <td style="text-align:right">0.227500</td>
+</tr>
+</tbody>
+</table></div>
+<p>The group-memory rule is perfect under the random split. Under grouped testing it falls back to prevalence. The signal rule wins in two seeds and loses in one. This supports the mechanism—familiar groups can make a task easier—not a universal superiority claim about either predictor.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Test rows differ across regimes: 48 random-test rows versus 64 grouped-test rows. Comparing their losses changes the target population; it is not a paired same-row treatment estimate. Three synthetic seeds are not three independent real datasets. This diagnostic does not reproduce BeyondArena's models or datasets.</p>
+</blockquote>
+<p><strong>Read the load-bearing code.</strong> The notebook makes you implement the split audit; the experiment then calls it before scoring.</p>
+<div class="highlight"><pre><span></span><span class="n">train_groups</span> <span class="o">=</span> <span class="p">{</span><span class="n">by_id</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;group&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">train_ids</span><span class="p">}</span>
+<span class="n">test_groups</span> <span class="o">=</span> <span class="p">{</span><span class="n">by_id</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;group&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">test_ids</span><span class="p">}</span>
+<span class="n">overlap</span> <span class="o">=</span> <span class="n">train_groups</span> <span class="o">&amp;</span> <span class="n">test_groups</span>
+</pre></div>
+<p>Zero row overlap is insufficient. The group intersection answers the new-group question. Duplicate or unknown row IDs must fail before this calculation.</p>
+<h2 id="3-%C2%B7-A-number-needs-an-origin">3 &#183; A number needs an origin<a class="anchor-link" href="#3-%C2%B7-A-number-needs-an-origin">&#182;</a></h2><p>BeyondArena's original report substitutes default Random Forest performance for certain unrun TabPFN-2.6 and TabDPT cases. That permits a complete comparison under a declared fallback policy, but it is not a measurement of the missing model. The current evaluator also exposes this policy in code. <a href="https://arxiv.org/html/2606.30410v1#S5">Paper §5</a> · <a href="https://github.com/autogluon/tabarena/blob/1ce4cae6c12972227dea6247bac83234a2915748/packages/tabarena/src/tabarena/contexts/beyondarena/context.py">Pinned evaluator context</a></p>
+<p>Separate three states: <strong>measured</strong>, <strong>missing</strong>, and <strong>imputed</strong> (filled by a declared rule). A fourth distinction is <strong>replayed</strong>: recalculating an aggregate from saved measurements creates no fresh model run.</p>
+<p><strong>Worked example.</strong> In our constructed four-dataset table, A has losses 0.10, 0.10, 0.10 and one missing result. B has 0.20 everywhere. The RF fallback for the missing dataset is 0.90. On the three jointly measured datasets A wins, 0.10 versus 0.20. After filling A's missing result, its mean is <code>(0.10 + 0.10 + 0.10 + 0.90) / 4 = 0.30</code>, so B wins.</p>
+<section class="evidence-board" data-missing-board><h3>Does the declared policy change the winner?</h3><div class="evidence-controls"><label>Missing-result policy <select name="policy"><option value="measured" selected>Common measured support</option><option value="rf">Explicit RF substitution</option></select></label><button type="button">Reset</button></div><output aria-live="polite">Enable JavaScript to explore saved measurements. The adjacent table and figure remain available without it.</output><noscript><p>Read the complete static worked example below.</p></noscript></section>
+
+<figure class="evidence-figure" tabindex="0" role="region" aria-label="Constructed losses: common measured support favors A; explicit RF substitution favors B." style="overflow-x:auto"><img src="../labs/figures/b19/missing.png" alt="Constructed losses: common measured support favors A; explicit RF substitution favors B." style="min-width:560px;max-width:100%;height:auto"><figcaption>Constructed losses: common measured support favors A; explicit RF substitution favors B. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<p>Neither policy discovers A's actual fourth score. Common support changes which datasets the claim covers; substitution changes which system produced part of the score. Keep the original missing cell and label the added value <code>imputed:RF</code>. Never silently replace it with a value marked <code>measured</code>.</p>
+<p>These constructed losses share units. Real benchmark datasets can use different metrics and scales: do not average raw RMSE and AUROC error together. Ranking or normalized-error protocols need their own declared handling of ties, missing values and dataset weighting. Here “winner” means lowest mean constructed loss, not BeyondArena Elo.</p>
+<h2 id="4-%C2%B7-Nine-seeds-are-not-nine-datasets">4 &#183; Nine seeds are not nine datasets<a class="anchor-link" href="#4-%C2%B7-Nine-seeds-are-not-nine-datasets">&#182;</a></h2><p>Suppose A−B loss differences are 0.10, 0.11, 0.09 on dataset a; −0.04, −0.05, −0.03 on b; and 0.02, 0.03, 0.01 on c. Positive means A has higher loss. Average seeds inside each dataset: the three means are 0.10, −0.04 and 0.02. Their equal-dataset mean is about 0.0267.</p>
+<p>A <strong>standard error</strong> describes variability of an estimated mean under sampling assumptions. For independent dataset means, the familiar estimate is their sample standard deviation divided by the square root of the number of datasets. Seed runs share a dataset, so treating all nine rows as independent changes the assumption.</p>
+<p>The fixture gives dataset-level SE ≈0.04055 versus naive seed-row SE ≈0.02048. Duplicating each seed result with a new seed ID makes the naive estimate smaller again, without adding a single dataset. Neither SE is a calibrated generalization guarantee: real datasets can share sources or tasks too.</p>
+<section class="evidence-board" data-uncertainty-board><h3>Add rows without adding information</h3><div class="evidence-controls"><label>Seed records <select name="replicas"><option value="1" selected>Original nine rows</option><option value="2">Duplicate to eighteen rows</option></select></label><button type="button">Reset</button></div><output aria-live="polite">Enable JavaScript to explore saved measurements. The adjacent table and figure remain available without it.</output><noscript><p>Read the complete static worked example below.</p></noscript></section>
+
+<figure class="evidence-figure" tabindex="0" role="region" aria-label="Constructed paired differences: seed duplication shrinks only the naive row-based uncertainty." style="overflow-x:auto"><img src="../labs/figures/b19/uncertainty.png" alt="Constructed paired differences: seed duplication shrinks only the naive row-based uncertainty." style="min-width:560px;max-width:100%;height:auto"><figcaption>Constructed paired differences: seed duplication shrinks only the naive row-based uncertainty. On narrow screens, scroll the figure horizontally.</figcaption></figure>
+
+<p>A <strong>bootstrap</strong> samples observed units with replacement. The lab enumerates all 27 ordered ways to resample three dataset means. As a teaching contrast, it also enumerates 729 ways to draw three of the nine seed rows. Both draws contain three units; the latter is deliberately not the usual nine-row bootstrap. The operation makes the choice of sampling unit visible. It does not turn this tiny constructed fixture into population evidence.</p>
+<p><strong>CHECK.</strong> If one dataset has 30 seeds and another has three, averaging all seed rows weights the first dataset ten times as heavily. Average within dataset first if the declared estimand—the quantity you want to estimate—is mean performance across equally weighted datasets. Report paired differences on common datasets; do not inflate the dataset count with folds, variants or repeated tasks.</p>
+<h2 id="5-%C2%B7-Contamination-is-a-separate-question-from-splitting">5 &#183; Contamination is a separate question from splitting<a class="anchor-link" href="#5-%C2%B7-Contamination-is-a-separate-question-from-splitting">&#182;</a></h2><p>A correct test split cannot erase exposure during pretraining. <strong>Contamination</strong> means evaluation information has entered model development or training in a way that invalidates the claimed holdout. Distinguish these cases:</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Exposure</th>
+  <th>What to check</th>
+  <th>What the check does not establish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Test labels used in fitting/selection</td>
+  <td>Fit scopes, timestamps, trial logs</td>
+  <td>Pretraining cleanliness</td>
+</tr>
+<tr>
+  <td>Dataset used in pretraining</td>
+  <td>Training manifest, hashes, dataset lineage</td>
+  <td>Absence of renamed derivatives</td>
+</tr>
+<tr>
+  <td>Near-duplicate or transformed table</td>
+  <td>Row/column matching and feature/target summaries</td>
+  <td>Perfect detection under arbitrary transforms</td>
+</tr>
+<tr>
+  <td>Repeated benchmark-driven development</td>
+  <td>Versioned decisions and untouched holdout</td>
+  <td>Independence merely because weights were frozen for the last run</td>
+</tr>
+</tbody>
+</table></div>
+<p>TabDPT's contamination appendix describes several identity/statistics checks across training and evaluation tables. Hash equality detects identical bytes; unequal hashes alone cannot rule out reordered, renamed or transformed copies. Statistical similarity is a screening signal requiring investigation, not proof of leakage. <a href="https://arxiv.org/html/2410.18164v3#A2.SS1">TabDPT Appendix B.1</a></p>
+<p><strong>Worked trace.</strong> Reorder a training table and rename its columns. The file hash changes while its information can remain identical. Conversely, two independently collected binary tables can have equal row counts and similar feature means. A good audit preserves both kinds of uncertainty. Record <code>UNKNOWN</code> exposure when the pretraining manifest is unavailable; do not substitute “clean.”</p>
+<h2 id="6-%C2%B7-Version-the-claim,-not-just-the-model-name">6 &#183; Version the claim, not just the model name<a class="anchor-link" href="#6-%C2%B7-Version-the-claim,-not-just-the-model-name">&#182;</a></h2><section class="evidence-flow" aria-label="Versioned evidence"><div class="evidence-step"><strong>Original paper target</strong>v1 Figure F.2 · original six families · grouped and IID · original full split/variant set</div><div class="evidence-arrow" aria-hidden="true">↓</div><div class="evidence-step"><strong>Later release</strong>September Linear rerun · newer TFM entries · current default core subset. Record these as changes.</div><div class="evidence-arrow" aria-hidden="true">↓</div><div class="evidence-step"><strong>Comparison decision</strong>Match all relevant identities for a historical claim, or label a new comparison. A familiar method name cannot bridge changed protocols.</div></section>
+
+<p>A later model can solve an older failure without contradicting the older measurement. Freeze the paper version, model/checkpoint, dataset bytes, split IDs, support policy, preprocessing, candidate search, missing-result policy and metric. A version label alone does not authenticate the weights or test population.</p>
+<p>The pinned current BeyondArena registry retains the original suite but replaces its default Linear entry with a September rerun. Its quickstart uses a reduced core set of splits. These are observable changes, not evidence that either version is invalid. Using today's defaults cannot automatically reproduce yesterday's figure. <a href="https://github.com/autogluon/tabarena/blob/1ce4cae6c12972227dea6247bac83234a2915748/packages/tabarena/src/tabarena/contexts/beyondarena/methods.py">Pinned registry</a> · <a href="https://github.com/autogluon/tabarena/blob/1ce4cae6c12972227dea6247bac83234a2915748/packages/tabflow_slurm/BENCHMARK_LOG.md">Benchmark log</a></p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Source or lane</th>
+  <th>Task/split and exposure</th>
+  <th>Selection and missing scores</th>
+  <th>Access / comparability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>BeyondArena v1</td>
+  <td>Mixed IID/grouped/temporal; audit each model's training exposure</td>
+  <td>Traditional search vs TFM ICL; specified RF fallbacks</td>
+  <td>Public source/results; historical F.2 IID scores not recovered here</td>
+</tr>
+<tr>
+  <td>Current pinned BeyondArena registry</td>
+  <td>Original and newer suites coexist; core differs from all splits</td>
+  <td>Linear rerun replaces default registry entry</td>
+  <td>Version change must be recorded before comparing ranks</td>
+</tr>
+<tr>
+  <td>TabDPT v3</td>
+  <td>Real-data pretraining; Appendix B.1 overlap screening</td>
+  <td>Follow its own split, retrieval and selection protocol</td>
+  <td>Screening evidence is not proof of zero contamination</td>
+</tr>
+<tr>
+  <td>Enterprise study v1</td>
+  <td>Selected internal business tasks; audit curation and semantic types</td>
+  <td>Nontrivial/signal filters affect target population</td>
+  <td>Internal data prevent an independent B19 reproduction; SAP affiliation disclosed</td>
+</tr>
+<tr>
+  <td>B19 synthetic diagnostic</td>
+  <td>Known generator; grouped/random populations; no pretraining</td>
+  <td>Fixed rules, all conditions, separate imputation fixture</td>
+  <td>Full local reconstruction; no real-data benchmark ranking</td>
+</tr>
+</tbody>
+</table></div>
+<p>The enterprise study's internal tasks were filtered for nontriviality and predictive signal. Its task composition and restricted data access must travel with any ranking claim. A vendor-affiliated study is not automatically wrong; affiliation and independent reproduction are separate fields in the matrix. Record categorical fraction, semantic types, imbalance, missingness, task mix and selection rules before transporting a ranking to your business problem. <a href="https://arxiv.org/html/2606.30452v1#S3">Enterprise study §§3–5</a></p>
+<p><strong>Representativeness checklist.</strong> Do not collapse strings, categories and identifiers into one feature type. For a business transfer claim, attach these fields to each compared suite:</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>BeyondArena evidence to inspect</th>
+  <th>Enterprise-study boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Task mix</td>
+  <td>142 curated datasets spanning IID, grouped and temporal tasks</td>
+  <td>557 selected internal tasks: 491 classification, 66 regression</td>
+</tr>
+<tr>
+  <td>Categorical fraction / semantic types</td>
+  <td>Per-task type metadata and actual preprocessing; one fraction cannot summarize the suite</td>
+  <td>String prevalence is not identical to categorical fraction; inspect semantic typing</td>
+</tr>
+<tr>
+  <td>Imbalance / missingness</td>
+  <td>Per-task minority fraction, imbalance ratio and missing-value fraction in the archived metadata</td>
+  <td>Aggregate distributions do not identify every task; internal row-level audit is not available here</td>
+</tr>
+<tr>
+  <td>Provider involvement</td>
+  <td>Authors include Prior Labs and academic researchers</td>
+  <td>SAP-affiliated internal-data study</td>
+</tr>
+<tr>
+  <td>Independent verification</td>
+  <td>B19 audits released grouped score tables, not fresh model outputs</td>
+  <td>B19 has not reproduced the internal benchmark</td>
+</tr>
+</tbody>
+</table></div>
+<p><a href="https://arxiv.org/html/2606.30410v1">BeyondArena paper and affiliations</a> · <a href="https://arxiv.org/html/2606.30452v1">Enterprise task counts and affiliations</a></p>
+<p>Use <a href="b03-pfn-tabpfn-generations.html">B03</a> and <a href="b06-mitra-prior-mixtures.html">B06</a> as checks on historical model identity. Their diagnostic successes and original-paper source gaps remain separate. <a href="https://huggingface.co/spaces/Neuralk-AI/tabbench">TabBench</a> is another benchmark to audit; B19 does not authenticate or reproduce its current ranking.</p>
+<h2 id="7-%C2%B7-Our-full-reproduction-ledger">7 &#183; Our full-reproduction ledger<a class="anchor-link" href="#7-%C2%B7-Our-full-reproduction-ledger">&#182;</a></h2><p><strong>Named target:</strong> BeyondArena v1 Figure F.2: two datasets, grouped and IID splits, six model families, with the original displayed variants and full protocol. The published rank correlations are targets to check, not newly measured B19 values.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Evidence item</th>
+  <th>B19 status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Complete course diagnostic</td>
+  <td>12 arms, 672 predictions independently reconstructed</td>
+</tr>
+<tr>
+  <td>Released grouped scores</td>
+  <td>9,540 records; twelve default aggregates checked</td>
+</tr>
+<tr>
+  <td>Full Figure F.2</td>
+  <td>INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN</td>
+</tr>
+<tr>
+  <td>Fresh benchmark / pretraining</td>
+  <td>NOT_RUN</td>
+</tr>
+<tr>
+  <td>Learner defense / live Colab</td>
+  <td>PENDING_WRITTEN_DEFENSE / NOT_CHECKED</td>
+</tr>
+</tbody>
+</table></div>
+<p>We fetched all six original-suite model-result tables and corresponding HPO tables, plus metadata. The complete selected grouped extraction contains <strong>9,540 score records</strong>. It covers 60 musk folds and 30 SAT11 folds, 26 configurations for each of four classical models and one for each TFM. The audit authenticates bytes, checks complete keys, compares every selected record against its original table and recomputes twelve default means. It does not rescore original predictions.</p>
+<p><strong>The missing half matters.</strong> The fetched tables have no corresponding IID-ablation scores. Both IID curation notebooks exist, but their existence does not supply the missing results. UUID-based renaming in source notebooks also means rerunning them is not proof of identical historical input bytes. Our bounded artifact search does not prove that unpublished or differently hosted artifacts do not exist.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Full Figure F.2: <code>INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN</code>. Fresh paper-model fits and the whole benchmark: <code>NOT_RUN</code>. The complete grouped score-table audit is a narrower success. The explicit paper command refuses rather than calling the grouped half a reproduced figure. $0 paid compute; all local attempts share a 3,600-second cap.</p>
+</blockquote>
+<h2 id="Lab-%C2%B7-Build-and-defend-the-comparison">Lab &#183; Build and defend the comparison<a class="anchor-link" href="#Lab-%C2%B7-Build-and-defend-the-comparison">&#182;</a></h2><p>The portable notebook contains all load-bearing course code and three live tasks: audit splits, aggregate paired scores while preserving provenance, and summarize paired seed differences at dataset level. The final experiment uses your functions; each task has immediate checks. Blank functions cannot pass. The saved-paper lane embeds the selected records; the repository command additionally authenticates the full original tables.</p>
+<p><strong>Preregister an untouched comparison.</strong> Before examining its test outcomes, choose one accessible dataset that has not guided your decisions. Complete the <a href="../labs/b19-preregistration.md">preregistration template</a>: deployment population; full row/entity/time keys; legal inputs and label-availability times; dataset and model exposure status; outer and inner splits; strong baseline and challenger; preprocessing and support access; exact candidate/seed budget; one primary metric; missing-run rule; paired analysis; cost cutoff; and a falsification criterion. Hash and date the contract before execution. This is learner work, not an author claim that an untouched benchmark was run.</p>
+<p><strong>EXIT.</strong> Defend why the split matches deployment, identify which results were actually measured, explain the independent unit, and say which source gaps prevent historical reproduction. Then state what evidence would change your architecture choice. Ask your teacher about any unclear step; revisit the split, missing-score and uncertainty traces after 1, 7 and 30 days.</p>
+<div id="b19-teachback"></div>
+
+<p>Next: <a href="../plan/year-5-6-bridge.md#b19a">B19a's planned probability-quality lesson</a>. Correct evaluation identity is necessary; it does not guarantee calibrated probabilities. Carry the contract into <a href="../reference/curriculum.html">Year 6</a>, particularly the proposal and experiment stages. Learner status remains <code>PENDING_WRITTEN_DEFENSE</code>.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/b19-evidence.js"></script><script src="../assets/benchmark-evidence.js"></script></body></html>

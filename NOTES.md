@@ -2401,3 +2401,48 @@ B14 final delivery (2026-10-04): 14-code-cell portable solution exactly regenera
 Complete finite 4-rule/8-column worlds and 16 hidden/future-label interventions. Legal external support resolves designed ambiguity; this changes available information, not encoder training. Three live student functions and portable executed solution. RDBLearn v1.1 actual history default OFF resolves README mismatch; exact Table 5 trial candidates/seeds/checkpoints/refit unknown, so selected inference INCOMPLETE_SOURCE_PROTOCOL_GATE/NOT_RUN. Cloud USD0; full suite/pretraining NOT_RUN. Learner PENDING_WRITTEN_DEFENSE. User authorized push and Pages deployment.
 
 B15 publication verified 2026-10-04: commit a89e475a, Pages workflow37158868926 SUCCESS. Live75file SHA256 comparisons,25embedded source hashes and14desktop/mobile interaction states PASS. Archived dot-path source bytes are verified in the live portable notebook packet because Pages rejects direct .github paths. GitHub warned artifact1,680,656,170bytes exceeds1GB, but deployment succeeded; retain as site-capacity risk. Local finite diagnostic remains separate from NOT_RUN selected paper inference; cloudUSD0. Deployment receipts under reviews/lesson-b15.
+
+## B16 · Approved construction-selection lesson (2026-10-04)
+
+User approved finite mechanism plus source-gated full Table 1 attempt. Complete 72 subset scores, 27 selections, 216 keyed test predictions, 24 graphs and 256 test-label interventions; 144 aligned scoring primitive comparisons. Backward search in source stops at one column, frequency counts differ across splits, and actual value-node features are zero. Missing experiment generator and run configuration block all 400 paper runs: INCOMPLETE_SOURCE_PROTOCOL_GATE, NOT_RUN. Course uses bounded Brier loss, exact finite fixtures and backward access to empty; these are explicit differences. Cloud USD0; numerical cap 3600 aggregate seconds. No learner mastery inferred.
+
+B16 local delivery verified: portable 15-cell solution equals saved report; three individual blank tasks rejected; 110 desktop/mobile browser states and 39 local links pass. Four portable figures inspected. Local numerical/verification ledger 116.094s including retries; cloud USD0. Pages workflow includes the package, but publication was not requested. Details: reviews/lesson-b16/review.md.
+
+
+## B17 · Approved reusable representation lesson (2026-10-04)
+
+Approved USD0 paid, 3600 aggregate local numerical seconds. Complete36 forward cases (seeds0/1/2, tasksA/B, six interventions),3456 embedding coordinates,72 query probabilities and24 external query-label exclusion cases. Independent NumPy full forward replay max error4.44e-16. Label-only edits preserve embeddings; support-feature changes invalidate them; query1 edits leave query0 unchanged. These random-network checks do not establish accuracy, learned transfer or source parity. Original FlexTab Table5 F1-DNF AUROC0.746 remains INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN; author checkpoint/evaluator and temporal sampling identities unresolved. GTAlign training/full paper pretraining NOT_RUN. Learner PENDING_WRITTEN_DEFENSE. No publication requested.
+
+B17 final delivery:18-code-cell portable solution exactly regenerates the report; three blank tasks, three wrong implementations and seven corrupted result cases rejected.76 desktop/mobile states, keyboard/reset, no-JS/print and40links PASS; three notebook diagrams visually inspected. Actual temporary-index Pages build and38-file artifact seal PASS; real index preserved. Local accounting287.652/3600seconds, paidUSD0. No deployment/liveColab or learner mastery claim. See reviews/lesson-b17/review.md.
+
+
+## B18 · approved context-sufficiency diagnostic (2026-10-04)
+
+Complete historical-sum experiment:24 fixtures,96 conditions,9600 paired draws,38400 estimates. Independent saved-index oracle maxerror2.013e-10; seven evidence corruptions and three wrong learner functions rejected. Count correction is unbiased under uniform sampling but may have large realized error; full count/aggregation adds information and access cost. Future-event intervention passes. No forecasting or trained-model result claimed.
+
+Full Animus RT raw/aggregate12-configuration target remains NOT_RUN / INCOMPLETE_SOURCE_PROTOCOL_GATE: original data/generator/model/init/seeds/selection unresolved, main/appendix RT scores conflict,474-person subgroup is retrospective. Source audit authenticates archived bytes; runnable gate refuses benchmark execution.
+
+Portable14-cell solution exact full-report parity;236 desktop/mobile states, keyboard/reset, print/noJS and46 local links pass. Actual temporary-index Pages build:36 byte-identical copied files and46 copied links; real index preserved. Visuals inspected and mobile status overflow corrected. Local numerical accounting 217.809/3600s including60s allowance; USD0paid. Design commit79186876; package local, no deployment, liveColabNOT_CHECKED, learnerPENDING_WRITTEN_DEFENSE. See reviews/lesson-b18/README.md.
+
+## B18a · approved context-as-state experiment (2026-10-04)
+
+Complete18-fit release checkpoint comparison plus10 state-update fits,2 query-missingness conditions and4 explanation contrasts. Dataset569 rows,284/285 split,71-row subset, inference seeds0/1/2,8 ensemble members, float32, four full query passes. POT6/6 cache pairs pass1e-5; TACO0/3 pass (max0.02807/0.03192/0.02798). Preserve failed cache equivalence: source paths use N versus N-K statistics, but no controlled patch establishes sole cause. Original pilot transfer failed; retry used durable volume, both attempts counted. Estimated all-in cost with build/storage allowance aboutUSD0.252; invoice NOT_CHECKED. Source and data hashes archived. Paper Figure3 generator/seed/checkpoint/timing identities unresolved; pretraining and whole paper NOT_RUN. Student has three live tasks, architecture, state widget, portable saved replay and optional fresh GPU operator. Learner defense pending; no publication requested.
+
+## B19 · approved benchmark-evidence lesson (2026-10-04)
+
+Approved USD0 paid;3600 aggregate local numerical seconds. Complete12-arm/672-prediction synthetic split diagnostic, common-support/imputation contrast and dataset-versus-seed uncertainty exercise. Group memory perfect on familiar groups; signal wins two of three grouped seeds, not universally. Full saved grouped score audit:9,540 rows,60 musk/30 SAT11 folds, twelve default aggregates; compact portable replay separate from full original-table authentication. Original-suite naming does not prove historical paper identity. Full Figure F.2 IID counterparts/plot variant mapping/checkpoint predictions unresolved: INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN. Public curation notebooks exist; bounded artifact search is not global absence. Fresh benchmark/pretraining NOT_RUN. Learner PENDING_WRITTEN_DEFENSE; no deployment/liveColab claim. See reviews/lesson-b19/README.md for final delivery evidence and budget.
+
+## B19a · approved distribution-scoring lesson (2026-10-04)
+
+Approved USD0 paid,3600aggregate local numerical seconds. Exact9forecast/outcome diagnostic,15finite mass candidates,18affine checks; separate9row calibration/4row final-test intervention. Same mean and RMSE do not fix CRPS; discrete interval coverage can exceed nominal.
+
+Complete selected ScoringBench v3 Tables1/4/5 reconstruction:18,480released fold records,38models,100raw dataset names→97retained; all798displayed fields match printed precision. Full-precision author JSON matches. Historical code ca1660023ba43dde460dbadb389b71e274e66ce1 / output1cc77f6c79f2c88ef206f4b79f81c67861576ce6. Paper stratified-vs-code KFold, full-table imputation and stale leading-rank prose disclosed. Raw prediction rescoring, fresh fits/pretraining/whole paper NOT_RUN; original checkpoint/environment identity unestablished. Learner PENDING_WRITTEN_DEFENSE; no publication requested.
+
+
+## B19b · approved forecasting lesson (2026-10-04)
+
+Complete27conditions/324keyed course predictions across3seeds/3origins/3arms. Forecast-time availability, complete horizons and MASE/WQL are live learner functions. Legal regression loses to seasonal naive on seed2; oracle future weather gains are unavailable-information evidence, not deployment evidence. Source-seasonal mirror agrees on4cases, including disclosed constant-input numerical peaks.
+
+All13plotted models×97tasks/1,261released records reconstructed from one dated GIFT snapshot. Only2/39Figure4.1 values match at3decimals, both baseline normalization identities. Historical score/model/environment identity and original confidence intervals remain INCOMPLETE_SOURCE_PROTOCOL_GATE. Fresh pretrained inference, raw prediction rescoring and whole paper NOT_RUN. No model/API calls; USD0paid.
+
+Portable19-code-cell solution reproduces both reports exactly from an empty directory and authenticates105source files; three blank/wrong tasks rejected.16desktop/mobile states, keyboard/reset/teach-back, noJS/print, all4portable figures and48links pass. Actual temporary-index Pages build verifies141copied files and preserves user index. Final local numerical accounting600.278/3600seconds includes failures/retries and330seconds conservative preparation/final allowances. No deployment/liveColab or learner mastery claim. See reviews/lesson-b19b/README.md.

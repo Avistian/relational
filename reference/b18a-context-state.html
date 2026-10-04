@@ -1,0 +1,108 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B18a reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/context-state.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Labs</a></nav><h1 id="Context-state-contract-%C2%B7-B18a">Context-state contract &#183; B18a<a class="anchor-link" href="#Context-state-contract-%C2%B7-B18a">&#182;</a></h1><p><a href="../lessons/b18a-context-state.html">Lesson</a> · <a href="../labs/b18a-context-state.ipynb">Student lab</a> · <a href="../labs/b18a-reproduction.md">Experiment contract</a></p>
+<h2 id="Identify-one-prediction">Identify one prediction<a class="anchor-link" href="#Identify-one-prediction">&#182;</a></h2><p>Checkpoint SHA256 + fitted preprocessing + ordered support IDs/features/labels + retrieval policy + compression setting + inference seeds/transforms + dtype + implementation + query. Query memoization also needs query identity. An explanation adds the method/estimand, feature set and background identity.</p>
+<h2 id="State-dependencies">State dependencies<a class="anchor-link" href="#State-dependencies">&#182;</a></h2><div class="state-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Edit</th>
+  <th>Support cache</th>
+  <th>Prediction</th>
+  <th>Explanation</th>
+  <th>Distilled student</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Support/preprocessing</td>
+  <td>Rebuild</td>
+  <td>Recompute</td>
+  <td>Recompute</td>
+  <td>Revalidate/retrain</td>
+</tr>
+<tr>
+  <td>Query only</td>
+  <td>Reuse</td>
+  <td>Recompute</td>
+  <td>Recompute</td>
+  <td>Reuse</td>
+</tr>
+<tr>
+  <td>Background only</td>
+  <td>Reuse</td>
+  <td>Reuse</td>
+  <td>Recompute</td>
+  <td>Reuse</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="Four-mechanisms">Four mechanisms<a class="anchor-link" href="#Four-mechanisms">&#182;</a></h2><p>KV caching retains attention state. Selection retains real rows. TACO jointly learns a compressor and predictor and retains latent context. Distillation learns a separate predictor from teacher outputs. The current TACO release already caches compressed context in fit_preprocessors; fit_with_cache additionally caches predictor attention.</p>
+<h2 id="Chronology">Chronology<a class="anchor-link" href="#Chronology">&#182;</a></h2><p>Labeled support requires event≤cutoff AND arrival≤cutoff AND label_available≤cutoff. Student teacher targets must exclude the row's own label; chronological tasks require earlier-available teacher context. Hashing proves identity, not timestamp truth.</p>
+<h2 id="Cost-and-explanation">Cost and explanation<a class="anchor-link" href="#Cost-and-explanation">&#182;</a></h2><p>Total = setup + all query calls + all rebuilds + all explanation calls. Break-even requires positive warm savings and enough requests before the next update. GPU peak allocation is not isolated KV storage.</p>
+<p>Replacement contrast = f(x) − average_b f(x with x_j=b_j). It is not SHAP or a causal effect. Foreground16 × background8 requires16+128=144 prediction rows. Changing the background can change the contrast without changing the predictor.</p>
+<h2 id="Evidence">Evidence<a class="anchor-link" href="#Evidence">&#182;</a></h2><div class="state-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th>KV</th>
+  <th style="text-align:right">AUROC mean</th>
+  <th style="text-align:right">Log loss mean</th>
+  <th style="text-align:right">Fit s mean</th>
+  <th style="text-align:right">Repeated pass s mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>POT-full</td>
+  <td>off</td>
+  <td style="text-align:right">0.9932</td>
+  <td style="text-align:right">0.0852</td>
+  <td style="text-align:right">0.2098</td>
+  <td style="text-align:right">2.0810</td>
+</tr>
+<tr>
+  <td>POT-full</td>
+  <td>on</td>
+  <td style="text-align:right">0.9932</td>
+  <td style="text-align:right">0.0852</td>
+  <td style="text-align:right">1.0076</td>
+  <td style="text-align:right">2.0926</td>
+</tr>
+<tr>
+  <td>POT-selected</td>
+  <td>off</td>
+  <td style="text-align:right">0.9896</td>
+  <td style="text-align:right">0.1235</td>
+  <td style="text-align:right">0.1443</td>
+  <td style="text-align:right">1.2839</td>
+</tr>
+<tr>
+  <td>POT-selected</td>
+  <td>on</td>
+  <td style="text-align:right">0.9896</td>
+  <td style="text-align:right">0.1235</td>
+  <td style="text-align:right">0.4911</td>
+  <td style="text-align:right">1.6426</td>
+</tr>
+<tr>
+  <td>TACO4</td>
+  <td>off</td>
+  <td style="text-align:right">0.9917</td>
+  <td style="text-align:right">0.0876</td>
+  <td style="text-align:right">0.2584</td>
+  <td style="text-align:right">1.2707</td>
+</tr>
+<tr>
+  <td>TACO4</td>
+  <td>on</td>
+  <td style="text-align:right">0.9917</td>
+  <td style="text-align:right">0.0882</td>
+  <td style="text-align:right">2.4880</td>
+  <td style="text-align:right">0.9815</td>
+</tr>
+</tbody>
+</table></div>
+<p>All 18 fits completed. Cached/uncached agreement at the predeclared1e-5 tolerance: <strong>6/9 pairs pass</strong>. Failed pairs: TACO4 seed0 Δ=0.0280723, TACO4 seed1 Δ=0.0319225, TACO4 seed2 Δ=0.0279807. Keep this failure visible; these modes are not interchangeable to the declared tolerance. Three repeated query passes measure warm reuse; they are not independent predictive trials.</p>
+<figure class="state-figure" tabindex="0" role="region" aria-label="Measured runtime and AUROC for all three inference seeds; no paper speedup claim."><img src="../labs/figures/b18a/quality-cost.png" alt="Measured runtime and AUROC for all three inference seeds; no paper speedup claim."><figcaption>Measured runtime and AUROC for all three inference seeds; no paper speedup claim. <span class="state-scroll-hint">On small screens, swipe the figure or focus it and use arrow keys.</span></figcaption></figure>
+<div class="state-evidence"><strong>Executed:</strong> 18 release-checkpoint fits, 12 state/query conditions and four explanation contrasts. Saved predictions independently rescored. <strong>Paper:</strong> historical Figure3 source-gated; pretraining NOT_RUN. <strong>Learner:</strong> PENDING_WRITTEN_DEFENSE. See each cache-agreement verdict above.</div>
+
+<p>Primary readings: <a href="https://arxiv.org/html/2602.05649v2">TACO §3–4</a>, <a href="https://arxiv.org/html/2511.08667v2">TabPFN-2.5 distillation</a>, <a href="https://arxiv.org/html/2403.10923v2">TabPFN interpretation</a>. Ask your teacher to review your state/update contract.</p>
+</article></body></html>

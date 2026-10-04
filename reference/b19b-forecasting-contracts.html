@@ -1,0 +1,89 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B19b · Forecast-time reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/benchmark-evidence.css"><link rel="stylesheet" href="../assets/forecast-availability.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebook gallery</a></nav><h1 id="B19b-%C2%B7-Forecast-time-reference">B19b &#183; Forecast-time reference<a class="anchor-link" href="#B19b-%C2%B7-Forecast-time-reference">&#182;</a></h1><p><a href="../lessons/b19b-forecasting-contracts.html">Lesson</a> · <a href="../labs/b19b-forecasting-contracts.ipynb">Notebook</a> · <a href="../labs/b19b-task-contract.md">Task contract</a></p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Contract</th>
+  <th>Rule</th>
+  <th>Failure case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Input availability</td>
+  <td>available_at ≤ issue_time</td>
+  <td>Future observed weather; late-arriving history</td>
+</tr>
+<tr>
+  <td>Origin o, horizon H</td>
+  <td>context[0:o]; query[o:o+H]</td>
+  <td>Random row split; partial final horizon</td>
+</tr>
+<tr>
+  <td>Fitted features</td>
+  <td>Estimate periods/scales on available history</td>
+  <td>FFT or normalization fitted on final labels</td>
+</tr>
+<tr>
+  <td>Future covariates</td>
+  <td>Known schedule or archived forecast vintage</td>
+  <td>Current revised record substituted for as-of state</td>
+</tr>
+<tr>
+  <td>MASE</td>
+  <td>Mean absolute median error / training seasonal difference</td>
+  <td>Scale0; claiming MASE&lt;1 proves test-baseline win</td>
+</tr>
+<tr>
+  <td>WQL</td>
+  <td>Mean over q of2×pinball sum / sum abs(target)</td>
+  <td>Zero denominator; treating quantile grid as full CRPS</td>
+</tr>
+<tr>
+  <td>Uncertainty</td>
+  <td>Preserve series/dataset dependence</td>
+  <td>Treating97 related tasks as97 independent datasets</td>
+</tr>
+<tr>
+  <td>Evidence</td>
+  <td>Released scores ≠ raw predictions ≠ fresh inference</td>
+  <td>Choosing source files because they match</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Worked trace:</strong> history[1,3,2,4],s=1 → scale5/3. Actual[2,4],median[1,5] → MASE0.6 and median-only WQL1/3.</p>
+<p><strong>Architecture:</strong> C history rows with labels + H future feature rows with labels hidden → fixed TabPFNv2 grouped-feature/row attention → H target-bin distributions. D=28+legal covariates for the full wrapper. Source-visible seasonal fitting uses history only. No fresh TabPFN inference was run here.</p>
+<p><strong>Falsification:</strong> change all unavailable future values; legal features and forecasts must remain fixed. A pass checks that intervention, not every possible leak.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Mean MASE ↓</th>
+  <th style="text-align:right">Mean WQL ↓</th>
+  <th>WQL by seed0 /1 /2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>seasonal_naive</td>
+  <td style="text-align:right">0.9159</td>
+  <td style="text-align:right">0.1556</td>
+  <td>0.1794 / 0.1594 / 0.1281</td>
+</tr>
+<tr>
+  <td>legal_regression</td>
+  <td style="text-align:right">0.7385</td>
+  <td style="text-align:right">0.1251</td>
+  <td>0.1309 / 0.1111 / 0.1333</td>
+</tr>
+<tr>
+  <td>oracle_weather</td>
+  <td style="text-align:right">0.0797</td>
+  <td style="text-align:right">0.0136</td>
+  <td>0.0137 / 0.0114 / 0.0157</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Reproduction:</strong> complete13×97 released score matrix reconstructed. Only2/39 printed figure fields match, both baseline identities. Figure4.1 historical identity and95% intervals remain INCOMPLETE; fresh model evaluation and pretraining NOT_RUN. <a href="../labs/b19b-reproduction.md">Full evidence contract</a>.</p>
+<p><strong>Research exit:</strong> include forecasting in L201 only with a decision/horizon, historical availability, paired legal baselines, frozen metric/aggregation and cost contract. Otherwise write a justified exclusion. Ask the teacher for review; revisit after1/7/30days.</p>
+<p>Primary reading: <a href="https://arxiv.org/html/2501.02945v4">TabPFN-TS v4</a>.</p>
+</article></body></html>

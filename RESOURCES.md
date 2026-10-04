@@ -1291,3 +1291,48 @@ Primary: [TabDPT v3 §3 and Appendix B.1](https://arxiv.org/html/2410.18164v3), 
 ## B15 · Parameter-free encoders: limits and assumptions
 
 [Paper v2](https://arxiv.org/html/2607.05476v2), §§3–4, Appendices A/D, Table 5; [RDBLearn v1.1 source](https://github.com/HKUSHXLab/rdblearn/tree/78561f0a9c1dd231d44659e761d5d85e18c82f6e). Actual default target-history flag is False; README says True. Code default agrees with paper, but exact run configuration is not established. Complete source packet and missing protocol ledger under labs/sources/b15 and labs/evidence/b15.
+
+## B16 · AutoGrable construction selection
+
+[Paper v1](https://arxiv.org/html/2608.11431v1), Eq.1, Algorithm 1, Lemma 1, Table 1 and Appendices C–D. [Pinned release](https://github.com/TamaraCucumides/autoGrable/tree/1cfad48ae8d8362ad7eca10f9fe6db115004975e). Source checks demonstrate backward-to-empty, frequency-population and value-identity discrepancies. All 400 selected paper runs remain NOT_RUN; no missing generator is invented. See [contract](labs/b16-reproduction.md) and [source audit](labs/evidence/b16/source-audit.json).
+
+
+## B17 · Reusable representation boundaries
+
+[FlexTab v2 §§2.2–3, Appendix A and Table5](https://arxiv.org/html/2606.30336v2): label-free encoder input, per-layer row aggregation and task decoders. [GTAlign v1 §§2.2–2.4](https://arxiv.org/html/2607.11374v1): contrastive graph pretraining, community episode joint alignment and target-label encoder adaptation with frozen TFM. Dated source/release probes with hashes: labs/sources/b17/manifest.json. FlexTab author-linked repository404, no HF model search matches; GTAlign search does not authenticate a graph-model release. Full selected Table5 F1-DNF remains source-gated. Mechanism code is an explicitly reduced untrained mirror, not released-source parity.
+
+
+## B18 · context sufficiency and Animus source audit (2026-10-04)
+
+Primary: Correa and Azevedo, [Context Window Failures in Relational Foundation Models, v1](https://arxiv.org/html/2609.00460v1), §3–4 and Appendices A–D. Read the RT score conflict, best-test selection captions and 474-customer retrospective subgroup alongside the claims. Archived bytes/search receipts: `labs/sources/b18/receipt.json`. Course historical reconstruction is not Animus forecasting. Full 12-configuration RT matrix remains NOT_RUN / INCOMPLETE_SOURCE_PROTOCOL_GATE.
+
+## B18a · context as deployed model state (2026-10-04)
+
+- [TACO v2 §§3–4 and Figure3](https://arxiv.org/html/2602.05649v2): jointly trained compressor/predictor and repeated inference. [Pinned source archive and audit](labs/sources/b18a/manifest.json), git002f83bdb5b1776ca69b7916f993a82344a3aef7; HF checkpoint revisiond38ed9517764698a0b0064a7a8cb4197016349a3. Historical checkpoint mapping remains unresolved.
+- [TabPFN-2.5 v2](https://arxiv.org/html/2511.08667v2): distillation as a distinct deployment mechanism; its benchmark is not executed in B18a.
+- [Interpretable ML for TabPFN v2](https://arxiv.org/html/2403.10923v2): interpretation methods; B18a's replacement contrast is separately defined and not presented as SHAP/LOCO.
+- [B18a contract](labs/b18a-reproduction.md), [complete finite evidence](labs/evidence/b18a/summary.json), and [cache-path discrepancy audit](labs/sources/b18a/cache-path-audit.md). TACO's failed cached/uncached equivalence remains visible.
+
+
+## B19 · benchmark identity, contamination and non-IID evaluation (2026-10-04)
+
+- [BeyondArena v1 §§2/5 and Appendix F.2](https://arxiv.org/html/2606.30410v1): split contract, model comparison and missing-result policy; selected full figure remains source-gated.
+- [TabDPT v3 Appendix B.1](https://arxiv.org/html/2410.18164v3#A2.SS1): pretraining/evaluation overlap screening and its limitations.
+- [Enterprise versus public benchmarks v1 §§3–5](https://arxiv.org/html/2606.30452v1): task selection, semantic types, provider involvement and internal-data access boundary.
+- [Pinned BeyondArena source](https://github.com/autogluon/tabarena/tree/1ce4cae6c12972227dea6247bac83234a2915748), [DataFoundry source](https://github.com/TabArena/data-foundry/tree/72c30d48d26c01fba87b49efbc6f5d6ef67d2049). Archived full selected suite tables and discovery receipts in labs/sources/b19; no conclusion of global artifact absence.
+- [B19 source audit](labs/evidence/b19/source-audit.json), [reproduction contract](labs/b19-reproduction.md), [learner preregistration](labs/b19-preregistration.md).
+
+## B19a · predictive distribution scoring (2026-10-04)
+
+- [ScoringBench v3](https://arxiv.org/html/2603.29928v3): primary §§3/A/C/D; selected Tables1/4/5 fully reconstructed from archived author scores, not fresh fits. Historical KFold and pre-split imputation differences documented.
+- [Distributional regression with TFMs v1](https://arxiv.org/html/2603.08206v1): proper scoring rules, training objectives and finite-sample comparison; no separate full-training claim.
+- [Angelopoulos and Bates](https://arxiv.org/abs/2107.07511): split-conformal finite-sample marginal guarantee and assumptions.
+- [Autorank documentation](https://sherbold.github.io/autorank/): ranking/statistical summaries; local1.3.0 used explicitly.
+- [B19a lesson](./lessons/b19a-predictive-distributions.html) · [metric contract](./labs/b19a-metric-contract.md) · [source manifest](./labs/sources/b19a/manifest.json).
+
+
+## B19b forecasting sources (checked2026-10-04)
+
+- [TabPFN-TS v4](https://arxiv.org/html/2501.02945v4): temporal wrapper, GIFT metrics, Figure4.1 and AppendixA.3.
+- [Pinned wrapper](https://github.com/PriorLabs/tabpfn-time-series/tree/47dc9c46bb379f40b455d20b07aa1a891b21907e): full code, source/pseudocode differences, client/local identity limits.
+- [Pinned GIFT release](https://github.com/SalesforceAIResearch/gift-eval/tree/2c13c6ff6fd7557c4353674c800d41995f280233): all13 plotted models and97tasks, baseline correction history. Full archive under labs/sources/b19b; score replay is separate from fresh inference and historical figure identity.

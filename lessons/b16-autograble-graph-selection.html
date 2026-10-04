@@ -1,0 +1,157 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B16 · AutoGrable: selecting or declining a graph</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/partition-selection.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Research bridge</a></nav><h1 id="B16-%C2%B7-AutoGrable:-selecting-or-declining-a-graph">B16 &#183; AutoGrable: selecting or declining a graph<a class="anchor-link" href="#B16-%C2%B7-AutoGrable:-selecting-or-declining-a-graph">&#182;</a></h1><p class="subtitle">Research bridge · elective · choose a construction before training its GNN.</p>
+
+<p><a href="b15-parameter-free-encoders.html">B15</a> asked what information an encoder can see. <a href="b11-supervised-relational-baselines.html">B11</a> compared ways to process relational structure. Today we ask a question that comes first: <strong>which structure should the model receive at all?</strong> A schema supplies possible relationships; it does not guarantee that every relationship helps the task.</p>
+<p>Your tangible win: take eight rows, score every candidate column subset, and explain why a valid search can return <strong>no graph edges</strong>. This gives your Year 6 proposal a stronger baseline: the relational model must earn its communication channels.</p>
+<p><strong>Route:</strong> 20–30 minutes to trace; 30–45 minutes for the lab; revisit after 1, 7 and 30 days. Prerequisites: binary labels, held-out validation, and message passing. Each is restated below. <a href="../labs/b16-autograble-graph-selection.ipynb">Student notebook</a> · <a href="../labs/html/b16-autograble-graph-selection.html">Executed solution</a> · <a href="../reference/b16-autograble-graph-selection.html">Printable reference</a></p>
+<h2 id="Recall-before-reading">Recall before reading<a class="anchor-link" href="#Recall-before-reading">&#182;</a></h2><div id="b16-warmup"></div>
+<noscript><p>Recall: why must test labels stay out of model selection? Can two different graphs look identical to a message-passing model? What does an encoder's information boundary constrain?</p></noscript>
+
+<h2 id="1-%C2%B7-A-graph-is-a-choice-about-access">1 &#183; A graph is a choice about access<a class="anchor-link" href="#1-%C2%B7-A-graph-is-a-choice-about-access">&#182;</a></h2><p>A <strong>row</strong> represents an example. Its <strong>label</strong> is the outcome to predict: here either 0 or 1. A <strong>candidate column</strong> is a feature we permit the algorithm to turn into shared graph structure. The candidate list is fixed before looking at validation outcomes. Labels are never candidate features.</p>
+<p>An <strong>incidence graph</strong> has row nodes and value nodes. Selecting column A creates one value node for each distinct A value. Each row connects to its own A value node. Two rows with A=0 now share a communication route. A <strong>grable</strong> is the paper's name for a graph constructed from a table. Selecting nothing yields the <strong>trivial grable</strong>: row nodes with no cross-row edges. A row-local predictor can still use each row's features. Abstention does not mean refusing to predict. <a href="https://arxiv.org/html/2608.11431v1#S4">Paper §4</a></p>
+<p><strong>Message passing</strong> updates a node using its current features and aggregated messages from its neighbors. Shared neighbors let a prediction depend on other rows. But they can also introduce noise, cost or unsupported distinctions. AutoGrable searches for useful columns before paying to train the downstream model.</p>
+<section class="ps-board"><h3>Algorithm architecture · the signal example</h3><div class="ps-flow"><div class="ps-step"><strong>1 · Table and legal labels</strong>Eight rows: A = 00001111, y = A. Validation has fresh keys.<small>Test labels stay outside this selection path.</small></div><div class="ps-step"><strong>2 · Project → fit counts → score</strong>A creates {0,1,2,3} and {4,5,6,7}. Training P(1) = 0 and 1.<small>J(A) = 0 + 0.5 × 0.5 = 0.250.</small></div><div class="ps-step"><strong>3 · Choose or decline</strong>Compare empty 0.427, A 0.250, unique K 0.750.<small>Choose A; freeze the decision before test evaluation.</small></div><div class="ps-step"><strong>4 · Materialize the selected graph</strong>8 row nodes → 2 A-value nodes through 8 incidence edges.<small>A=0 and A=1 define the shared communication routes.</small></div><div class="ps-step ps-model"><strong>5 · Downstream model · not run here</strong>Unexpanded row features → message-passing layers → row prediction head.<small>This path explains the full system. RQ1/Table 1 tests selection only.</small></div></div></section>
+
+<p>The upper path is the load-bearing algorithm in this lab. With N training rows, m eligible columns and k selected columns, its inputs are N×m features and N labels. Each candidate produces one probability per validation row. The graph contains N row nodes, V distinct typed value nodes and Nk undirected incidence edges. A downstream model would map node features to hidden vectors and then to one output per row. <strong>Table 1 studies column recovery only: no GNN is trained there or in our finite experiment.</strong> The lower model path is shown to place selection in the whole system, not as evidence of training. <a href="https://arxiv.org/html/2608.11431v1#S5.SS1">Paper §5.1</a></p>
+<h2 id="2-%C2%B7-Partitions-make-the-construction-measurable">2 &#183; Partitions make the construction measurable<a class="anchor-link" href="#2-%C2%B7-Partitions-make-the-construction-measurable">&#182;</a></h2><p>A <strong>partition</strong> divides rows into nonoverlapping blocks. For a selected subset S, put rows together exactly when they agree on every column in S. Write this as <code>r ~S r′</code> when <code>r[S] = r′[S]</code>. Empty S gives one block; a unique key K gives eight singleton blocks. A singleton is a block containing just one row.</p>
+<p>Our eight training rows enumerate A/B pairs twice. A is 0 for rows 0–3 and 1 for rows 4–7; B is 0,0,1,1,0,0,1,1. K is unique. In the <strong>signal world</strong>, the label equals A. Validation and test repeat these A/B patterns with disjoint IDs and fresh K values. This controlled setup is deliberately constructed; it is not a sample of Adult.</p>
+<p>The <strong>block predictor</strong> estimates P(label=1) as the proportion of training labels equal to 1 inside a block. An unseen validation projection has no training block, so it falls back to the overall training proportion. It fits counts, even though the paper calls the scoring stage “training-free”: that phrase means no trained graph model, not no use of training labels.</p>
+<p><strong>Worked example.</strong> For S={A}, the A=0 block has four zeros and the A=1 block four ones. The estimated probabilities are 0 and 1. For S={K}, every training label can be memorized, but every validation key is unseen. All validation probabilities become 0.5. Perfect training purity alone does not establish generalization. <a href="https://arxiv.org/html/2608.11431v1#S2">Paper §2</a></p>
+<div id="b16-predict"></div>
+
+<section class="ps-board" data-partition-selection><h3>What does this subset remember?</h3><div class="ps-table" role="region" aria-label="Scrollable data table" tabindex="0"><table><thead><tr><th>Row</th><th>A</th><th>B</th><th>K</th><th>y</th></tr></thead><tbody><tr><td>r0</td><td>0</td><td>0</td><td>tr-0</td><td>0</td></tr><tr><td>r1</td><td>0</td><td>0</td><td>tr-1</td><td>0</td></tr><tr><td>r2</td><td>0</td><td>1</td><td>tr-2</td><td>0</td></tr><tr><td>r3</td><td>0</td><td>1</td><td>tr-3</td><td>0</td></tr><tr><td>r4</td><td>1</td><td>0</td><td>tr-4</td><td>1</td></tr><tr><td>r5</td><td>1</td><td>0</td><td>tr-5</td><td>1</td></tr><tr><td>r6</td><td>1</td><td>1</td><td>tr-6</td><td>1</td></tr><tr><td>r7</td><td>1</td><td>1</td><td>tr-7</td><td>1</td></tr></tbody></table></div><label>Selected columns <select name="subset"><option value="">Empty</option><option value="A" selected>A</option><option value="B">B</option><option value="K">K</option><option value="A,B">A + B</option><option value="A,K">A + K</option><option value="B,K">B + K</option><option value="A,B,K">A + B + K</option></select></label><label>Penalty λ <select name="penalty"><option value="0">0</option><option value="0.5" selected>0.5</option><option value="1">1</option></select></label><button type="button">Reset partition</button><div class="ps-blocks" data-blocks></div><output aria-live="polite">A: risk 0; occupancy 0.5; J=0.250 at λ=0.5.</output><p class="ps-baseline" data-baseline>Empty J=0.427 at λ=0.5.</p><noscript><p>A groups four zeros and four ones. K makes eight singleton blocks but validation uses new keys: p=0.5 and J=0.750.</p></noscript></section>
+
+<p><strong>Try it:</strong> hold the labels and split fixed. Switch A → K → A+B, then increase the penalty. State which change affects prediction and which only fragments the training sample. The board always preserves the empty-set baseline. The course scorer uses binary <strong>Brier loss</strong>, <code>(p−y)²</code>: the squared gap between a predicted probability p and the actual binary label y. Smaller is better; 0 is perfect and probabilities of 0.5 give loss 0.25.</p>
+<h2 id="3-%C2%B7-Charge-for-fragile-distinctions">3 &#183; Charge for fragile distinctions<a class="anchor-link" href="#3-%C2%B7-Charge-for-fragile-distinctions">&#182;</a></h2><p>Let <code>n_b</code> be the number of training rows in block b and <code>n</code> the total number of training rows. The <strong>occupancy penalty</strong> is</p>
+<p><code>Ω = (Σ_b √n_b) / n</code>.</p>
+<p>The symbol Σ means “sum over the occupied blocks.” Dividing by n makes the scale comparable across partitions of the same training sample. With eight rows: one block gives √8/8≈0.354; two equal blocks give (2+2)/8=0.5; eight singletons give 8/8=1. Splitting a positive block increases the numerator because √a+√b≥√(a+b). Finer partitions therefore incur at least as much occupancy cost.</p>
+<p>AutoGrable scores a candidate by <code>J(S) = validation risk + λΩ</code>. The nonnegative <strong>penalty weight λ</strong> states how much predictive improvement is needed to justify fragmentation. The course default is λ=0.5. In the signal world, empty S scores 0.25+0.5×0.354≈0.427; A scores 0+0.5×0.5=0.250; K scores 0.25+0.5×1=0.750. A earns its extra blocks; K does not. These are exact finite diagnostics, with displayed decimals rounded. <a href="https://arxiv.org/html/2608.11431v1#S2">Paper Eq.1 and Appendix C</a></p>
+<p>The paper gives a bound for a <strong>penalized-risk comparator</strong>, assuming independent validation draws, a bounded loss and candidates fixed independently of validation. It does not guarantee that every selected graph improves a GNN. Adaptive search over a fixed candidate family is covered by its uniform bound, but greedy search can add an optimization gap. Frequency encodings derived from validation features require care before invoking that conditional argument; a theorem's assumptions must match the implemented pipeline. Our repeated finite grid illustrates arithmetic, not a random-sampling generalization theorem. <a href="https://arxiv.org/html/2608.11431v1#A3.SS5">Appendix C.5–C.7</a></p>
+<h2 id="4-%C2%B7-A-good-objective-can-have-a-bad-search-path">4 &#183; A good objective can have a bad search path<a class="anchor-link" href="#4-%C2%B7-A-good-objective-can-have-a-bad-search-path">&#182;</a></h2><p>There are 2^m subsets of m candidate columns. For three columns, all eight are cheap to enumerate. With many columns, <strong>greedy forward search</strong> starts empty and accepts the best single-column addition only if J improves by more than a tolerance τ. <strong>Greedy backward search</strong> starts with all candidates and considers single-column removals. Neither is guaranteed to find the global minimum. A tolerance is a stopping threshold, not a confidence interval.</p>
+<p>Now change the world: the label is <strong>XOR</strong>, equal to 1 exactly when A and B differ. Each column alone has balanced labels; together they determine the outcome. At λ=0.5, empty J≈0.427, either single column J=0.5, and A+B J≈0.354. The pair is better, but forward search cannot cross the worse single-column step. Backward search first removes K and reaches A+B. <a href="https://arxiv.org/html/2608.11431v1#S3">Algorithm 1 and §3</a></p>
+<p><strong>Predict before changing the control:</strong> does increasing λ to 1 rescue forward search, or make the pair too expensive?</p>
+<section class="ps-board" data-greedy-search><h3>Trace a search, then compare with the oracle</h3><label>Label rule <select name="world"><option value="xor">XOR interaction</option><option value="signal">Signal y=A</option><option value="null">Null within blocks</option></select></label><label>Penalty λ <select name="penalty"><option value="0">0</option><option value="0.5" selected>0.5</option><option value="1">1</option></select></label><label>Search method <select name="method"><option value="forward">Forward additions</option><option value="backward">Backward removals</option><option value="exhaustive">Exhaustive oracle</option></select></label><button type="button">Reset search</button><div class="ps-lattice" data-lattice></div><p class="ps-path" data-path>∅ → stop</p><output aria-live="polite">XOR at λ=0.5: forward stops empty; A+B has lower J.</output><p class="ps-baseline">Baseline: XOR, λ=0.5. Forward stops at J=0.427; exhaustive and backward reach A+B at J=0.354. Highlight marks the selected subset; the entire candidate grid stays visible.</p><noscript><p>At λ=1, empty J=0.604 beats A+B J=0.707. Null at λ=0.5 selects empty with all three methods.</p></noscript></section>
+
+<p>An <strong>objective failure</strong> means the scoring rule itself prefers an unwanted construction. A <strong>search failure</strong> means the procedure misses a better value of its own score. At λ=0.5 the XOR forward result is a search failure. At λ=1, empty J≈0.604 beats A+B J≈0.707; abstention is now the exact objective's preference. Backward search still gets stuck at A+B: either intermediate singleton scores 0.750, worse than the pair. Both search directions can fail, even when they fail at different penalty settings. Neither result alone answers whether a separately trained GNN would help.</p>
+<p>The <strong>null world</strong> alternates labels within each A/B pair. None of A, B or their combinations predicts these held-out labels better than the marginal. K still memorizes training rows but never repeats. With λ&gt;0, empty is the best subset. Our implementation allows backward search to reach it. This is a finite example of justified abstention relative to the declared features and score; it is not a universal theorem that the task has no learnable rule.</p>
+<h2 id="5-%C2%B7-Check-what-the-graph-actually-exposes">5 &#183; Check what the graph actually exposes<a class="anchor-link" href="#5-%C2%B7-Check-what-the-graph-actually-exposes">&#182;</a></h2><p>The <strong>one-dimensional Weisfeiler–Leman procedure</strong>, or <strong>1-WL / colour refinement</strong>, repeatedly replaces each node's colour by a signature of its old colour and the multiset of neighbor colours and edge types. A multiset records repeats. Colours are equality labels, not numerical features with distances. If two nodes retain the same colour, a standard deterministic message-passing model with those initial features cannot distinguish them.</p>
+<p>The paper's Lemma 1 equates the projection partition with the stable row colours under two precise conditions: <strong>all row features are erased</strong>, and <strong>value nodes expose their typed identities <code>(column, value)</code></strong>. The actual downstream graph keeps the unexpanded row features. Its rows may therefore be more distinguishable than the structural partition used for scoring. Structural blocks are also not connected components: with A+B selected, row (0,0) can share A with (0,1) and B with (1,0), connecting different blocks. <a href="https://arxiv.org/html/2608.11431v1#S4">Paper §4, Lemma 1</a></p>
+<section class="ps-board" data-incidence-boundary><h3>Keep the edges; change the visible features</h3><label>Value-node input <select name="identity"><option value="typed">Expose typed identities</option><option value="anonymous">Only type and zero feature</option></select></label><label>Row-local input <select name="features"><option value="none">Erase all row features</option><option value="B">Retain unexpanded B</option></select></label><button type="button">Reset graph</button><div data-graph></div><output aria-live="polite">Typed A identities with erased row features: two row classes.</output><p class="ps-baseline">Baseline: same 8 rows and 8 incidence edges; typed value identities; no row features. Row colours show the computed stable partition.</p><noscript><p>Hide literal value identities: one row class. Keep typed identities and add row B: four classes. Labels y never enter the graph.</p></noscript></section>
+
+<p>In this fixed balanced graph, typed A identities give two structural row blocks. Hide the identities and both four-row stars are symmetric: all eight rows have one colour. Keep row-local feature B and the typed graph distinguishes four groups. These interventions alter what the model can observe; adding parameters cannot repair an identity that is never exposed. Our lab constructs the edges and executes refinement rather than assigning colours from the desired answer.</p>
+<h2 id="6-%C2%B7-Reproduce-the-mechanism;-audit-the-publication-separately">6 &#183; Reproduce the mechanism; audit the publication separately<a class="anchor-link" href="#6-%C2%B7-Reproduce-the-mechanism;-audit-the-publication-separately">&#182;</a></h2><div class="ps-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th>World · λ=0.5</th>
+  <th>Search</th>
+  <th>Selected</th>
+  <th style="text-align:right">Validation J</th>
+  <th style="text-align:right">Test Brier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>signal</td>
+  <td>exhaustive</td>
+  <td>A</td>
+  <td style="text-align:right">0.250</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>signal</td>
+  <td>forward</td>
+  <td>A</td>
+  <td style="text-align:right">0.250</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>signal</td>
+  <td>backward</td>
+  <td>A</td>
+  <td style="text-align:right">0.250</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>xor</td>
+  <td>exhaustive</td>
+  <td>A + B</td>
+  <td style="text-align:right">0.354</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>xor</td>
+  <td>forward</td>
+  <td>∅</td>
+  <td style="text-align:right">0.427</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+<tr>
+  <td>xor</td>
+  <td>backward</td>
+  <td>A + B</td>
+  <td style="text-align:right">0.354</td>
+  <td style="text-align:right">0.000</td>
+</tr>
+<tr>
+  <td>null</td>
+  <td>exhaustive</td>
+  <td>∅</td>
+  <td style="text-align:right">0.427</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+<tr>
+  <td>null</td>
+  <td>forward</td>
+  <td>∅</td>
+  <td style="text-align:right">0.427</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+<tr>
+  <td>null</td>
+  <td>backward</td>
+  <td>∅</td>
+  <td style="text-align:right">0.427</td>
+  <td style="text-align:right">0.250</td>
+</tr>
+</tbody>
+</table></div>
+<p>The complete finite run covers 72 subset scores and 27 selections. Test probabilities are frozen after validation selection, and all 256 possible test-label vectors leave selection and probabilities unchanged in the intervention case. A separate scorer checks all 216 saved test predictions. The graph check covers 24 graphs and 1,536 pairwise same-block relations. These are author verification results, not your completion score.</p>
+<p>The primary reproduction target is <strong>B16-AUTOGRABLE-TABLE1</strong>: five Adult-derived families × two signatures × two search directions × two λ values × ten seeds = <strong>400 selection runs</strong>. The targets are exact selected-column recovery and recall of the planted columns, not test accuracy. No fresh Table 1 runs have executed. The source release lacks the required synthetic-task driver, seed/split recipe and enough generation settings to reconstruct it honestly. <a href="https://arxiv.org/html/2608.11431v1#S5.SS1">Table 1 and Appendix D</a></p>
+<p>The release at commit <code>1cfad48ae8d8362ad7eca10f9fe6db115004975e</code> also differs materially from the paper:</p>
+<div class="ps-table" role="region" aria-label="Scrollable data table" tabindex="0"><table>
+<thead>
+<tr>
+  <th>Audit</th>
+  <th>Paper / declared interpretation</th>
+  <th>Measured pinned-release behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Backward abstention</td>
+  <td>Algorithm 1 can remove the last column</td>
+  <td>Stops with one; null fixture keeps B at J=0.750 although empty scores 0.677 using 0–1 loss</td>
+</tr>
+<tr>
+  <td>Frequency population</td>
+  <td>Eq.2 recodes T=train∪validation</td>
+  <td>Train codes use train counts; validation uses union counts: the same a receives 2 versus 4</td>
+</tr>
+<tr>
+  <td>Value-node features</td>
+  <td>Lemma 1 exposes typed value identity</td>
+  <td>Builder emits zero vectors; balanced A graph has one structural row class</td>
+</tr>
+</tbody>
+</table></div>
+<p>The graph counterexample concerns the actual builder features with row features erased. The TabArena encoder also offers per-ID embeddings and random value features; both are off by default, but enabling them changes the information exposed. Builder features alone do not certify every downstream configuration.</p>
+<p>The 0–1 source-audit scores above differ from the course Brier scores because the loss differs. We matched <strong>144 scoring-primitive comparisons</strong> using aligned 0–1 and clipped log losses. This narrow parity check does not resolve the three discrepancies or establish whole-source parity. In particular, our backward-to-empty implementation follows the paper and deliberately differs from the pinned release. <a href="https://github.com/TamaraCucumides/autoGrable/tree/1cfad48ae8d8362ad7eca10f9fe6db115004975e">Pinned source</a></p>
+<p><strong>Selected paper verdict: <code>INCOMPLETE_SOURCE_PROTOCOL_GATE</code>; execution <code>NOT_RUN</code>.</strong> The full source packet, discrepancies and guarded operator ship with the notebook. It authenticates sources and refuses a paper run until an actual experiment driver/configuration is recovered. Inventing a driver with convenient defaults would make a new course experiment. The complete paper's other benchmarks are <code>NOT_RUN</code>. Cloud spend is $0. <a href="../labs/b16-reproduction.md">Reproduction contract</a> · <a href="../labs/evidence/b16/source-audit.json">Source audit</a> · <a href="../labs/sources/b16/manifest.json">Source manifest</a></p>
+<h2 id="Lab-%C2%B7-implement-the-decision">Lab &#183; implement the decision<a class="anchor-link" href="#Lab-%C2%B7-implement-the-decision">&#182;</a></h2><p>Use the <a href="../labs/b16-autograble-graph-selection.ipynb">portable notebook</a>. Three live tasks implement training-only block probabilities with unseen fallback, the occupancy penalty, and exhaustive/greedy selection including abstention. The full subset scorer, fixture generator, typed graph constructor and colour-refinement algorithm are visible. Immediate checks distinguish bad arithmetic, invalid information access and a genuine local-search trap.</p>
+<p>Before opening the <a href="../labs/html/b16-autograble-graph-selection.html">executed solution</a>, predict the selected set in signal/XOR/null at λ=0.5. Run the complete grid, then explain why a pure key block loses on unseen keys. The notebook embeds figures and the source packet; Python's standard library suffices for the learning lane. A local notebook pass does not establish live Colab execution.</p>
+<h2 id="EXIT-%C2%B7-defend-your-construction">EXIT &#183; defend your construction<a class="anchor-link" href="#EXIT-%C2%B7-defend-your-construction">&#182;</a></h2><div id="b16-teachback"></div>
+<noscript><p>Write a short defense: why does forward search miss A+B for XOR? When does empty become the exact optimum? Which graph features does Lemma 1 require? What remains unrun?</p></noscript>
+
+<p>Your answer must separate validation selection from test evaluation, objective failure from search failure, and projection blocks from full-feature graph distinguishability. Learner status remains <strong>PENDING_WRITTEN_DEFENSE</strong> until you submit your work. Ask follow-up questions here about any formula, code path or source discrepancy.</p>
+<p><strong>Spacing:</strong> in 1 day, derive Ω for one block versus eight singletons from memory. In 7 days, reconstruct the XOR search trap. In 30 days, audit the feature assumptions of a graph in your own project. <a href="../plan/year-5-6-bridge.md#b17">B17's plan</a> then asks when representations can be reused across tasks.</p>
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/html/2608.11431v1">AutoGrable v1</a>, §§2–4, Table 1 and Appendices C–D. Read Algorithm 1 beside the pinned <code>selection.py</code>; explain the one-column stopping difference before treating a library call as a reproduction.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/b16-evidence.js"></script><script src="../assets/partition-selection.js"></script></body></html>
