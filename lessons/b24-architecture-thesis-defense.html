@@ -1,0 +1,308 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B24 · Defend the architecture and the thesis</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/benchmark-evidence.css"><link rel="stylesheet" href="../assets/research-defense.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebook gallery</a></nav><h1 id="B24-%C2%B7-Defend-the-architecture-and-the-thesis">B24 &#183; Defend the architecture and the thesis<a class="anchor-link" href="#B24-%C2%B7-Defend-the-architecture-and-the-thesis">&#182;</a></h1><p><strong>The win:</strong> write a claim that your evidence can support, choose a fair way to challenge it, and say what result would make you change your mind.</p>
+<p><a href="b23-declared-comparison.html">Previous: B23 · reproduce one comparison</a> · <a href="b18a-context-state.html">Context and cost: B18a</a> · <a href="b19a-predictive-distributions.html">Metrics: B19a</a> · <a href="../plan/year-5-6-bridge.md#b24">Next: Year 6 handoff</a></p>
+<p><a href="../labs/b24-architecture-thesis-defense.ipynb">Student notebook</a> · <a href="../labs/html/b24-architecture-thesis-defense.html">Executed notebook</a> · <a href="../reference/b24-architecture-thesis-defense.html">Reference card</a> · <a href="../reference/b24-proposal-template.html">Five-page proposal template</a> · <a href="../labs/b24-proposal-template.md">Editable template</a> · <a href="../labs/b24-reproduction.md">Reproduction contract</a></p>
+<p><strong>Route through the lesson.</strong> Spend 10 minutes on the claim and worked example, 15 on baselines and falsification, then use the notebook to audit the evidence. Draft the proposal over later sessions. This is the bridge's exit defense; reading it does not mark the bridge complete.</p>
+<h2 id="1-%C2%B7-Recall-the-boundary-before-defending-it">1 &#183; Recall the boundary before defending it<a class="anchor-link" href="#1-%C2%B7-Recall-the-boundary-before-defending-it">&#182;</a></h2><div id="b24-warmup"></div>
+
+<p>Without reopening B23, explain why ten support draws are not ten databases. Recall how B18a counts a rebuilt context and how B19a separates ranking from probability quality. Write one sentence each, then check the linked lessons.</p>
+<p>B23 asked whether a declared computation was reproduced. B24 asks which research decision that computation justifies. The mission is to test whether learned relational models deliver value beyond strong single-table systems. A defense must therefore explain where information enters, what the baseline receives, and which observation would contradict the claimed benefit.</p>
+<p>A <strong>claim</strong> is a statement about a specified population and procedure. <strong>Evidence</strong> is the observed result and its provenance. A <strong>warrant</strong> is the reasoning connecting the evidence to the claim. A <strong>falsification test</strong> is a planned observation that would make us revise the claim. These four pieces belong together.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> “It scored higher” is an observation. “Therefore graph attention is necessary” needs another experiment.</p>
+</blockquote>
+<h2 id="2-%C2%B7-Start-with-the-result-we-actually-have">2 &#183; Start with the result we actually have<a class="anchor-link" href="#2-%C2%B7-Start-with-the-result-we-actually-have">&#182;</a></h2><p><strong>Frozen experiment.</strong> <code>B24-RESEARCH-DEFENSE-AUDIT</code> replays the complete B23 packet: 30 published-model checkpoint evaluations and ten course logistic fits. Each arm uses the same ten draws of 512 labeled supports and the same 702 queries from <code>rel-f1/driver-dnf</code>. A <strong>support</strong> is a labeled example available to the predictor. A <strong>query</strong> is a row whose answer is withheld until evaluation.</p>
+<p>The primary reading is <a href="https://arxiv.org/html/2603.03805v5#A6">RDB-PFN v5, evaluation protocol and Table 9</a>. Inspect its selected column, then compare the <a href="../labs/b23-reproduction.md">B23 frozen contract</a>. All B23 inputs, target orientation, preprocessing and checkpoints remain fixed. B24 changes only the audit implementation; it makes no new model predictions.</p>
+<div id="b24-predict"></div>
+
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Mean AUROC</th>
+  <th style="text-align:right">Sample SD over supports</th>
+  <th>Evidence lane</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>RDBPFN</td>
+  <td style="text-align:right">0.721938</td>
+  <td style="text-align:right">0.019983</td>
+  <td>Selected published configuration</td>
+</tr>
+<tr>
+  <td>RDBPFN_single</td>
+  <td style="text-align:right">0.663990</td>
+  <td style="text-align:right">0.034177</td>
+  <td>Selected published configuration</td>
+</tr>
+<tr>
+  <td>TabICLv1.1</td>
+  <td style="text-align:right">0.717571</td>
+  <td style="text-align:right">0.009769</td>
+  <td>Selected published configuration</td>
+</tr>
+<tr>
+  <td>Logistic</td>
+  <td style="text-align:right">0.643294</td>
+  <td style="text-align:right">0.085891</td>
+  <td>Course logistic baseline</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Worked example.</strong> The mean paired RDB-PFN minus TabICL effect is <strong>+0.004366 AUROC</strong>. RDB-PFN wins on six of the ten draws. “Paired” means subtracting model scores with the same support identity before averaging. AUROC measures how often a positive example ranks above a negative one, with half credit for a tie. It does not establish calibrated probabilities. The <strong>sample standard deviation (SD)</strong> describes how scores vary across support draws: subtract their mean, square the differences, sum them, divide by nine for ten draws, then take the square root. It is not a confidence interval for performance on new databases.</p>
+<figure class="defense-figure" tabindex="0" role="region" aria-label="All ten paired effects against each comparator; one reused task, not ten databases." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b24/effects.png" alt="All ten paired effects against each comparator; one reused task, not ten databases." style="display:block;width:100%;min-width:700px;height:auto"><figcaption>All ten paired effects against each comparator; one reused task, not ten databases. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>A defensible statement is: “On this released F1 task and these ten support draws, RDB-PFN has a higher mean AUROC than TabICL v1.1.” A stronger statement about other databases needs independent database evidence. A statement about graph-native inference is unsupported by this comparison: RDB-PFN and TabICL here both consume the same materialized feature table.</p>
+<p><strong>Independent replay.</strong> B24 authenticates the archive, checks every complete <code>(driverId, date)</code> identity, support identity and label, recomputes all 40 AUROCs using average ranks, and reconstructs all ten logistic probability vectors from saved coefficients. The largest AUROC discrepancy is below <code>1.2e-16</code>; the baseline vectors agree exactly. These are replay checks of the B23 artifacts, not another fit.</p>
+<blockquote>
+<p><strong>Scope check.</strong> Historical checkpoint identity and raw feature availability remain <code>NOT_ESTABLISHED</code>. The checkpoint uses width 96 where the paper appendix describes 128. Released labels retain their original orientation, which complements the current raw DNF reconstruction. Full feature regeneration, pretraining and the whole-paper benchmark remain <code>NOT_RUN</code>. Numerical agreement cannot resolve those gaps. B23's fixed logistic comparator is not tuned trees.</p>
+</blockquote>
+<h2 id="3-%C2%B7-Defend-an-information-path,-not-a-model-name">3 &#183; Defend an information path, not a model name<a class="anchor-link" href="#3-%C2%B7-Defend-an-information-path,-not-a-model-name">&#182;</a></h2><p>A <strong>representation</strong> is the form in which information reaches the predictor. An <strong>architecture</strong> is the set of operations mapping that representation to an output. A <strong>training prior</strong> is the distribution of tasks used to learn the weights. Changing any one can change predictions. Name which one your hypothesis concerns.</p>
+<p><strong>Worked example: two histories, one summary.</strong> History A contains values <code>[0, 1]</code>; history B contains <code>[0.5, 0.5]</code>. Both means equal <code>0.5</code>. Their population variances are <code>0.25</code> and <code>0</code>. A predictor receiving only the mean cannot distinguish them. This is loss in the representation, not proof that the predictor is weak. Add variance to the flat features and the distinction returns.</p>
+<figure class="defense-figure" tabindex="0" role="region" aria-label="Illustrative histories: variance repairs a distinction lost by mean-only flattening." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b24/architecture.png" alt="Illustrative histories: variance repairs a distinction lost by mean-only flattening." style="display:block;width:100%;min-width:700px;height:auto"><figcaption>Illustrative histories: variance repairs a distinction lost by mean-only flattening. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>The diagram asks a precise question: <strong>which operation can preserve the distinction?</strong> For A, subtract the mean to get <code>[-0.5, 0.5]</code>, square to get <code>[0.25, 0.25]</code>, and average to get <code>0.25</code>. For B, both centered values are zero. A learned neighbor aggregator might learn a useful distinction; a hand-built variance feature already supplies this one. Neither is guaranteed to win a real task.</p>
+<p>Three architecture paths belong in your proposal:</p>
+<ul>
+<li><strong>Flat path:</strong> legal historical records → fixed aggregates or deep feature synthesis → vector → trees, a multilayer perceptron (MLP), or a tabular foundation model (TFM) → prediction. An MLP is a stack of learned linear transformations and nonlinear activations. Deep feature synthesis composes declared aggregations along table relationships. It can retain substantial relational information.</li>
+<li><strong>Graph path:</strong> the same legal records → typed entities and foreign-key edges → learned neighbor messages → entity representation → task head. A task head converts the learned representation into the prediction. See <a href="b11-supervised-relational-baselines.html">RelGNN/RelGT mechanisms in B11</a>.</li>
+<li><strong>Cell path:</strong> legal table cells and their row/column/relationship identities → typed cell tokens → allowed attention operations → task output. Attention combines permitted source vectors according to learned weights. See <a href="b10-relational-transformer.html">RT in B10</a>. Trace the actual sampler as well as the attention mask.</li>
+</ul>
+<p>RDB-PFN belongs to the flat inference path even though its pretraining generator is relational. TabSTAR's parameter updates differ from forward-only in-context adaptation. A hypernetwork generates predictor weights; a support-context method supplies labeled input state. <a href="b13-synthetic-relational-data.html">B13</a>, <a href="b07-semantic-transfer.html">B07</a>, and <a href="b07a-hypernetworks.html">B07a</a> supply the model-specific traces.</p>
+<p><strong>Your task.</strong> Sketch your chosen path. Mark one load-bearing operation, its legal inputs, its output, and a simpler operation that could replace it. Predict the effect of that replacement before running it. An <strong>ablation</strong> changes a specified part while preserving the rest of the comparison.</p>
+<h2 id="4-%C2%B7-Make-the-baseline-capable-of-disproving-you">4 &#183; Make the baseline capable of disproving you<a class="anchor-link" href="#4-%C2%B7-Make-the-baseline-capable-of-disproving-you">&#182;</a></h2><p>A <strong>baseline</strong> is a comparator answering a research question. Its value comes from the alternative explanation it tests. A weak baseline may be easy to beat while leaving the central explanation untested.</p>
+<p><strong>Worked decision.</strong> If the thesis says learned graph aggregation improves over engineered summaries, include tuned trees with time-safe features. Give both methods access to the same eligible historical records and target labels. Their representations may differ; record the transformation and cost of building each. Also include a strong flat foundation model to test whether task pretraining, rather than graph computation, explains the gain.</p>
+<p><strong>Matched information</strong> means comparable access to raw observations, labels and prediction-time history. It does not require identical tensors for a graph and a tree. <strong>Matched selection budget</strong> means a declared equal opportunity to choose a configuration using training/validation data. Log total training, feature engineering, inference, failed attempts and human design effort separately. Equal tuning budgets do not equalize inherited pretraining cost.</p>
+<p>Use the inventory below to make decisions. “Core” means required in the proposed future comparison unless a task-specific reason is recorded. “Conditional” means include when its mechanism addresses the hypothesis. “Defer” means a named limitation and a reopening condition, never “it would probably lose.” <strong>No inventory row is a new B24 training result.</strong></p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Family / evidence route</th>
+  <th>Decision for the example proposal</th>
+  <th>What it tests; reason to reopen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Tuned trees + time-safe FE · <a href="b14-flattening-challenge.html">B14</a></td>
+  <td><strong>Core</strong></td>
+  <td>Can strong engineered summaries explain the gain? Include full feature/search cost and legal history.</td>
+</tr>
+<tr>
+  <td>RealMLP / TabM / TabPack · <a href="b02-numerical-embeddings-and-ensembles.html">B02</a></td>
+  <td><strong>Core family; select and justify</strong></td>
+  <td>Could a strong supervised flat neural predictor or ensemble explain it? Pin shared versus packed parameters and budget.</td>
+</tr>
+<tr>
+  <td>TabR / ModernNCA · <a href="../plan/year-5-6-bridge.md#b01">retrieval background</a></td>
+  <td><strong>Conditional</strong></td>
+  <td>Include when local similarity is the proposed advantage; otherwise document neighborhood/metric cost and defer.</td>
+</tr>
+<tr>
+  <td>TabPFN · <a href="b03-pfn-tabpfn-generations.html">B03</a></td>
+  <td><strong>Core candidate</strong></td>
+  <td>Strong synthetic-pretrained flat prediction. Choose one version within task/feature/class limits.</td>
+</tr>
+<tr>
+  <td>TabICL · <a href="b04-tabicl-scalable-icl.html">B04</a></td>
+  <td><strong>Core</strong></td>
+  <td>Strong flat ICL comparator. B23 uses v1.1; a current v2 run is a separate versioned comparison.</td>
+</tr>
+<tr>
+  <td>TabDPT / Turbo · <a href="b05-tabdpt-real-data-retrieval.html">B05</a></td>
+  <td><strong>Conditional</strong></td>
+  <td>Test real-data pretraining plus retrieval; admit overlap and target-free retrieval before execution.</td>
+</tr>
+<tr>
+  <td>Mitra / Mitra-v2 · <a href="b06-mitra-prior-mixtures.html">B06</a></td>
+  <td><strong>Conditional</strong></td>
+  <td>Does prior diversity or adaptation explain benefit? Distinguish fine-tuned from forward-only settings.</td>
+</tr>
+<tr>
+  <td>CARTE / ConTextTab / TabSTAR · <a href="b07-semantic-transfer.html">B07</a></td>
+  <td><strong>Conditional on useful text/semantics</strong></td>
+  <td>Include name/text controls when semantic information is material. For anonymous numeric inputs, explain omission.</td>
+</tr>
+<tr>
+  <td>SAP-RPT-1-OSS · <a href="https://huggingface.co/SAP/sap-rpt-1-oss">official card</a></td>
+  <td><strong>Alias of ConTextTab</strong></td>
+  <td>Do not double-count the same checkpoint. Commercial SAP variants require separate access records.</td>
+</tr>
+<tr>
+  <td>MotherNet / HyperFast / iLTM · <a href="b07a-hypernetworks.html">B07a</a></td>
+  <td><strong>Conditional on repeated serving</strong></td>
+  <td>Does generating a predictor amortize task construction? Count rebuilds and any retained retrieval state.</td>
+</tr>
+<tr>
+  <td>TabFlex / Wide / Orion / TabSwift · <a href="b04a-scaling-rows-features-classes.html">B04a</a></td>
+  <td><strong>Conditional scaling control</strong></td>
+  <td>Select one matching the stressed axis: rows, features or classes. A capacity claim alone does not establish accuracy.</td>
+</tr>
+<tr>
+  <td>RDBLearn / TabPFN-Rel · <a href="b14-flattening-challenge.html">B14</a></td>
+  <td><strong>Core relational-information baseline</strong></td>
+  <td>How much can stronger flattening/aggregation recover? Pin the information boundary and materialization protocol.</td>
+</tr>
+<tr>
+  <td>RelGNN / RelGT · <a href="b11-supervised-relational-baselines.html">B11</a></td>
+  <td><strong>Core graph family</strong></td>
+  <td>Test learned relational computation directly. Select one justified architecture and preserve task-specific tuning.</td>
+</tr>
+<tr>
+  <td>RT-v1 / accessible relational FM · <a href="b10-relational-transformer.html">B10</a>, <a href="b12-adaptation-mechanisms.html">B12</a></td>
+  <td><strong>Conditional on hypothesis/access</strong></td>
+  <td>Test cell-level or cross-task transfer when authenticated checkpoints and legal inputs are available. Missing access is not a negative result.</td>
+</tr>
+<tr>
+  <td>Griffin / OpenRFM / KumoRFM · <a href="b12-adaptation-mechanisms.html">B12</a></td>
+  <td><strong>Conditional, each access mode separate</strong></td>
+  <td>State whether weights, context or both adapt. Public and provider-controlled systems need distinct reproducibility records.</td>
+</tr>
+<tr>
+  <td>RDB-PFN / PluRel · <a href="b13-synthetic-relational-data.html">B13</a></td>
+  <td><strong>RDB-PFN evidence; PluRel conditional</strong></td>
+  <td>Relational synthetic pretraining is distinct from graph-native prediction. B23 supports a released flat-input result only.</td>
+</tr>
+<tr>
+  <td>LimiX · <a href="https://github.com/limix-ldm-ai/LimiX">official release</a></td>
+  <td><strong>Defer joint-objective extension</strong></td>
+  <td>Ranking-only example does not test joint imputation. Reopen when missing-value modeling is the hypothesis; freeze exact release/terms.</td>
+</tr>
+<tr>
+  <td>TabFM · <a href="https://arxiv.org/html/2609.37959v1">primary report</a></td>
+  <td><strong>Conditional flat comparator</strong></td>
+  <td>Base, TabFM+ and TabFM-Auto differ in ensembling/feature/search work. Reopen after the chosen operating point fits the declared budget.</td>
+</tr>
+<tr>
+  <td>EXAONE · <a href="https://arxiv.org/html/2608.25774v1">primary report</a></td>
+  <td><strong>Conditional flat comparator</strong></td>
+  <td>Cross-axis processing is another explanation for strong flat predictions. Select on development evidence and budget, not final test rank.</td>
+</tr>
+<tr>
+  <td>Nori · <a href="https://huggingface.co/Synthefy/Nori/blob/main/README.md">official card</a></td>
+  <td><strong>Conditional flat comparator</strong></td>
+  <td>Include if the pinned released task/configuration fits the comparison; model-card access is not full pretraining evidence.</td>
+</tr>
+<tr>
+  <td>RT-J · <a href="https://star-project.stanford.edu/rt-j/">author page</a></td>
+  <td><strong>Defer until artifact admission</strong></td>
+  <td>A separate candidate from RT-v1; require original checkpoint/code/protocol identity before a named reproduction.</td>
+</tr>
+<tr>
+  <td>Seldon · <a href="https://www.neuralk.ai/white-paper/seldon-foundation-made-tabular">provider report</a></td>
+  <td><strong>Excluded from B24 execution</strong></td>
+  <td>Zero-paid-compute replay does not evaluate provider access. Reopen with a matched protocol and approved cost; provider benchmark is not independent replication.</td>
+</tr>
+<tr>
+  <td>NEXUS · <a href="https://fundamental.tech/nexus">official product page</a></td>
+  <td><strong>Excluded from B24 execution</strong></td>
+  <td>Product/API claims are insufficient for a numerical comparison. Reopen with reproducible inputs, outputs, version and approved access budget.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Current candidate check · 4 October 2026.</strong> The <a href="../labs/sources/b24/candidate-audit.json">source receipt</a> records the dated official pages and access results. This is a candidate/source audit, not a current leaderboard. LimiX-2, TabFM, EXAONE, Nori and RT-J remain explicit decisions even if their elective was skipped. Seldon and NEXUS provider claims require the same information/cost protocol before comparison. A provider-controlled benchmark is not independent verification.</p>
+<p><strong>Selection rule.</strong> Pick a compact set that can falsify the chosen explanation. If the full comparison exceeds the budget, report the missing runs and narrow the empirical claim. Do not remove a strong competitor after seeing its test score. Cite both the reason for exclusion and the evidence that would reopen the decision.</p>
+<h2 id="5-%C2%B7-Freeze-two-ways-the-thesis-could-fail">5 &#183; Freeze two ways the thesis could fail<a class="anchor-link" href="#5-%C2%B7-Freeze-two-ways-the-thesis-could-fail">&#182;</a></h2><p>A falsification rule must name the task, challenger, reference, primary metric, direction, numerical threshold, matched information and selection budget, and the action taken if the rule fires. <strong>Preregistration</strong> means fixing those decisions before inspecting the evaluation outcomes they govern.</p>
+<p>For a higher-is-better metric such as AUROC, define the oriented effect as challenger minus reference. For a lower-is-better loss, define it as reference minus challenger. Positive then always favors the challenger. A rule such as “revise if mean effect is at most zero” has an unambiguous boundary: a tie triggers revision.</p>
+<ol>
+<li><strong>Simpler-baseline test.</strong> On a named future task, compare the proposed relational method with tuned trees plus time-safe features. If the prespecified paired mean effect is at most zero, withdraw superiority on that task. Preserve every planned run, including failures. A practical margin greater than zero can be chosen before evaluation if the deployment benefit requires it.</li>
+<li><strong>Untouched-task test.</strong> Lock a database/task that has not informed checkpoint, architecture, feature, prior or threshold selection. Compare with the locked strongest baseline. If the effect is at most the prespecified threshold, narrow the transfer claim. Record prior dataset use across this course; another F1 support seed is not an untouched task.</li>
+</ol>
+<p>An untouched task is stronger evidence than another seed, but one new task still cannot establish universal transfer. If no genuinely untouched candidate is available, record <code>PENDING_TASK_RESERVATION</code>; do not relabel a reused benchmark. Uncertainty should match the sampling unit: show support variability within tasks and task-level variability when claiming cross-task benefit.</p>
+<section class="defense-board" data-falsification-board><h3>Predict when the reversal rule fires</h3><p class="scope">A hypothetical future comparison. Change the threshold only to explore a different preregistration, never after observing real test results.</p><div class="defense-controls"><label>Illustrative effect: <span data-effect>-0.005</span><input name="effect" type="range" min="-0.03" max="0.03" step="0.005" value="-0.005"></label><label>Frozen threshold: <span data-threshold>0.000</span><input name="threshold" type="range" min="0" max="0.02" step="0.005" value="0"></label><label>Information and selection budget matched<input name="matched" type="checkbox" checked></label><button type="button">Reset</button></div><output aria-live="polite">Illustrative effect −0.005 ≤ threshold0.000: REVISE the task-specific superiority claim. Proposed tests NOT_RUN.</output><noscript><p>A tie at threshold also triggers revision. If information or selection budgets differ without a declared design, the result cannot answer the matched-comparison question.</p></noscript></section>
+
+<p><strong>Metric contract from B19a.</strong> State whether the decision needs ranking, class probabilities, a point estimate or a predictive distribution. The example F1 claim is ranking-only, so AUROC is primary and calibration is unestablished. <strong>Calibration</strong> asks whether stated probabilities agree with observed frequencies. A <strong>proper probability score</strong> rewards reporting the true probability distribution in expectation. If a downstream decision uses probabilities, predeclare such a score, a separate calibration partition and calibration diagnostics. Do not fit calibration on final test labels. <a href="../labs/b19a-metric-contract.md">Use the metric/calibration contract</a>.</p>
+<p><strong>Context contract from B18a.</strong> Freeze support selection, support-label availability, preprocessing, checkpoint, cache identity, update trigger, rebuild frequency, cold/warm latency, memory and total cost. Define what happens when an entity or label arrives late. Changing a support row can change the deployed predictor without changing weights. <a href="b18a-context-state.html">Review context as state</a>.</p>
+<p><strong>Task expansion is conditional.</strong> If your thesis forecasts future outcomes, add B19b's horizon, origin and as-of covariate contract. For a static classification thesis, explicitly mark forecasting out of scope. <a href="../labs/b19b-task-contract.md">Forecasting contract</a>.</p>
+<h2 id="6-%C2%B7-A-score-cannot-repair-invalid-evidence">6 &#183; A score cannot repair invalid evidence<a class="anchor-link" href="#6-%C2%B7-A-score-cannot-repair-invalid-evidence">&#182;</a></h2><p>The defense rubric has five axes. Score each 0 for missing/invalid, 1 for partial, or 2 for complete and justified. An assessor must read the actual proposal and evidence; string-filled fields are not proof.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Axis</th>
+  <th>What earns 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Protocol validity</td>
+  <td>Frozen identities, temporal availability, selection and metric; unresolved gaps bar claims needing them.</td>
+</tr>
+<tr>
+  <td>Baseline fairness</td>
+  <td>Strong relevant comparators, matched information and selection budgets, justified exclusions.</td>
+</tr>
+<tr>
+  <td>Reproducibility</td>
+  <td>Named scope, executable path, immutable inputs/predictions and complete evidence for the declared claim.</td>
+</tr>
+<tr>
+  <td>Evidence interpretation</td>
+  <td>Effect and variability at the right unit; source, replay, fresh execution and historical claims separated.</td>
+</tr>
+<tr>
+  <td>Falsifiability</td>
+  <td>Two concrete reversal tests with untouched-task audit and a decision that changes if they fail.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Eligibility requires <strong>at least 8/10, no zero, no unresolved leakage, and the required reproduction evidence</strong>. A proposal about future research may cite complete selected-release evidence while declaring historical validity open. A claim of historically valid deployment cannot pass using the same packet. The assessor determines which gate the actual claim requires.</p>
+<figure class="defense-figure" tabindex="0" role="region" aria-label="Illustrative eligibility cases; missing validity cannot be repaired with rubric points." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b24/gates.png" alt="Illustrative eligibility cases; missing validity cannot be repaired with rubric points." style="display:block;width:100%;min-width:700px;height:auto"><figcaption>Illustrative eligibility cases; missing validity cannot be repaired with rubric points. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<section class="defense-board" data-defense-board><h3>Try to compensate for a missing gate</h3><p class="scope">Hypothetical scores and evidence flags. Changing these controls never changes B23 provenance or assesses your work.</p><div class="defense-controls"><label>Protocol<select data-score name="protocol"><option value="0">0 · missing</option><option value="1">1 · partial</option><option value="2" selected>2 · justified</option></select></label><label>Baselines<select data-score name="baselines"><option value="0">0 · missing</option><option value="1">1 · partial</option><option value="2" selected>2 · justified</option></select></label><label>Reproducibility<select data-score name="reproducibility"><option value="0">0 · missing</option><option value="1">1 · partial</option><option value="2" selected>2 · justified</option></select></label><label>Interpretation<select data-score name="interpretation"><option value="0">0 · missing</option><option value="1">1 · partial</option><option value="2" selected>2 · justified</option></select></label><label>Falsifiability<select data-score name="falsifiability"><option value="0">0 · missing</option><option value="1">1 · partial</option><option value="2" selected>2 · justified</option></select></label><label>Required reproduction complete<input name="reproduction" type="checkbox"></label><label>Unresolved leakage<input name="leakage" type="checkbox" checked></label><button type="button">Reset</button></div><output aria-live="polite">Hypothetical rubric 10/10: NOT ELIGIBLE. Reproduction pending; unresolved leakage. Actual learner: pending written defense.</output><noscript><p>Manually remove both evidence blockers, then try scores [2,2,2,2,0]. The total is8 but the zero still blocks eligibility.</p></noscript></section>
+
+<blockquote>
+<p><strong>Scope check.</strong> The controls simulate hypothetical assessment inputs. They do not change the actual B23 evidence or grade your writing. Your status remains <code>PENDING_WRITTEN_DEFENSE</code> until your submission is assessed. A replay proves executable evidence, not learner mastery.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Build-the-five-page-defense">7 &#183; Build the five-page defense<a class="anchor-link" href="#7-%C2%B7-Build-the-five-page-defense">&#182;</a></h2><p>Open the <a href="../reference/b24-proposal-template.html">printable proposal template</a>. It supplies five page-sized prompts, not a filled learner answer:</p>
+<ol>
+<li><strong>Hypothesis and claim:</strong> population, mechanism, practical motivation, current evidence and nonclaims.</li>
+<li><strong>Architecture and coverage:</strong> your end-to-end information path and justified family inventory.</li>
+<li><strong>Frozen protocol:</strong> identities, splits, availability, selection, metrics, context/update/cost contracts.</li>
+<li><strong>Evidence and limits:</strong> B23 replay, per-draw effects, deviations, run status and missing historical facts.</li>
+<li><strong>Falsification and decision:</strong> two reserved tests, rubric evidence and next research action.</li>
+</ol>
+<p><strong>A short worked opening, not your submission.</strong> “I hypothesize that learned neighbor aggregation can improve a specified future task beyond tuned trees with time-safe aggregates at a fixed selection budget. B23 motivates studying pretrained predictors: it shows a small positive mean RDB-PFN–TabICL difference on one released F1 task. Both methods use flattened inputs, so this does not establish my graph hypothesis. I will test the graph-specific claim with matched eligible records and a strong flat comparator. Missing historical feature provenance bars a deployment-validity claim from B23.”</p>
+<p>The notebook implements three decisions you need to defend: pair effects by draw identity, apply the rubric without bypassing gates, and reject incomplete falsification contracts. Blank and incorrect functions must fail before a report is produced. <strong>A validator checks structure; it cannot verify that your prose is true or that a task was never used.</strong> Attach the underlying prior-use and availability evidence for the assessor.</p>
+<div id="b24-teachback"></div>
+
+<h2 id="8-%C2%B7-Exit-and-Year-6-handoff">8 &#183; Exit and Year 6 handoff<a class="anchor-link" href="#8-%C2%B7-Exit-and-Year-6-handoff">&#182;</a></h2><p>Submit the proposal, architecture map, baseline table, B23 evidence folder plus B24 replay receipt, and two falsification contracts. Ask the agent to challenge one warrant and assess each rubric axis. Do not fill a learning record from author-run checks.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>
+<thead>
+<tr>
+  <th>Next lesson</th>
+  <th>B24 handoff</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>L201 · Hypothesis</td>
+  <td>Narrow claim, mechanism and revision condition.</td>
+</tr>
+<tr>
+  <td>L202 · Sources</td>
+  <td>Versioned primary-source matrix and access/deviation ledger.</td>
+</tr>
+<tr>
+  <td>L203 · Protocol</td>
+  <td>Task reservation, splits, legal information, selection and metrics.</td>
+</tr>
+<tr>
+  <td>L204 · Baselines</td>
+  <td>Inclusion/exclusion decisions and total budget accounting.</td>
+</tr>
+<tr>
+  <td>L219 · Stress tests</td>
+  <td>Simpler-baseline and untouched-task failure rules.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Return after 1, 7 and 30 days.</strong> Day 1: derive the two-history variance example from memory. Day 7: defend one exclusion, then argue for including it. Day 30: reconstruct the two failure rules without looking. Bring any unclear step back to the agent; ask for another worked example or a skeptical review.</p>
+<h2 id="Reproduction-appendix-%C2%B7-exact-scope-and-commands">Reproduction appendix &#183; exact scope and commands<a class="anchor-link" href="#Reproduction-appendix-%C2%B7-exact-scope-and-commands">&#182;</a></h2><p>From the repository root, run:</p>
+<div class="highlight"><pre><span></span>.venv/bin/python<span class="w"> </span>labs/_budget_b24.py<span class="w"> </span>.venv/bin/python<span class="w"> </span>labs/_audit_b24.py
+.venv/bin/python<span class="w"> </span>labs/_budget_b24.py<span class="w"> </span>.venv/bin/python<span class="w"> </span>labs/_verify_b24.py
+</pre></div>
+<p>The downloaded notebook embeds the authenticated evidence and visible audit code; it needs only Python and NumPy to replay. It can run without a repository checkout or network access. The executed HTML is an author reference. Live Colab execution remains <code>NOT_CHECKED</code>.</p>
+<p>B24 uses a <strong>$0 paid-compute budget</strong> and a <strong>3,600-second aggregate local numerical/check cutoff</strong>, including preparation, failures and validation. The <a href="../labs/evidence/b24/local-budget.json">local ledger</a> records attempts. At cutoff, leave <code>INCOMPLETE</code>; retain all declared runs in the contract. A separate fresh-inference path remains documented in <a href="../labs/b23-reproduction.md">B23</a>; B24 does not dispatch it.</p>
+<p><a href="../labs/evidence/b24/report.json">Full replay report</a> · <a href="../labs/_verify_b24_results.json">Independent verification</a> · <a href="https://arxiv.org/html/2603.03805v5">Primary paper</a> · <a href="../plan/year-5-6-bridge.md#b24">Bridge specification</a></p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/research-defense.js"></script></body></html>

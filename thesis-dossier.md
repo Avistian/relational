@@ -777,3 +777,6 @@ The approved RDBLearn full21task reproduction stopped at a freshly verified shar
 
 
 - **B23 · FOR / BAR (2026-10-04):** fresh released-task RDBPFN comparison beats the fixed logistic baseline by .078643AUROC on average,10/10supports; versus TabICL+.004366,6/10. Supports a conditional selected-task result. Shared test population, reused task, unequal pretraining and incomplete historical availability bar broad architectural/deployment conclusions. Complete30published+10baseline runs; no learner defense inferred.
+
+
+- **B24 · BAR (2026-10-04):** complete independent B23 replay confirms40AUROCs and28,080predictions, including exact reconstruction of ten logistic vectors. RDBPFNminusTabICL+.004366,positive6/10, supports a narrow released-task comparison; common flat inputs do not establish graph-native superiority. Defend strong engineered baselines, matched information/selection budgets and two preregistered reversal tests. Historical availability remains unestablished; untouched-task tests and learner assessment pending. [Defense](lessons/b24-architecture-thesis-defense.html).

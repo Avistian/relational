@@ -369,6 +369,8 @@ Prepared: [lesson](../lessons/b23-declared-comparison.html), [portable lab](../l
 <a id="b24"></a>
 
 ### B24 ★ · Defend the architecture and the thesis
+
+**Prepared 2026-10-04:** [Lesson](../lessons/b24-architecture-thesis-defense.html) · [Lab](../labs/b24-architecture-thesis-defense.ipynb) · [Proposal template](../reference/b24-proposal-template.html). Complete40-run/28,080-prediction B23 replay; historical identity/availability remain unestablished. Fresh inference and untouched-task tests NOT_RUN; learner PENDING_WRITTEN_DEFENSE.
 - **Deliverable:** A 3–5-page proposal, B23 evidence folder, coverage map and baseline inclusion/exclusion table.
 - **Required inventory:** Tuned trees + time-safe feature engineering; RealMLP/TabM/TabPack; retrieval (TabR/ModernNCA when relevant); TabPFN, TabICL, TabDPT and Mitra families; semantic transfer when text is material; RDBLearn/TabPFN-Rel; RelGNN/RelGT; accessible RT/relational FM. Audit LimiX, TabFM, EXAONE, Nori and RT-J as current candidates even if their electives were skipped. This is a decision inventory, not a requirement to train every model.
 - **October additions:** Justify inclusion/exclusion of hypernetworks, a scaling alternative (TabFlex/Wide/Orion/TabSwift), and provider comparators Seldon/NEXUS; treat SAP-RPT-1-OSS as the documented ConTextTab alias. Submit B18a's context/update/cost contract and B19a's metric/calibration contract. Task expansion from B19b is required only when relevant to the chosen thesis.

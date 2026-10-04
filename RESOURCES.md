@@ -1358,3 +1358,10 @@ Primary: Correa and Azevedo, [Context Window Failures in Relational Foundation M
 ### B23 · declared reproduction comparison
 - Wang et al., [RDB-PFN v5 Table9](https://arxiv.org/html/2603.03805v5#A6): exact512support driver-dnf targets; fresh selected release evaluation, not whole-paper pretraining.
 - [B23 frozen contract](labs/b23-reproduction.md) and [fresh evidence report](labs/evidence/b23/report.json): immutable predictions, paired support identities, independent scores and explicit historical gaps.
+
+
+## B24 · architecture and thesis defense (2026-10-04)
+
+- [RDB-PFN v5 Table9 and protocol](https://arxiv.org/html/2603.03805v5#A6): selected released-task comparison; B24 independently replays all B23 predictions.
+- [Dated candidate audit](labs/sources/b24/candidate-audit.json): nine inspected official pages, source response hashes and candid access/scope dispositions.
+- [Full family coverage](labs/sources/b24/coverage.md), [reproduction contract](labs/b24-reproduction.md) and [proposal template](labs/b24-proposal-template.md): baseline decisions, information paths and reversal rules.

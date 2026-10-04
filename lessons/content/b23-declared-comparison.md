@@ -2,7 +2,7 @@
 
 **The win:** turn a published number into an inspectable chain of source, inputs, predictions and justified conclusions.
 
-[Previous: B22 · support-state interventions](b22-support-state-refinement.html) · [Core prerequisite: B19 · benchmark evidence](b19-benchmark-evidence.html) · [Metric contract: B19a](b19a-predictive-distributions.html) · [Next: B24 · research defense](../plan/year-5-6-bridge.md#b24)
+[Previous: B22 · support-state interventions](b22-support-state-refinement.html) · [Core prerequisite: B19 · benchmark evidence](b19-benchmark-evidence.html) · [Metric contract: B19a](b19a-predictive-distributions.html) · [Next: B24 · research defense](b24-architecture-thesis-defense.html)
 
 [Student notebook](../labs/b23-declared-comparison.ipynb) · [Executed notebook](../labs/html/b23-declared-comparison.html) · [Reference card](../reference/b23-declared-comparison.html) · [Frozen reproduction contract](../labs/b23-reproduction.md)
 
