@@ -497,7 +497,7 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | B20 ◆ | [Curriculum Matters: ordering versus scale](./lessons/b20-curriculum-order.html) | [Curriculum lab](./labs/b20-curriculum-order.ipynb):12 paired fits, complete printed-table audit; historical pretraining source-gated. |
 | B21 ◆ | [Valid links, vulnerable predictions](./lessons/b21-structural-robustness.html) | [Structural stress lab](./labs/b21-structural-robustness.ipynb): complete finite FK attack experiment; historical Table4 source-gated. |
 | B22 ◆ | [The support set is working memory](./lessons/b22-support-state-refinement.html) | [Support-write lab](./labs/b22-support-state-refinement.ipynb): complete paired course intervention; RefineICL Appendix E.2 source-gated. |
-| B23 ★ | [Reproduce one declared comparison](./plan/year-5-6-bridge.md#b23) | One named published comparison, provenance and deviation ledger. |
+| B23 ★ | [Reproduce one declared comparison](./lessons/b23-declared-comparison.html) | [Comparison audit lab](./labs/b23-declared-comparison.ipynb): fresh 30-run RDB-PFN comparison plus 10 logistic fits; historical availability remains unestablished. |
 | B24 ★ | [Defend the architecture and the thesis](./plan/year-5-6-bridge.md#b24) | Defended proposal, baseline decisions and falsification tests. |
 
 **Core route:** B01–B07 → B10–B14 → B18 → B18a → B19 → B19a → B23–B24 (18 units). The eleven ◆ electives deepen a selected research direction; insert selected suffix electives after their parent. Recent exploratory methods are not promoted solely because they report a new best score.

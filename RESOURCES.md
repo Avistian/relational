@@ -1353,3 +1353,8 @@ Primary: Correa and Azevedo, [Context Window Failures in Relational Foundation M
 - [RefineICL v1](https://arxiv.org/html/2609.27679v1): §3–4 architecture, Appendix E.2 support-write intervention, Appendix H release limits. Exploratory September preprint; trained weights excluded from described supplement.
 - [Authenticated source manifest](labs/sources/b22/manifest.json), [source audit](labs/evidence/b22/reproduction.json) and [reproduction contract](labs/b22-reproduction.md). The inspected35-member arXiv source archive contains no executable model/probe/checkpoint.
 - [Complete course experiment](labs/evidence/b22/diagnostic.json): random fixed-weight mechanism evidence, not trained-model or historical reproduction.
+
+
+### B23 · declared reproduction comparison
+- Wang et al., [RDB-PFN v5 Table9](https://arxiv.org/html/2603.03805v5#A6): exact512support driver-dnf targets; fresh selected release evaluation, not whole-paper pretraining.
+- [B23 frozen contract](labs/b23-reproduction.md) and [fresh evidence report](labs/evidence/b23/report.json): immutable predictions, paired support identities, independent scores and explicit historical gaps.

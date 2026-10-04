@@ -1,6 +1,6 @@
 # Year 5 → 6 bridge: influential architectures and the current frontier
 
-**29 units (B01–B19, B04a/B07a/B18a/B19a/B19b prepared; 5 planned): B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
+**29 units (B01–B23 and five suffix units prepared; B24 planned): B01–B24 plus B04a/B07a/B18a/B19a/B19b · research cutoff 2026-10-02.** After L200, before L201. [Curriculum](../CURRICULUM.md#research-bridge) · [September influence audit](./research-influence-audit-2026-09.md) · [2025–2026 coverage and Mindful Modeler audit](./tabular-foundation-coverage-audit-2026-10.md).
 
 The audit distinguishes established families, current baseline updates, coverage-critical mechanisms and exploratory ideas. Core means required for this mission; it does not label every recent paper equally influential. Existing lessons are prerequisites: a bridge revisit requires a new comparative artifact, not repetition of the entire earlier lesson.
 
@@ -358,6 +358,8 @@ Authored route: [The support set is working memory](../lessons/b22-support-state
 <a id="b23"></a>
 
 ### B23 ★ · Reproduce one declared comparison
+
+Prepared: [lesson](../lessons/b23-declared-comparison.html), [portable lab](../labs/b23-declared-comparison.ipynb), [contract](../labs/b23-reproduction.md). Complete selected fresh RDB-PFN Table9 comparison (30evaluations) plus10course logistic fits. Historical identity/availability remain NOT_ESTABLISHED; learner PENDING_WRITTEN_DEFENSE.
 - **Read:** Chosen model's exact experiment section and release; [RelArena protocol](https://arxiv.org/html/2608.16319v2) or [TabArena methodology](https://arxiv.org/html/2506.16791v1).
 - **Retrieve / skill:** What distinguishes a numerical match from a faithful experiment? Audit the full chain.
 - **Exercise:** Choose one named published task/table cell or bounded ablation with accessible artifacts; freeze its contract before running. Candidate lanes: trained TabM/TabPack, a released TabDPT/TabICL comparison, or local RDBLearn/TabPFN-Rel versus a supervised relational baseline. Include the simpler baseline.

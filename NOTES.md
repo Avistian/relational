@@ -2466,3 +2466,8 @@ B21 final delivery:19-code-cell portable solution reproduces full fresh/saved re
 ## B22 prepared — 2026-10-04
 
 Approved RefineICL support-state route and subsequent push/Pages deployment. Complete B22-SUPPORT-WRITE: 3 random frozen models ×24 shared episodes ×4 arms,288 trajectories/4608 query predictions. Identity unchanged; skip/permutation effects mixed. Independent scalar oracle checks every state and metric. Paper Appendix E.2 checkpoint/probe/episode identities unavailable; historical inference INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN. USD0 paid;3600 aggregate local numerical/verification seconds. No learner mastery or live Colab inferred. Deployment evidence belongs in reviews/lesson-b22/deployment.json after verification.
+
+
+## B23 prepared — approved fresh comparison and deployment (2026-10-04)
+
+B23-RDBPFN-F1-COMPARISON complete:30fresh Table9 checkpoint evaluations plus10fixed logistic fits,28080predictions. Means .721937735/.663989655/.717571366; course logistic .643294296. All paper means round to targets. RDBPFN−TabICL+.004366369,positive6/10; versus single-prior/logistic positive10/10. All40AUROCs independently verified; ten logistic vectors reconstructed exactly; eight corruptions rejected. Historical identity/feature availability NOT_ESTABLISHED; fullDFS/pretraining/wholepaper NOT_RUN; learner PENDING_WRITTEN_DEFENSE. Published-model pins retained; baseline local NumPy2.5.0/sklearn1.9.0 explicitly separate. User authorized Pages deployment; final receipt reviews/lesson-b23/deployment.json.
