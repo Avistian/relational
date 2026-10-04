@@ -1,0 +1,24 @@
+# B20 reproduction contract
+
+Approved 2026-10-04. USD0 paid; 3600 aggregate local numerical seconds, including preparation, retries and validation. Stop without changing the declared grid. All numerical commands use `_budget_b20.py`. No cloud/API inference or deployment authorized.
+
+## Named paper target
+
+Curriculum Matters, arXiv2607.29120v1, Table1: Family A progressive single-table curriculum versus Family B all-at-once, all23 tasks, context1024. Reconstruct every checkpoint and baseline row in Tables5–6, including the selected A/B comparison. Preserve printed precision; compare Table1, Table6 averages and AppendixB independently. A score-table calculation establishes arithmetic only. Raw predictions, original trained checkpoints and fresh paper pretraining remain NOT_RUN.
+
+Historical gates: original PluRel corpus and generator revision/configuration/seeds; missing TF11 schedule explanation; exact episode exposures and optimizer-state continuation; architecture (paper says six layers/d128, inherited RDB-PFN base uses d96); learning-rate schedule, batch/update counts and all random seeds; data/preprocessing/splits; checkpoint-selection rule and evaluation support identities. No author implementation/checkpoint link was found in the primary HTML or two targeted web searches; this is bounded discovery, not a claim of global absence. Upstream PluRel and RDB-PFN are not automatically the authors' experimental implementation. Preserve the duplicated FamilyG descriptions and C-versus-E initialization confound.
+
+`python labs/_reproduce_b20.py` authenticates source bytes and reconstructs the complete printed matrix. `python labs/_reproduce_b20.py --fresh` fails closed with the missing-identity ledger. It is a tested audit/gate, not a completed training operator. Until the historical gates are resolved, a complete executable historical trainer cannot honestly be supplied. No replacement recipe receives a paper-reproduction label.
+
+## Frozen course protocol B20-ORDER-2x2-3
+
+- 12 fits: families single/relational × staged/shuffled × initialization seeds0/1/2. Training pool seed1000+seed; shared within each ordering pair. Each pool has96 tasks,32 per active width2/4/6. Each has32 rows,16 support and16 query. Query labels never enter normalization or attention; targets thresholded on support scores only.
+- Single prior: independent Gaussian cells and random linear binary targets plus noise. Relational prior:32 parents,96 children with legal FKs; parent features plus count/mean/max child features, then the same target construction. These are course priors, not PluRel. Relational raw generation remains full at all stages; stage is retained feature width, not reduced database complexity. Family contrast changes data and cannot isolate pure ordering.
+- Staged: shuffle two copies of each width bucket, concatenate narrow to wide. Shuffled: shuffle two copies of the complete pool. Each task is used twice,192 updates, batch1, fixed6-column padded tensors. AdamW lr.001,weight_decay.01, default betas/eps; persistent optimizer, no scheduler, no early stopping or tuning. Final checkpoint only. Paired identical initial weights.
+- Source-shaped RDB-PFN:2 blocks,width16,2heads,FFN32,binary head; feature attention and support-only row attention. Source parity at identical compact settings is tested against the inherited B13 visible implementation. This is not certification against Curriculum Matters training code.
+- Frozen evaluation:24 tasks,12 from each family, balanced widths2/4/6; seeds90001/90002, unchanged across all fits. Each predicts16 held-out rows:384 predictions per fit,4608 total. Report macro per-task AUROC, exclude no task silently; abort if a task lacks both query classes. Also report mean binary cross-entropy over all queries. Three seeds are paired, not three independent real-world datasets.
+- Save full pools, schedules, predictions, losses, initial/final hashes, versions, raw generated feature/key cells and repeated model-cell exposures. Single raw cells exclude labels; relational raw cells include PK/FK; these conventions differ, so never interpret the raw-cell ratio as equal information or FLOPs. Fixed tensor dimensions and updates match theoretical model work within pairs; measure wall time separately.
+
+## Delivery and mastery
+
+Independent AUROC pair-count and log-loss replay; task/pool/order/hash corruption rejection; hidden-query and query-batching invariance; gradient/output source parity; three live learner functions. Portable notebook replay authenticates all embedded artifacts and recomputes both reports; optional fresh course training uses the visible trainer and frozen grid. HTML includes prerequisites, worked trace, interactive order intervention, architecture and paired results. Desktop375px/keyboard/noJS/print and copied Pages build verified separately. Learner PENDING_WRITTEN_DEFENSE; live Colab NOT_CHECKED.

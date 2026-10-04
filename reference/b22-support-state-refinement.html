@@ -1,0 +1,135 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B22 reference</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/benchmark-evidence.css"><link rel="stylesheet" href="../assets/support-state.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebook gallery</a></nav><h1 id="B22-%C2%B7-Support-state-intervention-reference">B22 &#183; Support-state intervention reference<a class="anchor-link" href="#B22-%C2%B7-Support-state-intervention-reference">&#182;</a></h1><p><a href="../lessons/b22-support-state-refinement.html">Lesson</a> · <a href="../labs/b22-support-state-refinement.ipynb">Notebook</a> · <a href="../labs/b22-reproduction.md">Reproduction contract</a></p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Term</th>
+  <th>Operational meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Support</td>
+  <td>Labeled examples available to the predictor</td>
+</tr>
+<tr>
+  <td>Query</td>
+  <td>Rows whose answers are withheld during prediction</td>
+</tr>
+<tr>
+  <td>State</td>
+  <td>Per-row intermediate vector; can change with fixed model weights</td>
+</tr>
+<tr>
+  <td>Attention</td>
+  <td>Softmax similarity weights multiplied by support value vectors</td>
+</tr>
+<tr>
+  <td>Gate</td>
+  <td>State-dependent multiplier; SiLU is not a probability</td>
+</tr>
+<tr>
+  <td>Support-write intervention</td>
+  <td>Restore support inputs after a block, preserving query outputs</td>
+</tr>
+<tr>
+  <td>Identity control</td>
+  <td>Copy actual support outputs back; require identical predictions</td>
+</tr>
+<tr>
+  <td>Paired effect</td>
+  <td>Changed minus normal metric on the same query rows</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Scalar trace:</strong> normal support[2,5], skip[1,3], permuted updates[3,4]. Preserve current query4. Weights[.75,.25], gate.5 → final states5.375/4.750/5.625. This is arithmetic, not accuracy.</p>
+<p><strong>Metric:</strong> CE = mean(logsumexp(logits) − true-class logit). PositiveΔCE is worse; positiveΔaccuracy is better. Multiply fractional accuracy differences by100 for percentage points.</p>
+<p>**Frozen course:**3random models ×24shared episodes ×4arms =288trajectories; no training. Never treat these as288independent trained models. Student functions: attention_read, replace_support, paired_effect.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Random seed</th>
+  <th style="text-align:right">Mean ΔCE</th>
+  <th style="text-align:right">Episode ΔCE range</th>
+  <th style="text-align:right">Worse CE</th>
+  <th style="text-align:right">Mean Δaccuracy (pp)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>identity</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">+0.000000</td>
+  <td style="text-align:right">[+0.000000, +0.000000]</td>
+  <td style="text-align:right">0/24</td>
+  <td style="text-align:right">+0.000</td>
+</tr>
+<tr>
+  <td>identity</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">+0.000000</td>
+  <td style="text-align:right">[+0.000000, +0.000000]</td>
+  <td style="text-align:right">0/24</td>
+  <td style="text-align:right">+0.000</td>
+</tr>
+<tr>
+  <td>identity</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">+0.000000</td>
+  <td style="text-align:right">[+0.000000, +0.000000]</td>
+  <td style="text-align:right">0/24</td>
+  <td style="text-align:right">+0.000</td>
+</tr>
+<tr>
+  <td>skip</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">-0.030857</td>
+  <td style="text-align:right">[-0.169584, +0.065388]</td>
+  <td style="text-align:right">6/24</td>
+  <td style="text-align:right">-0.260</td>
+</tr>
+<tr>
+  <td>skip</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">+0.001084</td>
+  <td style="text-align:right">[-0.008919, +0.014739]</td>
+  <td style="text-align:right">14/24</td>
+  <td style="text-align:right">-2.344</td>
+</tr>
+<tr>
+  <td>skip</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">+0.003664</td>
+  <td style="text-align:right">[-0.029844, +0.053670]</td>
+  <td style="text-align:right">15/24</td>
+  <td style="text-align:right">+1.042</td>
+</tr>
+<tr>
+  <td>permute</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">+0.001634</td>
+  <td style="text-align:right">[-0.018556, +0.023624]</td>
+  <td style="text-align:right">11/24</td>
+  <td style="text-align:right">-0.521</td>
+</tr>
+<tr>
+  <td>permute</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">-0.000073</td>
+  <td style="text-align:right">[-0.006960, +0.004808]</td>
+  <td style="text-align:right">12/24</td>
+  <td style="text-align:right">-0.260</td>
+</tr>
+<tr>
+  <td>permute</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">-0.000746</td>
+  <td style="text-align:right">[-0.050195, +0.050656]</td>
+  <td style="text-align:right">12/24</td>
+  <td style="text-align:right">+3.385</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Historical target:</strong> RefineICL v1 Appendix E.2, L24 15K, block12,72RBF episodes,1024supports/256queries. Paper-reportedΔCE+0.0510; our historical inference NOT_RUN / INCOMPLETE_SOURCE_PROTOCOL_GATE. Checkpoint and executable probe/episode identities are missing. <a href="https://arxiv.org/html/2609.27679v1#A5.SS2">Primary source</a>.</p>
+<p><strong>Exit:</strong> defend preserved routes, negative control, metric sign and missing historical identity. Internal sensitivity alone does not establish learned utility or generalization. Revisit1/7/30days; ask the agent for feedback.</p>
+</article></body></html>

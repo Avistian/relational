@@ -494,9 +494,9 @@ Exhaustive arXiv + web sweep merged below. **Do not re-add** items marked ✅; *
 | B19 ★ | [BeyondArena, contamination and moving benchmarks](./lessons/b19-benchmark-evidence.html) | [Evidence lab](./labs/b19-benchmark-evidence.ipynb): 12 diagnostic arms; 9,540 grouped score records; full Figure F.2 source-gated. |
 | B19a ★ | [Predictive distributions, calibration and proper scores](./lessons/b19a-predictive-distributions.html) | [Scoring lab](./labs/b19a-predictive-distributions.ipynb); complete selected published-table reconstruction; fresh fits NOT_RUN. |
 | B19b ◆ | [Forecasting: what is known when?](./lessons/b19b-forecasting-contracts.html) | [Forecasting lab](./labs/b19b-forecasting-contracts.ipynb); complete released-score replay, source-gated Figure4.1. |
-| B20 ◆ | [Curriculum Matters: ordering versus scale](./plan/year-5-6-bridge.md#b20) | Order-versus-scale pretraining experiment specification. |
-| B21 ◆ | [Privacy or structural robustness](./plan/year-5-6-bridge.md#b21) | Privacy ledger or integrity-preserving structural stress test. |
-| B22 ◆ | [Newest mechanisms: RefineICL or tabular JEPA](./plan/year-5-6-bridge.md#b22) | One mechanism intervention with matched controls. |
+| B20 ◆ | [Curriculum Matters: ordering versus scale](./lessons/b20-curriculum-order.html) | [Curriculum lab](./labs/b20-curriculum-order.ipynb):12 paired fits, complete printed-table audit; historical pretraining source-gated. |
+| B21 ◆ | [Valid links, vulnerable predictions](./lessons/b21-structural-robustness.html) | [Structural stress lab](./labs/b21-structural-robustness.ipynb): complete finite FK attack experiment; historical Table4 source-gated. |
+| B22 ◆ | [The support set is working memory](./lessons/b22-support-state-refinement.html) | [Support-write lab](./labs/b22-support-state-refinement.ipynb): complete paired course intervention; RefineICL Appendix E.2 source-gated. |
 | B23 ★ | [Reproduce one declared comparison](./plan/year-5-6-bridge.md#b23) | One named published comparison, provenance and deviation ledger. |
 | B24 ★ | [Defend the architecture and the thesis](./plan/year-5-6-bridge.md#b24) | Defended proposal, baseline decisions and falsification tests. |
 

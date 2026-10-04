@@ -1,0 +1,22 @@
+/* FK edit intervention: 3 units x 5 destinations x 3 budgets.
+   Reset moves session0 (events0/1) to account1 at budget2: valid, means0/2.5/5.5.
+   event0 alone -> another owner violates dependency; future3 and missing4 invalid.
+   Measures a scalar neighbor mean, NOT final GraphSAGE predictions. */
+(function(g){'use strict';
+const board=document.querySelector('[data-fk-board]');if(!board)return;
+const original=[0,0,1,2,1,2],values=[1,3,2,5,4,6],sessions=[0,0,1,2,3,4],times=[3,4,5,6,7,8],parentTimes=[0,1,2,12];
+function state(unit,dest,budget){const a=original.slice();const rows={session:[0,1],single:[0],other:[2]}[unit];rows.forEach(i=>a[i]=dest);const cost=a.filter((x,i)=>x!==original[i]).length;let errors=[];
+if(a.some(p=>p<0||p>=4))errors.push('FK existence: parent does not exist.');
+if(a[0]!==a[1])errors.push('Functional dependency: session0 has two owners.');
+if(a.some((p,i)=>p<4&&parentTimes[p]>times[i]))errors.push('Temporal eligibility: parent arrives after the event.');
+if(cost>budget)errors.push(`Budget: ${cost} changed FK cells exceed ${budget}.`);
+const means=[0,1,2].map(p=>{const xs=values.filter((v,i)=>a[i]===p);return xs.length?xs.reduce((s,v)=>s+v,0)/xs.length:0;});return {a,cost,errors,means};}
+function draw(){const unit=board.querySelector('[name=unit]').value,dest=+board.querySelector('[name=dest]').value,budget=+board.querySelector('[name=budget]').value;const result=state(unit,dest,budget);
+for(const [name,owners] of [['before',original],['after',result.a]])board.querySelector('[data-'+name+']').innerHTML=owners.map((p,i)=>`<li class="${p!==original[i]?'changed':''}">event${i}: session${sessions[i]} → account${p}${p!==original[i]?' (changed)':''}</li>`).join('');
+const out=board.querySelector('output');out.dataset.valid=String(!result.errors.length);out.textContent=`${result.errors.length?'REJECTED':'ADMISSIBLE'} · ${result.cost} FK cells changed; allowance ${budget}.\n${result.errors.length?result.errors.join('\n'):'All FK, session and time checks pass. This does not guarantee harmless predictions.'}`;
+board.querySelector('[data-preview]').textContent=`Clean account means: 2, 3, 5.5. ${result.errors.length?'Rejected preview (not an admitted model input)':'Admitted edited means'}: ${result.means.map(x=>x.toFixed(2)).join(', ')}. Features and model weights stay fixed. Means are one aggregation coordinate, not final predictions.`;}
+board.querySelectorAll('select').forEach(x=>x.addEventListener('change',draw));board.querySelector('button').onclick=()=>{board.querySelector('[name=unit]').value='session';board.querySelector('[name=dest]').value='1';board.querySelector('[name=budget]').value='2';draw();};draw();
+if(g.RetrievalBank)g.RetrievalBank.mount(document.getElementById('b21-warmup'),{upTo:200.21,count:2});
+if(g.Predict)g.Predict.mount(document.getElementById('b21-predict'),{prompt:'An attack may change at most two FK cells. Must its exact worst case change both?',options:[{label:'No, fewer can suffice',value:'no'},{label:'Yes, both are required',value:'yes'}],correct:'no',reveal:'Seed1’s exact worst case uses one FK change even when two are allowed. The feasible set includes clean and all smaller changes. A larger allowance cannot lower its maximum, but spending more does not necessarily increase damage.'});
+if(g.Teachback)g.Teachback.mount(document.getElementById('b21-teachback'),{prompt:'Explain why a valid FK is insufficient, how coupled edits consume budget, and why clean-equivalence must precede attack scoring.',points:['Existing parent, functional dependency and time eligibility are separate checks.','Count changed FK cells, including both members of a coupled move.','Synchronize forward and reverse graph edges with the database.','Freeze and verify the predictor before comparing attacks.','A finite exhaustive guarantee does not extend to other inputs or threat models.'],model:'An existing ID can still break a cross-row rule or refer to a parent unavailable at the event time. I validate each rule separately and count the final changed database cells. Moving two coupled rows costs two cells even if one operation updates them. I regenerate both graph directions and require the attackable model to match the clean model before perturbation. Exhaustive search bounds only the declared finite universe; a weak heuristic or a few unsuccessful attacks cannot certify general robustness.'});
+})(window);

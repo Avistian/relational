@@ -767,3 +767,10 @@ The approved RDBLearn full21task reproduction stopped at a freshly verified shar
 
 
 - **BAR · B19b (2026-10-04):** a forecasting wrapper requires an as-of information contract. Complete324-prediction synthetic diagnostic shows oracle-weather gains that do not support deployment; legal regression loses to seasonal naive on one seed. Complete13×97 released-score reconstruction does not establish Figure4.1 parity (2/39 printed fields match, both baseline identities). Fresh TabPFN inference and learner mastery remain unestablished. [Evidence](labs/b19b-reproduction.md).
+
+- **B20 · BAR (2026-10-04):** fewer synthetic databases do not establish cheaper optimization or stronger relational reasoning. Complete12-fit paired course experiment is weak at its frozen budget and shows no consistent staged advantage. Full322-score arithmetic audit supports the selected A/B rounded averages but exposes a best-ours summary mismatch and two task exceptions. Exact historical pretraining remains source-gated; these results establish neither relational superiority nor a refutation of the full paper.
+
+
+- **B21 · BAR · 2026-10-04:** Complete finite integrity-constrained evasion experiment:105 random-network/state pairs,27 comparisons; exact search exposes linearization regret and a one-edit worst case under budget2. This tests sensitivity, not learned RDL benefit. Public attack-wrapper clean conversion fails in current-runtime probes; zero-new-bias repair passes only the tested fixtures. Selected historical Table4 remains INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN. [Contract](labs/b21-reproduction.md).
+
+- **B22 · BAR (2026-10-04):** internal-state sensitivity is not evidence of learned utility or relational advantage. The complete paired random-model intervention preserves the current query calculation while altering future support reads; its mixed-sign effects cannot reproduce RefineICL Appendix E.2. Authenticate the original checkpoint, episode protocol and paired predictions before a historical claim.

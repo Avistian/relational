@@ -335,6 +335,8 @@ Prepared: [lesson](../lessons/b18a-context-state.html), [lab](../labs/b18a-conte
 <a id="b21"></a>
 
 ### B21 ◆ · Privacy or structural robustness
+
+Authored route: [Valid links, vulnerable predictions](../lessons/b21-structural-robustness.html), with [portable lab](../labs/b21-structural-robustness.ipynb). Complete finite FK stress test; selected historical Table4 remains source-gated. Privacy is an alternative elective route, not an additional requirement.
 - **Read:** Choose [TabPATE](https://arxiv.org/abs/2606.31474v1) or [integrity-constrained structural attacks](https://arxiv.org/abs/2607.07089v1).
 - **Retrieve / skill:** Does an empirical stress-test result establish a formal guarantee? Define the protected unit or threat model.
 - **Exercise / CHECK:** For privacy, specify entity/row adjacency and teacher/query accounting; near-random attack success does not prove DP. For attacks, enumerate admissible FK edits and compare equal perturbation budgets; check integrity and temporal constraints independently.
@@ -343,6 +345,8 @@ Prepared: [lesson](../lessons/b18a-context-state.html), [lab](../labs/b18a-conte
 <a id="b22"></a>
 
 ### B22 ◆ · Newest mechanisms: RefineICL or tabular JEPA
+
+Authored route: [The support set is working memory](../lessons/b22-support-state-refinement.html), with [portable lab](../labs/b22-support-state-refinement.ipynb). Complete random-model support-write intervention; RefineICL Appendix E.2 remains source-gated. JEPA remains an alternative elective.
 - **Read:** Choose [RefineICL](https://arxiv.org/abs/2609.27679v1) or [JEPA recipe](https://arxiv.org/abs/2609.25541v1).
 - **Retrieve / skill:** Can an internal mechanism change without improving downstream generalization? Design a discriminating intervention.
 - **Exercise / CHECK:** Specify a controlled support-state intervention, or value-only versus JEPA at fixed compute and at convergence. Separate benchmark-informed continuation from untouched tests; one run per arm cannot characterize seed uncertainty.

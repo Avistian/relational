@@ -1,0 +1,240 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B20 · Curriculum Matters</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/benchmark-evidence.css"><link rel="stylesheet" href="../assets/curriculum-order.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebook gallery</a></nav><h1 id="B20-%C2%B7-Curriculum-Matters:-ordering-versus-scale">B20 &#183; Curriculum Matters: ordering versus scale<a class="anchor-link" href="#B20-%C2%B7-Curriculum-Matters:-ordering-versus-scale">&#182;</a></h1><p class="subtitle">Research bridge · Elective ◆ · One win: design a comparison in which only training order changes</p>
+
+<p><a href="b19-benchmark-evidence.html">B19</a> asked whether benchmark evidence supports a claim. <a href="b19b-forecasting-contracts.html">B19b</a> asked what a forecaster could know at a particular time. Now ask a different timing question: <strong>in what order did a model learn from its training tasks?</strong> For the relational-learning thesis, better results from a smaller synthetic corpus would be useful. First we must separate an ordering effect from a changed generator, extra optimization, or benchmark-driven selection.</p>
+<p><a href="../labs/b20-curriculum-order.ipynb">Student notebook</a> · <a href="../labs/html/b20-curriculum-order.html">Executed solution</a> · <a href="../labs/solutions/b20-curriculum-order.ipynb">Download solution</a> · <a href="../reference/b20-curriculum-order.html">Printable reference</a> · <a href="../labs/b20-reproduction.md">Frozen reproduction contract</a></p>
+<h2 id="1-%C2%B7-Recall-the-three-moving-parts">1 &#183; Recall the three moving parts<a class="anchor-link" href="#1-%C2%B7-Recall-the-three-moving-parts">&#182;</a></h2><p>A <strong>prior</strong> is a distribution of possible tasks. A synthetic generator samples tasks from that prior. A <strong>task</strong> contains labeled support examples and query examples whose labels the predictor must infer. <strong>Pretraining</strong> updates model weights across many such tasks. <strong>In-context learning</strong> uses support examples to predict query labels with those pretrained weights held fixed.</p>
+<p><a href="b06-mitra-prior-mixtures.html">B06</a> distinguished changing a prior from changing a model. <a href="b13-synthetic-relational-data.html">B13</a> separated relational data generation from the representation used at inference. A relational generator can feed an ordinary feature matrix to a transformer; graph-shaped generation does not require graph-shaped prediction.</p>
+<p><strong>Worked prerequisite.</strong> A customer has three transactions with values 2, 4 and 9. A backward join can produce count3, mean5 and maximum9 beside that customer's own features. <strong>Deep Feature Synthesis (DFS)</strong> repeatedly applies such joins and aggregations to construct a flat row for each target entity. This transformation can lose information: a model cannot recover transaction order from those three statistics.</p>
+<div id="b20-warmup"></div>
+
+<h2 id="2-%C2%B7-The-same-examples-can-produce-different-weights">2 &#183; The same examples can produce different weights<a class="anchor-link" href="#2-%C2%B7-The-same-examples-can-produce-different-weights">&#182;</a></h2><p>A <strong>curriculum</strong> controls the order or mixture of training tasks. A <strong>stage</strong> is a segment of that schedule. “Narrow tables first” is a curriculum. “Generate different tables” changes the prior instead. “Train for more updates” changes optimization effort.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> Each update starts from the weights left by the previous update. Swapping two tasks changes that starting point, even when the final bag of tasks is identical.</p>
+</blockquote>
+<p><strong>Worked example.</strong> Let one weight w predict y as w×x. Start at w=0. The loss is half the squared error: ½(wx−y)². Its slope with respect to w is x(wx−y). With learning rate0.1, subtract0.1 times that slope at each update. For x=1,y=1, the first update gives w=0.1. The next easy example gives w=0.19. A harder example x=2,y=−1 then moves it to−0.086. One more moves it to−0.2516.</p>
+<p>The rate is the step size, not an amount of data. Use the control to swap exposure order while keeping the four examples fixed. Predict the final weight before revealing each step.</p>
+<section class="curriculum-board" data-curriculum-order><h3>Change the order; keep all four examples</h3><div class="curriculum-controls"><label>Completed updates<select name="step"><option>0</option><option>1</option><option>2</option><option>3</option><option selected>4</option></select></label><label>Learning rate<select name="rate"><option>.025</option><option selected>.1</option><option>.2</option></select></label><button type="button">Reset</button></div><p>Staged: A B C D</p><div class="curriculum-track" data-track="Staged"></div><p>Mixed: A C B D</p><div class="curriculum-track" data-track="Mixed"></div><output aria-live="polite">After4 updates at rate0.1: staged w=−0.2516; mixed w=−0.2156. Both saw A,B,C,D once.</output><noscript><p>A and B have x=1,y=1. C and D have x=2,y=−1. Start w=0 and subtract rate×x×(wx−y) at each step. Use the static curve below to trace both orders.</p></noscript></section>
+
+<figure class="curriculum-figure" tabindex="0" role="region" aria-label="Four-example SGD trace; illustrative training loss, not PFN evaluation." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b20/order.png" alt="Four-example SGD trace; illustrative training loss, not PFN evaluation." style="display:block;width:100%;min-width:670px;height:auto"><figcaption>Four-example SGD trace; illustrative training loss, not PFN evaluation. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>The example demonstrates path dependence, not a rule that easy-first wins. At intermediate steps the two schedules have seen different subsets. Only at the end have both seen the same multiset: the same examples with the same repetition counts.</p>
+<p><strong>CHECK.</strong> If one stage restarts Adam's moving averages while the shuffled run keeps them, have we changed only order? No: optimizer state is another intervention.</p>
+<h2 id="3-%C2%B7-Model-architecture:-where-does-the-order-enter?">3 &#183; Model architecture: where does the order enter?<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-where-does-the-order-enter?">&#182;</a></h2><p>The paper uses PluRel to generate tables and databases, then the RDB-PFN consumer to learn across tasks. The diagram distinguishes that design from the compact course implementation. The paper describes six layers and width128; our inherited released-base mirror defaults to width96. That discrepancy is part of the historical source gate, not something to hide by choosing whichever trains fastest. <a href="https://arxiv.org/html/2607.29120v1#S3">Paper §2–3</a></p>
+<figure class="curriculum-figure" tabindex="0" role="region" aria-label="Source-shaped compact course PFN; query labels never enter the predictor." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b20/architecture.png" alt="Source-shaped compact course PFN; query labels never enter the predictor." style="display:block;width:100%;min-width:670px;height:auto"><figcaption>Source-shaped compact course PFN; query labels never enter the predictor. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Input.</strong> One course task has32 rows and6 feature slots. The first16 rows are support; their binary labels are available. The last16 are queries. Each feature is centered and scaled using support rows only. Scalar values become vectors of length16. A seventh slot stores the target embedding: the observed support label or the support-label mean as a query placeholder.</p>
+<p><strong>Feature attention.</strong> Within each row, attention mixes its seven slots. An attention weight measures how strongly one vector reads another for this computation; it is not a causal feature attribution.</p>
+<p><strong>Row attention.</strong> For each feature slot, every receiver may read the16 support rows. Queries are never keys or values, so one query cannot convey its unknown target or alter another query through that route. Two repeated blocks apply feature attention, row attention, normalization and a small feed-forward network. A binary head maps each query's target slot to two logits; softmax converts them to class probabilities.</p>
+<p><strong>Training versus prediction.</strong> The model predicts16 query labels. Cross-entropy compares those probabilities with the hidden training answers, then AdamW updates weights. The scheduler selects the next task. Evaluation freezes weights and presents new tasks. A loss function can read answers after prediction without those answers being predictor inputs.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The notebook exposes the complete compact model and trainer. Its two blocks, width16, tiny course priors and192 updates differ from the paper. Output and gradient agreement with the inherited B13 implementation checks this mechanism, not the authors' unrecovered experiment code.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Freeze-the-comparison-before-inspecting-the-scores">4 &#183; Freeze the comparison before inspecting the scores<a class="anchor-link" href="#4-%C2%B7-Freeze-the-comparison-before-inspecting-the-scores">&#182;</a></h2><p>Our declared grid has two generators × two orders × three paired seeds = <strong>12 fits</strong>. Each training pool contains96 tasks at active widths2,4,6. Every task has32 rows and is used twice. The staged arm shuffles within each width bucket and visits buckets narrow-to-wide. The shuffled arm mixes all192 task exposures. Both use the same padded6-column shape and the final checkpoint after192 updates.</p>
+<p>Within each ordering pair, task bytes, initial weights, AdamW settings, exposure counts and evaluation tasks are identical. Optimizer state continues across every stage. There is no early stopping or hyperparameter search. We save every schedule and prediction. Changing generator family is a separate intervention: it changes the data, so that contrast cannot be called a pure ordering effect.</p>
+<p><strong>The course relational prior.</strong> It generates32 parent rows and96 child rows with valid foreign keys, then forms parent features and count/mean/max aggregates. Narrow stages retain fewer of those features; they still generate the full underlying database. This tests feature-exposure order, not progressively larger relational schemas. The single-table prior uses independent Gaussian features. Both construct per-task random linear targets with noise; the binary threshold uses support rows only.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Quantity</th>
+  <th>Why count it?</th>
+  <th>Frozen course value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Unique synthetic tasks</td>
+  <td>Data diversity</td>
+  <td>96 per pool</td>
+</tr>
+<tr>
+  <td>Task exposures</td>
+  <td>Reuse can hide extra training</td>
+  <td>192 per fit</td>
+</tr>
+<tr>
+  <td>Optimizer updates</td>
+  <td>Count optimization steps</td>
+  <td>192 per fit, batch1</td>
+</tr>
+<tr>
+  <td>Model feature cells processed</td>
+  <td>Width/rows change work per exposure</td>
+  <td>36,864 per fit, padding included</td>
+</tr>
+<tr>
+  <td>Generated raw cells</td>
+  <td>Cost before model input</td>
+  <td>Separate family conventions in contract</td>
+</tr>
+<tr>
+  <td>Wall-clock seconds</td>
+  <td>Measures actual execution</td>
+  <td>Recorded per fit; not inferred from database count</td>
+</tr>
+</tbody>
+</table></div>
+<p>The same model-cell count is a useful control here because tensor dimensions are fixed. It is not a universal measure of compute: attention, memory, preprocessing and hardware also matter. Reusing a database twice does not create another independent database.</p>
+<div id="b20-predict"></div>
+
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Prior</th>
+  <th>Order</th>
+  <th>AUROC: seed0 /1 /2</th>
+  <th style="text-align:right">Mean AUROC</th>
+  <th style="text-align:right">Mean cross-entropy ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>single</td>
+  <td>staged</td>
+  <td>0.4322 / 0.4351 / 0.4232</td>
+  <td style="text-align:right">0.4302</td>
+  <td style="text-align:right">0.6947</td>
+</tr>
+<tr>
+  <td>single</td>
+  <td>shuffled</td>
+  <td>0.4314 / 0.5474 / 0.4195</td>
+  <td style="text-align:right">0.4661</td>
+  <td style="text-align:right">0.6945</td>
+</tr>
+<tr>
+  <td>relational</td>
+  <td>staged</td>
+  <td>0.4460 / 0.4604 / 0.4989</td>
+  <td style="text-align:right">0.4684</td>
+  <td style="text-align:right">0.6926</td>
+</tr>
+<tr>
+  <td>relational</td>
+  <td>shuffled</td>
+  <td>0.4359 / 0.5625 / 0.5738</td>
+  <td style="text-align:right">0.5241</td>
+  <td style="text-align:right">0.6918</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="curriculum-figure" tabindex="0" role="region" aria-label="All12 fits and three paired seeds; fixed synthetic evaluation pool." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b20/scores.png" alt="All12 fits and three paired seeds; fixed synthetic evaluation pool." style="display:block;width:100%;min-width:670px;height:auto"><figcaption>All12 fits and three paired seeds; fixed synthetic evaluation pool. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>Evaluation uses the same24 unseen synthetic tasks for all fits:12 from each family,16 query rows per task. <strong>AUROC</strong> is the fraction of positive-negative pairs ranked correctly, with half-credit for ties. We compute it per task and average tasks equally. Binary cross-entropy also checks probability quality; a constant0.5 prediction has loss about0.6931.</p>
+<p>The models are weak at this budget. Most AUROCs are around or below chance, and their probability losses are near that constant baseline. The paired ordering differences change by seed; these results do not establish a beneficial curriculum or relational-pretraining advantage. Seed variation measures this training procedure's variability on one fixed synthetic evaluation pool, not uncertainty over all real databases. We retain the full grid rather than select the most favorable seed.</p>
+<p><strong>CHECK.</strong> Make one test label change. The saved trained weights must stay fixed. The reported score should change. If training changes, evaluation has leaked into model construction.</p>
+<h2 id="5-%C2%B7-Reconstruct-the-named-paper-comparison">5 &#183; Reconstruct the named paper comparison<a class="anchor-link" href="#5-%C2%B7-Reconstruct-the-named-paper-comparison">&#182;</a></h2><p>Primary reading: <a href="https://arxiv.org/html/2607.29120v1#S4.T1">Curriculum Matters v1, Table1 and Tables5–6</a>. Read §3 first to identify Family A's progressive single-table stages and Family B's mixed version of the same corpus. The reported comparison uses23 tasks and context1024. It is our declared historical target.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Printed row</th>
+  <th style="text-align:right">Mean of23 listed scores</th>
+  <th style="text-align:right">Displayed average</th>
+  <th>Matches at3 decimals?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>TF07</td>
+  <td style="text-align:right">0.567217</td>
+  <td style="text-align:right">0.567</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF08</td>
+  <td style="text-align:right">0.603609</td>
+  <td style="text-align:right">0.604</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF09</td>
+  <td style="text-align:right">0.625957</td>
+  <td style="text-align:right">0.626</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF10</td>
+  <td style="text-align:right">0.653783</td>
+  <td style="text-align:right">0.654</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF12</td>
+  <td style="text-align:right">0.714957</td>
+  <td style="text-align:right">0.715</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF13</td>
+  <td style="text-align:right">0.696565</td>
+  <td style="text-align:right">0.697</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF14</td>
+  <td style="text-align:right">0.705130</td>
+  <td style="text-align:right">0.705</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF15</td>
+  <td style="text-align:right">0.694478</td>
+  <td style="text-align:right">0.694</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF16</td>
+  <td style="text-align:right">0.687087</td>
+  <td style="text-align:right">0.687</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>TF17</td>
+  <td style="text-align:right">0.702652</td>
+  <td style="text-align:right">0.703</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Best ours</td>
+  <td style="text-align:right">0.729652</td>
+  <td style="text-align:right">0.715</td>
+  <td>No</td>
+</tr>
+<tr>
+  <td>Family B all-at-once</td>
+  <td style="text-align:right">0.540783</td>
+  <td style="text-align:right">0.541</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Paper (single-tbl)</td>
+  <td style="text-align:right">0.799870</td>
+  <td style="text-align:right">0.800</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>Paper (full)</td>
+  <td style="text-align:right">0.809913</td>
+  <td style="text-align:right">0.810</td>
+  <td>Yes</td>
+</tr>
+</tbody>
+</table></div>
+<p>We parsed all14 rows ×23 task scores = <strong>322 printed scores</strong>, including every listed stage and both published baselines. The final Family A mean is0.702652 and B is0.540783; their gap is0.161870. These round to the headline0.703 and0.541. This is a complete audit of that printed matrix, not newly generated predictions.</p>
+<p><strong>A summary mismatch.</strong> The “Best ours” task entries average to0.729652, whereas its average column says0.715. The latter matches the best single listed checkpoint, TF12. Per-task maxima and one selected checkpoint answer different questions; a collection of best test scores is not a deployable checkpoint-selection procedure.</p>
+<p><strong>A prose mismatch.</strong> The paper says all-at-once degrades on every task. The printed final A/B comparison instead favors A on21 tasks and B on two: Diabetes130US and pol. Retain both exceptions. AppendixB's four-decimal exactness claims also require care because the input scores are already rounded.</p>
+<p><strong>Historical identity still matters.</strong> The paper's stage table omits TF11 despite the TF07–TF17 wording. Exact corpus bytes, exposures, architecture, optimizer schedule, seeds, splits, checkpoint selection and support identities remain unresolved. FamilyG has two descriptions. C-versus-E changes initialization as well as relational ordering. These ambiguities restrict causal interpretation and prevent an exact training recipe from being invented. <a href="../labs/sources/b20/manifest.json">Source packet</a> · <a href="../labs/evidence/b20/reproduction.json">Audit report</a></p>
+<blockquote>
+<p><strong>Reproduction status.</strong> Printed-table audit COMPLETE. Historical training <code>INCOMPLETE_SOURCE_PROTOCOL_GATE</code>; fresh paper pretraining and whole-paper reproduction <code>NOT_RUN</code>. The tested reproduction command authenticates sources and audits tables. Its <code>--fresh</code> option refuses execution with the missing requirements. It does not pretend to be a complete historical trainer.</p>
+</blockquote>
+<h2 id="6-%C2%B7-%E2%80%9C88%25-of-performance%E2%80%9D-needs-a-denominator">6 &#183; &#8220;88% of performance&#8221; needs a denominator<a class="anchor-link" href="#6-%C2%B7-%E2%80%9C88%25-of-performance%E2%80%9D-needs-a-denominator">&#182;</a></h2><p><strong>Worked example.</strong> The paper compares relational AUROC0.638 with0.725. Dividing gives88%. But chance AUROC is0.5. The achieved margin is0.138 and the reference margin is0.225. Their ratio is about61.3%, not88%. Both calculations are valid; they describe different quantities. Neither is a percentage of errors avoided.</p>
+<figure class="curriculum-figure" tabindex="0" role="region" aria-label="Raw AUROC retention88% versus above-chance retention61.3%." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b20/retention.png" alt="Raw AUROC retention88% versus above-chance retention61.3%." style="display:block;width:100%;min-width:670px;height:auto"><figcaption>Raw AUROC retention88% versus above-chance retention61.3%. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p>A count of databases also needs a unit. One database can yield multiple target tasks, contain many more cells, or be replayed for more updates. A smaller generated corpus alone does not establish a proportional compute saving. Compare data generation, optimization and inference costs separately.</p>
+<h2 id="7-%C2%B7-Build,-falsify,-explain">7 &#183; Build, falsify, explain<a class="anchor-link" href="#7-%C2%B7-Build,-falsify,-explain">&#182;</a></h2><p>In the notebook, implement three live functions: an exposure schedule that preserves the task multiset, a paired-contract check that rejects changed controls, and raw/above-chance AUROC retention. Each has immediate checks. The notebook shows the model, generator and trainer inline; saved-evidence replay runs without a repository checkout. Fresh course training is an explicit optional rerun of the complete12-fit grid.</p>
+<p><strong>Exit ticket.</strong> Write a curriculum experiment for your L201 proposal. Name the prior, fixed task pool, stage variable, matched exposure count, optimizer-state policy and checkpoint-selection rule. State which cost is matched and which is only measured. Decide whether this elective belongs in your relational research direction.</p>
+<p>Two falsification tests: (1) randomize order while keeping identical contents and exposures; does the advantage survive across paired seeds? (2) keep ordering fixed but match the proposed compute measure; does the smaller corpus still save the claimed resource? Explain why our small unsuccessful pretraining experiment cannot refute the full paper.</p>
+<div id="b20-teachback"></div>
+
+<p>Revisit the contract from memory after1,7 and30 days. Ask the agent about any unclear step or paste your experiment and defense for feedback. Author preparation does not establish your mastery: <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
+<p><a href="b19b-forecasting-contracts.html">Back to B19b</a> · <a href="../plan/year-5-6-bridge.md#b21">Next planned elective: B21</a> · <a href="../plan/year-5-6-bridge.md#b23">Reproduction handoff: B23</a></p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/curriculum-order.js"></script></body></html>

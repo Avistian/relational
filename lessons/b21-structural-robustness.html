@@ -1,0 +1,180 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B21 · Valid links, vulnerable predictions</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/benchmark-evidence.css"><link rel="stylesheet" href="../assets/structural-robustness.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebook gallery</a></nav><h1 id="B21-%C2%B7-Valid-links,-vulnerable-predictions">B21 &#183; Valid links, vulnerable predictions<a class="anchor-link" href="#B21-%C2%B7-Valid-links,-vulnerable-predictions">&#182;</a></h1><p class="subtitle">Research bridge · Elective ◆ · One win: define and test a legal relational perturbation</p>
+
+<p><a href="b20-curriculum-order.html">B20</a> changed training order while holding exposure and optimization fixed. Now freeze the model and change its database links. The mission asks whether relational structure supplies useful information. That also creates a responsibility: <strong>test how predictions depend on that information being correct</strong>.</p>
+<p><a href="../labs/b21-structural-robustness.ipynb">Student notebook</a> · <a href="../labs/html/b21-structural-robustness.html">Executed solution</a> · <a href="../labs/solutions/b21-structural-robustness.ipynb">Download solution</a> · <a href="../reference/b21-structural-robustness.html">Printable reference</a> · <a href="../labs/b21-reproduction.md">Reproduction contract</a></p>
+<h2 id="1-%C2%B7-A-valid-value-can-still-be-the-wrong-value">1 &#183; A valid value can still be the wrong value<a class="anchor-link" href="#1-%C2%B7-A-valid-value-can-still-be-the-wrong-value">&#182;</a></h2><p>A <strong>primary key (PK)</strong> identifies a row uniquely. A <strong>foreign key (FK)</strong> stores the primary key of a related row. Referential integrity means every non-null FK refers to an existing permitted parent. Our example permits no nulls. An event's <code>owner</code> can reference a real account and still identify the wrong account.</p>
+<p>A <strong>functional dependency</strong>, written <code>session → owner</code>, means that any two events with the same session must have the same owner. Checking each FK against the account table does not check this cross-row rule. <strong>Temporal eligibility</strong> is another condition: our course permits a parent only if it existed when the event occurred. This stronger event-time rule is part of our declared threat model.</p>
+<div id="b21-warmup"></div>
+
+<p><strong>Worked prerequisite.</strong> Events0 and1 belong to session0. Their owners are both account0. Changing event0's owner to account1 preserves FK existence but breaks <code>session → owner</code>. Changing both owners to account1 preserves both conditions. If account1 did not yet exist, the change would still fail the time rule. Recall the availability boundary from <a href="b19b-forecasting-contracts.html">B19b</a>; the precise event-time rule here is a separate declared constraint.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> “The database accepts this ID” is weaker than “this edit obeys every rule of the experiment,” and both are weaker than “the prediction stays good.”</p>
+</blockquote>
+<h2 id="2-%C2%B7-Write-the-threat-model-before-choosing-the-attack">2 &#183; Write the threat model before choosing the attack<a class="anchor-link" href="#2-%C2%B7-Write-the-threat-model-before-choosing-the-attack">&#182;</a></h2><p>A <strong>threat model</strong> says what the attacker knows, what they may change, and what counts as damage. Our white-box evaluator knows the fixed model weights, features and query answers. It may edit owner FKs; it may not edit features, answers, row IDs, session IDs or timestamps. The query cutoff is10. Parent account3 arrives at12 and cannot be used.</p>
+<p>An <strong>evasion attack</strong> changes the input to a frozen model. A <strong>poisoning attack</strong> changes data used to train a model. This lesson studies evasion only. Knowing the answers makes this a strong supervised stress test. It is not a claim that a deployed attacker necessarily has those answers.</p>
+<p><strong>Budget unit.</strong> One edit means one changed database FK cell. A graph often stores both child→parent and parent→child edges. Replacing one FK removes two directed edges and inserts two directed edges, but still costs one database edit. Moving the two-row session costs two edits. Count the final changed cells once; do not count API calls or repeated rewrites.</p>
+<section class="fk-board" data-fk-board><h3>Predict which rule will reject this edit</h3><div class="fk-controls"><label>Rows to change<select name="unit"><option value="session">Session0: events0 and1</option><option value="single">Event0 only</option><option value="other">Event2 only</option></select></label><label>New owner<select name="dest"><option value="0">Account0 · time0</option><option value="1" selected>Account1 · time1</option><option value="2">Account2 · time2</option><option value="3">Account3 · future time12</option><option value="4">Account4 · missing</option></select></label><label>Allowed FK cells<select name="budget"><option>0</option><option>1</option><option selected>2</option></select></label><button type="button">Reset</button></div><div class="fk-pair"><section class="fk-state"><strong>Clean database</strong><ol data-before><li>owners:0,0,1,2,1,2</li></ol></section><section class="fk-state"><strong>Proposed database</strong><ol data-after><li>owners:1,1,1,2,1,2</li></ol></section></div><output aria-live="polite">ADMISSIBLE · 2 FK cells changed; allowance2. Both session0 rows move together to account1.</output><p data-preview>Clean account means:2,3,5.5. Edited means:0,2.5,5.5. These are aggregation values, not final predictions.</p><noscript><p>Manual check: a one-row session0 edit breaks its shared-owner rule. The two-row move needs budget2. Account3 arrives after all events; account4 does not exist.</p></noscript></section>
+
+<p><strong>Try it.</strong> Move session0 to account1 with budget1, then budget2. Next move only event0. Finally choose the future account. Before each reveal, predict which constraint rejects the proposal. Features and event values never change.</p>
+<figure class="fk-figure" tabindex="0" role="region" aria-label="The same feature values follow different valid owner links; two cells change together." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b21/fk-trace.png" alt="The same feature values follow different valid owner links; two cells change together." style="display:block;width:100%;min-width:680px;height:auto"><figcaption>The same feature values follow different valid owner links; two cells change together. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<h2 id="3-%C2%B7-Model-architecture:-how-a-link-changes-a-prediction">3 &#183; Model architecture: how a link changes a prediction<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-how-a-link-changes-a-prediction">&#182;</a></h2><p>A <strong>heterogeneous graph</strong> has different node and edge types. Here the types are events and accounts. <strong>Message passing</strong> makes a node read vectors from its neighbors. GraphSAGE combines a node's own vector with an aggregate of those neighbor vectors. Two rounds let information travel along two edges. The <a href="https://arxiv.org/html/2607.07089v1#S6.SS3">paper's model</a> is a heterogeneous GraphSAGE model; its public tutorial includes tabular and temporal encoders before graph propagation.</p>
+<figure class="fk-figure" tabindex="0" role="region" aria-label="Course bidirectional GraphSAGE-style forward pass; paper/tutorial differences labeled." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b21/architecture.png" alt="Course bidirectional GraphSAGE-style forward pass; paper/tutorial differences labeled." style="display:block;width:100%;min-width:680px;height:auto"><figcaption>Course bidirectional GraphSAGE-style forward pass; paper/tutorial differences labeled. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Course inputs.</strong> Events carry two numeric features, beginning with values1,3,2,5,4,6. Accounts carry two fixed numeric features. Separate2×4 projection matrices map each type into four channels. Our four-channel vectors are learned-model-shaped representations, but their weights are randomly initialized and frozen: there is no course training.</p>
+<p><strong>One round.</strong> Let A be a6×4 matrix whose entry A[i,j] is1 when event i belongs to account j and0 otherwise. Let R=Aᵀ be the4×6 reverse matrix; the superscript means transpose, swapping rows and columns. An account reads the mean of its linked event vectors. An event reads its linked account vector. Each type adds its own transformed vector, its transformed neighbor mean and a bias, then applies ReLU, which replaces negative coordinates with zero. Both types update simultaneously from the previous round.</p>
+<p><strong>Worked aggregation.</strong> Account0 initially reads values1 and3, so their mean is2. Account1 reads2 and4, mean3. Move session0's two events to account1: account0 has no neighbors, defined to contribute a zero vector; account1 now reads1,3,2,4, mean2.5. This is one displayed feature coordinate, not the network's final prediction.</p>
+<p><strong>Output.</strong> Repeat message passing twice. A linear head maps each account's four-vector to a scalar prediction. Score only query accounts0,1,2. Account3's features cannot influence them through any legal graph. A test changes those future features by a huge amount and requires unchanged eligible predictions.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The course uses width4, mean aggregation, no layer normalization, fixed random weights and squared loss. The source tutorial uses width128, sum aggregation and trained weights for the selected regression task. The diagram labels these differences. Our evidence concerns finite model sensitivity, not the paper's accuracy or learned relational generalization.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Score-the-whole-replacement,-not-just-the-new-edge">4 &#183; Score the whole replacement, not just the new edge<a class="anchor-link" href="#4-%C2%B7-Score-the-whole-replacement,-not-just-the-new-edge">&#182;</a></h2><p>The <strong>loss</strong> measures disagreement with known answers. Our mean squared error (MSE) averages (prediction−answer)² over the three queries. Larger means more damage in this experiment. The paper's selected target uses mean absolute error (MAE), which averages absolute differences instead. These are different units and objectives.</p>
+<p>A <strong>gradient</strong> measures the local rate of change of loss with an input. Integer IDs have no useful ordinary gradient. Introduce continuous edge weights, then differentiate the graph calculation with respect to them. An existing edge starts at1 and a candidate edge starts at0. Our weighted mean divides by the sum of incoming weights, with an explicit zero-neighborhood rule. These fractional weights are a scoring device, not database edits.</p>
+<p><strong>Worked direction.</strong> Suppose a child's old forward-edge gradient is2 and the new gradient is5. The reverse-edge gradients are7 and11. Removing the old edges contributes−2−7. Adding the new edges contributes5+11. The predicted first-order loss change is7. Looking only at the new edges gives16 and ranks the wrong quantity.</p>
+<p>For a proposed adjacency change Δ=A_new−A_old, the full linear score is the sum of G_forward×Δ plus G_reverse×Δᵀ over all entries. Here G denotes a matrix of gradients and × means entrywise multiplication before summing. A coupled edit adds the contributions of every changed row. The public source also subtracts old-edge gradients; read the actual implementation alongside the paper's candidate-score notation. <a href="../labs/sources/b21/utils.py">Source</a></p>
+<figure class="fk-figure" tabindex="0" role="region" aria-label="Removal and insertion in both directions yield total slope7, not16." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b21/direction.png" alt="Removal and insertion in both directions yield total slope7, not16." style="display:block;width:100%;min-width:680px;height:auto"><figcaption>Removal and insertion in both directions yield total slope7, not16. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Local is not exact.</strong> ReLU boundaries, changing neighbor means, and two-round propagation make loss nonlinear. A large local slope need not identify the most damaging discrete edit. We verify30 admissible directions by a small positive finite difference: nudge along the direction, measure the loss change, divide by the nudge size, and compare with the gradient. Passing that check verifies local derivatives, not the attack's global optimality.</p>
+<h2 id="5-%C2%B7-Enumerate-the-finite-experiment-completely">5 &#183; Enumerate the finite experiment completely<a class="anchor-link" href="#5-%C2%B7-Enumerate-the-finite-experiment-completely">&#182;</a></h2><p><strong>Held fixed:</strong> database features and answers, admissible destinations, model weights within each seed, budget definition and loss. <strong>Varied:</strong> edit selection method and allowed FK-cell budget. <strong>Measured:</strong> actual changed cells, all query predictions, attacked MSE and regret. Regret is the exhaustive worst-case loss minus the method's achieved loss; zero means the method found a worst case in this finite universe.</p>
+<p>There are three seeds0/1/2, budgets0/1/2, and three methods. That gives27 comparison conditions and81 reported query predictions. Five sessions each have two alternative legal parents:10 atomic session/destination edits. The two-row session costs2; the four other sessions cost1. Within budget2, count the clean state,8 single-row changes,2 coupled changes and24 two-single-row combinations:35 states. With three models, score105 model/state pairs, or315 output coordinates, before selecting results.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Method</th>
+  <th>Selection rule</th>
+  <th>What the result establishes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Random</td>
+  <td>One uniform draw from states using exactly the budget</td>
+  <td>One paired random baseline draw, not its expectation</td>
+</tr>
+<tr>
+  <td>Gradient</td>
+  <td>Maximize linear gain over all legal states within the budget</td>
+  <td>Best local linearized choice in this small universe</td>
+</tr>
+<tr>
+  <td>Exhaustive</td>
+  <td>Maximize actual loss over all legal states within the budget, including clean</td>
+  <td>Exact worst case for this finite model and threat set</td>
+</tr>
+</tbody>
+</table></div>
+<p>Ties favor fewer changed cells, then lexicographic owner assignments. Clean is available to both optimizers, so they need not spend the full allowance. Our gradient selection enumerates feasible directions to isolate linearization error. The paper uses sampled candidates and selection heuristics, which introduce additional search limitations.</p>
+<div id="b21-predict"></div>
+
+<figure class="fk-figure" tabindex="0" role="region" aria-label="All three seeds and budgets; exhaustive regret is zero by definition." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b21/results.png" alt="All three seeds and budgets; exhaustive regret is zero by definition." style="display:block;width:100%;min-width:680px;height:auto"><figcaption>All three seeds and budgets; exhaustive regret is zero by definition. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Seed</th>
+  <th style="text-align:right">Budget</th>
+  <th style="text-align:right">Random MSE</th>
+  <th style="text-align:right">Gradient MSE</th>
+  <th style="text-align:right">Exhaustive MSE</th>
+  <th style="text-align:right">Exhaustive edits used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">3.629972</td>
+  <td style="text-align:right">3.629972</td>
+  <td style="text-align:right">3.629972</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">3.589556</td>
+  <td style="text-align:right">3.645049</td>
+  <td style="text-align:right">3.645049</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>0</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">3.662597</td>
+  <td style="text-align:right">4.046013</td>
+  <td style="text-align:right">4.046013</td>
+  <td style="text-align:right">2</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">3.671067</td>
+  <td style="text-align:right">3.671067</td>
+  <td style="text-align:right">3.671067</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">3.685567</td>
+  <td style="text-align:right">3.676531</td>
+  <td style="text-align:right">3.685567</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">3.646104</td>
+  <td style="text-align:right">3.680894</td>
+  <td style="text-align:right">3.685567</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">3.709689</td>
+  <td style="text-align:right">3.709689</td>
+  <td style="text-align:right">3.709689</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">3.709689</td>
+  <td style="text-align:right">3.709689</td>
+  <td style="text-align:right">3.732193</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">3.666667</td>
+  <td style="text-align:right">3.762107</td>
+  <td style="text-align:right">3.885177</td>
+  <td style="text-align:right">2</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Read the result.</strong> At budget2, the gradient choice matches exhaustive search for seed0 but misses it for seeds1 and2. Seed1's exact worst case uses only one changed FK cell. More permitted edits cannot lower the exhaustive maximum, because the smaller feasible set remains included. A heuristic forced to use more edits can improve or worsen the attack. Do not infer that random never works or that gradients always win from three random-network seeds.</p>
+<p>The independent audit uses a separate NumPy forward and enumerates the six individual FK cells instead of the five session choices. It checks every legal state, prediction, loss and method selection. Its output agrees exactly with the saved course prediction coordinates in this runtime. Eight deliberately corrupted reports are rejected. <a href="../labs/evidence/b21/diagnostic.json">Numerical evidence</a> · <a href="../labs/_verify_b21_results.json">Independent audit</a></p>
+<h2 id="6-%C2%B7-Full-reproduction-starts-with-preserving-the-clean-model">6 &#183; Full reproduction starts with preserving the clean model<a class="anchor-link" href="#6-%C2%B7-Full-reproduction-starts-with-preserving-the-clean-model">&#182;</a></h2><p>Our named historical target is the entire qualifying-position block of Table4 in <a href="https://arxiv.org/abs/2607.07089v1">Structural Adversarial Attacks on Relational Deep Learning under Integrity Constraints</a>. It needs seven methods, five budgets1/25/50/75/100 and five seeds39–43:175 seed conditions. The published training setting has18epochs, two layers, width128, batch512,128neighbors per hop and100candidate samples per source. <a href="https://arxiv.org/html/2607.07089v1#A1.SS2">Appendix</a></p>
+<p><strong>What is available.</strong> The pinned author repository provides model/trainer/attack code and a notebook with saved output. We authenticate those bytes and extract all35 selected paper mean/std cells and all35 saved tutorial result rows. The tutorial has one epoch, one seed and budgets1/125/250/375/500. Its current seed loop cannot run as written, so saved outputs are historical notebook contents, not proof that the present cells execute.</p>
+<p><strong>Clean-equivalence test.</strong> Before any attack, the ordinary model and its differentiable wrapper should agree on the same graph. Our current-runtime probe finds four newly introduced root-bias tensors not filled by the permissive weight copy. Maximum embedding differences across three small fixtures are1.422336,0.712215 and1.648367. Zeroing only those biases makes the embeddings match exactly on all three fixtures. That controlled repair isolates this local conversion issue; it does not authenticate the authors' original environment or establish full benchmark equivalence.</p>
+<p><strong>Constraint test.</strong> The released candidate sampler admits future parents on our supplied fixture and does not enforce our coupled-session dependency. Its edit function can produce a graph dictionary that differs from the underlying relation stores. The attackable model reads that dictionary, so the edit is not a no-op; the problem is that database/graph consistency has not been demonstrated. These are bounded tests of released components, not claims that every original experiment violated its rules. <a href="../labs/evidence/b21/source-probes.json">Executed source probes</a></p>
+<blockquote>
+<p><strong>Scope check.</strong> Selected historical reproduction is <strong>INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN</strong>. Original checkpoints, exact batches, candidate draws, data identities and dependency versions have not been authenticated. Paper cells and tutorial results use different protocols and are <strong>INCOMPARABLE</strong>. We preserve the complete public source, an executable audit and a command that refuses historical training until the gates are resolved. No epochs or seeds are silently reduced to manufacture a reproduction.</p>
+</blockquote>
+<p><strong>Why this matters.</strong> Without clean equivalence, an apparent attack effect could include a changed predictor. Without valid database reconstruction, a graph perturbation may not represent any legal database edit. Without identical historical inputs, numerical proximity cannot establish reproduction. <a href="../labs/b21-reproduction.md">Full contract and commands</a></p>
+<h2 id="7-%C2%B7-Build-the-checks-yourself">7 &#183; Build the checks yourself<a class="anchor-link" href="#7-%C2%B7-Build-the-checks-yourself">&#182;</a></h2><p>The standalone notebook has three live functions:</p>
+<ol>
+<li><code>changed_cells</code>: count final FK cells that differ, including every member of a coupled edit.</li>
+<li><code>validate_assignment</code>: enforce existing integer parent IDs, session consistency, availability and budget.</li>
+<li><code>direction_score</code>: include old-edge removal and new-edge insertion in both directions.</li>
+</ol>
+<p>Each CHECK rejects a plausible wrong answer. Your functions feed a complete fresh finite rerun and comparison with saved evidence. The full small model and independent oracle are visible in the notebook. The paper lane separately authenticates the archived source and saved output. No repository checkout is required for either default lane.</p>
+<p><strong>Counterfactual exercise.</strong> If the attacker does not know query answers, which selection rules would become unavailable? If you allow only one-row edits, what happens to session0's feasible moves? Change one assumption at a time and report the newly defined universe rather than treating it as the original experiment.</p>
+<div id="b21-teachback"></div>
+
+<p><strong>Exit defense.</strong> Explain why FK validity is insufficient, why a two-row move costs two, why clean-equivalence is necessary, and why a failed attack does not prove a formal robustness guarantee. Exhaustive search gives a guarantee only over this explicitly finite set for these fixed models. It says nothing about other data, other edits or privacy. Near-random privacy-attack success would not prove differential privacy either; that is the alternative B21 route, not an outcome measured here.</p>
+<p>Ask the agent a follow-up question or paste your explanation for feedback. Revisit the legal-edit trace tomorrow, the gradient calculation in one week, and the threat-model defense in one month. Author tests do not establish learner mastery.</p>
+<p>Next: <a href="../plan/year-5-6-bridge.md#b22">B22</a> asks whether an intervention on a newer model mechanism supports the claim made about it. Carry forward the same habit: freeze the boundary, alter one thing, and measure the consequence.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/structural-robustness.js"></script></body></html>

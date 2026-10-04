@@ -1336,3 +1336,20 @@ Primary: Correa and Azevedo, [Context Window Failures in Relational Foundation M
 - [TabPFN-TS v4](https://arxiv.org/html/2501.02945v4): temporal wrapper, GIFT metrics, Figure4.1 and AppendixA.3.
 - [Pinned wrapper](https://github.com/PriorLabs/tabpfn-time-series/tree/47dc9c46bb379f40b455d20b07aa1a891b21907e): full code, source/pseudocode differences, client/local identity limits.
 - [Pinned GIFT release](https://github.com/SalesforceAIResearch/gift-eval/tree/2c13c6ff6fd7557c4353674c800d41995f280233): all13 plotted models and97tasks, baseline correction history. Full archive under labs/sources/b19b; score replay is separate from fresh inference and historical figure identity.
+
+## B20 · Curriculum Matters: ordering versus scale
+
+[Curriculum Matters v1](https://arxiv.org/html/2607.29120v1), §3, Table1, Tables5–6 and AppendixB. Full322-score printed arithmetic audit: finalA/B0.702652/0.540783;21/23 task wins; best-ours mean0.729652 versus displayed0.715. Corpus/schedule/architecture/seed/split/selection identities remain unresolved. [Frozen contract](labs/b20-reproduction.md) distinguishes course pretraining, printed-table arithmetic and historical paper reproduction. Inherited source-shaped RDB-PFN implementation from B13 is authenticated separately; it is not Curriculum Matters author code.
+
+
+## B21 · Structural robustness under integrity constraints
+
+- [Structural Adversarial Attacks on Relational Deep Learning under Integrity Constraints, v1](https://arxiv.org/abs/2607.07089v1): primary paper. Selected target Table4 qualifying-position, seven methods/five budgets/five seeds. Finite stress and formal guarantee are different claims.
+- [Author repository](https://github.com/alanganyDB/Structural-Adversarial-Attacks-on-Relational-Deep-Learning-under-Integrity-Constraints), pinned1bc60c7eee605fddbb0975a1c28c64ecc8ce515a; [archive manifest](labs/sources/b21/manifest.json). Current tutorial settings/output differ from the target; local conversion and constraint failures are documented, not silently repaired into historical evidence.
+- [B21 reproduction contract](labs/b21-reproduction.md), [source probes](labs/evidence/b21/source-probes.json), and [complete finite experiment](labs/evidence/b21/diagnostic.json). Historical source gate NOT_RUN; course experiment COMPLETE.
+
+## B22 · RefineICL support-state interventions
+
+- [RefineICL v1](https://arxiv.org/html/2609.27679v1): §3–4 architecture, Appendix E.2 support-write intervention, Appendix H release limits. Exploratory September preprint; trained weights excluded from described supplement.
+- [Authenticated source manifest](labs/sources/b22/manifest.json), [source audit](labs/evidence/b22/reproduction.json) and [reproduction contract](labs/b22-reproduction.md). The inspected35-member arXiv source archive contains no executable model/probe/checkpoint.
+- [Complete course experiment](labs/evidence/b22/diagnostic.json): random fixed-weight mechanism evidence, not trained-model or historical reproduction.

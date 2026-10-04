@@ -1,0 +1,164 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B22 · The support set is working memory</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/benchmark-evidence.css"><link rel="stylesheet" href="../assets/support-state.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebook gallery</a></nav><h1 id="B22-%C2%B7-The-support-set-is-working-memory">B22 &#183; The support set is working memory<a class="anchor-link" href="#B22-%C2%B7-The-support-set-is-working-memory">&#182;</a></h1><p class="subtitle">Research bridge · Elective ◆ · One win: isolate an internal update and trace its downstream effect</p>
+
+<p><a href="b21-structural-robustness.html">B21</a> changed database links while holding a model fixed. Here we hold the input table fixed and change one internal state. The mission asks which computations make relational and tabular models useful. To answer that, we need experiments that distinguish a plausible explanation from a mechanism that actually affects predictions.</p>
+<p><a href="../labs/b22-support-state-refinement.ipynb">Student notebook</a> · <a href="../labs/html/b22-support-state-refinement.html">Executed solution</a> · <a href="../labs/solutions/b22-support-state-refinement.ipynb">Download solution</a> · <a href="../reference/b22-support-state-refinement.html">Printable reference</a> · <a href="../labs/b22-reproduction.md">Reproduction contract</a></p>
+<h2 id="1-%C2%B7-Recall-the-boundary,-then-move-inside-it">1 &#183; Recall the boundary, then move inside it<a class="anchor-link" href="#1-%C2%B7-Recall-the-boundary,-then-move-inside-it">&#182;</a></h2><div id="b22-warmup"></div>
+
+<p>An <strong>intervention</strong> deliberately changes one part of a computation. A <strong>matched control</strong> keeps the other relevant conditions the same. In B21 that meant the same features and weights with different permitted links. In B22 it means the same examples, labels, weights and current query output, with different stored support states.</p>
+<p><strong>In-context learning (ICL)</strong> predicts from examples supplied in the input without updating the model's weights for that task. <strong>Support rows</strong> are those examples, with known answers. <strong>Query rows</strong> are the rows whose answers the model must predict. A <strong>state</strong> is the numeric vector representing a row inside the network. Weights are fixed during inference; these vectors can still change from block to block.</p>
+<p><strong>Worked prerequisite.</strong> Suppose three support customers have labels <code>buy, buy, leave</code>, and a fourth customer's label is unknown. A model may read their features and the three known labels. Reading the fourth customer's answer would leak the quantity being predicted. Our code therefore accepts query features in <code>forward</code>, but no query labels.</p>
+<blockquote>
+<p><strong>In plain terms.</strong> A fixed program can revise its working memory. “No weight update” does not mean “no internal change.”</p>
+</blockquote>
+<h2 id="2-%C2%B7-Read-a-correction,-choose-its-size,-add-it">2 &#183; Read a correction, choose its size, add it<a class="anchor-link" href="#2-%C2%B7-Read-a-correction,-choose-its-size,-add-it">&#182;</a></h2><p>The September preprint <a href="https://arxiv.org/html/2609.27679v1#S3">RefineICL</a> proposes that labeled support representations are refined and reused for later query predictions. It motivates an attention-gated update. This is an exploratory mechanism account, not an established claim that every model computes the same algorithm.</p>
+<p><strong>Attention reads.</strong> Each receiving row produces a query vector. Support rows produce key vectors, used for similarity, and value vectors, carrying information. Similarities pass through <strong>softmax</strong>: exponentiate scores and divide by their sum. The resulting nonnegative weights sum to one. A weighted sum of values is the attention read.</p>
+<p><strong>Worked example.</strong> Attention weights <code>[0.75, 0.25]</code> reading values <code>[2, 5]</code> produce <code>0.75×2 + 0.25×5 = 2.75</code>. A gate of <code>0.5</code> scales this to <code>1.375</code>. Adding it to the old receiving state <code>4</code> gives <code>5.375</code>. These are illustrative scalar values, not measured RefineICL activations.</p>
+<figure class="support-figure" tabindex="0" role="region" aria-label="Weighted read, gate and residual arithmetic in one scalar example." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b22/operator.png" alt="Weighted read, gate and residual arithmetic in one scalar example." style="display:block;width:100%;min-width:680px;height:auto"><figcaption>Weighted read, gate and residual arithmetic in one scalar example. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Gating scales.</strong> A gate is a state-dependent multiplier for the read. RefineICL uses <strong>SiLU</strong>, the function <code>g / (1 + exp(−g))</code>, coordinate by coordinate. It is not restricted to probabilities or to the range 0–1. A <strong>residual connection</strong> adds the projected correction to the previous state instead of replacing it.</p>
+<p>The paper's block has this form:</p>
+<div class="highlight"><pre><span></span>z        = LayerNorm(h)
+read     = attention(z)
+gate     = SiLU(z × W_gate)
+h_next   = h + (Norm(read) ⊙ gate) × W_out
+</pre></div>
+<p><code>h</code> contains row states; <code>z</code> is their normalized version. <strong>Layer normalization</strong> centers and scales the coordinates within each row; a small epsilon prevents division by zero. <code>W_gate</code> and <code>W_out</code> are learned projection matrices. <code>⊙</code> multiplies corresponding coordinates. The paper leaves the attention-output operation written as <code>Norm</code>; our course explicitly uses layer normalization without learned scale/bias. Its parameters are random and fixed, not learned.</p>
+<p><strong>CHECK.</strong> If the gate is zero, how much can this block change its input? If you double an attention weight, what else must change to keep weights summing to one?</p>
+<h2 id="3-%C2%B7-Model-architecture:-where-the-support-states-live">3 &#183; Model architecture: where the support states live<a class="anchor-link" href="#3-%C2%B7-Model-architecture:-where-the-support-states-live">&#182;</a></h2><p>RefineICL's complete model includes more than this block. <strong>Typed encoding</strong> treats numeric values, categories and missingness separately. <strong>Feature interactions</strong> mix information between columns. Its selected low-rank interaction first scores candidate column pairs, selects up to16 neighbors and forms messages through smaller intermediate vectors. “Low rank” here means projecting to fewer coordinates before multiplying and projecting back.</p>
+<p><strong>RowCLS tokens</strong> are learned summary tokens that gather feature information into fixed-width row vectors. <strong>Typed memory</strong> retains earlier feature states so later blocks can read information lost during row compression. The paper describes two gated memory reads, at one-third and two-thirds of the contextual stack. The diagram identifies these paths and the query-label boundary. <a href="https://arxiv.org/html/2609.27679v1#S4">Architecture, §4 and Appendix C</a></p>
+<figure class="support-figure" tabindex="0" role="region" aria-label="Full paper topology and explicitly separate course implementation." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b22/architecture.png" alt="Full paper topology and explicitly separate course implementation." style="display:block;width:100%;min-width:680px;height:auto"><figcaption>Full paper topology and explicitly separate course implementation. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Read the diagram labels.</strong> L24 means 24 contextual blocks. An <strong>FFN</strong> is a feed-forward network applied separately to each row; an expanded FFN first widens the vector before projecting it back. RefineICL removes that standalone expansion from the contextual stack, but still has learned projections and nonlinear gates. <strong>RMS</strong> means root mean square, a measure of vector magnitude. The paper caps a memory-read correction relative to the current row-state RMS. Its feature-interaction ranks are 32 before compression and 64 in the row encoder. Its memory reads use eight attention heads, parallel reading operations whose outputs are combined.</p>
+<p><strong>Course forward pass.</strong> We use 12 support and16 query rows, each with two numeric features. A2×8 projection creates28 row vectors of width 8. A known-label embedding is added only to the12 support rows. Three blocks update all 28 states. Every row reads only the12 support keys and values, so query rows cannot become evidence for other rows. A final8×2 projection gives two <strong>logits</strong>, unnormalized class scores, for each query. Softmax would convert those scores to class probabilities.</p>
+<p><strong>Training and inference.</strong> In the paper, pretraining learns a reusable procedure from tasks; inference keeps those learned weights fixed. Our experiment has no pretraining or optimization. We draw three sets of random weights and freeze them. The same interface makes the intervention inspectable without pretending we recovered the trained model.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The course omits the paper's typed feature encoder, selected feature interactions, RowCLS compressor and memory re-entry. Width8 and3 blocks replace width 1024 and24 blocks. The complete paper topology is shown for understanding; the notebook implements the explicitly labeled course model. Neither is presented as an executable historical reconstruction.</p>
+</blockquote>
+<h2 id="4-%C2%B7-Keep-the-current-query-output;-remove-one-support-write">4 &#183; Keep the current query output; remove one support write<a class="anchor-link" href="#4-%C2%B7-Keep-the-current-query-output;-remove-one-support-write">&#182;</a></h2><p>After block 2, branch the same forward pass. In the normal arm, keep its output. In the <strong>skip</strong> arm, replace only support outputs with their inputs to that block. Keep every query output exactly the same. Run block 3 normally in both arms.</p>
+<figure class="support-figure" tabindex="0" role="region" aria-label="Same current query; different support memory changes the later read." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b22/intervention.png" alt="Same current query; different support memory changes the later read." style="display:block;width:100%;min-width:680px;height:auto"><figcaption>Same current query; different support memory changes the later read. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Why preserve queries?</strong> Rewinding query states too would change two routes at once: the current query calculation and future reads from support. Preserving query outputs isolates the effect of the stored support write on later computation. This is a causal intervention within this fixed model, input and state-replacement rule. It does not prove that the changed state is typical of states seen during training.</p>
+<p><strong>Identity control.</strong> Copy the original support outputs back into the same positions. Predictions must remain exactly unchanged. A difference indicates an implementation bug, not a scientific discovery.</p>
+<p><strong>Permutation control.</strong> Move each support update to the next support row, wrapping the last one to the first. Add those updates to the original recipient inputs. This preserves the collection of update vectors while changing who receives them. In our course, later blocks run on this changed state.</p>
+<blockquote>
+<p><strong>Scope check.</strong> The paper's Table 10 permutation control scores an immediate counterfactual objective; it does not run a new downstream trajectory. Our downstream permutation is a declared additional control. Do not attach the paper's Table 10 numbers to it.</p>
+</blockquote>
+<section class="support-board" data-support-board><h3>Predict the later read before changing the memory</h3><div class="support-controls"><label>Support intervention<select name="mode"><option value="normal">Normal</option><option value="identity">Identity replacement</option><option value="skip" selected>Skip support write</option><option value="permute">Permute support updates</option></select></label><label>First support attention: <span data-attention>0.75</span><input name="attention" type="range" min="0" max="1" step=".25" value=".75"></label><label>Illustrative scalar gate: <span data-gate>0.50</span><input name="gate" type="range" min="0" max="1" step=".25" value=".5"></label><button type="button">Reset</button></div><div class="support-pair"><section class="support-state"><strong>Normal baseline</strong><div data-normal>Support[2,5]; query4; later read2.75; final5.375.</div></section><section class="support-state"><strong>Changed memory</strong><div data-changed>Support[1,3]; query4; later read1.50; final4.750.</div></section></div><output aria-live="polite">Normal5.375 · skip4.750 · difference−0.625. Current query4 is preserved.</output><noscript><p>Static default: skipping the write changes only support memory. Manually set gate0: both final states become4. Set identity: both become5.375.</p></noscript></section>
+
+<p><strong>Worked trace.</strong> Support values entering the intervention block are <code>[1,3]</code>; its outputs are <code>[2,5]</code>. The updates are <code>[1,2]</code>. Skipping leaves <code>[1,3]</code>; swapping updates gives <code>[3,4]</code>. In every arm the current query output remains4. A later read with weights <code>[0.75,0.25]</code> and scalar gate 0.5 gives5.375 normally,4.75 after skipping, and5.625 after swapping. A zero gate makes all final scalar states equal4. This widget illustrates routing; it does not calculate class accuracy or the full neural network.</p>
+<h2 id="5-%C2%B7-Measure-the-paired-outcome,-not-the-attractiveness-of-the-explanation">5 &#183; Measure the paired outcome, not the attractiveness of the explanation<a class="anchor-link" href="#5-%C2%B7-Measure-the-paired-outcome,-not-the-attractiveness-of-the-explanation">&#182;</a></h2><p><strong>Cross-entropy (CE)</strong> is the average negative natural logarithm of the probability assigned to the true class. Lower is better. <strong>Accuracy</strong> is the fraction of query rows whose highest-scoring class is correct. Our paired effect is <code>changed − normal</code>: positive CE means worse predictions; positive accuracy means better predictions. Accuracy differences are reported in <strong>percentage points</strong>, so0.50→0.625 is+12.5 points.</p>
+<p><strong>Worked metric.</strong> True class0, baseline logits <code>[2,0]</code>, changed logits <code>[0,2]</code>: baseline CE≈0.127; changed CE≈2.127. The increase is 2.0. The intervention has flipped the prediction away from the true class. We score both arms on identical query rows; no answer enters the state update.</p>
+<div id="b22-predict"></div>
+
+<p><strong>Complete course protocol.</strong> Three fixed random models ×24 shared episodes ×4 arms =288 trajectories. Episodes combine three rules—linear boundary, an XOR-type rule (class 1 when coordinate signs agree; a label-swapped XOR), and radial boundary—with eight replicates. Each has six supports and eight queries per class. The seed controls coordinates; the same coordinates and labels are reused across arms. We evaluate all4,608 query predictions and retain every intermediate state. There is no outcome-based filtering.</p>
+<div class="evidence-table" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>
+<thead>
+<tr>
+  <th>Arm</th>
+  <th style="text-align:right">Random seed</th>
+  <th style="text-align:right">Mean ΔCE</th>
+  <th style="text-align:right">Episode ΔCE range</th>
+  <th style="text-align:right">Worse CE</th>
+  <th style="text-align:right">Mean Δaccuracy (pp)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>identity</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">+0.000000</td>
+  <td style="text-align:right">[+0.000000, +0.000000]</td>
+  <td style="text-align:right">0/24</td>
+  <td style="text-align:right">+0.000</td>
+</tr>
+<tr>
+  <td>identity</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">+0.000000</td>
+  <td style="text-align:right">[+0.000000, +0.000000]</td>
+  <td style="text-align:right">0/24</td>
+  <td style="text-align:right">+0.000</td>
+</tr>
+<tr>
+  <td>identity</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">+0.000000</td>
+  <td style="text-align:right">[+0.000000, +0.000000]</td>
+  <td style="text-align:right">0/24</td>
+  <td style="text-align:right">+0.000</td>
+</tr>
+<tr>
+  <td>skip</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">-0.030857</td>
+  <td style="text-align:right">[-0.169584, +0.065388]</td>
+  <td style="text-align:right">6/24</td>
+  <td style="text-align:right">-0.260</td>
+</tr>
+<tr>
+  <td>skip</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">+0.001084</td>
+  <td style="text-align:right">[-0.008919, +0.014739]</td>
+  <td style="text-align:right">14/24</td>
+  <td style="text-align:right">-2.344</td>
+</tr>
+<tr>
+  <td>skip</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">+0.003664</td>
+  <td style="text-align:right">[-0.029844, +0.053670]</td>
+  <td style="text-align:right">15/24</td>
+  <td style="text-align:right">+1.042</td>
+</tr>
+<tr>
+  <td>permute</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">+0.001634</td>
+  <td style="text-align:right">[-0.018556, +0.023624]</td>
+  <td style="text-align:right">11/24</td>
+  <td style="text-align:right">-0.521</td>
+</tr>
+<tr>
+  <td>permute</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">-0.000073</td>
+  <td style="text-align:right">[-0.006960, +0.004808]</td>
+  <td style="text-align:right">12/24</td>
+  <td style="text-align:right">-0.260</td>
+</tr>
+<tr>
+  <td>permute</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">-0.000746</td>
+  <td style="text-align:right">[-0.050195, +0.050656]</td>
+  <td style="text-align:right">12/24</td>
+  <td style="text-align:right">+3.385</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="support-figure" tabindex="0" role="region" aria-label="Random-model course results, not the paper checkpoint experiment." style="max-width:100%;overflow-x:auto"><img src="../labs/figures/b22/results.png" alt="Random-model course results, not the paper checkpoint experiment." style="display:block;width:100%;min-width:680px;height:auto"><figcaption>Random-model course results, not the paper checkpoint experiment. On narrow screens, scroll horizontally.</figcaption></figure>
+
+<p><strong>Read the result.</strong> Identity has zero effect everywhere. Skipping a support write has mixed signs, including a negative mean CE change for seed 0: removing part of a random network can improve its predictions. The experiment establishes that the code isolates the route and that later predictions can depend on the support write. It does not establish that random updates are useful, that the paper's learned updates are reproduced, or that the method helps real relational tasks.</p>
+<p><strong>Uncertainty unit.</strong> Twenty-four episodes share three generating rules. The same episodes are used for all three models. Dots show paired cases, not independent training replications. We show all model means and episode ranges; we do not turn288 trajectories into a spurious sample size for pretrained-model superiority.</p>
+<h2 id="6-%C2%B7-The-exact-paper-target-and-the-missing-evidence">6 &#183; The exact paper target and the missing evidence<a class="anchor-link" href="#6-%C2%B7-The-exact-paper-target-and-the-missing-evidence">&#182;</a></h2><p>The selected target is <a href="https://arxiv.org/html/2609.27679v1#A5.SS2">Appendix E.2's support-write intervention</a>. It uses the pretrained L24 checkpoint at 15K updates (15,000 training updates), restores block 12's support input, preserves its query output and runs later blocks. Its72 RBF episodes use8 features,1,024 supports and256 queries; the grid is3 class counts ×3 rule sizes ×8 replicates. An <strong>RBF kernel</strong> gives high similarity to nearby points and lower similarity to distant points; the paper constructs synthetic labeling rules from its eigenmodes, directions of variation of the kernel matrix.</p>
+<p>The authors report CE increasing by 0.0510 on average, with an episode-bootstrap95% interval[0.0417,0.0608], and worse CE in72/72 episodes. Accuracy decreases by1.44 points. A <strong>paired bootstrap</strong> resamples complete episode pairs, preserving the within-episode comparison. These are paper-reported numbers, not our measured scores.</p>
+<p><strong>What the result supports.</strong> In that checkpoint and episode set, the middle support write contributes to later query performance. It does not by itself establish that a particular support objective explains the effect. An internal representation can change, or score better under a probe, without downstream generalization improving.</p>
+<p><strong>Reproduction status.</strong> <a href="https://arxiv.org/html/2609.27679v1#A8">Appendix H</a> says trained weights are absent from the supplement. The retrieved arXiv v1 archive contains35 members and no executable model/probe/checkpoint files. We authenticated those responses and checked the reported target, but did not recover the weights, exact episode identities or full-precision paired records. The historical lane is <strong>INCOMPLETE_SOURCE_PROTOCOL_GATE / NOT_RUN</strong>. The <a href="../labs/_reproduce_b22.py">CLI</a> refuses fresh paper inference until those gaps are resolved. The <a href="../labs/sources/b22/manifest.json">manifest</a> and <a href="../labs/evidence/b22/reproduction.json">source audit</a> make the boundary reviewable.</p>
+<blockquote>
+<p><strong>Scope check.</strong> A source audit, complete course experiment and historical reproduction are different accomplishments. The paper also labels its TabArena continuation benchmark-informed; do not treat that ranking as untouched evaluation. Full pretraining and whole-benchmark reproduction remain unrun. Nothing in this lesson establishes a relational-model advantage.</p>
+</blockquote>
+<h2 id="7-%C2%B7-Implement,-challenge,-explain">7 &#183; Implement, challenge, explain<a class="anchor-link" href="#7-%C2%B7-Implement,-challenge,-explain">&#182;</a></h2><p>In the portable notebook, complete three functions used by the full experiment. The <a href="../labs/relkit/refinement_b22.py">complete visible implementation</a> is also available as a Python file:</p>
+<ol>
+<li><code>attention_read</code>: stable similarity weighting and support-value reading. Subtract the largest score before exponentiating; this preserves softmax while preventing overflow.</li>
+<li><code>replace_support</code>: restore or permute only support rows; preserve query outputs and input arrays. Permute updates, not final states.</li>
+<li><code>paired_effect</code>: compute CE and accuracy differences with their signs and units. Reject misaligned inputs.</li>
+</ol>
+<p><strong>CHECK.</strong> Run all 288 trajectories, then reconstruct them with the independent scalar-loop oracle. Change a query label after inference: logits must stay fixed while scores may change. Replace the whole state instead of support rows: the preservation test must fail. Delete an episode result: the coverage audit must fail.</p>
+<div id="b22-teachback"></div>
+
+<p><strong>EXIT.</strong> Explain which path remains fixed, why identity is necessary, what a mixed-sign result means, and which artifacts prevent the historical reproduction. Submit your three functions and explanation to the agent for feedback. Author execution is not learner mastery; your defense is still pending. Revisit the intervention from memory tomorrow, in one week and in one month.</p>
+<p><strong>Primary reading.</strong> Read RefineICL §3–4, then Appendix E.2 and H. First sketch the path without the diagram; then explain what observation would contradict the claim that a particular support write improves later predictions.</p>
+<p><strong>Next: B23.</strong> Freeze one declared comparison and authenticate the full evidence chain. A well-designed intervention is one ingredient; a reproducible checkpoint, data protocol and fair comparator are still required. <a href="../plan/year-5-6-bridge.md#b23">Research handoff plan</a></p>
+<p>Ask the agent any follow-up question, especially if the difference between weights, states and support labels is unclear.</p>
+</article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/support-state.js"></script></body></html>
