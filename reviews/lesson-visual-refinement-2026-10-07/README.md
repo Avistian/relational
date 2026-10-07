@@ -33,3 +33,11 @@ The mobile model architectures are deliberately taller: six illustrated phases i
 - Stripping generated visual regions and reference wrappers yields the same original content in all 20 lesson HTML files.
 
 The clean-index Pages build and deployment/live results are recorded at delivery. Test counts support rendering and preservation claims; the operation-specific changes above are the teaching-quality evidence. This pass makes no course-wide quality certification and marks no learner outcomes complete.
+
+## Delivery
+
+- Implementation pushed as `5856fb76e8f733169c6efcdd1ac38488259f229b`. The clean Git-index Pages build passed before commit.
+- [Pages run 37639123555](https://github.com/Avistian/relational/actions/runs/37639123555) completed successfully; `deployment.json` records the deployed commit.
+- `live-hashes.json` verifies all 56 changed public files against the local committed bytes, including lesson pages, SVG/CSS assets, six notebooks, three rendered notebooks and three portable PNGs: zero mismatches.
+- `live/browser.json` records 40 drawing checks, 40 desktop/mobile lesson visits, 20 no-JS/print checks and 20 mobile no-JS checks: zero errors. Selected live screenshots are retained alongside the report.
+- The deployment artifact was 1,765,560,335 bytes, approximately 942 KB larger than the previous deployment. GitHub warned that it exceeds the stated 1 GB allowance; deployment succeeded. This existing site-capacity risk remains unresolved by this visual refinement.
