@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 105 — Continuous time: event streams versus snapshots</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0104-information-leakage-in-time.html">Lesson 104</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 105</p><h1>Continuous time: event streams versus snapshots</h1></header><!-- sequence-review:start -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 105 — Continuous time: event streams versus snapshots</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/visual-stories.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0104-information-leakage-in-time.html">Lesson 104</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 105</p><h1>Continuous time: event streams versus snapshots</h1></header><!-- sequence-review:start -->
 
 <aside class="sequence-context" aria-label="Where this lesson fits">
 <p class="sequence-eyebrow">From Lesson 104 to this lesson</p>
@@ -9,6 +9,9 @@
 
 <p class="subtitle">One tangible win: build two representations of the same interactions, then defend which information your prediction needs. Core reading: 15 minutes · lab: 35–50 minutes.</p>
 
+<!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 4 figures</summary><ol><li><a href="#visual-figure-1">Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six</a></li><li><a href="#visual-figure-2">Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can…</a></li><li><a href="#visual-figure-3">Synthetic query at 6 seconds: three eligible records are withheld by closed-window access</a></li><li><a href="#visual-figure-4">Measured full Wikipedia census, not a prediction benchmark</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
 <h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without opening L104, write three short answers:</p>
 <ol>
 <li>For a prediction just before time 10, can an interaction stamped 10 enter the history?</li>
@@ -28,14 +31,14 @@
 <p><strong>k = floor((t − o) / Δ), with window [o + kΔ, o + (k + 1)Δ).</strong></p>
 <p>The left boundary is included; the right boundary belongs to the next window. We use origin 0 and nonnegative times. “Daily” here means fixed 86,400-second bins from that origin, not local calendar dates with daylight-saving changes.</p>
 <p><strong>Worked stream, in seconds:</strong> AX@1, AX@3, BY@3, AY@8, BX@12, AX@19. A/B are users; X/Y are pages. With Δ = 10, the first window contains four events but only three distinct endpoint pairs. A binary graph stores one edge per pair. A count-weighted graph stores weights 2, 1, 1.</p>
-<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l105/aggregation.svg" alt="Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six. Timestamp ties remain simultaneous."><figcaption>Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six. Timestamp ties remain simultaneous.</figcaption></figure>
+<figure class="stream-figure" tabindex="0" id="visual-figure-1"><img src="../labs/figures/l105/aggregation.svg" alt="Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six. Timestamp ties remain simultaneous."><figcaption>Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six. Timestamp ties remain simultaneous.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l105/aggregation.svg" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>
 
 <p><strong>Predict before changing the control:</strong> will increasing the width from 10 to 20 reduce the number of binary edges? Will it change the sum of count weights?</p>
 <div id="l105-aggregation"></div>
 
 <p>For this stream, width 20 merges the two AX snapshot edges: 5 binary records become 4, while the total count remains 6. Wider windows need not merge anything in another stream. Nested widths make this comparison clean; changing the origin or using nonnested widths can change which events meet.</p>
 <h2 id="3-%C2%B7-Counts-cannot-restore-a-discarded-sequence">3 &#183; Counts cannot restore a discarded sequence<a class="anchor-link" href="#3-%C2%B7-Counts-cannot-restore-a-discarded-sequence">&#182;</a></h2><p>Keep the same pair counts but exchange the times of two contacts. The resulting snapshot is identical. Yet a time-respecting path—contacts traversed in increasing time order—may disappear. The following is a separate <strong>synthetic directed contact graph</strong>, not the bipartite Wikipedia graph.</p>
-<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l105/order.svg" alt="Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability."><figcaption>Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability.</figcaption></figure>
+<figure class="stream-figure" tabindex="0" id="visual-figure-2"><img src="../labs/figures/l105/order.svg" alt="Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability."><figcaption>Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l105/order.svg" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>
 
 <p>History I has A→B at 1, then B→C at 2: information starting at A can reach C. History II reverses those times: it cannot. Both weighted snapshots contain AB:1 and BC:1. A downstream model receiving only those counts cannot distinguish the histories. Adding first/last times makes a richer summary, but does not generally recover every repeated event’s timing.</p>
 <div id="l105-predict"></div>
@@ -45,7 +48,7 @@
 <p>We choose <strong>immutable completed windows</strong>. Their earliest permitted release is:</p>
 <p><strong>release = max(window end, latest availability of any constituent event).</strong></p>
 <p>A snapshot is readable when <strong>release ≤ query</strong>. At query 10, [0,10) is legal: every event in it is strictly earlier than 10. An event at 10 belongs to [10,20), which remains unavailable. A late-arriving event can delay the release of its <em>whole</em> window.</p>
-<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l105/release.svg" alt="Synthetic query at 6 seconds: three eligible records are withheld by closed-window access. Reading the completed current window exposes the event at 8. Vertically separated dots at 3 represent two tied events."><figcaption>Synthetic query at 6 seconds: three eligible records are withheld by closed-window access. Reading the completed current window exposes the event at 8. Vertically separated dots at 3 represent two tied events.</figcaption></figure>
+<figure class="stream-figure" tabindex="0" id="visual-figure-3"><img src="../labs/figures/l105/release.svg" alt="Synthetic query at 6 seconds: three eligible records are withheld by closed-window access. Reading the completed current window exposes the event at 8. Vertically separated dots at 3 represent two tied events."><figcaption>Synthetic query at 6 seconds: three eligible records are withheld by closed-window access. Reading the completed current window exposes the event at 8. Vertically separated dots at 3 represent two tied events.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l105/release.svg" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>
 
 <div id="l105-release"></div>
 
@@ -123,7 +126,7 @@
 </tbody>
 </table></div>
 <p>These global counts are deterministic; no error bars or confidence intervals are warranted for this fixed-file census. They are not predictive performance estimates.</p>
-<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l105/results.svg" alt="Measured full Wikipedia census, not a prediction benchmark. Fixed widths from origin zero; weights preserve the event total. Wait assumes availability equals event time."><figcaption>Measured full Wikipedia census, not a prediction benchmark. Fixed widths from origin zero; weights preserve the event total. Wait assumes availability equals event time.</figcaption></figure>
+<figure class="stream-figure" tabindex="0" id="visual-figure-4"><img src="../labs/figures/l105/results.svg" alt="Measured full Wikipedia census, not a prediction benchmark. Fixed widths from origin zero; weights preserve the event total. Wait assumes availability equals event time."><figcaption>Measured full Wikipedia census, not a prediction benchmark. Fixed widths from origin zero; weights preserve the event total. Wait assumes availability equals event time.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l105/results.svg" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>
 
 <p><strong>Read the measures carefully.</strong></p>
 <ul>
@@ -187,4 +190,4 @@
 <p><strong>Carry this forward.</strong> Define the candidate interactions against which a prediction will be scored. <a href="0106-temporal-link-prediction.html">Continue to Lesson 106</a>.</p>
 <!-- sequence-next:end -->
 
-</article><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/event-snapshot-viz.js"></script><script src="../assets/l105-lesson.js"></script></body></html>
+</article><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/event-snapshot-viz.js"></script><script src="../assets/l105-lesson.js"></script><script src="../assets/visual-stories.js" defer></script></body></html>
