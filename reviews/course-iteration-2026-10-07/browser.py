@@ -24,6 +24,8 @@ with sync_playwright() as pw:
   assert not errors,errors
   page.screenshot(path=str(OUT/f'{slug}-{width}.png'))
   rows.append({'width':width,'status':'PASS','script_errors':errors,'images':'PASS','overflow':'none','opening_reviews':'absent'})
+  if page.locator('.responsive-map:visible').count():
+   page.locator('.responsive-map:visible').first.screenshot(path=str(OUT/f'{slug}-architecture-{width}.png'))
   page.close()
  browser.close()
 server.shutdown();(OUT/f'{slug}-browser.json').write_text(json.dumps(rows,indent=2)+'\n');print(slug,rows)

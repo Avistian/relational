@@ -69,7 +69,7 @@ print({p:importlib.metadata.version(p) for p in ['numpy','pandas','scipy','pyarr
     section('scope');section('procedure');figure('protocol','Illustrative inner/outer split boundary. Trace V rows into validation; outer-test labels remain withheld.');figure('protocol-flow','One complete outer-split procedure for bagged non-foundation methods: OOF predictions select; bagged test predictions score after selection. C denotes output classes, or one output for regression.')
     code('# PROVIDED — exact artifact hash checks and loading\n'+piece('_verify_l056.py','load_snapshot')+'\nrows=load_snapshot()\nprint(rows.shape)\ndisplay(rows.groupby(["arm","method_subtype"]).size().unstack())')
     task('aligned_errors','def aligned_errors(rows, arms):','''## TODO 1 · Refuse an invalid comparison
-**Goal:** return an error matrix indexed by `(dataset,fold)` with columns in `arms` order. Select the requested arms, require unique nonempty arm names, reject duplicate keys, missing/nonfinite errors, any imputed row and conflicting metrics within a dataset. Require complete coverage across arms. Sort the index.
+**Goal:** return an error matrix indexed by `(dataset,fold)` with columns in `arms` order. Select the requested arms, require unique nonempty arm names, reject missing dataset/split/method/metric identities, duplicate keys, missing/nonfinite errors, any imputed row and conflicting metrics within a dataset. Require complete coverage across arms. Sort the index.
 
 **Why:** silent deletion of a failed model or unmatched split can change the question. **Hint boundary:** validate the rows before reshaping; absent arm/split cells must raise `ValueError`, not disappear. Do not select by test performance.''')
     code('''# CHECK — coverage, failure and metric interventions
@@ -85,6 +85,11 @@ mixed=base.copy();mixed.loc[mixed.index[0],'metric']='WRONG'
 try:aligned_errors(mixed,ARMS)
 except ValueError:pass
 else:raise AssertionError('Conflicting metrics accepted')
+for field in ['dataset','fold','arm','metric']:
+    missing=base.copy();missing.iloc[0,missing.columns.get_loc(field)]=None
+    try:aligned_errors(missing,ARMS)
+    except ValueError:pass
+    else:raise AssertionError('Missing evaluation identity accepted: '+field)
 print('PASS: 51 datasets, 816 splits; omissions, duplicates and metric/imputation corruption rejected')''')
     section('aggregation');figure('weighting','Synthetic fixed-rank example: three repetitions change pooled-split weights; equal dataset averages remain tied.')
     task('rank_errors','def rank_errors(errors):','''## TODO 2 · Rank errors, preserving ties

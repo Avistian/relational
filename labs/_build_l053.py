@@ -40,9 +40,7 @@ def build(solution=False,write=True):
 
 **Reproducibility contract:** Tier A real California Housing, House 16H and Higgs Small data from the TabR release, not RealMLP benchmark splits. Preserve released boundaries; label-blind row caps 1200/600/600, selection seeds 53/54/55; model seeds 0/1/2. Train-only numeric statistics and target standardization. Learning recipe: width 64, three hidden layers, 64 epochs, batch 256, all four schedule cycles; six XGB candidates, 150 trees each, patience 20. **INCOMPARABLE** to the paper benchmark. See [contract](l053-reproduction.md).
 
-The historical comparison took about 30 CPU seconds after setup; the added clipping intervention runs nine more neural fits and may take another minute. Downloading dependencies/data takes longer. Implementation and interpretation deserve a separate session. Static figures are labeled author-reference snapshots; your live results appear only when you run the experiment.
-
-**Recall first:** Explain why three random model seeds do not give three independent datasets. Then predict whether selecting a lower validation error guarantees a lower test error.''')
+The historical comparison took about 30 CPU seconds after setup; the added clipping intervention runs nine more neural fits and may take another minute. Downloading dependencies/data takes longer. Implementation and interpretation deserve a separate session. Static figures are labeled author-reference snapshots; your live results appear only when you run the experiment.''')
     for c in bootstrap_cells():cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']))
     code('''# PROVIDED — runtime and data setup
 import os,sys,math,copy,hashlib,json,time,importlib.metadata

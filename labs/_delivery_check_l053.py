@@ -1,5 +1,5 @@
 """Audit delivery, numerical evidence, embedded figures and actual copied Pages build."""
-import ast,base64,hashlib,io,json,re,shutil,subprocess,tempfile
+import ast,base64,hashlib,io,json,os,re,subprocess,tempfile
 from pathlib import Path
 from urllib.parse import urlsplit,unquote
 import nbformat
@@ -91,23 +91,20 @@ def main():
     for path in [ROOT/'relkit/realmlp.py',ROOT/'relkit/realmlp_experiment.py',REPO/'modal/l053_paper_repro.py']:ast.parse(path.read_text())
     manifest=json.loads((REPO/'lessons/manifest.json').read_text());entry=next(x for x in manifest['lessons'] if x['id']==53)
     assert entry['labPath']==f'labs/{SLUG}.ipynb'
-    # Recreate a COPY of workflow inputs; never let sed mutate the actual repository.
-    stage=Path(tempfile.mkdtemp(prefix='l053-pages-'))
-    for d in ['assets','lessons','reference']:shutil.copytree(REPO/d,stage/d)
-    for f in ['index.html','notebooks.html','flashcards.html','.nojekyll']:shutil.copy2(REPO/f,stage/f)
-    (stage/'labs').mkdir();shutil.copytree(ROOT/'html',stage/'labs/html');shutil.copytree(ROOT/'figures',stage/'labs/figures')
-    # The current Pages workflow also publishes the foundation source packages.
-    for directory in ['relkit','sources']:shutil.copytree(ROOT/directory,stage/'labs'/directory)
-    for pattern in ['*.ipynb','*.json','*.md','*.py']:
-        for f in ROOT.glob(pattern):shutil.copy2(f,stage/'labs'/f.name)
-    shutil.copytree(REPO/'modal',stage/'modal')
-    (stage/'reviews').mkdir()
-    shutil.copy2(REPO/'reviews/lessons-047-070-depth-and-architecture.md',stage/'reviews')
-    workflow=yaml.safe_load((REPO/'.github/workflows/pages.yml').read_text())
-    command=next(s['run'] for s in workflow['jobs']['build']['steps'] if s.get('name')=='Build site')
-    subprocess.run(['bash','-e','-c',command],cwd=stage,check=True,capture_output=True,text=True)
-    paths=[Path('lessons')/f'{SLUG}.html',Path('reference/realmlp-strong-defaults.html'),Path('labs/html')/f'{SLUG}.html']
-    links=sum(check_links(stage/'public'/p) for p in paths)
+    # Build from the same staged files that publication will receive.
+    # Stage intended edits before invoking this delivery check.
+    with tempfile.TemporaryDirectory(prefix='l053-pages-') as tmp:
+        stage=Path(tmp)
+        subprocess.run(['git','checkout-index','--all','--prefix='+tmp+'/'],
+                       cwd=REPO,env=dict(os.environ,GIT_LFS_SKIP_SMUDGE='1'),check=True)
+        workflow=yaml.safe_load((stage/'.github/workflows/pages.yml').read_text())
+        command=next(s['run'] for s in workflow['jobs']['build']['steps'] if s.get('name')=='Build site')
+        built=subprocess.run(['bash','-e','-c',command],cwd=stage,capture_output=True,text=True)
+        assert built.returncode==0, 'Clean-index Pages build failed:\n'+built.stderr
+        paths=[Path('lessons')/f'{SLUG}.html',Path('reference/realmlp-strong-defaults.html'),Path('labs/html')/f'{SLUG}.html']
+        for p in paths:
+            assert (stage/p).read_bytes()==(REPO/p).read_bytes(), 'Stage reviewed file before delivery: '+str(p)
+        links=sum(check_links(stage/'public'/p) for p in paths)
     gate=json.loads((ROOT/'_gate_l053_results.json').read_text());assert gate['status']=='PASS'
     final=dict(status='PASS',local_prediction_checks=count,larger_prediction_checks=3,ablation_prediction_checks=ablation_count,executed_solution_cells=len(scode),
         student_todos=4,portable_pngs=images,copied_pages_links=links,live_code_gate='PASS',

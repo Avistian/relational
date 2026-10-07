@@ -18,7 +18,11 @@ def aligned_errors(rows, arms):
     """Require identical dataset/fold coverage and metrics, without imputation."""
     if not arms or len(set(arms)) != len(arms):
         raise ValueError('Arms must be nonempty and unique')
+    if rows.arm.isna().any():
+        raise ValueError('Missing method identity')
     x = rows.loc[rows.arm.isin(arms)].copy()
+    if x[['dataset','fold','metric']].isna().any().any():
+        raise ValueError('Missing dataset, split or metric identity')
     if x.empty or x.duplicated(['dataset','fold','arm']).any():
         raise ValueError('Empty or duplicate evaluation keys')
     if x.imputed.isna().any() or x.imputed.any():

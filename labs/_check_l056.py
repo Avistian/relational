@@ -26,6 +26,12 @@ def checks():
         try:aligned_errors(bad,['A','B'])
         except ValueError:pass
         else:raise AssertionError('Missing, duplicate, imputed or mixed-metric row accepted')
+    for field in ['dataset','fold','arm','metric']:
+        for selected in [[0],[0,1]]:
+            bad=df.copy();bad.loc[selected,field]=None
+            try:aligned_errors(bad,['A','B'])
+            except ValueError:pass
+            else:raise AssertionError('Missing identity accepted: '+field)
     print('PASS: ties, invalid values, equal dataset weighting, reproducible cluster bootstrap, coverage guards')
 
 if __name__=='__main__':checks()

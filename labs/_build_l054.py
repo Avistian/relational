@@ -50,9 +50,7 @@ def build(solution=False, write=True):
 
 **Reproducibility contract:** real California Housing, House 16H and Higgs Small data from the TabR release inherited by the TabM benchmark (Appendix C); capped here and not independently compared with a second TabM archive. Preserve released boundaries; label-blind row caps 1200/600/600, selection seeds 53/54/55; model seeds 0/1/2. z-score statistics fit on training rows only. TabM-mini: width 64, depth 3, k=32, 64 epochs, batch 256, Adam. **INCOMPARABLE** to the paper benchmark. See [contract](l054-reproduction.md).
 
-**Note on runtime:** the deep ensemble trains k separate MLPs, so a full k=32 / 3-seed run takes ~20 CPU minutes. This notebook's live cell uses a lighter default (3 seeds, k=8, 32 epochs); the author evidence in the figures used k=32 and three seeds.
-
-**Recall first:** state the BatchEnsemble identity Wᵢ = W ⊙ (sᵢ rᵢᵀ) from memory, then predict whether a narrow (width-64) TabM should beat a plain MLP on 1200 rows.''')
+**Note on runtime:** the deep ensemble trains k separate MLPs, so a full k=32 / 3-seed run takes ~20 CPU minutes. This notebook's live cell uses a lighter default (3 seeds, k=8, 32 epochs); the author evidence in the figures used k=32 and three seeds.''')
     for c in bootstrap_cells():
         cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type'] == 'markdown'
                      else nbf.v4.new_code_cell(c['source']))

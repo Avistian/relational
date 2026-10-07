@@ -36,7 +36,7 @@ Four TODO functions feed the actual training experiment. PROVIDED means read/run
 
 **Reproducibility contract:** Tier A, authors' California Housing, House 16H and Higgs Small arrays and original splits. Local row caps 1200/600/600; label-blind subsample seeds 52/53/54, model seeds 0/1/2; train-only normal quantiles and regression target scaling; 25-epoch neural cap, 150-tree cap. No quantile jitter or tuning search. Local versus paper verdict: **INCOMPARABLE**. Environment versions and file hashes are printed. The bootstrap downloads dependencies; a first data fetch retrieves about 14 MB in verified byte ranges from the authors' archive.
 
-**Recall first:** Why are three model seeds not three independent datasets? Write one sentence before proceeding. Estimated compute is about one CPU minute after setup; allow much longer for implementation and explanation.''')
+Estimated compute is about one CPU minute after setup; allow much longer for implementation and explanation.''')
  for c in bootstrap_cells():cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']))
  code('''# PROVIDED — environment and data provisioning
 import os,sys,math,hashlib,json,copy,time,platform,types,importlib.metadata
