@@ -18,9 +18,8 @@ A **benchmark** fixes a collection of prediction problems and their evaluation r
 
 > **In plain terms.** The database is the world we observe. The task tells us which questions to ask about that world. The evaluator tells us how answers are judged.
 
-This directly serves the course mission: evidence that relational learning helps is credible only when the relational model and its baselines face the same task. Today's narrow skill is making that task contract inspectable. This is an API and evaluation lesson; it introduces no new neural architecture. The next planned integer lesson, L127, studies the later RelBench v1 benchmark and its baseline.
+This directly serves the course mission: evidence that relational learning helps is credible only when the relational model and its baselines face the same task. Today's narrow skill is making that task contract inspectable. This is an API and evaluation lesson; it introduces no new neural architecture. [Lesson 127](0127-relbench-v1.html) studies the later RelBench v1 benchmark and its baseline.
 
-Before reading on, write three short answers: What identifies a graph node? Why does a prediction need a time? Can an event after that time be used to construct the label?
 
 ## 2 · Freeze the version before interpreting the API
 
@@ -123,6 +122,16 @@ This is non-interpolated average precision. It is not ROC-AUC and not the trapez
 **Ties.** A score of 0.5 cannot admit one tied row while excluding another. Process the whole tie at once. Otherwise an arbitrary ordering of equal scores can change the reported score.
 
 [[AP_WIDGET]]
+
+**Save enough score precision to preserve the ranking.** Consider just two examples:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Label</th><th>Original score</th><th>Rounded to 3 decimals</th></tr></thead><tbody><tr><td>1</td><td>0.5004</td><td>0.500</td></tr><tr><td>0</td><td>0.5003</td><td>0.500</td></tr></tbody></table>
+
+The original ranking retrieves the positive first, so AP is 1. After rounding, one threshold retrieves both examples: recall jumps from 0 to 1 at precision 1/2, so AP is 0.5. The model and labels did not change; the exported scores did. Keep the original numerical predictions for scoring and round only their presentation.
+
+**Try the change.** Replace every original score `s` with `3s+7`, without rounding. Does AP change? Why is this different from merging scores into a tie?
+
+<details><summary>Check the ranking</summary><p>AP stays 1: the transformation strictly preserves score order and ties. The scores need not lie between 0 and 1 for AP. Rounding is different because it can erase an ordering distinction. These calculations assume the transformed values remain finite and distinct in the stored numerical format.</p></details>
 
 **TODO 4 — `average_precision`.** Sort descending, locate the ends of equal-score groups, compute cumulative positives and weight precision by recall increments. **CHECK:** equal scores for every row give AP equal to positive prevalence. Our explicit convention returns 0 when no positives exist, matching the reference's result; that degenerate split still deserves a warning in an experiment report. Reject nonbinary labels and non-finite scores.
 

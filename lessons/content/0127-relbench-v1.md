@@ -16,7 +16,6 @@ In [Lesson 126](0126-relbench-beta.html), a **Dataset** exposed tables and cutof
 
 Recall the pieces you can now assemble: [L122](0122-reg-construction.html) maps rows and foreign keys to a graph; [L123](0123-temporal-heterogeneous-graphs.html) attaches the query cutoff to every hop; [L124](0124-entity-task-tables.html) separates entity rows from supervised questions; [L125](0125-pytorch-frame-deep-dive.html) turns typed columns into vectors. Here the tangible skill is **keeping those contracts fixed while training and evaluating**.
 
-**Before reading:** can a low test MAE prove the correct temporal cutoff was used? What additional artifact would you inspect? Write one sentence; return to it after the batch audit.
 
 ## 2 · What the original benchmark standardizes
 
@@ -34,7 +33,7 @@ Read Robinson et al., [RelBench, arXiv:2407.20060v1](https://arxiv.org/html/2407
 
 These are **paper Table 1 counts**, after its test cutoff, not contemporary repository counts or counts of labeled examples. Thirty tasks share seven databases; a row can provide context without carrying a training label. Our executed experiment uses all nine F1 tables and its complete selected task. The other six databases are overview material and **NOT_RUN in this lesson**.
 
-The three benchmark task families need different prediction objects: a scalar probability for entity classification, a real value for entity regression, or a ranked target list for recommendation. Their metrics cannot be averaged in raw units. [Lesson 128](../reference/curriculum.html) will develop the head/metric taxonomy; today use regression and MAE so the whole experiment stays inspectable.
+The three benchmark task families need different prediction objects: a scalar probability for entity classification, a real value for entity regression, or a ranked target list for recommendation. Their metrics cannot be averaged in raw units. [Lesson 128](0128-task-taxonomy.html) develops the head/metric taxonomy; today use regression and MAE so the whole experiment stays inspectable.
 
 **CHECK:** F1 has 74,063 graph rows but 7,453 training queries. Which number belongs in the loss denominator? Answer: the supervised seed queries in the current batch, not every context row in the database.
 
@@ -105,6 +104,12 @@ Suppose seed 4 failed. Averaging seeds 0–3 and labeling the result “five see
 **TODO 3 — `summarize_seeds`.** Compute arithmetic means and **sample** standard deviations only after checking that contract. For values `[1,2,3,4,5]`, the mean is 3 and sample SD is `sqrt(10/4)`, about 1.5811. Population SD divides by five and answers a different descriptive question. **CHECK:** reject a missing seed, duplicate identity, unfinished status, partial epoch count or nonfinite result. The real-data harness independently rescores every prediction before calling your function.
 
 [[FIG:selection]]
+
+**Work a reporting decision with the saved runs.** The five test MAEs in this lesson average **3.967165**. The smallest is seed3's **3.824692**. Reporting only that minimum would improve the displayed number by about **0.142473 MAE** without changing a single prediction. It answers “which of these runs scored lowest on this test set?” The frozen five-run experiment asks for the aggregate instead. Both numbers can be calculated, but their meanings must stay explicit. [Saved five-run evidence](../labs/evidence/l127/summary.json).
+
+**Try the omission.** Seed4 has test MAE 4.076791. Drop it and recompute the remaining mean. Can that result satisfy `summarize_seeds` under the original expected seed set?
+
+<details><summary>Check the aggregation</summary><p>The four-run mean is about 3.939759. The original contract rejects it because seed4 is missing. Excluding a completed run because its test error is high adds a test-dependent selection step. Retain all five runs and report their mean and sample SD under the frozen contract.</p></details>
 
 A seed SD describes variation among these fits. It is not a confidence interval, and overlap with a published SD does not establish equivalence. We predeclare **0.2 MAE** as a descriptive closeness tolerance for the mean; `CLOSE` means only that this threshold was met. A close score cannot repair a protocol mismatch.
 

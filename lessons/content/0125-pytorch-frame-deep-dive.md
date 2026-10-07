@@ -138,6 +138,16 @@ The gradient step uses the released **training** task rows at 2004-09-03 and onl
 
 **Read the limitations before interpreting the export:** width 8, two residual blocks, deterministic 16-bin hashed text counts, random initial weights, a single graph relation for the gradient step, and no static creation history. Text hashing has collisions and no pretrained semantics. Real F1 data exercise numerical, categorical, timestamp and embedded-text paths; the six-type fixture separately covers multicategorical and external vectors. These are useful implementation tests, not the published Stack Exchange experiment.
 
+**Inspect an actual text collision.** The course's `fixed_text_vectors` hashes each lowercase word into one of 16 bins and counts it. With this exact adapter, both `cat` and `fox` land in bin 7 (zero-based):
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Text</th><th>Bin 7</th><th>Other bins</th></tr></thead><tbody><tr><td>cat</td><td>1</td><td>All 0</td></tr><tr><td>fox</td><td>1</td><td>All 0</td></tr><tr><td>cat cat</td><td>2</td><td>All 0</td></tr></tbody></table>
+
+The first two texts become the same 16-number input. No learned projection of that vector can recover which word was present. If all other inputs and graph context are also identical, downstream training cannot separate them using this lost distinction. This is a property of our small deterministic adapter, not a claim about pretrained text encoders. You can inspect the hash and counting code in the [visible implementation](../labs/relkit/frame_l125.py).
+
+**Try the change.** What vector does `cat fox` produce? Would training the row ResNet for more epochs recover the difference between that string and `cat cat`?
+
+<details><summary>Check the input boundary</summary><p>Both strings put count 2 in bin 7 and zero elsewhere. More training cannot undo an identical input representation. A different vocabulary or text encoder could preserve this distinction; its effectiveness would need a separate evaluation. Repetition counts surviving does not mean word identity survived.</p></details>
+
 ## 8 · Full reproduction audit: what is actually recoverable?
 
 The selected target is **Hu et al. Table 2, `rel-stackex-engage`: ROC-AUC 0.854**. It predicts whether a user contributes a vote, comment or post over the next two years. The contemporaneous source implements a 730-day window, with validation at 2019-01-01 and test at 2021-01-01. [Paper §5.3/Table 2](https://arxiv.org/html/2404.00776v2#S5.SS3) · [archived task SQL](../labs/sources/l125/relbench/relbench/tasks/stackex.py).

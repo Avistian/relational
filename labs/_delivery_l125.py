@@ -24,7 +24,7 @@ for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['numeric_tokens','categorical_indices','align_rows','fit_and_convert']:assert stu[name]==node,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/pytorch-frame-deep-dive.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l125.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l125.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l125').glob('*'));before=[sha(p) for p in figs]
 subprocess.run([sys.executable,str(P/'_figures_l125.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0

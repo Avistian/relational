@@ -76,6 +76,16 @@ The selected experiment keeps the relational encoder from Lessons 117 and 127. I
 
 **Worked example.** Labels `[0,1,0,1]` have scores `[0.1,0.4,0.4,0.8]`. The positive scores are 0.4 and 0.8. Against negative scores 0.1 and 0.4, the four pair credits are `[1,0.5,1,1]`. AUROC is `3.5/4 = 0.875`. Both classes are required. With only one class, this lesson rejects the metric as undefined.
 
+**The same AUROC can hide very different probability errors.** Keep two labels `[1,0]` and compare two predictions:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Probabilities</th><th>AUROC</th><th>Mean BCE</th></tr></thead><tbody><tr><td>[0.60, 0.40]</td><td>1</td><td>0.5108</td></tr><tr><td>[0.99, 0.98]</td><td>1</td><td>1.9610</td></tr></tbody></table>
+
+Both rank the positive above the negative. But the second prediction assigns probability 0.98 to a negative outcome. Its mean binary cross-entropy is `−(log(0.99)+log(0.02))/2 ≈ 1.9610`, compared with `−log(0.60) ≈ 0.5108` for the first. This two-example calculation is a loss comparison, not a population calibration estimate. It shows why a perfect ranking metric does not certify useful probability values.
+
+**Try the decision rule.** Classify a row as positive when its probability is at least 0.5. What accuracy does each pair attain, and why did AUROC not reveal that difference?
+
+<details><summary>Check the output meanings</summary><p>The first pair classifies both rows correctly; the second predicts both positive and gets one of two correct. AUROC only used the ordering of the two scores. Decision quality depends on the threshold and its costs; probabilistic loss uses the actual probabilities.</p></details>
+
 [[FIG:metrics]]
 
 **Predict before changing the scores.** Will changing the decision threshold alter this AUROC? Will swapping two article ranks alter MAP? Try the controls; the original result remains visible.
@@ -122,7 +132,7 @@ The reproduction reconstructs historical labels using `1−current_label`. This 
 
 > **Scope check.** Original historical archive bytes and row order remain unavailable. The experiment uses the current archive's query order with reconstructed historical labels and records that deviation. The task SQL also conditions on future participation and has no upper cutoff in its recent-driver eligibility subquery. A past-only 365-day audit finds 1,022/27/26 train/validation/test queries with no observed prior-year result. These are descriptive audit counts, not a silently changed experiment population.
 
-**Why this belongs in taxonomy.** A name, a binary dtype and a scalar head do not fully specify the task. The target event and its polarity must be explicit. This is also why Lesson 129's planned manual-feature comparison must share the exact same labels and query population.
+**Why this belongs in taxonomy.** A name, a binary dtype and a scalar head do not fully specify the task. The target event and its polarity must be explicit. This is also why [Lesson 129's manual-feature comparison](0129-manual-feature-engineering.html) must share the exact same labels and query population.
 
 ## 7 · Full selected experiment and what it establishes
 
