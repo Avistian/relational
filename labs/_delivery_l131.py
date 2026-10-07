@@ -25,7 +25,7 @@ for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['activation_summary','relative_days','seed_readout']:assert stu[name]==node,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/gnn-tabular-stack.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l131.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l131.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l131').glob('*'));before=[sha(p) for p in figs]
 subprocess.run([sys.executable,str(P/'_figures_l131.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0
@@ -48,7 +48,7 @@ with sync_playwright() as pw:
   time.screenshot(path=f'/tmp/l131-time-{width}.png')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
   assert page.locator('figure').count()==5
-  assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)')
+  page.locator('figure img').evaluate_all('(xs)=>xs.forEach(x=>x.loading="eager")');page.wait_for_function('Array.from(document.querySelectorAll("figure img")).every(x=>x.complete && x.naturalWidth>0)');assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)')
   page.screenshot(path=f'/tmp/l131-page-{width}.png')
   w.screenshot(path=f'/tmp/l131-cutoff-{width}.png')
   for i in range(5):page.locator('figure').nth(i).screenshot(path=f'/tmp/l131-figure-{i}-{width}.png')

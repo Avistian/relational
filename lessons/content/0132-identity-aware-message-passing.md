@@ -74,6 +74,14 @@ For each condition query, extract a disjoint temporal neighborhood. Encode typed
 
 **Training.** Each sampled sponsor occurrence gets a binary label defined by its `(query owner, sponsor ID)` pair. Binary cross-entropy (**BCE**) trains its logit. At evaluation, the released implementation initializes a `[B,D]` matrix to zero, writes sigmoid scores for sampled sponsors, and takes the top 10. Unsampled sponsors retain zero. When fewer than ten candidates are scored, zero-score ties can enter the list; preserving this behavior matters for source fidelity.
 
+**Trace the unscored candidates.** Shrink the destination universe to sponsors 0–3 and request three recommendations. Suppose only sponsors 1 and 3 were sampled, with logits −2 and −1. The released zero-initialize/write-sigmoid procedure creates:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Sponsor</th><th>Score</th><th>Where it came from</th></tr></thead><tbody><tr><td>0</td><td>0</td><td>Unscored default</td></tr><tr><td>1</td><td>0.1192</td><td>Sigmoid(−2)</td></tr><tr><td>2</td><td>0</td><td>Unscored default</td></tr><tr><td>3</td><td>0.2689</td><td>Sigmoid(−1)</td></tr></tbody></table>
+
+The first two recommendations are 3 and 1. The third is either 0 or 2: their default scores tie, and [`topk` does not promise a stable ordering of tied indices](https://docs.pytorch.org/docs/2.14/generated/torch.topk.html). If the only positive sponsor is 2, the ranking `[3,1,2]` earns AP@3 = **1/3**, while `[3,1,0]` earns **0**. Neither result means the network computed a score for sponsor 2. The actual benchmark requests ten recommendations; three here makes the same default-score behavior easy to inspect.
+
+**Transfer check.** With this same score vector and K = 2, AP@2 is zero for truth `{2}` under either tie ordering. Explain why increasing K can reveal a hit without increasing the number of candidates the model scored. Preserve the released behavior in a reproduction, and separate scored-candidate coverage from final ranking quality when diagnosing it.
+
 ### Open the identity-aware forward pass
 
 Each relation applies a sum-GraphSAGE transform to neighbor vectors and a transform to the receiving node’s own vector. The implementation sums outputs over incoming relation types, then applies node-wise LayerNorm and ReLU. Repeating these operations transports the root signal along typed paths. The root marker is added once before propagation, not re-added at every layer.

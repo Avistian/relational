@@ -82,6 +82,14 @@ An **epoch** visits every training query once. Each mini-batch predicts only its
 
 The released configuration uses Adam with learning rate 0.005 and batches of 512 queries. Every epoch must account for all 7,453 training queries. The final short batch still counts; a loop that silently skips it has changed the experiment.
 
+**Worked accounting check.** The 7,453 training queries make 14 full batches of 512 and one final batch of 285. To report an epoch's mean absolute error, weight each batch mean by its query count:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Illustrative batches</th><th>Queries</th><th>Mean error</th><th>Error sum</th></tr></thead><tbody><tr><td>14 full batches</td><td>7,168</td><td>1</td><td>7,168</td></tr><tr><td>Final batch</td><td>285</td><td>7</td><td>1,995</td></tr></tbody></table>
+
+The query-weighted mean is **9,163 / 7,453 ≈ 1.2294**. Averaging the 15 batch means instead gives **(14 × 1 + 7) / 15 = 1.4** and gives each final-batch query too much reporting weight. These are illustrative errors, not measured training results. The trainer's `loss_sum += loss * len(pred)` and `count += len(pred)` implement the weighted calculation.
+
+**Transfer check.** If the last batch also has mean error 1, both formulas yield 1. Explain why this passing example would fail to expose the accounting bug. This is about reporting an epoch statistic; each optimizer step still uses its own batch-mean loss, and the recorded training predictions come from changing parameter states.
+
 [[TRAIN_CODE]]
 
 Validation is evaluated after each epoch. A **checkpoint** is a saved set of model parameters. Keep the first checkpoint whose validation MAE strictly improves on previous epochs. Equal scores retain the earlier checkpoint. The test score does not participate in this choice.

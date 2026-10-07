@@ -12,8 +12,6 @@
 
 [Student notebook](../labs/0131-gnn-tabular-stack.ipynb) · [Executed solution](../labs/html/0131-gnn-tabular-stack.html) · [Reference card](../reference/gnn-tabular-stack.html) · [Reproduction contract](../labs/l131-reproduction.md)
 
-Before reading: which rows receive labels? Why can one driver appear several times in a minibatch? Does freezing a row encoder necessarily change today's prediction?
-
 Read [Fey et al., §5, relational deep learning blueprint](https://proceedings.mlr.press/v235/fey24a.html) for the decomposition. Use [Robinson et al., RelBench v1 §3, Appendix B and Table 7](https://arxiv.org/html/2407.20060v1) for the implemented baseline and numerical target. These are different sources with different jobs: the blueprint motivates the stack; the benchmark specifies the selected experiment.
 
 **Route.** First predict shapes on paper. Then trace the measured batch and complete the three functions. Run the short standalone notebook to inspect the author evidence and a small neural parity fixture. Finally use the explicit full-training gate for five fresh fits. The default replay, small fixture and full reproduction have separate evidence labels.
@@ -89,6 +87,14 @@ The trace uses three isolated copies of the same model on the same real batch an
 [[FIG:gradients]]
 
 **Predict.** Detach the row vectors immediately after encoding. Will the current prediction change? Will the row encoder receive gradients? Will the GNN still receive gradients?
+
+**A numerical backward trace.** Reduce the path to one scalar row encoder and one scalar head: input `x = 3`, encoder weight `w = 2`, row vector `h = wx = 6`, head weight `v = 4`, prediction `vh = 24`, target 20. The L1 loss is 4. Its derivative with respect to the prediction is +1, so the chain rule gives `dL/dv = h = 6` and `dL/dw = v × x = 12`.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Path into head</th><th>Output</th><th>Encoder<br>gradient</th><th>Head<br>gradient</th></tr></thead><tbody><tr><td>Live h</td><td>24</td><td>12</td><td>6</td></tr><tr><td>Detached h</td><td>24</td><td>None</td><td>6</td></tr></tbody></table>
+
+Detaching preserves the current number 6 and removes its recorded connection to w. It does not detach the head's own multiplication by v. `None` here means no gradient was produced for w, not a computed numerical zero. This linear fixture isolates the gradient path; it is not the full benchmark model.
+
+**One-step exercise.** Use plain SGD with learning rate 0.01 and no momentum or weight decay. The live branch changes w to 1.88 and v to 3.94, giving a next prediction of **22.2216**. The detached branch keeps w at 2 and changes v to 3.94, giving **23.64**. Derive both before running autograd; explain why equal predictions before the update did not imply equal learning afterward. These optimizer settings are for the fixture, not the benchmark's Adam configuration.
 
 [[GRAD_WIDGET]]
 
