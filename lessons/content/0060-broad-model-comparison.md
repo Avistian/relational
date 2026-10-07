@@ -1,6 +1,6 @@
 ## The checkpoint is a defensible comparison
 
-> **In plain terms.** Before a fancy relational model can claim a win, it has to beat a *fair* single-table opponent — one that was given a real feature pipeline, a real optimizer, a real search budget, and an honest scorecard. This lesson builds that opponent and the paperwork that proves the comparison was fair.
+> **In plain terms.** Before a fancy relational model can claim a win, it has to beat a *fair* single-table opponent — one that was given a real feature pipeline, a real optimizer, a real search budget, and an honest scorecard. This lesson builds that opponent and the artifacts that let a reader audit the declared comparison.
 
 A future relational model must beat a credible single-table procedure. That competitor is more than five model names in a table. It includes the feature representation, the optimizer, the search, the validation rule, and the resource budget. Your outcome here is a report whose selected models, predictions, uncertainty, and recommendation can all be reconstructed.
 
@@ -69,7 +69,7 @@ Every frozen decision below has a value and a reason.
 
 ## Preserve each baseline's important recipe
 
-> **In plain terms.** Every model gets the *same* fair input pipeline, fitted only on training rows so the future can never leak backward. But each model keeps the parts of its own recipe that make it itself.
+> **In plain terms.** Every model gets the same input pipeline, fitted only on training rows. This prevents preprocessing from learning from held-out rows; feature availability still needs its own audit. But each model keeps the parts of its own recipe that make it itself.
 
 **One shared encoder, fitted on training rows only.** The common encoder fits numeric medians and categorical one-hot columns on the training rows. Validation and test then transform through that fixed state. An *unseen category* — a value never seen during training — becomes an all-zero one-hot block.
 
@@ -194,6 +194,19 @@ The results above are author-reference measurements, independent of the notebook
 > **Scope check.** The author run experienced variable host contention, so these timings are descriptive records and cannot establish hardware efficiency superiority. This is one-thread CPU evidence, not a cold end-to-end request latency benchmark and not GPU throughput. The historical `last_invocation_seconds` was only a resumed tail, so it must never be presented as total historical suite cost.
 
 **State the objective before the test set.** For a deployment decision, specify a task, an acceptable loss difference, and a cost limit before examining a new test set. A procedure is **Pareto dominated** if another is no worse on both declared objectives and strictly better on at least one. A nondominated procedure merely remains eligible; it need not be preferred. A score-first ranking answers a different question from minimizing loss subject to a 10 ms prediction budget.
+
+**Worked example: choose under a budget.** These are invented validation measurements on one fixed batch, not results from the course panel. Lower loss and lower prediction time are both better.
+
+| Procedure | Log loss | Batch prediction time |
+|---|---:|---:|
+| A | .30 | 12 ms |
+| B | .32 | 4 ms |
+| C | .34 | 7 ms |
+| D | .29 | 20 ms |
+
+B dominates C: it has both lower loss and lower time. A, B and D remain nondominated because each accuracy improvement costs more time. Under a predeclared 10 ms limit, B and C are feasible and B wins. Under 15 ms, A wins; without a time limit, D has the lowest loss. The frontier alone cannot choose among A, B and D without a decision rule. Batch timings also cannot establish a per-request latency limit without measuring that workload.
+
+**Try it.** Reduce C's time to 2 ms. Is it still dominated? It now trades accuracy for speed and joins the frontier, but B still wins the minimum-loss decision under 10 ms. Freeze that rule using validation measurements, then evaluate the selected procedure on untouched test rows.
 
 **Compare the gap, not the two winners.** Compare the random-versus-temporal **paired model gap**, not only the two winners. If A−B is −.02 on shuffled rows and +.10 on later rows, the gap changes by .12. This suggests differential sensitivity to the regime.
 

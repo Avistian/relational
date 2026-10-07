@@ -7796,7 +7796,7 @@ a.anchor-link {
 <!-- End of mermaid configuration --><style>.jp-RenderedHTMLCommon img{height:auto}</style></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=85fd2680">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3821da8a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7810,7 +7810,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=740bd3f1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1def59c1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7871,7 +7871,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=84e5011d-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=92504225-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7914,7 +7914,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=91f14238">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=77ddf143">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7953,17 +7953,18 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4403db4f-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9366adfe-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="4.-Model-architecture:-the-OOF-stack">4. Model architecture: the OOF stack<a class="anchor-link" href="#4.-Model-architecture:-the-OOF-stack">¶</a></h2><p><em>Out-of-fold (OOF)</em> means that a row’s base prediction came from a model fitted without that row. Partition the outer development set into K folds. For fold f, fit each family on the other K−1 folds and predict f. Scatter predictions back into their original row positions. Every development row must be covered exactly once. This creates <code>Z ∈ [0,1]^(N×M)</code>: N development rows, M families, one positive-class probability per cell.</p>
-<p>The family branches are: XGBoost, a sum of boosted trees; corrected numeric TabM-mini from L054 (v2), three width-48 hidden blocks with eight internal members and mean member probabilities; and the released TabICL v1.1 classifier, which conditions its pretrained inference on labeled fitting rows. TabICL’s weights are loaded, not pretrained here. No held-out or test label is included in its context. We use one transformed view locally, versus its 32-view default. This is a large resource reduction, so it is not a strong-default TabICL claim. <a href="https://pypi.org/project/tabicl/0.1.4/">TabICL implementation</a>; exact package and checkpoint identities are in <a href="../_sources_l057.json">provenance</a>.</p>
-<p>For XGBoost and TabM, the imputer’s medians and scaler’s means/standard deviations are fitted only on the complementary training folds. TabICL fits its internal preprocessing on those rows. <strong>Early stopping on the OOF fold would let its labels influence the model that predicts it.</strong> Our fixed epochs/tree counts avoid this. If you add early stopping or HPO, create an inner validation split entirely within the complementary rows.</p>
-<p>The older L018 widget traces row eligibility. The lab extends it to three aligned columns and fit-only preprocessing. Fold membership may be stratified to preserve class proportions; that standard splitter use of labels is different from training on a held-out target.</p>
-<p>At inference, average the K fold-model predictions within each family, making <code>Z_test ∈ [0,1]^(N_test×M)</code>. Apply the frozen weights: <code>p_test=Z_test w</code>. Do not average K copies into the OOF row: each OOF row has exactly one eligible model per family. Our choice also avoids an unexamined full-data refit shift, though fold-averaged test predictions still differ from single-fold OOF predictions. A linear probability combiner trained on OOF features is a constrained stack; it is not logistic-regression stacking or AutoGluon’s complete multilevel stack.</p>
+<h2 id="4.-Model-architecture:-the-OOF-stack">4. Model architecture: the OOF stack<a class="anchor-link" href="#4.-Model-architecture:-the-OOF-stack">¶</a></h2><p><strong>In plain terms.</strong> The combiner needs to see how each base model behaves on unseen rows. So we split the training data into folds, and for each fold we predict it using models trained only on the other folds. Every training row then has a prediction from a model that never saw its answer. Those honest predictions become the columns the combiner learns from.</p>
+<p><strong>What out-of-fold means.</strong> <em>Out-of-fold (OOF)</em> means a row’s base prediction came from a model that was fitted without that row. Partition the outer development set into K folds. For fold f, fit each family on the other K−1 folds, then predict f. Scatter the predictions back into their original row positions. Every development row must be covered exactly once. The result is a matrix <code>Z ∈ [0,1]^(N×M)</code>: N development rows, M families, and one positive-class probability per cell.</p>
+<p><strong>The three family branches.</strong> The first is XGBoost, a sum of boosted trees. The second is the corrected numeric TabM-mini from L054 (v2): three width-48 hidden blocks with eight internal members, averaging member probabilities. The third is the released TabICL v1.1 classifier, which conditions its pretrained inference on labeled fitting rows. TabICL’s weights are loaded, not pretrained here. No held-out or test label is ever placed in its context. We use one transformed view locally, versus its 32-view default. That is a large resource reduction, so it is not a strong-default TabICL claim. <a href="https://pypi.org/project/tabicl/0.1.4/">TabICL implementation</a>; exact package and checkpoint identities are in <a href="../_sources_l057.json">provenance</a>.</p>
+<p><strong>Preprocessing is fitted on the complement too.</strong> For XGBoost and TabM, the imputer’s medians and the scaler’s means/standard deviations are fitted only on the complementary training folds. TabICL fits its internal preprocessing on those same rows. <strong>Early stopping on the OOF fold would let its labels influence the very model that predicts it.</strong> Our fixed epochs and tree counts avoid this. If you add early stopping or HPO, create an inner validation split entirely within the complementary rows.</p>
+<p>The older L018 widget traces row eligibility. The lab extends it to three aligned columns and to fit-only preprocessing. Fold membership may be stratified to preserve class proportions. That standard splitter use of labels is different from training on a held-out target.</p>
+<p><strong>What happens at inference.</strong> Average the K fold-model predictions within each family, which makes <code>Z_test ∈ [0,1]^(N_test×M)</code>. Then apply the frozen weights: <code>p_test=Z_test w</code>. Do not average K copies into the OOF row: each OOF row has exactly one eligible model per family. Our choice also avoids an unexamined full-data refit shift, though fold-averaged test predictions still differ from single-fold OOF predictions. A linear probability combiner trained on OOF features is a constrained stack; it is not logistic-regression stacking, and it is not AutoGluon’s complete multilevel stack.</p>
 </div>
 </div>
 </div>
@@ -8020,7 +8021,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=eefcf66d-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=289d385d-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8064,7 +8065,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0411cf75-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5d7444cc-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8114,7 +8115,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=60cbbeb5-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e930a1ff-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8172,22 +8173,23 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=156193a0-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8ba1c253-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="5.-Learn-the-weights-without-test-labels">5. Learn the weights without test labels<a class="anchor-link" href="#5.-Learn-the-weights-without-test-labels">¶</a></h2><p>We implement <a href="https://www.cs.cornell.edu/~alexn/papers/shotgun.icml04.revised.rev2.pdf">Caruana et al.’s forward ensemble selection</a>: start empty; try adding each candidate’s OOF predictions to the current sum; choose the candidate with lowest OOF log loss; allow selection with replacement. Repeated selection gives a useful model more weight. For selection counts [3,1,0], the weights are [.75,.25,0]. Inference needs each selected model once, not three separate runs of the first model.</p>
+<h2 id="5.-Learn-the-weights-without-test-labels">5. Learn the weights without test labels<a class="anchor-link" href="#5.-Learn-the-weights-without-test-labels">¶</a></h2><p><strong>In plain terms.</strong> To decide how much weight each model gets, we play a simple greedy game. Start with nothing in the blend. Each round, try adding each model and choose the resulting mixture with the lowest OOF loss. That mixture can still be worse than the previous round, so retain the best prefix encountered during the search. A model that keeps getting picked ends up with more weight. Because we only ever score on held-out rows, the weights are chosen without touching the test set.</p>
+<p><strong>The forward-selection procedure.</strong> We implement <a href="https://www.cs.cornell.edu/~alexn/papers/shotgun.icml04.revised.rev2.pdf">Caruana et al.’s forward ensemble selection</a>. Start empty. Try adding each candidate’s OOF predictions to the current sum. Choose the candidate with the lowest OOF log loss. Allow selection with replacement, so repeated selection gives a useful model more weight. <strong>Worked example.</strong> For selection counts [3,1,0], the weights are [.75,.25,0]. Inference needs each selected model once, not three separate runs of the first model.</p>
 <p>candidate_j(t) = (S_(t−1) + Z[:,j]) / t<br/>
 j_t = argmin_j logloss(y_dev, candidate_j(t))<br/>
 S_t = S_(t−1) + Z[:,j_t]<br/>
 w_j = count(j in the retained prefix) / prefix_length</p>
-<p><em>t</em> starts at one; <em>S</em> is the sum of chosen prediction vectors, initially zero. We run 40 steps and retain the prefix with best OOF loss. The current step need not improve on the preceding step: adding an equally weighted member can worsen the mixture. Retaining the best prefix preserves the best single candidate’s OOF loss, because step one is included. It does <em>not</em> preserve or improve its test loss.</p>
-<p>The notebook shows this implementation and keeps your TODO functions live in both training and audit paths. A check executes the <a href="https://github.com/autogluon/autogluon/blob/946b65c683e975df34456bbe1f68366c8f4570be/core/src/autogluon/core/models/greedy_ensemble/ensemble_selection.py">pinned upstream selector</a> with a local log-loss adapter: weights match on five non-tied fixtures. Upstream rounding and tie handling differ; this is a bounded primitive check, not full-library or historical TabArena parity.</p>
-<p><strong>Best-single comparator:</strong> select the lowest-loss family on OOF predictions and evaluate that frozen choice on test. Reporting the family with the best test score as the deployable comparator uses an oracle: a choice unavailable before test labels. Show individual test scores descriptively, but keep this distinction in the headline gap.</p>
-<p>OOF labels are still the combiner’s training labels. Trying hundreds of libraries, fold schemes and weight searches on them can overfit selection. The untouched outer test evaluates the whole selected procedure; nested outer evaluation is needed if you keep redesigning it. Lesson 059 studies this failure mode.</p>
-<p><strong>Source check on the actual corrected libraries:</strong> four of nine weight vectors match the pinned upstream selector exactly. Five differ because its six-decimal score rounding changes near-tied prefixes (maximum probability difference .003731, maximum OOF loss difference 7.44×10⁻⁷). A separate diagnostic disables only that rounding in the reference; then all nine match. This altered-reference diagnostic explains the mismatch; it is not exact upstream parity. <a href="../_source_check_l057_v2_results.json">Full measured source comparison</a>.</p>
+<p><strong>Read the recurrence.</strong> Here <em>t</em> starts at one, and <em>S</em> is the sum of chosen prediction vectors, initially zero. We run 40 steps and retain the prefix with the best OOF loss. The current step need not improve on the preceding one: adding an equally weighted member can worsen the mixture. Retaining the best prefix preserves the best single candidate’s OOF loss, because step one is included. It does <em>not</em> preserve or improve its test loss.</p>
+<p>The notebook shows this implementation and keeps your TODO functions live in both the training and the audit paths. A check executes the <a href="https://github.com/autogluon/autogluon/blob/946b65c683e975df34456bbe1f68366c8f4570be/core/src/autogluon/core/models/greedy_ensemble/ensemble_selection.py">pinned upstream selector</a> with a local log-loss adapter, and the weights match on five non-tied fixtures. Upstream rounding and tie handling differ, so this is a bounded primitive check, not full-library or historical TabArena parity.</p>
+<p><strong>The best-single comparator.</strong> Select the lowest-loss family on OOF predictions, and evaluate that frozen choice on test. Reporting instead the family with the best <em>test</em> score would use an oracle: a choice that was not available before test labels. Show individual test scores descriptively, but keep this distinction in the headline gap.</p>
+<p><strong>OOF labels can still be overfit.</strong> OOF labels are still the combiner’s training labels. Trying hundreds of libraries, fold schemes, and weight searches on them can overfit the selection. The untouched outer test evaluates the whole selected procedure; nested outer evaluation is needed if you keep redesigning it. Lesson 059 studies this failure mode.</p>
+<p><strong>Source check on the actual corrected libraries.</strong> Four of nine weight vectors match the pinned upstream selector exactly. Five differ, because its six-decimal score rounding changes near-tied prefixes (maximum probability difference .003731, maximum OOF loss difference 7.44×10⁻⁷). A separate diagnostic disables only that rounding in the reference; then all nine match. This altered-reference diagnostic explains the mismatch; it is not exact upstream parity. <a href="../_source_check_l057_v2_results.json">Full measured source comparison</a>.</p>
 </div>
 </div>
 </div>
@@ -8225,7 +8227,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=294e01df">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a5300cc7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8237,7 +8239,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=042dd23d">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=43122fe0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8270,7 +8272,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=dfb2abe9-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=56c5724f-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8317,7 +8319,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=544b7ff1-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a6896db6-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8524,7 +8526,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=93507e1f-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=75127f53-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8739,7 +8741,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3ea822fb-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8b9cd533-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8788,7 +8790,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fc4f736b-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c606c108-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8819,7 +8821,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5affba6e-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a6dfa352-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8868,7 +8870,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=86934a1c-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ffc9eeae-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8903,7 +8905,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5fbb50a0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2e5ac273">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8915,7 +8917,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4287de51">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=275f3649">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8927,7 +8929,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1350eb76-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=720897dd-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8973,7 +8975,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e2c955e8-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=342df44c-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9035,7 +9037,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6c696134-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d23de82a-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9074,7 +9076,7 @@ w_j = count(j in the retained prefix) / prefix_length</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2e6f82d0-part-1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f8050d29-part-1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

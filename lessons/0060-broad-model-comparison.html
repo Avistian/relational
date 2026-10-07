@@ -4,13 +4,12 @@
 <nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 6 figures</summary><ol><li><a href="#solution-comparison-system">How the parts work together</a></li><li><a href="#protocol-overview">Synthetic worked protocol: validation [.43,.39] selects candidate 1</a></li><li><a href="#visual-figure-3">Synthetic two-seed fixture: rank the mean losses, not the individual-seed ranks</a></li><li><a href="#visual-figure-4">Fresh v2 dataset-level mean ranks and exploratory Nemenyi critical differences</a></li><li><a href="#visual-figure-5">Fresh v2 random panel</a></li><li><a href="#visual-figure-6">Fresh v2 temporal panel, with three seed points per arm</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
 <!-- lesson-visuals:end -->
 <section class="solution-story" data-solution-story="opening"><p class="sm-eyebrow">The argument of this lesson</p><h2>Finish the baseline comparison before changing the learning paradigm</h2><p><a href="0059-validation-set-overfitting.html">Validation overfitting</a> showed that selecting a procedure is itself learning. This checkpoint assembles the earlier architecture, recipe and evaluation lessons into a reproducible decision. Only after task, budget and information boundaries are fixed can quality and cost inform a recommendation. That gives the foundation-model sequence a strong baseline to challenge.</p><nav aria-label="Follow the lesson argument" class="solution-route"><a href="#Freeze-the-experiment-before-fitting">Freeze the experiment before fitting</a><a href="#Preserve-each-baseline's-important-recipe">Preserve each baseline's important recipe</a><a href="#Test-labels-enter-once-the-choice-is-frozen">Test labels enter once the choice is frozen</a><a href="#Quality-and-cost-determine-a-conditional-decision">Quality and cost determine a conditional decision</a></nav></section><h2 id="The-checkpoint-is-a-defensible-comparison">The checkpoint is a defensible comparison<a class="anchor-link" href="#The-checkpoint-is-a-defensible-comparison">¶</a></h2><blockquote>
-<p><strong>In plain terms.</strong> Before a fancy relational model can claim a win, it has to beat a <em>fair</em> single-table opponent — one that was given a real feature pipeline, a real optimizer, a real search budget, and an honest scorecard. This lesson builds that opponent and the paperwork that proves the comparison was fair.</p>
+<p><strong>In plain terms.</strong> Before a fancy relational model can claim a win, it has to beat a <em>fair</em> single-table opponent — one that was given a real feature pipeline, a real optimizer, a real search budget, and an honest scorecard. This lesson builds that opponent and the artifacts that let a reader audit the declared comparison.</p>
 </blockquote>
 <p>A future relational model must beat a credible single-table procedure. That competitor is more than five model names in a table. It includes the feature representation, the optimizer, the search, the validation rule, and the resource budget. Your outcome here is a report whose selected models, predictions, uncertainty, and recommendation can all be reconstructed.</p>
 <blockquote>
 <p><strong>Scope check.</strong> A failed neural improvement is a valid outcome. The goal is a trustworthy measurement, not a win for any particular model.</p>
 </blockquote>
-
 <p><strong>No new model is introduced here.</strong> This is an evaluation checkpoint. We reuse three models taught earlier: the numerical MLP, RealMLP-TD-S, and the corrected TabM-mini. We add XGBoost and CatBoost as established comparator libraries.</p>
 <p><strong>The new skill is the evidence chain.</strong> An <em>evidence chain</em> is the ordered set of checks that lets a skeptic rerun your conclusion. It has five links: validate the partitions, freeze a choice, reconstruct its metric, check the declared panel, and compute paired effects. Five live notebook functions implement these links. Both a small fresh five-arm training run and the full saved-panel audit call them.</p>
 <p><strong>Two measurements exist, and they must not be confused.</strong> The earlier 210-record result remains available as historical evidence. It used <code>relkit/tabm.py</code>, whose mini architecture retained extra adapters and used incorrect fan-in initialization. The corrected measurement uses <code>relkit/tabm_v2.py</code> and a separate <code>checkpoint_l060_v2.py</code>. Its source hashes and all 210 newly fitted results are in the <a href="../labs/_verify_l060_v2_results.json">v2 evidence</a>.</p>
@@ -144,7 +143,7 @@
 <p>Candidate budgets should be declared before fitting. Equal candidate counts, equal wall-clock limits and published defaults are distinct comparison designs. Record the one you use and the realized resources. A method receiving a larger search should not be described as winning solely because of its architecture.</p>
 <p>Preserve each baseline's defining recipe. RealMLP's scaling and optimizer groups, TabM's member objective and probability aggregation, and tree early-stopping settings all affect the fitted procedure. Reusing a name while replacing its recipe with a generic loop weakens the comparison.</p>
 </div><h2 id="Preserve-each-baseline's-important-recipe">Preserve each baseline's important recipe<a class="anchor-link" href="#Preserve-each-baseline's-important-recipe">¶</a></h2><p class="solution-seam" data-solution-story="seam-1">A common comparison contract does not mean erasing a method’s essential recipe. Keep its intended preprocessing and fitting procedure visible while matching the declared resources and allowed information.</p><blockquote>
-<p><strong>In plain terms.</strong> Every model gets the <em>same</em> fair input pipeline, fitted only on training rows so the future can never leak backward. But each model keeps the parts of its own recipe that make it itself.</p>
+<p><strong>In plain terms.</strong> Every model gets the same input pipeline, fitted only on training rows. This prevents preprocessing from learning from held-out rows; feature availability still needs its own audit. But each model keeps the parts of its own recipe that make it itself.</p>
 </blockquote>
 <p><strong>One shared encoder, fitted on training rows only.</strong> The common encoder fits numeric medians and categorical one-hot columns on the training rows. Validation and test then transform through that fixed state. An <em>unseen category</em> — a value never seen during training — becomes an all-zero one-hot block.</p>
 <p><strong>Worked example.</strong> Training cities <code>{A,B}</code> become <code>[1,0]</code> and <code>[0,1]</code>. A future city <code>C</code> becomes <code>[0,0]</code>, not a third column learned from test data. Numeric missingness receives the training median. A column entirely missing in training is filled with zero, because its median is undefined. The categorical path casts values to strings, so a missing categorical value can itself be a category if it was observed in training.</p>
@@ -297,6 +296,40 @@
 <p><strong>Scope check.</strong> The author run experienced variable host contention, so these timings are descriptive records and cannot establish hardware efficiency superiority. This is one-thread CPU evidence, not a cold end-to-end request latency benchmark and not GPU throughput. The historical <code>last_invocation_seconds</code> was only a resumed tail, so it must never be presented as total historical suite cost.</p>
 </blockquote>
 <p><strong>State the objective before the test set.</strong> For a deployment decision, specify a task, an acceptable loss difference, and a cost limit before examining a new test set. A procedure is <strong>Pareto dominated</strong> if another is no worse on both declared objectives and strictly better on at least one. A nondominated procedure merely remains eligible; it need not be preferred. A score-first ranking answers a different question from minimizing loss subject to a 10 ms prediction budget.</p>
+<p><strong>Worked example: choose under a budget.</strong> These are invented validation measurements on one fixed batch, not results from the course panel. Lower loss and lower prediction time are both better.</p>
+<div aria-label="Scrollable comparison table" class="lesson-table-scroll" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>Procedure</th>
+<th style="text-align:right">Log loss</th>
+<th style="text-align:right">Batch prediction time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td style="text-align:right">.30</td>
+<td style="text-align:right">12 ms</td>
+</tr>
+<tr>
+<td>B</td>
+<td style="text-align:right">.32</td>
+<td style="text-align:right">4 ms</td>
+</tr>
+<tr>
+<td>C</td>
+<td style="text-align:right">.34</td>
+<td style="text-align:right">7 ms</td>
+</tr>
+<tr>
+<td>D</td>
+<td style="text-align:right">.29</td>
+<td style="text-align:right">20 ms</td>
+</tr>
+</tbody>
+</table></div>
+<p>B dominates C: it has both lower loss and lower time. A, B and D remain nondominated because each accuracy improvement costs more time. Under a predeclared 10 ms limit, B and C are feasible and B wins. Under 15 ms, A wins; without a time limit, D has the lowest loss. The frontier alone cannot choose among A, B and D without a decision rule. Batch timings also cannot establish a per-request latency limit without measuring that workload.</p>
+<p><strong>Try it.</strong> Reduce C's time to 2 ms. Is it still dominated? It now trades accuracy for speed and joins the frontier, but B still wins the minimum-loss decision under 10 ms. Freeze that rule using validation measurements, then evaluate the selected procedure on untouched test rows.</p>
 <p><strong>Compare the gap, not the two winners.</strong> Compare the random-versus-temporal <strong>paired model gap</strong>, not only the two winners. If A−B is −.02 on shuffled rows and +.10 on later rows, the gap changes by .12. This suggests differential sensitivity to the regime.</p>
 <blockquote>
 <p><strong>Scope check.</strong> This does not identify temporal drift as the sole cause: windows can differ in difficulty, class balance, feature distributions, and legal information. A follow-up should specify which factor is held fixed. The three released tasks are paired across regimes, so comparing the aggregate 11-task random rank to the aggregate three-task temporal rank confounds regime with task composition.</p>

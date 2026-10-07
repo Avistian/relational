@@ -1,6 +1,6 @@
 ## The validation set becomes training data for your decisions
 
-> **In plain terms.** Every time you look at a validation score and pick the option that scores best, you are letting that data teach your decision. The score that guided the choice can no longer be trusted to report how good the choice was. This lesson makes that leak measurable.
+> **In plain terms.** Every time you look at a validation score and pick the option that scores best, you are letting that data teach your decision. The winning score can become optimistic because it helped choose the winner. This lesson measures that selection bias and separates legitimate tuning from using the same data as independent evaluation.
 
 **What you will build.** You will implement and audit the boundary between two jobs: *choosing* a procedure and *estimating* how well it performs. You will trace a "winner" selected from pure noise. You will reconstruct the paper's kernel ridge and leave-one-out equations. You will run a nested evaluation that survives a held-out-label mutation test. This is an evaluation lesson; the kernel model is just a fully visible measuring instrument.
 
@@ -43,7 +43,7 @@ A constant upward bias need not change which candidate wins: adding .1 to every 
 
 ## Run a negative control you can explain completely
 
-> **In plain terms.** To see selection bias with nothing else mixed in, run an experiment where there is *no* real signal at all. Any apparent "winner" is then pure luck, and any gap between its selection score and its true error is exactly the bias you wanted to measure.
+> **In plain terms.** To see selection bias with nothing else mixed in, run an experiment where there is *no* real signal at all. Any apparent "winner" is then pure luck. Averaging its selected-score gap from the known true error measures selection bias. One observed gap still contains sampling noise; a finite fresh-test score adds its own noise.
 
 ### The control setup
 
