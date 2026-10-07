@@ -31,9 +31,8 @@
     .ov-card-bad { border-left: 4px solid #b03a2e; }
     .ov-card-good { border-left: 4px solid #1e6b3c; }
     .ov-h { font-family: var(--font-sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.25rem; }
-  </style>
-</head>
-<body>
+  </style><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head>
+<body class="early-course">
 <article>
   <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
   <h1>CatBoost</h1>
@@ -58,7 +57,10 @@
     "decision-table" trees.
   </div>
 
-  <h2>The problem: greedy target statistics leak</h2>
+  <!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 2 figures</summary><ol><li><a href="#course-visual-16">CatBoost keeps a row’s own target out of its encoding</a></li><li><a href="#ordered-viz">The fix: use only the past (a random permutation)</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
+<h2>The problem: greedy target statistics leak</h2>
   <p>
     Trees split on numeric thresholds, so a categorical column (<code>city</code>, <code>user_id</code>,
     <code>product</code>) must become a number. The most powerful encoding is a <strong>target statistic</strong>
@@ -101,7 +103,8 @@
     move with the order. This is the whole trick, applied in two places.
   </p>
 
-  <h2>Ordered boosting — the same trick on the gradients</h2>
+  <!-- course-visual:start --><section class="course-visual" id="course-visual-16" aria-labelledby="cv-heading-16"><header><p class="cv-kicker">Follow the computation</p><h3 id="cv-heading-16">CatBoost keeps a row’s own target out of its encoding</h3></header><div class="cv-body"><ol class="cv-route"><li><span class="cv-number">1</span><div><h4>Choose a training permutation</h4><p>Earlier positions define the permitted prefix for a training row.</p></div></li><li><span class="cv-number">2</span><div><h4>Encode a category from its prefix</h4><p>Use preceding target statistics plus the prior; exclude the current target.</p></div></li><li><span class="cv-number">3</span><div><h4>Build oblivious trees</h4><p>Within one tree depth, the same split is used at every node.</p></div></li><li><span class="cv-number">4</span><div><h4>Sum fitted tree predictions</h4><p>Ordered boosting also protects gradient construction; serving uses fitted training statistics.</p></div></li></ol><div class="cv-focus"><h4>Open the decisive operation</h4><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 270" role="img" aria-labelledby="cv-title-16"><title id="cv-title-16">For the second A row, may its own target enter the training category mean? No. Only preceding A targets and the declared prior can enter that row’s ordered statistic.</title><defs><marker id="cv-tip-16" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52717c"/></marker></defs><g font-family="system-ui,sans-serif"><text x="150" y="24" font-size="17" fill="#233c50" text-anchor="middle">permutation order →</text><rect x="22" y="44" width="83" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="63.5" y="62.0" font-size="16" fill="#087f83" text-anchor="middle">A</text><rect x="109" y="44" width="83" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="150.5" y="62.0" font-size="16" fill="#087f83" text-anchor="middle">A</text><rect x="196" y="44" width="83" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="237.5" y="62.0" font-size="16" fill="#087f83" text-anchor="middle">A</text><rect x="22" y="74" width="83" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="63.5" y="92.0" font-size="16" fill="#087f83" text-anchor="middle">1</text><rect x="109" y="74" width="83" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="150.5" y="92.0" font-size="16" fill="#087f83" text-anchor="middle">0</text><rect x="196" y="74" width="83" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="237.5" y="92.0" font-size="16" fill="#087f83" text-anchor="middle">1</text><text x="150" y="132" font-size="18" fill="#ab650a" text-anchor="middle">encode second A</text><path d="M63 109L30 150" fill="none" stroke="#087f83" stroke-width="2"/><path d="M30 150L30 180" fill="none" stroke="#087f83" stroke-width="2"/><path d="M30 180L75 180" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-16)"/><text x="155" y="188" font-size="18" fill="#087f83" text-anchor="middle">prefix mean = 1</text><text x="150" y="232" font-size="17" fill="#b54e55" text-anchor="middle">current target 0 excluded</text></g></svg><details><summary>For the second A row, may its own target enter the training category mean?</summary><p>No. Only preceding A targets and the declared prior can enter that row’s ordered statistic.</p></details><p class="cv-print-answer"><strong>Trace answer:</strong> No. Only preceding A targets and the declared prior can enter that row’s ordered statistic.</p></div></div><p class="cv-scope">Illustrative A-category targets 1, 0, 1; unsmoothed prefix means are shown only to expose the exclusion. Real encoding includes a prior.</p></section><!-- course-visual:end -->
+<h2>Ordered boosting — the same trick on the gradients</h2>
   <p>
     CatBoost applies "only the past" to the boosting loop too. In <strong>ordered boosting</strong> it keeps a
     set of supporting models where model <em>M</em><sub>i</sub> is trained on the first <em>i</em> rows of the
@@ -281,6 +284,5 @@
     correct: "a",
     explain: "Oblivious trees reuse one split (feature+threshold) across an entire level, so a depth-6 tree is a decision table indexed by 6 yes/no tests (2^6 = 64 leaves): weaker per tree, but strongly regularized and extremely fast at inference."
   });
-</script>
-</body>
+</script><script src="../assets/visual-stories.js" defer></script></body>
 </html>

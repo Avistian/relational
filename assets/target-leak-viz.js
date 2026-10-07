@@ -81,7 +81,7 @@
       grid.innerHTML = "";
       var tbl = document.createElement("div");
       tbl.className = "tlk-tbl";
-      tbl.style.gridTemplateColumns = "120px 70px 150px 1fr";
+      tbl.style.gridTemplateColumns = "minmax(50px, 1fr) minmax(38px, .6fr) minmax(65px, 1.2fr) minmax(65px, 1.4fr)";
       tbl.appendChild(cell("customer_id", "tlk-head"));
       tbl.appendChild(cell("label", "tlk-head"));
       tbl.appendChild(cell(mode === "naive" ? "naive encode" : "out-of-fold encode", "tlk-head"));

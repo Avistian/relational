@@ -12,6 +12,9 @@ import sys
 from visual_story_specs import STORIES, EXTRA_STORIES
 from visual_story_drawings import svg_scene
 import visual_details
+import course_visuals
+import responsive_architecture
+import course_notebooks
 ROOT=Path(__file__).resolve().parents[1]
 START='<!-- lesson-visuals:start -->'; END='<!-- lesson-visuals:end -->'
 TOOLS_START='<!-- visual-tools:start -->'; TOOLS_END='<!-- visual-tools:end -->'
@@ -24,7 +27,7 @@ def key_for(path):
     return str(int(key)) if key.isdigit() else key
 
 def selected():
-    return [p for p in sorted((ROOT/'lessons').glob('*.html')) if re.match(r'b\d|\d{4}',p.name) and (p.name.startswith('b') or int(p.name[:4])>=50)]
+    return [p for p in sorted((ROOT/'lessons').glob('*.html')) if re.match(r'b\d|\d{4}',p.name)]
 
 def story_html(key,s):
     prefix=f'vs-{key}'
@@ -55,13 +58,24 @@ def story_html(key,s):
     return ''.join(parts), ''.join(svg)
 
 def update(path):
-    text=visual_details.strip(path.read_text())
+    text=responsive_architecture.strip(course_visuals.strip(visual_details.strip(path.read_text())))
     # Marked regions are the only generated lesson content removed on refresh.
     text=re.sub(re.escape(START)+r'.*?'+re.escape(END)+'\n?', '',text,flags=re.S)
     text=re.sub(re.escape(TOOLS_START)+r'.*?'+re.escape(TOOLS_END), '',text,flags=re.S)
     text=re.sub(r'\s*<link\b[^>]*href=["\x27]../assets/visual-stories.css["\x27][^>]*>', '',text)
     text=re.sub(r'\s*<script\b[^>]*src=["\x27]../assets/visual-stories.js["\x27][^>]*>\s*</script>', '',text)
     key=key_for(path); links=[]; index=0
+    text=re.sub(r'\s*<link[^>]*href="../assets/course-visuals.css"[^>]*>', '', text)
+    text=course_visuals.inject(text,key)
+    if key in course_visuals.SPECS:links.append((f'course-visual-{key}',course_visuals.SPECS[key]['title']))
+    if key.isdigit() and int(key)<50:
+        text=re.sub(r'<body(?: class="early-course")?>','<body class="early-course">',text,count=1)
+        for m in re.finditer(r'\b\w*Viz\.mount\(document\.getElementById\("([^"]+)"',text):
+            ident=m[1]
+            target=re.search(r'<[^>]+id="'+re.escape(ident)+'"',text)
+            if target:
+                heads=list(re.finditer(r'<h[23][^>]*>(.*?)</h[23]>',text[:target.start()],re.S))
+                links.append((ident,clean_text(heads[-1][1]) if heads else 'Interactive diagram'))
     text=visual_details.inject(text,key)
     def figure(m):
         nonlocal index
@@ -91,6 +105,7 @@ def update(path):
         else:tools=''
         return full.replace('</figure>',TOOLS_START+tools+TOOLS_END+'</figure>')
     text=re.sub(r'<figure\b[^>]*>.*?</figure>',figure,text,flags=re.S)
+    text=responsive_architecture.inject(text)
     story='';asset=None
     if key in STORIES:
         story,asset=story_html(key,STORIES[key]);links.insert(0,(f'vs-{key}',STORIES[key]['title']))
@@ -111,7 +126,7 @@ def update(path):
     boundary=re.search(r'<(?:h2|section)\b',text[h1.end():])
     pos=h1.end()+boundary.start() if boundary else h1.end()
     text=text[:pos]+block+text[pos:]
-    text=text.replace('</head>','<link rel="stylesheet" href="../assets/visual-stories.css"/></head>',1)
+    text=text.replace('</head>','<link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head>',1)
     text=text.replace('</body>','<script src="../assets/visual-stories.js" defer></script></body>',1)
     return text,asset,dict(lesson=path.name,story=key in STORIES,figures=len(links),source=STORIES.get(key,{}).get('source'))
 
@@ -120,6 +135,8 @@ def reference():
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--check',action='store_true');args=parser.parse_args()
+    responsive_architecture.verify()
+    if args.check:course_notebooks.verify_exports()
     changes=[];coverage=[]
     def emit(path,value):
         if not path.exists() or path.read_text()!=value:
@@ -133,8 +150,9 @@ def main():
         emit(ROOT/'assets/visual-details'/f'{key}-mobile.svg',visual_details.render_mobile(key))
     for keys in EXTRA_STORIES.values():
         for key in keys:emit(ROOT/'assets/visual-stories'/f'{key}.svg',story_html(key,STORIES[key])[1])
+    for path,value in course_notebooks.outputs():emit(path,value)
     emit(ROOT/'reference/visual-reading-guide.html',reference())
-    emit(ROOT/'reviews/lesson-visuals-2026-10-07/coverage.json',json.dumps(coverage,indent=2)+'\n')
+    emit(ROOT/'reviews/course-visual-quality-2026-10-07/coverage.json',json.dumps(coverage,indent=2)+'\n')
     print(json.dumps(dict(lessons=len(coverage),stories=sum(r['story'] for r in coverage),changed=len(changes))))
     if args.check and changes:
         print('Stale generated files: '+', '.join(changes[:8]),file=sys.stderr);return 1

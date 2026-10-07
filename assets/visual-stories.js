@@ -18,6 +18,19 @@
     });
     story.querySelector('header').after(controls); story.append(live);
   });
+  // Older mounted widgets predate figure controls. Preserve their controls and
+  // give the rendered SVG a focusable inspection region and the same viewer.
+  document.querySelectorAll('.early-course svg').forEach((svg, i) => {
+    if (svg.closest('figure,.course-visual,.visual-story')) return;
+    const figure = document.createElement('figure'); figure.className = 'legacy-visual';
+    figure.id = 'legacy-visual-' + i; figure.tabIndex = 0;
+    figure.setAttribute('aria-label', 'Interactive diagram; scroll to inspect wide details');
+    svg.before(figure); figure.append(svg);
+    const tools = document.createElement('div'); tools.className = 'vs-figure-tools';
+    const link = document.createElement('a'); link.href = '#' + figure.id;
+    link.dataset.enlarge = ''; link.dataset.figureSvg = ''; link.textContent = 'Inspect diagram';
+    tools.append(link); figure.append(tools);
+  });
   let dialog, opener, objectURL;
   function openFigure(link, trigger) {
     opener = trigger;
@@ -26,7 +39,10 @@
       const bar = document.createElement('div'); bar.className = 'vs-dialog-bar';
       const title = document.createElement('span'); title.textContent = 'Full-size figure · scroll horizontally or vertically to inspect details';
       const close = document.createElement('button'); close.type = 'button'; close.textContent = 'Close'; close.addEventListener('click', () => dialog.close());
-      bar.append(title, close); dialog.append(bar);
+      const fit = document.createElement('button'); fit.type = 'button'; fit.textContent = 'Fit whole figure';
+      fit.setAttribute('aria-pressed', 'false');
+      fit.addEventListener('click', () => { const fitted = dialog.classList.toggle('cv-fit'); fit.setAttribute('aria-pressed', String(fitted)); fit.textContent = fitted ? 'Read full-size details' : 'Fit whole figure'; });
+      bar.append(title, fit, close); dialog.append(bar);
       const canvas = document.createElement('div'); canvas.className = 'vs-dialog-canvas'; canvas.tabIndex = 0;
       canvas.setAttribute('role', 'region'); canvas.setAttribute('aria-label', 'Scrollable enlarged figure'); dialog.append(canvas);
       dialog.addEventListener('close', () => { if (objectURL) URL.revokeObjectURL(objectURL); objectURL = null; if (opener?.isConnected) opener.focus(); });
@@ -46,6 +62,7 @@
       objectURL = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], {type:'image/svg+xml'})); image.src = objectURL;
     } else image.src = link.href;
     image.alt = figure?.querySelector('img')?.alt || figure?.querySelector('figcaption')?.textContent || 'Enlarged architecture diagram';
+    dialog.classList.remove('cv-fit'); const fit = dialog.querySelector('[aria-pressed]'); fit.setAttribute('aria-pressed','false'); fit.textContent = 'Fit whole figure';
     canvas.append(image); dialog.showModal(); canvas.scrollLeft = 0; canvas.scrollTop = 0;
   }
   document.querySelectorAll('.vs-figure-tools a[data-enlarge]').forEach(link => {

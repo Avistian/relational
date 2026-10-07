@@ -96,7 +96,7 @@
       tbl.className = "etx-tbl";
 
       if (scheme === "onehot") {
-        tbl.style.gridTemplateColumns = "150px repeat(4, 1fr)";
+        tbl.style.gridTemplateColumns = "minmax(65px, 1.4fr) repeat(4, minmax(0, 1fr))";
         tbl.appendChild(cell("level", "", false));
         LEVELS.forEach(function (l) { tbl.appendChild(cell("is_" + l.level, "", true)); });
         LEVELS.forEach(function (l, i) {
@@ -110,7 +110,7 @@
           "across all 13 categoricals that is <strong>+54 columns</strong>). Sparse, and every level is " +
           "equidistant — the model sees <em>no order and no similarity</em>. Safe from leakage; costly in width.";
       } else if (scheme === "ordinal") {
-        tbl.style.gridTemplateColumns = "150px 1fr";
+        tbl.style.gridTemplateColumns = "minmax(65px, 1.4fr) minmax(0, 1fr)";
         tbl.appendChild(cell("level", "", false));
         tbl.appendChild(cell("code", "", true));
         LEVELS.forEach(function (l) {
@@ -123,7 +123,7 @@
           "that the gaps are equal. A <em>linear</em> model must obey that fiction (AUC 0.782→0.739 on credit_g); " +
           "a tree can split around it.";
       } else if (scheme === "target") {
-        tbl.style.gridTemplateColumns = "150px 90px 1fr";
+        tbl.style.gridTemplateColumns = "minmax(65px, 1.4fr) minmax(40px, .8fr) minmax(0, 1fr)";
         tbl.appendChild(cell("level", "", false));
         tbl.appendChild(cell("n", "", true));
         tbl.appendChild(cell("P(good | level)", "", true));
@@ -138,7 +138,7 @@
           "cardinality. But it is computed <em>from the label</em>, so it <strong>leaks</strong> unless done " +
           "out-of-fold (next viz). Note it is literally a <em>1-D learned embedding</em>.";
       } else {
-        tbl.style.gridTemplateColumns = "150px 1fr 1fr";
+        tbl.style.gridTemplateColumns = "minmax(65px, 1.4fr) minmax(0, 1fr) minmax(0, 1fr)";
         tbl.appendChild(cell("level", "", false));
         tbl.appendChild(cell("emb[0]", "", true));
         tbl.appendChild(cell("emb[1]", "", true));

@@ -1,4 +1,4 @@
-"""Content/accessibility contracts for the later-lesson visual revision."""
+"""Content/accessibility contracts for the whole-course visual revision."""
 from pathlib import Path
 import re
 import unittest
@@ -6,10 +6,10 @@ from bs4 import BeautifulSoup
 ROOT = Path(__file__).resolve().parents[1]
 
 def lessons():
-    return [p for p in sorted((ROOT/'lessons').glob('*.html')) if re.match(r'b\d|\d{4}', p.name) and (p.name.startswith('b') or int(p.name[:4]) >= 50)]
+    return [p for p in sorted((ROOT/'lessons').glob('*.html')) if re.match(r'b\d|\d{4}', p.name)]
 
 class VisualContracts(unittest.TestCase):
-    def test_every_later_lesson_has_static_visual_navigation(self):
+    def test_every_lesson_has_static_visual_navigation(self):
         for path in lessons():
             with self.subTest(lesson=path.name):
                 soup = BeautifulSoup(path.read_text(), 'html.parser')

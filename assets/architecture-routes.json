@@ -1,0 +1,5805 @@
+{
+  "sources": {
+    "labs/_solution_map_content.py": "9fe028a45fa2e8c41b9b21f7f80e76cbf5058c7063e3d810f40b4109c1c10d52",
+    "labs/_architecture_071_090.py": "9dc1a32dba963bef5a345cfb4825af64123e03ecc493301d1f632926681c38b9",
+    "labs/_architecture_091_100.py": "5672b4585208a98db9ab934b5dcbfcbefb463271a2f35b896c43ffccc9dd410e"
+  },
+  "routes": {
+    "solution-feature-routing": {
+      "title": "ExcelFormer: make feature influence directional",
+      "scope": "Numeric local ExcelFormer mechanism. Importance uses training labels only; the diagram separates Feat-Mix from the prediction path.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Feature vector x",
+          "body": "B × F numeric inputs · train-fitted feature order",
+          "role": "query"
+        },
+        {
+          "id": "mix",
+          "title": "Feat-Mix",
+          "body": "donor feature subsets · information-weighted targets",
+          "role": "learn"
+        },
+        {
+          "id": "emb",
+          "title": "Gated tokenizers",
+          "body": "one embedding per feature · B × F × d",
+          "role": "compute"
+        },
+        {
+          "id": "att",
+          "title": "Directed attention",
+          "body": "strong reads strong · weak reads strong + weak",
+          "role": "compute"
+        },
+        {
+          "id": "pool",
+          "title": "Residual blocks → pool",
+          "body": "attention + gated FFN × L · learned feature pooling",
+          "role": "compute"
+        },
+        {
+          "id": "out",
+          "title": "Normalization → head",
+          "body": "class logits → softmax · B × K probabilities",
+          "role": "query"
+        },
+        {
+          "id": "loss",
+          "title": "Supervised loss",
+          "body": "mixed targets vs prediction · update learned parameters",
+          "role": "learn"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "emb",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "emb",
+          "b": "att",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "att",
+          "b": "pool",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pool",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mix",
+          "b": "emb",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "mix",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "out",
+          "b": "loss",
+          "label": "",
+          "dashed": true
+        }
+      ]
+    },
+    "solution-prompt-state": {
+      "title": "Trompt: the row is reread; prompt state evolves",
+      "scope": "Local numeric mirror: L=2 cells, P=8 prompts, d=16. Training sums cell losses; local inference averages cell logits before softmax.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Original row x",
+          "body": "B × C · reread at every cell",
+          "role": "query"
+        },
+        {
+          "id": "id",
+          "title": "Prompt + column IDs",
+          "body": "learned identities · initial state O⁰ = 0",
+          "role": "compute"
+        },
+        {
+          "id": "c1",
+          "title": "Fuse identities + O⁰",
+          "body": "score columns; softmax C · routing B × P × C",
+          "role": "compute"
+        },
+        {
+          "id": "v1",
+          "title": "Expand x",
+          "body": "gather over C · O¹: B × P × d",
+          "role": "compute"
+        },
+        {
+          "id": "c2",
+          "title": "Fuse identities + O¹",
+          "body": "new column routing · sample-dependent",
+          "role": "compute"
+        },
+        {
+          "id": "v2",
+          "title": "Expand x",
+          "body": "gather over C · O²: B × P × d",
+          "role": "compute"
+        },
+        {
+          "id": "head",
+          "title": "Same head on O¹, O²",
+          "body": "attention pool prompts · cell logits → mean → p",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "id",
+          "b": "c1",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "c1",
+          "b": "v1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "v1",
+          "b": "c2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "c2",
+          "b": "v2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x",
+          "b": "v1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x",
+          "b": "v2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "v1",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "v2",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-checkpoint-fit": {
+      "title": "A fair comparison contains a complete fitted procedure",
+      "scope": "Numeric local FT-T: d=32, two blocks, four heads; first attention pre-norm omitted. Tree/MLP contestants use their own declared recipes.",
+      "nodes": [
+        {
+          "id": "data",
+          "title": "Training X and y",
+          "body": "fit preprocessing on train · validation stays separate",
+          "role": "learn"
+        },
+        {
+          "id": "tok",
+          "title": "Feature tokens + CLS",
+          "body": "xⱼwⱼ + bⱼ; d=32 · B × (F+1) × 32",
+          "role": "compute"
+        },
+        {
+          "id": "block",
+          "title": "FT-T block × 2",
+          "body": "attention residual · ReGLU FFN residual",
+          "role": "compute"
+        },
+        {
+          "id": "head",
+          "title": "CLS → LN → ReLU → head",
+          "body": "binary logit; BCE training · validation selects recipe",
+          "role": "compute"
+        },
+        {
+          "id": "test",
+          "title": "Held-out test X",
+          "body": "same saved transform · same frozen model",
+          "role": "query"
+        },
+        {
+          "id": "pred",
+          "title": "Frozen predictions",
+          "body": "sigmoid(logit) · test y still hidden",
+          "role": "query"
+        },
+        {
+          "id": "score",
+          "title": "Paired test comparison",
+          "body": "test y enters metric here · aggregate by dataset",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "data",
+          "b": "tok",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tok",
+          "b": "block",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "block",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "test",
+          "b": "pred",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "head",
+          "b": "pred",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "pred",
+          "b": "score",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-interventions": {
+      "title": "Change the problem; observe which bias helps",
+      "scope": "Experimental design from the lesson. Each branch has its own declared intervention and matched comparison; no universal winner is encoded.",
+      "nodes": [
+        {
+          "id": "base",
+          "title": "One dataset, one split",
+          "body": "baseline features and labels · freeze candidate recipes",
+          "role": "query"
+        },
+        {
+          "id": "smooth",
+          "title": "Smooth targets",
+          "body": "remove short-scale variation · the target itself changes",
+          "role": "compute"
+        },
+        {
+          "id": "smoothfit",
+          "title": "Refit tree and network",
+          "body": "same declared budget / split · compare paired errors",
+          "role": "learn"
+        },
+        {
+          "id": "rotate",
+          "title": "Rotate features",
+          "body": "invertible coordinate map · information is retained",
+          "role": "compute"
+        },
+        {
+          "id": "rotatefit",
+          "title": "Refit tree and network",
+          "body": "same declared budget / split · compare paired errors",
+          "role": "learn"
+        },
+        {
+          "id": "noise",
+          "title": "Add irrelevant columns",
+          "body": "keep target fixed · increase nuisance inputs",
+          "role": "compute"
+        },
+        {
+          "id": "noisefit",
+          "title": "Refit tree and network",
+          "body": "same declared budget / split · compare paired errors",
+          "role": "learn"
+        }
+      ],
+      "edges": [
+        {
+          "a": "base",
+          "b": "smooth",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "smooth",
+          "b": "smoothfit",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "base",
+          "b": "rotate",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "rotate",
+          "b": "rotatefit",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "base",
+          "b": "noise",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "noise",
+          "b": "noisefit",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-retrieval-system": {
+      "title": "TabR-S: retrieve evidence, then correct its meaning",
+      "scope": "Complete numeric local TabR-S. Query-ID exclusion applies during supervised fitting; legal labeled memory remains part of the fitted predictor at inference.",
+      "nodes": [
+        {
+          "id": "q",
+          "title": "Query features x",
+          "body": "unknown y never supplied · B × F",
+          "role": "query"
+        },
+        {
+          "id": "mem",
+          "title": "Legal memory X, y, IDs",
+          "body": "training records only · N × F; labels retained",
+          "role": "compute"
+        },
+        {
+          "id": "hq",
+          "title": "Encode → h; key K(h)",
+          "body": "save h for residual · B × d",
+          "role": "compute"
+        },
+        {
+          "id": "hm",
+          "title": "Encode → hᵢ; key K(hᵢ)",
+          "body": "same encoder and key map · N × d",
+          "role": "compute"
+        },
+        {
+          "id": "search",
+          "title": "Nearest eligible keys",
+          "body": "top-m of −‖k−kᵢ‖² · exclude own record ID",
+          "role": "compute"
+        },
+        {
+          "id": "val",
+          "title": "Correct each label value",
+          "body": "vᵢ = E(yᵢ) + T(k−kᵢ) · softmax scores → Σ pᵢvᵢ",
+          "role": "compute"
+        },
+        {
+          "id": "sum",
+          "title": "Add direct + retrieved",
+          "body": "h + Σ pᵢvᵢ · B × d",
+          "role": "compute"
+        },
+        {
+          "id": "head",
+          "title": "Residual predictor → head",
+          "body": "classification probability · or regression output",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "q",
+          "b": "hq",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mem",
+          "b": "hm",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hq",
+          "b": "search",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hm",
+          "b": "search",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "search",
+          "b": "val",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mem",
+          "b": "val",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hq",
+          "b": "sum",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "val",
+          "b": "sum",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sum",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-recipe-system": {
+      "title": "RealMLP-TD-S: the predictor and how it is learned",
+      "scope": "Numeric TD-S: local width64; paper recipe width256. Three hidden layers; SELU for classification, Mish for regression. Categorical/full-TD paths are outside this diagram.",
+      "nodes": [
+        {
+          "id": "raw",
+          "title": "Numeric row",
+          "body": "train median / IQR · range fallback; smooth clip",
+          "role": "query"
+        },
+        {
+          "id": "scale",
+          "title": "Learned feature scales",
+          "body": "one multiplier per feature · B × F",
+          "role": "compute"
+        },
+        {
+          "id": "mlp",
+          "title": "Three hidden layers",
+          "body": "NTP linear → activation · F → d → d → d",
+          "role": "compute"
+        },
+        {
+          "id": "head",
+          "title": "Zero-initialized head",
+          "body": "class logits / target value · saved checkpoint output",
+          "role": "query"
+        },
+        {
+          "id": "opt",
+          "title": "Parameter groups",
+          "body": "initialization + decay · learning-rate policy",
+          "role": "learn"
+        },
+        {
+          "id": "sched",
+          "title": "coslog4 schedule",
+          "body": "four settling opportunities · training loss → updates",
+          "role": "learn"
+        },
+        {
+          "id": "select",
+          "title": "Validation selection",
+          "body": "choose checkpoint · freeze for test",
+          "role": "learn"
+        }
+      ],
+      "edges": [
+        {
+          "a": "raw",
+          "b": "scale",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "scale",
+          "b": "mlp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mlp",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "opt",
+          "b": "sched",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sched",
+          "b": "mlp",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "sched",
+          "b": "select",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "select",
+          "b": "head",
+          "label": "",
+          "dashed": true
+        }
+      ]
+    },
+    "solution-shared-members": {
+      "title": "TabM-mini: many prediction paths, one expensive backbone",
+      "scope": "Corrected local TabM-mini: first-layer R only, shared W/biases, independent heads. Full TabM has additional member adapters in every block.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Transformed row x",
+          "body": "train-only impute / z-score · broadcast B × k × F",
+          "role": "query"
+        },
+        {
+          "id": "a",
+          "title": "Member 1: x ⊙ R₁",
+          "body": "learned feature multipliers · different effective functions",
+          "role": "compute"
+        },
+        {
+          "id": "b",
+          "title": "Member 2: x ⊙ R₂",
+          "body": "learned feature multipliers · different effective functions",
+          "role": "compute"
+        },
+        {
+          "id": "c",
+          "title": "Member k: x ⊙ Rₖ",
+          "body": "learned feature multipliers · different effective functions",
+          "role": "compute"
+        },
+        {
+          "id": "ah",
+          "title": "W shared → head A",
+          "body": "independent output projection · logits → probability p",
+          "role": "compute"
+        },
+        {
+          "id": "bh",
+          "title": "W shared → head B",
+          "body": "independent output projection · logits → probability p",
+          "role": "compute"
+        },
+        {
+          "id": "ch",
+          "title": "W shared → head C",
+          "body": "independent output projection · logits → probability p",
+          "role": "compute"
+        },
+        {
+          "id": "mean",
+          "title": "Average probabilities",
+          "body": "p = (p₁ + … + pₖ) / k · one prediction per row",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "a",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x",
+          "b": "b",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x",
+          "b": "c",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "a",
+          "b": "ah",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "b",
+          "b": "bh",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "c",
+          "b": "ch",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ah",
+          "b": "mean",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "bh",
+          "b": "mean",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ch",
+          "b": "mean",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-time-contract": {
+      "title": "TabReD: the split is part of the question",
+      "scope": "Protocol schematic, not a new model. Match row universes and partition sizes when isolating split policy; released splits and stricter time-group policies remain distinct.",
+      "nodes": [
+        {
+          "id": "pool",
+          "title": "Same audited row universe",
+          "body": "IDs, event time, feature-ready time · label-ready time; fixed row counts",
+          "role": "compute"
+        },
+        {
+          "id": "clock",
+          "title": "Cutoff → eligibility",
+          "body": "event occurred AND features ready · training labels revealed by cutoff",
+          "role": "query"
+        },
+        {
+          "id": "random",
+          "title": "Random train / validation / test",
+          "body": "fit transforms on train only · validation chooses model",
+          "role": "learn"
+        },
+        {
+          "id": "time",
+          "title": "Train → validation → future test",
+          "body": "preserve declared time boundary · selection uses past information only",
+          "role": "learn"
+        },
+        {
+          "id": "rscore",
+          "title": "Held-out mixture error",
+          "body": "estimates this partition policy · same budget as temporal arm",
+          "role": "query"
+        },
+        {
+          "id": "tscore",
+          "title": "Future-period error",
+          "body": "estimates this horizon / availability · test labels enter only after prediction",
+          "role": "query"
+        },
+        {
+          "id": "gap",
+          "title": "Compare errors; diagnose separately",
+          "body": "a gap establishes policy sensitivity · it does not identify the cause of drift",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "pool",
+          "b": "random",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pool",
+          "b": "clock",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "clock",
+          "b": "time",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "random",
+          "b": "rscore",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "time",
+          "b": "tscore",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "rscore",
+          "b": "gap",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tscore",
+          "b": "gap",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-benchmark-reduction": {
+      "title": "TabArena: follow the unit of evidence",
+      "scope": "Frozen-score reanalysis for the declared four-method pool. These ranks are not the paper’s full-pool Elo; no fresh model fitting is pictured.",
+      "nodes": [
+        {
+          "id": "ledger",
+          "title": "Frozen score ledger",
+          "body": "dataset / split / method / regime · verify complete matched coverage",
+          "role": "query"
+        },
+        {
+          "id": "rank",
+          "title": "Rank each dataset / split",
+          "body": "lower error is better · ties receive average rank",
+          "role": "compute"
+        },
+        {
+          "id": "within",
+          "title": "Average over splits",
+          "body": "one rank per method / dataset · folds do not become datasets",
+          "role": "compute"
+        },
+        {
+          "id": "mean",
+          "title": "Average over datasets",
+          "body": "equal dataset weights · one score per method",
+          "role": "query"
+        },
+        {
+          "id": "boot",
+          "title": "Paired dataset bootstrap",
+          "body": "resample whole dataset records · retain method pairing",
+          "role": "learn"
+        },
+        {
+          "id": "scope",
+          "title": "Name the fitted regime",
+          "body": "default / tuned / ensemble · different fitted procedures",
+          "role": "compute"
+        },
+        {
+          "id": "read",
+          "title": "Rank + uncertainty",
+          "body": "comparison pool changes rank · neither rank nor Elo is accuracy",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "ledger",
+          "b": "rank",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "rank",
+          "b": "within",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "within",
+          "b": "mean",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "within",
+          "b": "boot",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "scope",
+          "b": "ledger",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "mean",
+          "b": "read",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "boot",
+          "b": "read",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-oof-system": {
+      "title": "Cross-family stacking: each training row needs an honest prediction",
+      "scope": "OOF procedure with XGBoost, TabM and provided TabICL predictions. The serving refit/fold policy is a declared part of the artifact, not inferred from this schematic.",
+      "nodes": [
+        {
+          "id": "split",
+          "title": "Fold f held out",
+          "body": "other folds fit preprocessing · and each base procedure",
+          "role": "learn"
+        },
+        {
+          "id": "families",
+          "title": "XGB | TabM | TabICL",
+          "body": "fit / construct context without f · predict only excluded fold f",
+          "role": "compute"
+        },
+        {
+          "id": "scatter",
+          "title": "Scatter by row ID",
+          "body": "repeat all folds · Z: N × 3 OOF p",
+          "role": "compute"
+        },
+        {
+          "id": "combine",
+          "title": "Fit / select combiner",
+          "body": "Z and outer-training y · freeze weights / policy",
+          "role": "learn"
+        },
+        {
+          "id": "serve",
+          "title": "New row → base models",
+          "body": "declared serving fit policy · same class / column order",
+          "role": "query"
+        },
+        {
+          "id": "out",
+          "title": "Base p → combiner",
+          "body": "one probability per row · test y is absent",
+          "role": "query"
+        },
+        {
+          "id": "score",
+          "title": "Test labels → final score",
+          "body": "compare to frozen single model · never select the oracle winner",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "split",
+          "b": "families",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "families",
+          "b": "scatter",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "scatter",
+          "b": "combine",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "combine",
+          "b": "out",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "serve",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "out",
+          "b": "score",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-evidence-funnel": {
+      "title": "From a literature map to a testable experiment",
+      "scope": "Evidence-synthesis workflow. The small benchmark in this lesson does not inherit the scope of the surveys it cites.",
+      "nodes": [
+        {
+          "id": "papers",
+          "title": "Paper claims",
+          "body": "task type / model operation · what question did each study ask?",
+          "role": "query"
+        },
+        {
+          "id": "protocol",
+          "title": "Recover the experiment",
+          "body": "datasets; splits; tuning budget · metric; missing methods",
+          "role": "compute"
+        },
+        {
+          "id": "pool",
+          "title": "Matched denominator",
+          "body": "which tasks / methods survive? · state exclusions before ranking",
+          "role": "compute"
+        },
+        {
+          "id": "ranks",
+          "title": "Within-task comparisons",
+          "body": "then equal-task aggregation · retain effect sizes and cost",
+          "role": "compute"
+        },
+        {
+          "id": "hyp",
+          "title": "Candidate explanation",
+          "body": "meta-feature association · a hypothesis, not identification",
+          "role": "compute"
+        },
+        {
+          "id": "test",
+          "title": "Discriminating experiment",
+          "body": "hold a baseline fixed · change the proposed mechanism",
+          "role": "learn"
+        }
+      ],
+      "edges": [
+        {
+          "a": "papers",
+          "b": "protocol",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "protocol",
+          "b": "pool",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pool",
+          "b": "ranks",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ranks",
+          "b": "hyp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hyp",
+          "b": "test",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-nested-selection": {
+      "title": "Validation overfitting: nest the selector, not just the fit",
+      "scope": "Lesson’s KRR measuring instrument: kernel/regularization candidates, exact deleted residuals and nested selection. This is an evaluation architecture, not a new tabular network.",
+      "nodes": [
+        {
+          "id": "train",
+          "title": "Outer-training rows",
+          "body": "features and labels · define candidate grid",
+          "role": "learn"
+        },
+        {
+          "id": "krr",
+          "title": "Fit each KRR candidate",
+          "body": "kernel + regularization · solve coefficients",
+          "role": "compute"
+        },
+        {
+          "id": "press",
+          "title": "Deleted-row residuals",
+          "body": "αᵢ / inverse diagonalᵢ · mean squared PRESS",
+          "role": "compute"
+        },
+        {
+          "id": "select",
+          "title": "Select minimum PRESS",
+          "body": "keep selected fitted model · freeze choice for held fold",
+          "role": "learn"
+        },
+        {
+          "id": "held",
+          "title": "Held features",
+          "body": "held targets excluded · from the entire left region",
+          "role": "query"
+        },
+        {
+          "id": "pred",
+          "title": "Selected KRR predicts",
+          "body": "no further selection · then reveal held targets",
+          "role": "query"
+        },
+        {
+          "id": "eval",
+          "title": "Outer predictions → error",
+          "body": "repeat; preserve pairing · report selector performance",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "train",
+          "b": "krr",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "krr",
+          "b": "press",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "press",
+          "b": "select",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "select",
+          "b": "pred",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "held",
+          "b": "pred",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pred",
+          "b": "eval",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-comparison-system": {
+      "title": "Compare complete procedures on the same task",
+      "scope": "Broad model-comparison protocol; not a novel architecture. The lesson’s small experiment and the cited papers retain separate evidence scopes.",
+      "nodes": [
+        {
+          "id": "contract",
+          "title": "Freeze comparison contract",
+          "body": "tasks / split / metrics / budgets · eligibility and preprocessing",
+          "role": "query"
+        },
+        {
+          "id": "t",
+          "title": "Tree procedure",
+          "body": "fit splits / leaves · select within allowed validation",
+          "role": "learn"
+        },
+        {
+          "id": "tp",
+          "title": "Frozen test predictions",
+          "body": "same test row IDs · record fit and inference cost",
+          "role": "query"
+        },
+        {
+          "id": "n",
+          "title": "Neural procedure",
+          "body": "fit weights + training recipe · select within allowed validation",
+          "role": "learn"
+        },
+        {
+          "id": "np",
+          "title": "Frozen test predictions",
+          "body": "same test row IDs · record fit and inference cost",
+          "role": "query"
+        },
+        {
+          "id": "f",
+          "title": "Foundation procedure",
+          "body": "context + checkpoint + wrapper · select within allowed validation",
+          "role": "learn"
+        },
+        {
+          "id": "fp",
+          "title": "Frozen test predictions",
+          "body": "same test row IDs · record fit and inference cost",
+          "role": "query"
+        },
+        {
+          "id": "compare",
+          "title": "Paired errors + cost",
+          "body": "dataset is the aggregate unit · retain scope and uncertainty",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "contract",
+          "b": "t",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "t",
+          "b": "tp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "contract",
+          "b": "n",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "n",
+          "b": "np",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "contract",
+          "b": "f",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "f",
+          "b": "fp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tp",
+          "b": "compare",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "np",
+          "b": "compare",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "fp",
+          "b": "compare",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-learn-inference": {
+      "title": "PFN: train on tasks; infer from a labeled set",
+      "scope": "Local GP row-PFN: d=64, three postnorm blocks, four heads, 64-bin full-support density. The GP is the auditable task prior here, not the TabPFN SCM mixture.",
+      "nodes": [
+        {
+          "id": "prior",
+          "title": "Sample one GP task",
+          "body": "joint draw at all row inputs · split context and query",
+          "role": "learn"
+        },
+        {
+          "id": "labels",
+          "title": "Context (Xc, yc)",
+          "body": "query Xq; hide yq · Ex shared; Ey context only",
+          "role": "compute"
+        },
+        {
+          "id": "truth",
+          "title": "Hidden targets yq",
+          "body": "used only by loss · never a forward input",
+          "role": "learn"
+        },
+        {
+          "id": "tokens",
+          "title": "Context: Ex(x) + Ey(y)",
+          "body": "query: Ex(x) only · B × (C+Q) × 64",
+          "role": "compute"
+        },
+        {
+          "id": "blocks",
+          "title": "Row blocks × 3",
+          "body": "residual → LayerNorm · context + own query eligible",
+          "role": "compute"
+        },
+        {
+          "id": "density",
+          "title": "Head → 64 bin masses",
+          "body": "divide finite-bin mass by width · tail bins keep full support",
+          "role": "query"
+        },
+        {
+          "id": "loss",
+          "title": "Query density loss",
+          "body": "−log pθ(yq | Xq, context) · backpropagate into θ",
+          "role": "learn"
+        }
+      ],
+      "edges": [
+        {
+          "a": "prior",
+          "b": "labels",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "prior",
+          "b": "truth",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "labels",
+          "b": "tokens",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tokens",
+          "b": "blocks",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "blocks",
+          "b": "density",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "truth",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "density",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "loss",
+          "b": "blocks",
+          "label": "",
+          "dashed": true
+        }
+      ]
+    },
+    "solution-historical-v1": {
+      "title": "TabPFN v1: one row token, many labeled-context interactions",
+      "scope": "Historical v1 checkpoint; 12 row blocks, d=512, four heads, 100-feature input contract, up to ten native classes. View count and preprocessing are the declared lesson recipe.",
+      "nodes": [
+        {
+          "id": "context",
+          "title": "Labeled context",
+          "body": "Xc and yc · fit the declared transform",
+          "role": "compute"
+        },
+        {
+          "id": "query",
+          "title": "Unlabeled queries",
+          "body": "Xq transformed identically · no query target supplied",
+          "role": "query"
+        },
+        {
+          "id": "views",
+          "title": "Create declared views",
+          "body": "feature / class permutations · record inverse class maps",
+          "role": "compute"
+        },
+        {
+          "id": "ctok",
+          "title": "Context row token",
+          "body": "pad / scale to 100 features · Ex(x) + Ey(y): 512 wide",
+          "role": "compute"
+        },
+        {
+          "id": "qtok",
+          "title": "Query row token",
+          "body": "same feature projection · Ex(x): 512 wide",
+          "role": "query"
+        },
+        {
+          "id": "blocks",
+          "title": "12 row blocks",
+          "body": "masked attention + FFN · residuals and normalization",
+          "role": "compute"
+        },
+        {
+          "id": "head",
+          "title": "Query decoder",
+          "body": "512 → 1024 → 10 · slice active classes; temperature",
+          "role": "compute"
+        },
+        {
+          "id": "combine",
+          "title": "Undo class remapping",
+          "body": "softmax in original class order · average view probabilities",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "context",
+          "b": "ctok",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "query",
+          "b": "qtok",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "views",
+          "b": "qtok",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "ctok",
+          "b": "blocks",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "qtok",
+          "b": "blocks",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "blocks",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "head",
+          "b": "combine",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "views",
+          "b": "ctok",
+          "label": "",
+          "dashed": true
+        }
+      ]
+    },
+    "solution-prior-generator": {
+      "title": "The synthetic prior: sample a world, then sample its rows",
+      "scope": "Released SCM-style generator concept and lesson reconstruction. Visible variables need not be causal parents of the target; predictive inference is not causal identification.",
+      "nodes": [
+        {
+          "id": "hyper",
+          "title": "Draw hyperparameters",
+          "body": "depth / width / sparsity · noise and mechanism choices",
+          "role": "learn"
+        },
+        {
+          "id": "graph",
+          "title": "Sample graph + weights",
+          "body": "fixed within this task · shared structural assignments",
+          "role": "learn"
+        },
+        {
+          "id": "obs",
+          "title": "Choose observations",
+          "body": "features; target variable · class threshold / class mapping",
+          "role": "learn"
+        },
+        {
+          "id": "noise",
+          "title": "Draw roots and noise",
+          "body": "fresh exogenous values · row-specific randomness",
+          "role": "query"
+        },
+        {
+          "id": "apply",
+          "title": "Evaluate the graph",
+          "body": "parents + noise → child · follow directed graph order",
+          "role": "compute"
+        },
+        {
+          "id": "xy",
+          "title": "Observe X; discretize Y",
+          "body": "causes / effects / proxies · imbalanced classes possible",
+          "role": "compute"
+        },
+        {
+          "id": "split",
+          "title": "Split context and query",
+          "body": "reveal only context labels · PFN learns query likelihood",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "hyper",
+          "b": "graph",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "graph",
+          "b": "obs",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "noise",
+          "b": "apply",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "graph",
+          "b": "apply",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "apply",
+          "b": "xy",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "obs",
+          "b": "xy",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "xy",
+          "b": "split",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-axial-network": {
+      "title": "TabPFN v2: keep the feature axis alive through inference",
+      "scope": "Complete historical default classifier: 12 blocks, d=192, six heads, two-feature groups. Numeric single-view lab uses temperature0.9; historical wrapper variants remain separate.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Context / query features",
+          "body": "context-fitted numeric wrapper · B × (C+Q) × F",
+          "role": "query"
+        },
+        {
+          "id": "y",
+          "title": "Context y / query missing",
+          "body": "value + missingness channels · query flag distinguishes unknown",
+          "role": "compute"
+        },
+        {
+          "id": "groups",
+          "title": "Two-feature group encoder",
+          "body": "2 values + 2 flags → 192 · add projected group identity",
+          "role": "compute"
+        },
+        {
+          "id": "target",
+          "title": "Target encoder",
+          "body": "2 channels → 192 · append one target token",
+          "role": "compute"
+        },
+        {
+          "id": "feature",
+          "title": "1 · Within each row",
+          "body": "feature / target attention · residual + LayerNorm",
+          "role": "compute"
+        },
+        {
+          "id": "row",
+          "title": "2 · At each token position",
+          "body": "context ↔ context; query ← context · query uses first-head K/V reuse",
+          "role": "compute"
+        },
+        {
+          "id": "ffn",
+          "title": "3 · Token-wise FFN",
+          "body": "192 → 768 → 192; GELU · residual + LayerNorm",
+          "role": "compute"
+        },
+        {
+          "id": "read",
+          "title": "Query target states → head",
+          "body": "192 → 768 → 10; keep K classes · temperature → softmax → Q × K",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "groups",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "y",
+          "b": "target",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "groups",
+          "b": "feature",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "target",
+          "b": "feature",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "feature",
+          "b": "row",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "row",
+          "b": "ffn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ffn",
+          "b": "read",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-embedding-probe": {
+      "title": "Query embeddings: freeze the encoder, learn a new readout",
+      "scope": "Lesson’s ten-fold query-role training extraction and full-training evaluation context. Frozen historical TabPFN v2; preprocessing/representation mismatch is measured, not assumed away.",
+      "nodes": [
+        {
+          "id": "fold",
+          "title": "Hold fold f in query role",
+          "body": "other folds provide context labels · f supplies features only",
+          "role": "learn"
+        },
+        {
+          "id": "full",
+          "title": "All training rows as context",
+          "body": "validation or test rows are queries · their labels never enter encoder",
+          "role": "query"
+        },
+        {
+          "id": "encode1",
+          "title": "Frozen v2 encoder",
+          "body": "12 feature / row blocks · read final query target states: 192",
+          "role": "compute"
+        },
+        {
+          "id": "encode2",
+          "title": "Same frozen v2 encoder",
+          "body": "same 192-wide readout · different context size/composition",
+          "role": "compute"
+        },
+        {
+          "id": "scatter",
+          "title": "Scatter embeddings into row order",
+          "body": "N × 192; attach training y · no self-target in extraction",
+          "role": "compute"
+        },
+        {
+          "id": "probe",
+          "title": "Fit / select linear probe",
+          "body": "fit on training vectors; validation selects · freeze probe; test once",
+          "role": "learn"
+        }
+      ],
+      "edges": [
+        {
+          "a": "fold",
+          "b": "encode1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "full",
+          "b": "encode2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "encode1",
+          "b": "scatter",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "scatter",
+          "b": "probe",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "encode2",
+          "b": "probe",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-three-transformers": {
+      "title": "TabICL: build row representations before learning from labels",
+      "scope": "Original February checkpoint, numeric single-view lesson path. Three column blocks, three row blocks, twelve ICL blocks. Hierarchical class extension and view ensembles are outside this pictured wrapper.",
+      "nodes": [
+        {
+          "id": "table",
+          "title": "Numeric Xc and Xq",
+          "body": "context-fitted preprocessing · N × F scalar cells",
+          "role": "query"
+        },
+        {
+          "id": "labels",
+          "title": "Context labels yc",
+          "body": "kept out of column / row stages · not available for query rows",
+          "role": "learn"
+        },
+        {
+          "id": "u",
+          "title": "Shared scalar projection",
+          "body": "cells → U: N × 128 · context slice Uc only → readers",
+          "role": "compute"
+        },
+        {
+          "id": "mem",
+          "title": "128 inducing readers I",
+          "body": "M = MAB(I, Uc) · fixed-size context memory",
+          "role": "compute"
+        },
+        {
+          "id": "cell",
+          "title": "Every cell reads M",
+          "body": "V = MAB(U, M) · then affine: x·W(V)+b(V)",
+          "role": "compute"
+        },
+        {
+          "id": "row",
+          "title": "Feature interactions",
+          "body": "prepend 4 CLS; apply RoPE · attention within each row",
+          "role": "compute"
+        },
+        {
+          "id": "compress",
+          "title": "Concatenate 4 CLS",
+          "body": "4 × 128 → 512 · N × 512; feature axis gone",
+          "role": "compute"
+        },
+        {
+          "id": "icl",
+          "title": "Context gets labels",
+          "body": "query rows read context only · 512-wide row attention + FFN",
+          "role": "compute"
+        },
+        {
+          "id": "head",
+          "title": "Query row head",
+          "body": "512 → 1024 → 10 · active-class softmax → Q × K",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "table",
+          "b": "u",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "u",
+          "b": "mem",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mem",
+          "b": "cell",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "cell",
+          "b": "row",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "row",
+          "b": "compress",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "compress",
+          "b": "icl",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "labels",
+          "b": "icl",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "icl",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-local-context": {
+      "title": "LoCalPFN: retrieval wraps a complete pretrained network",
+      "scope": "Historical v1 model: 12 blocks, d=512. Fixed standardized Euclidean retrieval; this is not TabR’s learned key/value correction. Local normalization follows the retrieved context.",
+      "nodes": [
+        {
+          "id": "q",
+          "title": "Query x",
+          "body": "transform with saved scaler · do not provide its target",
+          "role": "query"
+        },
+        {
+          "id": "bank",
+          "title": "Memory X, y, IDs",
+          "body": "transform with same scaler · exclude query ID during fitting",
+          "role": "compute"
+        },
+        {
+          "id": "knn",
+          "title": "Exact nearest k records",
+          "body": "distance in fixed scaled space · C(x) contains features + labels",
+          "role": "compute"
+        },
+        {
+          "id": "norm",
+          "title": "Local normalization",
+          "body": "local context mean / sample SD · pad to100; feature-count scaling",
+          "role": "compute"
+        },
+        {
+          "id": "pfn",
+          "title": "Full historical v1 PFN",
+          "body": "row tokens → 12 blocks → head · softmax → query probability",
+          "role": "query"
+        },
+        {
+          "id": "train",
+          "title": "Optional fine-tuning",
+          "body": "shared-anchor neighborhoods · query loss updates PFN θ",
+          "role": "learn"
+        },
+        {
+          "id": "val",
+          "title": "Validation-only selection",
+          "body": "choose tuning checkpoint · then frozen exact test retrieval",
+          "role": "learn"
+        }
+      ],
+      "edges": [
+        {
+          "a": "q",
+          "b": "knn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "bank",
+          "b": "knn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "knn",
+          "b": "norm",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "norm",
+          "b": "pfn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "train",
+          "b": "pfn",
+          "label": "",
+          "dashed": true
+        },
+        {
+          "a": "pfn",
+          "b": "val",
+          "label": "",
+          "dashed": true
+        }
+      ]
+    },
+    "solution-temporal-pfn": {
+      "title": "Drift-resilient PFN: time conditions a learned inference rule",
+      "scope": "Complete released Drift checkpoint: 12 axial blocks, d=192. The prior path is paper-grounded reconstruction; the original pretraining generator is unavailable in the release.",
+      "nodes": [
+        {
+          "id": "g",
+          "title": "Base structural graph G",
+          "body": "relationships generate X, y · selected edges may drift",
+          "role": "learn"
+        },
+        {
+          "id": "h",
+          "title": "Drift graph H(time)",
+          "body": "coherent changes to G weights · sample ordered-domain tasks",
+          "role": "learn"
+        },
+        {
+          "id": "pre",
+          "title": "Query likelihood loss",
+          "body": "learn weights across tasks · freeze released θ for inference",
+          "role": "learn"
+        },
+        {
+          "id": "time",
+          "title": "Domain c → Time2Vec",
+          "body": "1 linear + 99 sine coordinates · normalize clock using context",
+          "role": "compute"
+        },
+        {
+          "id": "encode",
+          "title": "Time in every pair",
+          "body": "[2 values; 100 time coords] · 102 → 192; add group identity",
+          "role": "compute"
+        },
+        {
+          "id": "target",
+          "title": "Target encoder",
+          "body": "context y; query label hidden · 2 → 192 target token",
+          "role": "compute"
+        },
+        {
+          "id": "blocks",
+          "title": "12 axial blocks",
+          "body": "feature attention → row attention · FFN; residual + LN each time",
+          "role": "compute"
+        },
+        {
+          "id": "head",
+          "title": "Query target → head",
+          "body": "192 → 768 → 10 · keep K logits → softmax",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "g",
+          "b": "h",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "h",
+          "b": "pre",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "time",
+          "b": "encode",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "encode",
+          "b": "blocks",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "target",
+          "b": "blocks",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "blocks",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-failure-contract": {
+      "title": "Open environments: keep failures inside the evaluation",
+      "scope": "Stress-test workflow for the lesson’s frozen predictors. These tests identify conditional failures, not a universal ordering of foundation models.",
+      "nodes": [
+        {
+          "id": "contract",
+          "title": "Freeze prediction contract",
+          "body": "known class vocabulary / schema · context, fallback, metric, cost",
+          "role": "query"
+        },
+        {
+          "id": "class",
+          "title": "Emerging classes",
+          "body": "hold a class out of context · separate naming from detection",
+          "role": "compute"
+        },
+        {
+          "id": "classp",
+          "title": "Frozen predictions",
+          "body": "retain unsupported / hard rows · score declared objective",
+          "role": "query"
+        },
+        {
+          "id": "feat",
+          "title": "Feature removal",
+          "body": "same query IDs; declared fallback · preserve paired comparison",
+          "role": "compute"
+        },
+        {
+          "id": "featp",
+          "title": "Frozen predictions",
+          "body": "retain unsupported / hard rows · score declared objective",
+          "role": "query"
+        },
+        {
+          "id": "shift",
+          "title": "Distribution shift",
+          "body": "declare the changed law · keep temporal / label eligibility",
+          "role": "compute"
+        },
+        {
+          "id": "shiftp",
+          "title": "Frozen predictions",
+          "body": "retain unsupported / hard rows · score declared objective",
+          "role": "query"
+        },
+        {
+          "id": "audit",
+          "title": "Absolute score + change",
+          "body": "failure size ≠ baseline quality · state the violated contract",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "contract",
+          "b": "class",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "class",
+          "b": "classp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "contract",
+          "b": "feat",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "feat",
+          "b": "featp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "contract",
+          "b": "shift",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "shift",
+          "b": "shiftp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "classp",
+          "b": "audit",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "featp",
+          "b": "audit",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "shiftp",
+          "b": "audit",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-decision-architecture": {
+      "title": "The final checkpoint: choose a defensible fitted system",
+      "scope": "Decision architecture for the lesson’s measured comparison. Family diagrams summarize information routes; exact checkpoint and wrapper identities remain in the lesson evidence ledger.",
+      "nodes": [
+        {
+          "id": "tree",
+          "title": "Tree model",
+          "body": "features → splits → leaf outputs · training y fits splits and leaves",
+          "role": "compute"
+        },
+        {
+          "id": "treesave",
+          "title": "Frozen fitted artifact",
+          "body": "save transforms + tree ensemble · validation choice already fixed",
+          "role": "learn"
+        },
+        {
+          "id": "tabm",
+          "title": "TabM",
+          "body": "adapters → W → member heads · training y updates weights; mean p",
+          "role": "compute"
+        },
+        {
+          "id": "tabmsave",
+          "title": "Frozen fitted artifact",
+          "body": "save transforms + learned weights · validation choice already fixed",
+          "role": "learn"
+        },
+        {
+          "id": "pfn",
+          "title": "PFN / TabICL",
+          "body": "query reads labeled context · θ pretrained on synthetic tasks",
+          "role": "compute"
+        },
+        {
+          "id": "pfnsave",
+          "title": "Frozen fitted artifact",
+          "body": "save context, wrapper, weights · validation choice already fixed",
+          "role": "learn"
+        },
+        {
+          "id": "eval",
+          "title": "Same held-out queries",
+          "body": "paired error; dataset-level uncertainty · lifecycle time and information stress",
+          "role": "query"
+        },
+        {
+          "id": "next",
+          "title": "Relational research handoff",
+          "body": "name information flat tables lose · test entity / event links fairly",
+          "role": "query"
+        }
+      ],
+      "edges": [
+        {
+          "a": "tree",
+          "b": "treesave",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tabm",
+          "b": "tabmsave",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pfn",
+          "b": "pfnsave",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "treesave",
+          "b": "eval",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tabmsave",
+          "b": "eval",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pfnsave",
+          "b": "eval",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "eval",
+          "b": "next",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "solution-anchored-cross-system": {
+      "title": "DCNv2: two routes from a row to a prediction",
+      "scope": "Complete local parallel dense/factored DCNv2: two cross layers, category embeddings of width4, deep widths32/32, binary head. The paper also studies stacked routing. Nonlinear gated experts are a separate extension and are not pictured as a trained arm here.",
+      "nodes": [
+        {
+          "id": "numeric",
+          "title": "Numeric fields",
+          "body": "training mean / standard deviation · missing → standardized mean",
+          "role": "query"
+        },
+        {
+          "id": "category",
+          "title": "Categorical fields",
+          "body": "training vocabulary; unknown ID · learned 4-wide embeddings",
+          "role": "query"
+        },
+        {
+          "id": "x0",
+          "title": "Concatenate → original x₀",
+          "body": "B × d; keep this vector available · d = numeric width + embeddings",
+          "role": "compute"
+        },
+        {
+          "id": "state",
+          "title": "Current state xₗ",
+          "body": "start with xₗ = x₀ · B × d",
+          "role": "compute"
+        },
+        {
+          "id": "mix",
+          "title": "Mix coordinates",
+          "body": "a = Wₗxₗ + bₗ · or Uₗ(Vₗᵀxₗ) + bₗ",
+          "role": "compute"
+        },
+        {
+          "id": "product",
+          "title": "Multiply by anchor",
+          "body": "u = x₀ ⊙ a · B × d; creates feature products",
+          "role": "compute"
+        },
+        {
+          "id": "add",
+          "title": "Add the residual",
+          "body": "xₗ₊₁ = xₗ + u · retain the current state",
+          "role": "compute"
+        },
+        {
+          "id": "cross",
+          "title": "After the second block",
+          "body": "x₂: B × d · explicit crossed representation",
+          "role": "compute"
+        },
+        {
+          "id": "deep",
+          "title": "Two hidden layers",
+          "body": "d → 32 → 32 · Linear → ReLU each time",
+          "role": "compute"
+        },
+        {
+          "id": "deepout",
+          "title": "Deep representation",
+          "body": "B × 32 · implicit feature interactions",
+          "role": "compute"
+        },
+        {
+          "id": "join",
+          "title": "Join both branch outputs",
+          "body": "concatenate [x₂ ; MLP(x₀)] · B × (d + 32)",
+          "role": "compute"
+        },
+        {
+          "id": "head",
+          "title": "Linear head → logit z",
+          "body": "sigmoid(z) for prediction · one probability per row",
+          "role": "query"
+        },
+        {
+          "id": "loss",
+          "title": "Supervised binary loss",
+          "body": "training target y + logit z · updates all learned weights",
+          "role": "learn"
+        }
+      ],
+      "edges": [
+        {
+          "a": "numeric",
+          "b": "x0",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "category",
+          "b": "x0",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x0",
+          "b": "state",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x0",
+          "b": "deep",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x0",
+          "b": "product",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "state",
+          "b": "mix",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mix",
+          "b": "product",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "state",
+          "b": "add",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "product",
+          "b": "add",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "add",
+          "b": "cross",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "deep",
+          "b": "deepout",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "cross",
+          "b": "join",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "deepout",
+          "b": "join",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "join",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "head",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "071-vime": {
+      "title": "VIME · learn what changed, then predict",
+      "scope": "Two pretext heads share one encoder; target labels enter a later stage. Pretraining updates encoder + two heads. Downstream consistency and supervised loss train the task head; inference uses clean rows.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Unlabeled training rows",
+          "body": "Clean x [B,d] + column donors",
+          "role": "input"
+        },
+        {
+          "id": "c",
+          "title": "Marginal replacement",
+          "body": "x̃ = (1−m)x + m x̄",
+          "role": "input"
+        },
+        {
+          "id": "f",
+          "title": "Encoder fθ",
+          "body": "d → d · ReLU · h [B,d]",
+          "role": "model"
+        },
+        {
+          "id": "mask",
+          "title": "Mask head",
+          "body": "d logits → BCE(actual changes)",
+          "role": "loss"
+        },
+        {
+          "id": "rec",
+          "title": "Value head",
+          "body": "d sigmoid values → reconstruction",
+          "role": "loss"
+        },
+        {
+          "id": "clean",
+          "title": "Clean target row",
+          "body": "Same fitted input transform",
+          "role": "input"
+        },
+        {
+          "id": "keep",
+          "title": "Retained encoder",
+          "body": "Freeze fθ in released pipeline",
+          "role": "model"
+        },
+        {
+          "id": "head",
+          "title": "New task head",
+          "body": "Fit with train labels; optional consistency",
+          "role": "model"
+        },
+        {
+          "id": "out",
+          "title": "Target prediction",
+          "body": "Predict without pretext heads",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "c",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "c",
+          "b": "f",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "f",
+          "b": "mask",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "f",
+          "b": "rec",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "f",
+          "b": "keep",
+          "label": "transfer",
+          "dashed": true
+        },
+        {
+          "a": "clean",
+          "b": "keep",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "keep",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "head",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "072-scarf": {
+      "title": "SCARF · recognize the same row across views",
+      "scope": "Shared weights in both branches; the projector serves pretraining. B is batch size, H is encoder width. Different row identities supply negatives even when their downstream classes match.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Clean view x",
+          "body": "Training rows [B,d]",
+          "role": "input"
+        },
+        {
+          "id": "v",
+          "title": "Corrupted view x̃",
+          "body": "Fixed-count marginal replacement",
+          "role": "input"
+        },
+        {
+          "id": "f1",
+          "title": "Shared encoder fθ",
+          "body": "h = fθ(x) [B,H]",
+          "role": "model"
+        },
+        {
+          "id": "f2",
+          "title": "Same encoder fθ",
+          "body": "h̃ = fθ(x̃) [B,H]",
+          "role": "model"
+        },
+        {
+          "id": "g1",
+          "title": "Shared projector gφ",
+          "body": "Normalize gφ(h) → z",
+          "role": "model"
+        },
+        {
+          "id": "g2",
+          "title": "Same projector gφ",
+          "body": "Normalize gφ(h̃) → z̃",
+          "role": "model"
+        },
+        {
+          "id": "loss",
+          "title": "B × B similarities",
+          "body": "Diagonal positives; N-way cross-entropy",
+          "role": "loss"
+        },
+        {
+          "id": "pred",
+          "title": "Retain encoder fθ",
+          "body": "Discard projector; attach task head",
+          "role": "output"
+        },
+        {
+          "id": "probe",
+          "title": "Choose transfer protocol",
+          "body": "Paper: tune f + head; lab: freeze f",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "f1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "v",
+          "b": "f2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "f1",
+          "b": "g1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "f2",
+          "b": "g2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "g1",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "g2",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "f2",
+          "b": "pred",
+          "label": "transfer",
+          "dashed": true
+        },
+        {
+          "a": "pred",
+          "b": "probe",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "072-subtab": {
+      "title": "SubTab · multiple column views, one row identity",
+      "scope": "Each subset has its own inputs but uses the same encoder, decoder and projector. Loss switches are part of the method: reconstruction-only is also an evaluated SubTab recipe. This overview shows the local joint path.",
+      "nodes": [
+        {
+          "id": "s1",
+          "title": "Column subset 1",
+          "body": "Select + training corruption",
+          "role": "input"
+        },
+        {
+          "id": "s2",
+          "title": "Column subset 2",
+          "body": "Overlaps other views",
+          "role": "input"
+        },
+        {
+          "id": "s3",
+          "title": "Column subset 3",
+          "body": "Same B row identities",
+          "role": "input"
+        },
+        {
+          "id": "e1",
+          "title": "Shared encoder E",
+          "body": "Latent h₁ [B,H]",
+          "role": "model"
+        },
+        {
+          "id": "e2",
+          "title": "Same encoder E",
+          "body": "Latent h₂ [B,H]",
+          "role": "model"
+        },
+        {
+          "id": "e3",
+          "title": "Same encoder E",
+          "body": "Latent h₃ [B,H]",
+          "role": "model"
+        },
+        {
+          "id": "d",
+          "title": "Shared decoder D",
+          "body": "Each h reconstructs the full row",
+          "role": "model"
+        },
+        {
+          "id": "g",
+          "title": "Shared projector G",
+          "body": "Cross-view contrast + distance",
+          "role": "model"
+        },
+        {
+          "id": "mean",
+          "title": "Inference: mean of h",
+          "body": "Average V views, never B rows",
+          "role": "output"
+        },
+        {
+          "id": "l",
+          "title": "Joint local objective",
+          "body": "Reconstruction + pair losses",
+          "role": "loss"
+        },
+        {
+          "id": "p",
+          "title": "Task predictor",
+          "body": "Discard D and G; no training noise",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "s1",
+          "b": "e1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "s2",
+          "b": "e2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "s3",
+          "b": "e3",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e1",
+          "b": "d",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e2",
+          "b": "d",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e3",
+          "b": "d",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e1",
+          "b": "g",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e2",
+          "b": "g",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e3",
+          "b": "g",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "d",
+          "b": "l",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "g",
+          "b": "l",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e1",
+          "b": "mean",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e2",
+          "b": "mean",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "e3",
+          "b": "mean",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mean",
+          "b": "p",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "073-budget": {
+      "title": "Does SSL help? · isolate the initialization",
+      "scope": "Matched architectures, nested label sets and paired seeds make the subtraction meaningful. This is an experimental design, not a new model. A sign change across tested budgets does not identify a universal threshold.",
+      "nodes": [
+        {
+          "id": "train",
+          "title": "Training features",
+          "body": "Fit transforms; pretrain without y",
+          "role": "input"
+        },
+        {
+          "id": "ssl",
+          "title": "SSL initialization",
+          "body": "SCARF pretraining → same encoder",
+          "role": "model"
+        },
+        {
+          "id": "random",
+          "title": "Scratch initialization",
+          "body": "Same supervised architecture",
+          "role": "model"
+        },
+        {
+          "id": "tune",
+          "title": "Matched supervised fits",
+          "body": "Identical label subset per budget",
+          "role": "model"
+        },
+        {
+          "id": "val",
+          "title": "Validation labels",
+          "body": "Choose within declared budgets",
+          "role": "input"
+        },
+        {
+          "id": "test",
+          "title": "Once-frozen test scores",
+          "body": "Δseed(b) = SSL − scratch",
+          "role": "output"
+        },
+        {
+          "id": "budget",
+          "title": "Label ledger",
+          "body": "Training labels + validation labels",
+          "role": "input"
+        },
+        {
+          "id": "curve",
+          "title": "Gain versus budget",
+          "body": "Paired gains; ties and brackets",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "train",
+          "b": "ssl",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "train",
+          "b": "random",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ssl",
+          "b": "tune",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "random",
+          "b": "tune",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "val",
+          "b": "tune",
+          "label": "select",
+          "dashed": true
+        },
+        {
+          "a": "tune",
+          "b": "test",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "test",
+          "b": "curve",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "budget",
+          "b": "curve",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "074-carte": {
+      "title": "CARTE · carry cell meaning across schemas",
+      "scope": "A row is a star graph. Column vectors condition messages before attention. The local downstream configuration uses one readout block, not the full pretraining stack. Schema flexibility does not prove transfer quality.",
+      "nodes": [
+        {
+          "id": "bg",
+          "title": "YAGO graphlet views",
+          "body": "Entity context + edge removal",
+          "role": "input"
+        },
+        {
+          "id": "pre",
+          "title": "Shared attention stack",
+          "body": "Contrastive pretraining · width 300",
+          "role": "model"
+        },
+        {
+          "id": "weights",
+          "title": "Pretrained parameters",
+          "body": "Selected encoder checkpoint",
+          "role": "output"
+        },
+        {
+          "id": "row",
+          "title": "Target row → star",
+          "body": "Values on leaves; names on edges",
+          "role": "input"
+        },
+        {
+          "id": "pair",
+          "title": "Node / edge input maps",
+          "body": "zᵢⱼ = xⱼ ⊙ eᵢⱼ",
+          "role": "model"
+        },
+        {
+          "id": "att",
+          "title": "Relation-aware attention",
+          "body": "Q(center); K,V(conditioned leaves)",
+          "role": "model"
+        },
+        {
+          "id": "read",
+          "title": "Center readout",
+          "body": "FFN + normalization → [B,300]",
+          "role": "model"
+        },
+        {
+          "id": "head",
+          "title": "Target head → prediction",
+          "body": "Frozen ridge or local fine-tuning",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "bg",
+          "b": "pre",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pre",
+          "b": "weights",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "weights",
+          "b": "att",
+          "label": "transfer",
+          "dashed": true
+        },
+        {
+          "a": "row",
+          "b": "pair",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pair",
+          "b": "att",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "att",
+          "b": "read",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "read",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "075-frame": {
+      "title": "PyTorch Frame · typed columns become row vectors",
+      "scope": "Materialization stores fitted state; learned encoders turn values into tokens. Type-specific tokenizers do not themselves connect records. L076 adds relationships after the row representation boundary.",
+      "nodes": [
+        {
+          "id": "train",
+          "title": "Training DataFrame",
+          "body": "Declare numerical / category / text",
+          "role": "input"
+        },
+        {
+          "id": "fit",
+          "title": "Fit materializer",
+          "body": "Statistics + vocabulary from train",
+          "role": "input"
+        },
+        {
+          "id": "query",
+          "title": "Held-out DataFrame",
+          "body": "Reuse fitted converter",
+          "role": "input"
+        },
+        {
+          "id": "tensor",
+          "title": "TensorFrame blocks",
+          "body": "Columns grouped by semantic type",
+          "role": "input"
+        },
+        {
+          "id": "num",
+          "title": "Numeric affine tokens",
+          "body": "((x − μ) / s) wⱼ + bⱼ",
+          "role": "model"
+        },
+        {
+          "id": "cat",
+          "title": "Category / text tokens",
+          "body": "Lookup or configured text encoder",
+          "role": "model"
+        },
+        {
+          "id": "tok",
+          "title": "Aligned column tokens",
+          "body": "[B,C,d] · explicit column order",
+          "role": "model"
+        },
+        {
+          "id": "row",
+          "title": "Row readout → head",
+          "body": "Flatten/project in this local stack",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "train",
+          "b": "fit",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "fit",
+          "b": "tensor",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "query",
+          "b": "tensor",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tensor",
+          "b": "num",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tensor",
+          "b": "cat",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "num",
+          "b": "tok",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "cat",
+          "b": "tok",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tok",
+          "b": "row",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "076-rdl": {
+      "title": "A small relational stack · route before reducing",
+      "scope": "Two table encoders preserve different schemas and emit a common width D. An original one-hop teaching model: event → customer only. At inference use the same fitted state and a time-valid neighborhood.",
+      "nodes": [
+        {
+          "id": "cust",
+          "title": "Customer rows",
+          "body": "IDs [42,7,99,105] + attributes",
+          "role": "input"
+        },
+        {
+          "id": "event",
+          "title": "Event rows",
+          "body": "FK + event and availability clocks",
+          "role": "input"
+        },
+        {
+          "id": "ce",
+          "title": "Customer encoder",
+          "body": "[4,2,4] tokens → [4,4]",
+          "role": "model"
+        },
+        {
+          "id": "ee",
+          "title": "Event encoder",
+          "body": "[5,2,4] tokens → [5,4]",
+          "role": "model"
+        },
+        {
+          "id": "eligible",
+          "title": "Eligible FK messages",
+          "body": "Map keys to positions; mean by customer",
+          "role": "model"
+        },
+        {
+          "id": "join",
+          "title": "Concatenate self + mean",
+          "body": "Aligned [4,4] + [4,4] → [4,8]",
+          "role": "model"
+        },
+        {
+          "id": "pred",
+          "title": "8 → 8 → 1 head",
+          "body": "One logit for each customer",
+          "role": "output"
+        },
+        {
+          "id": "loss",
+          "title": "Training labels only",
+          "body": "BCE backpropagates through both encoders",
+          "role": "loss"
+        }
+      ],
+      "edges": [
+        {
+          "a": "cust",
+          "b": "ce",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "event",
+          "b": "ee",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ee",
+          "b": "eligible",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ce",
+          "b": "join",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "eligible",
+          "b": "join",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "join",
+          "b": "pred",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pred",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "077-ceiling": {
+      "title": "An information ceiling · find the lost distinction",
+      "scope": "Two opposite histories can become the same vector before a predictor sees them. A constructive information argument, not a claim that every flat table has this ceiling or that any GNN automatically repairs it.",
+      "nodes": [
+        {
+          "id": "a",
+          "title": "History A",
+          "body": "10 → 30 → 50 · target 1",
+          "role": "input"
+        },
+        {
+          "id": "b",
+          "title": "History B",
+          "body": "50 → 30 → 10 · target 0",
+          "role": "input"
+        },
+        {
+          "id": "flat",
+          "title": "Order-free summary",
+          "body": "count 3; sum 90; mean 30; max 50",
+          "role": "model"
+        },
+        {
+          "id": "same",
+          "title": "Identical representation",
+          "body": "Any deterministic g gets same input",
+          "role": "model"
+        },
+        {
+          "id": "bound",
+          "title": "Balanced-pair ceiling",
+          "body": "At most 1 correct out of 2",
+          "role": "output"
+        },
+        {
+          "id": "repair",
+          "title": "Retain a time feature",
+          "body": "last − first: +40 versus −40",
+          "role": "model"
+        },
+        {
+          "id": "clf",
+          "title": "Same classifier family",
+          "body": "Now the inputs are distinguishable",
+          "role": "model"
+        },
+        {
+          "id": "audit",
+          "title": "Audit eligible history",
+          "body": "Recovery depends on available records",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "a",
+          "b": "flat",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "b",
+          "b": "flat",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "flat",
+          "b": "same",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "same",
+          "b": "bound",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "a",
+          "b": "repair",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "b",
+          "b": "repair",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "repair",
+          "b": "clf",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "clf",
+          "b": "audit",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "078-preview": {
+      "title": "From joins to GCN · the complete prediction path",
+      "scope": "Node-feature mixing and graph routing act on different axes. A preview of L082: shared weights transform features, graph support routes them. The graph is visible in the transductive Cora task.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Node features X",
+          "body": "Cora [2708,1433] · row-normalized",
+          "role": "input"
+        },
+        {
+          "id": "a",
+          "title": "Eligible graph A",
+          "body": "Add loops once; S = D⁻½(A+I)D⁻½",
+          "role": "input"
+        },
+        {
+          "id": "h",
+          "title": "First GCN layer",
+          "body": "Dropout → S X W₀ → ReLU",
+          "role": "model"
+        },
+        {
+          "id": "z",
+          "title": "Second GCN layer",
+          "body": "Dropout → S H W₁",
+          "role": "model"
+        },
+        {
+          "id": "p",
+          "title": "Class logits Z",
+          "body": "[2708,7] → class softmax",
+          "role": "output"
+        },
+        {
+          "id": "loss",
+          "title": "Training objective",
+          "body": "CE on 140 nodes + first-layer L2",
+          "role": "loss"
+        },
+        {
+          "id": "test",
+          "title": "Prediction",
+          "body": "Dropout off; held-out labels score only",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "h",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "a",
+          "b": "h",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "a",
+          "b": "z",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "h",
+          "b": "z",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "z",
+          "b": "p",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "z",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "p",
+          "b": "test",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "082-gcn": {
+      "title": "GCN · two layers, one shared graph support",
+      "scope": "Node-feature mixing and graph routing act on different axes. W₀: 1433 × 16; W₁: 16 × 7. Weights differ across layers and are shared across nodes. Validation governs stopping, never test labels.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Node features X",
+          "body": "Cora [2708,1433] · row-normalized",
+          "role": "input"
+        },
+        {
+          "id": "a",
+          "title": "Eligible graph A",
+          "body": "Add loops once; S = D⁻½(A+I)D⁻½",
+          "role": "input"
+        },
+        {
+          "id": "h",
+          "title": "First GCN layer",
+          "body": "Dropout → S X W₀ → ReLU",
+          "role": "model"
+        },
+        {
+          "id": "z",
+          "title": "Second GCN layer",
+          "body": "Dropout → S H W₁",
+          "role": "model"
+        },
+        {
+          "id": "p",
+          "title": "Class logits Z",
+          "body": "[2708,7] → class softmax",
+          "role": "output"
+        },
+        {
+          "id": "loss",
+          "title": "Training objective",
+          "body": "CE on 140 nodes + first-layer L2",
+          "role": "loss"
+        },
+        {
+          "id": "test",
+          "title": "Prediction",
+          "body": "Dropout off; held-out labels score only",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "h",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "a",
+          "b": "h",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "a",
+          "b": "z",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "h",
+          "b": "z",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "z",
+          "b": "p",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "z",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "p",
+          "b": "test",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "079-decision": {
+      "title": "Model choice · turn a regime into a falsifiable plan",
+      "scope": "A decision procedure comparing existing models, not a newly proposed architecture. Carry L060 comparison discipline through L070 foundation-model evidence. A new dataset can overturn the recommendation.",
+      "nodes": [
+        {
+          "id": "task",
+          "title": "Prediction contract",
+          "body": "Target · entity · time · metric",
+          "role": "input"
+        },
+        {
+          "id": "info",
+          "title": "Available information",
+          "body": "Rows, labels, relations, shift, cost",
+          "role": "input"
+        },
+        {
+          "id": "base",
+          "title": "Strong baseline",
+          "body": "Trees / simple neural / frozen PFN",
+          "role": "model"
+        },
+        {
+          "id": "challenge",
+          "title": "One justified challenger",
+          "body": "Specify its expected advantage",
+          "role": "model"
+        },
+        {
+          "id": "valid",
+          "title": "Matched selection",
+          "body": "Same split and explicit budget",
+          "role": "model"
+        },
+        {
+          "id": "test",
+          "title": "Frozen comparison",
+          "body": "Quality + cost + falsifier",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "task",
+          "b": "info",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "info",
+          "b": "base",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "info",
+          "b": "challenge",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "base",
+          "b": "valid",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "challenge",
+          "b": "valid",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "valid",
+          "b": "test",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "080-exam": {
+      "title": "Year 2 exit · prove a decision is reproducible",
+      "scope": "Compare methods only after freezing their information and selection contracts. An assessment protocol, not a new model. Numerical checks support the submission; a written explanation remains required.",
+      "nodes": [
+        {
+          "id": "split",
+          "title": "Freeze split / budgets",
+          "body": "Random and temporal regimes differ",
+          "role": "input"
+        },
+        {
+          "id": "fit",
+          "title": "Train-only transforms",
+          "body": "Model-specific preprocessing",
+          "role": "input"
+        },
+        {
+          "id": "models",
+          "title": "Four declared arms",
+          "body": "XGBoost · FT-T · TabM · TabPFN v2",
+          "role": "model"
+        },
+        {
+          "id": "val",
+          "title": "Validation selection",
+          "body": "Hyperparameters / stopping / choice",
+          "role": "model"
+        },
+        {
+          "id": "test",
+          "title": "Final test predictions",
+          "body": "Save row IDs + scores + provenance",
+          "role": "output"
+        },
+        {
+          "id": "repair",
+          "title": "Leakage intervention",
+          "body": "Change held-out values; inspect fitted state",
+          "role": "input"
+        },
+        {
+          "id": "report",
+          "title": "Written defense",
+          "body": "Paired evidence, limits, deployment rule",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "split",
+          "b": "fit",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "fit",
+          "b": "models",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "models",
+          "b": "val",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "val",
+          "b": "test",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "repair",
+          "b": "fit",
+          "label": "audit",
+          "dashed": true
+        },
+        {
+          "a": "test",
+          "b": "report",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "081-ggnn": {
+      "title": "Sparse molecular GG-NN · messages, gates, readout",
+      "scope": "An instantiated MPNN: bond types choose transforms and gates preserve atom state. The released gate equations are shown in the lesson; a stock GRU is not automatically equivalent. Readout never mixes separate molecules.",
+      "nodes": [
+        {
+          "id": "atom",
+          "title": "Atom features",
+          "body": "13 coordinates → zero-pad to 50",
+          "role": "input"
+        },
+        {
+          "id": "bond",
+          "title": "Directed bond entries",
+          "body": "Two directions per chemical bond",
+          "role": "input"
+        },
+        {
+          "id": "msg",
+          "title": "Two matrix banks",
+          "body": "Bond-specific transforms → two sums",
+          "role": "model"
+        },
+        {
+          "id": "gru",
+          "title": "Recurrent gated update",
+          "body": "Message [N,100] + old state [N,50]",
+          "role": "model"
+        },
+        {
+          "id": "state",
+          "title": "Final atom state",
+          "body": "Shared parameters across rounds",
+          "role": "model"
+        },
+        {
+          "id": "skip",
+          "title": "Original atom features",
+          "body": "Retain alongside final state",
+          "role": "input"
+        },
+        {
+          "id": "read",
+          "title": "Gated atom contributions",
+          "body": "[hT,x] → sigmoid gate × value",
+          "role": "model"
+        },
+        {
+          "id": "out",
+          "title": "Sum within molecule",
+          "body": "One molecular prediction → task loss",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "atom",
+          "b": "msg",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "bond",
+          "b": "msg",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "msg",
+          "b": "gru",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "gru",
+          "b": "state",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "state",
+          "b": "msg",
+          "label": "repeat",
+          "dashed": true
+        },
+        {
+          "a": "atom",
+          "b": "skip",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "skip",
+          "b": "read",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "state",
+          "b": "read",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "read",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "083-sage": {
+      "title": "GraphSAGE · expand dependencies, compute inward",
+      "scope": "The released mean variant keeps independent self and neighbor transform blocks. Sampling travels outward; neural computation travels inward. Training uses only the training-induced graph in this inductive PPI track.",
+      "nodes": [
+        {
+          "id": "root",
+          "title": "B root nodes",
+          "body": "Prediction targets",
+          "role": "input"
+        },
+        {
+          "id": "hop1",
+          "title": "10 neighbors per root",
+          "body": "First-hop occurrences [B,10]",
+          "role": "input"
+        },
+        {
+          "id": "hop2",
+          "title": "25 per first-hop node",
+          "body": "Second-hop occurrences [B,10,25]",
+          "role": "input"
+        },
+        {
+          "id": "inner",
+          "title": "Shared first layer",
+          "body": "Compute root and first-hop states",
+          "role": "model"
+        },
+        {
+          "id": "agg",
+          "title": "Second mean layer",
+          "body": "[self Wself || mean Wneighbor]",
+          "role": "model"
+        },
+        {
+          "id": "norm",
+          "title": "Final unit normalization",
+          "body": "Embedding [B,256]",
+          "role": "model"
+        },
+        {
+          "id": "head",
+          "title": "256 → 121 head",
+          "body": "Independent PPI label logits",
+          "role": "output"
+        },
+        {
+          "id": "loss",
+          "title": "Root-only BCE",
+          "body": "Support nodes provide features",
+          "role": "loss"
+        }
+      ],
+      "edges": [
+        {
+          "a": "root",
+          "b": "hop1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hop1",
+          "b": "hop2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hop2",
+          "b": "inner",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hop1",
+          "b": "inner",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "inner",
+          "b": "agg",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "root",
+          "b": "inner",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "agg",
+          "b": "norm",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "norm",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "head",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "084-gat": {
+      "title": "GAT · learn a neighbor distribution for each head",
+      "scope": "Neighbor softmax precedes aggregation; class softmax follows the output layer. Weights are shared across edges inside a head, not between heads. Attention coefficients describe this forward pass, not causal importance.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Node states + edges",
+          "body": "Include self once; score eligible edges",
+          "role": "input"
+        },
+        {
+          "id": "h1",
+          "title": "Head 1 · W₁, a₁",
+          "body": "Project → score → receiver softmax",
+          "role": "model"
+        },
+        {
+          "id": "h8",
+          "title": "Heads 2–8 · own W,a",
+          "body": "Independent learned neighbor weights",
+          "role": "model"
+        },
+        {
+          "id": "cat",
+          "title": "Concatenate + ELU",
+          "body": "8 heads × 8 coordinates = 64",
+          "role": "model"
+        },
+        {
+          "id": "out",
+          "title": "Output attention head",
+          "body": "64 → 7; one Cora output head",
+          "role": "model"
+        },
+        {
+          "id": "loss",
+          "title": "Masked task objective",
+          "body": "Train CE + release L2; validation selects",
+          "role": "loss"
+        },
+        {
+          "id": "pred",
+          "title": "Inference: class softmax",
+          "body": "Dropout off; each node has 7 logits",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "h1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x",
+          "b": "h8",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "h1",
+          "b": "cat",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "h8",
+          "b": "cat",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "cat",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "out",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "out",
+          "b": "pred",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "085-depth": {
+      "title": "Repeated propagation · reach versus distinguishability",
+      "scope": "The linear limit is a diagnostic; the finite nonlinear network is a different object. No objective or fitting is used for the paper Figure 2 reconstruction. The trained Cora extension asks a separate empirical question.",
+      "nodes": [
+        {
+          "id": "h",
+          "title": "Initial states H₀",
+          "body": "Different node signals",
+          "role": "input"
+        },
+        {
+          "id": "s1",
+          "title": "One mixing step",
+          "body": "H₁ = S H₀",
+          "role": "model"
+        },
+        {
+          "id": "sk",
+          "title": "Repeated mixing",
+          "body": "Hₖ = Sᵏ H₀",
+          "role": "model"
+        },
+        {
+          "id": "lim",
+          "title": "Connected-component limit",
+          "body": "Degree-scaled stationary direction",
+          "role": "output"
+        },
+        {
+          "id": "net",
+          "title": "Actual Figure 2 network",
+          "body": "Karate · identity features · untrained",
+          "role": "input"
+        },
+        {
+          "id": "layers",
+          "title": "Depth 1–5 GCN",
+          "body": "ReLU hidden layers; linear final layer",
+          "role": "model"
+        },
+        {
+          "id": "plot",
+          "title": "Two output coordinates",
+          "body": "Inspect geometry across depth / seeds",
+          "role": "output"
+        },
+        {
+          "id": "diag",
+          "title": "Separate trained extension",
+          "body": "Accuracy + degree-adjusted collapse",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "h",
+          "b": "s1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "s1",
+          "b": "sk",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sk",
+          "b": "lim",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "net",
+          "b": "layers",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "layers",
+          "b": "plot",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "plot",
+          "b": "diag",
+          "label": "compare",
+          "dashed": true
+        }
+      ]
+    },
+    "086-pyg": {
+      "title": "PyG · follow one edge through the tensor program",
+      "scope": "Under source_to_target, edge_index[0] sends to edge_index[1]. PyG provides routing, not an automatic split policy. Whole-graph batching and sampled-node batching have different identity contracts.",
+      "nodes": [
+        {
+          "id": "data",
+          "title": "Data container",
+          "body": "x [N,F]; edge_index [2,E]",
+          "role": "input"
+        },
+        {
+          "id": "forward",
+          "title": "forward",
+          "body": "Add loops, degrees, transform XW",
+          "role": "model"
+        },
+        {
+          "id": "msg",
+          "title": "message(x_j)",
+          "body": "Gather E sender rows; weight messages",
+          "role": "model"
+        },
+        {
+          "id": "agg",
+          "title": "aggregate → update",
+          "body": "Sum by receiver → [N,D]",
+          "role": "model"
+        },
+        {
+          "id": "batch",
+          "title": "NeighborLoader batch",
+          "body": "Local IDs + n_id + seed count",
+          "role": "input"
+        },
+        {
+          "id": "route",
+          "title": "Same message program",
+          "body": "Support nodes remain in computation",
+          "role": "model"
+        },
+        {
+          "id": "head",
+          "title": "Seed logits only",
+          "body": "First batch_size rows supervise",
+          "role": "output"
+        },
+        {
+          "id": "loss",
+          "title": "Training loss",
+          "body": "No supervision from context labels",
+          "role": "loss"
+        }
+      ],
+      "edges": [
+        {
+          "a": "data",
+          "b": "forward",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "forward",
+          "b": "msg",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "msg",
+          "b": "agg",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "batch",
+          "b": "route",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "route",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "head",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "087-link": {
+      "title": "Link prediction · keep messages separate from targets",
+      "scope": "A candidate edge is an output question; its hidden existence must not enter messages. This local dot-product path is symmetric: s(u,v)=s(v,u). Candidate sampling and tie rules are part of the measured task.",
+      "nodes": [
+        {
+          "id": "graph",
+          "title": "Observed training graph",
+          "body": "Remove held-out positives both ways",
+          "role": "input"
+        },
+        {
+          "id": "enc",
+          "title": "Shared node GCN",
+          "body": "Compute z for all eligible nodes",
+          "role": "model"
+        },
+        {
+          "id": "pair",
+          "title": "Gather pair endpoints",
+          "body": "For each (u,v), obtain zᵤ and zᵥ",
+          "role": "model"
+        },
+        {
+          "id": "dot",
+          "title": "Dot-product decoder",
+          "body": "s(u,v) = sum(zᵤ ⊙ zᵥ)",
+          "role": "output"
+        },
+        {
+          "id": "labels",
+          "title": "Supervision pairs",
+          "body": "Observed positives + sampled negatives",
+          "role": "input"
+        },
+        {
+          "id": "loss",
+          "title": "BCE with logits",
+          "body": "Train pair labels only",
+          "role": "loss"
+        },
+        {
+          "id": "rank",
+          "title": "Evaluation candidates",
+          "body": "Scores → ranking under a fixed rule",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "graph",
+          "b": "enc",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "enc",
+          "b": "pair",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pair",
+          "b": "dot",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "labels",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "dot",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "dot",
+          "b": "rank",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "087-seal": {
+      "title": "SEAL · classify a graph around each candidate link",
+      "scope": "A model overview only here; the full SEAL classifier has not been executed in this lesson. The local paper reconstruction covers CN / AA / RA baseline cells. Understanding this architecture is distinct from reproducing SEAL scores.",
+      "nodes": [
+        {
+          "id": "pair",
+          "title": "Candidate (u,v)",
+          "body": "Observed graph + candidate endpoints",
+          "role": "input"
+        },
+        {
+          "id": "sub",
+          "title": "Enclosing subgraph",
+          "body": "Extract h-hop context; remove target edge",
+          "role": "input"
+        },
+        {
+          "id": "drnl",
+          "title": "Root-relative labels",
+          "body": "DRNL distances mark endpoint roles",
+          "role": "model"
+        },
+        {
+          "id": "gnn",
+          "title": "DGCNN node layers",
+          "body": "Learn structural node representations",
+          "role": "model"
+        },
+        {
+          "id": "sort",
+          "title": "SortPooling",
+          "body": "Order nodes; fixed-size representation",
+          "role": "model"
+        },
+        {
+          "id": "conv",
+          "title": "1D convolution + dense",
+          "body": "Graph-level classifier",
+          "role": "model"
+        },
+        {
+          "id": "pred",
+          "title": "Link score",
+          "body": "Train BCE; same pipeline at inference",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "pair",
+          "b": "sub",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sub",
+          "b": "drnl",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "drnl",
+          "b": "gnn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "gnn",
+          "b": "sort",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sort",
+          "b": "conv",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "conv",
+          "b": "pred",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "088-gin": {
+      "title": "GIN · count locally, read out at every depth",
+      "scope": "The MUTAG release adds graph-level class logits from the input and all hidden depths. At inference dropout is off and batch-normalization state is fixed. Parameters transfer across graphs; labels never enter the forward pass.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Atom-tag features H₀",
+          "body": "One-hot node labels; graph membership",
+          "role": "input"
+        },
+        {
+          "id": "sum",
+          "title": "Neighbor sum + self",
+          "body": "(1+ε)hᵥ + Σᵤ hᵤ · ε=0 for GIN-0",
+          "role": "model"
+        },
+        {
+          "id": "mlp",
+          "title": "MLP + normalization",
+          "body": "Learn a nonlinear multiset map",
+          "role": "model"
+        },
+        {
+          "id": "next",
+          "title": "Next node states",
+          "body": "Repeat with depth-specific weights",
+          "role": "model"
+        },
+        {
+          "id": "read0",
+          "title": "Input-depth readout",
+          "body": "Sum nodes within each graph",
+          "role": "model"
+        },
+        {
+          "id": "readk",
+          "title": "Each-depth readout",
+          "body": "Sum nodes → own class head",
+          "role": "model"
+        },
+        {
+          "id": "out",
+          "title": "Sum class logits",
+          "body": "Training dropout per head; graph CE",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "sum",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sum",
+          "b": "mlp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mlp",
+          "b": "next",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "next",
+          "b": "sum",
+          "label": "repeat",
+          "dashed": true
+        },
+        {
+          "a": "x",
+          "b": "read0",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "next",
+          "b": "readk",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "read0",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "readk",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "089-cluster": {
+      "title": "Cluster-GCN · a sampling plan plus a concrete model",
+      "scope": "The released PPI recipe has a full-training-graph first-layer cache. Batching affects messages and normalization. First-layer cache can cross training-cluster boundaries; held-out features stay excluded.",
+      "nodes": [
+        {
+          "id": "train",
+          "title": "Training-induced graph",
+          "body": "Fit feature scaling on training nodes",
+          "role": "input"
+        },
+        {
+          "id": "cache",
+          "title": "Cache [Atrain X, X]",
+          "body": "Raw adjacency; computed before partition",
+          "role": "input"
+        },
+        {
+          "id": "part",
+          "title": "Partition → choose q",
+          "body": "Induce batch; recover internal edges",
+          "role": "input"
+        },
+        {
+          "id": "first",
+          "title": "First learned stage",
+          "body": "100 → 2048; layer norm + ReLU",
+          "role": "model"
+        },
+        {
+          "id": "support",
+          "title": "Enhanced batch support",
+          "body": "T=(D+I)⁻¹(A+I); S=T+diag(T)",
+          "role": "model"
+        },
+        {
+          "id": "later",
+          "title": "Later stages [SH,H]W",
+          "body": "Four hidden stages total; width 2048",
+          "role": "model"
+        },
+        {
+          "id": "out",
+          "title": "Fifth stage → 121 logits",
+          "body": "No final ReLU or layer norm",
+          "role": "output"
+        },
+        {
+          "id": "loss",
+          "title": "Independent-label BCE",
+          "body": "At evaluation threshold logits > 0",
+          "role": "loss"
+        }
+      ],
+      "edges": [
+        {
+          "a": "train",
+          "b": "cache",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "train",
+          "b": "part",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "cache",
+          "b": "first",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "part",
+          "b": "support",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "first",
+          "b": "later",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "support",
+          "b": "later",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "later",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "out",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "090-checkpoint": {
+      "title": "GNN checkpoint · identify which experiment you ran",
+      "scope": "GCN reconstruction and an inductive mini-batch extension answer different questions. A comparable number needs an aligned protocol. Keep historical identity, measured port results, and extension evidence in separate claims.",
+      "nodes": [
+        {
+          "id": "cora",
+          "title": "Fixed transductive Cora",
+          "body": "Full X,A visible; split masks for labels",
+          "role": "input"
+        },
+        {
+          "id": "gcn",
+          "title": "Two-layer GCN",
+          "body": "S X W₀ → ReLU → S H W₁",
+          "role": "model"
+        },
+        {
+          "id": "loss",
+          "title": "140-node objective",
+          "body": "CE + first-layer L2; validation stop",
+          "role": "loss"
+        },
+        {
+          "id": "eval",
+          "title": "100-run reconstruction",
+          "body": "Fixed split; initialization variability",
+          "role": "output"
+        },
+        {
+          "id": "ind",
+          "title": "Inductive training graph",
+          "body": "Remove held-out nodes and edges",
+          "role": "input"
+        },
+        {
+          "id": "sample",
+          "title": "Root/support mini-batch",
+          "body": "Sample outward; compute inward",
+          "role": "model"
+        },
+        {
+          "id": "root",
+          "title": "Root-only supervision",
+          "body": "Support provides eligible features",
+          "role": "loss"
+        },
+        {
+          "id": "report",
+          "title": "Separate extension report",
+          "body": "Access, sampling and model differ",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "cora",
+          "b": "gcn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "gcn",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "loss",
+          "b": "eval",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ind",
+          "b": "sample",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sample",
+          "b": "root",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "root",
+          "b": "report",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "091-rgcn": {
+      "title": "R-GCN · preserve the role of each incoming message",
+      "scope": "Entity classification: relation branches meet before the nonlinearity. AIFB release lane: unrestricted weights. Basis sharing is a separate extension. The identity input is implemented without allocating I.",
+      "nodes": [
+        {
+          "id": "input",
+          "title": "Typed graph + identity",
+          "body": "N nodes; forward / inverse edges",
+          "role": "input"
+        },
+        {
+          "id": "r1",
+          "title": "Relation r₁",
+          "body": "S₁ H W₁ · per-relation mean",
+          "role": "model"
+        },
+        {
+          "id": "r2",
+          "title": "Other relation branches",
+          "body": "One Sᵣ H Wᵣ per other role",
+          "role": "model"
+        },
+        {
+          "id": "self",
+          "title": "Self contribution",
+          "body": "H W_self · exactly once",
+          "role": "model"
+        },
+        {
+          "id": "basis",
+          "title": "Optional shared bases",
+          "body": "Wᵣ = Σᵦ aᵣᵦ Vᵦ, per layer",
+          "role": "model"
+        },
+        {
+          "id": "h",
+          "title": "Sum → ReLU",
+          "body": "First layer: N × 16",
+          "role": "model"
+        },
+        {
+          "id": "z",
+          "title": "Second typed layer",
+          "body": "N × 4 class logits; no ReLU",
+          "role": "model"
+        },
+        {
+          "id": "y",
+          "title": "Training IDs + labels",
+          "body": "Only 140 labels supervise AIFB",
+          "role": "input"
+        },
+        {
+          "id": "loss",
+          "title": "Masked cross-entropy",
+          "body": "Update both layer banks",
+          "role": "loss"
+        },
+        {
+          "id": "out",
+          "title": "Frozen model → argmax",
+          "body": "36 test entities; same graph",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "input",
+          "b": "r1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "input",
+          "b": "r2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "input",
+          "b": "self",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "self",
+          "b": "h",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "basis",
+          "b": "self",
+          "label": "weights",
+          "dashed": true
+        },
+        {
+          "a": "basis",
+          "b": "r1",
+          "label": "weights",
+          "dashed": true
+        },
+        {
+          "a": "basis",
+          "b": "r2",
+          "label": "weights",
+          "dashed": true
+        },
+        {
+          "a": "r1",
+          "b": "h",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "r2",
+          "b": "h",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "h",
+          "b": "z",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "z",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "y",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "z",
+          "b": "out",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "092-han": {
+      "title": "HAN · choose routes, attend within them, then fuse",
+      "scope": "Two independent path encoders; one shared semantic scoring function. Release β is node-specific. Paper Eqs. 7–9 average scores across nodes before path softmax. Keep these as explicitly different modes.",
+      "nodes": [
+        {
+          "id": "x",
+          "title": "Paper keywords",
+          "body": "X [3025,1870]",
+          "role": "input"
+        },
+        {
+          "id": "pap",
+          "title": "PAP neighborhood",
+          "body": "8 independent GAT heads × 8",
+          "role": "model"
+        },
+        {
+          "id": "psp",
+          "title": "PSP neighborhood",
+          "body": "8 other GAT heads × 8",
+          "role": "model"
+        },
+        {
+          "id": "stack",
+          "title": "Stack route embeddings",
+          "body": "Z [3025,2,64]",
+          "role": "model"
+        },
+        {
+          "id": "sem",
+          "title": "Semantic scorer",
+          "body": "Shared W,b,q → scores [N,2]",
+          "role": "model"
+        },
+        {
+          "id": "fuse",
+          "title": "Path softmax + fusion",
+          "body": "Σₚ βᵢₚ Zᵢₚ → [N,64]",
+          "role": "model"
+        },
+        {
+          "id": "head",
+          "title": "64 → 3 classifier",
+          "body": "Masked CE + L2 during fitting",
+          "role": "loss"
+        },
+        {
+          "id": "probe",
+          "title": "Frozen test embeddings",
+          "body": "Release: KNN probe fractions",
+          "role": "output"
+        },
+        {
+          "id": "routes",
+          "title": "Designer supplies routes",
+          "body": "Binary endpoints; counts lost",
+          "role": "input"
+        }
+      ],
+      "edges": [
+        {
+          "a": "x",
+          "b": "pap",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "x",
+          "b": "psp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "routes",
+          "b": "pap",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "routes",
+          "b": "psp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pap",
+          "b": "stack",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "psp",
+          "b": "stack",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "stack",
+          "b": "sem",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sem",
+          "b": "fuse",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "stack",
+          "b": "fuse",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "fuse",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "fuse",
+          "b": "probe",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "093-hgt": {
+      "title": "HGT · compatibility and content take separate routes",
+      "scope": "One typed edge feeds the score branch and the message branch. Parameters share by node type and relation/head. RTE changes source K/V inputs; time availability is a separate data-access contract.",
+      "nodes": [
+        {
+          "id": "target",
+          "title": "Receiver state zₜ",
+          "body": "Target type selects Q",
+          "role": "input"
+        },
+        {
+          "id": "old",
+          "title": "Previous receiver state",
+          "body": "Residual path; width d",
+          "role": "input"
+        },
+        {
+          "id": "source",
+          "title": "Sender state + RTE",
+          "body": "Source type selects K and V",
+          "role": "input"
+        },
+        {
+          "id": "score",
+          "title": "Typed compatibility",
+          "body": "Qₜ · (Kₛ Aᵣ); prior / √D",
+          "role": "model"
+        },
+        {
+          "id": "value",
+          "title": "Typed message",
+          "body": "Vₛ Mᵣ · [E,H,D]",
+          "role": "model"
+        },
+        {
+          "id": "soft",
+          "title": "Receiver/head softmax",
+          "body": "All incoming relations compete",
+          "role": "model"
+        },
+        {
+          "id": "sum",
+          "title": "Weighted sum of values",
+          "body": "Concatenate heads → [N,d]",
+          "role": "model"
+        },
+        {
+          "id": "update",
+          "title": "Typed output + residual",
+          "body": "GELU, Aₜ, gate, LayerNorm",
+          "role": "model"
+        },
+        {
+          "id": "head",
+          "title": "Repeat → seed task head",
+          "body": "Field ranking; train KL loss",
+          "role": "loss"
+        },
+        {
+          "id": "sample",
+          "title": "Sample eligible context",
+          "body": "Graph budget; remove label links",
+          "role": "input"
+        }
+      ],
+      "edges": [
+        {
+          "a": "target",
+          "b": "old",
+          "label": "residual",
+          "dashed": true
+        },
+        {
+          "a": "old",
+          "b": "update",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "target",
+          "b": "score",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "source",
+          "b": "score",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "source",
+          "b": "value",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "score",
+          "b": "soft",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "soft",
+          "b": "sum",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "value",
+          "b": "sum",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sum",
+          "b": "update",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "update",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sample",
+          "b": "source",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "094-taxonomy": {
+      "title": "A method map · ask four independent questions",
+      "scope": "Survey synthesis: a route specification and an encoder are separate choices. This is a workflow, not a new architecture or an accuracy ranking. R-GCN, HAN and HGT occupy several independent taxonomy axes.",
+      "nodes": [
+        {
+          "id": "schema",
+          "title": "Schema and prediction",
+          "body": "Types, roles, target, legal access",
+          "role": "input"
+        },
+        {
+          "id": "route",
+          "title": "Which structure?",
+          "body": "One-hop / typed path / pattern",
+          "role": "input"
+        },
+        {
+          "id": "learn",
+          "title": "What is learned?",
+          "body": "Counts / ID vectors / encoder",
+          "role": "model"
+        },
+        {
+          "id": "task",
+          "title": "What is predicted?",
+          "body": "Entity label / edge / ranked item",
+          "role": "output"
+        },
+        {
+          "id": "protocol",
+          "title": "Comparison contract",
+          "body": "Same graph, task, split, metric?",
+          "role": "input"
+        },
+        {
+          "id": "audit",
+          "title": "Graph-count audit",
+          "body": "Forward, reverse, hierarchy",
+          "role": "model"
+        },
+        {
+          "id": "evidence",
+          "title": "Evidence scope",
+          "body": "Statistics ≠ trained quality",
+          "role": "output"
+        },
+        {
+          "id": "decision",
+          "title": "Testable next question",
+          "body": "Choose one controlled contrast",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "schema",
+          "b": "route",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "route",
+          "b": "learn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "learn",
+          "b": "task",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "protocol",
+          "b": "audit",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "audit",
+          "b": "evidence",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "evidence",
+          "b": "decision",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "task",
+          "b": "decision",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "094-metapath2vec": {
+      "title": "metapath2vec · from typed walks to stored vectors",
+      "scope": "Conceptual survey map; no new implementation or benchmark run in L094. The typed walk constrains observed contexts. The enhanced ++ objective also conditions normalization on context type; do not conflate them.",
+      "nodes": [
+        {
+          "id": "g",
+          "title": "Typed graph + template",
+          "body": "Author → paper → author",
+          "role": "input"
+        },
+        {
+          "id": "walk",
+          "title": "Typed random walks",
+          "body": "Next node must match path type",
+          "role": "model"
+        },
+        {
+          "id": "context",
+          "title": "Context windows",
+          "body": "Center ID and context IDs",
+          "role": "input"
+        },
+        {
+          "id": "tables",
+          "title": "Embedding tables",
+          "body": "Lookup vectors for known IDs",
+          "role": "model"
+        },
+        {
+          "id": "objective",
+          "title": "Skip-gram objective",
+          "body": "Predict context; sample negatives",
+          "role": "loss"
+        },
+        {
+          "id": "frozen",
+          "title": "Learned node vectors",
+          "body": "Freeze or fit downstream probe",
+          "role": "output"
+        },
+        {
+          "id": "task",
+          "title": "Classification / clustering",
+          "body": "No automatic new-ID embedding",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "g",
+          "b": "walk",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "walk",
+          "b": "context",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "context",
+          "b": "objective",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tables",
+          "b": "objective",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "tables",
+          "b": "frozen",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "frozen",
+          "b": "task",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "095-walk": {
+      "title": "Bipartite recommendation · return to an item",
+      "scope": "Deterministic scorer: preserve the intermediate item and user identities. No neural weights or gradient objective. Degree-zero users use the declared fallback; official offline splits do not establish temporal validity.",
+      "nodes": [
+        {
+          "id": "fit",
+          "title": "Fitting ratings only",
+          "body": "Likes → B [U,I]; seen mask",
+          "role": "input"
+        },
+        {
+          "id": "pui",
+          "title": "User → item",
+          "body": "P_UI = Dᵤ⁻¹ B",
+          "role": "model"
+        },
+        {
+          "id": "piu",
+          "title": "Item → user",
+          "body": "P_IU = Dᵢ⁻¹ Bᵀ",
+          "role": "model"
+        },
+        {
+          "id": "back",
+          "title": "User → item again",
+          "body": "S = P_UI P_IU P_UI",
+          "role": "model"
+        },
+        {
+          "id": "pop",
+          "title": "Fitting popularity",
+          "body": "Item counts / all likes",
+          "role": "input"
+        },
+        {
+          "id": "mix",
+          "title": "Validation chooses α",
+          "body": "α S + (1−α) popularity",
+          "role": "model"
+        },
+        {
+          "id": "rank",
+          "title": "Mask seen → rank items",
+          "body": "Recall@10 / NDCG@10",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "fit",
+          "b": "pui",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pui",
+          "b": "piu",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "piu",
+          "b": "back",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "fit",
+          "b": "pop",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pop",
+          "b": "mix",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "back",
+          "b": "mix",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mix",
+          "b": "rank",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "096-database": {
+      "title": "Database → graph · preserve rows before learning",
+      "scope": "Foreign-key roles define edges; composite keys preserve distinct events. Construction is not training. A valid foreign key establishes referential integrity; it does not establish prediction-time availability.",
+      "nodes": [
+        {
+          "id": "tables",
+          "title": "Customers and products",
+          "body": "Separate maps for each type",
+          "role": "input"
+        },
+        {
+          "id": "orders",
+          "title": "Orders / line-item tables",
+          "body": "Tuple keys, quantity, nullable FK",
+          "role": "input"
+        },
+        {
+          "id": "ids",
+          "title": "Typed row identity",
+          "body": "Table + PK → local tensor row",
+          "role": "model"
+        },
+        {
+          "id": "edges",
+          "title": "Resolve each FK role",
+          "body": "Child → parent; reverse view",
+          "role": "model"
+        },
+        {
+          "id": "graph",
+          "title": "Typed graph + audit keys",
+          "body": "Keep isolates and line rows",
+          "role": "output"
+        },
+        {
+          "id": "paths",
+          "title": "Line → order → buyer",
+          "body": "Also line → product; sum units",
+          "role": "model"
+        },
+        {
+          "id": "sql",
+          "title": "Independent SQL query",
+          "body": "Same rows, JOIN + GROUP BY",
+          "role": "input"
+        },
+        {
+          "id": "check",
+          "title": "Compare paths and sums",
+          "body": "Existence 1 / count 2 / units 5",
+          "role": "output"
+        },
+        {
+          "id": "learn",
+          "title": "Later: fit an encoder",
+          "body": "Choose target, cutoff and split",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "tables",
+          "b": "ids",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "orders",
+          "b": "ids",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "orders",
+          "b": "edges",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ids",
+          "b": "edges",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "ids",
+          "b": "graph",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "edges",
+          "b": "graph",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "graph",
+          "b": "paths",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "paths",
+          "b": "check",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sql",
+          "b": "check",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "graph",
+          "b": "learn",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "097-bpr": {
+      "title": "Pairwise ranking · one scorer, two item branches",
+      "scope": "Matrix factorization with sampled comparisons; no graph message passing. q determines which ranking errors train the scorer. Missing items are unobserved, not certified dislikes; full-paper BPR replay is NOT_RUN.",
+      "nodes": [
+        {
+          "id": "pos",
+          "title": "Observed positive (u,i)",
+          "body": "Fitting like; known user/item IDs",
+          "role": "input"
+        },
+        {
+          "id": "neg",
+          "title": "Draw eligible j from q",
+          "body": "Uniform / degree / hard pool",
+          "role": "input"
+        },
+        {
+          "id": "sp",
+          "title": "Positive score s(u,i)",
+          "body": "Uᵤ · Vᵢ + bᵢ",
+          "role": "model"
+        },
+        {
+          "id": "sn",
+          "title": "Negative score s(u,j)",
+          "body": "Same U, V and b tables",
+          "role": "model"
+        },
+        {
+          "id": "delta",
+          "title": "Score difference",
+          "body": "Δ = s(u,i) − s(u,j)",
+          "role": "model"
+        },
+        {
+          "id": "loss",
+          "title": "softplus(−Δ) + penalty",
+          "body": "Backprop into selected vectors",
+          "role": "loss"
+        },
+        {
+          "id": "all",
+          "title": "Inference: all candidates",
+          "body": "Frozen U,V,b; no pairwise loss",
+          "role": "model"
+        },
+        {
+          "id": "mask",
+          "title": "Exclude fitting-rated items",
+          "body": "Same catalog across trained arms",
+          "role": "input"
+        },
+        {
+          "id": "rank",
+          "title": "Rank → Recall / NDCG",
+          "body": "Sampled catalog is a diagnostic",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "pos",
+          "b": "sp",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "pos",
+          "b": "sn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "neg",
+          "b": "sn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sp",
+          "b": "delta",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sn",
+          "b": "delta",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "delta",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sn",
+          "b": "all",
+          "label": "shared",
+          "dashed": true
+        },
+        {
+          "a": "all",
+          "b": "mask",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "mask",
+          "b": "rank",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "098-batch": {
+      "title": "Typed mini-batching · expand out, compute inward",
+      "scope": "Query identity includes entity and cutoff; batch rows have type-local IDs. All-neighbor parity needs complete dependencies and compatible normalization. Finite fanout changes computation; a temporal filter cannot repair leaked features.",
+      "nodes": [
+        {
+          "id": "query",
+          "title": "B seed queries",
+          "body": "Entity IDs + prediction times",
+          "role": "input"
+        },
+        {
+          "id": "hop1",
+          "title": "First dependency hop",
+          "body": "Eligible incoming typed edges",
+          "role": "input"
+        },
+        {
+          "id": "hop2",
+          "title": "Second dependency hop",
+          "body": "Enough context for two layers",
+          "role": "input"
+        },
+        {
+          "id": "local",
+          "title": "Local feature/edge stores",
+          "body": "n_id, e_id and query components",
+          "role": "input"
+        },
+        {
+          "id": "layer1",
+          "title": "Shared first layer",
+          "body": "Source features → support states",
+          "role": "model"
+        },
+        {
+          "id": "layer2",
+          "title": "Shared second layer",
+          "body": "Support states → seed states",
+          "role": "model"
+        },
+        {
+          "id": "head",
+          "title": "Seed logits [B]",
+          "body": "Gather requested customer rows",
+          "role": "output"
+        },
+        {
+          "id": "loss",
+          "title": "Seed-only BCE",
+          "body": "Context labels are not targets",
+          "role": "loss"
+        },
+        {
+          "id": "oracle",
+          "title": "Full-neighbor audit",
+          "body": "Fixed weights → dense oracle",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "query",
+          "b": "hop1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hop1",
+          "b": "hop2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hop2",
+          "b": "local",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "local",
+          "b": "layer1",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "layer1",
+          "b": "layer2",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "layer2",
+          "b": "head",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "head",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "head",
+          "b": "oracle",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "099-comparison": {
+      "title": "R-GCN versus HGT · compare complete procedures",
+      "scope": "One static ACM contract; two mechanism controls make attribution narrower. Each arm trains with masked CE. Equal width and epochs do not equalize capacity or cost; one graph cannot establish a universal family ranking.",
+      "nodes": [
+        {
+          "id": "graph",
+          "title": "Same X, edges and split",
+          "body": "Conference edges excluded",
+          "role": "input"
+        },
+        {
+          "id": "rgcn",
+          "title": "R-GCN · two layers",
+          "body": "Relation means + learned self",
+          "role": "model"
+        },
+        {
+          "id": "hgt",
+          "title": "HGT · two layers",
+          "body": "Scored messages + gated update",
+          "role": "model"
+        },
+        {
+          "id": "uniform",
+          "title": "Uniform HGT / MLP",
+          "body": "No scorer / no graph context",
+          "role": "model"
+        },
+        {
+          "id": "val",
+          "title": "Validation selects",
+          "body": "Epoch and one LR per arm",
+          "role": "loss"
+        },
+        {
+          "id": "frozen",
+          "title": "Frozen test predictions",
+          "body": "Accuracy and macro F1",
+          "role": "output"
+        },
+        {
+          "id": "contrast",
+          "title": "Interpret the contrasts",
+          "body": "Within-HGT scorer intervention",
+          "role": "output"
+        },
+        {
+          "id": "cost",
+          "title": "Report resource differences",
+          "body": "Active parameters, time, memory",
+          "role": "input"
+        }
+      ],
+      "edges": [
+        {
+          "a": "graph",
+          "b": "rgcn",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "graph",
+          "b": "hgt",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "graph",
+          "b": "uniform",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "rgcn",
+          "b": "val",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "hgt",
+          "b": "val",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "uniform",
+          "b": "val",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "val",
+          "b": "frozen",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "frozen",
+          "b": "contrast",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "cost",
+          "b": "contrast",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    },
+    "100-checkpoint": {
+      "title": "Checkpoint · make every boundary inspectable",
+      "scope": "Same typed graph → paired batches → trained candidates → frozen evaluation. Audit gradients at fixed weights. Training steps between batches follow a different trajectory from one full-batch update; mastery requires a defense.",
+      "nodes": [
+        {
+          "id": "data",
+          "title": "ACM + frozen split",
+          "body": "804 / 403 / 2818 paper labels",
+          "role": "input"
+        },
+        {
+          "id": "sample",
+          "title": "Native typed sampler",
+          "body": "Fanout 8 × 2 hops; seeds first",
+          "role": "input"
+        },
+        {
+          "id": "models",
+          "title": "Four prediction routes",
+          "body": "R-GCN / HGT / uniform / MLP",
+          "role": "model"
+        },
+        {
+          "id": "loss",
+          "title": "Seed-only CE → Adam",
+          "body": "Update after each training batch",
+          "role": "loss"
+        },
+        {
+          "id": "identity",
+          "title": "Identity / gradient audit",
+          "body": "Typed IDs; full-neighbor parity",
+          "role": "input"
+        },
+        {
+          "id": "val",
+          "title": "Full-graph validation",
+          "body": "Select epoch and learning rate",
+          "role": "model"
+        },
+        {
+          "id": "test",
+          "title": "Frozen full-graph test",
+          "body": "Same target IDs; report metrics",
+          "role": "output"
+        },
+        {
+          "id": "defend",
+          "title": "Written research defense",
+          "body": "Mechanism, protocol, uncertainty",
+          "role": "output"
+        }
+      ],
+      "edges": [
+        {
+          "a": "data",
+          "b": "sample",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "sample",
+          "b": "models",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "models",
+          "b": "loss",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "models",
+          "b": "val",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "identity",
+          "b": "val",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "val",
+          "b": "test",
+          "label": "",
+          "dashed": false
+        },
+        {
+          "a": "test",
+          "b": "defend",
+          "label": "",
+          "dashed": false
+        }
+      ]
+    }
+  }
+}

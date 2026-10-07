@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lesson 001 — The Single-Table Assumption</title>
-  <link rel="stylesheet" href="../assets/lesson.css">
-</head>
-<body>
+  <link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head>
+<body class="early-course">
 <article>
   <h1>The Single-Table Assumption</h1>
   <p class="subtitle">Lesson 001 · Phase 1 · ~40 min</p>
@@ -18,7 +17,10 @@
     you need to see exactly what that contract costs.
   </p>
 
-  <h2>What tabular ML actually eats</h2>
+  <!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 1 figures</summary><ol><li><a href="#course-visual-1">Four tables do not become one row for free</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
+<h2>What tabular ML actually eats</h2>
   <p>
     scikit-learn, XGBoost, and neural tabular models expect a matrix <code>X</code> and a
     vector <code>y</code>. Real companies store data in many linked tables — customers,
@@ -73,7 +75,8 @@ GROUP BY c.customer_id</pre>
     into SQL that the gradient booster will never question.
   </p>
 
-  <h2>Three ways the assumption breaks</h2>
+  <!-- course-visual:start --><section class="course-visual" id="course-visual-1" aria-labelledby="cv-heading-1"><header><p class="cv-kicker">Follow the computation</p><h3 id="cv-heading-1">Four tables do not become one row for free</h3></header><div class="cv-body"><ol class="cv-route"><li><span class="cv-number">1</span><div><h4>Ask one question</h4><p>Customer c at cutoff t: will they cancel in the next 30 days?</p></div></li><li><span class="cv-number">2</span><div><h4>Follow three relationships</h4><p>Orders, sessions and tickets connect to the customer by key.</p></div></li><li><span class="cv-number">3</span><div><h4>Summarize eligible history</h4><p>Aggregate each child table before combining customer features.</p></div></li><li><span class="cv-number">4</span><div><h4>Predict from the flat row</h4><p>The learner sees counts and averages; it does not see the discarded event identities.</p></div></li></ol><div class="cv-focus"><h4>Open the decisive operation</h4><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 270" role="img" aria-labelledby="cv-title-1"><title id="cv-title-1">If two customers have the same aggregates, can this model distinguish their event histories? Not from those aggregates alone. Add a distinguishing feature or preserve the relevant relational context.</title><defs><marker id="cv-tip-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52717c"/></marker></defs><g font-family="system-ui,sans-serif"><text x="47" y="22" font-size="16" fill="#087f83" text-anchor="middle">orders</text><rect x="15" y="40" width="66" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="48.0" y="58.0" font-size="16" fill="#087f83" text-anchor="middle">20</text><rect x="15" y="70" width="66" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="48.0" y="88.0" font-size="16" fill="#087f83" text-anchor="middle">30</text><path d="M47 111L47 140" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-1)"/><text x="148" y="22" font-size="16" fill="#087f83" text-anchor="middle">sessions</text><rect x="116" y="40" width="66" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="149.0" y="58.0" font-size="16" fill="#087f83" text-anchor="middle">4</text><rect x="116" y="70" width="66" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="149.0" y="88.0" font-size="16" fill="#087f83" text-anchor="middle">8</text><path d="M148 111L148 140" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-1)"/><text x="249" y="22" font-size="16" fill="#087f83" text-anchor="middle">tickets</text><rect x="217" y="40" width="66" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="250.0" y="58.0" font-size="16" fill="#087f83" text-anchor="middle">open</text><path d="M249 111L249 140" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-1)"/><rect x="15" y="150" width="86" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="58.0" y="168.0" font-size="16" fill="#087f83" text-anchor="middle">2</text><rect x="105" y="150" width="86" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="148.0" y="168.0" font-size="16" fill="#087f83" text-anchor="middle">6</text><rect x="195" y="150" width="86" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="238.0" y="168.0" font-size="16" fill="#087f83" text-anchor="middle">1</text><text x="150" y="203" font-size="16" fill="#233c50" text-anchor="middle">count · mean · count</text></g></svg><details><summary>If two customers have the same aggregates, can this model distinguish their event histories?</summary><p>Not from those aggregates alone. Add a distinguishing feature or preserve the relevant relational context.</p></details><p class="cv-print-answer"><strong>Trace answer:</strong> Not from those aggregates alone. Add a distinguishing feature or preserve the relevant relational context.</p></div></div><p class="cv-scope">Illustrative schema from this lesson. Aggregating each child separately also avoids multiplying rows in a many-to-many join.</p></section><!-- course-visual:end -->
+<h2>Three ways the assumption breaks</h2>
   <ol>
     <li>
       <strong>Lost structure.</strong> Primary–foreign key links encode who bought what, who
@@ -208,6 +211,5 @@ GROUP BY c.customer_id</pre>
     correct: "a",
     explain: "Foreign-key structure — who bought what, when, in which session — collapses into hand-picked aggregates; the learner never sees the graph."
   });
-</script>
-</body>
+</script><script src="../assets/visual-stories.js" defer></script></body>
 </html>

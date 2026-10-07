@@ -42,9 +42,8 @@
     .tta-boxsub { font-family: var(--font-sans); font-size: 8.5px; }
     .tta-lane { font-family: var(--font-sans); font-size: 8.5px; letter-spacing: 0.05em; fill: var(--muted); }
     .tta-readout { font-size: 0.86rem; margin: 0.7rem 0.2rem 0; line-height: 1.55; }
-  </style>
-</head>
-<body>
+  </style><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head>
+<body class="early-course">
 <article>
   <p class="mission-tag">Mission · RDL thesis · Year 2 · Q1 · Neural tabular architectures</p>
   <h1>FT-Transformer <span style="color:var(--muted);font-weight:400">(feature tokenizer + [CLS] readout)</span></h1>
@@ -83,7 +82,10 @@
     tree on flat data.
   </div>
 
-  <h2>Warm up — recall before you read</h2>
+  <!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 3 figures</summary><ol><li><a href="#course-visual-46">FT-Transformer lets every feature enter attention</a></li><li><a href="#tokenizer">The one idea: tokenize every feature</a></li><li><a href="#tabt-arch">Recap: where TabTransformer stops</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
+<h2>Warm up — recall before you read</h2>
   <p>
     Three questions from memory before today's material. The numeric-bypass limitation you are about to fix
     was named in <a href="0045-tabtransformer.html">L045</a>; effortful retrieval now is what makes the
@@ -152,7 +154,8 @@ categorical T_j = b_j + e_j[x_j]        (embedding lookup + per-feature bias)</s
     carry the signal.
   </div>
 
-  <h2>Training it: the same fair protocol</h2>
+  <!-- course-visual:start --><section class="course-visual" id="course-visual-46" aria-labelledby="cv-heading-46"><header><p class="cv-kicker">Follow the computation</p><h3 id="cv-heading-46">FT-Transformer lets every feature enter attention</h3></header><div class="cv-body"><ol class="cv-route"><li><span class="cv-number">1</span><div><h4>Tokenize numeric values</h4><p>For feature j, multiply scalar xj by learned vector wj and add bj.</p></div></li><li><span class="cv-number">2</span><div><h4>Embed categories and prepend CLS</h4><p>All feature tokens share width d; CLS is a learned readout token.</p></div></li><li><span class="cv-number">3</span><div><h4>Mix all token types</h4><p>Repeated attention and feed-forward blocks update feature and CLS states.</p></div></li><li><span class="cv-number">4</span><div><h4>Decode CLS</h4><p>The final CLS state feeds the prediction head; training labels enter the task loss.</p></div></li></ol><div class="cv-focus"><h4>Open the decisive operation</h4><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 270" role="img" aria-labelledby="cv-title-46"><title id="cv-title-46">If one numeric value changes, can its token influence the final CLS state? Yes. The numeric token participates in the same attention route as the other features.</title><defs><marker id="cv-tip-46" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52717c"/></marker></defs><g font-family="system-ui,sans-serif"><rect x="18" y="20" width="100" height="34" rx="5" fill="#f5f9fb" stroke="#ab650a"/><text x="68.0" y="42.0" font-size="16" fill="#ab650a" text-anchor="middle">xj = 2</text><rect x="139" y="22" width="60" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="169.0" y="40.0" font-size="16" fill="#087f83" text-anchor="middle">1</text><rect x="203" y="22" width="60" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="233.0" y="40.0" font-size="16" fill="#087f83" text-anchor="middle">3</text><text x="203" y="83" font-size="17" fill="#087f83" text-anchor="middle">wj</text><text x="150" y="123" font-size="19" fill="#233c50" text-anchor="middle">2 × [1, 3] + [0, 1]</text><rect x="71" y="152" width="78" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="110.0" y="170.0" font-size="16" fill="#087f83" text-anchor="middle">2</text><rect x="153" y="152" width="78" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="192.0" y="170.0" font-size="16" fill="#087f83" text-anchor="middle">7</text><text x="150" y="224" font-size="17" fill="#7656a6" text-anchor="middle">one numeric feature token</text></g></svg><details><summary>If one numeric value changes, can its token influence the final CLS state?</summary><p>Yes. The numeric token participates in the same attention route as the other features.</p></details><p class="cv-print-answer"><strong>Trace answer:</strong> Yes. The numeric token participates in the same attention route as the other features.</p></div></div><p class="cv-scope">FT-Transformer topology, contrasted with the numeric bypass in TabTransformer.</p></section><!-- course-visual:end -->
+<h2>Training it: the same fair protocol</h2>
   <p>
     Nothing about training is FT-Transformer-specific — the point of Gorishniy 2021 is that architectures
     should be compared under <em>one</em> protocol. We reuse the shared recipe of every neural arm since
@@ -483,6 +486,5 @@ categorical T_j = b_j + e_j[x_j]        (embedding lookup + per-feature bias)</s
     correct: "a",
     explain: "(a). Verified: FT-T mean rank 2.50, MLP 2.75, TabTransformer 3.75, CatBoost 1.00; FT-T beats CatBoost 0/4. So FT-T is the best DEEP model but still loses to the tree — Gorishniy 2021's exact finding. It did not beat the trees (b); FT-T out-ranks the MLP so architecture does matter (c); and p=0.026 REJECTS the null (a difference is detectable), it does not prove equivalence (d)."
   });
-</script>
-</body>
+</script><script src="../assets/visual-stories.js" defer></script></body>
 </html>

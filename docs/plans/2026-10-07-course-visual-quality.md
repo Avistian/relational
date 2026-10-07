@@ -1,0 +1,7 @@
+# Whole-course visual teaching review
+
+The user asked to extend the approved visual-quality refinement to the entire course and previously authorized pushing completed changes. Scope is all 228 currently published lesson HTML files, including early foundations and bridge lessons. Unpublished curriculum units are not fabricated.
+
+Review each lesson's intended tracing/prediction question against its actual rendered visuals. Retain effective diagrams; repair missing mechanisms, opaque architectures, inaccessible reading sizes, broken states and unclear figure relationships. Use the existing worked examples and source contracts. Prefer native responsive structures for narrow reading rather than shrinking dense exports. Keep measured results, course schematics and paper architectures distinct. Introduce architecture visuals only where a model is introduced; evaluation and writing lessons can use their existing tables or evidence maps.
+
+Keep a per-lesson decision ledger, rendered desktop/mobile evidence and explicit verification limits. Check all pages and their visual resources, keyboard and native disclosures, print and no-JS fallbacks; inspect actual screenshots. Preserve notebook code and outputs and align any replacement primary architecture exports with the notebook builders. Run generation and clean-index publication checks, push, and verify live artifacts. This is an editorial and rendering review, not evidence of learner mastery or a fresh experiment.

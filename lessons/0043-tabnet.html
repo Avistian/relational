@@ -90,9 +90,8 @@
     .spx-note { color: var(--muted); }
     .tna-caption, .spx-caption, .tnf-caption {
       font-size: 0.8rem; color: var(--muted); margin: 0.6rem 0.2rem 0; line-height: 1.5; }
-  </style>
-</head>
-<body>
+  </style><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head>
+<body class="early-course">
 <article>
   <p class="mission-tag">Mission · RDL thesis · Year 2 · Q1 · Neural tabular architectures</p>
   <h1>TabNet <span style="color:var(--muted);font-weight:400">(sequential attention)</span></h1>
@@ -127,7 +126,10 @@
     <em>interesting mechanism, unproven advantage</em>.
   </div>
 
-  <h2>Warm up — recall before you read</h2>
+  <!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 5 figures</summary><ol><li><a href="#course-visual-43">TabNet carries a feature-use prior from step to step</a></li><li><a href="#arch">The whole encoder, before any equations</a></li><li><a href="#sparsemax">1. sparsemax — the reason the mask can contain real zeros</a></li><li><a href="#fblock">5. The feature transformer — the part that does the actual computing</a></li><li><a href="#masks">Drive it: sequential attention on one row</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
+<h2>Warm up — recall before you read</h2>
   <p>
     Three questions from memory before today's material. Retrieval that feels effortful is what builds
     durable memory; re-reading only feels productive. Today's warm-up matters more than usual, because
@@ -182,7 +184,8 @@
     unrolls that loop across three steps.
   </p>
 
-  <h2>The mechanism, piece by piece</h2>
+  <!-- course-visual:start --><section class="course-visual" id="course-visual-43" aria-labelledby="cv-heading-43"><header><p class="cv-kicker">Follow the computation</p><h3 id="cv-heading-43">TabNet carries a feature-use prior from step to step</h3></header><div class="cv-body"><ol class="cv-route"><li><span class="cv-number">1</span><div><h4>Normalize and initialize</h4><p>The input and initial feature transform provide the first attention state.</p></div></li><li><span class="cv-number">2</span><div><h4>Select a sparse mask</h4><p>The attentive transformer combines its state with the carried prior; sparsemax can set entries exactly to zero.</p></div></li><li><span class="cv-number">3</span><div><h4>Transform selected values</h4><p>Multiply the mask by the original input, then split transformed state into decision and next-attention parts.</p></div></li><li><span class="cv-number">4</span><div><h4>Accumulate and repeat</h4><p>Add decision outputs; update the feature-use prior before the next step, then predict from the accumulated decision.</p></div></li></ol><div class="cv-focus"><h4>Open the decisive operation</h4><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 270" role="img" aria-labelledby="cv-title-43"><title id="cv-title-43">Does the mask multiply the previous hidden vector or the original feature input? The feature mask selects the original feature input at each step. The attention state and prior govern that selection.</title><defs><marker id="cv-tip-43" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52717c"/></marker></defs><g font-family="system-ui,sans-serif"><text x="150" y="24" font-size="17" fill="#087f83" text-anchor="middle">original input</text><rect x="33" y="42" width="77" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="71.5" y="60.0" font-size="16" fill="#087f83" text-anchor="middle">2</text><rect x="114" y="42" width="77" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="152.5" y="60.0" font-size="16" fill="#087f83" text-anchor="middle">4</text><rect x="195" y="42" width="77" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="233.5" y="60.0" font-size="16" fill="#087f83" text-anchor="middle">6</text><text x="150" y="110" font-size="17" fill="#7656a6" text-anchor="middle">mask × input</text><rect x="33" y="127" width="77" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="71.5" y="145.0" font-size="16" fill="#087f83" text-anchor="middle">0.5</text><rect x="114" y="127" width="77" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="152.5" y="145.0" font-size="16" fill="#087f83" text-anchor="middle">0</text><rect x="195" y="127" width="77" height="26" rx="5" fill="#e5f2ef" stroke="#087f83"/><text x="233.5" y="145.0" font-size="16" fill="#087f83" text-anchor="middle">0.5</text><text x="150" y="218" font-size="20" fill="#087f83" text-anchor="middle">[1, 0, 3] → transform</text></g></svg><details><summary>Does the mask multiply the previous hidden vector or the original feature input?</summary><p>The feature mask selects the original feature input at each step. The attention state and prior govern that selection.</p></details><p class="cv-print-answer"><strong>Trace answer:</strong> The feature mask selects the original feature input at each step. The attention state and prior govern that selection.</p></div></div><p class="cv-scope">TabNet encoder schematic. The feature-use prior encourages reuse control; it is not a hard one-use rule.</p></section><!-- course-visual:end -->
+<h2>The mechanism, piece by piece</h2>
   <p>
     Five components, each a box in the diagram above. We define each one fully, including the pieces you
     have not met yet.
@@ -805,6 +808,5 @@ sparsemax(z)ᵢ = max(zᵢ − τ(z), 0)</span>
     correct: "a",
     explain: "(a). The Syn2 result shows the mechanism genuinely works when relevance is global; the Syn4 result shows the same reading can be confidently wrong when relevance is conditional — and the paper's own use of 10M rather than 10k samples for its Fig. 5 masks shows crispness scales with data. So attributions must be checked where ground truth is known. They are not automatically faithful (b), but they are not useless either — Syn4 still found the switch feature and moved weight the right way (c). And Syn4 is the MORE relevant test (d): it is the instance-wise case that motivates the architecture."
   });
-</script>
-</body>
+</script><script src="../assets/visual-stories.js" defer></script></body>
 </html>

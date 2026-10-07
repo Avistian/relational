@@ -16,9 +16,8 @@
     td.n { font-family: var(--font-mono); font-size: 0.82rem; }
     .win { font-weight: 600; color: #1e6b3c; }
     .eq { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 1rem; margin: 0.9rem 0; text-align: center; }
-  </style>
-</head>
-<body>
+  </style><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head>
+<body class="early-course">
 <article>
   <p class="mission-tag">Mission · RDL thesis · Year 1 · Q2</p>
   <h1>LightGBM</h1>
@@ -42,7 +41,10 @@
     (<strong>GOSS</strong>), and merge sparse features that never co-occur (<strong>EFB</strong>).
   </div>
 
-  <h2>Same gain, different growth: leaf-wise vs level-wise</h2>
+  <!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 2 figures</summary><ol><li><a href="#course-visual-15">LightGBM changes how the next tree is built</a></li><li><a href="#growth-viz">Same gain, different growth: leaf-wise vs level-wise</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
+<h2>Same gain, different growth: leaf-wise vs level-wise</h2>
   <p>
     XGBoost (by default) grows a tree <strong>level-wise</strong>: it splits every node at the current
     depth before going deeper, producing balanced trees. LightGBM grows <strong>leaf-wise
@@ -58,7 +60,8 @@
   </p>
   <div id="growth-viz"></div>
 
-  <h2>GOSS — keep the rows that still hurt</h2>
+  <!-- course-visual:start --><section class="course-visual" id="course-visual-15" aria-labelledby="cv-heading-15"><header><p class="cv-kicker">Follow the computation</p><h3 id="cv-heading-15">LightGBM changes how the next tree is built</h3></header><div class="cv-body"><ol class="cv-route"><li><span class="cv-number">1</span><div><h4>Accumulate histogram statistics</h4><p>Bin feature values; store gradient and curvature sums per bin.</p></div></li><li><span class="cv-number">2</span><div><h4>Evaluate candidate leaves</h4><p>The same regularized gain logic scores potential splits.</p></div></li><li><span class="cv-number">3</span><div><h4>Expand the best leaf</h4><p>Leaf-wise growth spends the next split on the greatest available gain.</p></div></li><li><span class="cv-number">4</span><div><h4>Add the tree to the ensemble</h4><p>GOSS and EFB are separate efficiency mechanisms; their applicability depends on the configured training path.</p></div></li></ol><div class="cv-focus"><h4>Open the decisive operation</h4><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 270" role="img" aria-labelledby="cv-title-15"><title id="cv-title-15">If left and right leaves offer gains 2 and 7, which expands next? Leaf-wise growth chooses gain 7, subject to constraints. It does not require both leaves to advance to the same depth.</title><defs><marker id="cv-tip-15" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52717c"/></marker></defs><g font-family="system-ui,sans-serif"><circle cx="150" cy="35" r="28" fill="white" stroke="#087f83" stroke-width="2"/><text x="150" y="40" font-size="16" fill="#087f83" text-anchor="middle">root</text><path d="M127 55L65 96" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-15)"/><path d="M173 55L235 96" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-15)"/><rect x="9" y="104" width="114" height="34" rx="5" fill="#f5f9fb" stroke="#087f83"/><text x="66.0" y="126.0" font-size="16" fill="#087f83" text-anchor="middle">gain 2</text><rect x="177" y="104" width="114" height="34" rx="5" fill="#f5f9fb" stroke="#ab650a"/><text x="234.0" y="126.0" font-size="16" fill="#ab650a" text-anchor="middle">gain 7</text><path d="M226 144L190 187" fill="none" stroke="#ab650a" stroke-width="2" marker-end="url(#cv-tip-15)"/><path d="M245 144L270 187" fill="none" stroke="#ab650a" stroke-width="2" marker-end="url(#cv-tip-15)"/><circle cx="189" cy="212" r="22" fill="white" stroke="#ab650a" stroke-width="2"/><text x="189" y="217" font-size="16" fill="#ab650a" text-anchor="middle">L</text><circle cx="271" cy="212" r="22" fill="white" stroke="#ab650a" stroke-width="2"/><text x="271" y="217" font-size="16" fill="#ab650a" text-anchor="middle">R</text><text x="66" y="187" font-size="17" fill="#657b8b" text-anchor="middle">wait</text></g></svg><details><summary>If left and right leaves offer gains 2 and 7, which expands next?</summary><p>Leaf-wise growth chooses gain 7, subject to constraints. It does not require both leaves to advance to the same depth.</p></details><p class="cv-print-answer"><strong>Trace answer:</strong> Leaf-wise growth chooses gain 7, subject to constraints. It does not require both leaves to advance to the same depth.</p></div></div><p class="cv-scope">Schematic gains. GOSS samples rows; EFB bundles features. Neither is the definition of leaf-wise growth.</p></section><!-- course-visual:end -->
+<h2>GOSS — keep the rows that still hurt</h2>
   <p>
     To score a split, XGBoost scans <em>every</em> row to sum gradients and hessians. LightGBM's
     <strong>Gradient-based One-Side Sampling</strong> asks: do we really need them all? A row with a
@@ -281,6 +284,5 @@
     correct: "a",
     explain: "Leaf-wise trees overfit small data; num_leaves is the primary complexity knob, so lower it first (the credit_g sweep shows PR-AUC dropping as num_leaves grows)."
   });
-</script>
-</body>
+</script><script src="../assets/visual-stories.js" defer></script></body>
 </html>

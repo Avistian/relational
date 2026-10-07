@@ -39,9 +39,8 @@
     .formula { font-family: var(--font-mono); font-size: 0.9rem; background: var(--bg-soft); padding: 0.7rem 0.9rem; border-radius: 6px; display: block; margin: 0.8rem 0; overflow-x: auto; }
     .defbox { border-left: 3px solid var(--border); background: var(--bg-soft); padding: 0.6rem 0.9rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; font-size: 0.9rem; line-height: 1.6; }
     .defbox strong.term { color: var(--fg, #222); }
-  </style>
-</head>
-<body>
+  </style><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head>
+<body class="early-course">
 <article>
   <p class="mission-tag">Mission · RDL thesis · Year 1 · Q3</p>
   <h1>MLP &amp; ResNet Tabular Baselines</h1>
@@ -74,7 +73,10 @@
     nonetheless still <em>tied or beaten</em> by a tuned GBDT on small tabular data.
   </div>
 
-  <h2>Warm up — recall before you read</h2>
+  <!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 4 figures</summary><ol><li><a href="#course-visual-28">A residual block learns a change to the carried state</a></li><li><a href="#resnet-block-viz">The fix: the residual block</a></li><li><a href="#depth-trainability-viz">See it: depth helps the ResNet, hurts the plain MLP</a></li><li><a href="#baseline-bakeoff-viz">The honest bake-off: no universal winner</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
+<h2>Warm up — recall before you read</h2>
   <p>
     Three questions from earlier lessons, pulled from memory before today's material. A wrong guess
     here is useful — the act of retrieval (even a failed one) encodes the idea far better than
@@ -280,7 +282,8 @@ MLP(x)      = Linear( MLPBlock( … MLPBlock(x) … ) )</span>
     near-identity blocks on top.
   </p>
 
-  <h2>The full architecture, and its two other pieces</h2>
+  <!-- course-visual:start --><section class="course-visual" id="course-visual-28" aria-labelledby="cv-heading-28"><header><p class="cv-kicker">Follow the computation</p><h3 id="cv-heading-28">A residual block learns a change to the carried state</h3></header><div class="cv-body"><ol class="cv-route"><li><span class="cv-number">1</span><div><h4>Encode the row</h4><p>Numeric values and categorical embeddings form the input representation.</p></div></li><li><span class="cv-number">2</span><div><h4>Compute a learned branch</h4><p>Normalization, affine maps, nonlinearities and dropout transform the state.</p></div></li><li><span class="cv-number">3</span><div><h4>Keep the identity route</h4><p>Add the branch output to the unchanged incoming state.</p></div></li><li><span class="cv-number">4</span><div><h4>Repeat and predict</h4><p>The final representation feeds the task head; the skip does not bypass the loss.</p></div></li></ol><div class="cv-focus"><h4>Open the decisive operation</h4><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 270" role="img" aria-labelledby="cv-title-28"><title id="cv-title-28">If the learned branch outputs zero, what does the residual block return? It returns its input. This identity route is why a block can learn a small refinement without relearning the carried state.</title><defs><marker id="cv-tip-28" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52717c"/></marker></defs><g font-family="system-ui,sans-serif"><rect x="65" y="18" width="170" height="34" rx="5" fill="#f5f9fb" stroke="#087f83"/><text x="150.0" y="40.0" font-size="16" fill="#087f83" text-anchor="middle">incoming x</text><path d="M150 59L150 84" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-28)"/><rect x="65" y="92" width="170" height="34" rx="5" fill="#f5f9fb" stroke="#7656a6"/><text x="150.0" y="114.0" font-size="16" fill="#7656a6" text-anchor="middle">branch F(x)</text><path d="M150 133L150 158" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-28)"/><circle cx="150" cy="186" r="22" fill="white" stroke="#ab650a" stroke-width="2"/><text x="150" y="191" font-size="16" fill="#ab650a" text-anchor="middle">+</text><path d="M240 35L275 35" fill="none" stroke="#087f83" stroke-width="2"/><path d="M275 35L275 186" fill="none" stroke="#087f83" stroke-width="2"/><path d="M275 186L178 186" fill="none" stroke="#087f83" stroke-width="2" marker-end="url(#cv-tip-28)"/><text x="150" y="244" font-size="19" fill="#233c50" text-anchor="middle">output = x + F(x)</text></g></svg><details><summary>If the learned branch outputs zero, what does the residual block return?</summary><p>It returns its input. This identity route is why a block can learn a small refinement without relearning the carried state.</p></details><p class="cv-print-answer"><strong>Trace answer:</strong> It returns its input. This identity route is why a block can learn a small refinement without relearning the carried state.</p></div></div><p class="cv-scope">ResNet baseline schematic; consult the full diagram for the configured block ordering.</p></section><!-- course-visual:end -->
+<h2>The full architecture, and its two other pieces</h2>
   <p>
     We now have the block. The complete Gorishniy ResNet wraps a stack of them between an input
     embedding and a prediction head:
@@ -508,6 +511,5 @@ Head(x)   = Linear( ReLU( BatchNorm(x) ) )</span>
     correct: "a",
     explain: "Gorishniy's contribution is methodological: compare against properly-tuned MLP/ResNet baselines. On small categorical data the GBDT still wins (consistent with L024–L027), and the two neural baselines tie because depth has little to buy at 1000 rows."
   });
-</script>
-</body>
+</script><script src="../assets/visual-stories.js" defer></script></body>
 </html>
