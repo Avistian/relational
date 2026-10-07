@@ -60,11 +60,26 @@ Sum ignores the order of incoming edges. Mean also ignores order, but divides aw
 
 **Worked example.** Use A—B—C plus isolated node D. Start with [2,4,8,10]. Send the old scalar state along each direction of each bond. Take the mean of incoming messages, then average it with the destination's old state. Define an empty neighborhood's aggregate as zero.
 
+**Before indexing tensors.** Rows 0, 1, 2, 3 stand for A, B, C, D. An edge list has shape [2,E]: its first row names the sender of each edge and its second row names the receiver. Thus `[[0,1,1,2],[1,0,2,1]]` lists A→B, B→A, B→C, C→B in that order. Gathering `h[src]` copies the **old** sender states into edge order; reducing by `dst` returns to node order. The same operation acts on every feature coordinate independently.
+
 [[PREDICT]]
 
 [[FIG:trace]]
 
 At B, incoming messages are 2 and 8. Their mean is 5, so B becomes ½×4 + ½×5 = **4.5**. D receives zero and becomes **5**. This is an explicit empty-neighborhood convention, not a universal GNN rule; a residual-only update could instead preserve D.
+
+| Node row | Incoming edge values | Mean | Old state → new state | Graph ID |
+|---|---|---:|---|---:|
+| 0 · A | 4 | 4 | 2 → 3 | 0 |
+| 1 · B | 2, 8 | 5 | 4 → 4.5 | 0 |
+| 2 · C | 4 | 4 | 8 → 6 | 0 |
+| 3 · D | none | 0 | 10 → 5 | 1 |
+
+Treat the chain as graph 0 and D as a separate one-node graph 1. The graph-membership vector `batch=[0,0,0,1]` assigns a graph to each node row. Readout now produces **[13.5,5]**, because 3+4.5+6=13.5. Summing everything to 18.5 would combine two examples. If all four nodes instead belong to one disconnected graph, 18.5 is the correct single output. Connectivity does not determine the supplied graph IDs.
+
+**Transfer exercise — change only the edge list.** Keep the same node states but allow only A→B and B→C. Predict all four outputs, then test your implementation. Explain why a symmetric graph cannot detect swapped source and destination rows. Your checker should also reject an implementation that writes new states into `h` while visiting nodes.
+
+<details><summary>Check the directed prediction after attempting it</summary><p>The output is [1,3,6,5]: A and D receive zero; B receives old A=2; C receives old B=4. Reversing the edges gives [3,6,4,5]. Updating A before sending its message would incorrectly feed its new value into B.</p></details>
 
 [[MESSAGES]]
 

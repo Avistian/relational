@@ -69,10 +69,14 @@ Learner completion requires the three TODOs, hand trace and written EXIT explana
 
 The canonical implementation is `labs/relkit/gcn_l082.py`. The loader deliberately shares immutable raw data and `_sources_l078.json` with L078; the notebook embeds the same manifest and downloads/hash-checks missing bytes without repository imports. `_sources_l082.json` adds this lesson's implementation hashes. Attribution: adapted from tkipf/gcn, MIT; the pinned `sources/l078/LICENCE` is retained.
 
-Measured full port run:100 seeds, mean81.401%, sample SD0.658 percentage points. The educational acceptance band is mean within±1 percentage point of81.5%; this is a declared course criterion, not the paper's statistical criterion. No test-based hyperparameter or seed selection. The executed solution repeats all100 runs and compares every score and stopping trace.
+Measured full port run:100 seeds, mean81.401%, sample SD0.658 percentage points. The educational acceptance band is mean within±1 percentage point of81.5%; this is a declared course criterion, not the paper's statistical criterion. No test-based hyperparameter or seed selection. The prior full solution execution repeated all100 runs and compared every score and stopping trace. After the October 7 exercise review, the downloadable solution contains freshly executed core exercises; its training cells are unexecuted. The saved benchmark and prior full execution remain historical evidence, not a fresh run of the revised notebook.
 
 `figures/l082/hidden-seed0.npz` stores hidden states from a separate seed0 diagnostic and their PCA coordinates. Its colors use labels only after training. This figure does not enter selection.
 
 For exact observed packages, use `pip install -r labs/requirements-l082-observed.txt` in a compatible Python3.12 CPU environment. This snapshot may contain platform-specific versions; installation in a fresh public environment is NOT_CHECKED. The Colab bootstrap installs numpy/scipy/torch and reports runtime versions through the result JSON; it is portable but not an environment-lock claim.
 
 The curriculum suggests PyG; this lesson deliberately uses native PyTorch sparse operations so self-loops, normalization and masked loss are visible and editable. This changes the library, not the declared GCN architecture. The source-visible solution is downloadable at `labs/solutions/0082-gcn.ipynb`.
+
+## October 7 exercise review
+
+The current execution record is `CORE_PASS_TRAINING_NOT_RUN`: 23 core code cells ran in a fresh kernel, including signed multi-channel propagation and input-versus-output gradient checks. Run `reviews/two-lesson-pilot-2026-10-07/verify.py 82` from the repository with the lab Python for independent arithmetic and mutation checks. `--reset-execution` on the builder explicitly clears old notebook outputs when exercise code changes. The default editorial build still refuses to preserve outputs across code changes. Full Cora training was not rerun during this review.

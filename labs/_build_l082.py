@@ -5,17 +5,32 @@ import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
 ROOT=Path(__file__).resolve().parents[1];LAB=ROOT/'labs';SLUG='0082-gcn';TITLE='GCN: normalize, propagate, reproduce'
-CAPTIONS={'trace':'Four-node arithmetic: loops, augmented degrees and each contribution to B.','architecture':'Complete Cora GCN: two layers, shared graph support, masked supervision, stopping and test inference.','results':'All 100 initialization scores on the same Cora split; variability is not across datasets.','embedding':'Seed-zero final hidden states projected to two principal components; descriptive visualization only.'}
+CAPTIONS={'channels':'Teaching example: the same four-node graph with two input channels. Signed preactivations distinguish linear propagation from ReLU; these are illustrative weights, not Cora results.','trace':'Four-node arithmetic: loops, augmented degrees and each contribution to B.','architecture':'Complete Cora GCN: two layers, shared graph support, masked supervision, stopping and test inference.','results':'All 100 initialization scores on the same Cora split; variability is not across datasets.','embedding':'Seed-zero final hidden states projected to two principal components; descriptive visualization only.'}
+
+def mobile_channels():
+    import numpy as np
+    h=np.array([[2.,1.],[4.,0.],[8.,2.],[10.,1.]])
+    w=np.array([[1.,-1.],[2.,1.]])
+    s=np.array([[.5,6**-.5,0,0],[6**-.5,1/3,6**-.5,0],[0,6**-.5,.5,0],[0,0,0,1]])
+    stages=[('1 · Learn channels: HW',h@w),('2 · Mix neighbors: S(HW)',s@h@w),('3 · Hidden layer only: ReLU',np.maximum(0,s@h@w))]
+    html='<div class="mpnn-mobile-trace"><h3>Trace both channels</h3><p>Same A—B—C plus D. H rows: [2,1], [4,0], [8,2], [10,1]. W maps [x,y] to [x+2y,−x+y].</p>'
+    for title,values in stages:
+        html+='<h4>'+title+'</h4><table><thead><tr><th>Node</th><th>Channel 1</th><th>Channel 2</th></tr></thead><tbody>'
+        for name,row in zip('ABCD',values):
+            html+='<tr'+(' class="trace-focus"' if name=='B' else '')+'><td>'+name+'</td>'+''.join(f'<td>{v:.3f}</td>' for v in row)+'</tr>'
+        html+='</tbody></table>'
+    return html+'<p>Values rounded to 3 decimals. Final logits keep their signs; ReLU belongs outside the linear helper.</p></div>'
 
 def prose(portable=False):
     s=(ROOT/'lessons/content'/f'{SLUG}.md').read_text()
     for name,caption in CAPTIONS.items():
         src='data:image/png;base64,'+base64.b64encode((LAB/'figures/l082'/f'{name}.png').read_bytes()).decode() if portable else f'../labs/figures/l082/{name}.png'
-        s=s.replace('[[FIG:'+name+']]',f'<figure class="mpnn-figure"><small>Scroll horizontally on narrow screens to inspect the full computation.</small><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"></div><figcaption>{caption}</figcaption></figure>')
+        mobile=mobile_channels() if name=='channels' and not portable else ''
+        s=s.replace('[[FIG:'+name+']]',f'<figure class="mpnn-figure">{mobile}<small>Scroll horizontally on narrow screens to inspect the full computation.</small><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"></div><figcaption>{caption}</figcaption></figure>')
     for name in ['warmup','predict','normalized','teachback']:
         s=s.replace('[['+name.upper()+']]', '**Pause and write your prediction before reading the explanation.**' if portable else '<div id="'+name+'"></div>')
     r=json.loads((LAB/'_paper_l082_results.json').read_text())
-    s=s.replace('[[RESULTS]]',f'**Fresh author run:** {len(r["runs"])} initializations; mean **{100*r["mean"]:.3f}%**, sample SD **{100*r["sample_sd"]:.3f} percentage points**, standard error **{100*r["se"]:.3f} percentage points**. Difference from paper target: **{100*(r["mean"]-.815):+.3f} percentage points**. [Per-seed scores and complete validation traces](../labs/_paper_l082_results.json). These are measured port results, not original-framework parity.')
+    s=s.replace('[[RESULTS]]',f'**Saved author benchmark (not rerun by this exercise review):** {len(r["runs"])} initializations; mean **{100*r["mean"]:.3f}%**, sample SD **{100*r["sample_sd"]:.3f} percentage points**, standard error **{100*r["se"]:.3f} percentage points**. Difference from paper target: **{100*(r["mean"]-.815):+.3f} percentage points**. [Per-seed scores and complete validation traces](../labs/_paper_l082_results.json). These are measured port results, not original-framework parity.')
     if portable:
         s=s.replace('](0081-','](https://avistian.github.io/relational/lessons/0081-').replace('](../labs/','](https://avistian.github.io/relational/labs/').replace('](../reference/','](https://avistian.github.io/relational/reference/')
     return s
@@ -33,7 +48,15 @@ out=propagate(s,h,w)
 torch.testing.assert_close(out,expected@h)
 torch.testing.assert_close(propagate(s,h.to_sparse(),w),out)
 torch.testing.assert_close(propagate(normalized_support(a[p][:,p]),h[p],w),out[p])
-print('CHECK: sparse/dense states, equivariance; B =',float(out[1]))''',
+# Keep the graph; introduce a second feature and a non-identity channel map.
+h2=torch.tensor([[2.,1.],[4.,0.],[8.,2.],[10.,1.]])
+w2=torch.tensor([[1.,-1.],[2.,1.]])
+want=expected@torch.tensor([[4.,-1.],[4.,-4.],[12.,-6.],[12.,-9.]])
+actual=propagate(s,h2,w2)
+torch.testing.assert_close(actual,want)
+torch.testing.assert_close(propagate(s,h2.to_sparse(),w2),want)
+assert (actual[:,1]<0).all(), 'propagate must preserve negative logits'
+print('CHECK: dense/sparse inputs, learned channel mixing, signed logits and equivariance')''',
 'masked_objective':'''z=torch.tensor([[1.,0.],[0.,1.],[2.,0.]],requires_grad=True)
 y=torch.tensor([0,1,1]);index=torch.tensor([0,1]);w0=torch.ones(2,2,requires_grad=True)
 loss=masked_objective(z,y,index,w0);loss.backward()
@@ -41,7 +64,19 @@ assert torch.count_nonzero(z.grad[2])==0
 torch.testing.assert_close(w0.grad,.0005*w0)
 y2=y.clone();y2[2]=0
 torch.testing.assert_close(loss,masked_objective(z,y2,index,w0))
-print('CHECK: held-out labels excluded, first-layer L2 coefficient exact')'''}
+# Masked OUTPUT gradients do not imply masked INPUT gradients.
+features=torch.tensor([[.2],[.4],[.8],[1.]],requires_grad=True)
+logits=propagate(s,features,torch.tensor([[1.,-1.]]))
+logits.retain_grad()
+labels=torch.tensor([0,1,0,1]);train=torch.tensor([1])
+objective=masked_objective(logits,labels,train,torch.zeros(1,2))
+objective.backward()
+assert torch.count_nonzero(logits.grad[[0,2,3]])==0
+assert features.grad[0].abs().item()>0 and features.grad[2].abs().item()>0
+assert features.grad[3].item()==0
+changed=labels.clone();changed[[0,2,3]]=1-changed[[0,2,3]]
+torch.testing.assert_close(objective,masked_objective(logits,changed,train,torch.zeros(1,2)))
+print('CHECK: held-out labels excluded; neighboring features receive gradients; isolated D does not')'''}
 
 def inline(solution):
     source=(LAB/'relkit/gcn_l082.py').read_text();cells=[]
@@ -55,9 +90,12 @@ def inline(solution):
         if isinstance(node,ast.FunctionDef) and node.name in CHECKS:cells.append(nbf.v4.new_code_cell(CHECKS[node.name]))
     return cells
 
-def build(keep_execution=False):
+def build(keep_execution=False,reset_execution=False):
+    if keep_execution and reset_execution:raise ValueError("Choose preserved or fresh execution, not both")
     from _walkthrough_delivery import snapshot, finalize
     snapshot(82)
+    from _figures_l082 import channels
+    channels()
     head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{TITLE}</title>'+''.join(f'<link rel="stylesheet" href="../assets/{n}.css">' for n in ['lesson','message-passing-viz','mpnn-lesson'])+'</head><body><article>'
     head+=f'<nav><a href="../index.html">Course</a> · <a href="0081-mpnn-framework.html">Lesson 81</a></nav><header><p>Year 3 · Quarter 1 · Lesson 082</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/solutions/{SLUG}.ipynb">Solution</a> · <a href="../labs/l082-reproduction.md">Reproduce</a></aside>'
     scripts=''.join(f'<script src="../assets/{n}.js"></script>' for n in ['retrieval-pool','retrieval-bank','predict','message-passing-viz','teachback','l082-gcn'])
@@ -106,7 +144,7 @@ A close mean is not protocol identity. The port has different framework/RNG; ori
 '''
     (ROOT/'reference'/f'{SLUG}.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GCN contract card</title><link rel="stylesheet" href="../assets/lesson.css"><article>'+render(ref)+'</article></html>')
     print('Built L082 lesson, notebooks, preview and reference')
-    finalize(82)
+    finalize(82,reset_execution=reset_execution)
 if __name__=='__main__':
     import sys
-    build(keep_execution='--keep-execution' in sys.argv)
+    build(keep_execution='--keep-execution' in sys.argv,reset_execution='--reset-execution' in sys.argv)

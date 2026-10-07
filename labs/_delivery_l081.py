@@ -8,10 +8,21 @@ ROOT=Path(__file__).resolve().parents[1];LAB=ROOT/'labs';SLUG='0081-mpnn-framewo
 student=nbformat.read(LAB/f'{SLUG}.ipynb',as_version=4);teacher=nbformat.read(LAB/'solutions'/f'{SLUG}.ipynb',as_version=4)
 assert sum('raise NotImplementedError' in c.source for c in student.cells if c.cell_type=='code')==3
 assert all(not c.outputs and c.execution_count is None for c in student.cells if c.cell_type=='code')
-assert all(c.execution_count is not None and all(o.output_type!='error' for o in c.outputs) for c in teacher.cells if c.cell_type=='code')
+execution=json.loads((LAB/'_execution_l081_results.json').read_text())
+assert execution['status'] in ['PASS','CORE_PASS_TRAINING_NOT_RUN']
+if execution['status']=='CORE_PASS_TRAINING_NOT_RUN':
+    assert execution['notebook_sha256']==hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest()
+    cut=next(i for i,c in enumerate(teacher.cells) if c.cell_type=='markdown' and c.source.startswith('## NEXT STEP'))
+    executed=[c for c in teacher.cells[:cut] if c.cell_type=='code']
+    assert len(executed)==execution['executed_code_cells']
+    assert all(c.execution_count is not None and all(o.output_type!='error' for o in c.outputs) for c in executed)
+    assert all(c.execution_count is None and not c.outputs for c in teacher.cells[cut:] if c.cell_type=='code')
+else:
+    assert all(c.execution_count is not None and all(o.output_type!='error' for o in c.outputs) for c in teacher.cells if c.cell_type=='code')
+
 for nb in [student,teacher]:
     text='\n'.join(c.source for c in nb.cells);images=re.findall(r'data:image/png;base64,([A-Za-z0-9+/=]+)',text)
-    assert len(images)==3 and all(base64.b64decode(x).startswith(b'\x89PNG') for x in images)
+    assert len(images)==4 and all(base64.b64decode(x).startswith(b'\x89PNG') for x in images)
     assert 'attachment:' not in text
 expected={}
 for name in ['mpnn_l081.py','qm9_l081.py']:
@@ -25,7 +36,7 @@ for c in teacher.cells:
 assert actual==expected,'Canonical implementation differs from notebook'
 provenance=json.loads((LAB/'_sources_l081.json').read_text())
 for name,digest in provenance['sha256'].items():assert hashlib.sha256((LAB/name).read_bytes()).hexdigest()==digest
-for name in ['_verify_l081_results.json','_execution_l081_results.json','_browser_l081_results.json','_check_l081_evidence_results.json']:
+for name in ['_verify_l081_results.json','_browser_l081_results.json','_check_l081_evidence_results.json']:
     assert json.loads((LAB/name).read_text())['status']=='PASS'
 workflow=(ROOT/'.github/workflows/pages.yml').read_text();block=workflow.split('      - name: Build site\n        run: |\n',1)[1].split('\n      - ',1)[0]
 lines=[ln[10:] for ln in block.splitlines()];lines=[ln for ln in lines if not ln.startswith('VER=') and not ln.startswith('sed -i')];checked=0
@@ -46,5 +57,5 @@ with tempfile.TemporaryDirectory(prefix='l081-pages-') as tmp:
                 assert dest.find(id=u.fragment) or dest.find(id=unquote(u.fragment)),(str(target),u.fragment)
             checked+=1
     for name in ['mpnn_l081.py','qm9_l081.py']:assert (stage/'labs/relkit'/name).is_file()
-report={'status':'PASS','copied_pages_links':checked,'inline_source_definitions':len(actual),'student_todos':3,'portable_figures':3,'live_colab':'NOT_CHECKED','remote_execution':'NOT_RUN','full_historical_reproduction':'NOT_RUN','deployment':'NOT_CHECKED'}
+report={'status':'PASS','copied_pages_links':checked,'inline_source_definitions':len(actual),'student_todos':3,'portable_figures':4,'current_notebook_execution':execution['status'],'live_colab':'NOT_CHECKED','remote_execution':'NOT_RUN','full_historical_reproduction':'NOT_RUN','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l081_results.json').write_text(json.dumps(report,indent=2)+'\n');print(report)

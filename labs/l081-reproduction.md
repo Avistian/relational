@@ -64,3 +64,7 @@ Use a fresh output directory. The driver preserves split molecule IDs, configura
 `_verify_l081_results.json` checks the toy trace, empty neighborhoods, duplicate edges, relabeling, edge order, graph isolation, dense messages, source-equation GRU arithmetic and finite gradients. Passing these is not complete source-runtime parity.
 
 Full historical result: **NOT_RUN / protocol gaps**. Every reconstruction remains **INCOMPARABLE**, even if a score approaches .394. Missing reader/trainer/search/split details are source gaps, not details that a larger run can silently solve. Browser/notebook/delivery status is recorded separately in their result files. Nothing here marks learner mastery or deploys the course.
+
+## October 7 exercise review
+
+The current execution record is `CORE_PASS_TRAINING_NOT_RUN`: 16 core code cells ran in a fresh kernel. New checks cover directed routing, two-coordinate messages, zero empty aggregates and interleaved graph membership. Run `reviews/two-lesson-pilot-2026-10-07/verify.py 81` from the repository with the lab Python for independent loop oracles and mutation checks. The revised trace follows edge rows through node updates to separate graph outputs. Saved QM9 smoke results were not rerun; historical paper reproduction remains NOT_RUN. `--reset-execution` on the builder clears prior outputs when exercise code changes.

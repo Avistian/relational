@@ -60,4 +60,29 @@ def build():
     fig,ax=plt.subplots(figsize=(9,5));points=ax.scatter(z[:,0],z[:,1],c=y.numpy(),cmap='tab10',s=7,alpha=.7);ax.set(xlabel='Hidden-state PC1',ylabel='Hidden-state PC2',title='All Cora nodes • seed 0 • colors shown after training');fig.colorbar(points,ax=ax,label='Class index');save(fig,'embedding')
     np.savez_compressed(OUT/'hidden-seed0.npz',hidden=h,pca=z,labels=y.numpy())
     (OUT/'embedding-evidence.json').write_text(json.dumps({'seed':0,'epochs':result['epochs'],'test_accuracy':result['test_accuracy'],'projection':'PCA via centered SVD; all nodes; visualization only','pca_variance_fraction':(sv[:2]**2/(sv**2).sum()).tolist()},indent=2)+'\n')
-if __name__=='__main__':build()
+
+
+def channels():
+    """Deterministic teaching arithmetic only; does not run the Cora trainer."""
+    OUT.mkdir(parents=True,exist_ok=True)
+    h=np.array([[2.,1.],[4.,0.],[8.,2.],[10.,1.]])
+    w=np.array([[1.,-1.],[2.,1.]])
+    support=np.array([[.5,6**-.5,0,0],[6**-.5,1/3,6**-.5,0],[0,6**-.5,.5,0],[0,0,0,1]])
+    mapped=h@w;pre=support@mapped
+    fig,axs=plt.subplots(3,1,figsize=(6.4,8.6));fig.subplots_adjust(hspace=.45)
+    for ax in axs:ax.axis('off')
+    stages=[('1  CHANNEL MIXING · same W at every node',h,mapped,['Node','H · input','HW · transformed']),
+            ('2  GRAPH MIXING · same S for both channels',mapped,pre,['Node','HW','S(HW)']),
+            ('3  ACTIVATION · outside the linear helper',pre,np.maximum(0,pre),['Node','Linear output','After ReLU'])]
+    for ax,(title,before,after,labels) in zip(axs,stages):
+        ax.set_title(title,fontsize=12,weight='bold',loc='left')
+        rows=[[name,', '.join(f'{v:.3f}' for v in a),', '.join(f'{v:.3f}' for v in b)] for name,a,b in zip('ABCD',before,after)]
+        table=ax.table(cellText=rows,colLabels=labels,colWidths=[.13,.42,.45],cellLoc='center',bbox=[0,0,1,.92])
+        table.auto_set_font_size(False);table.set_fontsize(11)
+        for j in range(3):table[(2,j)].set_facecolor('#dceaf5')
+    fig.suptitle('Trace B across features, neighbors and ReLU',fontsize=14,weight='bold')
+    fig.text(.12,.025,'W = [[1, −1], [2, 1]] · rounded to 3 decimals\nHidden layer: apply ReLU. Final logits: keep signed values.',fontsize=11,color=INK)
+    save(fig,'channels')
+
+if __name__=='__main__':
+    build();channels()

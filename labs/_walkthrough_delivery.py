@@ -1,7 +1,7 @@
 """Keep the shared walkthrough portable when a lesson's existing builder runs.
 
-Only explanatory cells/assets change. Saved execution is retained only when the
-entire ordered code-cell source is identical; it is never labeled a fresh run.
+By default only explanatory cells/assets change. Saved execution is retained only when the
+entire ordered code-cell source is identical; it is never labeled a fresh run. An explicit reset discards prior execution.
 """
 from pathlib import Path
 import base64
@@ -32,7 +32,7 @@ def portable(text):
     text=text.replace('href="../reference/0091-0100-model-map.html"','href="https://avistian.github.io/relational/reference/0091-0100-model-map.html"')
     return text
 
-def finalize(number, preview='student'):
+def finalize(number, preview='student', reset_execution=False):
     slug=next((ROOT/'lessons/content').glob(f'{number:04}-*.md')).stem
     page=ROOT/'lessons'/f'{slug}.html'
     html=page.read_text()
@@ -47,7 +47,9 @@ def finalize(number, preview='student'):
             nb.cells.insert(1,nbformat.v4.new_markdown_cell(portable('<!-- depth-walkthrough:start -->'+block+'<!-- depth-walkthrough:end -->')))
         for cell in nb.cells:
             if cell.cell_type=='markdown':cell.source=portable(cell.source)
-        previous=_SAVED.get(str(p))
+        # An explicit exercise rebuild starts with unexecuted cells. Never attach
+        # historical outputs or execution metadata to changed code.
+        previous=None if reset_execution else _SAVED.get(str(p))
         if previous:
             old=[c for c in previous.cells if c.cell_type=='code'];new=[c for c in nb.cells if c.cell_type=='code']
             if [c.source for c in old]!=[c.source for c in new]:
@@ -76,9 +78,9 @@ def finalize(number, preview='student'):
     (ROOT/'labs/html'/f'{slug}.html').write_text('\n'.join(line.rstrip() for line in str(soup).splitlines())+'\n')
 
     record=ROOT/'labs'/f'_execution_l{number:03}_results.json'
-    if record.exists():
+    if record.exists() and not reset_execution:
         import json
         saved=json.loads(record.read_text())
-        if saved.get('prose_refresh_code_unchanged'):
+        if saved.get('prose_refresh_code_unchanged') or saved.get('status')=='CORE_PASS_TRAINING_NOT_RUN':
             saved['notebook_sha256']=hashlib.sha256((ROOT/'labs/solutions'/f'{slug}.ipynb').read_bytes()).hexdigest()
             record.write_text(json.dumps(saved,indent=2)+'\n')

@@ -11,7 +11,8 @@ CAPTIONS={'trace':'Exact teaching trace; messages use old states and the isolate
 
 def figure(name,portable=False):
     src=('data:image/png;base64,'+base64.b64encode((LAB/'figures/l081'/f'{name}.png').read_bytes()).decode()) if portable else '../labs/figures/l081/'+name+'.png'
-    return f'<figure class="mpnn-figure"><small>Scroll horizontally on narrow screens to inspect the full figure.</small><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{CAPTIONS[name]}"></div><figcaption>{CAPTIONS[name]}</figcaption></figure>'
+    mobile='''<div class="mpnn-mobile-trace"><h3>One round: edges → nodes → graphs</h3><p>A—B—C is graph 0. Isolated D is graph 1. Old states: [2,4,8,10].</p><h4>1 · Send old states</h4><table><thead><tr><th>Edge</th><th>Message</th></tr></thead><tbody><tr><td>A → B</td><td>2</td></tr><tr><td>B → A</td><td>4</td></tr><tr><td>B → C</td><td>4</td></tr><tr><td>C → B</td><td>8</td></tr></tbody></table><h4>2 · Half old + half mean</h4><table><thead><tr><th>Node</th><th>Old</th><th>Mean</th><th>New</th></tr></thead><tbody><tr><td>A</td><td>2</td><td>4</td><td>3</td></tr><tr><td>B</td><td>4</td><td>5</td><td>4.5</td></tr><tr><td>C</td><td>8</td><td>4</td><td>6</td></tr><tr><td>D</td><td>10</td><td>0</td><td>5</td></tr></tbody></table><h4>3 · Read out each graph</h4><p>Graph 0: 3 + 4.5 + 6 = <strong>13.5</strong><br>Graph 1: <strong>5</strong></p></div>''' if name=='trace' and not portable else ''
+    return f'<figure class="mpnn-figure">{mobile}<small>Scroll horizontally on narrow screens to inspect the full figure.</small><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{CAPTIONS[name]}"></div><figcaption>{CAPTIONS[name]}</figcaption></figure>'
 
 
 def prose(portable=False):
@@ -36,15 +37,27 @@ CHECKS={
 'aggregate':"""m=torch.tensor([[2.],[8.],[8.]])
 torch.testing.assert_close(aggregate(m,torch.tensor([1,1,1]),4,'mean'),torch.tensor([[0.],[6.],[0.],[0.]]))
 assert aggregate(torch.empty(0,2),torch.empty(0,dtype=torch.long),3).shape==(3,2)
-print('CHECK: multiple destinations, multiplicity and empty edges')""",
+for reduction in ['sum','mean']:
+    torch.testing.assert_close(aggregate(torch.empty(0,2),torch.empty(0,dtype=torch.long),3,reduction),torch.zeros(3,2))
+m2=torch.tensor([[2.,-1.],[8.,3.],[4.,5.],[8.,3.]])
+dest=torch.tensor([1,0,1,0])
+torch.testing.assert_close(aggregate(m2,dest,3,'sum'),torch.tensor([[16.,6.],[6.,4.],[0.,0.]]))
+torch.testing.assert_close(aggregate(m2,dest,3,'mean'),torch.tensor([[8.,3.],[3.,2.],[0.,0.]]))
+print('CHECK: multiple destinations, two coordinates, multiplicity and zero empty aggregates')""",
 'mean_step':"""h=torch.tensor([[2.],[4.],[8.],[10.]])
 e=torch.tensor([[0,1,1,2],[1,0,2,1]])
 torch.testing.assert_close(mean_step(h,e),torch.tensor([[3.],[4.5],[6.],[5.]]))
 p=torch.tensor([2,0,3,1]);inverse=torch.argsort(p)
 torch.testing.assert_close(mean_step(h[p],inverse[e]),mean_step(h,e)[p])
-print('CHECK: synchronous trace and node relabeling')""",
+# A different, directed graph exposes a reversed source/destination convention.
+directed=torch.tensor([[0,1],[1,2]])
+torch.testing.assert_close(mean_step(h,directed),torch.tensor([[1.],[3.],[6.],[5.]]))
+torch.testing.assert_close(h,torch.tensor([[2.],[4.],[8.],[10.]]))
+print('CHECK: synchronous trace, directed routing, input preservation and node relabeling')""",
 'graph_sum':"""torch.testing.assert_close(graph_sum(torch.tensor([[2.],[4.],[8.],[10.]]),torch.tensor([0,0,0,1])),torch.tensor([[14.],[10.]]))
-print('CHECK: graph membership prevents cross-molecule pooling')"""}
+states=torch.tensor([[3.,-1.],[5.,2.],[4.5,3.],[6.,4.]])
+torch.testing.assert_close(graph_sum(states,torch.tensor([0,1,0,0])),torch.tensor([[13.5,6.],[5.,2.]]))
+print('CHECK: graph membership, interleaved nodes and two-coordinate pooling')"""}
 
 DEMO="""# PROVIDED: recover the mean operator with the generic interface.
 h=torch.tensor([[2.],[4.],[8.],[10.]])
@@ -115,12 +128,12 @@ def inline_cells(file,solution=False):
     return cells
 
 
-def build():
+def build(reset_execution=False):
     from _walkthrough_delivery import snapshot, finalize
     snapshot(81)
     figures();s=prose()
     head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{TITLE}</title>'+''.join(f'<link rel="stylesheet" href="../assets/{x}.css">' for x in ['lesson','message-passing-viz','mpnn-lesson'])+'</head><body><article>'
-    head+=f'<nav><a href="../index.html">Course</a> · <a href="0080-year-2-exit-exam.html">Lesson 80</a></nav><header><p>Year 3 · Quarter 1 · Lesson 081</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/l081-reproduction.md">Reproduce</a></aside>'
+    head+=f'<nav><a href="../index.html">Course</a> · <a href="0080-year-2-exit-exam.html">Lesson 80</a></nav><header><p>Year 3 · Quarter 1 · Lesson 081</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/solutions/{SLUG}.ipynb">Solution</a> · <a href="../labs/l081-reproduction.md">Reproduce</a></aside>'
     scripts=''.join(f'<script src="../assets/{x}.js"></script>' for x in ['retrieval-pool','retrieval-bank','predict','message-passing-viz','teachback','l081-mpnn'])
     (ROOT/'lessons'/f'{SLUG}.html').write_text(head+render(s)+'</article>'+scripts+'</body></html>')
     for solution in [False,True]:
@@ -155,5 +168,7 @@ Paper target: supplement Table 3 GG-NN μ, 3.94 × 0.1 = 0.394 Debye MAE. A matc
 '''
     (ROOT/'reference'/f'{SLUG}.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MPNN contract card</title><link rel="stylesheet" href="../assets/lesson.css"><article>'+render(ref)+'</article></html>')
     print('Built lesson, student, solution, prepared HTML and reference')
-    finalize(81)
-if __name__=='__main__':build()
+    finalize(81,reset_execution=reset_execution)
+if __name__=='__main__':
+    import sys
+    build(reset_execution='--reset-execution' in sys.argv)
