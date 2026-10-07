@@ -6,6 +6,8 @@
 </aside>
 <!-- sequence-review:end -->
 
+## 1 · Defend a claim, not just a score
+
 **Your checkpoint:** defend one complete RelGNN reproduction, then explain exactly what it establishes. A good score, a runnable notebook and a convincing report are different achievements.
 
 [Lesson 143](0143-relgnn-reproduction.html) exposed the distance between loading published weights and recovering a training procedure. [Lesson 145](0145-relational-graph-transformer.html) showed why an available implementation can still fail temporal and budget requirements. [Lesson 149](0149-weakest-relbench-tasks.html) made counter-evidence part of the thesis. Now combine those skills into a report another researcher can audit.
@@ -37,7 +39,15 @@ The notebook's extra validation seed 1000 is another execution check. It does no
 
 **Historical score gate:** the five-seed mean must be within a frozen **±0.20 MAE** of 3.798 to receive `CLOSE`. This is a descriptive reproduction tolerance. It is not a confidence interval, a significance test, or a definition of current near-SOTA. A better score far outside the band would need explanation too: closeness and predictive quality are different questions.
 
-**Current competitive-standing gate:** require a separate comparable benchmark audit. The [current RelBench leaderboard](https://star-project.stanford.edu/relbench/leaderboard/) displays normalized MAE, not the historical raw MAE. The [RelArena protocol](https://star-project.stanford.edu/relarena/) changes data-state, tuning and final refit rules. We retrieved the live leaderboard data rather than trusting its static “No entries yet” fallback. A numerical comparison without reconciling metric normalization and protocol would be invalid. This checkpoint does not establish current SOTA or near-SOTA.
+**Closeness and quality can rank results differently.** Keep protocol execution valid and compare hypothetical complete-track means with the fixed paper target 3.798:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Mean MAE</th><th>Distance from paper</th><th>Score gate</th></tr></thead><tbody><tr><td>3.500</td><td>0.298</td><td>Outside</td></tr><tr><td>3.798</td><td>0</td><td>Close</td></tr><tr><td>3.900</td><td>0.102</td><td>Close</td></tr></tbody></table>
+
+The lowest error is outside the closeness band, while a higher error is inside it. The gate measures resemblance to one published scalar; it is not the optimization objective. An unexpectedly good result deserves checks of population, inputs, selection and metrics before it becomes evidence of a method improvement. These are hypothetical means, separate from the measured tracks below.
+
+**Try it after the example.** Keep mean 3.798 but fail the protocol audit. What should the paper-score gate say? <details><summary>Check your reasoning</summary>INCOMPARABLE. Exact numerical agreement does not repair an invalid comparison; the protocol gate takes precedence in the actual verdict function.</details>
+
+**Current competitive-standing gate:** require a separate comparable benchmark audit. The [RelBench leaderboard](https://star-project.stanford.edu/relbench/leaderboard/) displays normalized MAE, not the historical raw MAE. The [RelArena protocol](https://star-project.stanford.edu/relarena/) changes data-state, tuning and final refit rules. The [archived audit dated 2026-09-30](../labs/evidence/l150/current-context.json) retrieved the leaderboard data rather than trusting its static “No entries yet” fallback. Treat it as a dated protocol comparison; recheck the current board before making a new competitive claim. A numerical comparison without reconciling metric normalization and protocol would be invalid. This checkpoint does not establish current SOTA or near-SOTA.
 
 [[FIG:gates]]
 

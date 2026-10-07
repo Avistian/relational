@@ -6,6 +6,8 @@
 </aside>
 <!-- sequence-review:end -->
 
+## 1 · Treat counterexamples as evidence
+
 **The question:** where does learned relational prediction lose to a strong feature-engineered baseline—and what would change your mind about the explanation?
 
 [Lesson 148](0148-ablation-discipline.html) asked which component earns a gain. That leaves a harder question: which tasks fail to produce a gain at all? The mission is to demonstrate useful relational learning, so a weakness catalog is part of the evidence for the thesis. A catalog records counterexamples instead of hiding them behind a benchmark average.
@@ -37,6 +39,14 @@ A **query** is an entity together with a prediction cutoff. The same driver at t
 **How this extends Lesson 137.** That lesson diagnosed slices within one F1 comparison. Here we first catalog weaknesses across published tasks, then use a fresh F1 replay to practice the same diagnostic discipline. Reusing that analysis pattern does not create new cross-database evidence.
 
 **Normalization changes the question.** Figure 3 divides each regression score by that task's RDL score. Its RDL bars equal 1. This differs from [Lesson 136’s leaderboard NMAE](0136-leaderboard-literacy.html), which divides MAE by training-target standard deviation. Both remove the raw units, but their denominators and interpretations differ; do not combine their rankings. A normalized advantage of −0.35 means FE MAE is about 0.65 times RDL MAE. It does not mean a 0.35-unit error on the original target. Relative gaps can support an ordering under that normalization; they are not universal measures of business harm.
+
+**State the denominator when translating a bar into words.** Take illustrative MAEs of 10 for RDL and 6.5 for FE. They reproduce the normalized ratio 0.65, but two natural percentage statements are different:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Question</th><th>Calculation</th><th>Answer</th></tr></thead><tbody><tr><td>How much lower is FE than RDL?</td><td>(10−6.5)/10</td><td>35%</td></tr><tr><td>How much higher is RDL than FE?</td><td>(10−6.5)/6.5</td><td>53.85%</td></tr></tbody></table>
+
+Both describe the same pair of errors. “FE is 35% lower” does not mean “RDL is 35% higher.” The Figure 3 ratio fixes RDL as the denominator; a report using FE as the reference must calculate the reciprocal comparison explicitly. These illustrative values are not an additional recovered paper result.
+
+**Try it after the example.** Divide both MAEs by ten to change the reporting unit. Which raw and relative differences change? <details><summary>Check your reasoning</summary>The raw difference falls from 3.5 to 0.35 units. The ratio 0.65 and the two percentages remain unchanged. Unit invariance does not remove the choice of denominator.</details>
 
 ## 3 · The published weakness catalog
 

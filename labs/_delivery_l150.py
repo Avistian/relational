@@ -39,7 +39,7 @@ with sync_playwright() as pw:
   protocol.focus();page.keyboard.press('Space');assert host.get_attribute('data-score')=='INCOMPARABLE';host.locator('button').click()
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="fresh"]').click();predict.locator('.predict-reveal').click();assert 'complete fresh fits' in predict.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   if width==375:
@@ -77,6 +77,8 @@ with tempfile.TemporaryDirectory(prefix='l150-pages-') as tmp:
    if part.scheme or not part.path:continue
    dest=(path.parent/unquote(part.path)).resolve();assert dest.exists(),str(dest);count+=1
 paths=[R/'lessons'/(S+'.html'),R/'reference/q3-reproduction-checkpoint.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]
-before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l150.py')],check=True,capture_output=True);assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
+before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l150.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
+assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',portable_figures=4,notebook_code_cells=sum(c.cell_type=='code' for c in sol.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l150_results.json').write_text(json.dumps(r,indent=2));print(r)

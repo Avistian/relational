@@ -50,6 +50,14 @@ We group predictions into bins to inspect different prediction ranges. Each seed
 
 For each occupied bin, report its count, strict-below fraction, tie fraction and strict-above fraction. Our descriptive **median violation** is `max(0, below - .5, above - .5)`. Zero says these two empirical inequalities hold for that bin. It does not prove conditional calibration: grouping can hide local errors, finite samples fluctuate, and repeated driver queries are dependent. These plots carry counts, not unjustified independent-observation confidence intervals.
 
+**A balanced bin can hide opposing subgroup errors.** Suppose a prediction-time feature already defines groups A and B. Every prediction is 5, so all four queries enter the same prediction bin:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Group</th><th>Outcomes</th><th>Below / above</th><th>Violation</th></tr></thead><tbody><tr><td>A</td><td>1,2</td><td>1 / 0</td><td>0.5</td></tr><tr><td>B</td><td>8,9</td><td>0 / 1</td><td>0.5</td></tr><tr><td>Pooled</td><td>1,2,8,9</td><td>0.5 / 0.5</td><td>0</td></tr></tbody></table>
+
+The pooled median check passes, yet 5 is too high for every A outcome and too low for every B outcome. A median of the pooled outcomes can lie anywhere from 2 to 8; that does not make it a median conditional on each group. The example uses tiny deterministic data to prove the distinction, not to justify a population claim from two observations. Predeclare useful groups from available features and report their support before interpreting real subgroup diagnostics.
+
+**Try it after the example.** Move both groups' predictions to 2. Does that solve B's imbalance? <details><summary>Check your reasoning</summary>No. For A, one outcome is below and one is tied, so its violation is zero. Both B outcomes remain above the prediction, so its violation stays 0.5. Improving one group does not certify the other.</details>
+
 [[CALIBRATION_WIDGET]]
 
 **Lab task 2 — `median_diagnostics`.** Implement fixed-edge assignment and the tie-aware fractions. Preserve an empty bin as `n=0` with undefined statistics, rather than reporting a reassuring zero. Checks distinguish a skewed but median-balanced sample from a genuinely unbalanced one.

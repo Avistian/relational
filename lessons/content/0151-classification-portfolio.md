@@ -66,6 +66,14 @@ Final validation is reevaluated with freshly sampled neighborhoods after checkpo
 
 A **seed** controls stochastic initialization and sampling. Report all five completed seeds, their mean and **sample standard deviation**, which divides squared deviations by `n−1`. The reference and selected tracks use different seed sets, so their difference is not a paired causal estimate of the learning-rate change. This spread measures training-run variation on this task. It is not a confidence interval for performance across future databases or future years.
 
+**Average seed metrics; do not pool their score scales.** Suppose two fitted models score the same negative and positive query using these logits:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Fit</th><th>Negative</th><th>Positive</th><th>AUROC</th></tr></thead><tbody><tr><td>A</td><td>0</td><td>1</td><td>1</td></tr><tr><td>B</td><td>10</td><td>11</td><td>1</td></tr></tbody></table>
+
+Mean seed AUROC is 1. If you instead concatenate the four observations, AUROC falls to 0.75: the positive score 1 from A loses to the negative score 10 from B. That comparison never occurred within either fitted model. Adding a constant to all logits in one fit preserves its ranking, so differences in score location cannot justify pooling across fits. The repeated query identities are another reason those four observations are not four independent test queries. Forming an ensemble by combining predictions per query is a separate, explicitly defined procedure.
+
+**Try it after the example.** Subtract 10 from both scores of fit B. What changes in each seed's AUROC and in the pooled calculation? <details><summary>Check your reasoning</summary>Both seed AUROCs remain 1, but the pooled value becomes 1. A harmless within-fit shift changed the pooled answer, revealing why it is not the requested mean-over-fits statistic.</details>
+
 **Lab task 2 — `summarize_track`.** Require exactly the five planned unique seeds, the correct track and 20 completed epochs. Reject mixed search and evaluation runs. Calculate mean and sample SD only after those checks.
 
 [[PREDICT]]

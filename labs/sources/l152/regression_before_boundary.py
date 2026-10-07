@@ -43,5 +43,5 @@ def portfolio_summary(records):
     for name,key in [('val','val_mae'),('test','test_mae'),('rmse','test_rmse')]:
         values=[r[key] for r in sorted(records,key=lambda r:r['seed'])]
         result[name]=dict(mean=statistics.mean(values),sample_sd=statistics.stdev(values),values=values)
-    result.update(paper_score='CLOSE' if abs(result['test']['mean']-4.022)<=.20+8*math.ulp(4.022) else 'OUTSIDE_TOLERANCE',historical_identity='NOT_ESTABLISHED',feature_arrival_legality='NOT_ESTABLISHED',whole_paper='NOT_RUN',fresh_fe_comparison='NOT_RUN',learner='PENDING_WRITTEN_DEFENSE')
+    result.update(paper_score='CLOSE' if abs(result['test']['mean']-4.022)<=.20 else 'OUTSIDE_TOLERANCE',historical_identity='NOT_ESTABLISHED',feature_arrival_legality='NOT_ESTABLISHED',whole_paper='NOT_RUN',fresh_fe_comparison='NOT_RUN',learner='PENDING_WRITTEN_DEFENSE')
     return result

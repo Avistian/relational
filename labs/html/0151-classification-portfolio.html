@@ -7912,8 +7912,7 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="1-%C2%B7-Decide-what-the-entry-means">1 · Decide what the entry means<a class="anchor-link" href="#1-%C2%B7-Decide-what-the-entry-means">¶</a></h2><p>Answer the following retrieval questions before continuing.</p>
-<blockquote>
+<h2 id="1-%C2%B7-Decide-what-the-entry-means">1 · Decide what the entry means<a class="anchor-link" href="#1-%C2%B7-Decide-what-the-entry-means">¶</a></h2><blockquote>
 <p><strong>In plain terms.</strong> A portfolio entry is a result plus the instructions and evidence needed to interpret it. A score without those attachments cannot support your thesis.</p>
 </blockquote>
 <p>An <strong>entity-classification task</strong> assigns a binary label to one database entity at a prediction time. Here the entity is a clinical study. A <strong>query key</strong> is <code>(study_id, cutoff)</code>: the same study at another cutoff is another prediction problem. The metric is <strong>AUROC</strong>, the probability that a random positive receives a higher score than a random negative, with half credit for ties. Higher is better.</p>
@@ -8859,6 +8858,10 @@ a.anchor-link {
 <p><strong>In plain terms.</strong> A complete experiment includes the inconvenient seed. If you summarize only the outputs that arrived first, you change the experiment after seeing its outcome.</p>
 </blockquote>
 <p>A <strong>seed</strong> controls stochastic initialization and sampling. Report all five completed seeds, their mean and <strong>sample standard deviation</strong>, which divides squared deviations by <code>n−1</code>. The reference and selected tracks use different seed sets, so their difference is not a paired causal estimate of the learning-rate change. This spread measures training-run variation on this task. It is not a confidence interval for performance across future databases or future years.</p>
+<p><strong>Average seed metrics; do not pool their score scales.</strong> Suppose two fitted models score the same negative and positive query using these logits:</p>
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Fit</th><th>Negative</th><th>Positive</th><th>AUROC</th></tr></thead><tbody><tr><td>A</td><td>0</td><td>1</td><td>1</td></tr><tr><td>B</td><td>10</td><td>11</td><td>1</td></tr></tbody></table>
+<p>Mean seed AUROC is 1. If you instead concatenate the four observations, AUROC falls to 0.75: the positive score 1 from A loses to the negative score 10 from B. That comparison never occurred within either fitted model. Adding a constant to all logits in one fit preserves its ranking, so differences in score location cannot justify pooling across fits. The repeated query identities are another reason those four observations are not four independent test queries. Forming an ensemble by combining predictions per query is a separate, explicitly defined procedure.</p>
+<p><strong>Try it after the example.</strong> Subtract 10 from both scores of fit B. What changes in each seed's AUROC and in the pooled calculation? <details><summary>Check your reasoning</summary>Both seed AUROCs remain 1, but the pooled value becomes 1. A harmless within-fit shift changed the pooled answer, revealing why it is not the requested mean-over-fits statistic.</details></p>
 <p><strong>Lab task 2 — <code>summarize_track</code>.</strong> Require exactly the five planned unique seeds, the correct track and 20 completed epochs. Reject mixed search and evaluation runs. Calculate mean and sample SD only after those checks.</p>
 <p>Predict before reading: what evidence supports complete fresh training?</p>
 <table>

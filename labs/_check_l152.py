@@ -35,6 +35,11 @@ def check_summary(f):
     for field,value in [('epochs',9),('complete',False),('test_mae',float('nan')),('test_rmse',-1)]:
         broken=[dict(x) for x in rows];broken[0][field]=value;rejects(f,broken)
     assert f([dict(x,test_mae=4.3) for x in rows])['paper_score']=='OUTSIDE_TOLERANCE'
+    for boundary in [4.022-.20,4.022+.20]:
+        assert f([dict(x,test_mae=boundary) for x in rows])['paper_score']=='CLOSE', 'Inclusive tolerance boundary'
+    for outside in [4.022-.20-1e-9,4.022+.20+1e-9]:
+        assert f([dict(x,test_mae=outside) for x in rows])['paper_score']=='OUTSIDE_TOLERANCE', 'Reject materially outside boundary'
+
 
 if __name__=='__main__':
     check_metrics(keyed_metrics);check_diagnostics(median_diagnostics);check_summary(portfolio_summary)
