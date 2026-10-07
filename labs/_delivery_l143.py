@@ -43,7 +43,7 @@ with sync_playwright() as pw:
    inp.fill(str(count));inp.dispatch_event('input');assert ('Execution: COMPLETE.' if count==5 else 'Execution: INCOMPLETE.') in host.inner_text();states+=1
   flag.check();flag.dispatch_event('input');assert 'Execution: INCOMPLETE.' in host.inner_text();states+=1
   host.locator('button').click();assert 'Execution: COMPLETE.' in host.inner_text() and not flag.is_checked()
-  assert page.locator('#warmup button').count()>0 and page.locator('#l143-teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#l143-teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   page.evaluate('window.scrollTo(0,0)');page.screenshot(path=f'/tmp/l143-top-{width}.png')
@@ -87,6 +87,7 @@ paths=[R/'lessons'/f'{S}.html',R/'reference/relgnn-reproduction.html',P/f'{S}.ip
 before={str(p):sha(p) for p in paths}
 subprocess.run([sys.executable,str(P/'_figures_l143.py')],cwd=R,check=True,capture_output=True)
 subprocess.run([sys.executable,str(P/'_build_l143.py')],cwd=R,check=True,capture_output=True)
+subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],cwd=R,check=True,capture_output=True)
 assert before=={str(p):sha(p) for p in paths},'Nondeterministic build'
 report=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_javascript=True,print=True,portable_figures=4,copied_pages_links=checked,deterministic_build=True,console_errors=errors,manifest_galleries=True,canonical_inline_ast='PASS',notebook_code_sha256=digest,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l143_results.json').write_text(json.dumps(report,indent=2));print(report)

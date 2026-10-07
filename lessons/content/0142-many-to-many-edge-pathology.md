@@ -52,6 +52,14 @@ Both ordinary outputs equal 18. The source-specific composite outputs are 6 and 
 
 The qualification matters. Distinct learned maps per relation, enough hidden width, or separate channel blocks can preserve source roles even with ordinary message passing. Our collision is a proof about a specified equal-weight scalar sum, not an impossibility theorem for heterogeneous GNNs. Conversely, composite routes also compress information; their later route summation can still create collisions.
 
+**Repair this particular collision with two channels.** Keep the same graph, two synchronous sum-plus-root updates, and fixed `f=1,d=3`. Encode source, fact and destination in channel 1, and the third role in channel 2: `s→[s,0]`, `f→[1,0]`, `d→[3,0]`, `n→[0,n]`. Apply the same update coordinate by coordinate.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>World (s,n)</th><th>Destination after 2 layers</th><th>Read channel 1 − 8</th></tr></thead><tbody><tr><td>(2,8)</td><td>[10,8]</td><td>2</td></tr><tr><td>(8,2)</td><td>[16,2]</td><td>8</td></tr></tbody></table>
+
+The result is `[s+2f+2d,n]`. Summing its channels still gives 18 in both worlds, but retaining them separately permits the source-specific readout. The subtraction of 8 relies on our **fixed** fact and destination values; it is not a decoder for arbitrary inputs. This constructive control shows exactly why the scalar collision is not an impossibility proof about ordinary heterogeneous GNNs. It does not show that training will discover these projections or that finite-width channels preserve every database distinction.
+
+**Try it after the example.** If the target is `s+n`, what readout works on both rows? If `f` varies between examples, does subtracting 8 still recover `s`? <details><summary>Check your reasoning</summary>With the fixed f and d, sum both channels and subtract 8: both targets are 10. If f varies, the first channel contains an unknown 2f contribution, so subtracting a constant is insufficient.</details>
+
 The paper's motivation is a useful **inductive bias**: an architectural preference for preserving particular relational interactions. It is not a universal ordering of predictive performance. [RelGNN §3.2 and §4.2](https://arxiv.org/html/2502.06784v2#S3.SS2).
 
 **TODO 1 — incoming sums:** implement `edge_sum`. Preserve the destination axis and every trailing feature/head axis. Duplicate destination indices mean sum, not overwrite. The function feeds both neural arms.

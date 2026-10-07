@@ -34,7 +34,7 @@ with sync_playwright() as pw:
     slider.fill(str(offset));slider.dispatch_event('input');scores=[3+offset,2,1+offset if member else 3,4];order=sorted(range(4),key=lambda i:(-scores[i],i));ranking=' → '.join('ABCD'[i] for i in order)
     assert 'Ranking: '+ranking+'.' in host.inner_text();states+=1
   host.locator('button').click();assert slider.input_value()=='0' and check.is_checked();slider.focus();page.keyboard.press('ArrowRight');assert slider.input_value()=='.5' or slider.input_value()=='0.5';host.locator('button').click()
-  assert page.locator('#warmup button').count()>0 and page.locator('#context-teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#context-teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   page.screenshot(path=f'/tmp/l144-top-{width}.png');host.screenshot(path=f'/tmp/l144-ranking-{width}.png')
@@ -69,6 +69,7 @@ finally:server.shutdown();server.server_close()
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 paths=[R/'lessons'/f'{S}.html',R/'reference/contextgnn.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']+list((P/'figures/l144').glob('*'));before={str(p):sha(p) for p in paths}
 subprocess.run([sys.executable,str(P/'_figures_l144.py')],cwd=R,check=True,capture_output=True);subprocess.run([sys.executable,str(P/'_build_l144.py')],cwd=R,check=True,capture_output=True)
+subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],cwd=R,check=True,capture_output=True)
 assert before=={str(p):sha(p) for p in paths},'Nondeterministic build'
 report=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_javascript=True,print=True,portable_figures=4,copied_pages_links=checked,deterministic_build=True,console_errors=errors,manifest_galleries=True,canonical_inline_ast='PASS',notebook_code_sha256=digest,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l144_results.json').write_text(json.dumps(report,indent=2));print(report)

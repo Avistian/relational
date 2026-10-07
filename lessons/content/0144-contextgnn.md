@@ -10,7 +10,7 @@
 
 [Lesson 143](0143-relgnn-reproduction.html) asked what makes a reproduction claim defensible. Its model predicted one number for one entity. Recommendation adds a different problem: **which of many candidate entities should come first?** Better message passing alone does not decide how to represent each candidate relative to the query. This lesson connects the mission’s relational-model thesis to a concrete sponsor recommendation task.
 
-Recall [bipartite graphs](0095-bipartite-graphs.html), temporal sampling, and validation-only selection: what identifies a query when a facility appears at several dates? What is lost if every facility sees the same sponsor embedding? Why does a validation-selected configuration need a separate test score?
+Prerequisites: [bipartite graphs](0095-bipartite-graphs.html), query-owned temporal sampling, and validation-only selection. The same facility at two dates defines two different queries.
 
 ## 1 · Why two towers leave something unresolved
 
@@ -62,6 +62,14 @@ Initialize a matrix of tower scores with shape `B × N`: `B` query rows and `N` 
 [[RANKING_WIDGET]]
 
 The illustration holds learned vectors fixed, so changing only the offset isolates score calibration. Changing graph membership is a second intervention. A sponsor outside the sampled graph is not necessarily new or never previously encountered; sampling may simply omit it.
+
+**Only the relative branch offset changes the ranking.** Fix one local sponsor A and two distant sponsors B and C. After replacement, let their logits be `[1,2,0]`. The following trace uses a single positive label A, a valid special case of the training loss:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Offsets changed</th><th>Final A,B,C</th><th>Top</th><th>Loss</th></tr></thead><tbody><tr><td>Neither</td><td>1,2,0</td><td>B</td><td>1.408</td></tr><tr><td>Both +7</td><td>8,9,7</td><td>B</td><td>1.408</td></tr><tr><td>Local +2</td><td>3,2,0</td><td>A</td><td>0.349</td></tr></tbody></table>
+
+For this one-positive case, loss is `−log(exp(score_A) / Σ exp(score))`. Adding 7 to every score multiplies numerator and denominator by the same factor, so probabilities, loss and rank are unchanged. Raising just the local branch changes its competition with the distant branch. The toy holds graph states, membership and every other parameter fixed; it isolates offset behavior rather than predicting a trained MAP improvement. [Released score construction](../labs/sources/l144/contextgnn/nn/models/contextgnn.py)
+
+**Try it after the example.** Increase both branch offsets by another 100. Which entries change, and which ranking and loss values remain? <details><summary>Check your reasoning</summary>Every final logit rises by 100, while each row retains the same ranking, probabilities and loss. Stable log-softmax subtracts a shared maximum instead of exponentiating these large raw scores directly.</details>
 
 **TODO 1 — `fuse_scores`.** Implement the owner-specific replacement without mutating the supplied tower matrix. The full model calls your function. The CHECK verifies two queries that share a candidate ID and checks gradients: overwritten tower entries must receive no gradient through the final score, while local values and offsets must receive it.
 

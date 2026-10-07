@@ -27,7 +27,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- body=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','teachback','atomic-route-viz'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 141 — '+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0140-rdl-reproduction-checkpoint.html">Lesson 140</a></nav><header><p class="route-kicker">Year 4 · Quarter 3 · Lesson 141</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))
@@ -143,9 +143,14 @@ for solution in [False,True]:
  for i,c in enumerate(cells):c.id=f'l141-{i:03d}'
  notebook=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'}})
  path=P/('solutions' if solution else '')/f'{S}.ipynb'
- # Preserve executed output only when the complete source/metadata input is unchanged.
+ # Prose edits preserve execution evidence only when every ordered code cell is unchanged.
  if solution and path.exists():
   old=nb.read(path,4)
-  if [c.source for c in old.cells]==[c.source for c in cells]:notebook=old
+  notebook.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code']
+  current=[c for c in cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for before,after in zip(previous,current):
+    after.outputs=before.outputs;after.execution_count=before.execution_count;after.metadata=before.metadata
  nb.write(notebook,path)
 print('Built lesson, reference and both standalone notebooks')

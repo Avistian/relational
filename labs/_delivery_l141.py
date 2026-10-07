@@ -47,7 +47,7 @@ with sync_playwright() as pw:
     assert f'route output {expected:.3f}' in a.locator('.route-readout').inner_text();states+=1
   a.locator('button').click();assert q.input_value()=='1' and noise.input_value()=='0'
   q.focus();page.keyboard.press('ArrowLeft');assert q.input_value()=='0.5';a.locator('button').click()
-  assert page.locator('#warmup button').count()>0 and page.locator('#l141-teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#l141-teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   page.evaluate('window.scrollTo(0,0)');page.screenshot(path=f'/tmp/l141-top-{width}.png')
@@ -91,6 +91,7 @@ paths=[R/'lessons'/f'{S}.html',R/'reference/composite-message-passing.html',P/f'
 before={str(p):sha(p) for p in paths}
 subprocess.run([sys.executable,str(P/'_figures_l141.py')],cwd=R,check=True,capture_output=True)
 subprocess.run([sys.executable,str(P/'_build_l141.py')],cwd=R,check=True,capture_output=True)
+subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],cwd=R,check=True,capture_output=True)
 assert before=={str(p):sha(p) for p in paths},'Nondeterministic build'
 report=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_javascript=True,print=True,portable_figures=4,copied_pages_links=checked,deterministic_build=True,console_errors=errors,manifest_galleries=True,canonical_inline_ast='PASS',notebook_code_sha256=digest,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l141_results.json').write_text(json.dumps(report,indent=2));print(report)

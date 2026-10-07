@@ -49,11 +49,13 @@ with sync_playwright() as pw:
    if hub:
     host.locator('[data-swap]').click();assert 'Ordinary after layer 2: 18.' in host.inner_text() and 'Source-route composite: 12.' in host.inner_text();states+=1
     host.locator('[data-reset]').click()
-  assert page.locator('#warmup button').count()>0 and page.locator('#l142-teachback textarea').count()==1
-  assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
+  assert page.locator('#warmup button').count()==0 and page.locator('#l142-teachback textarea').count()==1
+  page.locator('figure img').evaluate_all('(xs)=>xs.forEach(x=>x.loading="eager")')
+  page.wait_for_function('Array.from(document.querySelectorAll("figure img")).every(x=>x.complete&&x.naturalWidth>0)')
+  assert page.locator('figure img').evaluate_all('(xs)=>xs.length===5&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   page.evaluate('window.scrollTo(0,0)');page.screenshot(path=f'/tmp/l142-top-{width}.png')
-  for i in range(4):page.locator('figure').nth(i).screenshot(path=f'/tmp/l142-figure-{i}-{width}.png')
+  for i in range(5):page.locator('figure').nth(i).screenshot(path=f'/tmp/l142-figure-{i}-{width}.png')
   page.locator('#l142-hub').screenshot(path=f'/tmp/l142-hub-{width}.png')
  page.emulate_media(media='print');page.set_viewport_size(dict(width=1100,height=900));page.screenshot(path='/tmp/l142-print.png',full_page=True);page.emulate_media(media='screen')
  page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('figure img[src^="data:image/png;base64,"]').count()==4
@@ -93,6 +95,7 @@ paths=[R/'lessons'/f'{S}.html',R/'reference/many-to-many-edge-pathology.html',P/
 before={str(p):sha(p) for p in paths}
 subprocess.run([sys.executable,str(P/'_figures_l142.py')],cwd=R,check=True,capture_output=True)
 subprocess.run([sys.executable,str(P/'_build_l142.py')],cwd=R,check=True,capture_output=True)
+subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],cwd=R,check=True,capture_output=True)
 assert before=={str(p):sha(p) for p in paths},'Nondeterministic build'
-report=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_javascript=True,print=True,portable_figures=4,copied_pages_links=checked,deterministic_build=True,console_errors=errors,manifest_galleries=True,canonical_inline_ast='PASS',notebook_code_sha256=digest,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
+report=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_javascript=True,print=True,page_figures=5,portable_figures=4,copied_pages_links=checked,deterministic_build=True,console_errors=errors,manifest_galleries=True,canonical_inline_ast='PASS',notebook_code_sha256=digest,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l142_results.json').write_text(json.dumps(report,indent=2));print(report)

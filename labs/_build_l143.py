@@ -29,7 +29,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- body=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','teachback','reproduction-audit'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 143 — '+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0142-many-to-many-edge-pathology.html">Lesson 142</a></nav><header><p class="route-kicker">Year 4 · Quarter 3 · Lesson 143</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))
@@ -153,7 +153,10 @@ for solution in [False,True]:
  if solution and path.exists():
   old=nb.read(path,4)
   notebook.metadata=old.metadata
-  for new,prev in zip(notebook.cells,old.cells):
-   if new.cell_type==prev.cell_type=='code' and new.source==prev.source:new.outputs=prev.outputs;new.execution_count=prev.execution_count;new.metadata=prev.metadata
+  previous=[c for c in old.cells if c.cell_type=='code']
+  current=[c for c in cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for before,after in zip(previous,current):
+    after.outputs=before.outputs;after.execution_count=before.execution_count;after.metadata=before.metadata
  nb.write(notebook,path)
 print('Built lesson, reference and both standalone notebooks')

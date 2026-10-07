@@ -77,6 +77,14 @@ A **head** is a separate learned query/key/value projection. The denominator ran
 
 **Continue the scalar example.** Use identity key/value maps and a one-dimensional query of 1. The scores are 3 and 4; the scale is `sqrt(1)` in this illustration. Softmax gives approximately **0.269 and 0.731**, producing **3.731**. With query 0, both scores are equal: the result becomes **3.500**. The source messages are unchanged; only the destination's weighting changes.
 
+**Edge order and edge multiplicity are different.** Keep the same scalar query of 1 and the same key/value maps. Reordering the two incoming messages cannot change the sum. Repeating just one message changes the softmax denominator and its total share of attention:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Incoming values</th><th>Weight on 3</th><th>Output</th></tr></thead><tbody><tr><td>3, 4</td><td>0.269</td><td>3.731</td></tr><tr><td>3, 3, 4</td><td>0.424</td><td>3.576</td></tr><tr><td>3, 4, 3, 4</td><td>0.269</td><td>3.731</td></tr></tbody></table>
+
+In the middle row, the two copies together receive `2 / (2 + exp(1))` of the weight. Repeating **every** message equally preserves the normalized result; repeating only one does not. Distinct fact rows can legitimately produce equal vectors, so this is not an instruction to deduplicate equal embeddings. The sampler's edge multiplicities are part of the operator's input. This follows directly from the [released incoming-edge softmax and sum](../labs/sources/l141/examples__relgnn_conv.py).
+
+**Try it after the example.** Set the query to zero. Compute all three outputs and explain why permutation invariance alone cannot catch an accidentally duplicated edge. <details><summary>Check your reasoning</summary>Every edge gets equal weight: 3.5, 10/3, and 3.5. A permutation retains the same edges and multiplicities; a duplicate changes their relative counts.</details>
+
 **Predict:** will raising the query emphasize the larger fused value? Will adding an unrelated race coordinate alter this particular route's calculation?
 
 [[ATTENTION_WIDGET]]

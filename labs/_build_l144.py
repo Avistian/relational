@@ -34,7 +34,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="context-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="context-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','teachback','contextgnn-viz','contextgnn-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 144 — '+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contextgnn.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0143-relgnn-reproduction.html">Lesson 143</a></nav><header><p class="context-kicker">Year 4 · Quarter 3 · Lesson 144</p><h1>'+title+'</h1></header>'+html+'</article>'+''.join(f'<script src="../assets/{name}.js"></script>' for name in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))
@@ -142,9 +142,13 @@ for solution in [False,True]:
  cells.append(nb.v4.new_code_cell("report=dict(status='PASS',mechanism=mechanism_report,author_ranking_rows=sum(r['rows'] for r in rows),full_training='RUN' if RUN_FULL_REPRODUCTION else 'NOT_RUN',learner='PENDING_WRITTEN_DEFENSE')\nPath('l144-report.json').write_text(json.dumps(report,indent=2))\nprint(report)"))
  for i,c in enumerate(cells):c.id=f'l144-{i:03d}'
  notebook=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'}});path=P/('solutions' if solution else '')/f'{S}.ipynb';path.parent.mkdir(parents=True,exist_ok=True)
- if path.exists():
+ if solution and path.exists():
   old=nb.read(path,4)
-  if len(old.cells)==len(cells) and all(a.cell_type==b.cell_type and a.source==b.source for a,b in zip(old.cells,cells)):
-   notebook=old
+  notebook.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code']
+  current=[c for c in cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for before,after in zip(previous,current):
+    after.outputs=before.outputs;after.execution_count=before.execution_count;after.metadata=before.metadata
  nb.write(notebook,path)
 print('Built L144 lesson, reference, student and solution')

@@ -10,8 +10,6 @@
 
 [Lesson 141](0141-composite-message-passing.html) exposed the atomic-route computation. [Lesson 142](0142-many-to-many-edge-pathology.html) tested why mixing roles can matter and compared two architectures. Neither recovered the original training history. Now the unresolved question is operational: **what must match before a number becomes reproduction evidence?** This serves our mission of making relational-model claims that survive independent scrutiny.
 
-Start from memory: why does a two-edge route fit inside one composite layer? Why is validation allowed to choose an epoch while test is not? Name an example where a close score hides a different experiment.
-
 ## 1 · Freeze the claim before running
 
 The named target is **RelGNN, rel-f1/driver-position, Table 2, test MAE 3.798** in [Chen et al., ICML 2025, §5.2](https://arxiv.org/html/2502.06784v2#S5.SS2). The paper reports five-run averages. We select one complete task from its benchmark, not the whole paper and not a reduced query sample.
@@ -45,6 +43,14 @@ The compatibility reconstruction changes only this column to numerical. It then 
 [[FIG:compatibility]]
 
 **TODO 1 — `verify_numeric_layout`:** check dimension, finite values, and ordered mean/std agreement. Reject an order swap even when every shape still matches. This function guards the actual compatibility materialization in the full notebook lane. Try predicting which check catches a wrong second column before running it.
+
+**Matching moments do not uniquely identify columns.** Consider a separate two-row diagnostic with columns `A=[−1,1]` and `B=[1,−1]`. Both have mean 0 and population standard deviation 1. Either column order therefore passes the same ordered-moment check, yet a saved linear weight vector `[1,2]` behaves differently:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Row</th><th>Correct input [A,B]</th><th>Correct output</th><th>Swapped output</th></tr></thead><tbody><tr><td>1</td><td>[−1,1]</td><td>1</td><td>−1</td></tr><tr><td>2</td><td>[1,−1]</td><td>−1</td><td>1</td></tr></tbody></table>
+
+Here the numerical normalization leaves values unchanged. The outputs are `A+2B` versus `B+2A`. A buffer match is a useful rejection test for incompatible candidates; it is not a feature-identity certificate. This is a constructed ambiguity, **not** a claim that the two F1 columns have equal moments. A historical ordered schema or authenticated row-level preprocessing evidence would strengthen the identity claim beyond this helper's checks.
+
+**Try it after the example.** Change the saved weights to `[1,1]`. Does the swap still change predictions? Does agreement then identify the correct schema? <details><summary>Check your reasoning</summary>Both orders produce zero on both rows. The symmetric readout hides the swap; equal outputs still do not establish which feature occupied each input position.</details>
 
 The untouched freshly inferred graph goes to the training lane. The separately reconstructed graph goes to checkpoint replay. Comparing their scores does **not** isolate the feature-type effect: weights and training histories also differ.
 
