@@ -119,6 +119,16 @@ The three Tier-A offline datasets are sklearn's Wine, Breast Cancer Wisconsin Di
 
 **Observed pattern.** On Digits, frozen SCARF beats random features at every measured budget, yet fine-tuned SCARF has a negative mean gain over scratch from 20% onward. On Wine, the primary comparison ties at 40%, 70% and 100%. On Breast Cancer, the 40–70% bracket is built from mean differences smaller than one percentage point. These patterns make the choice of control and test-set resolution central to the conclusion.
 
+**Worked resolution check.** Each Wine test split contains 36 rows. One additional correct prediction changes one seed's accuracy by `1/36 = 2.78` percentage points. If that is the only changed prediction across three paired seeds, their mean gain moves by `1/(36×3) = 0.93` points. A mean gain just above zero can therefore reflect a single net correct decision across the repetitions.
+
+| Net extra correct | Mean gain (pp) |
+|---:|---:|
+| −1 | −0.93 |
+| 0 | 0 |
+| +1 | +0.93 |
+
+These 108 prediction outcomes do not imply 108 distinct people or independent trials: seed test sets can overlap. **Try it:** suppose adjacent budgets have net gains +1 and −1. The strict sign rule reports a crossing, but neither side establishes a practically meaningful advantage. Prespecify a useful margin and examine paired disagreements and uncertainty before recommending a switch. Do not silently redefine the recorded strict-crossing statistic after seeing this example.
+
 A zero-width interval can occur when all three paired gains happen to be identical. It reports zero observed repetition spread, not certainty about new samples.
 
 **Read in order.** First inspect the primary matched neural comparison. Next ask whether the frozen representation comparison agrees. Finally inspect raw logistic and trees before recommending a recipe. A disagreement between probe and fine-tuning results is a diagnosis target, not an arithmetic contradiction: supervised updates can change what information the encoder preserves.

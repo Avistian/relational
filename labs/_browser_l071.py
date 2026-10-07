@@ -11,6 +11,8 @@ if __name__=='__main__':
             page=browser.new_page(viewport={'width':width,'height':900})
             page.on('pageerror',lambda error:errors.append(str(error)))
             page.goto((ROOT/'lessons'/f'{SLUG}.html').as_uri())
+            page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")')
+            page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
             assert page.locator('#mask-trace input').count()==3
             assert 'actually changed 1/3' in page.locator('.vime-readout').inner_text()
             page.locator('#mask-trace input').nth(2).check()
@@ -23,7 +25,7 @@ if __name__=='__main__':
                 assert 'Clean-anchor MSE = '+expected in page.locator('#consistency-trace output').inner_text()
             slider.focus();page.keyboard.press('ArrowLeft')
             assert 'Clean logit = 0.9' in page.locator('#consistency-trace output').inner_text()
-            assert page.locator('#warmup').inner_text().strip()
+            assert page.locator('#warmup').count()==0, 'Opening review must remain removed'
             assert page.locator('#prediction').inner_text().strip()
             assert page.locator('#teachback textarea').count()==1
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1'), 'Page overflow'
@@ -34,7 +36,7 @@ if __name__=='__main__':
                 loc.scroll_into_view_if_needed()
                 dest=f'/tmp/l071-{name}-{width}.png';page.screenshot(path=dest);screens.append(dest)
             page.emulate_media(media='print')
-            assert page.locator('figure img').count()==5
+            assert page.locator('figure img').count()==6
             page.close()
         # Static course access remains when JavaScript is unavailable.
         page=browser.new_page(java_script_enabled=False)
@@ -44,7 +46,7 @@ if __name__=='__main__':
             else:assert page.locator(f'a[href="lessons/{SLUG}.html"]').count()>=1
         page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri())
         assert page.locator('#lab-exercises').count()==1
-        assert page.locator('img[src^="data:image/png;base64,"]').count()==5
+        assert page.locator('img[src^="data:image/png;base64,"]').count()==6
         # Verify the actual manifest-driven course navigation over HTTP as well.
         from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
         from functools import partial
@@ -54,7 +56,10 @@ if __name__=='__main__':
         try:
             live=browser.new_page()
             live.goto(f'http://127.0.0.1:{server.server_port}/index.html')
-            live.locator(f'#lesson-nav a[href="lessons/{SLUG}.html"]').wait_for()
+            link=live.locator(f'#lesson-nav a[href="lessons/{SLUG}.html"]')
+            link.wait_for(state='attached')
+            link.evaluate("e=>{for(let p=e.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;}")
+            link.wait_for(state='visible')
             live.goto(f'http://127.0.0.1:{server.server_port}/notebooks.html')
             live.locator(f'#nb-list a[href="labs/{SLUG}.ipynb"]').first.wait_for()
             live.close()

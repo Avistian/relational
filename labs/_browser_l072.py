@@ -11,6 +11,8 @@ def run():
             page=browser.new_page(viewport={'width':width,'height':950})
             page.on('pageerror',lambda e:errors.append(str(e)))
             page.goto((ROOT/'lessons'/f'{SLUG}.html').as_uri())
+            page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")')
+            page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
             assert '0.3133' in page.locator('#loss-trace output').inner_text()
             page.locator('#loss-trace select').select_option('subtab')
             assert '0.5514' in page.locator('#loss-trace output').inner_text()
@@ -28,7 +30,7 @@ def run():
             page.locator('#subset-trace input').nth(0).click()
             assert page.locator('#subset-trace input:checked').count()==1
             page.locator('#subset-trace input').nth(1).check();page.locator('#subset-trace input').nth(2).check()
-            assert page.locator('#warmup').inner_text().strip()
+            assert page.locator('#warmup').count()==0, 'Opening review must remain removed'
             assert page.locator('#prediction').inner_text().strip()
             assert page.locator('#teachback textarea').count()==1
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1'), 'Page has horizontal overflow'
@@ -36,7 +38,7 @@ def run():
             for selector,name in [('figure','scarf'),('figure','subtab'),('#loss-trace','loss'),('#subset-trace','subset')]:
                 loc=page.locator(selector).nth(1 if name=='subtab' else 0);loc.scroll_into_view_if_needed()
                 dest=f'/tmp/l072-{name}-{width}.png';page.screenshot(path=dest);screens.append(dest)
-            page.emulate_media(media='print');assert page.locator('figure img').count()==4
+            page.emulate_media(media='print');assert page.locator('figure img').count()==6
             page.close()
         page=browser.new_page(java_script_enabled=False)
         for filename in ['index.html','notebooks.html']:
@@ -44,7 +46,7 @@ def run():
             if filename=='index.html':assert page.locator('#lesson-nav').count()==1
             else:assert page.locator(f'a[href="lessons/{SLUG}.html"]').count()>=1
         page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri())
-        assert page.locator('img[src^="data:image/png;base64,"]').count()==4
+        assert page.locator('img[src^="data:image/png;base64,"]').count()==6
         assert page.locator('#lab-exercises').count()==1
         browser.close()
     assert not errors,errors

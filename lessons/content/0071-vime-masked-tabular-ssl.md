@@ -156,6 +156,17 @@ The paper's Eqs. 9–10 write squared difference from the clean prediction. If i
 
 Expand each difference as `(a_k−mean(a)) + (mean(a)−c)`. The cross-term sums to zero because deviations from the mean sum to zero. The two objectives coincide only when the clean value equals the mean of the augmented predictions. This algebra applies to the same output coordinate and representation; switching between logits and probabilities introduces a further difference.
 
+### Same probabilities can still have a nonzero logit penalty
+
+Softmax ignores a common offset added to every class logit in one view. For two classes, views `[2,0]` and `[12,10]` both predict approximately `[0.8808,0.1192]`: their logit difference is 2 in both cases. Yet their mean logits are `[7,5]`, and each coordinate's population variance is `(25+25)/2 = 25`. The released consistency loss is therefore **25**, while the variance of their class probabilities is **0**.
+
+| Logit views | Same probabilities? | Loss |
+|---|---|---:|
+| `[2,0]` and `[2,0]` | Yes | 0 |
+| `[2,0]` and `[12,10]` | Yes | 25 |
+
+This is a consequence of the released objective, not a claim that the implementation is broken. It regularizes absolute logits as well as predicted class distributions. Replacing it with probability variance or centering each view's logits would change the training rule and require a separately labeled experiment. **Try it:** replace the offset 10 by 4. Probabilities remain equal; the logit loss becomes 4. Explain why the loss scales with the square of the offset.
+
 <div id="consistency-trace" class="vime-widget"></div>
 
 **Failure case.** If corruption removes the feature that determines the true class, demanding unchanged predictions can suppress useful task information. Small consistency loss alone is weak evidence: a constant predictor has zero view variance. Always measure supervised task performance too.

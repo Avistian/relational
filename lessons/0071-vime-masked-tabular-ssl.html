@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>071 · VIME: learn from unlabeled tabular rows</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/vime-lesson.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0070-foundation-model-checkpoint.html">Previous lesson</a></nav><header><p>Year 2 · Quarter 4 · Lesson 071</p><h1>VIME: learn from unlabeled tabular rows</h1></header><aside class="lab-access"><strong>Lesson package · implement three live operations</strong><nav>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>071 · VIME: learn from unlabeled tabular rows</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/vime-lesson.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0070-foundation-model-checkpoint.html">Previous lesson</a> · <a href="0072-scarf-subtab-contrastive-views.html">Next lesson</a></nav><header><p>Year 2 · Quarter 4 · Lesson 071</p><h1>VIME: learn from unlabeled tabular rows</h1></header><aside class="lab-access"><strong>Lesson package · implement three live operations</strong><nav>
  <a href="../labs/html/0071-vime-masked-tabular-ssl.html">Read-only lab preview</a>
  <a href="../labs/0071-vime-masked-tabular-ssl.ipynb">Download student notebook</a>
  <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0071-vime-masked-tabular-ssl.ipynb">Run in Colab after publication</a>
@@ -102,6 +102,29 @@
 <p>The paper's Eqs. 9–10 write squared difference from the clean prediction. If its value is 0.8, that loss is <code>[(0.2−0.8)²+(0.6−0.8)²]/2 = 0.20</code>. For any fixed clean value c,</p>
 <p><code>mean_k (a_k−c)² = variance_k(a_k) + (mean_k(a_k)−c)²</code>.</p>
 <p>Expand each difference as <code>(a_k−mean(a)) + (mean(a)−c)</code>. The cross-term sums to zero because deviations from the mean sum to zero. The two objectives coincide only when the clean value equals the mean of the augmented predictions. This algebra applies to the same output coordinate and representation; switching between logits and probabilities introduces a further difference.</p>
+<h3 id="Same-probabilities-can-still-have-a-nonzero-logit-penalty">Same probabilities can still have a nonzero logit penalty<a class="anchor-link" href="#Same-probabilities-can-still-have-a-nonzero-logit-penalty">&#182;</a></h3><p>Softmax ignores a common offset added to every class logit in one view. For two classes, views <code>[2,0]</code> and <code>[12,10]</code> both predict approximately <code>[0.8808,0.1192]</code>: their logit difference is 2 in both cases. Yet their mean logits are <code>[7,5]</code>, and each coordinate's population variance is <code>(25+25)/2 = 25</code>. The released consistency loss is therefore <strong>25</strong>, while the variance of their class probabilities is <strong>0</strong>.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Logit views</th>
+  <th>Same probabilities?</th>
+  <th style="text-align:right">Loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>[2,0]</code> and <code>[2,0]</code></td>
+  <td>Yes</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td><code>[2,0]</code> and <code>[12,10]</code></td>
+  <td>Yes</td>
+  <td style="text-align:right">25</td>
+</tr>
+</tbody>
+</table></div>
+<p>This is a consequence of the released objective, not a claim that the implementation is broken. It regularizes absolute logits as well as predicted class distributions. Replacing it with probability variance or centering each view's logits would change the training rule and require a separately labeled experiment. <strong>Try it:</strong> replace the offset 10 by 4. Probabilities remain equal; the logit loss becomes 4. Explain why the loss scales with the square of the offset.</p>
 <div id="consistency-trace" class="vime-widget"></div>
 
 <p><strong>Failure case.</strong> If corruption removes the feature that determines the true class, demanding unchanged predictions can suppress useful task information. Small consistency loss alone is weak evidence: a constant predictor has zero view variance. Always measure supervised task performance too.</p>

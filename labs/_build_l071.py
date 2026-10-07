@@ -107,7 +107,7 @@ def build():
  figures()
  body=markdown2html_mistune(manuscript()).replace('<table>', '<div class="result-scroll"><table>').replace('</table>', '</table></div>')
  scripts=''.join(f'<script src="../assets/{name}.js"></script>' for name in ['retrieval-pool','retrieval-bank','predict','teachback','mask-pretrain-viz'])
- page=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>071 · {TITLE}</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/vime-lesson.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0070-foundation-model-checkpoint.html">Previous lesson</a></nav><header><p>Year 2 · Quarter 4 · Lesson 071</p><h1>{TITLE}</h1></header>{launcher()}{body}</article>{scripts}</body></html>'
+ page=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>071 · {TITLE}</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/vime-lesson.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0070-foundation-model-checkpoint.html">Previous lesson</a> · <a href="0072-scarf-subtab-contrastive-views.html">Next lesson</a></nav><header><p>Year 2 · Quarter 4 · Lesson 071</p><h1>{TITLE}</h1></header>{launcher()}{body}</article>{scripts}</body></html>'
  (REPO/'lessons'/f'{SLUG}.html').write_text(page)
  for solution in [False,True]:
   dest=ROOT/('solutions' if solution else '')/f'{SLUG}.ipynb';dest.parent.mkdir(exist_ok=True)
