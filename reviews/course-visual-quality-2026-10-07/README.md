@@ -39,3 +39,11 @@ When changing an authored graph, regenerate `assets/architecture-routes.json` wi
 ## Limits
 
 Dense original plots and detailed architecture references still use full-size inspection where appropriate. Native phone layouts preserve graph dependencies but present them as linked blocks rather than reproducing the spatial arrangement of a wide graph. Portable notebook figures are static PNGs; the lesson HTML provides responsive text and native question disclosures. Colab's remote UI was not tested, and no notebooks or paper experiments were executed. Publication and live verification are recorded separately after deployment.
+
+## Publication receipt
+
+Published commit [`b416223b`](https://github.com/Avistian/relational/commit/b416223b3dcf4ed7bb5f0b5bca0e6f3f66eb7c03) passed [GitHub Pages run 37649765908](https://github.com/Avistian/relational/actions/runs/37649765908). [deployment.json](deployment.json) records build/deploy success. All **386 changed public files** match that commit byte for byte: [live-hashes.json](live-hashes.json).
+
+The live browser checks cover all **228 lessons at 1200px and 375px**. Initial checks encountered transient resource failures; affected ranges and then L071 were rechecked, with **zero unresolved issues across all 456 lesson/width pairs**. Original observations, final range reports, targeted reloads and resource byte checks are retained under `live/`; [live-verification.json](live-verification.json) explains their reconciliation. Four prepared notebooks also passed live image/render checks.
+
+The uploaded Pages artifact is **1,780,714,274 bytes** (1.78 GB decimal), about **15.15 MB larger** than the previous deployment. The existing large site remains a capacity concern; this pass did not restructure publication storage.
