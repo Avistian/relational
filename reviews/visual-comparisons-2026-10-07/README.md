@@ -21,3 +21,9 @@ Each drawing is next to its mechanism, uses native responsive reading text, supp
 - A clean Git-index Pages build and live deployment verification are recorded below when completed.
 
 The new panels extend the course's existing 42 computation traces to 46. This is a targeted visual improvement, not a claim that every lesson's pedagogy has been validated with learners.
+
+## Publication
+
+The clean Git-index Pages build passed. Commit [`3e3defce`](https://github.com/Avistian/relational/commit/3e3defce39bede6288ba239c8fa40ac9138eaf43) deployed successfully in [run 37653620456](https://github.com/Avistian/relational/actions/runs/37653620456). All **20 changed public files** match the commit byte for byte (`live-hashes.json`), and all **eight live desktop/mobile visits** passed with zero errors (`live-browser-*.json`).
+
+GitHub reported the existing artifact-size warning: **1,782,576,914 bytes**, above its stated 1 GB limit. Deployment succeeded; this follow-up adds 1,862,640 bytes. The existing site-size capacity concern remains separate from this visual revision.
