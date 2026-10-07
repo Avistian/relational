@@ -1,9 +1,18 @@
 """Behavioral checks for the exit exam; deliberately reject invalid evidence."""
 import copy
 import numpy as np
-from relkit.exit_l080 import choose_validation, binary_loss, audit_result
+from relkit.exit_l080 import choose_validation, binary_loss, audit_result, temperature_probability
 
 def check_primitives():
+    for temp in [0.,-1.,np.nan,np.inf,[1.,2.]]:
+        try: temperature_probability([[0.,2.]],temp)
+        except ValueError: pass
+        else: raise AssertionError('Invalid temperature accepted')
+    for logits in [[],[0.,2.],[[1.,2.,3.]],[[0.,np.nan]],[[0.,np.inf]]]:
+        try: temperature_probability(logits,1.)
+        except ValueError: pass
+        else: raise AssertionError('Invalid binary logits accepted')
+    np.testing.assert_array_equal(temperature_probability([[1e308,-1e308],[-1e308,1e308]],1e-308),[0.,1.])
     assert choose_validation([.4,.2,.2]) == 1
     for errors in [[],[float('nan')],[float('inf')]]:
         try: choose_validation(errors)

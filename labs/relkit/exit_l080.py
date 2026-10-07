@@ -86,7 +86,19 @@ def fit_candidate(arm,train,ytrain,val,yval,seed,candidate,cfg):
     return predict,predict(val),dict(best_epoch=best_epoch,history=history,mean=scaler.mean_.tolist(),scale=scaler.scale_.tolist())
 
 def temperature_probability(logits,temperature):
-    z=np.asarray(logits,float)/temperature;z-=z.max(1,keepdims=True);p=np.exp(z);return (p/p.sum(1,keepdims=True))[:,1]
+    """Binary class-1 probabilities; a finite positive scalar preserves ordering."""
+    raw=np.asarray(logits,float);temp=np.asarray(temperature,float)
+    if raw.ndim!=2 or raw.shape[1]!=2 or not len(raw) or not np.isfinite(raw).all():
+        raise ValueError('Finite nonempty binary logits with shape [rows,2] required')
+    if temp.ndim!=0 or not np.isfinite(temp) or temp<=0:
+        raise ValueError('Finite positive scalar temperature required')
+    with np.errstate(over='ignore',under='ignore'):
+        z=raw/temp
+        # Extreme finite inputs can overflow scaling; shift first in that case.
+        if not np.isfinite(z).all(): z=(raw-raw.max(1,keepdims=True))/temp
+        else: z-=z.max(1,keepdims=True)
+        p=np.exp(z)
+    return (p/p.sum(1,keepdims=True))[:,1]
 
 def run_experiment(root,preset,output,namespace=None):
     """No resume/overwrite. A failed run remains visibly IN_PROGRESS."""

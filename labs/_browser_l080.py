@@ -11,21 +11,23 @@ with sync_playwright() as p:
     for width in [1100,375]:
         page=browser.new_page(viewport={'width':width,'height':950});page.on('pageerror',lambda e:errors.append(str(e)))
         page.goto((ROOT/'lessons'/f'{SLUG}.html').as_uri())
-        assert page.locator('#warmup').inner_text().strip()
+        page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")')
+        page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
+        assert page.locator('#warmup').count()==0
         assert '0/4' in page.locator('#exam-gates output').inner_text()
         for box in page.locator('#exam-gates input').all():box.check()
         assert 'Submission ready' in page.locator('#exam-gates output').inner_text()
         page.locator('#exam-gates input').first.uncheck();assert '3/4' in page.locator('#exam-gates output').inner_text()
-        page.locator('details summary').click()
+        page.locator('summary').filter(has_text='Reveal the fresh author experiment').click()
         for img in page.locator('figure img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
         assert page.locator('#teachback textarea').count()==1
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
-        page.locator('details').scroll_into_view_if_needed();dest=f'/tmp/l080-results-{width}.png';page.screenshot(path=dest);screens.append(dest)
+        page.locator('details').filter(has_text='Reveal the fresh author experiment').scroll_into_view_if_needed();dest=f'/tmp/l080-results-{width}.png';page.screenshot(path=dest);screens.append(dest)
         page.emulate_media(media='print')
         if width==1100:page.pdf(path='/tmp/l080-print.pdf')
         page.close()
     page=browser.new_page(java_script_enabled=False);page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri())
-    assert page.locator('img[src^="data:image/png;base64,"]').count()==2
+    assert page.locator('img[src^="data:image/png;base64,"]').count()==3
     for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
     page.goto((ROOT/'notebooks.html').as_uri());assert page.locator('#lab-80 a').count()==3
     browser.close()

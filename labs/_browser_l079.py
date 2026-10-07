@@ -11,6 +11,8 @@ with sync_playwright() as p:
     for width in [1100,375]:
         page=browser.new_page(viewport={'width':width,'height':950});page.on('pageerror',lambda e:errors.append(str(e)));page.on('requestfailed',lambda e:errors.append(e.url))
         page.goto((ROOT/'lessons'/f'{SLUG}.html').as_uri())
+        page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")')
+        page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
         w=page.locator('#budget-viz');assert 'Choose Trees' in w.locator('output').inner_text()
         w.locator('input').focus();page.keyboard.press('End');assert 'Choose ICL' in w.locator('output').inner_text()
         page.keyboard.press('Home');assert 'No feasible' in w.locator('output').inner_text()
@@ -20,15 +22,15 @@ with sync_playwright() as p:
         w.scroll_into_view_if_needed();dest=f'/tmp/l079-budget-{width}.png';page.screenshot(path=dest);screens.append(dest)
         c=page.locator('#cohort-viz');assert '1.818' in c.inner_text();c.locator('select').select_option('matched');assert '1.000' in c.inner_text();assert 'Matched names' in c.locator('output').inner_text()
         c.locator('select').select_option('all');assert 'Unequal populations' in c.locator('output').inner_text()
-        assert page.locator('#warmup').inner_text().strip();assert page.locator('#teachback textarea').count()==1
+        assert page.locator('#warmup').count()==0;assert page.locator('#teachback textarea').count()==1
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Horizontal page overflow'
         for i,img in enumerate(page.locator('figure img').all()):
-            assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0');img.scroll_into_view_if_needed();dest=f'/tmp/l079-figure{i}-{width}.png';page.screenshot(path=dest);screens.append(dest)
-        page.emulate_media(media='print');assert page.locator('figure img').count()==3
+            assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0');img.locator('xpath=ancestor::figure[1]').scroll_into_view_if_needed();dest=f'/tmp/l079-figure{i}-{width}.png';page.screenshot(path=dest);screens.append(dest)
+        page.emulate_media(media='print');assert page.locator('figure img').count()==4
         if width==1100:page.pdf(path='/tmp/l079-print.pdf')
         page.close()
     page=browser.new_page(java_script_enabled=False);page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri())
-    assert page.locator('img[src^="data:image/png;base64,"]').count()==3
+    assert page.locator('img[src^="data:image/png;base64,"]').count()==4
     for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
     page.goto((ROOT/'notebooks.html').as_uri());assert page.locator('#lab-79 a').count()==3
     browser.close()

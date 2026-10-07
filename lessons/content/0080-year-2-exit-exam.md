@@ -56,6 +56,19 @@ Write your intended prediction time, features, metric and selection budget into 
 
 The FT arm uses the pinned released architecture, including ReGLU and omission of the first attention normalization. It does not silently inherit the simpler GELU model from the earlier introductory FT lesson. The historical v2 arm loads all checkpoint tensors but uses a disclosed simple numeric wrapper rather than the paper's complete evaluation ensemble.
 
+### Temperature changes confidence, not the winning class
+
+The third TODO converts two class logits to P(y=1): divide both by a **finite positive scalar** T, subtract their row maximum for stable exponentiation, then apply softmax. Subtracting the same maximum leaves probabilities unchanged. Positive temperature preserves logit ordering, so it preserves the predicted class while changing log loss.
+
+For logits `[2,0]`, class 0 wins at both T=1 and T=2. At T=1 its probability is 0.8808; at T=2 it is 0.7311. If the label is 0, those predictions cost 0.1269 and 0.3133 nats. If the label is 1, they cost 2.1269 and 1.3133 nats. Lower confidence helps a wrong prediction and hurts a correct one; its value must be measured over validation rows.
+
+| Temperature | P(y=1) | Loss if y=0 | Loss if y=1 |
+|---:|---:|---:|---:|
+| 1 | 0.1192 | 0.1269 | 2.1269 |
+| 2 | 0.2689 | 0.3133 | 1.3133 |
+
+The actual exam compares T=0.7 and T=1 on validation data; T=2 is only a teaching example. **Try it:** adding 100 to both logits changes neither probability. A negative T reverses their order and is invalid for this contract; T=0 and nonfinite inputs must also be rejected. The revised CHECK tests these cases. Existing archived scores retain their original source identities; this guard repair does not establish a fresh full exam run.
+
 ## 3 · Run, break, repair
 
 Open the [student notebook](../labs/0080-year-2-exit-exam.ipynb). Implement three live functions: binary log loss, first-minimum validation selection, and temperature-to-probability conversion. The fresh comparison calls your functions. The CHECK cells test invalid inputs and boundary cases, not just one happy-path number.

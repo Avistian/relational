@@ -7807,7 +7807,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l080-2e5919c0ea198764-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l080-987bfd266736854d-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7883,7 +7883,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l080-dca759a8454ee7c7-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l080-9684d35de06cf753-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7961,6 +7961,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </pre></div>
 <p>The notebook exposes the same complete live operator behind <code>RUN_FRESH_COMPARISON</code>. Default solution execution audits all frozen exam predictions and performs the full four-arm/two-regime smoke with the student's functions. To reproduce the full author experiment choose <code>exam</code>. Use a new path. The notebook records its actual executed cell source alongside the result; repository hashes alone do not identify edited kernel code.</p>
 <p>Live Colab, cloud execution, deployment and original paper pretraining remain NOT_CHECKED/NOT_RUN. The student must submit a fresh run plus written reasoning; author evidence is not the student's exit ticket.</p>
+<h3 id="October-2026-temperature-input-repair">October 2026 temperature-input repair<a class="anchor-link" href="#October-2026-temperature-input-repair">¶</a></h3><p>The temperature helper now rejects nonpositive/nonfinite/nonscalar temperatures and invalid binary logits, and handles finite extreme logits without overflow. Valid outputs match the previous helper bit-for-bit on 3,000 bounded cases at the declared temperatures and a teaching temperature. Archived full-exam predictions and source identities are unchanged. The revised notebook is separately executed on its 16-record smoke preset; that is not a fresh 48-record assessed exam or a historical pretraining reproduction. The review receipt lives in <code>reviews/course-iteration-2026-10-07/l080-check.json</code>.</p>
 </div>
 </div>
 </div>
@@ -9673,7 +9674,7 @@ normalization. One uncached call; no batch/resume equivalence is assumed.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l080-87c10066e517f80a-0">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l080-5ecf24f6e809df8a-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9685,7 +9686,16 @@ normalization. One uncached call; no batch/resume equivalence is assumed.</p>
 <span class="n">a</span><span class="o">=</span><span class="n">temperature_probability</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]],</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">];</span><span class="n">b</span><span class="o">=</span><span class="n">temperature_probability</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]],</span><span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 <span class="k">assert</span> <span class="mf">.5</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&lt;</span><span class="mi">1</span>
 <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">temperature_probability</span><span class="p">([[</span><span class="mi">100</span><span class="p">,</span><span class="mi">102</span><span class="p">]],</span><span class="mi">2</span><span class="p">),[</span><span class="n">b</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">'CHECK: odds, temperature and additive-logit invariance pass'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">temp</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">]]:</span>
+    <span class="k">try</span><span class="p">:</span> <span class="n">temperature_probability</span><span class="p">([[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">2.</span><span class="p">]],</span><span class="n">temp</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span> <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s1">'Reject nonpositive, nonfinite or nonscalar temperature'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">logits</span> <span class="ow">in</span> <span class="p">[[],[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">2.</span><span class="p">],[[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">2.</span><span class="p">,</span><span class="mf">3.</span><span class="p">]],[[</span><span class="mf">0.</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]],[[</span><span class="mf">0.</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]]]:</span>
+    <span class="k">try</span><span class="p">:</span> <span class="n">temperature_probability</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span><span class="mf">1.</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span> <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s1">'Require finite nonempty two-class logits'</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">temperature_probability</span><span class="p">([[</span><span class="mf">1e308</span><span class="p">,</span><span class="o">-</span><span class="mf">1e308</span><span class="p">],[</span><span class="o">-</span><span class="mf">1e308</span><span class="p">,</span><span class="mf">1e308</span><span class="p">]],</span><span class="mf">1e-308</span><span class="p">),[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'CHECK: odds, temperature, additive shifts and invalid inputs pass'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

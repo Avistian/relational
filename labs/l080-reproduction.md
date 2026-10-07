@@ -60,3 +60,7 @@ Original FT, TabM, TabPFN and TabReD paper-result reproduction: **NOT_RUN / INCO
 The notebook exposes the same complete live operator behind `RUN_FRESH_COMPARISON`. Default solution execution audits all frozen exam predictions and performs the full four-arm/two-regime smoke with the student's functions. To reproduce the full author experiment choose `exam`. Use a new path. The notebook records its actual executed cell source alongside the result; repository hashes alone do not identify edited kernel code.
 
 Live Colab, cloud execution, deployment and original paper pretraining remain NOT_CHECKED/NOT_RUN. The student must submit a fresh run plus written reasoning; author evidence is not the student's exit ticket.
+
+### October 2026 temperature-input repair
+
+The temperature helper now rejects nonpositive/nonfinite/nonscalar temperatures and invalid binary logits, and handles finite extreme logits without overflow. Valid outputs match the previous helper bit-for-bit on 3,000 bounded cases at the declared temperatures and a teaching temperature. Archived full-exam predictions and source identities are unchanged. The revised notebook is separately executed on its 16-record smoke preset; that is not a fresh 48-record assessed exam or a historical pretraining reproduction. The review receipt lives in `reviews/course-iteration-2026-10-07/l080-check.json`.

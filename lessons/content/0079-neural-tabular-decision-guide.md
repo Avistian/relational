@@ -1,4 +1,4 @@
-A fraud table has 6,000 labeled transactions, merchant IDs, a text description and timestamps. Predictions must serve next month's traffic within 5 ms per request. Write down your first baseline, validation split, strongest challenger and one result that would change your mind. **Commit to four sentences before reading on.** A model name without a split is not yet a decision.
+A fraud table has 6,000 labeled transactions, merchant IDs, a text description and timestamps. Predictions must serve next month's traffic within 5 ms per request. Use this running case to build a decision guide: a baseline, validation split, challenger and result that would change the recommendation. A model name without a split is not yet a decision.
 
 **Today's win:** write a one-page decision guide that another researcher can execute and challenge. Spend about 20 minutes on sections 1–4, then 20 minutes on the writing task. The optional audit notebook rebuilds every displayed rank from the complete corrected Lesson 60 predictions. It does not train new models.
 
@@ -87,6 +87,16 @@ Here is a **synthetic decision example**, not measured model performance. The va
 
 At 5 ms only Trees qualifies. At 10 ms TabM becomes the lowest-loss feasible candidate; at 40 ms ICL does. Under 2 ms none qualifies. The decision rule is: filter by the declared constraint, then minimize validation loss, with a prespecified tie rule. Real latency is a measured distribution, so include a margin and repeat measurements near a threshold. The synthetic fixture uses exact point estimates to expose the logic.
 
+**Worked latency trap.** Suppose preprocessing and inference each take 1 ms on most of 100 requests. Preprocessing takes 10 ms on requests 1–3; inference takes 10 ms on different requests, 4–6. Each stage separately has p95 = 1 ms, yet six complete requests take 11 ms and only 94 take 2 ms. End-to-end p95 is therefore **11 ms**, not the sum of stage p95s, 2 ms. This uses both the nearest-rank and ordinary linear-interpolation percentile conventions on the stated sample.
+
+| Measurement | p95 |
+|---|---:|
+| Preprocessing alone | 1 ms |
+| Inference alone | 1 ms |
+| Complete request | 11 ms |
+
+The 5 ms requirement fails despite both isolated stage reports looking fast. **Try it:** make the slow stages occur on the same three requests. Only 3% of complete requests are now slow and p95 becomes 2 ms, while p99 exposes the tail. Preserve request-level timing pairs and state the percentile and workload; stage percentiles cannot simply be added. These are synthetic timings illustrating the decision rule, not measured performance of a model family.
+
 The test set has no role in that rule. Once a family, preprocessing recipe and ensemble are chosen, freeze them before the final evaluation. If you inspect test results and redesign the shortlist, the old test has become development evidence; acquire a new holdout or report the adaptive nature of the evaluation. Revisit [validation overfitting](0059-validation-set-overfitting.html) and [OOF ensembling](0057-cross-family-ensembling.html).
 
 ## 5 · Write the one-page artifact
@@ -99,7 +109,7 @@ Download the [blank decision guide](../labs/l079-decision-template.md). Fill six
 
 **Rubric: 12 points.** Award 0–2 each for deployment/split precision, mechanism-based shortlist, evidence with scope, feasible costs, falsifiable change criteria, and a complete reproduction footer. Two means concrete enough to execute; one means partially specified; zero means missing. A passing rehearsal is at least 10/12, with no test-based selection, future-information leakage or invented paper-reproduction claim. This is self-assessment until your written artifact is reviewed.
 
-The optional notebook has two live TODOs: constrained validation selection and matching dataset populations. Its CHECK cells test your definitions; the audit runs those same functions. Submit the guide, the audit output if attempted, and your four initial sentences. A [worked guide](../solutions/l079-example-guide.md) is available **after your own draft**; different defensible shortlists are welcome.
+The optional notebook has two live TODOs: constrained validation selection and matching dataset populations. Its CHECK cells test your definitions; the audit runs those same functions. Submit the guide, the audit output if attempted, and your worked fraud recommendation. A [worked guide](../solutions/l079-example-guide.md) is available **after your own draft**; different defensible shortlists are welcome.
 
 <div id="teachback"></div>
 

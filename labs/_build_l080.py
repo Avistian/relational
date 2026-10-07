@@ -26,7 +26,16 @@ print('CHECK: first minimum, ties and invalid evidence pass')""",
 a=temperature_probability([[0,2]],1)[0];b=temperature_probability([[0,2]],2)[0]
 assert .5<b<a<1
 np.testing.assert_allclose(temperature_probability([[100,102]],2),[b])
-print('CHECK: odds, temperature and additive-logit invariance pass')"""}
+for temp in [0.,-1.,np.nan,np.inf,[1.,2.]]:
+    try: temperature_probability([[0.,2.]],temp)
+    except ValueError: pass
+    else: raise AssertionError('Reject nonpositive, nonfinite or nonscalar temperature')
+for logits in [[],[0.,2.],[[1.,2.,3.]],[[0.,np.nan]],[[0.,np.inf]]]:
+    try: temperature_probability(logits,1.)
+    except ValueError: pass
+    else: raise AssertionError('Require finite nonempty two-class logits')
+np.testing.assert_array_equal(temperature_probability([[1e308,-1e308],[-1e308,1e308]],1e-308),[0.,1.])
+print('CHECK: odds, temperature, additive shifts and invalid inputs pass')"""}
 
 def source_cells(solution):
     cells=[]
@@ -132,8 +141,9 @@ def build():
     figures();body=(ROOT/'lessons/content'/f'{SLUG}.md').read_text().replace('{{RESULTS}}',results_table())
     body=re.sub(r'\{\{FIG:(\w+)\}\}',lambda m:image_markup(m[1]),body)
     head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/decision-guide.css"><link rel="stylesheet" href="../assets/exit-exam.css"></head><body><article>'
-    nav=f'<nav><a href="../index.html">Course</a> · <a href="0079-neural-tabular-decision-guide.html">Lesson 79</a></nav><header><p>Year 2 · Quarter 4 · Lesson 080</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/l080-submission.md">Submission template</a> · <a href="../labs/l080-reproduction.md">Reproduce</a></aside>'
+    nav=f'<nav><a href="../index.html">Course</a> · <a href="0079-neural-tabular-decision-guide.html">Lesson 79</a> · <a href="0081-mpnn-framework.html">Year 3: Lesson 81 →</a></nav><header><p>Year 2 · Quarter 4 · Lesson 080</p><h1>{TITLE}</h1></header><aside><a href="../labs/{SLUG}.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/{SLUG}.ipynb">Open in Colab</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/l080-submission.md">Submission template</a> · <a href="../labs/l080-reproduction.md">Reproduce</a></aside>'
     html=render(body).replace('<table>','<div class="exam-table"><table>').replace('</table>','</table></div>')
+    html=re.sub(r'<div class="exam-table"><table>.*?</table></div>', lambda m: m[0].replace('class="exam-table"', 'class="exam-table temperature-table"', 1) if 'Temperature</th>' in m[0] else m[0], html, flags=re.S)
     scripts=''.join(f'<script src="../assets/{name}.js"></script>' for name in ['retrieval-pool','retrieval-bank','teachback','l080-lesson'])
     (ROOT/'lessons'/f'{SLUG}.html').write_text(head+nav+html+'</article>'+scripts+'</body></html>')
     ref='''# Year 2 exit · compact reference

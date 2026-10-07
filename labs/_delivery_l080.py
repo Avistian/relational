@@ -12,7 +12,7 @@ assert all(not c.outputs and c.execution_count is None for c in student.cells if
 assert all(c.execution_count is not None and all(o.output_type!='error' for o in c.outputs) for c in teacher.cells if c.cell_type=='code')
 for nb in [student,teacher]:
     text='\n'.join(c.source for c in nb.cells);images=re.findall(r'data:image/png;base64,([A-Za-z0-9+/=]+)',text)
-    assert len(images)==2 and all(base64.b64decode(x).startswith(b'\x89PNG') for x in images)
+    assert len(images)==3 and all(base64.b64decode(x).startswith(b'\x89PNG') for x in images)
     assert 'attachment:' not in text
 # Compare every visible architecture/driver definition with canonical source.
 expected={}
@@ -44,5 +44,5 @@ with tempfile.TemporaryDirectory(prefix='l080-pages-') as tmp:
             target=(page.parent/unquote(u.path)).resolve()
             assert target.exists(),str(target)
             checked+=1
-report={'status':'PASS','copied_pages_links':checked,'inline_source_definitions':len(actual),'student_todos':3,'portable_figures':2,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+report={'status':'PASS','copied_pages_links':checked,'inline_source_definitions':len(actual),'student_todos':3,'portable_figures':3,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l080_results.json').write_text(json.dumps(report,indent=2)+'\n');print(report)

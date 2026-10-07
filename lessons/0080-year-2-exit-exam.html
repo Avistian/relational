@@ -1,6 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Year 2 exit exam: defend a reproducible comparison</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/decision-guide.css"><link rel="stylesheet" href="../assets/exit-exam.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0079-neural-tabular-decision-guide.html">Lesson 79</a></nav><header><p>Year 2 · Quarter 4 · Lesson 080</p><h1>Year 2 exit exam: defend a reproducible comparison</h1></header><aside><a href="../labs/0080-year-2-exit-exam.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0080-year-2-exit-exam.ipynb">Open in Colab</a> · <a href="../labs/html/0080-year-2-exit-exam.html">Read lab</a> · <a href="../labs/l080-submission.md">Submission template</a> · <a href="../labs/l080-reproduction.md">Reproduce</a></aside>
-
-<p><strong>Your tangible win:</strong> deliver one reproducible comparison and a defensible explanation of when to stay with a single-table model. This is the gate to Year 3, not a race to a higher score. Use one session for protocol, one for the lab, and one for interpretation and teach-back. A tie or a neural loss can earn full marks.</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Year 2 exit exam: defend a reproducible comparison</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/decision-guide.css"><link rel="stylesheet" href="../assets/exit-exam.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0079-neural-tabular-decision-guide.html">Lesson 79</a> · <a href="0081-mpnn-framework.html">Year 3: Lesson 81 →</a></nav><header><p>Year 2 · Quarter 4 · Lesson 080</p><h1>Year 2 exit exam: defend a reproducible comparison</h1></header><aside><a href="../labs/0080-year-2-exit-exam.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0080-year-2-exit-exam.ipynb">Open in Colab</a> · <a href="../labs/html/0080-year-2-exit-exam.html">Read lab</a> · <a href="../labs/l080-submission.md">Submission template</a> · <a href="../labs/l080-reproduction.md">Reproduce</a></aside><p><strong>Your tangible win:</strong> deliver one reproducible comparison and a defensible explanation of when to stay with a single-table model. This is the gate to Year 3, not a race to a higher score. Use one session for protocol, one for the lab, and one for interpretation and teach-back. A tie or a neural loss can earn full marks.</p>
 <p><a href="0079-neural-tabular-decision-guide.html">Lesson 79</a> asked you to choose a model conditionally. This exam tests whether you can turn that choice into evidence another person can reproduce. <a href="0077-single-table-ceiling.html">Lesson 77</a> then helps you explain what even the winning row model cannot recover; <a href="0078-message-passing-preview.html">Lesson 78</a> supplies the next mechanism to investigate.</p>
 <!-- depth-walkthrough:start -->
 
@@ -40,6 +38,33 @@
 <p><strong>Four boundaries to inspect in code:</strong> fit imputation and scaling on training rows; give the trainer only training and validation inputs; select the first minimum validation loss; call the selected predictor on the locked test rows. Save predictions and labels in the same order so a second implementation can reconstruct the reported score.</p>
 <p><strong>FT-Transformer</strong> turns each scalar into a feature token, mixes tokens with attention, and reads a learned classification token. <strong>TabM</strong> produces several member logits using shared matrices and small member-specific adapters. Its training averages member losses; its inference averages member probabilities. <strong>TabPFN v2</strong> applies pretrained weights to labeled context and unlabeled query rows. The context is part of the predictor, so its size, feature encoding and query batch must be reproducible. Read the full forward passes and the common trainer in the notebook, not just the wrappers.</p>
 <p>The FT arm uses the pinned released architecture, including ReGLU and omission of the first attention normalization. It does not silently inherit the simpler GELU model from the earlier introductory FT lesson. The historical v2 arm loads all checkpoint tensors but uses a disclosed simple numeric wrapper rather than the paper's complete evaluation ensemble.</p>
+<h3 id="Temperature-changes-confidence,-not-the-winning-class">Temperature changes confidence, not the winning class<a class="anchor-link" href="#Temperature-changes-confidence,-not-the-winning-class">&#182;</a></h3><p>The third TODO converts two class logits to P(y=1): divide both by a <strong>finite positive scalar</strong> T, subtract their row maximum for stable exponentiation, then apply softmax. Subtracting the same maximum leaves probabilities unchanged. Positive temperature preserves logit ordering, so it preserves the predicted class while changing log loss.</p>
+<p>For logits <code>[2,0]</code>, class 0 wins at both T=1 and T=2. At T=1 its probability is 0.8808; at T=2 it is 0.7311. If the label is 0, those predictions cost 0.1269 and 0.3133 nats. If the label is 1, they cost 2.1269 and 1.3133 nats. Lower confidence helps a wrong prediction and hurts a correct one; its value must be measured over validation rows.</p>
+<div class="exam-table temperature-table"><table>
+<thead>
+<tr>
+  <th style="text-align:right">Temperature</th>
+  <th style="text-align:right">P(y=1)</th>
+  <th style="text-align:right">Loss if y=0</th>
+  <th style="text-align:right">Loss if y=1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0.1192</td>
+  <td style="text-align:right">0.1269</td>
+  <td style="text-align:right">2.1269</td>
+</tr>
+<tr>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">0.2689</td>
+  <td style="text-align:right">0.3133</td>
+  <td style="text-align:right">1.3133</td>
+</tr>
+</tbody>
+</table></div>
+<p>The actual exam compares T=0.7 and T=1 on validation data; T=2 is only a teaching example. <strong>Try it:</strong> adding 100 to both logits changes neither probability. A negative T reverses their order and is invalid for this contract; T=0 and nonfinite inputs must also be rejected. The revised CHECK tests these cases. Existing archived scores retain their original source identities; this guard repair does not establish a fresh full exam run.</p>
 <h2 id="3-%C2%B7-Run,-break,-repair">3 &#183; Run, break, repair<a class="anchor-link" href="#3-%C2%B7-Run,-break,-repair">&#182;</a></h2><p>Open the <a href="../labs/0080-year-2-exit-exam.ipynb">student notebook</a>. Implement three live functions: binary log loss, first-minimum validation selection, and temperature-to-probability conversion. The fresh comparison calls your functions. The CHECK cells test invalid inputs and boundary cases, not just one happy-path number.</p>
 <ol>
 <li>Predict what a broken validation selector would do, then implement the correct one.</li>

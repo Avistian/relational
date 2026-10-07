@@ -90,7 +90,7 @@ def build():
     snapshot(79)
     figures()
     head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/decision-guide.css"></head><body><article>'
-    nav=f'<nav><a href="../index.html">Course</a> · <a href="0078-message-passing-preview.html">Lesson 78</a></nav><header><p>Year 2 · Quarter 4 · Lesson 079</p><h1>{TITLE}</h1><p>From model familiarity to a falsifiable recommendation.</p></header><aside><a href="../labs/l079-decision-template.md">Essay template</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/{SLUG}.ipynb">Notebook</a> · <a href="../reference/{SLUG}.html">Reference</a></aside>'
+    nav=f'<nav><a href="../index.html">Course</a> · <a href="0078-message-passing-preview.html">Lesson 78</a> · <a href="0080-year-2-exit-exam.html">Lesson 80 →</a></nav><header><p>Year 2 · Quarter 4 · Lesson 079</p><h1>{TITLE}</h1><p>From model familiarity to a falsifiable recommendation.</p></header><aside><a href="../labs/l079-decision-template.md">Essay template</a> · <a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/{SLUG}.ipynb">Notebook</a> · <a href="../reference/{SLUG}.html">Reference</a></aside>'
     body=render(manuscript()).replace('<table>','<div class="dg-table"><table>').replace('</table>','</table></div>')
     scripts=''.join(f'<script src="../assets/{s}.js"></script>' for s in ['retrieval-pool','retrieval-bank','teachback','decision-guide-viz','l079-lesson'])
     (ROOT/'lessons'/f'{SLUG}.html').write_text(head+nav+body+'</article>'+scripts+'</body></html>')
