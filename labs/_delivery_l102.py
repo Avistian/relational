@@ -38,10 +38,11 @@ with sync_playwright() as pw:
      assert f'Legal score: {oracle(idx,batch,False):.4f}' in out.inner_text()
      assert f'Compared score: {oracle(idx,batch,leak):.4f}' in out.inner_text();states+=1
   widget.locator('button').click();slider.focus();page.keyboard.press('ArrowRight');assert slider.input_value()=='2';widget.locator('button').click()
-  assert page.locator('#l102-warmup').inner_text().strip()
+  assert page.locator('#l102-warmup').count()==0
   pred=page.locator('#l102-predict');assert pred.locator('button').last.is_disabled();pred.locator('button').first.click();pred.locator('button').last.click()
   teach=page.locator('#l102-teachback');teach.locator('textarea').fill('Past observed messages enter a new differentiable GRU update before scoring the current event. Only afterward does that event become a pending message. Weights freeze during evaluation, but memory keeps evolving with observed history.');teach.locator('button').first.click()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'page overflow'
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   page.evaluate('window.scrollTo(0,0)');page.screenshot(path=f'/tmp/l102-top-{width}.png');widget.screenshot(path=f'/tmp/l102-widget-{width}.png');page.locator('figure').first.screenshot(path=f'/tmp/l102-architecture-{width}.png')
  page.emulate_media(media='print');assert page.locator('h1').is_visible();page.emulate_media(media='screen')
@@ -60,6 +61,7 @@ assert 'from relkit' not in '\n'.join(c.source for c in solution.cells)
 paths=[R/'lessons'/f'{S}.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l102.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'nondeterministic build'
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[]
@@ -85,7 +87,7 @@ with tempfile.TemporaryDirectory(prefix='l102-pages-') as tmp:
  try:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page()
-   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]')
+   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]',state='attached')
    assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
    page.goto(f'http://127.0.0.1:{server.server_port}/lessons/{S}.html');assert 'Legal score: 0.5000' in page.locator('.temporal-readout').inner_text();browser.close()
  finally:server.shutdown();server.server_close();thread.join()

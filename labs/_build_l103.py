@@ -2,6 +2,7 @@
 import ast,base64,hashlib,json,re
 from pathlib import Path
 import nbformat as nbf
+from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
 P=Path(__file__).resolve().parent;R=P.parent;S='0103-tgat';TITLE='TGAT: attention that knows when'
 CAP={'architecture':'Trace each endpoint from its timestamped query through two recursive layers to the shared pair decoder. Shapes describe the released Wikipedia variant.', 'recursion':'A child reached through an event at time 5 must use history before 5, even when the root query is at time 8. The lower panel separately shows a released sampler defect.', 'kernel':'Illustrative fixed frequencies: paired sine/cosine inner products preserve time differences. A cosine-only inner product can change under a common shift of its arguments.'}
@@ -32,14 +33,14 @@ def prose(portable=False):
    s=s.replace('[[FIG:'+name+']]','');continue
   src='data:image/png;base64,'+base64.b64encode((P/f'figures/l103/{name}.png').read_bytes()).decode() if portable else f'../labs/figures/l103/{name}.svg'
   s=s.replace('[[FIG:'+name+']]',f'<figure class="tgat-figure" tabindex="0"><img src="{src}" alt="{cap}"><figcaption>{cap}</figcaption></figure>')
- for key,mount,plain in [('WARMUP','l103-warmup','**Retrieval first:** answer the prompts below before reading.'),('PREDICT','l103-predict','**Predict:** must an older event always receive less attention as query time increases?'),('TIME_WIDGET','l103-time','**Portable worked state:** at t=4 the two weights are approximately 0.178 and 0.822. Open the HTML lesson to change query time from 4 to 10 and see the older event regain attention.'),('TEACHBACK','l103-teachback','**Teach back:** explain the five points above without copying the lesson, then ask the tutor to challenge your reasoning.')]:s=s.replace('[['+key+']]',plain if portable else f'<div id="{mount}"></div>')
+ for key,mount,plain in [('PREDICT','l103-predict','**Predict:** must an older event always receive less attention as query time increases?'),('TIME_WIDGET','l103-time','**Portable worked state:** at t=4 the two weights are approximately 0.178 and 0.822. Open the HTML lesson to change query time from 4 to 10 and see the older event regain attention.'),('TEACHBACK','l103-teachback','**Teach back:** explain the five points above without copying the lesson, then ask the tutor to challenge your reasoning.')]:s=s.replace('[['+key+']]',plain if portable else f'<div id="{mount}"></div>')
  s=s.replace('[[PAPER_RESULTS]]',result_text('paper')).replace('[[COMPARISON_RESULTS]]',result_text('comparison'))
  if portable:
   s=s.replace('href="../','href="https://avistian.github.io/relational/').replace('](../','](https://avistian.github.io/relational/')
   s=re.sub(r'\]\((\d{4}-[^)]+\.html)\)',r'](https://avistian.github.io/relational/lessons/\1)',s)
  return s
 head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 103 — {TITLE}</title>'+''.join(f'<link rel="stylesheet" href="../assets/{x}.css">' for x in ['lesson','tgat-lesson'])+'</head><body><article><nav><a href="../index.html">Course</a> · <a href="0102-temporal-graph-networks.html">Lesson 102</a></nav><header><p class="tgat-kicker">Year 3 · Quarter 3 · Lesson 103</p><h1>'+TITLE+'</h1></header>'
-body=render(prose()).replace('<table>','<div class="tgat-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+body=re.sub(r'<table([^>]*)>',r'<div class="tgat-scroll" tabindex="0"><table\1>',render(prose())).replace('</table>','</table></div>')
 (R/'lessons'/f'{S}.html').write_text(head+body+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in ['retrieval-pool','retrieval-bank','predict','teachback','temporal-attention-viz','l103-lesson'])+'</body></html>')
 checks={
 'encode_time':"x=torch.tensor([[0.,2.]],requires_grad=True);frequency=torch.tensor([1.,.5],requires_grad=True);phase=torch.zeros(2,requires_grad=True)\ny=encode_time(x,frequency,phase)\nassert y.shape==(1,2,2), 'Broadcast to B × N × D'\nassert torch.allclose(y[0,0],torch.ones(2)), 'Zero elapsed and zero phase must give cosine(0)'\nassert torch.allclose(y[0,1],torch.cos(torch.tensor([2.,1.]))), 'Frequency multiplies elapsed time'\ny.sum().backward();assert frequency.grad is not None and phase.grad is not None and frequency.grad.abs().sum()>0 and phase.grad.abs().sum()>0 and x.grad.abs().sum()>0, 'Keep the gradient path'\nprint('PASS: values, dimensions and gradients')",
@@ -81,6 +82,9 @@ for solution in [False,True]:
   if [c.source for c in oldcode]==[c.source for c in newcode]:
    for a,b in zip(newcode,oldcode):a.outputs=b.outputs;a.execution_count=b.execution_count;a.metadata=b.metadata
  nbf.write(nb,path)
+ if solution:
+  lab_html,_=HTMLExporter().from_notebook_node(nb)
+  (P/'html'/f'{S}.html').write_text(lab_html)
 ref='''# TGAT time-attention reference
 
 **Query:** a node and a time. **History:** timestamped interactions. **Embedding:** a computed vector. **Persistent memory:** per-node recurrent state, present in TGN and absent in TGAT. **Parameters:** shared learned weights.

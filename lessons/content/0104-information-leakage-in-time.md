@@ -8,7 +8,7 @@
 
 **Your win:** find a time-travel dependency, repair it, and defend the resulting metric. This is the evaluation discipline your relational-learning thesis depends on.
 
-Start with the short audit below. Then follow one prediction through its inputs. The lab uses a trained Temporal Graph Attention (TGAT) model on real Wikipedia interactions; its full model and training recipe remain visible.
+Follow one prediction through its inputs. The lab uses a trained Temporal Graph Attention (TGAT) model on real Wikipedia interactions; its full model and training recipe remain visible.
 
 
 
@@ -114,6 +114,23 @@ For a true interaction (u, v, t), inclusive history can contain that very intera
 
 These are inference interventions; no arm retrains the model. Negatives come from the archived evaluation, so the candidate pairs and labels stay fixed. Each sampler call draws a uniform matrix even when a node has no history. Resetting the seed for each arm then gives a common random-number schedule. The same uniforms may select different neighbors from changed eligible sets; holding neighbors identical would prevent the access intervention itself. Because the fanout (the number of samples per request) stays at 20 records, illegal records can also displace legitimate ones. That is part of this access-rule intervention and another reason the score need not rise.
 
+### Same seed, different draws: an empty-history trap
+
+Two requests, A then B, each reserve two sampling slots. A has no strict-past records but gains one equal-time record in the inclusive arm. B has the same two eligible records in both arms, ordered old then new. Use one fixed stream of uniform draws: **0.010, 0.502, 0.496, 0.134**. Map a draw u to slot `floor(2u)` for B.
+
+If the sampler draws only after finding nonempty history, strict A consumes nothing. B then gets the first two draws, selecting **old, new**. Inclusive A consumes the first two draws, so B gets the third and fourth, selecting **old, old**. B's access rule did not change, but its samples did.
+
+<table style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Draw policy</th><th>Strict B</th><th>Inclusive B</th></tr></thead>
+<tbody><tr><td>Skip empty A</td><td>old, new</td><td>old, old</td></tr>
+<tr><td>Reserve A's slots</td><td>old, old</td><td>old, old</td></tr></tbody></table>
+
+The audited sampler draws the entire 2×2 matrix before inspecting histories. Empty A still reserves the first row, so B uses the second row in both arms. This is why resetting the seed is only part of pairing the randomness.
+
+**Work it through.** If B's pool grows from two to three records under lookahead, apply its reserved draws 0.496 and 0.134 to `floor(3u)`. Should paired randomness force the sampled records to stay identical?
+
+<details><summary>Check the random schedule</summary><p>The three-record indices are 1 and 0, versus 0 and 0 for a two-record pool. Common draws align the random schedule; they do not force unchanged records when eligibility changes. Changing the pool is the intended intervention. Skipping draws for empty rows adds unrelated changes to later requests.</p></details>
+
 The release sampler drops one eligible item and consumes random numbers differently on empty histories. Its historical baseline is therefore **not** the causal baseline for B. We separately compare each illegal arm to the corrected strict arm. Release early stopping, omitted last events, and batch-mean AP remain documented in the [reproduction contract](../labs/l104-reproduction.md).
 
 **Read the actual sampler.** `uniforms` is drawn before inspecting individual histories, so an empty row cannot shift later random draws. The audit compares each sampled timestamp to that request's cutoff; zero-padding slots do not count as historical records. The eligibility policy is the notebook's first TODO.
@@ -155,6 +172,8 @@ Open the [student notebook](../labs/0104-information-leakage-in-time.ipynb) or t
 1. **TODO — eligibility:** implement event-time and availability-time filtering. CHECK empty histories, ties and late arrivals. Your function is called by the live neighborhood sampler.
 2. **TODO — label maturity:** decide which training targets were knowable at fitting time. CHECK that an old query can still have a future target.
 3. **TODO — paired AP:** reject mismatched event IDs, negative destinations or batches before computing the score difference. CHECK a deliberate negative-sample mismatch.
+
+**Alignment repair.** Matching arrays between arms is insufficient if both are malformed. The checker now rejects truncated or non-vector event IDs, negative IDs, batch IDs and scores before calculating AP. Historical evaluation code is archived at its original hash; valid saved comparisons retain the same values.
 
 The default notebook evaluates 120 positive questions and 120 sampled negatives from one full-data trained checkpoint under each arm. This is a small execution exercise, distinct from the complete author evaluation. It downloads checksum-pinned data and a provided checkpoint when absent. The model and complete trainer are visible inline; the checkpoint is an explicit pretrained input.
 

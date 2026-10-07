@@ -18,6 +18,17 @@ def check():
     try:paired_ap(base,bad)
     except ValueError:pass
     else:raise AssertionError('Changed negatives must reject comparison')
+    # A shared malformed identity vector does not establish paired questions.
+    for field in ['e','negative','batch','p','n']:
+        malformed={**base,field:base[field][:1]}
+        try:paired_ap(malformed,malformed)
+        except ValueError:pass
+        else:raise AssertionError(f'Reject truncated {field} even when both arms agree')
+    for field in ['e','negative','batch','p','n']:
+        malformed={**base,field:base[field][:,None]}
+        try:paired_ap(malformed,malformed)
+        except ValueError:pass
+        else:raise AssertionError(f'Reject non-vector {field}')
     d={'u':np.array([1,1,1]),'v':np.array([2,3,4]),'t':np.array([1.,3.,5.]),'e':np.array([1,2,3])}
     for mode,expected in [('strict',[1]),('inclusive',[1,2]),('lookahead',[1,2,3])]:
         f=AuditFinder(d,5,mode,lookahead=2)

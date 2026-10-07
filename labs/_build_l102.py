@@ -2,6 +2,7 @@
 import ast,base64,json,re
 from pathlib import Path
 import nbformat as nbf
+from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
 P=Path(__file__).resolve().parent;R=P.parent;S='0102-temporal-graph-networks';TITLE='Temporal Graph Networks: memory without time travel'
 
@@ -32,14 +33,14 @@ def prose(portable=False):
   src='data:image/png;base64,'+base64.b64encode(path.read_bytes()).decode() if portable else f'../labs/figures/l102/{name}.svg'
   s=s.replace('[[FIG:'+name+']]',f'<figure class="tgn-figure" tabindex="0"><img src="{src}" alt="{cap}"><figcaption>{cap}</figcaption></figure>')
  s=s.replace('[[PAPER_RESULTS]]',results('paper')).replace('[[SMOKE_RESULTS]]',results('smoke'))
- for key,mount,alt in [('WARMUP','l102-warmup','**Retrieval first:** write your answers before opening the feedback.'),('PREDICT','l102-predict','**Commit a prediction:** which messages may update memory before the next batch is scored? Explain the gradient path.'),('TIMELINE','temporal-graph','| Event 2 | Batch size 2 | Batch size 1 |\n|---|---:|---:|\n| Candidate A memory | 0 | 0.3808 |\n| Candidate C memory | 0 | 0 |\n| Illustrative score | 0.5000 | 0.5941 |\n\nUse the linked HTML lesson for the interactive intervention.')]:
+ for key,mount,alt in [('PREDICT','l102-predict','**Commit a prediction:** which messages may update memory before the next batch is scored? Explain the gradient path.'),('TIMELINE','temporal-graph','| Event 2 | Batch size 2 | Batch size 1 |\n|---|---:|---:|\n| Candidate A memory | 0 | 0.3808 |\n| Candidate C memory | 0 | 0 |\n| Illustrative score | 0.5000 | 0.5941 |\n\nUse the linked HTML lesson for the interactive intervention.')]:
   s=s.replace('[['+key+']]',alt if portable else f'<div id="{mount}"></div>')
  if portable:
   s=s.replace('href="../','href="https://avistian.github.io/relational/').replace('](../','](https://avistian.github.io/relational/')
   s=re.sub(r'\]\((\d{4}-[^)]+\.html)\)',r'](https://avistian.github.io/relational/lessons/\1)',s)
  return s
 head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 102 — {TITLE}</title>'+''.join(f'<link rel="stylesheet" href="../assets/{s}.css">' for s in ['lesson','temporal-lesson','tgn-lesson'])+f'</head><body><article><nav><a href="../index.html">Course</a> · <a href="0101-static-vs-temporal.html">Lesson 101</a></nav><header><p class="tgn-kicker">Year 3 · Quarter 3 · Lesson 102</p><h1>{TITLE}</h1></header>'
-(R/'lessons'/f'{S}.html').write_text(head+render(prose()).replace('<table>','<div class="temporal-scroll" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>').replace('</table>','</table></div>')+'<div id="l102-teachback"></div></article>'+''.join(f'<script src="../assets/{s}.js"></script>' for s in ['retrieval-pool','retrieval-bank','predict','teachback','temporal-graph-viz','l102-lesson'])+'</body></html>')
+(R/'lessons'/f'{S}.html').write_text(head+re.sub(r'<table([^>]*)>',r'<div class="temporal-scroll" tabindex="0" role="region" aria-label="Scrollable evidence table"><table\1>',render(prose())).replace('</table>','</table></div>')+'<div id="l102-teachback"></div></article>'+''.join(f'<script src="../assets/{s}.js"></script>' for s in ['retrieval-pool','retrieval-bank','predict','teachback','temporal-graph-viz','l102-lesson'])+'</body></html>')
 checks={
 'last_message_indices':"assert last_message_indices(np.array([2,1,2,1])).tolist()==[3,2], 'Return the final occurrence in sorted node order'\nassert last_message_indices(np.array([],dtype=int)).dtype==np.int64\nassert last_message_indices(np.array([7,7,7])).tolist()==[2]\nprint('PASS: repeated IDs, single node, empty batch')",
 'raw_messages':"enc=lambda t: torch.stack([t,t+1],dim=-1)\nown=torch.tensor([[1.,2.]]); other=torch.tensor([[3.,4.]])\nmsg=raw_messages(own,other,torch.tensor([[5.,6.]]),torch.tensor([7.]),enc)\nassert msg.shape==(1,8), 'Two memories, edge and encoded time must all survive'\nassert torch.equal(msg,torch.arange(1.,9.)[None]), 'Check endpoint order and elapsed encoding'\nprint('PASS: message order and shape')",
@@ -74,6 +75,9 @@ for solution in [False,True]:
   if [c.source for c in old]==[c.source for c in new]:
    for a,b in zip(new,old):a.outputs=b.outputs;a.execution_count=b.execution_count;a.metadata=b.metadata
  nbf.write(nb,path)
+ if solution:
+  lab_html,_=HTMLExporter().from_notebook_node(nb)
+  (P/'html'/f'{S}.html').write_text(lab_html)
 ref='''# TGN memory: a reference card
 
 **Memory** is per-node historical state. **Embedding** is a query-time representation. **Parameters** are shared learned weights. **Pending message** is an observed event waiting for a later differentiable update.

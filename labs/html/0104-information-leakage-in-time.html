@@ -7855,11 +7855,17 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p><strong>Your win:</strong> find a time-travel dependency, repair it, and defend the resulting metric. This is the evaluation discipline your relational-learning thesis depends on.</p>
-<p>Start with the short audit below. Then follow one prediction through its inputs. The lab uses a trained Temporal Graph Attention (TGAT) model on real Wikipedia interactions; its full model and training recipe remain visible.</p>
+<!-- sequence-review:start -->
+<aside aria-label="Where this lesson fits" class="sequence-context">
+<p class="sequence-eyebrow">From Lesson 103 to this lesson</p>
+<p>A temporal encoder can process timestamps while still reading forbidden records. Trace the data dependencies before trusting its score.</p>
+**Quick prerequisite reminder**
 
-<p><strong>Check after committing your answers</strong></p>
-<p>In TGAT, the child is queried at 5 and its event history is strictly earlier than 5. TGN must predict before incorporating the current outcome. A chronological target split alone cannot constrain joins, feature versions, sampled neighbors, memory, or model selection.</p>
+<p>Event time says when something happened; availability time says when the predictor could read it. A label is the outcome to predict, not an input feature.</p>
+</aside>
+<!-- sequence-review:end -->
+<p><strong>Your win:</strong> find a time-travel dependency, repair it, and defend the resulting metric. This is the evaluation discipline your relational-learning thesis depends on.</p>
+<p>Follow one prediction through its inputs. The lab uses a trained Temporal Graph Attention (TGAT) model on real Wikipedia interactions; its full model and training recipe remain visible.</p>
 <p><strong>Where we are.</strong> <a href="https://avistian.github.io/relational/lessons/0102-temporal-graph-networks.html">L102</a> introduced persistent memory. <a href="https://avistian.github.io/relational/lessons/0103-tgat.html">L103</a> recomputed embeddings from history. Both still need an explicit rule for what was knowable. A timestamp inside a neural network does not enforce that rule.</p>
 <h2 id="2-%C2%B7-First-define-the-prediction-moment">2 · First define the prediction moment<a class="anchor-link" href="#2-%C2%B7-First-define-the-prediction-moment">¶</a></h2><blockquote>
 <p><strong>In plain terms.</strong> Imagine stopping the application immediately before it must answer. Which records could it read at that instant?</p>
@@ -7970,6 +7976,16 @@ a.anchor-link {
 </table>
 <p>For a true interaction (u, v, t), inclusive history can contain that very interaction while the model is trying to predict it. A sampled negative pair often has no corresponding current edge. This can reveal part of the answer through graph structure.</p>
 <p>These are inference interventions; no arm retrains the model. Negatives come from the archived evaluation, so the candidate pairs and labels stay fixed. Each sampler call draws a uniform matrix even when a node has no history. Resetting the seed for each arm then gives a common random-number schedule. The same uniforms may select different neighbors from changed eligible sets; holding neighbors identical would prevent the access intervention itself. Because the fanout (the number of samples per request) stays at 20 records, illegal records can also displace legitimate ones. That is part of this access-rule intervention and another reason the score need not rise.</p>
+<h3 id="Same-seed,-different-draws:-an-empty-history-trap">Same seed, different draws: an empty-history trap<a class="anchor-link" href="#Same-seed,-different-draws:-an-empty-history-trap">¶</a></h3><p>Two requests, A then B, each reserve two sampling slots. A has no strict-past records but gains one equal-time record in the inclusive arm. B has the same two eligible records in both arms, ordered old then new. Use one fixed stream of uniform draws: <strong>0.010, 0.502, 0.496, 0.134</strong>. Map a draw u to slot <code>floor(2u)</code> for B.</p>
+<p>If the sampler draws only after finding nonempty history, strict A consumes nothing. B then gets the first two draws, selecting <strong>old, new</strong>. Inclusive A consumes the first two draws, so B gets the third and fourth, selecting <strong>old, old</strong>. B's access rule did not change, but its samples did.</p>
+<table style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Draw policy</th><th>Strict B</th><th>Inclusive B</th></tr></thead>
+<tbody><tr><td>Skip empty A</td><td>old, new</td><td>old, old</td></tr>
+<tr><td>Reserve A's slots</td><td>old, old</td><td>old, old</td></tr></tbody></table>
+<p>The audited sampler draws the entire 2×2 matrix before inspecting histories. Empty A still reserves the first row, so B uses the second row in both arms. This is why resetting the seed is only part of pairing the randomness.</p>
+<p><strong>Work it through.</strong> If B's pool grows from two to three records under lookahead, apply its reserved draws 0.496 and 0.134 to <code>floor(3u)</code>. Should paired randomness force the sampled records to stay identical?</p>
+<p><strong>Check the random schedule</strong></p>
+<p>The three-record indices are 1 and 0, versus 0 and 0 for a two-record pool. Common draws align the random schedule; they do not force unchanged records when eligibility changes. Changing the pool is the intended intervention. Skipping draws for empty rows adds unrelated changes to later requests.</p>
 <p>The release sampler drops one eligible item and consumes random numbers differently on empty histories. Its historical baseline is therefore <strong>not</strong> the causal baseline for B. We separately compare each illegal arm to the corrected strict arm. Release early stopping, omitted last events, and batch-mean AP remain documented in the <a href="https://avistian.github.io/relational/labs/l104-reproduction.md">reproduction contract</a>.</p>
 <p><strong>Read the actual sampler.</strong> <code>uniforms</code> is drawn before inspecting individual histories, so an empty row cannot shift later random draws. The audit compares each sampled timestamp to that request's cutoff; zero-padding slots do not count as historical records. The eligibility policy is the notebook's first TODO.</p>
 <div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">get_temporal_neighbor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">cutoffs</span><span class="p">,</span> <span class="n">num_neighbors</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
@@ -8059,12 +8075,16 @@ a.anchor-link {
 <li><strong>TODO — label maturity:</strong> decide which training targets were knowable at fitting time. CHECK that an old query can still have a future target.</li>
 <li><strong>TODO — paired AP:</strong> reject mismatched event IDs, negative destinations or batches before computing the score difference. CHECK a deliberate negative-sample mismatch.</li>
 </ol>
+<p><strong>Alignment repair.</strong> Matching arrays between arms is insufficient if both are malformed. The checker now rejects truncated or non-vector event IDs, negative IDs, batch IDs and scores before calculating AP. Historical evaluation code is archived at its original hash; valid saved comparisons retain the same values.</p>
 <p>The default notebook evaluates 120 positive questions and 120 sampled negatives from one full-data trained checkpoint under each arm. This is a small execution exercise, distinct from the complete author evaluation. It downloads checksum-pinned data and a provided checkpoint when absent. The model and complete trainer are visible inline; the checkpoint is an explicit pretrained input.</p>
 <p><strong>EXIT — submit four things:</strong> the three functions; your measured AP table; one exact forbidden dependency (event time, cutoff and path); and a written defense of the repaired result. Explain why correct timestamp filtering cannot certify unknown arrival times. Explain which training was reused and which predictions you generated yourself. Status stays <strong>PENDING_WRITTEN_DEFENSE</strong> until you supply that evidence.</p>
 <h2 id="8-%C2%B7-Reproduce-and-extend">8 · Reproduce and extend<a class="anchor-link" href="#8-%C2%B7-Reproduce-and-extend">¶</a></h2><p>The <a href="https://avistian.github.io/relational/labs/l104-reproduction.md">reproduction contract</a> contains pinned inputs, runtime, exact local/Modal commands, the budget, and deviations. It also links the complete L103 training recipe. Keep <strong>fresh evaluation</strong>, <strong>reused training</strong>, <strong>course interventions</strong>, and <strong>unrun paper coverage</strong> separate.</p>
 <p>An adversarial extension: perturb every inaccessible future row while keeping accessible data fixed. For a strictly causal predictor, current outputs should remain unchanged when the random schedule is fixed. This is a <strong>metamorphic test</strong>: check how an output should respond to a controlled input transformation even when the exact output is unknown. It complements observed-edge audit logs; it does not replace availability provenance.</p>
 <p><strong>Teach back:</strong> explain the corrected number and the provenance limits in your own words before consulting the solution.</p>
 <p><strong>Read next:</strong> Kapoor &amp; Narayanan's taxonomy and model-info-sheet sections, then Fey §§2.2–3.3. <a href="https://avistian.github.io/relational/reference/temporal-leakage-audit.html">Reference card</a> · <a href="https://avistian.github.io/relational/reference/glossary.html#temporal-l101">Temporal glossary</a>. Ask the tutor about any unclear boundary or paste your EXIT defense for review. Lesson 105 will ask how continuous-time event streams differ from snapshots; carry the prediction-time contract into that choice.</p>
+<!-- sequence-next:start -->
+<p><strong>Carry this forward.</strong> Ask what a daily snapshot discards even when its inputs are legal. <a href="https://avistian.github.io/relational/lessons/0105-continuous-time.html">Continue to Lesson 105</a>.</p>
+<!-- sequence-next:end -->
 </div>
 </div>
 </div>
@@ -8858,10 +8878,18 @@ a.anchor-link {
 <span class="w">    </span><span class="sd">"""Pooled AP and changed-minus-baseline percentage points on paired records.</span>
 <span class="sd">    e identifies positive events; negative identifies paired negative destinations.</span>
 <span class="sd">    """</span>
+    <span class="n">event_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">baseline</span><span class="p">[</span><span class="s1">'e'</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">event_ids</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Event identities must be a vector'</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_ids</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">records</span> <span class="ow">in</span> <span class="p">[</span><span class="n">baseline</span><span class="p">,</span> <span class="n">changed</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'e'</span><span class="p">,</span> <span class="s1">'negative'</span><span class="p">,</span> <span class="s1">'batch'</span><span class="p">,</span> <span class="s1">'p'</span><span class="p">,</span> <span class="s1">'n'</span><span class="p">]:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">records</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Unaligned evaluation vector: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'e'</span><span class="p">,</span> <span class="s1">'negative'</span><span class="p">,</span> <span class="s1">'batch'</span><span class="p">]:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">baseline</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">changed</span><span class="p">[</span><span class="n">name</span><span class="p">]):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Unpaired comparison: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">baseline</span><span class="p">[</span><span class="s1">'e'</span><span class="p">])</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">n</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Empty evaluation'</span><span class="p">)</span>
     <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
@@ -8908,6 +8936,12 @@ a.anchor-link {
     <span class="nb">print</span><span class="p">(</span><span class="s1">'PASS: changed candidates rejected; reversed ranking AP = 5/12'</span><span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s1">'Reject unpaired negatives before comparing AP'</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">paired_ap</span><span class="p">({</span><span class="o">**</span><span class="n">a</span><span class="p">,</span><span class="s1">'negative'</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">7</span><span class="p">])},{</span><span class="o">**</span><span class="n">a</span><span class="p">,</span><span class="s1">'negative'</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">7</span><span class="p">])})</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'PASS: equally truncated identities are not valid pairing'</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s1">'Check each vector against the event count'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8921,6 +8955,7 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>PASS: changed candidates rejected; reversed ranking AP = 5/12
+PASS: equally truncated identities are not valid pairing
 </pre>
 </div>
 </div>

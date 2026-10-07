@@ -22,10 +22,11 @@ with sync_playwright() as pw:
    x,y=math.exp(math.cos(t-1)),math.exp(math.cos(t-3));value=(2*x+8*y)/(x+y)
    assert f'Current weighted value: {value:.4f}' in out.inner_text();states+=1
   widget.locator('button').click();slider.focus();page.keyboard.press('ArrowRight');assert slider.input_value()=='4.1';widget.locator('button').click()
-  assert page.locator('#l103-warmup').inner_text().strip()
+  assert page.locator('#l103-warmup').count()==0
   pred=page.locator('#l103-predict');assert pred.locator('button').last.is_disabled();pred.locator('button').first.click();pred.locator('button').last.click()
   teach=page.locator('#l103-teachback');teach.locator('textarea').fill('TGAT recomputes embeddings from historical events. The child cutoff is the connecting event time. Cosine time features influence keys and values, while TGN maintains per-node state. A released Wikipedia replay is not full-paper reproduction.');teach.locator('button').first.click()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'page overflow'
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   page.evaluate('window.scrollTo(0,0)');page.screenshot(path=f'/tmp/l103-top-{width}.png');widget.screenshot(path=f'/tmp/l103-widget-{width}.png');page.locator('figure').nth(2).screenshot(path=f'/tmp/l103-architecture-{width}.png')
  page.emulate_media(media='print');assert page.locator('h1').is_visible();page.emulate_media(media='screen')
@@ -53,6 +54,7 @@ assert 'from relkit' not in '\n'.join(c.source for c in solution.cells)
 paths=[R/'lessons'/f'{S}.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l103.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'nondeterministic build'
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[]

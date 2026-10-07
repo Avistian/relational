@@ -4,7 +4,6 @@
 
 
 
-<details><summary>Feedback — open after trying</summary><p>A join can attach a value learned after prediction time. Random rows can mix historical regimes and future information into training. Context supplies messages; only the chosen seeds supply supervised targets. Today we add a time boundary to all those dependencies.</p></details>
 
 **The tangible win.** Given a typed entity, a prediction time and a horizon, determine which inputs and labels are legal. Work through sections 2–5 first; then implement the three notebook tasks. The full real-data baseline replay is small enough to run in the same session.
 
@@ -125,7 +124,21 @@ All ten cells match the paper's three-decimal values within a declared **0.0005 
 
 > **Scope check.** `MATCH` describes those ten rounded score cells. Exact historical execution identity remains `NOT_ESTABLISHED`: the pinned release is a reproducible reference, not proof of the authors' exact run environment. The LightGBM and RDL columns, other tasks, and regeneration of targets from the original relational database are **NOT_RUN** here. Full-paper reproduction is **NOT_ESTABLISHED**. Matching heuristics does not establish temporal GNN correctness or superiority.
 
-This is also an instructive negative result for a simplistic relational story: the per-entity heuristics are worse than global mean/median on this task. Remember their zero fallback and distribution shift before attributing the gap. Neither this baseline slice nor our fabricated leakage experiment tests the mission's full learned-relational-model thesis.
+### Read the aggregate without losing the unseen drivers
+
+The entity-mean baseline has test MAE **8.501**, versus **4.513** for the global mean. Does that mean its driver-specific history is less useful on every group? Split the same 760 frozen predictions by whether the driver appears in the permitted train-plus-validation fitting rows: **433 seen-driver queries and 327 unseen-driver queries**. These are query counts, not distinct driver counts.
+
+On the seen group, entity mean is **better**: MAE **4.592**, versus global mean **5.385**. On the unseen group, entity mean's zero fallback gives MAE **13.677**, versus global mean **3.357**. The aggregate reverses the seen-group comparison because about 43% of test queries use that fallback.
+
+[[FIG:fallback]]
+
+To reconstruct overall MAE, weight by query count. For entity mean, `(433/760) × 4.59249 + (327/760) × 13.67732 = 2.61651 + 5.88485 = 8.50136`. The diagram shows these **weighted contributions**; its segment labels are not the within-group errors. A simple average of the two group MAEs would give each group equal weight and answer a different question.
+
+**Work it through.** Use the global mean's two group errors to recover its overall MAE. Which arm wins within the seen group, and which wins overall? Explain why replacing the unseen-driver fallback now would require a separately labeled extension rather than a corrected Table 4 replay.
+
+<details><summary>Check the decomposition</summary><p>The global mean contributes 3.06830 from seen queries and 1.44458 from unseen queries, totaling 4.51288. Entity mean wins on the seen group; global mean wins overall. This is a descriptive breakdown of fixed test predictions, not validation evidence for choosing a new fallback. Keep the released zero rule for the named replay; declare and evaluate any extension separately.</p></details>
+
+The per-entity heuristics are worse in aggregate on this slice, but the group breakdown prevents attributing that entire gap to the usefulness of entity history. Neither this baseline slice nor our fabricated leakage experiment tests the mission's full learned-relational-model thesis.
 
 ## 8 · Lab, reproduction commands and defense
 

@@ -2,15 +2,18 @@
 import ast,base64,json,re
 from pathlib import Path
 import nbformat as nbf
+from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
 P=Path(__file__).resolve().parent;R=P.parent;S='0101-static-vs-temporal';T='Static vs temporal: a graph query cannot read its future'
 paper=json.loads((P/'_paper_l101_results.json').read_text());course=json.loads((P/'_experiment_l101_results.json').read_text())
 def prose(portable=False):
  s=(R/'lessons/content'/f'{S}.md').read_text()
- for name in ['query-path','label-window']:
+ for name in ['query-path','label-window','fallback']:
   src='data:image/png;base64,'+base64.b64encode((P/f'figures/l101/{name}.png').read_bytes()).decode() if portable else f'../labs/figures/l101/{name}.svg'
-  alt={'query-path':'At query day 5, two-hop inputs include A, B and E; future C and late-arriving D are excluded.','label-window':'A label window ending at day 8 can train a day-10 model; a window ending at day 11 cannot.'}[name]
-  s=s.replace('[[FIG:'+name+']]',f'<figure class="temporal-figure" tabindex="0"><img src="{src}" alt="{alt}"><figcaption>Illustrative computation. {alt}</figcaption></figure>')
+  alt={'query-path':'At query day 5, two-hop inputs include A, B and E; future C and late-arriving D are excluded.','fallback':'Global-mean test MAE 4.513 decomposes into 3.068 from seen queries and 1.445 from unseen queries; entity-mean MAE 8.501 decomposes into 2.617 and 5.885.','label-window':'A label window ending at day 8 can train a day-10 model; a window ending at day 11 cannot.'}[name]
+  caption='Measured frozen test predictions.' if name=='fallback' else 'Illustrative computation.'
+  style=' style="min-width:0;max-width:100%"' if name=='fallback' else ''
+  s=s.replace('[[FIG:'+name+']]',f'<figure class="temporal-figure" tabindex="0"><img src="{src}" alt="{alt}"{style}><figcaption>{caption} {alt}</figcaption></figure>')
  course_table='| Seed | Legal accuracy | Event-only accuracy | Static accuracy |\n|---|---:|---:|---:|\n'
  for seed in range(3):
   course_table+=f'| {seed} | '+' | '.join(f"{100*next(x for x in course['records'] if x['seed']==seed and x['arm']==arm)['test_accuracy']:.2f}%" for arm in ['legal','event_only','static'])+' |\n'
@@ -21,8 +24,8 @@ def prose(portable=False):
   rows=[next(x for x in paper['results'] if x['split']==split and x['arm']==arm) for split in ['val','test']]
   tab+='| '+arm+' | '+' | '.join(f"{x['mae']:.6f} / {x['paper_mae']:.3f}" for x in rows)+' | MATCH |\n'
  s=s.replace('[[PAPER_RESULTS]]',tab)
- for key,mount in [('WARMUP','l101-warmup'),('PREDICT','l101-predict'),('VISIBILITY','temporal-visibility')]:
-  replacement={'WARMUP':'**Retrieval first:** answer the questions below without notes.','PREDICT':'**Commit before reading:** may a day-5 query use a day-4 record that arrived on day 7? Explain your rule.','VISIBILITY':'| Record | Event day | Arrival day | Value | Legal at day 5? |\n|---|---:|---:|---:|---|\n| Past purchase | 3 | 3 | 2 | Yes |\n| Late correction | 4 | 7 | 8 | No |\n| Boundary purchase | 5 | 5 | 4 | Yes |\n| Future outcome | 8 | 8 | 10 | No |'}[key] if portable else f'<div id="{mount}"></div>'
+ for key,mount in [('PREDICT','l101-predict'),('VISIBILITY','temporal-visibility')]:
+  replacement={'PREDICT':'**Commit before reading:** may a day-5 query use a day-4 record that arrived on day 7? Explain your rule.','VISIBILITY':'| Record | Event day | Arrival day | Value | Legal at day 5? |\n|---|---:|---:|---:|---|\n| Past purchase | 3 | 3 | 2 | Yes |\n| Late correction | 4 | 7 | 8 | No |\n| Boundary purchase | 5 | 5 | 4 | Yes |\n| Future outcome | 8 | 8 | 10 | No |'}[key] if portable else f'<div id="{mount}"></div>'
   s=s.replace('[['+key+']]',replacement)
  if portable:
   s=s.replace('href="../','href="https://avistian.github.io/relational/').replace('](../','](https://avistian.github.io/relational/')
@@ -66,6 +69,9 @@ for solution in [False,True]:
   if [c.source for c in old_code]==[c.source for c in new_code]:
    for a,b in zip(new_code,old_code):a.outputs=b.outputs;a.execution_count=b.execution_count;a.metadata=b.metadata
  nbf.write(nb,path)
+ if solution:
+  lab_html,_=HTMLExporter().from_notebook_node(nb)
+  (P/'html'/f'{S}.html').write_text(lab_html)
 ref='''# Temporal visibility: a reference card
 
 A query is **(typed entity, prediction time t, horizon Δ)**. Inputs stop at t; labels describe (t,t+Δ]. All boundaries must be declared.

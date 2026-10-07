@@ -38,18 +38,10 @@ def paired_ap(baseline, changed):
     """Pooled AP and changed-minus-baseline percentage points on paired records.
     e identifies positive events; negative identifies paired negative destinations.
     """
-    event_ids = np.asarray(baseline['e'])
-    if event_ids.ndim != 1:
-        raise ValueError('Event identities must be a vector')
-    n = len(event_ids)
-    for records in [baseline, changed]:
-        for name in ['e', 'negative', 'batch', 'p', 'n']:
-            values = np.asarray(records[name])
-            if values.ndim != 1 or len(values) != n:
-                raise ValueError(f'Unaligned evaluation vector: {name}')
     for name in ['e', 'negative', 'batch']:
         if not np.array_equal(baseline[name], changed[name]):
             raise ValueError(f'Unpaired comparison: {name}')
+    n = len(baseline['e'])
     if not n:
         raise ValueError('Empty evaluation')
     y = np.r_[np.ones(n), np.zeros(n)]

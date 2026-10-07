@@ -22,10 +22,11 @@ with sync_playwright() as pw:
    assert ('ALLOW' if day<=8 else 'BLOCK') in out.inner_text()
    assert widget.locator('section').first.inner_text().endswith('BLOCK · unavailable at prediction');states+=1
   widget.locator('button').click();assert slider.input_value()=='9';slider.focus();page.keyboard.press('ArrowLeft');assert slider.input_value()=='8' and 'ALLOW' in out.inner_text();widget.locator('button').click()
-  assert page.locator('#l104-warmup').inner_text().strip()
+  assert page.locator('#l104-warmup').count()==0
   pred=page.locator('#l104-predict');assert pred.locator('button').last.is_disabled();pred.locator('button').first.click();pred.locator('button').last.click()
   teach=page.locator('#l104-teachback');teach.locator('textarea').fill('A record is usable only under the declared prediction-time convention. Event time and availability time differ. Child histories have their own cutoffs, and fitting labels must mature. I fix the trained weights, event IDs, negative destinations and random schedule when measuring the effect. Fresh evaluation reuses L103 training.');teach.locator('button').first.click()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'page overflow'
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   page.evaluate('document.querySelectorAll("details").forEach(d=>d.open=true)')
   page.evaluate('window.scrollTo(0,0)');page.screenshot(path=f'/tmp/l104-top-{width}.png')
@@ -44,10 +45,10 @@ with sync_playwright() as pw:
  page.goto((P/'html'/f'{S}.html').as_uri());figures=page.locator('img[src^="data:image/png;base64,"]').count();assert figures>=3
  page.set_viewport_size({'width':950,'height':900});page.locator('img[src^="data:image/png;base64,"]').nth(1).screenshot(path='/tmp/l104-notebook-recursion.png')
  nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri())
- assert 'Without opening L103' in plain.locator('article').inner_text()
+ assert 'Same seed, different draws' in plain.locator('article').inner_text()
  assert plain.locator('figure').count()>=3
  assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
- assert plain.get_by_text('Check after committing your answers',exact=True).count()==1
+ assert plain.get_by_text('Check after committing your answers',exact=True).count()==0
  assert plain.locator('details:has(table)').count()==1
  plain.emulate_media(media='print');assert plain.locator('details:has(table)').locator('table').first.evaluate('e=>e.checkVisibility()'),'No-JS print results'
  nojs.close();browser.close()
@@ -62,6 +63,7 @@ assert hashlib.sha256('\n\n'.join(c.source for c in solution.cells if c.cell_typ
 paths=[R/'lessons'/f'{S}.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l104.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'nondeterministic build'
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[]
