@@ -261,3 +261,28 @@ SPECS['138'].update(title='A book influences churn through its review path',step
  ['Pass context through reviews','A product informs a review; a later layer can carry that state to the customer.'],
  ['Predict customer churn','The customer root head produces one logit; binary cross-entropy trains against the churn target.']
 ],op=('churn',),question='Is this output a ranking over books?',answer='No. It is one churn prediction for the queried customer. Books supply relational context through review rows.',scope='rel-amazon customer-churn path. Eligibility and future outcome windows are distinct; future reviews are not input features.')
+
+add('65','Select query rows and their target-token states',[
+ 'Capture a complete block output|H has axes batch × rows × tokens × hidden coordinates. The final token in each row is its target token.',
+ 'Exclude context rows from the readout|C: selects all query rows; it does not select only the final row.',
+ 'Keep the target-token axis|−1 selects the target token, not the final hidden coordinate. Keep every hidden coordinate with the last colon.',
+ 'Preserve each row’s identity|H[:, C:, −1, :] yields B × Q × 192. Cross-fit training rows, scatter to original order, then fit the probe.'
+],('query_slice',),'With two query rows, does H[:, −1, −1, :] return both embeddings?','No. It keeps only the last row. H[:, C:, −1, :] keeps both query rows and every hidden coordinate.','Illustrative slice of one batch with two context rows, two queries and two feature-group tokens. Each pictured cell is an entire hidden vector; the real width is 192.', 'Why context and query states answer different questions')
+add('83','A duplicated neighbor receives more weight in the stored table',[
+ 'Start with the true neighbor list|A carries scalar value 2; B carries 8. Their full-list mean is 5.',
+ 'Construct a padded adjacency row|A toy three-entry stored row [A, B, B] repeats B. The pinned release uses width 128, not three.',
+ 'Average sampled occurrences|For this complete toy row, (2 + 8 + 8)/3 = 6. A uniform column draw samples B with probability 2/3.',
+ 'Keep this approximation separate|Mean aggregation is symmetric in order, but not invariant to duplicating only one neighbor. The root’s own path remains separate.'
+],('duplicate_mean',),'Does shuffling [A, B, B] recover the true-list mean of 5?','No. Shuffling preserves multiplicity, so the row mean stays 6. Sampling uniformly from its columns targets that stored-row mean, not the original two-entry mean.','Scalar toy example of the fixed padded adjacency table described below. It is not a new measured result or a claim that every minibatch equals the row mean.', '4 ·')
+add('84','Removing one edge changes the other attention weights',[
+ 'Freeze one head’s projected values|Allowed sender values and post-activation scores are both [0, 1, 2] in this scalar example.',
+ 'Normalize within one receiver|The denominator is exp(0) + exp(1) + exp(2). It belongs to this receiver and head.',
+ 'Remove the third incoming edge|Scores 0 and 1 stay fixed. Recompute their denominator; do not keep their old coefficients.',
+ 'Weight and sum the remaining values|The output changes from about 1.575 to 0.731. A disconnected node never enters either denominator.'
+],('attention_remove',),'After removing sender 3, does sender 2 keep weight 0.245?','No. Its weight becomes exp(1)/(exp(0)+exp(1)) ≈ 0.731. Attention coefficients depend on the other eligible senders.','The same scalar worked example used below, with zero biases and evaluation-time dropout off. Values are rounded to three decimals; this is neighborhood softmax, not class softmax.', 'Trace one receiver before adding heads')
+add('85','Small distances can mean shrinking rather than mixing',[
+ 'Begin with distinct node states|Two scalar node states are [2, 8]. Their raw gap is 6.',
+ 'Shrink both by the same factor|Multiplying by 0.001 gives [0.002, 0.008]. The relative distinction is unchanged.',
+ 'Compare with actual averaging|The lesson’s equal-degree two-node support maps [2, 8] to [5, 5]. That distinction has vanished.',
+ 'Check scale and graph structure|Compare the gap relative to vector norm in this toy case. For general graphs, use the lesson’s degree-adjusted, component-aware diagnostic.'
+],('scale_mix',),'Is a thousand-fold reduction in raw distance enough to establish over-smoothing?','No. Uniform rescaling can produce it without removing the distinction. In this example only averaging makes the scale-normalized gap zero.','Toy comparison: normalized gap = |h₂ − h₁| / √(h₁² + h₂²), with a nonzero denominator. This illustrates a confound; it is not a replacement for the general graph diagnostic.', 'Use a two-node calculation')

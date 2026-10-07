@@ -1,13 +1,38 @@
 """Responsive course architecture routes with an explicit operation inside each map."""
 from html import escape as e
-import re
+import math,re
 from visual_detail_layouts import Scene,T,P,G,R,I,S
 from course_visual_specs import SPECS
 START='<!-- course-visual:start -->';END='<!-- course-visual:end -->'
 
 def drawing(kind,key):
  c=Scene()
- if kind=='churn':
+ if kind=='query_slice':
+  c.text(20,21,'row',15,I);c.text(134,21,'feature groups',15,I,'middle');c.text(249,21,'target',15,P,'middle')
+  for i,label in enumerate(['c₀','c₁','q₀','q₁']):
+   y=40+i*40;c.text(22,y+20,label,17,P if i>1 else S)
+   c.table(69,y,[['h','h','Z₀' if i==2 else 'Z₁' if i==3 else 'h']],w=67,h=34,colors={(0,2):P} if i>1 else None)
+  c.parts.append('<rect x="199" y="116" width="71" height="82" rx="6" fill="none" stroke="#7656a6" stroke-width="3"/>')
+  c.text(150,226,'H[:, C:, −1, :]',21,P,'middle');c.text(150,254,'two query vectors × 192',17,I,'middle')
+ elif kind=='duplicate_mean':
+  c.text(150,21,'true neighbor list',17,I,'middle');c.table(71,36,[['A: 2','B: 8']],w=82,h=33)
+  c.text(150,96,f'mean = {(2+8)/2:g}',19,T,'middle');c.line(150,108,150,130)
+  c.text(150,154,'padded table: B appears twice',16,P,'middle');c.table(20,170,[['A: 2','B: 8','B: 8']],w=88,h=33,colors={(0,1):P,(0,2):P})
+  c.text(150,239,f'mean = {(2+8+8)/3:g} ≠ 5',21,P,'middle')
+ elif kind=='attention_remove':
+  values=[0,1,2];den=sum(math.exp(x) for x in values);weights=[math.exp(x)/den for x in values];reduced=sum(math.exp(x) for x in values[:2]);next_weights=[math.exp(x)/reduced for x in values[:2]]
+  c.text(150,21,'same scores / values: 0, 1, 2',16,I,'middle')
+  c.text(150,49,f'all edges · denominator {den:.3f}',16,T,'middle');c.table(22,61,[[f'{w:.3f}' for w in weights]],w=87,h=34)
+  c.text(150,120,f'weighted output = {sum(w*v for w,v in zip(weights,values)):.3f}',18,T,'middle')
+  c.text(150,156,'remove edge 3; scores unchanged',15,P,'middle');c.table(22,170,[[f'{w:.3f}' for w in next_weights]+['excluded']],w=87,h=34,colors={(0,j):P for j in range(3)})
+  c.text(150,228,f'denominator {reduced:.3f} → output {next_weights[1]:.3f}',16,P,'middle');c.text(150,256,'remaining weights renormalize',15,I,'middle')
+ elif kind=='scale_mix':
+  for i,(label,values) in enumerate([('original',[2,8]),('× 0.001',[.002,.008]),('average',[5,5])]):
+   y=25+i*79;color=P if i==2 else T;gap=abs(values[1]-values[0])/math.sqrt(sum(x*x for x in values))
+   c.text(10,y+18,label,16,color);c.table(104,y,[[f'{v:g}' for v in values]],w=88,h=31,colors={(0,j):color for j in range(2)})
+   c.text(150,y+55,f'normalized gap = {gap:.3f}',17,color,'middle')
+  c.text(150,264,'shrink: same ratio · mix: gap lost',15,I,'middle')
+ elif kind=='churn':
   c.graph([(50,43),(150,115),(250,43)],[(0,1)],['book','review','future'])
   c.line(150,143,150,173);c.box(56,185,190,'customer → logit',G);c.text(150,252,'future review stays excluded',16,R,'middle')
  elif kind=='join':

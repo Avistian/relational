@@ -4,7 +4,7 @@ from http.server import ThreadingHTTPServer,SimpleHTTPRequestHandler
 from playwright.sync_api import sync_playwright
 from refresh_lesson_visuals import ROOT,selected,key_for
 from course_visual_specs import SPECS
-SOURCES=['scripts/course_visual_specs.py','scripts/course_visuals.py','assets/course-visuals.css','assets/lesson.css']
+SOURCES=['scripts/course_visual_specs.py','scripts/course_visuals.py','scripts/visual_detail_layouts.py','assets/course-visuals.css','assets/lesson.css']
 def main():
  class Quiet(SimpleHTTPRequestHandler):
   def log_message(self,*a):pass
