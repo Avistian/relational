@@ -23,6 +23,10 @@ def verify():
     torch.testing.assert_close(propagate(s,h,torch.ones(1,1)),expected)
     assert verdict(.815,100,True)=='CLOSE'
     assert verdict(.90,100,True)=='FAIL'
+    assert verdict(.805,100,True)==verdict(.825,100,True)=='CLOSE'
+    assert verdict(.804999,100,True)==verdict(.825001,100,True)=='FAIL'
+    assert verdict(.825,99,True)=='INCOMPLETE'
+    assert verdict(.825,100,False)=='INCOMPARABLE'
     assert verdict(.815,3,True)=='INCOMPLETE'
     assert verdict(.815,100,False)=='INCOMPARABLE'
     # Shared weights: deterministic degree-one fixture makes sampled and full inference identical.

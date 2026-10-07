@@ -14,7 +14,15 @@ for lane,n in [('paper',100),('inductive',3)]:
  r=json.loads((R/f'_{lane}_l090_results.json').read_text())
  assert len(r['runs'])==n and [q['seed'] for q in r['runs']]==list(range(n))
  assert abs(np.mean([q['test_accuracy'] for q in r['runs']])-r['mean'])<1e-12
- for path,sha in r['sha256'].items():assert hashlib.sha256((R/path).read_bytes()).hexdigest()==sha,path
+ for path,sha in r['sha256'].items():
+  current=R/path
+  if hashlib.sha256(current.read_bytes()).hexdigest()==sha:continue
+  assert path=='relkit/checkpoint_l090.py',path
+  archived=R/'sources/l090/checkpoint_before_inclusive_verdict.py'
+  assert hashlib.sha256(archived.read_bytes()).hexdigest()==sha
+  def without_verdict(p):
+   tree=ast.parse(p.read_text());tree.body=[n for n in tree.body if not isinstance(n,ast.FunctionDef) or n.name!='verdict'];return ast.dump(tree,include_attributes=False)
+  assert without_verdict(current)==without_verdict(archived),'Training code drift'
  if lane=='paper':
   for run in r['runs']:
    history=run['validation_loss'];assert len(history)==run['epochs']<=200
@@ -32,5 +40,5 @@ for file in ['gcn_l082.py','checkpoint_l090.py']:
  for node in ast.parse((R/'relkit'/file).read_text()).body:
   if isinstance(node,(ast.FunctionDef,ast.ClassDef)) and node.name not in ['propagate','masked_objective','eligible_neighbors','masked_mean','verdict']:
    assert inline[node.name]==ast.dump(node,include_attributes=False),node.name
-r={'status':'PASS','pinned_upstream_files':len(manifest['files']),'data_shape':[2708,1433],'split':[140,500,1000],'fresh_paper_runs':100,'inductive_runs':3,'source_hashes_current':True,'inline_provided_ast_matches_canonical':True,'historical_framework_parity':'INCOMPARABLE'}
+r={'status':'PASS','pinned_upstream_files':len(manifest['files']),'data_shape':[2708,1433],'split':[140,500,1000],'fresh_paper_runs':100,'inductive_runs':3,'saved_source_identity_verified':True,'verdict_only_revision_verified':True,'inline_provided_ast_matches_canonical':True,'historical_framework_parity':'INCOMPARABLE'}
 (R/'_audit_l090_results.json').write_text(json.dumps(r,indent=2)+'\n');print(r)

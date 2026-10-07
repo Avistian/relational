@@ -1,6 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Graph classification: what can GIN distinguish?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/wl-viz.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0087-link-prediction.html">Lesson 87</a> · <a href="../reference/graph-classification.html">Reference</a></nav><header><p>Year 3 · Quarter 1 · Lesson 088</p><h1>Graph classification: what can GIN distinguish?</h1></header><aside><a href="../labs/0088-graph-classification.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0088-graph-classification.ipynb">Open in Colab</a> · <a href="../labs/html/0088-graph-classification.html">Read lab</a> · <a href="../labs/solutions/0088-graph-classification.ipynb">Solution</a></aside>
-
-<p><strong>Your tangible win.</strong> Implement a GIN update and whole-graph readout, then explain a pair of graphs the model cannot separate. The core reading takes about 25 minutes. The notebook adds three live implementation tasks; the full reproduction is a separate, much longer run.</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Graph classification: what can GIN distinguish?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/wl-viz.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0087-link-prediction.html">Lesson 87</a> · <a href="../reference/graph-classification.html">Reference</a></nav><header><p>Year 3 · Quarter 1 · Lesson 088</p><h1>Graph classification: what can GIN distinguish?</h1></header><aside><a href="../labs/0088-graph-classification.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0088-graph-classification.ipynb">Open in Colab</a> · <a href="../labs/html/0088-graph-classification.html">Read lab</a> · <a href="../labs/solutions/0088-graph-classification.ipynb">Solution</a></aside><p><strong>Your tangible win.</strong> Implement a GIN update and whole-graph readout, then explain a pair of graphs the model cannot separate. The core reading takes about 25 minutes. The notebook adds three live implementation tasks; the full reproduction is a separate, much longer run.</p>
 <p><a href="0087-link-prediction.html">Lesson 87</a> ended by turning a candidate link into an enclosing subgraph. Now the prediction target is the entire graph. One molecule yields one class label, even though molecules have different numbers of atoms. Our mission needs this step: relational models must compress variable-size neighborhoods without silently discarding the distinctions a task needs.</p>
 <!-- depth-walkthrough:start -->
 
@@ -57,6 +55,30 @@
 </pre></div>
 <p>Here <code>h</code> is a node vector, <code>N(v)</code> is the set of its neighbors, and <code>ε</code> weights the center relative to those neighbors. Every node at a given depth uses the same MLP; different depths have separate parameters. <strong>GIN-ε</strong> learns epsilon. <strong>GIN-0</strong>, our paper target, fixes it to zero. At zero, center and neighbors have equal weight. GIN-0 is a practical variant: do not transfer every sufficient injectivity condition for the center–multiset pair to it automatically.</p>
 <p><strong>Worked example.</strong> A center <code>[1,0]</code> receives neighbors <code>[1,0]</code> and <code>[0,1]</code>. Their sum is <code>[1,1]</code>; adding the center produces <code>[2,1]</code>. This <code>[2,1]</code>, not the mean <code>[2/3,1/3]</code>, enters the MLP. With epsilon .5 the input would be <code>[2.5,1]</code>.</p>
+<h3 id="Why-the-center-coefficient-can-matter">Why the center coefficient can matter<a class="anchor-link" href="#Why-the-center-coefficient-can-matter">&#182;</a></h3><p>Consider two rooted neighborhoods using scalar features. In the first, the center is 1 and its only neighbor is 2. In the second, the center is 2 and its only neighbor is 1. A rooted neighborhood identifies which node is the receiver; swapping that role changes the input even though the combined multiset is the same.</p>
+<table>
+<thead>
+<tr>
+  <th>Rooted input</th>
+  <th style="text-align:right">GIN-0</th>
+  <th style="text-align:right">ε=0.5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Center 1, neighbor 2</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">3.5</td>
+</tr>
+<tr>
+  <td>Center 2, neighbor 1</td>
+  <td style="text-align:right">3</td>
+  <td style="text-align:right">4</td>
+</tr>
+</tbody>
+</table>
+<p>At ε=0, the same MLP receives 3 in both cases, so it cannot recover which value belonged to the center. A 1-WL signature keeps the center label separate from the neighbor multiset and can distinguish these rooted inputs immediately. A nonzero coefficient separates this particular pair, but ε=0.5 is not a universal injectivity guarantee.</p>
+<p>This is a <strong>node-update</strong> collision. It does not by itself prove that every pair of whole graphs containing these roots has identical GIN predictions: the input-depth head, other nodes and later readouts also matter. <strong>Try it:</strong> construct two more different center/neighbor pairs that still collide when ε=0.5. For example, center 2 with neighbor 1 and center 0 with neighbor 4 both produce 4. The paper's sufficient conditions concern suitable encodings and coefficients, not arbitrary raw scalars.</p>
 <figure class="mpnn-figure" id="visual-figure-4"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l088/architecture.png" alt="Complete released GIN-0 path: four node updates, five graph readouts, per-depth heads, logit dropout and graph loss."></div><figcaption>Complete released GIN-0 path: four node updates, five graph readouts, per-depth heads, logit dropout and graph loss.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l088/architecture.png" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>
 
 <p>The released model contains <strong>four message-passing updates plus the input representation</strong>, described as five layers in the paper. Each update uses a two-layer MLP: linear → batch normalization → ReLU → linear, followed by another batch normalization and ReLU. <strong>Batch normalization</strong> standardizes hidden coordinates using training mini-batch statistics and maintains running statistics for evaluation. <strong>ReLU</strong> keeps positive values and replaces negative values with zero.</p>
@@ -187,6 +209,6 @@
 <p><strong>EXIT artifact.</strong> Save <code>l088-exit.json</code> with your three readout results, selected epochs, fold values, and answers to: Why can raw sums collide? Why does a six-cycle collide with two triangles? What makes the selected CV score optimistic? Explain a result that would make you choose mean readout despite its weaker counting ability. Send the artifact and your explanation to the agent for feedback.</p>
 <div id="teachback"></div>
 
-<p><strong>Spaced return.</strong> Tomorrow, draw the four-node path/star refinement without looking. In a week, implement grouped sum and recover the common-epoch counterexample from memory. <a href="../reference/graph-classification.html#next">Lesson 89's planned topic</a> asks how to preserve useful graph computation when the whole graph cannot fit in memory.</p>
+<p><strong>Spaced return.</strong> Tomorrow, draw the four-node path/star refinement without looking. In a week, implement grouped sum and recover the common-epoch counterexample from memory. <a href="0089-sampling-at-scale.html">Lesson 89</a> asks how to preserve useful graph computation when the whole graph cannot fit in memory.</p>
 <p>Ask the agent about any unclear step; especially challenge the distinction between an expressiveness theorem and a measured predictive advantage. Prepared material does not establish your mastery.</p>
 </article><script src="../assets/retrieval-pool.js"></script><script src="../assets/retrieval-bank.js"></script><script src="../assets/predict.js"></script><script src="../assets/teachback.js"></script><script src="../assets/wl-viz.js"></script><script src="../assets/l088-lesson.js"></script><script src="../assets/visual-stories.js" defer></script></body></html>

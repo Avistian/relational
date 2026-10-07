@@ -7816,14 +7816,13 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l090-b110c36ea661a062-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l090-9962f2c07fe4b634-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h1 id="Q1-checkpoint:-build-and-defend-a-GNN">Q1 checkpoint: build and defend a GNN<a class="anchor-link" href="#Q1-checkpoint:-build-and-defend-a-GNN">¶</a></h1><p><strong>Your win:</strong> hand over a runnable GNN, a benchmark report and an inductive mini-batch implementation whose information boundary you can defend. This is the Q1 checkpoint, not a new architecture survey. Allow one session for the short reading and several sessions for the lab and written defense.</p>
-
 <p><a href="https://avistian.github.io/relational/lessons/0089-sampling-at-scale.html">Lesson 89</a> made a large graph trainable. Here you must assemble the whole argument: the messages are right, the training data is allowed, the benchmark is faithfully specified, and the conclusion follows from the measurements. These are prerequisites for learning across foreign-key relationships in the next quarter. Our mission demands defensible relational results, not simply a working GNN import.</p>
 <p><strong>Primary reading:</strong> revisit <a href="https://arxiv.org/html/1609.02907v4">Kipf &amp; Welling, §3, §5.2 and Table 2</a> and <a href="https://arxiv.org/html/1706.02216v4">Hamilton et al., Algorithm 1 and §3.1</a>. The <a href="https://github.com/tkipf/gcn/tree/39a4089fe72ad9f055ed6fdb9746abdcfebc4d81">pinned GCN release</a> resolves concrete implementation choices. <a href="https://avistian.github.io/relational/lessons/0082-gcn.html">Lesson 82</a> and <a href="https://avistian.github.io/relational/lessons/0083-graphsage.html">Lesson 83</a> are repair references; use them when needed.</p>
 <!-- depth-walkthrough:start -->
@@ -7963,6 +7962,35 @@ a.anchor-link {
 <p><strong>Interpretation.</strong> Sample standard deviation describes variation among the declared initializations. Standard error divides that SD by √100; it estimates uncertainty of the mean conditional on this fixed split and implementation. Neither quantifies performance across future graphs. The plot retains individual seed scores so you can see what the mean hides.</p>
 <p><strong>Historical fidelity.</strong> This is a modern PyTorch port of the released GCN protocol. Original seed identities and exact paper-run source revision are unavailable. TensorFlow-1 RNG streams, sparse operations and Adam arithmetic differ. Full execution coverage and a close score establish a useful reconstruction; bitwise historical parity remains <strong>INCOMPARABLE</strong>. Original TensorFlow training, other datasets and other Table 2 methods remain <strong>NOT_RUN</strong>.</p>
 <p><strong>Lab task D:</strong> implement a verdict that checks protocol compatibility before score tolerance, rejects fewer than 100 runs as incomplete, and distinguishes CLOSE from FAIL. A high score under an incompatible split must remain INCOMPARABLE. An honest FAIL report is a valid scientific artifact; it is not permission to tune against test labels.</p>
+<h3 id="Trace-the-verdict-at-the-acceptance-boundary">Trace the verdict at the acceptance boundary<a class="anchor-link" href="#Trace-the-verdict-at-the-acceptance-boundary">¶</a></h3><p>The course target is 0.815 with an inclusive absolute tolerance of 0.01: the accepted interval is <strong>[0.805,0.825]</strong>, or 80.5% through 82.5%. This is one percentage point, not one percent of the target. Apply the protocol and run-count gates first.</p>
+<table>
+<thead>
+<tr>
+<th>Protocol · runs · mean</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aligned · 100 · 0.825</td>
+<td><code style="white-space:nowrap">CLOSE</code></td>
+</tr>
+<tr>
+<td>Aligned · 100 · 0.825001</td>
+<td><code style="white-space:nowrap">FAIL</code></td>
+</tr>
+<tr>
+<td>Aligned · 99 · 0.815</td>
+<td><code style="white-space:nowrap">INCOMPLETE</code></td>
+</tr>
+<tr>
+<td>Different split · 100 · 0.815</td>
+<td><code style="white-space:nowrap">INCOMPARABLE</code></td>
+</tr>
+</tbody>
+</table>
+<p>Floating-point arithmetic needs a boundary check. In Python, <code>abs(0.825 - 0.815)</code> is approximately <code>0.010000000000000009</code>, so a direct subtraction comparison incorrectly rejected the displayed upper endpoint. The revised helper compares <code>target - tolerance &lt;= mean &lt;= target + tolerance</code>. It does not round every score into the interval: 0.825001 still fails. The notebook CHECK includes both endpoints and nearby outside values.</p>
+<p><strong>Try it:</strong> hold the mean at 0.825 while changing only the run count or protocol flag. Explain why a numerical correction must not bypass either evidence gate. CLOSE still describes this course's tolerance, not historical identity or learner mastery.</p>
 <h2 id="6-%C2%B7-Produce-the-checkpoint-artifact">6 · Produce the checkpoint artifact<a class="anchor-link" href="#6-%C2%B7-Produce-the-checkpoint-artifact">¶</a></h2><p>Open the <a href="https://avistian.github.io/relational/labs/0090-gnn-checkpoint.ipynb">student notebook</a>, <a href="https://avistian.github.io/relational/labs/html/0090-gnn-checkpoint.html">prepared readable lab</a>, or <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0090-gnn-checkpoint.ipynb">Colab</a>. A <a href="https://avistian.github.io/relational/labs/solutions/0090-gnn-checkpoint.ipynb">teacher solution</a> is available after your attempt. Every load-bearing implementation is visible inline; no graph library supplies the model.</p>
 <p>From the repository root, the full author reproduction is:</p>
 <div class="highlight"><pre><span></span>python<span class="w"> </span>labs/_verify_l090.py
@@ -8580,7 +8608,7 @@ python<span class="w"> </span>labs/_run_l090.py<span class="w"> </span>--lane<sp
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_check" id="cell-id=l090-d6863eb2ab234faa-0">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_check" id="cell-id=l090-73caade56f41fb89-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8593,6 +8621,8 @@ python<span class="w"> </span>labs/_run_l090.py<span class="w"> </span>--lane<sp
 <span class="k">assert</span> <span class="n">verdict</span><span class="p">(</span><span class="mf">.815</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span><span class="o">==</span><span class="s1">'INCOMPLETE'</span>
 <span class="k">assert</span> <span class="n">verdict</span><span class="p">(</span><span class="mf">.815</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span><span class="o">==</span><span class="s1">'CLOSE'</span>
 <span class="k">assert</span> <span class="n">verdict</span><span class="p">(</span><span class="mf">.9</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span><span class="o">==</span><span class="s1">'FAIL'</span>
+<span class="k">assert</span> <span class="n">verdict</span><span class="p">(</span><span class="mf">.805</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span><span class="o">==</span><span class="n">verdict</span><span class="p">(</span><span class="mf">.825</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span><span class="o">==</span><span class="s1">'CLOSE'</span>
+<span class="k">assert</span> <span class="n">verdict</span><span class="p">(</span><span class="mf">.804999</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span><span class="o">==</span><span class="n">verdict</span><span class="p">(</span><span class="mf">.825001</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span><span class="o">==</span><span class="s1">'FAIL'</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'CHECK: protocol and execution coverage precede numerical closeness'</span><span class="p">)</span>
 </pre></div>
 </div>

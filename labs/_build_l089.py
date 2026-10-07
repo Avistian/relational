@@ -20,7 +20,7 @@ def prose(portable=False):
  for tag,(name,caption) in FIGS.items():
   p=LAB/f'figures/l089/{name}.png';src='data:image/png;base64,'+base64.b64encode(p.read_bytes()).decode() if portable else f'../labs/figures/l089/{name}.png'
   s=s.replace('[['+tag+']]',f'<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"></div><figcaption>{caption}</figcaption></figure>')
- for tag,id,text in [('WARMUP','warmup','Write your three cold-retrieval answers before continuing.'),('PREDICT','prediction','Predict before revealing: how many edges belong in the induced union of C0 and C1?'),('PARTITION_WIDGET','cluster-sampling','Trace q=1,2,3 selected clusters on the six-node path; retained edge counts are1,3,5.'),('TEACHBACK','teachback','Explain the memory and gradient trade-off, including the cache and unequal update counts.')]:
+ for tag,id,text in [('PREDICT','prediction','Predict before revealing: how many edges belong in the induced union of C0 and C1?'),('PARTITION_WIDGET','cluster-sampling','Trace q=1,2,3 selected clusters on the six-node path; retained edge counts are1,3,5.'),('TEACHBACK','teachback','Explain the memory and gradient trade-off, including the cache and unequal update counts.')]:
   s=s.replace('[['+tag+']]',text if portable else f'<div id="{id}"></div>')
  s=s.replace('[[TEACHING]]',teaching()).replace('[[PAPER_STATUS]]',paper())
  if portable:

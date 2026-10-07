@@ -7828,14 +7828,12 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l087-4d1d28a19529a349-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l087-1e20b92b350395c8-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Close lesson 86. For an undirected graph stored as directed messages, how many columns represent one edge? Which data may enter a validation-selected model before test scoring? If every example shares one graph, does splitting example rows necessarily isolate their information?</p>
-
 <!-- depth-walkthrough:start -->
 <div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 087</p><p><strong>Build on what you know.</strong> <a href="https://avistian.github.io/relational/lessons/0086-pyg-fundamentals.html">Lesson 86</a> made routing explicit. Link prediction introduces a new boundary: the relationship being predicted must not reveal itself through the message graph. <a href="https://avistian.github.io/relational/lessons/0055-tabred-temporal-splits.html">Lesson 55</a>'s temporal discipline becomes especially important for future interactions.</p><p><strong>The next question.</strong> <a href="https://avistian.github.io/relational/lessons/0088-graph-classification.html">Lesson 88</a> treats graph classification directly. SEAL provides the bridge by converting each candidate link into a labeled enclosing graph, while the simpler dot-product model predicts from two node embeddings.</p><p><a href="https://avistian.github.io/relational/reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 </div>
@@ -7938,7 +7936,7 @@ Predict and check: adding A → C changes H_C from 0 to 1; the safe baseline rem
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l087-79cab602eb2df7e2-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l087-aeda452664856f58-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7955,6 +7953,31 @@ Hits@k = mean(rank &lt;= k)
 </pre></div>
 <p>The lab evaluates both directions of each test pair. Each query receives 50 distinct, uniformly sampled destinations that are neither the source nor any known neighbor. Negatives may recur across different queries. We freeze the sampled candidates. Hits@10 with 50 negatives is not an all-item retrieval result; filtering and K are part of its name.</p>
 <p><strong>AUC asks another question.</strong> ROC AUC measures how often a randomly drawn positive outranks a negative, counting ties as half. It pools binary examples rather than requiring a fixed source per query. AUC and MRR can disagree because they compare different pairs. The paper reconstruction reports AUC; the teaching lab adds ranking metrics under its separate candidate protocol.</p>
+<h3 id="Perfect-within-query-ranking-need-not-give-pooled-AUC-one">Perfect within-query ranking need not give pooled AUC one<a class="anchor-link" href="#Perfect-within-query-ranking-need-not-give-pooled-AUC-one">¶</a></h3><p>Consider two queries, each with one positive and one negative candidate. This is a tiny diagnostic, not the lab's 50-negative protocol.</p>
+<table>
+<thead>
+<tr>
+<th>Q</th>
+<th style="text-align:right">Positive score</th>
+<th style="text-align:right">Negative score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td style="text-align:right">100</td>
+<td style="text-align:right">99</td>
+</tr>
+<tr>
+<td>B</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<p>Each positive outranks its own negative, so both ranks are 1 and MRR is 1. Pooled AUC compares <strong>every</strong> positive with <strong>every</strong> negative: 100 beats 99 and 0, while 1 beats 0 but loses to 99. Three of four comparisons succeed, giving AUC=0.75.</p>
+<p>Subtract 99 from both scores of query A. Both queries now have positive score 1 and negative score 0. Their within-query ranks and MRR are unchanged, but pooled AUC becomes 1. The query-specific shift changes the ordering across queries; one common shift applied to every score would change neither metric.</p>
+<p>Neither result is a contradiction. Per-query ranking asks which candidate wins for a given source; pooled AUC also compares score levels across sources. If you change the candidate policy, or replace pooled AUC with a mean of query-specific AUCs, you have changed the evaluation question. <strong>Try it:</strong> enumerate the four positive–negative comparisons before and after the shift, then reproduce them with the evaluator.</p>
 </div>
 </div>
 </div>

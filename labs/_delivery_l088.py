@@ -28,11 +28,15 @@ with sync_playwright() as p:
   page.locator('#wl-refinement button').click()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'page overflow'
   page.screenshot(path=f'/tmp/l088-page-{width}.png',full_page=False)
+ page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+ page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
- assert page.locator('#warmup').inner_text().strip()
+ assert page.locator('#warmup').count()==0
  assert page.locator('#prediction').inner_text().strip() and page.locator('#teachback textarea').count()==1
  page.goto((LAB/'html'/f'{SLUG}.html').as_uri())
- count=page.locator('img[src^="data:image/png;base64,"]').count();assert count==4
+ count=page.locator('img[src^="data:image/png;base64,"]').count();assert count==5
+ page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+ page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
  assert not errors,errors;browser.close()
 nb=nbformat.read(LAB/f'{SLUG}.ipynb',as_version=4)

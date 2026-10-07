@@ -7836,14 +7836,12 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l086-ffd1882516a32504-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l086-64699b85eaa029f8-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Close lesson 82. Write the shape of X, edge_index and W for a four-node graph with three features and two output channels. Which row of an edge list names the sender? Which labels may contribute gradients in transductive training? Why must degrees include self-loops?</p>
-
 <!-- depth-walkthrough:start -->
 <div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 086</p><p><strong>Build on what you know.</strong> <a href="https://avistian.github.io/relational/lessons/0082-gcn.html">Lesson 82</a> derived the GCN coefficients and <a href="https://avistian.github.io/relational/lessons/0083-graphsage.html">Lesson 83</a> separated roots from support. PyG changes the implementation tools; it should not silently change either mathematical operator or supervision boundary.</p><p><strong>The next question.</strong> <a href="https://avistian.github.io/relational/lessons/0087-link-prediction.html">Lesson 87</a> changes the target from nodes to pairs. <a href="https://avistian.github.io/relational/lessons/0088-graph-classification.html">Lesson 88</a> changes it to whole graphs. The same containers support these tasks, but their split units and readouts differ.</p><p><a href="https://avistian.github.io/relational/reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 </div>
@@ -7925,7 +7923,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l086-cfd4f004c718daaf-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l086-288b74e51b4f9f51-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7943,6 +7941,31 @@ a.anchor-link {
 <p>The first <code>batch_size</code> nodes are seeds. The rest supply context. <code>batch.n_id</code> maps local node IDs back to the original graph; recover original edges with <code>batch.n_id[batch.edge_index]</code>. A batch seeded at global node 1 may place it at local node 0. Never use local IDs to index the original label array. Sampling requires a compatible compiled backend such as pyg-lib. The reproduction guide records the tested build. <a href="https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/loader/neighbor_loader.html">NeighborLoader source and contract</a>.</p>
 <p><strong>Prediction:</strong> if you flip labels of context nodes but keep seeds unchanged, should seed loss or its gradients change? The lab proves they do not. Context features can still affect seed predictions. This is expected in a transductive setting; availability of future relational features must be audited separately.</p>
 <p><strong>GCN sampling trap:</strong> recomputing degrees on a sampled subgraph changes normalization. Even all-neighbor sampling for a fixed number of hops does not necessarily preserve boundary-node degrees. The lesson's exact GCN parity and benchmark therefore use the full graph. The loader lab tests identity and supervision contracts; it does not claim sampled/full GCN equality. For exact evaluation, preserve full-graph coefficients and all required message paths, or use the full graph.</p>
+<h3 id="All-root-neighbors-can-be-present-and-the-answer-can-still-change">All root neighbors can be present and the answer can still change<a class="anchor-link" href="#All-root-neighbors-can-be-present-and-the-answer-can-still-change">¶</a></h3><p>Use A—B—C with scalar features <code>[2,4,8]</code>, a single GCN layer, W=1 and no bias. Seed A and collect all its one-hop neighbors: the retained nodes are A and B. Now deliberately build the <strong>induced undirected graph</strong> on those nodes, keeping both directions of A—B. This additional step makes the comparison about degree normalization; a default directional loader returns only sampled directed edges.</p>
+<table>
+<thead>
+<tr>
+<th>Graph used for normalization</th>
+<th style="text-align:right">Degree of B with loop</th>
+<th style="text-align:right">Output at A</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full A—B—C</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">1 + 4/√6 = 2.6330</td>
+</tr>
+<tr>
+<td>Induced A—B</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">1 + 4/2 = 3.0000</td>
+</tr>
+</tbody>
+</table>
+<p>A has every neighbor it needs for one layer in both computations, and B still sends feature 4. The coefficient changed because B lost its edge to C. Collecting all immediate neighbors guarantees neither the same degree nor the same normalized message.</p>
+<p>To recover A's full-graph answer here, keep the original coefficients: A's self coefficient is 1/2 and B→A is 1/√6. Sum those weighted messages directly, without asking another GCN layer to normalize them again. In PyG, preweighted edges require disabling automatic normalization and controlling self-loops explicitly. For several layers, every required intermediate state and message path must also be available.</p>
+<p><strong>Try it:</strong> use <code>NeighborLoader(..., num_neighbors=[-1])</code> with seed A, inspect <code>n_id</code>, then construct the retained-node induced edges with <code>torch_geometric.utils.subgraph</code>. Compare a bias-free <code>GCNConv</code> with weight 1 on the full and induced graphs. Finally, change only C's feature from 8 to 80: neither one-layer result at A changes. C affects the coefficient through its edge, not through its feature at this depth.</p>
 </div>
 </div>
 </div>

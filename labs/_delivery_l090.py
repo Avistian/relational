@@ -20,7 +20,7 @@ with sync_playwright() as p:
   assert '3.000000' in page.locator('#boundary output').inner_text()
   control.focus();page.keyboard.press('ArrowLeft');assert control.input_value()=='19'
   page.locator('#boundary button').click();assert control.input_value()=='8'
-  assert page.locator('#warmup').inner_text().strip()
+  assert page.locator('#warmup').count()==0
   assert page.locator('#prediction button').count()>=3
   assert page.locator('#teachback textarea').count()==1
   scroll=page.locator('#boundary .figure-scroll')
@@ -30,12 +30,14 @@ with sync_playwright() as p:
    scroll.evaluate('(e)=>e.scrollLeft=e.scrollWidth')
    assert scroll.evaluate('(e)=>e.scrollLeft>0')
    scroll.evaluate('(e)=>e.scrollLeft=0')
+  page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+  page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
   page.locator('#boundary').screenshot(path=f'/tmp/l090-boundary-{width}.png')
   page.screenshot(path=f'/tmp/l090-page-{width}.png')
  page.goto((LAB/'html'/f'{SLUG}.html').as_uri())
- assert page.locator('img[src^="data:image/png;base64,"]').count()==3
+ assert page.locator('img[src^="data:image/png;base64,"]').count()==4
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
  nojs=browser.new_page(java_script_enabled=False);nojs.goto((ROOT/'notebooks.html').as_uri());assert nojs.locator('#lab-90 a').count()==4
  browser.close()
@@ -69,5 +71,5 @@ with tempfile.TemporaryDirectory(prefix='l090-pages-') as tmp:
    assert not dest.is_symlink();checked+=1
  for path in ['labs/solutions/'+SLUG+'.ipynb','labs/relkit/checkpoint_l090.py','labs/relkit/gcn_l082.py','labs/_sources_l078.json','labs/_paper_l090_results.json','labs/_run_l090.py','labs/_execution_l090_results.json']:
   assert (stage/path).exists(),path
-r={'status':'PASS','browser_widths':[1200,375],'boundary_intervention_and_keyboard':'PASS','portable_figures':3,'student_TODOs':5,'actual_pages_copy_commands':'PASS','copied_local_links':checked,'executed_solution_sha256':hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest(),'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+r={'status':'PASS','browser_widths':[1200,375],'boundary_intervention_and_keyboard':'PASS','portable_figures':4,'student_TODOs':5,'actual_pages_copy_commands':'PASS','copied_local_links':checked,'executed_solution_sha256':hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest(),'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l090_results.json').write_text(json.dumps(r,indent=2)+'\n');print(r)

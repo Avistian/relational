@@ -1,7 +1,3 @@
-Close lesson 82. Write the shape of X, edge_index and W for a four-node graph with three features and two output channels. Which row of an edge list names the sender? Which labels may contribute gradients in transductive training? Why must degrees include self-loops?
-
-
-
 <!-- depth-walkthrough:start -->
 <div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 086</p><p><strong>Build on what you know.</strong> <a href="0082-gcn.html">Lesson 82</a> derived the GCN coefficients and <a href="0083-graphsage.html">Lesson 83</a> separated roots from support. PyG changes the implementation tools; it should not silently change either mathematical operator or supervision boundary.</p><p><strong>The next question.</strong> <a href="0087-link-prediction.html">Lesson 87</a> changes the target from nodes to pairs. <a href="0088-graph-classification.html">Lesson 88</a> changes it to whole graphs. The same containers support these tasks, but their split units and readouts differ.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
@@ -90,6 +86,21 @@ The first `batch_size` nodes are seeds. The rest supply context. `batch.n_id` ma
 **Prediction:** if you flip labels of context nodes but keep seeds unchanged, should seed loss or its gradients change? The lab proves they do not. Context features can still affect seed predictions. This is expected in a transductive setting; availability of future relational features must be audited separately.
 
 **GCN sampling trap:** recomputing degrees on a sampled subgraph changes normalization. Even all-neighbor sampling for a fixed number of hops does not necessarily preserve boundary-node degrees. The lesson's exact GCN parity and benchmark therefore use the full graph. The loader lab tests identity and supervision contracts; it does not claim sampled/full GCN equality. For exact evaluation, preserve full-graph coefficients and all required message paths, or use the full graph.
+
+### All root neighbors can be present and the answer can still change
+
+Use A—B—C with scalar features `[2,4,8]`, a single GCN layer, W=1 and no bias. Seed A and collect all its one-hop neighbors: the retained nodes are A and B. Now deliberately build the **induced undirected graph** on those nodes, keeping both directions of A—B. This additional step makes the comparison about degree normalization; a default directional loader returns only sampled directed edges.
+
+| Graph used for normalization | Degree of B with loop | Output at A |
+|---|---:|---:|
+| Full A—B—C | 3 | 1 + 4/√6 = 2.6330 |
+| Induced A—B | 2 | 1 + 4/2 = 3.0000 |
+
+A has every neighbor it needs for one layer in both computations, and B still sends feature 4. The coefficient changed because B lost its edge to C. Collecting all immediate neighbors guarantees neither the same degree nor the same normalized message.
+
+To recover A's full-graph answer here, keep the original coefficients: A's self coefficient is 1/2 and B→A is 1/√6. Sum those weighted messages directly, without asking another GCN layer to normalize them again. In PyG, preweighted edges require disabling automatic normalization and controlling self-loops explicitly. For several layers, every required intermediate state and message path must also be available.
+
+**Try it:** use `NeighborLoader(..., num_neighbors=[-1])` with seed A, inspect `n_id`, then construct the retained-node induced edges with `torch_geometric.utils.subgraph`. Compare a bias-free `GCNConv` with weight 1 on the full and induced graphs. Finally, change only C's feature from 8 to 80: neither one-layer result at A changes. C affects the coefficient through its edge, not through its feature at this depth.
 
 ## HeteroData: IDs have a type
 

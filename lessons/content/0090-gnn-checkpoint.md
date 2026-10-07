@@ -118,6 +118,21 @@ Before opening the measured results, predict which is sufficient for acceptance:
 
 **Lab task D:** implement a verdict that checks protocol compatibility before score tolerance, rejects fewer than 100 runs as incomplete, and distinguishes CLOSE from FAIL. A high score under an incompatible split must remain INCOMPARABLE. An honest FAIL report is a valid scientific artifact; it is not permission to tune against test labels.
 
+### Trace the verdict at the acceptance boundary
+
+The course target is 0.815 with an inclusive absolute tolerance of 0.01: the accepted interval is **[0.805,0.825]**, or 80.5% through 82.5%. This is one percentage point, not one percent of the target. Apply the protocol and run-count gates first.
+
+| Protocol · runs · mean | Verdict |
+|---|---|
+| Aligned · 100 · 0.825 | <code style="white-space:nowrap">CLOSE</code> |
+| Aligned · 100 · 0.825001 | <code style="white-space:nowrap">FAIL</code> |
+| Aligned · 99 · 0.815 | <code style="white-space:nowrap">INCOMPLETE</code> |
+| Different split · 100 · 0.815 | <code style="white-space:nowrap">INCOMPARABLE</code> |
+
+Floating-point arithmetic needs a boundary check. In Python, `abs(0.825 - 0.815)` is approximately `0.010000000000000009`, so a direct subtraction comparison incorrectly rejected the displayed upper endpoint. The revised helper compares `target - tolerance <= mean <= target + tolerance`. It does not round every score into the interval: 0.825001 still fails. The notebook CHECK includes both endpoints and nearby outside values.
+
+**Try it:** hold the mean at 0.825 while changing only the run count or protocol flag. Explain why a numerical correction must not bypass either evidence gate. CLOSE still describes this course's tolerance, not historical identity or learner mastery.
+
 ## 6 · Produce the checkpoint artifact
 
 Open the [student notebook](../labs/0090-gnn-checkpoint.ipynb), [prepared readable lab](../labs/html/0090-gnn-checkpoint.html), or [Colab](https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0090-gnn-checkpoint.ipynb). A [teacher solution](../labs/solutions/0090-gnn-checkpoint.ipynb) is available after your attempt. Every load-bearing implementation is visible inline; no graph library supplies the model.

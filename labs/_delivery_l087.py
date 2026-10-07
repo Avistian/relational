@@ -26,10 +26,14 @@ with sync_playwright() as p:
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'page overflow'
   page.locator('#edge-leak').screenshot(path=f'/tmp/l087-leak-{width}.png');page.locator('#edge-rank').screenshot(path=f'/tmp/l087-rank-{width}.png')
   page.screenshot(path=f'/tmp/l087-page-{width}.png',full_page=False)
+ page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+ page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
- assert page.locator('#warmup').inner_text().strip()
+ assert page.locator('#warmup').count()==0
  assert page.locator('#prediction').inner_text().strip() and page.locator('#teachback textarea').count()==1
- page.goto((LAB/'html'/f'{SLUG}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==6
+ page.goto((LAB/'html'/f'{SLUG}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==8
+ page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+ page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
  assert not errors,errors;browser.close()
 nb=nbformat.read(LAB/f'{SLUG}.ipynb',as_version=4)
@@ -57,5 +61,5 @@ with tempfile.TemporaryDirectory(prefix='l087-pages-') as tmp:
    assert not dest.is_symlink();checked+=1
  assert (stage/'labs/solutions'/f'{SLUG}.ipynb').exists()
  assert len(list((stage/'labs/results/l087/paper').glob('*.npz')))==80
-r={'status':'PASS','browser_widths':[1200,375],'leak_intervention_reset':'PASS','all_nine_rank_states_keyboard_reset':'PASS','portable_figures':6,'student_TODOs':3,'actual_pages_copy_commands':'PASS','copied_local_links':checked,'raw_split_artifacts_staged':80,'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+r={'status':'PASS','browser_widths':[1200,375],'leak_intervention_reset':'PASS','all_nine_rank_states_keyboard_reset':'PASS','portable_figures':8,'student_TODOs':3,'actual_pages_copy_commands':'PASS','copied_local_links':checked,'raw_split_artifacts_staged':80,'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l087_results.json').write_text(json.dumps(r,indent=2)+'\n');print(r)

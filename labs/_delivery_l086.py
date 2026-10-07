@@ -21,7 +21,7 @@ with sync_playwright() as p:
   page.screenshot(path=f'/tmp/l086-{width}.png',full_page=True)
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
  page.goto((LAB/'html/0086-pyg-fundamentals.html').as_uri())
- assert page.locator('img[src^="data:image/png;base64,"]').count()==1
+ assert page.locator('img[src^="data:image/png;base64,"]').count()==2
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
  assert not errors,errors;browser.close()
 class Links(HTMLParser):

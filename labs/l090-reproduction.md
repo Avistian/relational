@@ -76,3 +76,7 @@ Canonical GCN: `relkit/gcn_l082.py`, shared unchanged with L082. Canonical exten
 ## Portable runtime replay
 
 A newly created Python3.12 virtual environment with system site packages disabled installed `requirements-l090-runtime.txt` successfully. All100 GCN runs completed under torch2.8.0+cpu, numpy2.2.6 and scipy1.15.3. All scores and validation-loss traces exactly matched the author environment in this CPU check:81.401% mean. This verifies these two observed CPU environments; it does not imply platform-independent bitwise identity or live Colab execution. Portable raw evidence: `_portable_paper_l090_results.json`; full dependency freeze: `requirements-l090-lock.txt`. `_clean_environment_l090_results.json` records the independent extension replay and behavioral checks.
+
+### Inclusive verdict repair (2026-10-07)
+
+The course acceptance helper now compares interval endpoints directly so 0.825 passes the declared 0.815 ± 0.01 boundary. The archived experiment records retain their source hashes. `sources/l090/checkpoint_before_inclusive_verdict.py` preserves the exact source identified by those records; the audit verifies its hash and proves that every AST node other than `verdict` matches the revised implementation. Model, optimizer, sampling and recorded scores are unchanged. Fresh notebook execution is recorded separately by the execution check.

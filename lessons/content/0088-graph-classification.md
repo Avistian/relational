@@ -84,6 +84,19 @@ Here `h` is a node vector, `N(v)` is the set of its neighbors, and `ε` weights 
 
 **Worked example.** A center `[1,0]` receives neighbors `[1,0]` and `[0,1]`. Their sum is `[1,1]`; adding the center produces `[2,1]`. This `[2,1]`, not the mean `[2/3,1/3]`, enters the MLP. With epsilon .5 the input would be `[2.5,1]`.
 
+### Why the center coefficient can matter
+
+Consider two rooted neighborhoods using scalar features. In the first, the center is 1 and its only neighbor is 2. In the second, the center is 2 and its only neighbor is 1. A rooted neighborhood identifies which node is the receiver; swapping that role changes the input even though the combined multiset is the same.
+
+| Rooted input | GIN-0 | ε=0.5 |
+|---|---:|---:|
+| Center 1, neighbor 2 | 3 | 3.5 |
+| Center 2, neighbor 1 | 3 | 4 |
+
+At ε=0, the same MLP receives 3 in both cases, so it cannot recover which value belonged to the center. A 1-WL signature keeps the center label separate from the neighbor multiset and can distinguish these rooted inputs immediately. A nonzero coefficient separates this particular pair, but ε=0.5 is not a universal injectivity guarantee.
+
+This is a **node-update** collision. It does not by itself prove that every pair of whole graphs containing these roots has identical GIN predictions: the input-depth head, other nodes and later readouts also matter. **Try it:** construct two more different center/neighbor pairs that still collide when ε=0.5. For example, center 2 with neighbor 1 and center 0 with neighbor 4 both produce 4. The paper's sufficient conditions concern suitable encodings and coefficients, not arbitrary raw scalars.
+
 [[ARCH]]
 
 The released model contains **four message-passing updates plus the input representation**, described as five layers in the paper. Each update uses a two-layer MLP: linear → batch normalization → ReLU → linear, followed by another batch normalization and ReLU. **Batch normalization** standardizes hidden coordinates using training mini-batch statistics and maintains running statistics for evaluation. **ReLU** keeps positive values and replaces negative values with zero.
@@ -152,6 +165,6 @@ The complete loader, disjoint-union batcher, GIN model, trainer and paper grid a
 
 [[TEACHBACK]]
 
-**Spaced return.** Tomorrow, draw the four-node path/star refinement without looking. In a week, implement grouped sum and recover the common-epoch counterexample from memory. [Lesson 89's planned topic](../reference/graph-classification.html#next) asks how to preserve useful graph computation when the whole graph cannot fit in memory.
+**Spaced return.** Tomorrow, draw the four-node path/star refinement without looking. In a week, implement grouped sum and recover the common-epoch counterexample from memory. [Lesson 89](0089-sampling-at-scale.html) asks how to preserve useful graph computation when the whole graph cannot fit in memory.
 
 Ask the agent about any unclear step; especially challenge the distinction between an expressiveness theorem and a measured predictive advantage. Prepared material does not establish your mastery.

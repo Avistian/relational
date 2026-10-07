@@ -90,6 +90,21 @@ The release precomputes **[A_train X, X]**, a concatenation with 100 columns. A_
 
 The raw first-layer cache is not the normalized support described next. Substituting a standard GCN layer here would change the released model. See [`train.py::load_data`](https://github.com/google-research/google-research/blob/89c16e403d42015c3133634788ed0b7965f56395/cluster_gcn/train.py).
 
+### Trace the message that survives outside the batch
+
+Use training path 0—1—2, raw scalar features X=[1,2,4], no existing self-loops, and a batch containing only nodes 0 and 1. Before partitioning, node 1's neighbor sum is 1+4=5. Concatenating its own feature gives cached input **[5,2]**. Slicing the completed cache to the batch keeps that row intact.
+
+| Cache order | Sum | Self |
+|---|---:|---:|
+| Before slicing | 5 | 2 |
+| After slicing | 1 | 2 |
+
+The second procedure gives [1,2] and changes the released model. Although node 2 is absent from this batch, changing its raw feature from 4 to 40 changes the correct cached row to [41,2]. That is allowed here because node 2 belongs to the eligible training graph. A held-out node would have been excluded before constructing the training cache.
+
+The cache is raw feature aggregation, not a stored hidden state from an earlier optimizer step. First-layer weights are still learned from the cached inputs. Later hidden layers propagate only over the selected induced support, so they cannot simply recover every omitted neighbor's hidden state from this cache.
+
+**Try it:** compute both rows with sparse matrix multiplication and slicing in the two different orders. Then make node 2 held out before building A_train: both its edge and feature contribution must disappear from the training cache. This is why a low later-layer edge-retention percentage does not imply that every first-hop input message was lost.
+
 ### Later stages: strengthen the center, then concatenate
 
 Let A_B be a batch's adjacency. Add self-loops with the identity I. Let D contain the row sums of A_B. First form T=(D+I)⁻¹(A_B+I): every row divides by its sum. Then use **S=T+λ diag(T)**, with λ=1. `diag(T)` keeps only diagonal entries. This **diagonal enhancement** gives extra weight to a node's own representation. S generally has row sums greater than one; it is not a probability transition matrix.
@@ -98,9 +113,9 @@ Let A_B be a batch's adjacency. Add self-loops with the identity I. Let D contai
 
 [[SUPPORT_FIG]]
 
-At each later hidden layer, compute **[S H, H] W**, apply layer normalization, then ReLU. H has b rows, one per batch node; at hidden width2048, the concatenation has4096 columns. The matrix W mixes those columns into2048 output coordinates. Neighbor and self branches have separate columns of W. **Layer normalization** standardizes coordinates within each node, then learns a scale and offset; it is not a statistic fitted across training and test nodes. **ReLU** clips negative values to zero. **Dropout** randomly removes20% of the concatenated input coordinates during training and rescales those retained.
+At each later hidden layer, compute **[S H, H] W**, apply layer normalization, then ReLU. H has b rows, one per batch node; at hidden width 2048, the concatenation has 4096 columns. The matrix W mixes those columns into 2048 output coordinates. Neighbor and self branches have separate columns of W. **Layer normalization** standardizes coordinates within each node, then learns a scale and offset; it is not a statistic fitted across training and test nodes. **ReLU** clips negative values to zero. **Dropout** randomly removes 20% of the concatenated input coordinates during training and rescales those retained.
 
-The five-layer recipe has four hidden stages of width2048. Its fifth layer returns121 logits with no normalization or ReLU. All nodes share the same weights at a given depth; different depths have different weights. Binary cross-entropy penalizes each node-label prediction independently, then averages those losses. At evaluation, a label is predicted present exactly when its logit is greater than zero. **Micro-F1** pools all node-label true positives, false positives and false negatives: 2TP/(2TP+FP+FN).
+The five-layer recipe has four hidden stages of width 2048. Its fifth layer returns 121 logits with no normalization or ReLU. All nodes share the same weights at a given depth; different depths have different weights. Binary cross-entropy penalizes each node-label prediction independently, then averages those losses. At evaluation, a label is predicted present exactly when its logit is greater than zero. **Micro-F1** pools all node-label true positives, false positives and false negatives: 2TP/(2TP+FP+FN).
 
 **Self-loop audit.** The PPI archive already includes some loops. The released loader adds adjacency to its transpose, doubling their raw weight. Its q=1 partition builder replaces nonzero weights with1 before support normalization. The precomputed cache and later supports therefore have different loop conventions. Our paper track preserves this; the teaching experiment uses one binary raw graph in every arm. See the [reproduction contract](../labs/l089-reproduction.md) for the exact sequence.
 
@@ -118,9 +133,9 @@ Open the [student lab](../labs/0089-sampling-at-scale.ipynb), [prepared lab](../
 2. **TODO · enhanced support.** Implement the ordered normalization and diagonal adjustment. CHECK includes an isolated node; adding identity makes its support defined.
 3. **TODO · concatenated message.** Build neighbor/self branches in the released order. CHECK examines both output values and gradients.
 
-**Experiment held fixed:** all PPI nodes, original split, train-only scaling, a binary raw graph, two layers,width32,dropout.2,Adam.01,ten data passes,three declared seeds. **Varied:** full batch;50 random groups;50 METIS clusters with q1;the same50 clusters with q5. **Measured:** test micro-F1, largest batch, retained adjacency entries, training time, and a dense-hidden-state memory proxy.
+**Experiment held fixed:** all PPI nodes, original split, train-only scaling, a binary raw graph, two layers, width 32, dropout .2, Adam .01, ten data passes,three declared seeds. **Varied:** full batch; 50 random groups; 50 METIS clusters with q1;the same 50 clusters with q5. **Measured:** test micro-F1, largest batch, retained adjacency entries, training time, and a dense-hidden-state memory proxy.
 
-> **Scope check.** Equal data passes are not equal updates: the arms make10,500,500 and100 updates respectively. This evaluates the combined batching strategy, not clustering in isolation. The first-hop cache contains all eligible training-neighbor messages in every arm. One dataset and three seeds cannot establish a universal method ranking.
+> **Scope check.** Equal data passes are not equal updates: the arms make 10, 500, 500 and 100 updates respectively. This evaluates the combined batching strategy, not clustering in isolation. The first-hop cache contains all eligible training-neighbor messages in every arm. One dataset and three seeds cannot establish a universal method ranking.
 
 [[TEACHING]]
 
@@ -132,9 +147,9 @@ The memory column counts one float32 hidden-state array per hidden stage at the 
 
 ## 6 · Full reproduction: one named cell, explicit evidence
 
-**Target:** [paper Table10](https://arxiv.org/html/1905.07953v2#S4.SS3), PPI test micro-F1 **99.36%**. The release's `run_ppi.sh` specifies five layers,width2048,50 clusters,q1,400 epochs,dropout.2,diagonal enhancement1 and layer normalization. Table4's width512 belongs to different experiments; copying it would not reproduce this target.
+**Target:** [paper Table10](https://arxiv.org/html/1905.07953v2#S4.SS3), PPI test micro-F1 **99.36%**. The release's `run_ppi.sh` specifies five layers,width 2048,50 clusters, q1, 400 epochs,dropout.2,diagonal enhancement1 and layer normalization. Table4's width 512 belongs to different experiments; copying it would not reproduce this target.
 
-Our full command uses every released training node and all400 epochs. The release keeps final-epoch weights: its patience1000 is longer than the run. We do not substitute a best-validation checkpoint or select from test scores. NumPy shuffle seed1 is retained; fresh PyTorch initialization seed1 is declared. Historical initialization and partition identity cannot be recovered from the paper alone.
+Our full command uses every released training node and all 400 epochs. The release keeps final-epoch weights: its patience 1000 is longer than the run. We do not substitute a best-validation checkpoint or select from test scores. NumPy shuffle seed 1 is retained; fresh PyTorch initialization seed 1 is declared. Historical initialization and partition identity cannot be recovered from the paper alone.
 
 ```bash
 python labs/_run_l089.py --preset paper --device cuda \
@@ -150,7 +165,7 @@ See the [environment pins](../labs/requirements-l089-runtime.txt), [source hashe
 
 ## 7 · EXIT: justify the batch you trained
 
-Submit `l089-exit.json`, your three TODO implementations, a table from your own four-arm experiment, and the explanation below. The EXIT writer refuses to mark completion without all12 run records and substantive explanations. Author-reference results are not your live notebook output.
+Submit `l089-exit.json`, your three TODO implementations, a table from your own four-arm experiment, and the explanation below. The EXIT writer refuses to mark completion without all 12 run records and substantive explanations. Author-reference results are not your live notebook output.
 
 - Trace edge1–2 and the local IDs when C1 and C0 are combined.
 - Explain why lost edges can bias the gradient even with uniform cluster selection.
@@ -159,6 +174,6 @@ Submit `l089-exit.json`, your three TODO implementations, a table from your own 
 
 [[TEACHBACK]]
 
-Tomorrow, derive the conditional boundary-edge inclusion probability without opening this page. At the next checkpoint, choose full-batch, neighbor sampling or cluster sampling for a stated graph and memory budget, then defend the information boundary. This connects to the planned Lesson90 checkpoint and later large relational entity graphs.
+Tomorrow, derive the conditional boundary-edge inclusion probability without opening this page. At the next checkpoint, choose full-batch, neighbor sampling or cluster sampling for a stated graph and memory budget, then defend the information boundary. This connects to the [Lesson 90 checkpoint](0090-gnn-checkpoint.html) and later large relational entity graphs.
 
 Ask the teaching agent follow-up questions whenever the normalization, sampling boundary or evidence ledger is unclear. Bring the graph trace or run artifact so feedback can target the actual computation.

@@ -37,8 +37,7 @@ def verdict(mean,n,protocol_aligned,target=.815,tolerance=.01):
     """Course tolerance is meaningful only after declared protocol and coverage pass."""
     if not protocol_aligned:return 'INCOMPARABLE'
     if n!=100:return 'INCOMPLETE'
-    # Compare inclusive endpoints to avoid cancellation at the upper boundary.
-    return 'CLOSE' if target-tolerance <= mean <= target+tolerance else 'FAIL'
+    return 'CLOSE' if abs(mean-target)<=tolerance else 'FAIL'
 
 
 class SampledSAGE(nn.Module):

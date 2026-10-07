@@ -1,9 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link prediction: hide the edge, define the candidates</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/link-prediction-viz.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0086-pyg-fundamentals.html">Lesson 86</a></nav><header><p>Year 3 · Quarter 1 · Lesson 087</p><h1>Link prediction: hide the edge, define the candidates</h1></header><aside><a href="../labs/0087-link-prediction.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0087-link-prediction.ipynb">Open in Colab</a> · <a href="../labs/html/0087-link-prediction.html">Read lab</a> · <a href="../labs/solutions/0087-link-prediction.ipynb">Solution</a></aside><p>Close lesson 86. For an undirected graph stored as directed messages, how many columns represent one edge? Which data may enter a validation-selected model before test scoring? If every example shares one graph, does splitting example rows necessarily isolate their information?</p>
-
-
-
-
-<!-- depth-walkthrough:start -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link prediction: hide the edge, define the candidates</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/link-prediction-viz.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0086-pyg-fundamentals.html">Lesson 86</a></nav><header><p>Year 3 · Quarter 1 · Lesson 087</p><h1>Link prediction: hide the edge, define the candidates</h1></header><aside><a href="../labs/0087-link-prediction.ipynb">Download lab</a> · <a href="https://colab.research.google.com/github/Avistian/relational/blob/main/labs/0087-link-prediction.ipynb">Open in Colab</a> · <a href="../labs/html/0087-link-prediction.html">Read lab</a> · <a href="../labs/solutions/0087-link-prediction.ipynb">Solution</a></aside><!-- depth-walkthrough:start -->
 
 <div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 087</p><p><strong>Build on what you know.</strong> <a href="0086-pyg-fundamentals.html">Lesson 86</a> made routing explicit. Link prediction introduces a new boundary: the relationship being predicted must not reveal itself through the message graph. <a href="0055-tabred-temporal-splits.html">Lesson 55</a>'s temporal discipline becomes especially important for future interactions.</p><p><strong>The next question.</strong> <a href="0088-graph-classification.html">Lesson 88</a> treats graph classification directly. SEAL provides the bridge by converting each candidate link into a labeled enclosing graph, while the simpler dot-product model predicts from two node embeddings.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
@@ -72,6 +67,31 @@ Hits@k = mean(rank &lt;= k)
 </pre></div>
 <p>The lab evaluates both directions of each test pair. Each query receives 50 distinct, uniformly sampled destinations that are neither the source nor any known neighbor. Negatives may recur across different queries. We freeze the sampled candidates. Hits@10 with 50 negatives is not an all-item retrieval result; filtering and K are part of its name.</p>
 <p><strong>AUC asks another question.</strong> ROC AUC measures how often a randomly drawn positive outranks a negative, counting ties as half. It pools binary examples rather than requiring a fixed source per query. AUC and MRR can disagree because they compare different pairs. The paper reconstruction reports AUC; the teaching lab adds ranking metrics under its separate candidate protocol.</p>
+<h3 id="Perfect-within-query-ranking-need-not-give-pooled-AUC-one">Perfect within-query ranking need not give pooled AUC one<a class="anchor-link" href="#Perfect-within-query-ranking-need-not-give-pooled-AUC-one">&#182;</a></h3><p>Consider two queries, each with one positive and one negative candidate. This is a tiny diagnostic, not the lab's 50-negative protocol.</p>
+<table>
+<thead>
+<tr>
+  <th>Q</th>
+  <th style="text-align:right">Positive score</th>
+  <th style="text-align:right">Negative score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>A</td>
+  <td style="text-align:right">100</td>
+  <td style="text-align:right">99</td>
+</tr>
+<tr>
+  <td>B</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<p>Each positive outranks its own negative, so both ranks are 1 and MRR is 1. Pooled AUC compares <strong>every</strong> positive with <strong>every</strong> negative: 100 beats 99 and 0, while 1 beats 0 but loses to 99. Three of four comparisons succeed, giving AUC=0.75.</p>
+<p>Subtract 99 from both scores of query A. Both queries now have positive score 1 and negative score 0. Their within-query ranks and MRR are unchanged, but pooled AUC becomes 1. The query-specific shift changes the ordering across queries; one common shift applied to every score would change neither metric.</p>
+<p>Neither result is a contradiction. Per-query ranking asks which candidate wins for a given source; pooled AUC also compares score levels across sources. If you change the candidate policy, or replace pooled AUC with a mean of query-specific AUCs, you have changed the evaluation question. <strong>Try it:</strong> enumerate the four positive–negative comparisons before and after the shift, then reproduce them with the evaluator.</p>
 <h2 id="From-dot-products-to-SEAL-%C2%B7-the-pair-becomes-a-graph">From dot products to SEAL &#183; the pair becomes a graph<a class="anchor-link" href="#From-dot-products-to-SEAL-%C2%B7-the-pair-becomes-a-graph">&#182;</a></h2><p>A shared embedding compresses each node before knowing which other node it will be paired with. To retain pair-specific structure, SEAL builds an <strong>enclosing subgraph</strong>: the nodes within h hops of either endpoint, plus their induced edges. It removes the target edge before classification. This applies to positive training examples too.</p>
 <p><strong>Double-radius node labeling (DRNL)</strong> records each node's structural position relative to both roots. Label both roots 1. For every other node, compute distance dᵤ with v deleted and distance dᵥ with u deleted. This prevents paths through the opposite root from defining the distance. If either distance is infinite, assign 0. Otherwise, with d=dᵤ+dᵥ, q=floor(d/2), r=d mod 2, assign <code>1 + min(dᵤ,dᵥ) + q(q+r−1)</code>.</p>
 <figure class="mpnn-figure" id="visual-figure-6"><div class="figure-scroll" tabindex="0"><img src="../labs/figures/l087/seal.png" alt="SEAL enclosing subgraph and DRNL labels for roots A,C; full classifier shown as a reading bridge, not executed."></div><figcaption>SEAL enclosing subgraph and DRNL labels for roots A,C; full classifier shown as a reading bridge, not executed.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l087/seal.png" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>

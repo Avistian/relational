@@ -27,12 +27,16 @@ with sync_playwright() as p:
   page.evaluate("document.querySelector('#cluster-sampling').clusterAPI.setState(99)");assert page.locator('#cluster-sampling select').input_value()=='3'
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflows viewport'
   page.screenshot(path=f'/tmp/l089-page-{width}.png',full_page=False)
+ page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+ page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
- assert page.locator('#warmup').inner_text().strip()
+ assert page.locator('#warmup').count()==0
  assert page.locator('#prediction').inner_text().strip()
  assert page.locator('#teachback textarea').count()==1
  page.goto((LAB/'html'/f'{SLUG}.html').as_uri())
- count=page.locator('img[src^="data:image/png;base64,"]').count();assert count==4
+ count=page.locator('img[src^="data:image/png;base64,"]').count();assert count==5
+ page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+ page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
  assert not errors,errors;browser.close()
 nb=nbformat.read(LAB/f'{SLUG}.ipynb',as_version=4);sol=nbformat.read(LAB/'solutions'/f'{SLUG}.ipynb',as_version=4)

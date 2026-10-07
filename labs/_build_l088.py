@@ -33,7 +33,7 @@ def prose(portable=False):
   if not p.exists():s=s.replace('[['+tag+']]','');continue
   src='data:image/png;base64,'+base64.b64encode(p.read_bytes()).decode() if portable else f'../labs/figures/l088/{name}.png'
   s=s.replace('[['+tag+']]',f'<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"></div><figcaption>{caption}</figcaption></figure>')
- for tag,id,text in [('WARMUP','warmup','Write the three retrieval answers below before reading.'),('PREDICT','prediction','Predict: sum, mean or max? Commit before reading the worked example.'),('WL_WIDGET','wl-refinement','Trace one joint WL round on path/star. Then prove why cycle/triangles cannot separate.'),('TEACHBACK','teachback','Explain the WL bound in your own words; include both graph pairs and the distinction between capacity and generalization.')]:
+ for tag,id,text in [('PREDICT','prediction','Predict: sum, mean or max? Commit before reading the worked example.'),('WL_WIDGET','wl-refinement','Trace one joint WL round on path/star. Then prove why cycle/triangles cannot separate.'),('TEACHBACK','teachback','Explain the WL bound in your own words; include both graph pairs and the distinction between capacity and generalization.')]:
   s=s.replace('[['+tag+']]',text if portable else f'<div id="{id}"></div>')
  s=s.replace('[[RESULTS]]',report()).replace('[[TEACHING]]',teaching())
  if portable:
