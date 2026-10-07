@@ -7826,24 +7826,14 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l092-bbc95377b4b8362c-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l092-dbf920ca402d4239-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="The-skill-you-will-leave-with">The skill you will leave with<a class="anchor-link" href="#The-skill-you-will-leave-with">¶</a></h2><p><strong>Define a typed route, turn it into a neighborhood, and explain both attention decisions in HAN.</strong> Your deliverable is a trained ACM model with measured PAP/PSP weights and a defensible reproduction report. This connects the course mission—learning from relationships—to a precise choice: which relational routes should supply a prediction?</p>
-<p>Take this in three sittings if needed: retrieval and the worked trace; implementation; then the full experiment and written defense. Reading the page is preparation. Mastery remains <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l092-03c6f1e16d8e3174-0">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Take this in three sittings if needed: the worked trace; implementation; then the full experiment and written defense. Reading the page is preparation. Mastery remains <strong>PENDING_WRITTEN_DEFENSE</strong>.</p>
 <p><strong>Bridge from L091.</strong> R-GCN learns how each edge type changes a message. Two layers can compose those messages through an intermediate node. But that computation also mixes the intermediate node's other incoming information. Today's choice is different: specify a complete typed route first, connect its endpoints, then attend over the resulting neighbors. This does not make HAN universally better. It makes the route itself an explicit modeling assumption.</p>
 <p>Primary reading: <a href="https://arxiv.org/html/1903.07293v2#S4">Wang et al., HAN, §§3–4 and Figure 2</a>. Read the mechanism first, then §§5.3–5.4 and Table 3 when auditing the lab. The <a href="https://github.com/Jhy1993/HAN/tree/71bac29a07fb8fab908d50a806a7bc38aa6c6611">authors' release</a> is a second primary source; it does not agree with every paper equation.</p>
 <!-- depth-walkthrough:start -->
@@ -7960,7 +7950,7 @@ B Bᵀ = [[2,2,1],       A_PAP = 1[B Bᵀ &gt; 0] = [[1,1,1],
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l092-d3b3c0f735d5fde0-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l092-c58de9c4daf15030-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8015,6 +8005,46 @@ B Bᵀ = [[2,2,1],       A_PAP = 1[B Bᵀ &gt; 0] = [[1,1,1],
 </tbody>
 </table>
 <p><strong>Why checkpoint detail matters.</strong> The release resets patience when validation accuracy improves <strong>or</strong> validation loss improves. It saves weights only when both conditions hold at the same epoch, with equality allowed. That differs from selecting minimum validation loss alone. The code records the selected epoch and the entire validation trace; test labels never select an epoch.</p>
+<h3 id="Follow-the-checkpoint-through-five-epochs">Follow the checkpoint through five epochs<a class="anchor-link" href="#Follow-the-checkpoint-through-five-epochs">¶</a></h3><p>Here is a synthetic validation trace for the <a href="https://github.com/Jhy1993/HAN/blob/71bac29a07fb8fab908d50a806a7bc38aa6c6611/ex_acm3025.py#L225">released stopping rule</a>. Higher accuracy and lower loss are better. Start with best accuracy 0, best loss infinity, and no checkpoint. The two best values are tracked separately; they can come from different epochs.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Acc / loss</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>.80 / .50</td>
+<td>Save 1; wait 0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>.90 / .60</td>
+<td>Keep 1; wait 0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>.85 / .40</td>
+<td>Keep 1; wait 0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>.88 / .45</td>
+<td>Keep 1; wait 1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>.90 / .40</td>
+<td>Save 5; wait 0</td>
+</tr>
+</tbody>
+</table>
+<p>After epoch 2, the accuracy record is .90 but the loss record stays .50. Epoch 3 improves loss to .40 without reaching the accuracy record, so it resets patience <strong>without saving</strong>. If training ended after epoch 4, inference would restore epoch 1—even though epochs 2 and 3 improved individual validation metrics. Epoch 5 matches both records; inclusive comparisons allow it to save. Selecting the minimum-loss epoch would be a different protocol.</p>
+<p><strong>Try a counterfactual.</strong> Change epoch 4's accuracy to .90, leaving its loss .45. Does it save?</p>
+<details><summary>Check both comparisons</summary><p>No. Equality with the accuracy record resets patience, but .45 is worse than the loss record .40. Both conditions must hold to save. The checkpoint remains epoch 1 and waiting returns to zero.</p></details>
 <p><strong>Why regularization detail matters.</strong> The source excludes a list of short variable names, but TensorFlow variable names carry scopes and suffixes. The port explicitly regularizes all learned parameters, including biases. It uses Glorot-uniform projection/readout initialization and normal semantic parameters with standard deviation 0.1, following the released initializers. PyTorch's optimizer/random-number implementation still differs from TensorFlow 1.</p>
 <p><strong>Author-reference evidence; not your current kernel output.</strong> 1 complete encoder fit; 200 epochs executed; validation selected epoch 35. Direct test-head accuracy 87.44%.</p>
 <table>

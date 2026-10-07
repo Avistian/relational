@@ -3,12 +3,14 @@ import ast,base64,hashlib,json,re
 from pathlib import Path
 from _walkthrough_delivery import snapshot, finalize
 snapshot(91)
+from _figures_l091_pruning import build as build_pruning
+build_pruning()
 import nbformat as nbf
 from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
 ROOT=Path(__file__).resolve().parents[1];LAB=ROOT/'labs';SLUG='0091-r-gcn';TITLE='R-GCN: make the relation change the message'
 manifest=json.loads((LAB/'_sources_l091.json').read_text())
-figs={'TRACE_FIG':('trace','Per-relation means produce 10 − 8 + 1 = 3. Moving one edge changes both denominators and yields 12.'),'BASIS_FIG':('basis','Two learned bases reconstruct a relation matrix before applying its message transformation. Sharing differs from block sparsity.'),'ARCH_FIG':('architecture','Full featureless AIFB R-GCN: typed supports, two relation-specific layers, masked supervision and transductive prediction.'),'RESULT_FIG':('results','All ten full-schedule initialization results. The paper target and modern port have explicit historical differences.')}
+figs={'PRUNE_FIG':('pruning','Two-layer root computation: pruning receiver row 2 preserves 18; deleting its sender column changes the root to 10.'),'TRACE_FIG':('trace','Per-relation means produce 10 − 8 + 1 = 3. Moving one edge changes both denominators and yields 12.'),'BASIS_FIG':('basis','Two learned bases reconstruct a relation matrix before applying its message transformation. Sharing differs from block sparsity.'),'ARCH_FIG':('architecture','Full featureless AIFB R-GCN: typed supports, two relation-specific layers, masked supervision and transductive prediction.'),'RESULT_FIG':('results','All ten full-schedule initialization results. The paper target and modern port have explicit historical differences.')}
 def prose(portable=False):
  s=(ROOT/'lessons/content'/f'{SLUG}.md').read_text()
  p=json.loads((LAB/'_paper_l091_results.json').read_text());t=json.loads((LAB/'_teaching_l091_results.json').read_text())
@@ -27,8 +29,9 @@ The standalone solution repeated all thirteen runs from a fresh data download an
  s=s.replace('[[RESULTS]]',table)
  for tag,(name,caption) in figs.items():
   p=LAB/f'figures/l091/{name}.png';src='data:image/png;base64,'+base64.b64encode(p.read_bytes()).decode() if portable else f'../labs/figures/l091/{name}.png'
-  s=s.replace('[['+tag+']]',f'<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"></div><figcaption>{caption}</figcaption></figure>')
- for tag,id_,fallback in [('WARMUP','warmup','**Cold retrieval:** write the three answers below before continuing.'),('PREDICT','prediction','**Predict:** can changing only edge roles alter the typed or untyped aggregate? Commit your answer first.'),('TYPED_WIDGET','typed','**Intervention:** move A from buys to returns. Compute the two changed means before checking the answer.'),('TEACHBACK','teachback','**Teach-back:** explain role-specific weights, per-relation normalization, basis sharing and the AIFB evidence boundary in your own words.')]:
+  style=' style="min-width:0;max-width:100%;width:100%"' if name=='pruning' else ''
+  s=s.replace('[['+tag+']]',f'<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"{style}></div><figcaption>{caption}</figcaption></figure>')
+ for tag,id_,fallback in [('PREDICT','prediction','**Predict:** can changing only edge roles alter the typed or untyped aggregate? Commit your answer first.'),('TYPED_WIDGET','typed','**Intervention:** move A from buys to returns. Compute the two changed means before checking the answer.'),('TEACHBACK','teachback','**Teach-back:** explain role-specific weights, per-relation normalization, basis sharing and the AIFB evidence boundary in your own words.')]:
   s=s.replace('[['+tag+']]',fallback if portable else f'<div id="{id_}"></div>')
  if portable:
   s=re.sub(r'\]\((00\d\d-[^)]+\.html)\)',r'](https://avistian.github.io/relational/lessons/\1)',s)

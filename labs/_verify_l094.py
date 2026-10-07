@@ -27,6 +27,9 @@ def main():
     g=Graph();g.node_feature={'paper':[0],'author':[0,1]};g.edge_list={'paper':{'author':{'AP':{0:{0:None,1:None}}}},'author':{'paper':{'rev_AP':{0:{0:None},1:{0:None}}}}}
     c=count_graph(g);assert c['all_stored_edges']==4 and c['forward_edges']==2 and c['table_columns']['PA']==2
     assert c['reverse_content_matches']
+    g.edge_list['author']['paper']['rev_orphan']={0:{0:None}}
+    assert not count_graph(g)['reverse_content_matches'], 'Orphan reverse relation must fail the content audit'
+    del g.edge_list['author']['paper']['rev_orphan']
     del g.edge_list['author']['paper']['rev_AP'][1]
     assert not count_graph(g)['reverse_content_matches']
     result={'status':'PASS','checks':['typed path multiplicity and zero-degree nodes','invalid path rejection','HAN belongs to overlapping categories','missing protocol fails closed','changed metric rejected','table arithmetic','independent reverse-edge content audit']}

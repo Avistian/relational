@@ -6,11 +6,6 @@
 <h2 id="One-tangible-win">One tangible win<a class="anchor-link" href="#One-tangible-win">&#182;</a></h2><p>Build a defensible map of heterogeneous graph methods. Given a method description, identify <strong>what structure it uses, how routes are chosen, what it learns, and what evidence could test it</strong>. This is the organizing lesson between the three heterogeneous encoders and the coming database/recommendation lessons.</p>
 <p>Our mission is to establish when relational structure adds predictive value. A taxonomy helps choose a testable hypothesis. It does not establish that more elaborate structure is better.</p>
 <p><strong>Reading route:</strong> first trace the small graph; finally fill the taxonomy and audit a real released graph in the notebook. You can complete the conceptual core in one sitting and return for the data audit.</p>
-
-
-
-
-
 <!-- depth-walkthrough:start -->
 
 <h2 id="The-big-picture-%C2%B7-classify-assumptions-before-comparing-results">The big picture &#183; classify assumptions before comparing results<a class="anchor-link" href="#The-big-picture-%C2%B7-classify-assumptions-before-comparing-results">&#182;</a></h2><div class="learning-route"><p class="route-kicker">THE BIG PICTURE · 094 / A MAP OF DESIGN CHOICES</p><p><strong>Bring forward:</strong> R-GCN, HAN and HGT made different choices about transformations and routes. <strong>Follow:</strong> schema → supplied structure → learned representation → prediction task → evidence contract. <strong>Carry forward:</strong> the bipartite and database lessons make the input assumptions concrete before the later controlled comparison.</p><p><a href="0091-r-gcn.html">L091: relations</a> · <a href="0092-meta-paths.html">L092: paths</a> · <a href="0093-hgt.html">L093: attention</a> · <a href="0060-broad-model-comparison.html">L060: comparison protocol</a> · <a href="../reference/0091-0100-model-map.html">Sequence map</a></p></div>
@@ -48,6 +43,30 @@
 <p><strong>Step 3: change the meaning.</strong> Let <code>A_PV</code> have four paper rows and two venue columns. The product <code>A_AP @ A_PV @ A_PV.T @ A_AP.T</code> counts shared-venue walks. Ada–Cy changes from 0 to 1. They have no common paper, but both have a paper at V0. Ada–Bo changes from 1 to 2 because two paper-pair combinations pass through V1.</p>
 <p><strong>Step 4: distinguish counts from reachability.</strong> Replacing every positive entry by 1 asks whether a route exists. Keeping the integer asks how many instances exist. Those are different input features. A sparse implementation must preserve the chosen meaning; building these dense products on OAG would be impractical.</p>
 <h3 id="A-meta-graph-is-not-simply-a-longer-path">A meta-graph is not simply a longer path<a class="anchor-link" href="#A-meta-graph-is-not-simply-a-longer-path">&#182;</a></h3><p>A <strong>meta-graph</strong> is a typed structural pattern that can branch and combine constraints. Here is one explicit teaching example: require both a shared-paper route and a shared-venue route between the same two authors. Define its Boolean result as <code>(paper_count &gt; 0) AND (venue_count &gt; 0)</code>. Ada–Cy fails this conjunction despite their shared venue. This example is a chosen pattern semantics; it is not a universal formula for every meta-graph method.</p>
+<p><strong>Check whether the added condition adds information.</strong> In this fixture every paper has a venue. Sharing a paper therefore already implies sharing a venue. The conjunction equals the shared-paper reachability matrix for every author pair; adding a second route has not made the rule more selective.</p>
+<p>Now remove <strong>P1's venue link</strong>, keeping every authorship fixed. Ada and Bo still share P1, but Ada's remaining venue is V0 through P0 and Bo's is V1 through P2. Their shared-venue count becomes zero, so the conjunction finally rejects them.</p>
+<table>
+<thead>
+<tr>
+  <th>Ada–Bo case</th>
+  <th>Paper / venue counts</th>
+  <th>AND</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Original</td>
+  <td>1 / 2</td>
+  <td>Yes</td>
+</tr>
+<tr>
+  <td>P1 venue missing</td>
+  <td>1 / 0</td>
+  <td>No</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Exercise:</strong> explain why the first conjunction is redundant, and why missing venue data can make the second reject a real coauthor pair. A more elaborate structural rule can add a missing-data dependency without adding predictive information. Test the actual pattern rather than assuming that branching makes it stronger.</p>
 <div id="route-widget"></div>
 
 <p><strong>Predict, intervene, explain.</strong> Remove Bo's link to P1. Ada–Bo shared-paper count becomes 0; the shared-venue count becomes 1 because Bo still has P2 at V1. Dee's row remains zero. Explain why changing the route can create connectivity without adding an authorship edge.</p>
@@ -110,6 +129,7 @@
 <p><strong>A fair next experiment.</strong> Choose one graph, one prediction target, fixed availability rules, a declared split, and a validation-only selection budget. Include a simple baseline that tests whether the task is trivial. Train the candidate encoders with comparable opportunities and report paired outcomes. For a broad family claim, repeat across datasets and aggregate at the dataset level, as in <a href="0055-tabred-temporal-splits.html">L055</a> and <a href="0060-broad-model-comparison.html">L060</a>.</p>
 <h2 id="5-%C2%B7-Reproduce-the-accounting-before-trusting-the-benchmark">5 &#183; Reproduce the accounting before trusting the benchmark<a class="anchor-link" href="#5-%C2%B7-Reproduce-the-accounting-before-trusting-the-benchmark">&#182;</a></h2><p><strong>Held fixed:</strong> the SHA-256-pinned complete NN archive and a source-visible read-only loader. <strong>Measured:</strong> every node count and every stored typed adjacency. <strong>Varied:</strong> the edge-count convention. There are no sampled nodes, random seeds, train/validation choices, or fitted models in this audit.</p>
 <p>The released structure stores both original and <code>rev_</code> relations. It also stores field-to-field hierarchy links, which are absent from the table's five listed edge families. The audit counts original entries, verifies their reverse content, and reports both totals. An edge entry represents a source/target pair within one relation map; repeated events overwritten during preprocessing cannot be recovered from it.</p>
+<p><strong>Audit both directions.</strong> Checking that every forward fact has a reverse copy is insufficient. Suppose <code>(p0, written_by, a0)</code> and <code>(a0, rev_written_by, p0)</code> match, but the release also contains <code>(a0, rev_reviews, p0)</code> with no forward <code>reviews</code> fact. The original check accepted the matched pair and skipped the orphan relation. The revised loader audit rejects this case and checks endpoint identities and timestamps in both directions. Equal totals alone would not prove content equality either.</p>
 <table>
 <thead>
 <tr>

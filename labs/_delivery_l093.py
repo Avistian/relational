@@ -18,15 +18,16 @@ with sync_playwright() as p:
   slider=page.locator('#attention-widget input');slider.fill('2');slider.dispatch_event('input');assert 'output 5.200' in page.locator('#attention-widget output').inner_text()
   page.locator('#attention-widget button').click();assert slider.input_value()=='1'
   slider.focus();page.keyboard.press('ArrowRight');assert slider.input_value()=='1.25'
-  assert page.locator('#warmup').inner_text().strip();assert page.locator('#prediction button').count()>=3;assert page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup').count()==0;assert page.locator('#prediction button').count()>=3;assert page.locator('#teachback textarea').count()==1
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   if width==375:
    scroll=page.locator('.figure-scroll').first;assert scroll.evaluate('(e)=>e.scrollWidth>e.clientWidth')
    scroll.focus();page.keyboard.press('ArrowRight');page.wait_for_timeout(200);assert scroll.evaluate('(e)=>e.scrollLeft>0')
   page.screenshot(path=f'/tmp/l093-page-{width}.png');page.locator('#attention-widget').screenshot(path=f'/tmp/l093-widget-{width}.png')
  page.set_viewport_size({'width':1200,'height':900});page.emulate_media(media='print');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1');page.emulate_media(media='screen')
- page.goto((LAB/'html'/f'{SLUG}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==5
+ page.goto((LAB/'html'/f'{SLUG}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==6
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
  nojs=browser.new_page(java_script_enabled=False);nojs.goto((ROOT/'notebooks.html').as_uri());assert nojs.locator('#lab-93 a').count()==4
  browser.close()
@@ -56,5 +57,5 @@ with tempfile.TemporaryDirectory(prefix='l093-pages-') as tmp:
  for name in ['labs/solutions/'+SLUG+'.ipynb','labs/relkit/hgt_l093.py','labs/_sources_l093.json','labs/_teaching_l093_results.json','labs/_run_l093.py','labs/sources/hgt-l093/OAG/pyHGT/conv.py','labs/sources/hgt-l093/publication-2020/conv.py','modal/l093_paper_repro.py']:
   assert (stage/name).exists(),name
  assert not (stage/'labs/data/l093').exists(),'Do not publish multi-GB graphs'
-result={'status':'PASS','browser_widths':[1200,375],'interaction_keyboard_reset':'PASS','portable_png_figures':5,'student_TODOs':3,'print_media_layout':'PASS','pages_actual_copy_commands':'PASS','copied_local_links':checked,'saved_solution_scope':'Tasks, diagnostic, fixed-weight intervention and nine NN fits; CS NOT_RUN','solution_sha256':hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest(),'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+result={'status':'PASS','browser_widths':[1200,375],'interaction_keyboard_reset':'PASS','portable_png_figures':6,'student_TODOs':3,'print_media_layout':'PASS','pages_actual_copy_commands':'PASS','copied_local_links':checked,'saved_solution_scope':'Tasks, diagnostic, fixed-weight intervention and nine NN fits; CS NOT_RUN','solution_sha256':hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest(),'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l093_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

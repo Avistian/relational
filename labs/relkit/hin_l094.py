@@ -56,7 +56,13 @@ def count_graph(graph):
                 n=sum(len(neighbors) for neighbors in adj.values());stored+=n
                 reverse=relation.startswith('rev_')
                 rows.append({'source':source,'target':target,'relation':relation,'edges':n,'reverse':reverse})
-                if reverse:continue
+                if reverse:
+                    counterpart=graph.edge_list.get(source,{}).get(target,{}).get(relation[4:],{})
+                    if sum(map(len,counterpart.values()))!=n:reverse_ok=False
+                    for dst,srcs in adj.items():
+                        for src,stamp in srcs.items():
+                            if dst not in counterpart.get(src,{}) or counterpart[src][dst]!=stamp:reverse_ok=False
+                    continue
                 forward+=n
                 column=pairs.get(frozenset([source,target]))
                 if column:columns[column]+=n

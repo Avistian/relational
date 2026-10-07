@@ -14,7 +14,7 @@ Our mission is to establish when relational structure adds predictive value. A t
 
 
 
-<details><summary>Check after attempting</summary><p>R-GCN uses the relation type. HAN starts with selected meta-path neighbor graphs. HGT's time representation changes the computation; availability cutoffs and removal of target edges still have to be enforced by the data pipeline.</p></details>
+
 
 <!-- depth-walkthrough:start -->
 ## The big picture · classify assumptions before comparing results
@@ -83,6 +83,17 @@ The **meta-path** `author → paper → author` is a schema-level sequence. Ada 
 
 A **meta-graph** is a typed structural pattern that can branch and combine constraints. Here is one explicit teaching example: require both a shared-paper route and a shared-venue route between the same two authors. Define its Boolean result as `(paper_count > 0) AND (venue_count > 0)`. Ada–Cy fails this conjunction despite their shared venue. This example is a chosen pattern semantics; it is not a universal formula for every meta-graph method.
 
+**Check whether the added condition adds information.** In this fixture every paper has a venue. Sharing a paper therefore already implies sharing a venue. The conjunction equals the shared-paper reachability matrix for every author pair; adding a second route has not made the rule more selective.
+
+Now remove **P1's venue link**, keeping every authorship fixed. Ada and Bo still share P1, but Ada's remaining venue is V0 through P0 and Bo's is V1 through P2. Their shared-venue count becomes zero, so the conjunction finally rejects them.
+
+| Ada–Bo case | Paper / venue counts | AND |
+|---|---|---|
+| Original | 1 / 2 | Yes |
+| P1 venue missing | 1 / 0 | No |
+
+**Exercise:** explain why the first conjunction is redundant, and why missing venue data can make the second reject a real coauthor pair. A more elaborate structural rule can add a missing-data dependency without adding predictive information. Test the actual pattern rather than assuming that branching makes it stronger.
+
 [[ROUTE_WIDGET]]
 
 **Predict, intervene, explain.** Remove Bo's link to P1. Ada–Bo shared-paper count becomes 0; the shared-venue count becomes 1 because Bo still has P2 at V1. Dee's row remains zero. Explain why changing the route can create connectivity without adding an authorship edge.
@@ -132,6 +143,8 @@ The notebook's `compare_protocols` returns `INCOMPARABLE` for a known conflict, 
 **Held fixed:** the SHA-256-pinned complete NN archive and a source-visible read-only loader. **Measured:** every node count and every stored typed adjacency. **Varied:** the edge-count convention. There are no sampled nodes, random seeds, train/validation choices, or fitted models in this audit.
 
 The released structure stores both original and `rev_` relations. It also stores field-to-field hierarchy links, which are absent from the table's five listed edge families. The audit counts original entries, verifies their reverse content, and reports both totals. An edge entry represents a source/target pair within one relation map; repeated events overwritten during preprocessing cannot be recovered from it.
+
+**Audit both directions.** Checking that every forward fact has a reverse copy is insufficient. Suppose `(p0, written_by, a0)` and `(a0, rev_written_by, p0)` match, but the release also contains `(a0, rev_reviews, p0)` with no forward `reviews` fact. The original check accepted the matched pair and skipped the orphan relation. The revised loader audit rejects this case and checks endpoint identities and timestamps in both directions. Equal totals alone would not prove content equality either.
 
 [[MEASURED_TABLE]]
 

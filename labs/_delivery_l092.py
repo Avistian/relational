@@ -20,9 +20,10 @@ with sync_playwright() as p:
   page.locator('#semantic button').click();assert slider.input_value()=='0'
   slider.focus();page.keyboard.press('ArrowLeft');assert slider.input_value()=='-1'
   assert 'global 0.622; per-node 0.881' in page.locator('#semantic output').inner_text()
-  assert page.locator('#warmup').inner_text().strip()
+  assert page.locator('#warmup').count()==0
   assert page.locator('#prediction button').count()>=3
   assert page.locator('#teachback textarea').count()==1
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
   if width==375:
@@ -33,7 +34,7 @@ with sync_playwright() as p:
  page.set_viewport_size({'width':1200,'height':900});page.emulate_media(media='print')
  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
  page.emulate_media(media='screen');page.goto((LAB/'html'/f'{SLUG}.html').as_uri())
- count=page.locator('img[src^="data:image/png;base64,"]').count();assert count==5,count
+ count=page.locator('img[src^="data:image/png;base64,"]').count();assert count==6,count
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
  nojs=browser.new_page(java_script_enabled=False);nojs.goto((ROOT/'notebooks.html').as_uri());assert nojs.locator('#lab-92 a').count()==4
  browser.close()
@@ -66,5 +67,5 @@ with tempfile.TemporaryDirectory(prefix='l092-pages-') as tmp:
    assert not dest.is_symlink();checked+=1
  for name in ['labs/solutions/'+SLUG+'.ipynb','labs/relkit/han_l092.py','labs/_sources_l092.json','labs/_paper_l092_results.json','labs/_run_l092.py','labs/sources/han-l092/layers.py']:
   assert (stage/name).exists(),name
-result={'status':'PASS','browser_widths':[1200,375],'semantic_intervention_and_keyboard':'PASS','portable_figures':5,'student_TODOs':3,'print_media_layout':'PASS','actual_pages_copy_commands':'PASS','copied_local_links':checked,'saved_solution_scope':'diagnostic outputs; independent full replay in _replay_l092_results.json','executed_solution_sha256':hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest(),'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+result={'status':'PASS','browser_widths':[1200,375],'semantic_intervention_and_keyboard':'PASS','portable_figures':6,'student_TODOs':3,'print_media_layout':'PASS','actual_pages_copy_commands':'PASS','copied_local_links':checked,'saved_solution_scope':'diagnostic outputs; independent full replay in _replay_l092_results.json','executed_solution_sha256':hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest(),'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l092_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

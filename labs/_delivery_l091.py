@@ -19,9 +19,10 @@ with sync_playwright() as p:
   assert 'ReLU(12) = 12' in page.locator('#typed output').inner_text()
   page.locator('#typed button').click();assert select.input_value()=='buys'
   select.focus();page.keyboard.press('ArrowDown');page.keyboard.press('Enter');assert select.input_value()=='returns'
-  assert page.locator('#warmup').inner_text().strip()
+  assert page.locator('#warmup').count()==0
   assert page.locator('#prediction button').count()>=3
   assert page.locator('#teachback textarea').count()==1
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
   if width==375:
@@ -31,10 +32,10 @@ with sync_playwright() as p:
   page.locator('#typed').screenshot(path=f'/tmp/l091-widget-{width}.png')
   page.screenshot(path=f'/tmp/l091-page-{width}.png')
  page.set_viewport_size({'width':1200,'height':900});page.emulate_media(media='print')
- assert page.locator('img').count()==4
+ assert page.locator('img').count()==6
  page.pdf(path='/tmp/l091-print.pdf',format='A4',print_background=True)
  page.emulate_media(media='screen');page.goto((LAB/'html'/f'{SLUG}.html').as_uri())
- assert page.locator('img[src^="data:image/png;base64,"]').count()==4
+ assert page.locator('img[src^="data:image/png;base64,"]').count()==6
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
  nojs=browser.new_page(java_script_enabled=False);nojs.goto((ROOT/'notebooks.html').as_uri());assert nojs.locator('#lab-91 a').count()==4
  browser.close()
@@ -66,5 +67,5 @@ with tempfile.TemporaryDirectory(prefix='l091-pages-') as tmp:
    assert not dest.is_symlink();checked+=1
  for name in ['labs/solutions/'+SLUG+'.ipynb','labs/relkit/rgcn_l091.py','labs/_sources_l091.json','labs/_paper_l091_results.json','labs/_run_l091.py','labs/data/l091/aifb.tgz']:
   assert (stage/name).exists(),name
-result={'status':'PASS','browser_widths':[1200,375],'typed_edge_intervention_and_keyboard':'PASS','portable_figures':4,'student_TODOs':3,'print_render':'PASS','actual_pages_copy_commands':'PASS','copied_local_links':checked,'executed_solution_sha256':hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest(),'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+result={'status':'PASS','browser_widths':[1200,375],'typed_edge_intervention_and_keyboard':'PASS','portable_figures':6,'student_TODOs':3,'print_render':'PASS','actual_pages_copy_commands':'PASS','copied_local_links':checked,'executed_solution_sha256':hashlib.sha256((LAB/'solutions'/f'{SLUG}.ipynb').read_bytes()).hexdigest(),'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l091_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

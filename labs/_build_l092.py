@@ -33,7 +33,7 @@ def prose(portable=False):
  for tag,(name,caption) in allfigs.items():
   p=LAB/f'figures/l092/{name}.png';src='data:image/png;base64,'+base64.b64encode(p.read_bytes()).decode() if portable else f'../labs/figures/l092/{name}.png'
   s=s.replace('[['+tag+']]',f'<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"></div><figcaption>{caption}</figcaption></figure>')
- for tag,id_,fallback in [('WARMUP','warmup','**Cold retrieval:** answer the three prompts before reading onward.'),('PREDICT','prediction','**Predict before computing:** can another node change your mixture under each semantic rule?'),('SEMANTIC_WIDGET','semantic','**Intervene on the arithmetic:** replace node 1’s PAP score 0 with 4. Global node 0 weight becomes softmax([3,0]) ≈ .953; released node 0 weight stays .881.'),('TEACHBACK','teachback','**Teach-back:** write your explanation before comparing it with the equations above.')]:
+ for tag,id_,fallback in [('PREDICT','prediction','**Predict before computing:** can another node change your mixture under each semantic rule?'),('SEMANTIC_WIDGET','semantic','**Intervene on the arithmetic:** replace node 1’s PAP score 0 with 4. Global node 0 weight becomes softmax([3,0]) ≈ .953; released node 0 weight stays .881.'),('TEACHBACK','teachback','**Teach-back:** write your explanation before comparing it with the equations above.')]:
   s=s.replace('[['+tag+']]',fallback if portable else f'<div id="{id_}"></div>')
  if portable:
   s=re.sub(r'\]\((00\d\d-[^)]+\.html)\)',r'](https://avistian.github.io/relational/lessons/\1)',s)

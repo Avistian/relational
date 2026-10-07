@@ -2,7 +2,7 @@
 
 **Define a typed route, turn it into a neighborhood, and explain both attention decisions in HAN.** Your deliverable is a trained ACM model with measured PAP/PSP weights and a defensible reproduction report. This connects the course mission—learning from relationships—to a precise choice: which relational routes should supply a prediction?
 
-Take this in three sittings if needed: retrieval and the worked trace; implementation; then the full experiment and written defense. Reading the page is preparation. Mastery remains **PENDING_WRITTEN_DEFENSE**.
+Take this in three sittings if needed: the worked trace; implementation; then the full experiment and written defense. Reading the page is preparation. Mastery remains **PENDING_WRITTEN_DEFENSE**.
 
 
 
@@ -145,6 +145,24 @@ The target is **HAN Table 3, ACM, all four KNN training fractions**. A 20% fract
 | Acceptance | Descriptive ±2 percentage-point tolerance fixed before execution; protocol verdict remains separate |
 
 **Why checkpoint detail matters.** The release resets patience when validation accuracy improves **or** validation loss improves. It saves weights only when both conditions hold at the same epoch, with equality allowed. That differs from selecting minimum validation loss alone. The code records the selected epoch and the entire validation trace; test labels never select an epoch.
+
+### Follow the checkpoint through five epochs
+
+Here is a synthetic validation trace for the [released stopping rule](https://github.com/Jhy1993/HAN/blob/71bac29a07fb8fab908d50a806a7bc38aa6c6611/ex_acm3025.py#L225). Higher accuracy and lower loss are better. Start with best accuracy 0, best loss infinity, and no checkpoint. The two best values are tracked separately; they can come from different epochs.
+
+| # | Acc / loss | Action |
+|---|---|---|
+| 1 | .80 / .50 | Save 1; wait 0 |
+| 2 | .90 / .60 | Keep 1; wait 0 |
+| 3 | .85 / .40 | Keep 1; wait 0 |
+| 4 | .88 / .45 | Keep 1; wait 1 |
+| 5 | .90 / .40 | Save 5; wait 0 |
+
+After epoch 2, the accuracy record is .90 but the loss record stays .50. Epoch 3 improves loss to .40 without reaching the accuracy record, so it resets patience **without saving**. If training ended after epoch 4, inference would restore epoch 1—even though epochs 2 and 3 improved individual validation metrics. Epoch 5 matches both records; inclusive comparisons allow it to save. Selecting the minimum-loss epoch would be a different protocol.
+
+**Try a counterfactual.** Change epoch 4's accuracy to .90, leaving its loss .45. Does it save?
+
+<details><summary>Check both comparisons</summary><p>No. Equality with the accuracy record resets patience, but .45 is worse than the loss record .40. Both conditions must hold to save. The checkpoint remains epoch 1 and waiting returns to zero.</p></details>
 
 **Why regularization detail matters.** The source excludes a list of short variable names, but TensorFlow variable names carry scopes and suffixes. The port explicitly regularizes all learned parameters, including biases. It uses Glorot-uniform projection/readout initialization and normal semantic parameters with standard deviation 0.1, following the released initializers. PyTorch's optimizer/random-number implementation still differs from TensorFlow 1.
 
