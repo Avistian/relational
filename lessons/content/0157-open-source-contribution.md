@@ -8,7 +8,7 @@
 
 A **reproduction** repeats a specified computation. An **evidence replay** checks previously saved inputs and outputs. A **contribution** gives other people something they can use and review. A public URL establishes access; it does not establish correctness, acceptance by maintainers or learner mastery.
 
-Start with the [RelBench contribution guide](https://github.com/stanford-star/relbench/blob/main/CONTRIBUTING.md). Its current tests use small synthetic fixtures, rather than full training loops. Our archived experiment belongs in a reproducibility package; a proposed upstream change needs a focused regression test against current upstream. The [pinned reference implementation](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py) is the scientific baseline, not an assertion about today's code.
+Start with the [RelBench contribution guide](https://github.com/stanford-star/relbench/blob/main/CONTRIBUTING.md). As checked on 2026-10-08, its guide requires small synthetic fixtures and single-batch checks rather than full training loops. Our archived experiment belongs in a reproducibility package; a proposed upstream change needs a focused regression test against current upstream. The [pinned reference implementation](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py) is the scientific baseline, not an assertion about today's code.
 
 ## 2 · Pick a contribution that follows from the evidence
 
@@ -33,6 +33,12 @@ Worked trace: `paper/seed-0/predictions.npz` has a frozen digest. Integrity chec
 [[CODE:verify_manifest]]
 
 **TODO1:** implement this integrity function in the notebook. **CHECK:** change a byte, remove a file, and substitute a symlink. All must fail. **Recall:** why can an authentic-looking hash still fail to prove the scientist's conclusion?
+
+**Follow three packets through the gates.** Imagine a small `runs.json` file containing the two policies × five seeds from the CHECK fixture. Each row has the required ten epochs and full query counts.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Packet</th><th>Integrity</th><th>Selected reproduction</th></tr></thead><tbody><tr><td>Original ten rows</td><td>PASS</td><td>SUPPORTED</td></tr><tr><td>Edit a byte after hashing</td><td>FAIL</td><td>REJECTED</td></tr><tr><td>Separate, correctly hashed nine-row packet</td><td>PASS</td><td>INCOMPLETE</td></tr></tbody></table>
+
+The third packet is internally consistent but lacks one planned run. It must omit aggregate scores. Computing its digest does not restore the missing experiment or authenticate its author. **Try it:** add a second copy of seed 0 instead of the missing seed. **Check:** duplicate-run validation rejects it before summarizing; ten rows are not necessarily ten distinct required runs. Keep the real frozen manifests unchanged while trying these failures in temporary fixtures.
 
 ## 4 · A complete recipe must survive leaving this checkout
 

@@ -88,6 +88,12 @@ Write **700–1,000 words**: state your verdict; trace one saved result through 
 | Effort and temporal validity | Invents effort or certifies unknowns | Gaps recognized | Measurement plan and policy scope operational |
 | Next experiment and verdict | Untestable claim or false pass | Test sketched | Frozen selection, cutoff, budget and disconfirming result |
 
+**Same total, different decision.** These hypothetical reviews illustrate the rule; they are not grades for your submission:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Experimental gates</th><th>Five rubric scores</th><th>Decision</th></tr></thead><tbody><tr><td>All met</td><td>Not reviewed</td><td>Defense pending</td></tr><tr><td>All met</td><td>2, 2, 2, 2, 0</td><td>Revision required</td></tr><tr><td>All met</td><td>2, 2, 2, 1, 1</td><td>Pass</td></tr><tr><td>One missing</td><td>2, 2, 2, 2, 2</td><td>Incomplete</td></tr></tbody></table>
+
+Both middle rows total eight, but a zero leaves one essential reasoning dimension unsupported. In the final row, strong prose cannot supply a missing experiment. **Try it:** improve the zero to one in the second row. **Check:** the total becomes nine, every axis is positive, and the decision becomes PASS if every experimental gate is still met and an actual reviewer supplied the scores.
+
 Reviewed readiness requires **at least 8/10 with no zero**, plus all experimental gates. A prose revision and an incomplete portfolio are different states. Ask the teaching agent to assess your reasoning and any unclear mechanism; automatic code checks do not grade scientific judgment.
 
 **Remediation order.** First resolve the information-policy/arrival-history requirements with a reviewable audit design. Plan prospective effort observation before doing more work. Then scope the missing FE and third-task experiments, pin their recipes and budget all seeds, preparation, validation and retries. L153's previous safety-adjusted forecast was **$51.85**, above its $10 cap; it remains stopped. Do not reduce epochs, seeds or catalog size while retaining the label “full reproduction.” [Exact commands, inherited recipes and current stop condition](../labs/l160-reproduction.md).

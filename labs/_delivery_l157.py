@@ -36,7 +36,7 @@ with sync_playwright() as pw:
       assert host.get_attribute('data-status')==expected;states+=1
   host.locator('button').click();assert host.get_attribute('data-status')=='SUPPORTED'
   host.locator('[data-integrity]').focus();page.keyboard.press('ArrowDown');assert host.get_attribute('data-status')=='REJECTED';host.locator('button').click()
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   teach=page.locator('#teachback');assert teach.locator('textarea').count()==1
   assert teach.locator('button').first.is_disabled()
   teach.locator('textarea').fill('Replay checks captured evidence; a fresh run repeats the experiment. Publication establishes access, and neither proves historical feature availability.')
@@ -76,6 +76,7 @@ with tempfile.TemporaryDirectory(prefix='l157-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/reproducibility-contribution.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'releases/l157-f1-audit.zip']+sorted((P/'figures/l157').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for builder in ['_release_l157.py','_figures_l157.py','_build_l157.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/builder)],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Non-deterministic builder'
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=2,copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l157_results.json').write_text(json.dumps(r,indent=2));print(r)

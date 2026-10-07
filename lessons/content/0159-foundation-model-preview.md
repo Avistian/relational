@@ -58,6 +58,12 @@ For this local graph, every normalized adjacency entry is `1/4`. Thus each row r
 
 `A_normalized` is the 4×4 matrix of averaging weights. Multiplying it by the 4×16 matrix `H` produces four 16-number neighborhood means. `W` is a learned 16×16 transformation; `b` adds one learned offset per coordinate. `tanh` squashes each resulting number into `(−1,1)`. The output `H′` therefore still has shape 4×16.
 
+**One-coordinate trace of the local graph layer.** For illustration, use row representations `[.1, .3, .5, .7]`, scalar weight 2 and bias 0. Every row receives the same complete-graph mean `.4`, then outputs `tanh(.4 × 2) ≈ .664`:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Row</th><th>Input</th><th>Neighborhood mean</th><th>Output</th></tr></thead><tbody><tr><td>0</td><td>.1</td><td>.4</td><td>.664</td></tr><tr><td>1</td><td>.3</td><td>.4</td><td>.664</td></tr><tr><td>2</td><td>.5</td><td>.4</td><td>.664</td></tr><tr><td>3</td><td>.7</td><td>.4</td><td>.664</td></tr></tbody></table>
+
+This layer discards within-table row differences because all adjacency rows are identical. Reading row 0 afterward does not restore its original identity. This is a property of this deliberately simple local graph, not a claim about the paper's unspecified full interface. **Try it:** change only the last input to .9. **Check:** all four means become .45 and all outputs become `tanh(.9) ≈ .716`. Permuting the four original inputs instead leaves every output unchanged.
+
 The notebook exposes the embedding, encoder, graph operation, decoder, optimizer, checkpoint selection and evaluation. It never hides a model import behind “run this cell.”
 
 > **Scope check.** This is a **Tier C** experiment: a synthetic mechanism laboratory, the course’s label for testing an idea on deliberately constructed small data. It is neither a trained foundation model nor an implementation of BART. The published target remains separately recorded as `NOT_RUN`.

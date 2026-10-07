@@ -55,7 +55,7 @@ def prose(portable=False):
  return text
 
 def doc(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','predict','teachback','thesis-claim','l158-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in ['lesson','atomic-route','checkpoint'])+'</head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0157-open-source-contribution.html">Lesson 157</a></nav><header><p class="route-kicker">Year 4 · Quarter 4 · Lesson 158</p><h1>'+title+'</h1></header>'+html+'</article>'+''.join('<script src="../assets/'+x+'.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))
@@ -139,9 +139,10 @@ for solution in [False,True]:
  for i,c in enumerate(notebook.cells):c.id=f'l158-{i:03d}'
  path=P/('solutions' if solution else '')/(S+'.ipynb')
  if solution and path.exists():
-  prior=nb.read(path,4)
-  if [(c.cell_type,c.source) for c in prior.cells]==[(c.cell_type,c.source) for c in notebook.cells]:
-   for cell,old in zip(notebook.cells,prior.cells):
-    if cell.cell_type=='code':cell.outputs=old.outputs;cell.execution_count=old.execution_count;cell.metadata=old.metadata
+  prior=nb.read(path,4);notebook.metadata=prior.metadata
+  previous=[c for c in prior.cells if c.cell_type=='code'];current=[c for c in notebook.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for old,cell in zip(previous,current):
+    cell.outputs=old.outputs;cell.execution_count=old.execution_count;cell.metadata=old.metadata
  nb.write(notebook,path)
 print('Built lesson, reference, two figures, student and solution notebooks')

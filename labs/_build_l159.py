@@ -105,7 +105,7 @@ def prose(portable=False):
     return text
 
 def doc(title,text,interactive=False):
-    body=render(text).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+    body=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(text)).replace('</table>','</table></div>')
     css=['lesson','atomic-route','checkpoint','pretraining-objective']
     scripts=['retrieval-pool','retrieval-bank','predict','teachback','pretraining-objective','l159-lesson'] if interactive else []
     return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join(f'<link rel="stylesheet" href="../assets/{x}.css">' for x in css)+'</head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0158-year-4-synthesis.html">Lesson 158</a></nav><header><p class="fm-kicker">Year 4 · Lesson 159 · Foundation-model preview</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in scripts)+'</body></html>'
@@ -182,10 +182,10 @@ for solution in [False,True]:
     for i,c in enumerate(notebook.cells):c.id=f'l159-{i:03d}'
     path=P/('solutions' if solution else '')/(S+'.ipynb')
     if solution and path.exists():
-        old=nb.read(path,4)
-        if [(c.cell_type,c.source) for c in old.cells]==[(c.cell_type,c.source) for c in notebook.cells]:
-            notebook.metadata=old.metadata
-            for c,prior in zip(notebook.cells,old.cells):
-                if c.cell_type=='code':c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
+        old=nb.read(path,4);notebook.metadata=old.metadata
+        previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in notebook.cells if c.cell_type=='code']
+        if [c.source for c in previous]==[c.source for c in current]:
+            for prior,c in zip(previous,current):
+                c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
     nb.write(notebook,path)
 print('Built L159 lesson, reference, three figures and portable student/solution notebooks')

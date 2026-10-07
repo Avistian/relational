@@ -34,7 +34,7 @@ with sync_playwright() as pw:
     assert host.locator('[data-count]').inner_text().startswith('5' if copies else '1');states+=1
   host.locator('button').click();assert claim.input_value()=='quality' and not repeat.is_checked()
   repeat.focus();page.keyboard.press('Space');assert repeat.is_checked();host.locator('button').click()
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="no"]').click();predict.locator('.predict-reveal').click();assert 'equivalence' in predict.locator('.predict-outcome').inner_text()
   assert page.locator('#teachback textarea').count()==1
@@ -74,6 +74,7 @@ with tempfile.TemporaryDirectory(prefix='l158-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/year-4-synthesis.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l158/report.json',P/'evidence/l158/report.md']+sorted((P/'figures/l158').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l158.py')],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Builder is not deterministic'
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',
        inline_source_parity='PASS',portable_figures=2,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),

@@ -56,7 +56,7 @@ with sync_playwright() as pw:
         gradient.locator('button').click();assert gradient.locator('[data-grad]').inner_text()=='-0.620'
         gradient.locator('[data-detach]').focus();page.keyboard.press('Space');assert 'Absent' in gradient.locator('[data-grad]').inner_text()
         gradient.locator('button').click()
-        assert page.locator('#warmup button').count()>0
+        assert page.locator('#warmup button').count()==0
         predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
         predict.locator('[data-value="local"]').click();predict.locator('.predict-reveal').click();assert 'transfer' in predict.locator('.predict-outcome').inner_text()
         assert page.locator('#teachback textarea').count()==1
@@ -101,6 +101,7 @@ with tempfile.TemporaryDirectory(prefix='l159-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/foundation-model-preview.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]+sorted((P/'figures/l159').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l159.py')],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Non-deterministic builder'
 result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',
     inline_source_parity='PASS',portable_figures=3,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),

@@ -44,7 +44,7 @@ with sync_playwright() as pw:
    states+=1
   host.locator('[data-reset]').click();assert all(not host.locator('[data-gate="'+n+'"]').is_checked() for n in names)
   task_box=host.locator('[data-gate="task"]');task_box.focus();page.keyboard.press('Space');assert task_box.is_checked();host.locator('[data-reset]').click()
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="no"]').click();predict.locator('.predict-reveal').click();assert 'separate requirements' in predict.locator('.predict-outcome').inner_text()
   assert page.locator('#teachback textarea').count()==1
@@ -84,6 +84,7 @@ with tempfile.TemporaryDirectory(prefix='l160-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/year-4-exit-exam.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l160/report.json',P/'evidence/l160/report.md']+sorted((P/'figures/l160').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l160.py')],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 after=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 assert before==after,'Builder changed: '+str([str(p) for p,a,b in zip(paths,before,after) if a!=b])
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',
