@@ -14,17 +14,13 @@
 
 This is a deliverable-based exam. Start with the closed-notes questions, then implement the five functions in the notebook. Consult the worked explanation when stuck; record the assistance in your submission. Plan several one-hour sessions for implementation, full-paper reading, execution and defense. Finishing this page is not the Year 3 exit criterion.
 
-## 1 · Retrieve the contracts before writing code
 
-Without opening previous lessons, answer these questions:
 
-1. Why does a foreign key equal to 90 not necessarily point to row 90?
-2. A result occurred on day 5 and arrived on day 8. Can a day-7 prediction use it?
-3. The same person appears in two queries at different times. Must their sampled graphs be identical?
-4. Which nodes receive the supervised loss in a sampled batch? Which may still receive gradients indirectly?
-5. What evidence would establish that your code ran, and what additional evidence establishes that you understand it?
 
-<details><summary>Check the contracts after attempting retrieval</summary><p>Primary keys identify entities; array positions identify storage locations. Day-7 queries cannot use a day-8 arrival. Query identity includes entity and cutoff, so repeated entities can have different legal neighborhoods. Supervise query roots only; context representations can receive gradients through their messages. Executed artifacts establish reference behavior; an independently produced graph, implementation, leakage explanation and written defense establish learner performance.</p></details>
+
+
+
+
 
 [Lesson 100](0100-heterogeneous-gnn-checkpoint.html) supplies heterogeneous graph discipline; [Lesson 110](0110-temporal-gnn-checkpoint.html) supplies time discipline; [Lesson 116](0116-debug-gnn-training.html) supplies diagnostic discipline. [Lesson 119](0119-year-3-synthesis.html) asks what the resulting evidence actually supports. This exam joins those contracts.
 

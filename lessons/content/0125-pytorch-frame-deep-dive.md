@@ -6,8 +6,6 @@
 </aside>
 <!-- sequence-review:end -->
 
-[[WARMUP]]
-
 ## 1 · We have a graph and a question. What does each node contain?
 
 [Lesson 122](0122-reg-construction.html) made database rows into nodes. [Lesson 123](0123-temporal-heterogeneous-graphs.html) restricted their temporal neighborhoods. [Lesson 124](0124-entity-task-tables.html) separated prediction queries from entity rows. We still need a differentiable function that turns a driver's nationality, birth date and name into a vector the GNN can consume.

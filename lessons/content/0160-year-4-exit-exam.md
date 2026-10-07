@@ -12,9 +12,7 @@ The [curriculum](../reference/curriculum.html#y4) requires documented results ve
 
 **A negative result is admissible.** The exit does not require RDL to win. It requires a complete, credible comparison and a defensible explanation. This serves the mission: know what the relational models can establish before publishing a claim.
 
-[[WARMUP]]
 
-Retrieve without looking: (1) the complete key of a prediction query; (2) the split that selects a checkpoint; (3) the difference between an event timestamp and feature arrival. Check your answers against Lessons [123](0123-temporal-heterogeneous-graphs.html), [155](0155-compare-manual-fe.html), and [156](0156-temporal-leakage-audit.html).
 
 ## 2 · Read the evidence before giving a grade
 

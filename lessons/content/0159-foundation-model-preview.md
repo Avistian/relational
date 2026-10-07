@@ -8,8 +8,6 @@
 
 A **representation** is the vector a model computes from its input. **Pre-training** learns such vectors before the intended downstream task. **Adaptation** changes or conditions a pre-trained model using information from the new task. **Transfer** is the measured usefulness of that prior learning on a different task or population. A lower pre-training loss alone does not measure transfer.
 
-[[WARMUP]]
-
 **Primary reading:** [Vogel, Hilprecht and Binnig (2023), Sections 2–4](https://arxiv.org/html/2305.15321v1). The earlier curriculum incorrectly called this Zahradník's paper. Read this historical proposal alongside [L147's research map](0147-next-generation-architectures.html), then return to its wider agenda in L162. L160's Year 4 exit requirements still apply; this preview does not clear the missing portfolio evidence.
 
 ## 2 · Invent a target without inventing a label

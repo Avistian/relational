@@ -10,8 +10,6 @@ The new problem is **composition**: a correct score can become a misleading repo
 
 **Prerequisites:** complete `(entity, cutoff)` query keys from L124; validation-only selection from L135/L151; seed variation from L136; MAE versus ranking metrics from L152–153. This is a reporting lesson, not a new architecture or a new training experiment.
 
-[[WARMUP]]
-
 ## 2 · Trace one claim back to its inputs
 
 **Vocabulary reminder.** A **lane** is one declared experiment procedure, such as the fixed reference recipe or a validation-selected recipe. **Provenance** records where evidence came from. A **manifest** lists the files being checked, and a **SHA256 digest** is a content fingerprint used to detect changes. **FE** means feature engineering: explicitly constructing model inputs. `ddof=1` requests the sample-standard-deviation denominator `n−1`.

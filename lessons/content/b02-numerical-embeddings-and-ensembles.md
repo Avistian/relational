@@ -6,7 +6,7 @@
 
 [B01](b01-architecture-coverage-honest-comparison.html) showed why a score compares an entire pipeline. Its unresolved question: once the input table is matched, which part of the predictor deserves credit? Here we separate two choices: how a scalar enters a neural network, and how several predictions are trained and combined. A strong relational result must eventually beat credible flat-table baselines, not an unnecessarily weak MLP.
 
-**Recall before reading:** What is a validation set allowed to choose? Why does matching train/test rows fail to match selection effort? Write one sentence for each. Prerequisites: [RealMLP, L053](0053-realmlp-strong-defaults.html), [TabM, L054](0054-tabm-parameter-efficient-ensembling.html), and an affine layer `x @ W + b`. You need only shapes, averages and squared error for the core lesson.
+Prerequisites: [RealMLP, L053](0053-realmlp-strong-defaults.html), [TabM, L054](0054-tabm-parameter-efficient-ensembling.html), and an affine layer `x @ W + b`. You need only shapes, averages and squared error for the core lesson.
 
 ## 1. Give a scalar useful coordinates
 

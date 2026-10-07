@@ -10,8 +10,6 @@ Recall the earlier weakness work in [L137](0137-error-analysis-reg.html) and [L1
 
 **Prerequisites in one sentence each:** a query is `(entity, cutoff)`; validation selects the recipe/checkpoint; test evaluates the frozen choice; MAE is lower-is-better; training-seed SD is not uncertainty across databases.
 
-[[WARMUP]]
-
 ## 2 · Separate four questions before drafting
 
 | Question | Evidence needed | Current local boundary |

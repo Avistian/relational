@@ -6,8 +6,6 @@
 
 **Prerequisites, restated:** a *support set* is the labeled training examples supplied to an in-context predictor; a *query* is an example whose target must be predicted. *Frozen weights* means no optimizer updates on the target task. A *checkpoint* is a saved set of model parameters. *DFS* (Deep Feature Synthesis) builds a flat feature matrix from related tables using aggregations. A *seed* fixes a reproducible support draw; ten seeds are ten draws on the same database, not ten new databases.
 
-[[WARMUP]]
-
 ## 1 · “Bigger” has several meanings
 
 The [2025 RDL survey, §5.2](https://arxiv.org/html/2506.16654v1#S5.SS2) argues for models that combine reusable relational structure, heterogeneous attributes and temporal reasoning. It motivates a research direction; it does not give a fitted relational scaling law. We use it as historical framing and the version-pinned [RDB-PFN v5 experiment](https://arxiv.org/html/2603.03805v5#A1.SS3) as measurable evidence.

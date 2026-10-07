@@ -4,7 +4,7 @@
 
 **Your outcome.** By the end you will turn a frozen TabPFN v2 into a useful feature extractor **without giving a training row its own answer**. You will implement four steps: ten-fold extraction, restoring row identities, concatenating selected layer states, and training a validation-selected linear head. The backbone is the full historical model from Lesson 064. That backbone has 12 distinct layers, 192 hidden coordinates, six attention heads, and every released parameter loaded. The four new tasks run that real model on a complete dataset.
 
-**Retrieve first, without scrolling.** What is a query allowed to attend to in v2? What does "frozen" describe — weights, inputs, or both? Why can choosing a hyperparameter on test data invalidate a test score even when no gradient ever touches that data? Try answering before reading further.
+
 
 ### Two terms, defined once
 

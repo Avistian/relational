@@ -14,8 +14,6 @@
 
 **Route:** understand the historical map; trace one small database; implement three computations; audit what the reproduction establishes; write your own map. Work through one section at a time. The research and reproduction appendix can take a separate session.
 
-[[WARMUP]]
-
 Open the [student notebook](../labs/0121-history-relational-ml.ipynb), [executed reference notebook](../labs/html/0121-history-relational-ml.html), and [quick reference](../reference/history-relational-ml.html). The notebook contains the visible mechanism code and full Cvitkovic model/trainer. It runs without the private competition data.
 
 ## 1 · Read the map as a set of design choices

@@ -8,10 +8,9 @@
 
 [Open student notebook](../labs/b18-context-sufficiency.ipynb) · [View executed solution](../labs/html/b18-context-sufficiency.html) · [Download solution](../labs/solutions/b18-context-sufficiency.ipynb) · [Printable reference](../reference/b18-context-sufficiency.html) · [Experiment contract](../labs/b18-reproduction.md) · [Measured evidence](../labs/evidence/b18/summary.json)
 
-## Recall before reading
 
-<div id="b18-warmup"></div>
-<noscript><p>Without notes: what makes a record legal at prediction time? Can fixed model weights compensate for a missing input? Which split may choose a model configuration?</p></noscript>
+
+
 
 ## 1 · Follow one customer's money
 

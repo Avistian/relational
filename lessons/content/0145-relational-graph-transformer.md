@@ -10,9 +10,7 @@
 
 Trace one relational query through **RelGT**, then implement three contracts that the actual model, data audit and trainer use. You will be able to explain both what attention changes and what a successful reproduction must establish. This advances our mission: make relational-model claims defensible through visible computation and controlled evidence.
 
-**Recall before reading.** What does an atomic route preserve when a many-to-many bridge would mix records? What is the difference between an entity and an `(entity, cutoff)` query? Why must validation choose a checkpoint before test results are interpreted?
 
-[[WARMUP]]
 
 ## 1 · What the previous methods leave unresolved
 

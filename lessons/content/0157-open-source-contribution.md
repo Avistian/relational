@@ -8,8 +8,6 @@
 
 A **reproduction** repeats a specified computation. An **evidence replay** checks previously saved inputs and outputs. A **contribution** gives other people something they can use and review. A public URL establishes access; it does not establish correctness, acceptance by maintainers or learner mastery.
 
-[[WARMUP]]
-
 Start with the [RelBench contribution guide](https://github.com/stanford-star/relbench/blob/main/CONTRIBUTING.md). Its current tests use small synthetic fixtures, rather than full training loops. Our archived experiment belongs in a reproducibility package; a proposed upstream change needs a focused regression test against current upstream. The [pinned reference implementation](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py) is the scientific baseline, not an assertion about today's code.
 
 ## 2 · Pick a contribution that follows from the evidence

@@ -4,8 +4,6 @@
 
 [Open the lab](../labs/html/0170-fm-design-checkpoint.html) · [Student notebook](../labs/0170-fm-design-checkpoint.ipynb) · [Reference solution](../labs/solutions/0170-fm-design-checkpoint.ipynb) · [Design template](../labs/l170-design-template.md) · [Quick reference](../reference/fm-design-checkpoint.html)
 
-[[WARMUP]]
-
 ## 1 · From measuring a curve to making a decision
 
 [Lesson 167](0167-tabular-to-relational-fm-transfer.html) separated representation, pretraining and adaptation. [Lesson 168](0168-cross-database-generalization.html) added a second task. [Lesson 169](0169-scaling-laws-open-questions.html) varied context size while keeping pretrained weights fixed. Those experiments tell us what happened under their protocols. They do not automatically choose an architecture for a new database.

@@ -8,9 +8,7 @@
 
 ## 1 · Decide what the entry means
 
-[[WARMUP]]
 
-Close your notes. Why do five seeds not create five independent datasets? Which split may choose a learning rate? Why does temporal sampling not recover missing feature-arrival dates?
 
 > **In plain terms.** A portfolio entry is a result plus the instructions and evidence needed to interpret it. A score without those attachments cannot support your thesis.
 

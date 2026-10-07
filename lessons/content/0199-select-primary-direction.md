@@ -6,9 +6,9 @@
 
 [[STATUS]]
 
-## 1 · Retrieve before reading
 
-Without opening earlier lessons, answer: Why can a completed replay leave a research proposal blocked? What can change a ranking even when its weights seem robust?
+
+
 
 <details><summary>Check your reasoning</summary><p>A replay can verify old arithmetic while the proposed study still lacks data, healthy baselines or a feasible budget. Weight sensitivity leaves the assigned ratings fixed; changing those judgments can change the winner.</p></details>
 

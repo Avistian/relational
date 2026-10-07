@@ -4,8 +4,6 @@
 
 **Prerequisites:** full `(entity, cutoff)` query keys; training versus validation versus test; frozen weights versus label access; reservations versus measured costs. Recall [RelGNN's composite routes](0141-composite-message-passing.html) and [RDB-PFN's relational prior](0166-rdb-pfn-synthetic-relational-priors.html). The links in the notebook include the exact source implementations.
 
-[[WARMUP]]
-
 ## 1 · Three routes; one prediction contract
 
 A relational foundation model can reuse pretrained weights while conditioning on support examples. A supervised GNN learns task-specific parameters from labeled queries and relational neighborhoods. RDBLearn builds relational features and delegates prediction to an existing tabular model. **RDBLearn also uses a foundation model**: these are pipeline choices, not three mutually exclusive kinds of intelligence. [RDBLearn §3](https://arxiv.org/html/2602.18495v1#S3), [RelGNN §4](https://arxiv.org/html/2502.06784v2#S4), [RDB-PFN v5](https://arxiv.org/html/2603.03805v5).

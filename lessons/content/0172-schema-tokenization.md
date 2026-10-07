@@ -4,11 +4,9 @@
 
 > **In plain terms.** A database stores values. A tokenizer says what each value means, how to represent it, and which information must stay hidden.
 
-## 1 · Retrieve before reading
 
-[[WARMUP]]
 
-Recall two facts from Lesson 171: why does a valid foreign key not prove historical availability? What should happen when a table has no time column? Write an answer before opening the lab.
+
 
 ## 2 · An integer is not a meaning
 

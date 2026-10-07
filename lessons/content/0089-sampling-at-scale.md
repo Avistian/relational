@@ -1,17 +1,13 @@
-## 0 · Retrieve before reading
-
 **Your win:** build a graph mini-batch that restores every edge between its selected partitions, and explain the memory–information trade-off from your own measurements.
 
-Close the previous lesson. Write answers before opening the explanations: (1) In GraphSAGE, why can a small set of target nodes still require many intermediate nodes? (2) What does an induced subgraph retain? (3) Why must an inductive training graph exclude held-out nodes even if their labels are masked?
 
-[[WARMUP]]
 
 [Lesson 88](0088-graph-classification.html) asked which structures an aggregation can distinguish. Expressive aggregation is useful only if we can afford to train it. [Lesson 83](0083-graphsage.html) controlled cost by sampling neighbors. Here we change **which nodes share a training step**. This matters for the mission: a relational entity graph may contain millions of rows, and a training method must respect both memory and information-access boundaries.
 
 **Primary reading:** Chiang et al., [Cluster-GCN, KDD 2019, §§3.1–3.3 and Algorithm 1](https://arxiv.org/html/1905.07953v2#S3). Read §4.3 and Table 10 for our named reproduction target. The [2019 release](https://github.com/google-research/google-research/tree/89c16e403d42015c3133634788ed0b7965f56395/cluster_gcn) supplies concrete settings that the algorithm alone does not.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 089</p><p><strong>Build on what you know.</strong> <a href="0083-graphsage.html">Lesson 83</a> bounded neighborhood expansion by sampling at each hop. <a href="0088-graph-classification.html">Lesson 88</a> made graph membership explicit. Cluster-GCN instead reuses a chosen induced node set at every depth, changing both cost and the approximation.</p><p><strong>The next question.</strong> <a href="0090-gnn-checkpoint.html">Lesson 90</a> asks you to defend the actual experiment. Carry the sampler, normalization and first-layer cache into that defense; the model name alone omits all three.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 089</p><p><strong>Build on what you know.</strong> <a href="0083-graphsage.html">Lesson 83</a> bounded neighborhood expansion by sampling at each hop. <a href="0088-graph-classification.html">Lesson 88</a> made graph membership explicit. Cluster-GCN instead reuses a chosen induced node set at every depth, changing both cost and the approximation.</p><p><strong>The next question.</strong> <a href="0090-gnn-checkpoint.html">Lesson 90</a> asks you to defend the actual experiment. Carry the sampler, normalization and first-layer cache into that defense; the model name alone omits all three.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## A batch changes which messages exist
 

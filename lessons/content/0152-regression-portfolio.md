@@ -6,9 +6,7 @@
 
 Our second portfolio entry predicts a driver's average finishing position over the next 60 days. A lower MAE is better. The tangible win is an entry whose metric, loss, calibration diagnostic and evidence all describe the same object. This supports the mission: make a defensible relational-learning claim with enough evidence for a skeptic to reproduce it.
 
-[[WARMUP]]
 
-Recall before reading: why does a driver need both an ID and a cutoff? Which split chooses a checkpoint? Why can five complete runs still leave historical identity unestablished? Revisit [query contracts](0124-entity-task-tables.html), [the complete F1 pipeline](0130-rdl-checkpoint.html), and [regression metrics](0008-metrics-calibration.html) as needed; this lesson restates the essentials below.
 
 ## 2 · Define the numerical target before choosing the loss
 

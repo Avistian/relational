@@ -12,9 +12,9 @@
 
 This connects to the mission: before crediting a relational model for using database structure, check whether it simply received useful text that its competitors never saw. A foreign-key relationship and a meaningful column name are different information channels.
 
-**Recall before reading.** A *feature* is a known input. A *target* is the value to predict. An *embedding* maps an input into a vector of numbers. *Pretraining* learns reusable parameters before the present task. *Fine-tuning* changes parameters using the present task's training data. *In-context learning* changes the labeled examples supplied to a frozen model.
+Prerequisites. A *feature* is a known input. A *target* is the value to predict. An *embedding* maps an input into a vector of numbers. *Pretraining* learns reusable parameters before the present task. *Fine-tuning* changes parameters using the present task's training data. *In-context learning* changes the labeled examples supplied to a frozen model.
 
-<div id="b07-warmup"></div>
+
 <noscript><p>Recall B06: what must stay fixed when comparing priors? Recall L074: what do row-graph edges represent? Recall B05: may a query label enter its retrieved context?</p></noscript>
 
 ## 2 · What exactly will we remove?

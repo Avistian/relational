@@ -11,18 +11,14 @@
 
 <p>A good test score is only useful if the predictor could have known its inputs. <strong>Your Q3 checkpoint is to train a temporal graph network, reconstruct its evaluation, and demonstrate that changing the future cannot change an earlier prediction.</strong> You will submit working code and a short defense, rather than declare mastery because a notebook ran.</p>
 <p><a href="0102-temporal-graph-networks.html">L102</a> supplied the TGN computation. <a href="0104-information-leakage-in-time.html">L104</a> tested information access. <a href="0108-temporal-neighbor-sampling.html">L108</a> examined strict-past neighborhoods, and <a href="0109-database-timestamp-contracts.html">L109</a> separated event dates from actual availability. Here those pieces become one executable contract. This serves our mission: results on a relational graph must survive the same scrutiny as features built from database history.</p>
+
+
+
+
+<p><strong>Primary reading:</strong> <a href="https://arxiv.org/abs/2006.10637v3">Rossi et al., Temporal Graph Networks, v3</a>, §3 for memory/messages/embeddings and Table 2 for the selected Wikipedia results. Read the <a href="https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/train_self_supervised.py">released trainer</a> alongside the paper. The two are distinct evidence sources: prose defines the method; executable code resolves many protocol details.</p>
 <!-- lesson-visuals:start -->
 <nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 5 figures</summary><ol><li><a href="#course-visual-110">Score the event before it changes memory</a></li><li><a href="#visual-figure-1">Complete Wikipedia TGN-attn path: 688-number old message → GRU state → strict history attention…</a></li><li><a href="#visual-figure-2">Illustrative selected epoch 12 and stopping epoch 17: the release can combine selected…</a></li><li><a href="#visual-figure-3">Worked timestamp stream: fixed size-two slicing crosses a time-2 boundary; extending the batch…</a></li><li><a href="#visual-figure-4">Author-reference full-data runs</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
 <!-- lesson-visuals:end -->
-<h2 id="1-%C2%B7-Retrieve-the-contract-before-opening-the-code">1 &#183; Retrieve the contract before opening the code<a class="anchor-link" href="#1-%C2%B7-Retrieve-the-contract-before-opening-the-code">&#182;</a></h2><div id="warmup"></div>
-
-<p>Write three answers from memory. What does a temporal model remember besides its learned weights? May one event at time 5 update the state used to score another event at time 5? What evidence would establish that an event dated yesterday was available yesterday?</p>
-<details><summary>Check after committing your answers</summary>
-
-<p>The model also has node memories, last-update clocks and queued messages. A resumable training process additionally needs optimizer state, random-generator state and a stream cursor. Under our strict-time contract, tied events cannot update each other's prediction state. Actual arrival or version history is needed to establish availability; an event date alone does not establish it.</p>
-</details>
-
-<p><strong>Primary reading:</strong> <a href="https://arxiv.org/abs/2006.10637v3">Rossi et al., Temporal Graph Networks, v3</a>, §3 for memory/messages/embeddings and Table 2 for the selected Wikipedia results. Read the <a href="https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/train_self_supervised.py">released trainer</a> alongside the paper. The two are distinct evidence sources: prose defines the method; executable code resolves many protocol details.</p>
 <h2 id="2-%C2%B7-Model-architecture:-score-the-event-before-learning-from-it">2 &#183; Model architecture: score the event before learning from it<a class="anchor-link" href="#2-%C2%B7-Model-architecture:-score-the-event-before-learning-from-it">&#182;</a></h2><blockquote>
 <p><strong>In plain terms.</strong> The network predicts whether a user will edit a page using earlier interactions. Only after making the prediction may it remember the edit that actually happened.</p>
 </blockquote>

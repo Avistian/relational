@@ -4,8 +4,6 @@
 
 **Recall first.** A database contains tables linked by keys. A *primary key* identifies a row within a table. A *foreign key* refers to a primary key in another table. A *query cutoff* is the moment at which a prediction must be made; information arriving later cannot support that prediction.
 
-[[WARMUP]]
-
 ## 1 · From a model design to a corpus contract
 
 [Lesson 170](0170-fm-design-checkpoint.html) asked you to defend a relational foundation-model design. It left a practical question open: **which databases is the model allowed to learn from?** A model can pass a prediction benchmark while having already seen the evaluation database during pretraining. The corpus contract must come before the first training batch.

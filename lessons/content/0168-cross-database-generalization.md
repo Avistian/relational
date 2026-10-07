@@ -10,8 +10,6 @@
 
 Recall three prerequisites: a **support** row has a supplied label; a **query** row has a hidden target; a **schema** describes tables, columns and relationships. AUROC measures binary ranking: 0.5 is chance ranking, 1 is perfect ranking. Our mission is to test where relational modeling adds value, so the tabular comparator must receive the same available relational features and labels.
 
-[[WARMUP]]
-
 **Prediction to commit:** a frozen model receives 512 labeled target examples. Has it performed zero-shot prediction?
 
 [[PREDICT]]

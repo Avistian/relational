@@ -1,9 +1,3 @@
-## Start with retrieval
-
-Before reading further, answer from memory: what did the L035 aggregation discard? Why can an old event be unavailable at prediction time? In L076, which operation decides what a customer can receive from other rows?
-
-<div id="warmup"></div>
-
 Your tangible win is a **ceiling certificate**: two different histories, one identical input vector, incompatible labels, and a calculation showing the best possible accuracy from that vector. You will then break the collision with a feature computed from the eligible history.
 
 This strengthens the mission by making the relational thesis falsifiable. You must name the information a model receives before interpreting its score. The [Fey et al. position paper](https://proceedings.mlr.press/v235/fey24a.html) motivates learning over connected database records. Here we test one carefully bounded consequence of discarding information.
@@ -11,7 +5,7 @@ This strengthens the mission by making the relational thesis falsifiable. You mu
 > **Scope check.** This curriculum unit is an original synthesis experiment, with no newly introduced model or assigned published table. Its complete experiment is reproduced below. The construction establishes a possibility and an information bound; it does not measure the prevalence of this problem in real databases.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 077</p><p><strong>Build on what you know.</strong> Lessons 51 and 60 warned against claiming that one model family always wins. <a href="0076-encoder-predictor-stack.html">Lesson 76</a> exposed the records a relational model can receive. Here we locate a precise representation bottleneck before making any architecture claim.</p><p><strong>The next question.</strong> <a href="0078-message-passing-preview.html">Lesson 78</a> introduces learned message passing as one way to consume relationships. Carry the counterexample forward: a GNN with an order-insensitive reducer and no time features can lose the same distinction.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 077</p><p><strong>Build on what you know.</strong> Lessons 51 and 60 warned against claiming that one model family always wins. <a href="0076-encoder-predictor-stack.html">Lesson 76</a> exposed the records a relational model can receive. Here we locate a precise representation bottleneck before making any architecture claim.</p><p><strong>The next question.</strong> <a href="0078-message-passing-preview.html">Lesson 78</a> introduces learned message passing as one way to consume relationships. Carry the counterexample forward: a GNN with an order-insensitive reducer and no time features can lose the same distinction.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## Prove what the input cannot tell you
 

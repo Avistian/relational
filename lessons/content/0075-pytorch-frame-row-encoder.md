@@ -1,9 +1,3 @@
-## Start with retrieval
-
-Before reading, write three short answers from memory. What distinguishes a numeric feature token from a category lookup in L046? What information does a within-row CARTE graph omit about a relational database? Why must a fitted transformation be learned without looking at the test set? Keep these answers for your exit ticket.
-
-<div id="warmup"></div>
-
 **Today’s tangible win:** take a table containing numbers, categories, text, timestamps and stored vectors; produce a typed `TensorFrame`, column tokens and one vector per row; explain which operations learned from which rows. Plan for 35–45 minutes of reading and prediction, then 30–45 minutes in the lab.
 
 > **In plain terms.** A database row contains several kinds of information. Before a neural network can use it, each kind needs an appropriate translator. PyTorch Frame organizes those translators and their outputs. It does not decide which information was legally available at prediction time.
@@ -11,7 +5,7 @@ Before reading, write three short answers from memory. What distinguishes a nume
 This advances our mission at a specific seam: the representation of each database row **before** a GNN exchanges information along relationships. L074’s [CARTE lesson](0074-carte-cross-table-transfer.html) handled schema-variable row graphs. Here we deliberately use a fixed schema and explicit type assignments. L076 will connect row vectors to relationships between records.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 075</p><p><strong>Build on what you know.</strong> Lessons 44–46 built column tokenizers inside specific architectures; <a href="0074-carte-cross-table-transfer.html">Lesson 74</a> attached semantic meaning to cells. Here we separate conversion, learned encoding and row readout so each boundary can be inspected.</p><p><strong>The next question.</strong> <a href="0076-encoder-predictor-stack.html">Lesson 76</a> uses the resulting vectors as node states. A row encoder must preserve identity as well as width, otherwise correct graph arithmetic can send the wrong record to a neighbor.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 075</p><p><strong>Build on what you know.</strong> Lessons 44–46 built column tokenizers inside specific architectures; <a href="0074-carte-cross-table-transfer.html">Lesson 74</a> attached semantic meaning to cells. Here we separate conversion, learned encoding and row readout so each boundary can be inspected.</p><p><strong>The next question.</strong> <a href="0076-encoder-predictor-stack.html">Lesson 76</a> uses the resulting vectors as node states. A row encoder must preserve identity as well as width, otherwise correct graph arithmetic can send the wrong record to a neighbor.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## A row representation is an interface with state
 

@@ -1,15 +1,9 @@
-## Before reading: retrieve the boundary
-
-Close the previous lesson. Write three short answers: What comparison isolates pretraining from architecture? Which rows may fit a numerical transform? Why can a positive gain at one label budget fail at another? Keep your answers, then complete the spaced warm-up.
-
-<div id="warmup"></div>
-
 **Your tangible win.** Given a row from a table with unfamiliar columns, draw the graph CARTE consumes, trace how column meaning changes one message, and design a fair test of whether a pretrained encoder helps a small target table. The companion lab makes you implement graph construction, attention normalization and validation-only probe selection.
 
 The route is **row → typed messages → shared encoder → target prediction → transfer audit**. Allow one focused reading session and a separate lab session. Ask the tutor about any step you cannot reconstruct; bring your graph and intermediate values.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 074</p><p><strong>Build on what you know.</strong> <a href="0072-scarf-subtab-contrastive-views.html">Lesson 72</a> aligned views of the same row. <a href="0073-when-ssl-helps.html">Lesson 73</a> held schema fixed. CARTE changes the representation itself so a shared encoder can consume different column sets; contrast this with the fixed column token positions of Lessons 44–46.</p><p><strong>The next question.</strong> <a href="0075-pytorch-frame-row-encoder.html">Lesson 75</a> returns to explicit semantic types and fitted conversion state. CARTE makes schema flexibility visible; PyTorch Frame makes the modular row-encoding interface visible.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 074</p><p><strong>Build on what you know.</strong> <a href="0072-scarf-subtab-contrastive-views.html">Lesson 72</a> aligned views of the same row. <a href="0073-when-ssl-helps.html">Lesson 73</a> held schema fixed. CARTE changes the representation itself so a shared encoder can consume different column sets; contrast this with the fixed column token positions of Lessons 44–46.</p><p><strong>The next question.</strong> <a href="0075-pytorch-frame-row-encoder.html">Lesson 75</a> returns to explicit semantic types and fitted conversion state. CARTE makes schema flexibility visible; PyTorch Frame makes the modular row-encoding interface visible.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## Transfer a computation, not a column position
 

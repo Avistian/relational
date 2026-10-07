@@ -12,20 +12,13 @@
 <p><strong>Your win:</strong> build and defend a heterogeneous, temporal PyG predictor whose graph, batches, training labels and reported score refer to the same legal prediction questions.</p>
 <p><a href="../labs/0120-year-3-exit-exam.ipynb">Student notebook</a> · <a href="../labs/html/0120-year-3-exit-exam.html">Executed reference</a> · <a href="../labs/l120-submission.md">Exam submission</a> · <a href="../reference/year-3-exit-exam.html">Quick reference</a> · <a href="../labs/l120-reproduction.md">Full reproduction contract</a></p>
 <p>This is a deliverable-based exam. Start with the closed-notes questions, then implement the five functions in the notebook. Consult the worked explanation when stuck; record the assistance in your submission. Plan several one-hour sessions for implementation, full-paper reading, execution and defense. Finishing this page is not the Year 3 exit criterion.</p>
+
+
+
+<p><a href="0100-heterogeneous-gnn-checkpoint.html">Lesson 100</a> supplies heterogeneous graph discipline; <a href="0110-temporal-gnn-checkpoint.html">Lesson 110</a> supplies time discipline; <a href="0116-debug-gnn-training.html">Lesson 116</a> supplies diagnostic discipline. <a href="0119-year-3-synthesis.html">Lesson 119</a> asks what the resulting evidence actually supports. This exam joins those contracts.</p>
 <!-- lesson-visuals:start -->
 <nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 3 figures</summary><ol><li><a href="#visual-figure-1">A day-7 person90 query admits event1; late event2 enters only at day8</a></li><li><a href="#visual-figure-2">The course model: typed two-channel inputs, table encoders, two relation-specific message…</a></li><li><a href="#visual-figure-3">The separate published RelBench model: table encoders, query-relative time, typed GraphSAGE and…</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
 <!-- lesson-visuals:end -->
-<h2 id="1-%C2%B7-Retrieve-the-contracts-before-writing-code">1 &#183; Retrieve the contracts before writing code<a class="anchor-link" href="#1-%C2%B7-Retrieve-the-contracts-before-writing-code">&#182;</a></h2><p>Without opening previous lessons, answer these questions:</p>
-<ol>
-<li>Why does a foreign key equal to 90 not necessarily point to row 90?</li>
-<li>A result occurred on day 5 and arrived on day 8. Can a day-7 prediction use it?</li>
-<li>The same person appears in two queries at different times. Must their sampled graphs be identical?</li>
-<li>Which nodes receive the supervised loss in a sampled batch? Which may still receive gradients indirectly?</li>
-<li>What evidence would establish that your code ran, and what additional evidence establishes that you understand it?</li>
-</ol>
-<details><summary>Check the contracts after attempting retrieval</summary><p>Primary keys identify entities; array positions identify storage locations. Day-7 queries cannot use a day-8 arrival. Query identity includes entity and cutoff, so repeated entities can have different legal neighborhoods. Supervise query roots only; context representations can receive gradients through their messages. Executed artifacts establish reference behavior; an independently produced graph, implementation, leakage explanation and written defense establish learner performance.</p></details>
-
-<p><a href="0100-heterogeneous-gnn-checkpoint.html">Lesson 100</a> supplies heterogeneous graph discipline; <a href="0110-temporal-gnn-checkpoint.html">Lesson 110</a> supplies time discipline; <a href="0116-debug-gnn-training.html">Lesson 116</a> supplies diagnostic discipline. <a href="0119-year-3-synthesis.html">Lesson 119</a> asks what the resulting evidence actually supports. This exam joins those contracts.</p>
 <h2 id="2-%C2%B7-Draw-the-relational-entity-graph-by-hand">2 &#183; Draw the relational entity graph by hand<a class="anchor-link" href="#2-%C2%B7-Draw-the-relational-entity-graph-by-hand">&#182;</a></h2><p>A relational entity graph (REG) gives each table row its own node and each valid primary/foreign-key match its own typed edge. Reverse edges permit information to flow in the opposite direction; they do not add a second database fact. This is the construction in <a href="https://proceedings.mlr.press/v235/fey24a.html">Fey §3</a>.</p>
 <p>Our small course database has three people with keys <code>[90,10,70]</code>, two merchants with keys <code>[8,4]</code>, and six event rows:</p>
 <div class="stream-scroll" tabindex="0"><table>

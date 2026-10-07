@@ -11,21 +11,18 @@
 
 <p>You have learned to sample a temporal graph. Now someone hands you a database containing <code>created_at</code>, <code>updated_at</code>, and <code>date</code>. Which one should govern the graph? <strong>By the end, you will write a timestamp contract, reconstruct historical row versions, and prove that a join uses the information available at its query time.</strong></p>
 <p>This is the hand-off from <a href="0096-multi-relational-data.html">L096’s SQL-to-graph mapping</a>, <a href="0104-information-leakage-in-time.html">L104’s leakage audit</a>, and <a href="0108-temporal-neighbor-sampling.html">L108’s temporal sampler</a> to relational learning. A powerful sampler cannot recover a historical value that the database has overwritten. The mission requires both meaningful relational structure and an honest account of when it became usable.</p>
-<!-- lesson-visuals:start -->
-<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 5 figures</summary><ol><li><a href="#visual-detail-109">Teaching schematic</a></li><li><a href="#visual-figure-1">Synthetic immutable event: occurred day 2, observed day 7; exclude from the day-5 query.</a></li><li><a href="#visual-figure-2">Synthetic append-only histories: select both row versions before joining their keys</a></li><li><a href="#visual-figure-3">Synthetic label window (5,9], with final constituent arrival on 12; fit no earlier than 12 under…</a></li><li><a href="#visual-figure-4">Author-reference reconstruction: full selected validation/test populations, all five…</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
-<!-- lesson-visuals:end -->
-<h2 id="First-retrieve,-without-notes">First retrieve, without notes<a class="anchor-link" href="#First-retrieve,-without-notes">&#182;</a></h2><div id="warmup"></div>
+
 
 <ol>
 <li>An event happened on day 2 and arrived on day 7. Can a day-5 prediction use it?</li>
 <li>Why can a correct foreign-key join still leak future information?</li>
 <li>What separates a target’s prediction time from the time it becomes safe to train on it?</li>
 </ol>
-<details><summary>Check after writing</summary>
 
-<p>No: it was not available by day 5. A key can link to a future row or a corrected value that was unknown at the query time. A future-window target must wait until the window has ended and the necessary outcomes are available, under a declared completeness policy.</p>
-</details>
 
+<!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 5 figures</summary><ol><li><a href="#visual-detail-109">Teaching schematic</a></li><li><a href="#visual-figure-1">Synthetic immutable event: occurred day 2, observed day 7; exclude from the day-5 query.</a></li><li><a href="#visual-figure-2">Synthetic append-only histories: select both row versions before joining their keys</a></li><li><a href="#visual-figure-3">Synthetic label window (5,9], with final constituent arrival on 12; fit no earlier than 12 under…</a></li><li><a href="#visual-figure-4">Author-reference reconstruction: full selected validation/test populations, all five…</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
 <h2 id="1-%C2%B7-Name-the-clocks-before-choosing-a-column">1 &#183; Name the clocks before choosing a column<a class="anchor-link" href="#1-%C2%B7-Name-the-clocks-before-choosing-a-column">&#182;</a></h2><blockquote>
 <p><strong>In plain terms.</strong> “When did this happen?” and “When could our predictor know it?” are separate questions.</p>
 </blockquote>

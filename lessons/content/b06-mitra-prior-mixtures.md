@@ -8,15 +8,15 @@
 
 > **Scope check.** Nine fresh course fits and 4,320 predictions are complete. All arms are near chance; none beats the uniform-probability baseline in mean cross-entropy. Original Mitra Table 12 remains `INCOMPLETE_SOURCE_PROTOCOL`. These are separate findings, not conflicting labels.
 
-## Retrieve before reading
 
-<div id="b06-warmup"></div>
+
+
 
 1. From B05: which labels may enter a prediction-time context, and which may only score the answer?
 2. From [L063](0063-synthetic-scm-prior.html): how can a fixed network behave differently when its training-task distribution changes?
 3. A benchmark helps choose a mixture weight. Is it still an untouched final test?
 
-Write your answers before opening the explanations. Return to these prompts after one, seven and thirty days **following your completion**; author preparation does not count as completion.
+
 
 ## 1 · A prior is a recipe for tasks
 

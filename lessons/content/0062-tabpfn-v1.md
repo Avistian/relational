@@ -14,7 +14,7 @@ This lesson's tangible outcome is a predictor you can inspect end to end. The la
 
 **Why this is on the syllabus.** The relational mission is to show whether database *structure* (entities, joins, time) adds value over a strong flat-table baseline. TabPFN is an unusually strong and unusually *different* baseline: it transfers an inference procedure learned across many tasks. But its row tokens still describe one flat feature table. They do not, by themselves, create entity relationships, temporal guarantees, or database joins — those remain properties of how *you* set up the prediction task.
 
-**Retrieve first, without scrolling.** In an ordinary MLP, does the label enter the *input* or the *loss*? In lesson 061, why did the Gaussian-process sampler have to draw the context targets and the query targets from one shared function? Could a query row attend to its own feature token without seeing its own target? Hold onto that last answer: v1 changes that edge for a *computational* reason, not because the edge necessarily leaked a label.
+
 
 ## The idea behind a prior-fitted network
 

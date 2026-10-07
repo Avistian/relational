@@ -14,9 +14,7 @@
 
 [Lesson 124](0124-entity-task-tables.html) separated database entities from supervised task rows. A driver can be queried many times: `(driver, cutoff)` identifies the question. [Lesson 127](0127-relbench-v1.html) trained a scalar regression model on those questions. Now ask what changes when the question asks whether an event happens, or which items a customer will buy.
 
-[[WARMUP]]
 
-**Recall before reading.** Why can two rows with the same driver ID have different labels? Why must a context node not receive the seed's supervised loss? Can a model with excellent test performance still have an invalid temporal split?
 
 **In plain terms.** A task contract says what an answer means before the model produces it. Its six parts are the query, target, output shape, training objective, evaluation rule and information cutoff. The loss is the quantity optimized during training. The metric is the quantity used to assess predictions; they need not be the same function.
 

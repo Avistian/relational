@@ -12,15 +12,15 @@ A node has interacted a million times. A prediction needs its history, but loadi
 
 L107 compressed events into snapshots. Here we retain individual event times and reduce how much history a query reads. The key distinction is between **finding the same records faster** and **choosing different records**. Only the first should preserve predictions exactly.
 
-## First retrieve, without notes
 
-<div id="warmup"></div>
+
+
 
 1. At time 8, can an event stamped exactly 8 enter a strict-past prediction?
 2. If two systems score the same positives against different negatives, is their accuracy difference a clean model comparison?
 3. What information does an hourly count snapshot lose?
 
-<details><summary>Check after writing your answers</summary>
+
 
 No: strict-past means event time < query time. Different negative candidates change the evaluation problem. A count snapshot loses within-window event order and exact times. Revisit [L104](0104-information-leakage-in-time.html), [L106](0106-temporal-link-prediction.html), and [L107](0107-snapshot-methods.html) if needed.
 

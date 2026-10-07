@@ -4,11 +4,9 @@
 
 Take this in three sittings if needed: retrieval and the worked trace; implementation; then the full experiment and written defense. Reading the page is preparation. Mastery remains **PENDING_WRITTEN_DEFENSE**.
 
-## 1 · Retrieve before reading
 
-[[WARMUP]]
 
-Without opening earlier lessons, write three answers: what does a GAT attention coefficient normalize over? Why does R-GCN assign different matrices to different edge roles? What makes a graph experiment transductive? Then check [L084 GAT](0084-gat.html), [L091 R-GCN](0091-r-gcn.html), and [L090 checkpoint](0090-gnn-checkpoint.html).
+
 
 **Bridge from L091.** R-GCN learns how each edge type changes a message. Two layers can compose those messages through an intermediate node. But that computation also mixes the intermediate node's other incoming information. Today's choice is different: specify a complete typed route first, connect its endpoints, then attend over the resulting neighbors. This does not make HAN universally better. It makes the route itself an explicit modeling assumption.
 

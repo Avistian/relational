@@ -14,8 +14,6 @@ Your deliverable is a **variant comparison with a defensible explanation**: trac
 
 [Student lab](../labs/0132-identity-aware-message-passing.ipynb) · [Executed solution](../labs/html/0132-identity-aware-message-passing.html) · [Reference](../reference/identity-aware-message-passing.html) · [Reproduction protocol](../labs/l132-reproduction.md)
 
-[[WARMUP]]
-
 **Read first.** [You et al., Identity-aware Graph Neural Networks](https://snap.stanford.edu/idgnn/) motivates identity-aware message passing. [RelBench v1 §3, Tables 5/8 and Appendix B.2](https://arxiv.org/html/2407.20060v1) specifies the recommendation experiment. Read the [pinned Model](../labs/sources/l132/model.py) beside these papers: the conceptual family and this implementation are not identical.
 
 **Route.** Spend about 35–45 minutes on the walkthrough and predictions, then complete the three notebook functions. The default notebook executes a small complete neural fixture and its paired ablation. The full-data training gate is separate, uses pinned sources, and writes fresh evidence. Ask the teaching agent about any step you cannot explain without looking at the code.

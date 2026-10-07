@@ -1,10 +1,8 @@
 <div class="package-links"><strong>Your tangible win:</strong> turn an interaction table into a typed graph, prove its prediction targets are hidden, and produce a full-catalog recommendation baseline.<br><a href="../labs/0095-bipartite-graphs.ipynb">Student notebook</a> · <a href="../labs/html/0095-bipartite-graphs.html">Executed lab</a> · <a href="../reference/bipartite-contract.html">Reference sheet</a> · <a href="../labs/l095-reproduction.md">Reproduction contract</a></div>
 
-## 1 · Retrieve before reading
 
-[[WARMUP]]
 
-Close the preceding lessons. Write three answers: What distinguishes an edge used for message passing from an edge used as a prediction label? Why is a reverse relation still information about the original interaction? What does an off-diagonal entry of a two-step path matrix count?
+
 
 <details><summary>Check after attempting</summary><p>A message-passing edge is visible input to an encoder; a prediction label is an outcome whose availability depends on the split. A reversed rating identifies the same user–item event. In an unweighted graph, an off-diagonal two-step product counts connecting length-two walks, such as shared items. Correct recognition is not yet a written defense.</p></details>
 

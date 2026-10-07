@@ -6,8 +6,6 @@ A relational model can score well offline and still return an answer too late—
 
 [[STATUS]]
 
-[[WARMUP]]
-
 ## 1 · The missing contract
 
 In an offline benchmark, features and predictions can already be on disk. At serving time, a customer request must find the customer’s orders, connect payments to those orders, form the model input, and return an answer. The slowest or least current dependency can determine whether that answer is usable.

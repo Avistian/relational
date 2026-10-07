@@ -16,9 +16,7 @@ A **row** is one database record. Its **primary key** uniquely identifies it. A 
 
 The graph keeps the fact as a node and foreign keys as edges. Keeping these rows and links can preserve the database information. A learned **embedding**, a fixed-width numerical summary of a node, is a different object. Its aggregation can mix distinctions the graph still contains. “Lossless graph conversion” does not imply “lossless message passing.” Primary reading: [RelGNN v2 §§3.1–3.2 and equations 1–3](https://arxiv.org/html/2502.06784v2#S3).
 
-[[WARMUP]]
 
-**Retrieve before reading:** Which way does a foreign key point? Why is `(driver, date)` a stronger prediction identity than driver alone? Which split may select a model checkpoint?
 
 ## 2 · Count walks before learning weights
 

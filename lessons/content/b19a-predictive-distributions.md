@@ -8,13 +8,13 @@ Our relational-learning mission needs both honest comparisons and useful predict
 
 [Student notebook](../labs/b19a-predictive-distributions.ipynb) · [Executed solution](../labs/html/b19a-predictive-distributions.html) · [Solution notebook](../labs/solutions/b19a-predictive-distributions.ipynb) · [Printable reference](../reference/b19a-predictive-distributions.html) · [Reproduction contract](../labs/b19a-reproduction.md)
 
-## 1 · Recall the prediction, not just the score
+
 
 Prerequisites: expectation, probability mass, squared error, train/test separation; recall earlier calibration and conformal-prediction work. A **CDF**, F(z), is the probability that an outcome is at most z. A **quantile**, Q(q), is the smallest z with F(z) ≥ q. For a discrete distribution, its CDF jumps and nominal interval coverage need not be exact.
 
-Before reading on, retrieve: Which quantity minimizes expected squared error? Can test labels choose an interval width? Does repeating a fold create a new independent dataset?
 
-<div id="b19a-warmup"></div>
+
+
 
 **Squared loss targets the conditional mean.** RMSE takes the square root after averaging squared errors. It cannot distinguish forecasts that share a mean. A **proper scoring rule** rewards the true predictive distribution in expectation; strict propriety makes it the unique optimum over the stated distribution class. This is a population statement, not a promise that the true distribution wins on every individual outcome. [ScoringBench §3 and Appendix A](https://arxiv.org/html/2603.29928v3#S3) · [Distributional regression study](https://arxiv.org/html/2603.08206v1)
 

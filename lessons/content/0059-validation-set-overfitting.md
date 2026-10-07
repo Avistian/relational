@@ -15,7 +15,7 @@ The key rule: once you minimize a number to make a choice, that same number cann
 
 **Why this matters for the mission.** Suppose your relational predictor gains .01 in validation AUC after your eighth feature-history redesign. That may be useful development work. It does not yet establish that relational structure beats a strong flat-table baseline, because the procedure you should be evaluating includes all eight designs *and* the decision to keep this one. Recall the pattern from earlier lessons. In lesson 057, out-of-fold (OOF) means each row was excluded from fitting its own base predictor — yet that row's target could still fit the ensemble selector. In lesson 058, selecting tasks to preserve known-model rankings can specialize the benchmark itself. Here the adaptive object is the model-selection procedure.
 
-**Retrieve first.** Explain why an OOF combiner needs its own evaluation boundary. Then name one decision that consults validation labels without ever computing a gradient. Hold your answer until the EXIT teach-back.
+
 
 **The primary reading.** Work from [Cawley and Talbot (2010), full paper](https://jmlr.org/papers/volume11/cawley10a/cawley10a.pdf). Read §§2–3 for the instrument and data, §4 for selection overfitting, and §5 for biased evaluation protocols. These are separate empirical arguments.
 

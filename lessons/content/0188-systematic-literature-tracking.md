@@ -4,9 +4,7 @@ Build a paper log you can explain and regenerate: **what you searched, what you 
 
 [[STATUS]]
 
-## Recall before reading
 
-[[WARMUP]]
 
 From memory, distinguish validation selection from test evaluation, and saved-evidence replay from fresh training. [Lesson 178](0178-fair-model-comparison.html) showed why model names alone do not define a fair comparison. This lesson moves that discipline earlier: before choosing a paper to implement. [Lesson 187](0187-ethics-privacy-reg.html) showed why a performance result cannot establish every claimed guarantee. Apply that same care when screening sources. This prepares [Lesson 189’s draft shortlist](0189-identify-open-problems.html); that lesson remains under construction, while [Lesson 190](0190-research-gap-checkpoint.html) supplies a worked research checkpoint. The collection log below can be understood independently.
 

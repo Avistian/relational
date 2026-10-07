@@ -179,6 +179,9 @@
   }
 
   function mount(container, config) {
+    // Opening reviews were removed at the learner's request. Legacy callers
+    // may still run while other lesson widgets initialize.
+    if (!container) return { items: [] };
     config = config || {};
     var pool = config.pool || global.RETRIEVAL_POOL || [];
     var count = config.count || 3;

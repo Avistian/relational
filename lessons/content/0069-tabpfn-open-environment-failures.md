@@ -4,7 +4,7 @@
 
 **What this lesson trains.** Your skill here is to turn an open-environment claim into a controlled experiment and then explain exactly what its score measures. By the EXIT you will have implemented six live operations and run the complete historical TabPFN v2 weights. You will separate two failures that look identical from the outside: being unable to *name* a new class, and being unable to *detect* an unfamiliar row. You will also test what happens when a feature is removed. You will separate a change in the inputs from a change in the label rule. You will interpret several scoring objectives computed on one fixed set of predictions.
 
-**Retrieve first, without notes.** Answer these from memory before reading on. What does a PFN learn during pretraining? Which labels are allowed to enter its context? Why does a temporal holdout answer a different question from a random split? What must be held fixed before two losses can be compared? These connect back to lessons [062](0062-tabpfn-v1.html), [064](0064-tabpfn-v2.html), [066](0066-tabicl-column-row-attention.html) and [068](0068-pfns-under-temporal-shift.html); the essential definitions are restated below.
+
 
 ### The four ways a contract can break
 

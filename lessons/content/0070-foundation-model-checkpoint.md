@@ -6,7 +6,7 @@ Imagine defending a relational model to a skeptical reviewer. You have a new neu
 
 **What this checkpoint trains.** Your skill here is to construct and defend that procedure. You will audit an existing seven-arm experiment. You will train a corrected neural baseline on exactly its rows. You will perform a feature-loss intervention with frozen fitted models. The outcome is an executable argument about a particular prediction task, including a result that could change your recommendation. It is preparation for relational research, where information cutoffs and target identity matter at least as much as architecture.
 
-**Retrieve first, without notes.** Answer three questions before reading on. Why can label-free preprocessing leak information? Why do three seeds on one split remain one dataset? Why can a classifier that supports many classes still fail to recognize an emerging class? Write a sentence for each. Revisit them after the lab's checks; recognition while reading is weaker evidence than explaining a result from your own artifact.
+
 
 **Reading route.** Start with the [TabPFN-3 report, §§2.1–2.4 and Appendix C](https://arxiv.org/html/2605.13986v1#S2), then compare [TabICLv2 §3 and Appendix A](https://arxiv.org/html/2602.11139v1#S3). Read the first report's Appendices E.2–E.3 before interpreting a leaderboard. This lesson teaches their mechanisms and evaluation distinctions; it does not reproduce either report's benchmark.
 

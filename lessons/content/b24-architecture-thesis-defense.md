@@ -8,11 +8,11 @@
 
 **Route through the lesson.** Spend 10 minutes on the claim and worked example, 15 on baselines and falsification, then use the notebook to audit the evidence. Draft the proposal over later sessions. This is the bridge's exit defense; reading it does not mark the bridge complete.
 
-## 1 · Recall the boundary before defending it
 
-<div id="b24-warmup"></div>
 
-Without reopening B23, explain why ten support draws are not ten databases. Recall how B18a counts a rebuilt context and how B19a separates ranking from probability quality. Write one sentence each, then check the linked lessons.
+
+
+
 
 B23 asked whether a declared computation was reproduced. B24 asks which research decision that computation justifies. The mission is to test whether learned relational models deliver value beyond strong single-table systems. A defense must therefore explain where information enters, what the baseline receives, and which observation would contradict the claimed benefit.
 

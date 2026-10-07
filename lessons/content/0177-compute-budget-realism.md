@@ -4,8 +4,6 @@ In [lesson 176](0176-few-shot-icl-evaluation.html), you measured what more label
 
 **Prerequisites:** distinguish pretraining from adaptation ([173](0173-multi-task-pretraining.html), [174](0174-fine-tuning-protocol.html)); recall why the cheap RT audit stopped in [175](0175-zero-shot-evaluation.html). You only need multiplication, units and the idea of a timer inside another timer.
 
-[[WARMUP]]
-
 ## 1 · What work are you buying?
 
 Pretraining changes shared weights across many tasks. Fine-tuning changes parameters for a selected target setting. In-context prediction uses labeled support with fixed pretrained weights, but still pays for relational features, preprocessing, loading and prediction. [RDBLearn §3](https://arxiv.org/html/2602.18495v1#S3) illustrates the featurization-plus-ICL route; the L176 TabICL comparator is a different pipeline and does not reproduce RDBLearn.

@@ -1,12 +1,10 @@
 <div class="package-links"><strong>Your tangible win:</strong> train a three-type GNN with a real heterogeneous NeighborLoader, then prove which parts of its computation a mini-batch preserves.<br><a href="../labs/0098-hetero-mini-batching.ipynb">Student notebook</a> · <a href="../labs/solutions/0098-hetero-mini-batching.ipynb">Executed solution</a> · <a href="../labs/html/0098-hetero-mini-batching.html">Read the solution</a> · <a href="../labs/l098-reproduction.md">Full reproduction contract</a></div>
 
-## 1 · Retrieve before reading — 5 minutes
 
-[[WARMUP]]
 
-Write answers before opening the feedback. (1) In L096, does local row 0 identify an entity without a table type? (2) For the edge orders → customer, whose representation changes after one message-passing layer? (3) Does L097's negative sampler choose the neighbors needed to compute an embedding? (4) Why should training exclude a future order even if its customer ID is already known?
 
-<details><summary>Check after committing your answers</summary><p>Identity is (table type, row ID). Source orders send messages to destination customers. Negative sampling chooses contrasting targets; neighborhood sampling chooses encoder inputs. A known entity can still acquire information that was unavailable at prediction time. Filtering training labels alone does not remove that information.</p></details>
+
+
 
 [Lesson 96](0096-multi-relational-data.html) gave every row and FK a typed identity. [Lesson 97](0097-negative-sampling.html) separated training targets from evaluation candidates. Neither tells us how to compute an embedding when the graph is too large for one forward pass. This lesson supplies that missing execution mechanism. Recall the expanding neighborhoods of [GraphSAGE](0083-graphsage.html) and the partition approach of [Cluster-GCN](0089-sampling-at-scale.html): here the unit of work is a set of typed seed nodes and their incoming dependencies.
 

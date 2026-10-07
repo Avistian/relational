@@ -8,9 +8,9 @@ B11 compared models trained for a particular task. It left a practical question 
 
 **Route through the lesson.** Recall the terms, trace three architectures, calculate one prediction, then run the corruption experiment. The source appendix is for auditing the reproduction boundary.
 
-## 1 · Retrieve before reading
 
-Without reopening B10/B11: what is the complete identity of a temporal query? Why can correct attention still consume forbidden information? What does validation select in a supervised model?
+
+
 
 {{WARMUP}}
 

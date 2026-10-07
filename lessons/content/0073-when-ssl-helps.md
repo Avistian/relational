@@ -1,15 +1,9 @@
-## Start with retrieval
-
-Without reopening Lesson 72, write three answers: What does SCARF predict during pretraining? Which parameters move in a frozen probe? Can unlabeled test rows enter an inductive training pipeline? Then complete the spaced warm-up.
-
-<div id="warmup"></div>
-
 **Your tangible win:** build a fair label-budget curve, compute paired gains, and explain whether the measured grid contains a crossover. Finishing the notebook is not the same as demonstrating that explanation.
 
 [Lesson 71](0071-vime-masked-tabular-ssl.html) introduced learning by repairing corrupted rows. [Lesson 72](0072-scarf-subtab-contrastive-views.html) introduced learning by recognizing companion views. Here the question changes: when does that additional training help the prediction task? This is an experimental-design lesson; it introduces no new model.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 073</p><p><strong>Build on what you know.</strong> Lessons 71–72 supplied mechanisms. Lessons 56 and 60 supplied dataset-balanced comparison discipline. Here the intervention is pretraining, so matching the supervised architecture is essential.</p><p><strong>The next question.</strong> <a href="0074-carte-cross-table-transfer.html">Lesson 74</a> changes a different assumption: the source and target can have different schemas. A label-efficiency gain within one fixed schema does not answer that transfer question.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 073</p><p><strong>Build on what you know.</strong> Lessons 71–72 supplied mechanisms. Lessons 56 and 60 supplied dataset-balanced comparison discipline. Here the intervention is pretraining, so matching the supervised architecture is essential.</p><p><strong>The next question.</strong> <a href="0074-carte-cross-table-transfer.html">Lesson 74</a> changes a different assumption: the source and target can have different schemas. A label-efficiency gain within one fixed schema does not answer that transfer question.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## Make “SSL helps” a measurable statement
 

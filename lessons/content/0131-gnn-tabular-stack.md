@@ -12,8 +12,6 @@
 
 [Student notebook](../labs/0131-gnn-tabular-stack.ipynb) · [Executed solution](../labs/html/0131-gnn-tabular-stack.html) · [Reference card](../reference/gnn-tabular-stack.html) · [Reproduction contract](../labs/l131-reproduction.md)
 
-[[WARMUP]]
-
 Before reading: which rows receive labels? Why can one driver appear several times in a minibatch? Does freezing a row encoder necessarily change today's prediction?
 
 Read [Fey et al., §5, relational deep learning blueprint](https://proceedings.mlr.press/v235/fey24a.html) for the decomposition. Use [Robinson et al., RelBench v1 §3, Appendix B and Table 7](https://arxiv.org/html/2407.20060v1) for the implemented baseline and numerical target. These are different sources with different jobs: the blueprint motivates the stack; the benchmark specifies the selected experiment.

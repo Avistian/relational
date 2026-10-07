@@ -6,16 +6,14 @@ Diagnose whether repeated graph propagation is erasing distinctions between node
 
 Start with the 25-minute explanation. The notebook is a separate implementation session. The short karate experiment and the longer Cora diagnostic have separate commands and evidence.
 
-## Retrieve before reading
 
-Without opening earlier lessons, write down the GCN propagation rule, explain what a GAT attention coefficient normalizes over, and name the labels allowed to influence stopping.
 
-[[WARMUP]]
 
-<details><summary>Check your recall</summary><p>A GCN layer computes H′ = σ(SHW), with S determined by the graph and augmented degrees. GAT normalizes scores over one receiver’s allowed senders within one head. Validation labels may control stopping; test labels score the frozen result. See <a href="0082-gcn.html">L082</a> and <a href="0084-gat.html">L084</a>.</p></details>
+
+
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 085</p><p><strong>Build on what you know.</strong> Lessons 82–84 expanded a node’s receptive field through graph mixing. <a href="0077-single-table-ceiling.html">Lesson 77</a> taught us to look for representation collisions. Over-smoothing asks whether repeated propagation makes initially different node signals difficult to distinguish.</p><p><strong>The next question.</strong> <a href="0086-pyg-fundamentals.html">Lesson 86</a> implements the operator in PyG. Preserve this diagnostic when changing tooling: an implementation can be numerically correct and still embody a poor depth choice for a task.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 085</p><p><strong>Build on what you know.</strong> Lessons 82–84 expanded a node’s receptive field through graph mixing. <a href="0077-single-table-ceiling.html">Lesson 77</a> taught us to look for representation collisions. Over-smoothing asks whether repeated propagation makes initially different node signals difficult to distinguish.</p><p><strong>The next question.</strong> <a href="0086-pyg-fundamentals.html">Lesson 86</a> implements the operator in PyG. Preserve this diagnostic when changing tooling: an implementation can be numerically correct and still embody a poor depth choice for a task.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## More reach can leave less distinction
 

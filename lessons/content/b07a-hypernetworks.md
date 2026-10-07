@@ -14,11 +14,11 @@ Imagine a fraud classifier serving the same table schema all afternoon. Repeatin
 
 Spend about 25 minutes on the conceptual path through the worked example and cost model. Use the lab as a separate deeper session. You do not need to run a GPU job to start learning.
 
-## Retrieve before reading
 
-Without notes: what does an MLP layer compute? What distinguishes a frozen model receiving new context from a model taking gradient steps? Which rows may fit a scaler? Attempt these, then use the spaced warm-up.
 
-<div id="b07a-warmup"></div>
+
+
+
 
 **Prerequisite recap.** A labeled **support set** contains feature rows and their known targets. A **query** has known features but an unknown target. An **MLP** is a sequence of matrix multiplications, biases and nonlinearities. A **weight** multiplies an input; a **bias** adds an offset. A **logit** is an unnormalized class score. **Softmax** converts scores into probabilities by exponentiating them and dividing by their sum. A **gradient** tells an optimizer how to change parameters to reduce a loss.
 

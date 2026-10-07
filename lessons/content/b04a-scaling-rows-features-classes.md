@@ -8,9 +8,9 @@
 
 **Route:** 25–35 minutes for the lesson, then the elective's 3–5 hour lab and defense. [Student notebook](../labs/b04a-scaling-rows-features-classes.ipynb) · [Executed solution](../labs/html/b04a-scaling-rows-features-classes.html) · [Reference](../reference/b04a-scaling-axes.html) · [Reproduction contract](../labs/b04a-reproduction.md).
 
-## 1. Retrieve the shapes before the formula
 
-Close B04 and answer: what are a support row, a query row, and a held-out target? Where does feature compression happen? Why is a frozen model allowed to use support labels but not query labels?
+
+
 
 A **support set** supplies examples and their labels. A **query set** supplies examples to predict. We use **S** support rows, **Q** query rows, **F** raw features, **C** classes, **d** coordinates in an attention head and **dv** value coordinates. F is not d: an encoder can map 256 raw features into a 16-dimensional vector, but that encoding has a cost and loses information.
 

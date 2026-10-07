@@ -12,9 +12,9 @@ You have learned to sample a temporal graph. Now someone hands you a database co
 
 This is the hand-off from [L096’s SQL-to-graph mapping](0096-multi-relational-data.html), [L104’s leakage audit](0104-information-leakage-in-time.html), and [L108’s temporal sampler](0108-temporal-neighbor-sampling.html) to relational learning. A powerful sampler cannot recover a historical value that the database has overwritten. The mission requires both meaningful relational structure and an honest account of when it became usable.
 
-## First retrieve, without notes
 
-<div id="warmup"></div>
+
+
 
 1. An event happened on day 2 and arrived on day 7. Can a day-5 prediction use it?
 2. Why can a correct foreign-key join still leak future information?

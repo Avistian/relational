@@ -2,8 +2,6 @@
 
 [Lesson 171: choose the corpus](0171-corpus-of-databases.html) → [Lesson 172: encode its cells](0172-schema-tokenization.html) → **173: decide what gets learned** → Lesson 174: adapt the resulting encoder.
 
-[[WARMUP]]
-
 ## 1 · A masked token is not yet a training example
 
 Lesson 172 gave each cell a type, state and payload. It deliberately stopped before learning. Now separate three objects: **input context** contains permitted visible cells; **target** holds the hidden answer outside the model input; **loss** measures a prediction against that answer. A MASKED state alone does not prevent a join or a second reference from revealing the same target.

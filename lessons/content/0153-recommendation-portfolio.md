@@ -8,8 +8,6 @@
 
 Prerequisites: `(entity, cutoff)` query keys from L124, temporal neighborhood ownership from L123, and local-versus-global candidate scoring from [ContextGNN, Lesson 144](0144-contextgnn.html). Recall why the same entity at two cutoffs represents two distinct queries. Then recall why validation can choose a checkpoint while test cannot.
 
-[[WARMUP]]
-
 The task is **`rel-trial/site-sponsor-run`**: for a facility at cutoff *t*, rank sponsors that will run a study there during the next 365 days. A query may have several relevant sponsors. “Site” means a clinical-trial facility here, not a website. This is a retrospective benchmark prediction task, not a clinical decision tool. [RelBench task definitions](https://arxiv.org/html/2407.20060v1#A1)
 
 ## 2 · Define the population before the score

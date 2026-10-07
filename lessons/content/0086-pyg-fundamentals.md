@@ -1,11 +1,9 @@
-## Retrieval before reading · 3 minutes
-
 Close lesson 82. Write the shape of X, edge_index and W for a four-node graph with three features and two output channels. Which row of an edge list names the sender? Which labels may contribute gradients in transductive training? Why must degrees include self-loops?
 
-<details><summary>Check after committing your answer</summary><p>X: [4,3]; edge_index: [2,E]; W: [3,2]. With source_to_target, row 0 is the sender, row 1 the receiver. Training labels supervise the objective; validation labels select the checkpoint. Add loops before measuring augmented degrees.</p></details>
+
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 086</p><p><strong>Build on what you know.</strong> <a href="0082-gcn.html">Lesson 82</a> derived the GCN coefficients and <a href="0083-graphsage.html">Lesson 83</a> separated roots from support. PyG changes the implementation tools; it should not silently change either mathematical operator or supervision boundary.</p><p><strong>The next question.</strong> <a href="0087-link-prediction.html">Lesson 87</a> changes the target from nodes to pairs. <a href="0088-graph-classification.html">Lesson 88</a> changes it to whole graphs. The same containers support these tasks, but their split units and readouts differ.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 086</p><p><strong>Build on what you know.</strong> <a href="0082-gcn.html">Lesson 82</a> derived the GCN coefficients and <a href="0083-graphsage.html">Lesson 83</a> separated roots from support. PyG changes the implementation tools; it should not silently change either mathematical operator or supervision boundary.</p><p><strong>The next question.</strong> <a href="0087-link-prediction.html">Lesson 87</a> changes the target from nodes to pairs. <a href="0088-graph-classification.html">Lesson 88</a> changes it to whole graphs. The same containers support these tasks, but their split units and readouts differ.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## Translate the operator into a tensor program
 

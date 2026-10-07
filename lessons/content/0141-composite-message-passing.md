@@ -16,9 +16,7 @@ A relational entity graph represents a database row as a node. A foreign key cre
 
 Your tangible win: trace one complete composite update, explain its tensor dimensions, and distinguish a checkpoint replay from reconstructed fresh training. Read the core lesson in one sitting; use a separate lab session for the code and written defense. Primary reading: [RelGNN, ICML 2025, §§4.1–4.3](https://arxiv.org/html/2502.06784v2#S4). The runnable details below follow the [pinned released code](https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b).
 
-[[WARMUP]]
 
-**Retrieve before reading:** what does a foreign key identify? Why are two forecasts for one driver at different dates two distinct queries? Which split may select a checkpoint?
 
 ## 2 · Derive atomic routes from foreign key roles
 

@@ -14,8 +14,6 @@
 
 RelBench v2 adds four databases: scholarly publications (`rel-arxiv`), enterprise orders (`rel-salt`), consumer reviews (`rel-ratebeer`), and clinical records (`rel-mimic`). Its new autocomplete tasks include binary, multiclass and numerical targets. We use the two published F1 numerical tasks to make the contract small enough to inspect completely. [Primary source: RelBench v2 §§2–4](https://arxiv.org/html/2602.12606v1#S4).
 
-[[WARMUP]]
-
 ## 2 · Name the row before choosing the model
 
 A **primary key** identifies a row. A **foreign key** points to a row in another table. A result row can link to a driver, race and constructor, but those linked entities are not interchangeable with the result row itself.

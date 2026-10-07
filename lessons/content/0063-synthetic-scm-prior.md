@@ -14,7 +14,7 @@ Your tangible outcome is a runnable prior card. You will sample one mechanism. Y
 
 > **Scope check.** The generator has an architecture, but its weights are sampled to *create data*. They are not the trained Transformer weights used for deployment. Building the data factory is not the same as building the model.
 
-**Retrieve before proceeding.** What remains fixed across rows of a GP task in lesson 061? Which labels are hidden from a prediction query in lesson 062? What would fail if each labeled row belonged to a newly sampled, unrelated task? Write answers before looking at the trace below.
+
 
 ## Two levels of randomness: a world and its observations
 

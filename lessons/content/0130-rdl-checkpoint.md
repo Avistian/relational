@@ -16,9 +16,7 @@
 
 The missing skill is ownership of the chain. A passing training script is insufficient if you cannot identify the query, reconstruct its permitted information, explain its output, and independently verify the experiment report. This is the Q1 deliverable from the [year-four plan](../plan/year-4.md), and prepares the instrumented forward pass of Lesson 131.
 
-[[WARMUP]]
 
-**Recall before opening code.** Why can one driver have several labels? Which rows receive loss? Which split chooses the checkpoint? Why does a future scheduled race differ from a future race result?
 
 Read [Fey et al., RDL blueprint](https://proceedings.mlr.press/v235/fey24a.html) for the database-to-graph-to-prediction argument. Read [Robinson et al., RelBench v1, §3, Table 7 and Appendix B](https://arxiv.org/html/2407.20060v1) for this experiment. The former motivates the computation; the latter supplies the named numerical target.
 

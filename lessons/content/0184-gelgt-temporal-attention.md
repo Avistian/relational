@@ -6,8 +6,6 @@ This serves our mission: make relational-model gains defensible through visible 
 
 **Recall first.** A primary key identifies a row. A foreign key connects it to a row in another table. A query cutoff is the time at which a prediction must be possible. An attention weight tells us how much an already-admitted value contributes; it does not grant access to that value.
 
-[[WARMUP]]
-
 > **Scope check.** [[STATUS]]
 
 ## Why reach alone is insufficient

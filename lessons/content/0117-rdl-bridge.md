@@ -14,8 +14,6 @@
 
 Take Sections 1–4 as the first study session. Continue with the model trace and notebook in a second session. The full benchmark is an author-reference experiment; running its cells is not a substitute for defending your own construction.
 
-[[WARMUP]]
-
 ## 1 · The bridge: a prediction request determines a computation
 
 [Lesson 115](0115-graph-ml-design-patterns.html) split a graph predictor into encoder, message passing, and head. [Lesson 116](0116-debug-gnn-training.html) checked that the training loop actually updates the intended model. Both started with an existing graph. A business database supplies tables, keys, timestamps, and a question. This lesson fills that missing first step.
@@ -26,7 +24,7 @@ Suppose you want to predict a driver's average finishing position over the next 
 
 It does not remove the need to define the target, decide when information becomes available, interpret table semantics, or evaluate fairly. A competent feature engineer can also use related tables. The empirical question is whether the learned pipeline improves the chosen accuracy, effort, or maintenance tradeoff under matched information access. Keep this distinction when assessing the course mission.
 
-**Retrieve before continuing.** What does a foreign key tell you that a numeric feature does not? Why does knowing a result today fail to authorize it for a prediction made last year?
+
 
 <details><summary>Check the distinction</summary><p>A foreign key identifies another entity; its numeric magnitude normally has no useful distance interpretation. A row can be present in today's archive while remaining unavailable at a historical query time. Representation and availability are separate contracts.</p></details>
 

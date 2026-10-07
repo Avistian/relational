@@ -12,11 +12,11 @@ Relational Transformer (RT) makes each **cell** a token and uses database relati
 
 The primary reading is [RT-v1 §§3–5 and Appendix H](https://arxiv.org/html/2510.06377v1). Use the [pinned original model](../labs/sources/b10/upstream/rt/model.py) alongside it. The current repository's default example uses RT-J; that is a different release and recipe.
 
-## Retrieve before reading
 
-Without notes: Why is a query target hidden? How can a model make a zero-gradient prediction while still using labels? Why does an event timestamp alone fail to prove what was known at prediction time?
 
-<div id="b10-warmup"></div>
+
+
+
 
 **Prerequisite recap.** A primary key identifies a row. A foreign key points to another table's primary key. A parent is the referenced row; a child is a row containing that reference. A task table stores the prediction examples, their entity references, their cutoffs, and their labels. A cutoff is the time at which the prediction must be made. A label's outcome window may finish later than that cutoff.
 

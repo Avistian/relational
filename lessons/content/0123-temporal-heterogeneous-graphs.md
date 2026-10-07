@@ -6,8 +6,6 @@
 </aside>
 <!-- sequence-review:end -->
 
-[[WARMUP]]
-
 ## 1 · A correct graph can still answer with tomorrow's information
 
 [Lesson 122](0122-reg-construction.html) established which rows and foreign keys belong in the relational entity graph (REG). A REG represents each table as a node type, each row as a node, and each foreign-key role as an edge type. Now fix a **query**: predict something about one entity using information available at time **t**. The graph can contain many dates, but this query may see only its eligible neighborhood. Our skill is to construct that neighborhood and defend every included row and relationship.

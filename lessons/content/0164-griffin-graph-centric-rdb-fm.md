@@ -10,8 +10,6 @@
 
 Recall the [GNN–tabular stack](0131-gnn-tabular-stack.html): an encoder represents each row, message passing adds related rows, and a head predicts a task. Griffin shares these operations across schemas and tasks. A shared interface makes transfer possible; only held-out experiments establish useful transfer. The foundation-model definition from [Lesson 161](0161-what-is-a-foundation-model.html) still requires broad pretraining followed by adaptation.
 
-[[WARMUP]]
-
 A **cell** is a value in a named column. A **node** is a database row. A **relation** is a particular foreign-key connection, such as results→drivers. **Metadata** describes names and roles, not the outcome to be predicted. A **task embedding** is a vector representing what we want to predict. The prediction target must be removed when it is also an input feature.
 
 Primary reading: Wang et al., [Griffin, §§3–4 and Table 12](https://arxiv.org/html/2505.05568v1). Read the architecture first, then the selected experiment. The [official implementation](https://github.com/yanxwb/Griffin/tree/b9d0e1fa8d89dfb1cd8bd5976b71de8a3b515427) is a second source: the compact paper equations omit some operations that affect checkpoint execution.

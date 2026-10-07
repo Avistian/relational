@@ -8,9 +8,9 @@
 
 <div class="callout"><strong>Start here.</strong> This lesson has fresh CPU mechanism checks and a complete replay of saved predictions. A new matched RelGNN–RelGT benchmark was not run. Read the ideas first; the evidence ledger below says exactly what each result supports.</div>
 
-## 1 · Retrieve the ingredients
 
-Before opening the explanation, answer: **Does a two-edge path require two ordinary message-passing layers? Could another operator compose it in one block?**
+
+
 
 A **row** is an entity or event. A **foreign key** identifies a related row. A **bridge table** connects two kinds of entity: each purchase refers to a customer and a product. A **task row** asks for a prediction about an entity at a particular cutoff. The label is an outcome after that cutoff and belongs in the loss, not in the input.
 

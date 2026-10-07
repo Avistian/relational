@@ -6,11 +6,9 @@ A sales conversion model trained through June may face a changed July relationsh
 
 **Your outcome.** By the end you will trace how a temporal prior generates changing relationships; reconstruct the complete released Drift-Resilient TabPFN forward pass; and measure future-domain predictions with frozen historical contexts. You will implement five live operations, compare actual pretrained checkpoints, and explain a negative result without changing the evaluation after seeing it.
 
-**Retrieve before reading.** Before reading, retrieve three ideas in writing.
 
-- What information may a query use in a PFN context?
-- Why does a temporal split answer a different question from a random split?
-- How can two predictors have identical accuracy but different log loss?
+
+
 
 The lab assumes matrix multiplication, sample standard deviation and softmax; each operation is restated below.
 

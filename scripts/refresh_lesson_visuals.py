@@ -15,6 +15,7 @@ import visual_details
 import course_visuals
 import responsive_architecture
 import course_notebooks
+import lesson_openings
 ROOT=Path(__file__).resolve().parents[1]
 START='<!-- lesson-visuals:start -->'; END='<!-- lesson-visuals:end -->'
 TOOLS_START='<!-- visual-tools:start -->'; TOOLS_END='<!-- visual-tools:end -->'
@@ -58,7 +59,7 @@ def story_html(key,s):
     return ''.join(parts), ''.join(svg)
 
 def update(path):
-    text=responsive_architecture.strip(course_visuals.strip(visual_details.strip(path.read_text())))
+    text=lesson_openings.strip_html(responsive_architecture.strip(course_visuals.strip(visual_details.strip(path.read_text()))))
     # Marked regions are the only generated lesson content removed on refresh.
     text=re.sub(re.escape(START)+r'.*?'+re.escape(END)+'\n?', '',text,flags=re.S)
     text=re.sub(re.escape(TOOLS_START)+r'.*?'+re.escape(TOOLS_END), '',text,flags=re.S)
@@ -151,6 +152,7 @@ def main():
     for keys in EXTRA_STORIES.values():
         for key in keys:emit(ROOT/'assets/visual-stories'/f'{key}.svg',story_html(key,STORIES[key])[1])
     for path,value in course_notebooks.outputs():emit(path,value)
+    for path,value in lesson_openings.outputs():emit(path,value)
     emit(ROOT/'reference/visual-reading-guide.html',reference())
     emit(ROOT/'reviews/course-visual-quality-2026-10-07/coverage.json',json.dumps(coverage,indent=2)+'\n')
     print(json.dumps(dict(lessons=len(coverage),stories=sum(r['story'] for r in coverage),changed=len(changes))))

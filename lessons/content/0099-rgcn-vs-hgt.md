@@ -1,12 +1,10 @@
 <div class="package-links"><strong>Your tangible win:</strong> produce an attribution table that distinguishes an architecture difference, an attention intervention and a budget effect.<br><a href="../labs/0099-rgcn-vs-hgt.ipynb">Student notebook</a> · <a href="../labs/solutions/0099-rgcn-vs-hgt.ipynb">Executed solution</a> · <a href="../labs/html/0099-rgcn-vs-hgt.html">Read the solution</a> · <a href="../labs/l099-reproduction.md">Full reproduction contract</a></div>
 
-## 1 · Retrieve before reading — five minutes
 
-[[WARMUP]]
 
-Write your answers before revealing the feedback. From [L091](0091-r-gcn.html): if a receiver has two author neighbors and one subject neighbor, does R-GCN divide all three messages by three? From [L093](0093-hgt.html): which axis does HGT's softmax normalize? From [L098](0098-hetero-mini-batching.html): does matching sampled seed IDs guarantee matching neighborhoods? From [L097](0097-negative-sampling.html): can a different evaluation candidate set change a model ranking?
 
-<details><summary>Check after committing an answer</summary><p>R-GCN takes a separate mean within each relation and then sums those relation contributions. HGT normalizes over all incoming edges for each receiver and head in the implemented release. Identical seeds do not guarantee identical sampled context. Changing evaluation candidates can change the question being scored. A comparison must align the information, selection and evaluation interfaces as well as the model names.</p></details>
+
+
 
 **Route:** about 30 minutes for the explanation, then a separate lab and written defense. This is the synthesis between typed message passing and the [Q2 checkpoint](../plan/year-3.md). It prepares the controlled GNN/graph-transformer comparison in L146 and the mission's demand for defensible relational-model evidence.
 

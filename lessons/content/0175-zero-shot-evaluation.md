@@ -2,8 +2,6 @@
 
 [171: exclude the database](0171-corpus-of-databases.html) → [172: encode cells](0172-schema-tokenization.html) → [173: pretrain](0173-multi-task-pretraining.html) → [174: adapt](0174-fine-tuning-protocol.html) → **175: evaluate without target updates**.
 
-[[WARMUP]]
-
 ## 1 · Freeze the weights, then ask what else can change
 
 Lesson 174 compared ways to update a model using later F1 labels. Even its “freeze” arm trained the task heads. Its tasks and database were already familiar to the model. It therefore left a different question unanswered: **can a pretrained model predict on a database excluded from its training?**

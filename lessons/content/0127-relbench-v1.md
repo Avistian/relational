@@ -16,8 +16,6 @@ In [Lesson 126](0126-relbench-beta.html), a **Dataset** exposed tables and cutof
 
 Recall the pieces you can now assemble: [L122](0122-reg-construction.html) maps rows and foreign keys to a graph; [L123](0123-temporal-heterogeneous-graphs.html) attaches the query cutoff to every hop; [L124](0124-entity-task-tables.html) separates entity rows from supervised questions; [L125](0125-pytorch-frame-deep-dive.html) turns typed columns into vectors. Here the tangible skill is **keeping those contracts fixed while training and evaluating**.
 
-[[WARMUP]]
-
 **Before reading:** can a low test MAE prove the correct temporal cutoff was used? What additional artifact would you inspect? Write one sentence; return to it after the batch audit.
 
 ## 2 · What the original benchmark standardizes

@@ -8,15 +8,13 @@
 
 <p class="subtitle">One tangible win: build two representations of the same interactions, then defend which information your prediction needs. Core reading: 15 minutes · lab: 35–50 minutes.</p>
 
-## 1 · Retrieve before reading
 
-Without opening L104, write three short answers:
 
-1. For a prediction just before time 10, can an interaction stamped 10 enter the history?
-2. An event happened at 3 but arrived at 12. Can a prediction at 8 use it?
-3. If two records have equal timestamps, does their CSV row order prove which happened first?
 
-<details><summary>Check only after committing your answers</summary>
+
+
+
+
 
 Under our before-event contract: **no**, **no**, and **no**. We require event time < query time and availability time ≤ query time. A row number is a reproducible identity, not evidence of an unrecorded causal order. If you missed one, revisit [L104’s prediction-time boundary](0104-information-leakage-in-time.html) before proceeding.
 

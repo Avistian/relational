@@ -8,11 +8,9 @@ Your tangible deliverable is a **reproduction admission record**: the named targ
 
 [[STATUS]]
 
-## Recall before reading
 
-[[WARMUP]]
 
-Without looking back: what identifies a temporal query? Which split chooses a configuration? Why does an unchanged database file not establish that every field existed at prediction time? A query needs an entity and a cutoff; validation chooses; availability is a separate property from file identity.
+
 
 ## 1 · Choose a result, not a model name
 

@@ -6,11 +6,9 @@ A future relational model must beat a credible single-table procedure. That comp
 
 > **Scope check.** A failed neural improvement is a valid outcome. The goal is a trustworthy measurement, not a win for any particular model.
 
-**Retrieve first, without notes.** Answer these from memory before reading the code.
 
-- From Lesson 058, why can a carefully chosen collection of datasets still favor a particular family?
-- From Lesson 059, which labels may *select* a candidate, and which labels may *estimate* its performance?
-- From Lesson 054, does TabM train on the loss of the average prediction, or on the average of the member losses?
+
+
 
 **No new model is introduced here.** This is an evaluation checkpoint. We reuse three models taught earlier: the numerical MLP, RealMLP-TD-S, and the corrected TabM-mini. We add XGBoost and CatBoost as established comparator libraries.
 

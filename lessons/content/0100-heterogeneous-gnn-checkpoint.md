@@ -1,16 +1,14 @@
 <div class="package-links"><strong>Your deliverable:</strong> defend one trained heterogeneous GNN pipeline from table IDs to final held-out predictions.<br><a href="../labs/0100-heterogeneous-gnn-checkpoint.ipynb">Student notebook</a> · <a href="../labs/solutions/0100-heterogeneous-gnn-checkpoint.ipynb">Executed solution</a> · <a href="../labs/html/0100-heterogeneous-gnn-checkpoint.html">Read the lab</a> · <a href="../labs/l100-reproduction.md">Reproduction contract</a></div>
 
-## 1 · Close the notes: retrieve before building
 
-[[WARMUP]]
 
-Write four answers before opening the feedback. From [L091](0091-r-gcn.html), what is the denominator of a relation-wise mean? From [L096](0096-multi-relational-data.html), can author row 4 and paper row 4 be the same node? From [L098](0098-hetero-mini-batching.html), which sampled nodes receive supervised loss? From [L099](0099-rgcn-vs-hgt.html), what extra experiment is needed before attributing an HGT advantage to learned attention?
 
-<details><summary>Feedback — open after answering</summary><p>R-GCN divides by the receiver's degree within that relation, then sums relation contributions. A node identity is (type, row ID). Only the input seed prefix receives the batch loss. A uniform-attention HGT intervention narrows the attention question; comparing two architecture families changes several operators at once.</p></details>
+
+
 
 This is the Year 3 Q2 checkpoint. You already have individual operators, typed graph construction, sampling and comparison discipline. The tangible new skill is joining them into one pipeline whose result survives an audit. This supports the [mission](../MISSION.md): explain learned relational systems without hand-waving, and eventually evaluate them on real relational benchmarks.
 
-A suggested route is retrieval and the worked trace first; then the notebook tasks; then the complete experiment and written defense. The experiment can run while you prepare your protocol table. A prepared solution does not demonstrate your mastery.
+A suggested route is the worked trace first; then the notebook tasks; then the complete experiment and written defense. The experiment can run while you prepare your protocol table. A prepared solution does not demonstrate your mastery.
 
 <!-- depth-walkthrough:start -->
 ## The big picture · defend the whole prediction procedure

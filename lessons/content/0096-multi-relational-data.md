@@ -1,8 +1,8 @@
 <div class="package-links"><strong>Your tangible win:</strong> turn four SQL tables into a typed graph and prove that it preserves a declared join and aggregation.<br><a href="../labs/0096-multi-relational-data.ipynb">Student notebook</a> · <a href="../labs/html/0096-multi-relational-data.html">Executed solution</a> · <a href="../reference/schema-graph-contract.html">Reference sheet</a> · <a href="../labs/l096-reproduction.md">Reproduction contract</a></div>
 
-## 1 · Retrieve before reading
 
-Without opening L095, write answers to these questions. Why can customer 10 and product 10 be different nodes? What information disappears when repeated interactions become one binary edge? Does reversing an edge make its information safe to use in a training graph?
+
+
 
 <details><summary>Check after you have written</summary><p>Identity includes the node type. A binary edge discards event multiplicity and event attributes unless these are explicitly retained elsewhere. Reversing a held-out link still exposes that link. If any answer was uncertain, revisit <a href="0095-bipartite-graphs.html">L095</a> before building.</p></details>
 

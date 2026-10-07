@@ -12,8 +12,6 @@
 
 Recall [bipartite graphs](0095-bipartite-graphs.html), temporal sampling, and validation-only selection: what identifies a query when a facility appears at several dates? What is lost if every facility sees the same sponsor embedding? Why does a validation-selected configuration need a separate test score?
 
-[[WARMUP]]
-
 ## 1 · Why two towers leave something unresolved
 
 A **query** here is a facility and a cutoff time. A **candidate** is a sponsor. The task asks which sponsors will conduct trials at that facility in the next 365 days. The graph connects facilities, studies, sponsors, and other tables through foreign keys. At prediction time, temporal sampling admits timestamped rows only through the query cutoff.

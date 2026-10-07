@@ -14,7 +14,7 @@ A **forecast origin** is the boundary between observed history and the horizon w
 
 Before continuing, retrieve: can future calendar values be legal? Can an old record still arrive too late? Does low WQL establish that either input was legal?
 
-<div id="b19b-warmup"></div>
+
 
 {{AVAILABILITY_WIDGET}}
 

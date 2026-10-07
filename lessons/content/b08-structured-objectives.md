@@ -14,11 +14,11 @@ Imagine a customer table with income, spending, and a future outcome. Predicting
 
 The conceptual path takes about 25 minutes. Use the notebook for a separate implementation session. This extends the mission’s demand for defensible tabular baselines: before adding database relationships, know what a single-table model can learn from its objective.
 
-## Retrieve first
 
-Without notes: distinguish changing parameters from changing context. Which rows may fit preprocessing? Does an attention mask specify the loss, or only which representations can communicate?
 
-<div id="b08-warmup"></div>
+
+
+
 
 **Prerequisite recap.** A **support set** supplies observed examples and known targets. A **query** supplies observed features with an unknown target. A **cell embedding** represents one table entry as a vector. A **prediction head** maps that vector to an output. A **loss** scores prediction errors; its gradient changes parameters during training. A **mask** may mean hidden input values, forbidden attention edges, or scored outputs. Keep these three meanings separate.
 

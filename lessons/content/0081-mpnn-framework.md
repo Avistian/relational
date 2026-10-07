@@ -1,9 +1,3 @@
-## Start cold · what must move when a node is renamed?
-
-[[WARMUP]]
-
-Close your notes. In the chain A—B—C, can changing C affect A after one synchronous neighbor update? If rows are reordered, what else must be reordered? Why is validation allowed to choose a model while the test set is not? Write answers before continuing.
-
 **Your tangible win:** implement message → aggregate → update → readout, and show that renaming nodes changes their positions rather than the graph prediction. The core takes about 30 minutes; reserve another session for the molecular model and reproduction audit.
 
 [Lesson 78](0078-message-passing-preview.html) made one neighbor calculation concrete. [Lesson 80](0080-year-2-exit-exam.html) demanded a defensible experiment. Year 3 combines these skills: make graph operations explicit, then test what the resulting model actually learns. This is the foundation for learning over entity relationships in a database.
@@ -11,7 +5,7 @@ Close your notes. In the chain A—B—C, can changing C affect A after one sync
 **Primary reading:** Gilmer et al., [Neural Message Passing for Quantum Chemistry](https://proceedings.mlr.press/v70/gilmer17a.html), §2 for the framework and §§6–8 for the experiment. Read the [supplement](https://proceedings.mlr.press/v70/gilmer17a/gilmer17a-supp.pdf), Table 3, after the core lab.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 081</p><p><strong>Build on what you know.</strong> <a href="0078-message-passing-preview.html">Lesson 78</a> introduced routing and weighted aggregation. Lessons 42 and 46 already separated transformations from their training recipe. Here we use one interface to say exactly where different graph models disagree.</p><p><strong>The next question.</strong> <a href="0082-gcn.html">Lesson 82</a> fixes the message coefficient using graph degrees. <a href="0084-gat.html">Lesson 84</a> learns it using attention. Before comparing those models, keep message, aggregation, update and readout as distinct operations.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 081</p><p><strong>Build on what you know.</strong> <a href="0078-message-passing-preview.html">Lesson 78</a> introduced routing and weighted aggregation. Lessons 42 and 46 already separated transformations from their training recipe. Here we use one interface to say exactly where different graph models disagree.</p><p><strong>The next question.</strong> <a href="0082-gcn.html">Lesson 82</a> fixes the message coefficient using graph degrees. <a href="0084-gat.html">Lesson 84</a> learns it using attention. Before comparing those models, keep message, aggregation, update and readout as distinct operations.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## An MPNN is a set of choices, not one layer
 

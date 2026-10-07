@@ -10,8 +10,6 @@ Our mission is to test whether relational learning unlocks useful predictive sig
 
 **Prerequisites, recalled here:** a query is an entity and a prediction cutoff; the cutoff says when its information must be available. Validation selects a model before test scoring. **MAE**, mean absolute error, averages `abs(target − prediction)` over queries; lower is better. A **seed** sets pseudorandom choices for a training run. Repeated seeds measure one kind of variability on the same data.
 
-[[WARMUP]]
-
 ## 2 · Put both complete pipelines on the same query table
 
 For this task, each target is a driver's average finishing position over the next 60 days. Both arms use all 7,453 training, 499 validation and 760 test queries. Those labels are independently reconstructed from raw race results before fitting. **Matched** means the same task, target definition, query population, split and scoring rule.

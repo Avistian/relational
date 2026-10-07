@@ -14,7 +14,7 @@ A relational entity graph (REG) represents table rows as nodes and foreign-key l
 
 Spend about 15 minutes on the trace and 30–45 minutes on the notebook. The full reproduction appendix is an author/reference track; executing it is not proof you can explain the layer.
 
-**Retrieve first.** What does each row of `edge_index` index? Why is “row 7” ambiguous without its table? What makes a reverse relation different from a self-loop? Write answers before opening the explanations below.
+
 
 <details><summary>Check the retrieval before continuing</summary><p>Edge row 0 indexes source rows; edge row 1 indexes destination rows. A local index needs its table and sampled graph to identify an occurrence. A reverse relation sends messages in the opposite direction across a stored relationship; a self-loop connects a node to itself.</p></details>
 

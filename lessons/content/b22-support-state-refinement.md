@@ -6,9 +6,9 @@
 
 [Student notebook](../labs/b22-support-state-refinement.ipynb) · [Executed solution](../labs/html/b22-support-state-refinement.html) · [Download solution](../labs/solutions/b22-support-state-refinement.ipynb) · [Printable reference](../reference/b22-support-state-refinement.html) · [Reproduction contract](../labs/b22-reproduction.md)
 
-## 1 · Recall the boundary, then move inside it
 
-<div id="b22-warmup"></div>
+
+
 
 An **intervention** deliberately changes one part of a computation. A **matched control** keeps the other relevant conditions the same. In B21 that meant the same features and weights with different permitted links. In B22 it means the same examples, labels, weights and current query output, with different stored support states.
 

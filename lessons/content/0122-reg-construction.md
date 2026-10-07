@@ -14,8 +14,6 @@ Given tables and their declared keys, build a graph whose nodes, typed edges, an
 
 **Read:** [Fey et al., ICML 2024, §3.1–3.2 and Figure 4](https://proceedings.mlr.press/v235/fey24a.html), then inspect the [pinned RelBench graph constructor](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/graph.py). The former defines the representation; the latter specifies executable choices. The score reproduction below is a named experiment from the separate RelBench v1 paper.
 
-[[WARMUP]]
-
 ## 1 · Three graphs answer three different questions
 
 A **schema graph** has a node per table: it says which kinds of entities can be connected. A **relational entity graph (REG)** expands each table into its individual rows. A **computation graph** selects the context used for one prediction, under a sampling and temporal contract. Building the second does not establish that the third is valid for a historical query. [Fey §3](https://proceedings.mlr.press/v235/fey24a.html).

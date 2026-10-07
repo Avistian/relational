@@ -9,21 +9,13 @@
 
 <p class="subtitle">One tangible win: build two representations of the same interactions, then defend which information your prediction needs. Core reading: 15 minutes · lab: 35–50 minutes.</p>
 
+
+
+
+<p><strong>The next problem.</strong> L102 and L103 consume timestamped interactions. L104 asks whether those interactions were knowable. Now suppose your data pipeline hands the model one graph per day. Even a perfectly causal daily graph may have discarded information the task needs. Our mission is to build defensible relational systems: representation choices belong in that argument, before choosing a neural architecture.</p>
 <!-- lesson-visuals:start -->
 <nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 4 figures</summary><ol><li><a href="#visual-figure-1">Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six</a></li><li><a href="#visual-figure-2">Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can…</a></li><li><a href="#visual-figure-3">Synthetic query at 6 seconds: three eligible records are withheld by closed-window access</a></li><li><a href="#visual-figure-4">Measured full Wikipedia census, not a prediction benchmark</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
 <!-- lesson-visuals:end -->
-<h2 id="1-%C2%B7-Retrieve-before-reading">1 &#183; Retrieve before reading<a class="anchor-link" href="#1-%C2%B7-Retrieve-before-reading">&#182;</a></h2><p>Without opening L104, write three short answers:</p>
-<ol>
-<li>For a prediction just before time 10, can an interaction stamped 10 enter the history?</li>
-<li>An event happened at 3 but arrived at 12. Can a prediction at 8 use it?</li>
-<li>If two records have equal timestamps, does their CSV row order prove which happened first?</li>
-</ol>
-<details><summary>Check only after committing your answers</summary>
-
-<p>Under our before-event contract: <strong>no</strong>, <strong>no</strong>, and <strong>no</strong>. We require event time &lt; query time and availability time ≤ query time. A row number is a reproducible identity, not evidence of an unrecorded causal order. If you missed one, revisit <a href="0104-information-leakage-in-time.html">L104’s prediction-time boundary</a> before proceeding.</p>
-</details>
-
-<p><strong>The next problem.</strong> L102 and L103 consume timestamped interactions. L104 asks whether those interactions were knowable. Now suppose your data pipeline hands the model one graph per day. Even a perfectly causal daily graph may have discarded information the task needs. Our mission is to build defensible relational systems: representation choices belong in that argument, before choosing a neural architecture.</p>
 <h2 id="2-%C2%B7-One-stream,-two-representations">2 &#183; One stream, two representations<a class="anchor-link" href="#2-%C2%B7-One-stream,-two-representations">&#182;</a></h2><p>A <strong>continuous-time dynamic graph (CTDG)</strong> records changes at their event timestamps. “Continuous time” means updates need not lie on a fixed grid; recorded timestamps can still be rounded or tied. It does not imply continuous-valued node states or require a point-process model. A <strong>discrete-time dynamic graph (DTDG)</strong> is a sequence of graph snapshots. See <a href="https://arxiv.org/html/2006.10637v3#S2">TGN v3 §2, Dynamic Graphs</a>.</p>
 <p>Our interaction stream stores <code>(event_id, user_id, page_id, time, availability)</code>. An edge is an occurrence, so repeated edits between the same user and page remain separate records. User 0 and page 0 belong to different identity spaces. Sorting all their raw integers into one node set would merge different entities.</p>
 <p><strong>What does a snapshot mean?</strong> This lesson uses a <em>window interaction graph</em>: an edge summarizes interactions occurring in one time interval. This differs from a <em>state snapshot</em>, such as all friendships still active at a moment, and from a <em>cumulative interaction graph</em> containing all interactions so far. An edit is not a permanent relationship. Deletions would need explicit state-transition semantics; this dataset projection has no such operation.</p>

@@ -6,7 +6,7 @@
 
 [B03](b03-pfn-tabpfn-generations.html) left a practical question: if support rows replace task-specific weight updates, what happens when that support grows? TabICL first constructs one vector per row, then runs dataset-level attention on those vectors. This is a useful flat-table baseline for our relational mission, and a building block for relational systems; it does not itself recover missing joins or temporal histories. Recall [L066](0066-tabicl-column-row-attention.html) and the earlier ICL scaling work before treating this as a new model from scratch.
 
-**Retrieve before reading:** What stays fixed during base ICL? Why must query targets stay outside inference? Can unchanged accuracy hide changed probabilities? Prerequisites: matrix shapes, dot-product attention, entropy and support-fitted preprocessing. [B03](b03-pfn-tabpfn-generations.html) reviews the first and third questions; ask the agent for a worked attention example if needed.
+Prerequisites: matrix shapes, dot-product attention, entropy and support-fitted preprocessing. [B03](b03-pfn-tabpfn-generations.html) reviews the first and third questions; ask the agent for a worked attention example if needed.
 
 ## 1. Two stages, three operations
 

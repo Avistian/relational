@@ -10,17 +10,13 @@
 
 Start with the short audit below. Then follow one prediction through its inputs. The lab uses a trained Temporal Graph Attention (TGAT) model on real Wikipedia interactions; its full model and training recipe remain visible.
 
-## 1 · Retrieval before reading
 
-[[WARMUP]]
 
-Without opening L103, answer these three questions:
 
-1. A query at time 8 reaches a neighbor through an interaction at time 5. At what time is that neighbor's historical representation queried?
-2. In TGN, may the current event update memory before the model predicts that same event?
-3. Does putting every test target after the training targets guarantee legal feature access?
 
-<details><summary>Check after committing your answers</summary><p>In TGAT, the child is queried at 5 and its event history is strictly earlier than 5. TGN must predict before incorporating the current outcome. A chronological target split alone cannot constrain joins, feature versions, sampled neighbors, memory, or model selection.</p></details>
+
+
+
 
 **Where we are.** [L102](0102-temporal-graph-networks.html) introduced persistent memory. [L103](0103-tgat.html) recomputed embeddings from history. Both still need an explicit rule for what was knowable. A timestamp inside a neural network does not enforce that rule.
 

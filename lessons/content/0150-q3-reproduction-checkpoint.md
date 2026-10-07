@@ -12,11 +12,9 @@
 
 **Read first:** [RelGNN v2 §5.2 and Table 2](https://arxiv.org/html/2502.06784v2#S5.T2), then the [pinned released implementation](https://github.com/snap-stanford/RelGNN/tree/cffdb8b54627e92c7dd112c1243dde739c90d35b). The paper reports **3.798 test MAE** on `rel-f1/driver-position`. Our attempt preserves the released architecture, documents unreleased training choices, and evaluates two primary tracks of five fresh fits each, plus three validation-only search fits. The released-checkpoint replay is a separate evaluation.
 
-## 1 · Retrieval before the checkpoint
 
-[[WARMUP]]
 
-Close the preceding lessons. Explain why a checkpoint replay is not a fresh seed, why first-minimum validation selection matters when scores tie, and why five seeds do not create five independent databases.
+
 
 **One tangible deliverable:** an evidence-backed reproduction report with a manifest, complete seed table, uncertainty statement and written defense. The core lesson explains the gates; the lab supplies the computation and report scaffold. Passing author checks does not pass your checkpoint.
 

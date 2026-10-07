@@ -12,8 +12,6 @@
 
 Start from memory: why does a two-edge route fit inside one composite layer? Why is validation allowed to choose an epoch while test is not? Name an example where a close score hides a different experiment.
 
-[[WARMUP]]
-
 ## 1 · Freeze the claim before running
 
 The named target is **RelGNN, rel-f1/driver-position, Table 2, test MAE 3.798** in [Chen et al., ICML 2025, §5.2](https://arxiv.org/html/2502.06784v2#S5.SS2). The paper reports five-run averages. We select one complete task from its benchmark, not the whole paper and not a reduced query sample.

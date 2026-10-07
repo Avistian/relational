@@ -6,11 +6,11 @@ You have seen models, temporal audits, serving simulations and privacy mechanism
 
 [[STATUS]]
 
-## 1 · Retrieve the distinctions
 
-Before looking below, write one sentence for each: (a) event time versus availability time; (b) saved prediction replay versus fresh inference; (c) support seeds versus independent databases.
 
-<details><summary>Check your recall</summary><p>Event time says when something happened; availability says when the predictor could know it. A replay scores existing predictions; inference creates new ones. Support seeds change the examples supplied to a model within the same benchmark population. They do not create new databases.</p></details>
+
+
+
 
 [Lesson 181](0181-relbench-v2-autocomplete.html) supplies the autocomplete contract. [Lesson 182](0182-rdb-pfn-composite-message-passing.html) separates a reproduced comparison from a proposed hybrid. [Lesson 188](0188-systematic-literature-tracking.html) separates collected papers from complete discovery. [Lesson 189’s draft problem-ranking work](0189-identify-open-problems.html) is an optional bridge; the three cards below make this checkpoint self-contained, without assuming you completed it.
 

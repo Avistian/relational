@@ -14,8 +14,6 @@ Start with the guided case in Sections 1–3 (about 20 minutes). Then work throu
 
 [Student notebook](../labs/0116-debug-gnn-training.ipynb) · [Executed solution](../labs/html/0116-debug-gnn-training.html) · [Quick reference](../reference/debug-gnn-training.html) · [Protocol and exact commands](../labs/l116-reproduction.md)
 
-[[WARMUP]]
-
 ## 1 · A symptom starts an investigation
 
 [Lesson 115](0115-graph-ml-design-patterns.html) gave each module a responsibility. Here we ask whether those responsibilities are actually fulfilled during training. A tensor can have the right shape while its rows carry the wrong identities. A backward pass can produce gradients while the optimizer never changes a parameter. A high validation score can result from reading validation labels.

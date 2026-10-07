@@ -20,11 +20,9 @@ On a narrow screen, scroll diagrams horizontally to keep their labels readable.
 
 [Lesson 135](0135-tuning-on-reg.html) froze a search budget and used validation to select its winner. That protects one experiment. A leaderboard adds a harder question: did the other entry get the same information and resources?
 
-**Retrieve before reading:** What identifies a temporal query? Which split selects a checkpoint? Does five-seed agreement establish performance on another database?
+
 
 <details><summary>Check your retrieval</summary>A temporal query is an entity and a prediction cutoff. Validation selects the checkpoint. Five seeds probe fitting variability on the chosen task and split, not variation across databases.</details>
-
-[[WARMUP]]
 
 Our mission is to make evidence for relational learning credible to a skeptic. Ranking a method is useful only after identifying what was ranked. This lesson therefore carries three separate statements through the same workflow: the score is correct; the training setup is recoverable; the comparison supports the claim. Each needs different evidence.
 

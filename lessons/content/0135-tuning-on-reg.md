@@ -10,11 +10,9 @@
 
 [Lesson 134](0134-training-at-scale.html) measures which sampled rows reach the model and how much a step costs. That leaves a decision unresolved: how should we spend a finite budget choosing the model settings? A cheap configuration may permit more trials. A large fanout changes both the available context and the computation. Equal trial counts, epochs, GPU time and dollars are four different constraints.
 
-**Retrieve before reading:** What identifies a temporal prediction besides its entity ID? Which split selects a checkpoint? Why does doubling the fanout not guarantee twice the peak GPU memory?
+
 
 <details><summary>Check your retrieval</summary>The query is (entity, cutoff). Validation selects the checkpoint; test evaluates a frozen decision. Relation paths, node degrees, time filtering, activations and allocator behavior determine actual memory, so a fanout multiplier alone is insufficient.</details>
-
-[[WARMUP]]
 
 The mission is to make relational-model evidence credible against strong tabular baselines. An undocumented search can give one method an advantage before the final metric is even calculated. This lesson trains you to make that advantage visible.
 

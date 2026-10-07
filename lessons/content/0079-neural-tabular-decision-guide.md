@@ -1,13 +1,9 @@
-## Start cold · choose before reading
-
-<div id="warmup"></div>
-
 A fraud table has 6,000 labeled transactions, merchant IDs, a text description and timestamps. Predictions must serve next month's traffic within 5 ms per request. Write down your first baseline, validation split, strongest challenger and one result that would change your mind. **Commit to four sentences before reading on.** A model name without a split is not yet a decision.
 
 **Today's win:** write a one-page decision guide that another researcher can execute and challenge. Spend about 20 minutes on sections 1–4, then 20 minutes on the writing task. The optional audit notebook rebuilds every displayed rank from the complete corrected Lesson 60 predictions. It does not train new models.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 079</p><p><strong>Build on what you know.</strong> Lessons 40 and 70 ended with defensible baseline decisions. Lessons 71–78 added pretraining, schema transfer, and relations. The extra mechanisms create more choices, so model selection now needs a written rule.</p><p><strong>The next question.</strong> <a href="0080-year-2-exit-exam.html">Lesson 80</a> asks you to execute and defend that rule. A recommendation becomes useful when another person can reconstruct what result would change your mind.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 079</p><p><strong>Build on what you know.</strong> Lessons 40 and 70 ended with defensible baseline decisions. Lessons 71–78 added pretraining, schema transfer, and relations. The extra mechanisms create more choices, so model selection now needs a written rule.</p><p><strong>The next question.</strong> <a href="0080-year-2-exit-exam.html">Lesson 80</a> asks you to execute and defend that rule. A recommendation becomes useful when another person can reconstruct what result would change your mind.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## Choose a model by naming the missing capability
 

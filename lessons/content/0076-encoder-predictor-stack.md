@@ -1,13 +1,7 @@
-## Start with retrieval
-
-<div id="warmup"></div>
-
-Before reading, explain these three things without looking them up: what state a row encoder fits, why a foreign key is not automatically a row number, and why an event timestamp alone cannot prove information was available. If one is unclear, write your current guess. Return to it after the worked example.
-
 **Your tangible win.** Build a complete two-table predictor and account for every input coordinate, edge and gradient. You will connect the row encoder from [Lesson 75](0075-pytorch-frame-row-encoder.html) to another table, rather than treating relational learning as an unexplained box. This is the architecture preview specified by the curriculum. The core lab takes about an hour; the historical benchmark replay is a separate, longer track.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 076</p><p><strong>Build on what you know.</strong> <a href="0075-pytorch-frame-row-encoder.html">Lesson 75</a> ended at one vector per record. <a href="0055-tabred-temporal-splits.html">Lesson 55</a> supplied point-in-time discipline. Combining these requires two explicit operations: connect identities correctly and remove information that was not available at prediction time.</p><p><strong>The next question.</strong> <a href="0077-single-table-ceiling.html">Lesson 77</a> asks what the relational route can preserve that a chosen flattened summary loses. <a href="0078-message-passing-preview.html">Lesson 78</a> turns this concrete one-hop stack into the message-passing vocabulary.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 076</p><p><strong>Build on what you know.</strong> <a href="0075-pytorch-frame-row-encoder.html">Lesson 75</a> ended at one vector per record. <a href="0055-tabred-temporal-splits.html">Lesson 55</a> supplied point-in-time discipline. Combining these requires two explicit operations: connect identities correctly and remove information that was not available at prediction time.</p><p><strong>The next question.</strong> <a href="0077-single-table-ceiling.html">Lesson 77</a> asks what the relational route can preserve that a chosen flattened summary loses. <a href="0078-message-passing-preview.html">Lesson 78</a> turns this concrete one-hop stack into the message-passing vocabulary.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## Follow one customer from rows to loss
 

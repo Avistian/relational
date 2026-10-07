@@ -14,11 +14,9 @@
 
 **Read first:** [RelBench v1 §6, Figure 3 and Appendix C.2](https://arxiv.org/html/2407.20060v1#S6). Read the output-head qualification before comparing its regression results with Table 7. [Released user-study code](https://github.com/snap-stanford/relbench-user-study/tree/445bb7a3b1230f49f8e5890ae81754d3e365680f) is the primary source for the manual feature-engineering comparator.
 
-## 1 · Recall before looking
 
-[[WARMUP]]
 
-Without opening the preceding lessons, write two sentences: why can removing graph history change more than architecture, and why do five seeds on one database not establish cross-database robustness?
+
 
 ## 2 · Make “weak” mean something precise
 

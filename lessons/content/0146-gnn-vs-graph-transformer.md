@@ -14,8 +14,6 @@ A graph transformer can connect two sampled rows in one attention step. That is 
 
 This serves the course mission: defend evidence that learned relational models add value, even when the defensible answer is “this experiment does not establish that claim.” Budget about 20 minutes for the main lesson; use the notebook for the implementation and evidence audit.
 
-[[WARMUP]]
-
 ## 1 · Count information paths before counting layers
 
 > **In plain terms.** A model cannot use a row that was never retrieved. Once a row is retrieved, the model's communication and readout determine how it can affect the answer.

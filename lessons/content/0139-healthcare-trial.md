@@ -12,9 +12,7 @@
 
 Allow 25 minutes for the core lesson, then a separate lab session. Read [RelBench v1 Appendix B.2](https://arxiv.org/html/2407.20060v1#A2.SS2) for the trial-specific training exception; inspect the [released target SQL](../labs/sources/l139/relbench__tasks__trial.py) while working through the label.
 
-[[WARMUP]]
 
-**Retrieve before reading:** what was an eligible Amazon customer? Which side of the cutoff supplied the churn label? Could a correct time filter recover an attribute whose historical availability was never recorded?
 
 | Contract | Amazon user-churn | Trial study-outcome |
 |---|---|---|
@@ -124,12 +122,9 @@ Inspect the [source manifest](../labs/sources/l139/manifest.json), [task audit](
 
 ## 8 · Exit: defend the transfer
 
-Without looking back, answer in four short paragraphs:
 
-1. A started trial has only a secondary future analysis. Why is it absent rather than label 0? What population does the reported AUROC describe?
-2. Trace facility → association → study with shapes and the query cutoff. What happens when the association is dated after the cutoff?
-3. Which code structure transfers from Amazon, which four training settings change, and why is this not zero-shot inference?
-4. State the measured result, one verified property, and one unresolved claim. Does successful execution show that the GNN beats a strong tabular baseline?
+
+
 
 [[TEACHBACK]]
 

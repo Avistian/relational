@@ -12,7 +12,7 @@ This serves our mission directly. A relational model must beat a strong baseline
 
 Recall [grouped validation](0004-grouped-nested-cv.html) and [B18a's predictor identity](b18a-context-state.html). Without looking back: what may be fitted using test labels? Does changing the support change the predictor? Are two rows from the same person independent evidence about performance on a new person?
 
-<div id="b19-warmup"></div>
+
 
 **In plain terms.** A test split is a promise about what will be unfamiliar at deployment. A random split with familiar customers tests a different promise from holding out whole customers.
 

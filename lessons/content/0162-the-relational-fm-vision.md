@@ -6,8 +6,6 @@
 
 [Lesson 159](0159-foundation-model-preview.html) supplied masked reconstruction objectives: hide an item and learn to recover it. [Lesson 161](0161-what-is-a-foundation-model.html) asked what makes a learned starting point reusable. Neither objective nor definition explains how related tables enter a prediction. This lesson connects them through Vogel, Hilprecht and Binnig’s [2023 relational foundation-model vision](https://arxiv.org/html/2305.15321v1#S2).
 
-[[WARMUP]]
-
 **Worked example.** A database has rows about moons, their planets and their stars. A moon row carries a planet key. That planet carries a star key. A language model that reads only the moon’s text cannot directly read a star’s attributes. We need a route between the rows before we can ask whether those attributes help.
 
 A **primary key** identifies a row. A **foreign key** refers to a row in another table. A **graph** represents entities as nodes and relationships as edges. **Message passing** updates a node’s representation using representations from its neighbors. One **hop** crosses one edge. These definitions concern information access; useful prediction still has to be learned and tested.

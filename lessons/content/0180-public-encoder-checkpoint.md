@@ -10,8 +10,6 @@
 
 The checkpoint joins these ideas: **public initialization → legal task inputs → actual updates → validation selection → independently checked predictions**. A failure anywhere prevents the practical exit. Lesson 179 is not yet present in this checkout; the retrieval below revisits the relevant failure concepts without assuming it was completed. This advances our mission of making relational-model claims that can survive scrutiny.
 
-[[WARMUP]]
-
 ## 2 · Name the model before naming the result
 
 Our selected target is **RT-v1 supervised fine-tuning on `rel-f1/driver-dnf`**, using `pretrain_rel-f1_driver-dnf.pt`. The release describes this initialization as pretrained with F1 held out. That is release provenance; reproducing the entire pretraining lineage is a different claim. The later `finetune-from-contd-pretrain` checkpoint already has target supervision and is not a fresh initialization for this experiment. [Pinned release card](https://huggingface.co/stanford-star/rt-v1/blob/299701dedae451f3dfa40717b831d9dc17c0e4e7/README.md)
@@ -20,7 +18,7 @@ We pin the repository revision and filename, but **have not downloaded or authen
 
 ### Model architecture · what would receive gradients?
 
-**Recall before tracing.** An encoder maps input cells to numerical representations; a decoder maps the final query representation to a prediction. A logit is an unconstrained class score, converted to a probability by sigmoid. Binary cross-entropy penalizes assigning low probability to the correct binary answer. Gradients describe how weights affect that loss; AdamW uses those gradients to update the trainable weights. The frozen MiniLM text encoder supplies name representations and receives no such update.
+
 
 A query is a driver and cutoff. The target asks whether a result in **(cutoff, cutoff + 30 days]** has `statusId != 1`; raw-label reconstruction retains the benchmark cohort, which requires future participation. This is not a prospective evaluation of every driver. Mask the query target, sample linked cells, and encode datatype values plus table/column semantics. The frozen MiniLM vectors are inputs; RT's value projections, attention blocks and decoder are trainable. [Original task SQL](../labs/sources/l180/relbench-f1-task.py), [RT §3](https://arxiv.org/html/2510.06377v1#S3).
 

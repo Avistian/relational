@@ -7,29 +7,9 @@ Use when creating or editing a lesson. Knowledge and skills only stick if the le
 **storage strength** (long-term retention), not **fluency** (feeling fluent while re-reading). The
 `teach` skill names fluency as the enemy. Three cheap, reusable mechanisms enforce this.
 
-## 1. Open every lesson with a spaced-retrieval warm-up (`assets/retrieval-bank.js`)
+## 1. Begin with the lesson, not a review test
 
-Before new material, make the learner recall **older** material from memory. Spacing + interleaving +
-effortful retrieval are the highest-leverage retention levers.
-
-```html
-<h2>Warm up</h2>
-<div id="warmup"></div>
-...
-<script src="../assets/retrieval-pool.js"></script>
-<script src="../assets/retrieval-bank.js"></script>
-<script>
-  RetrievalBank.mount(document.getElementById("warmup"), { upTo: 21, count: 3 });
-</script>
-```
-
-- `upTo` = **this** lesson's number. The bank only draws from lessons *before* it (spacing), never the
-  fresh material.
-- It is Leitner-scheduled in `localStorage`: a missed item returns next session, a mastered one returns
-  much later. Nothing to configure per lesson.
-- **Feed the pool** (`assets/retrieval-pool.js`) whenever a lesson ships a durable, testable idea — add
-  one item with a **stable `id`** (never renumber; Leitner state is keyed on it). Options should be
-  similar length (quiz-fairness standard #2).
+User preference (2026-10-07): remove opening review tests; they were not helpful to this learner. Do not add opening spaced-retrieval quizzes, closed-notes questions, or recall/answer panels. Keep useful prerequisite explanations, the lesson objective, worked examples, and exercises within the lesson. This preference supersedes the previous mandatory warm-up rule. The shared publication pass removes legacy openings; `RetrievalBank.mount` accepts missing containers so unrelated lesson widgets still initialize.
 
 ## 2. Add a prediction-before-reveal prompt before any result (`assets/predict.js`)
 

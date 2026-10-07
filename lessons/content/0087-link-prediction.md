@@ -1,13 +1,9 @@
-## Retrieval before reading · 3 minutes
-
 Close lesson 86. For an undirected graph stored as directed messages, how many columns represent one edge? Which data may enter a validation-selected model before test scoring? If every example shares one graph, does splitting example rows necessarily isolate their information?
 
-[[WARMUP]]
 
-<details><summary>Check after writing your answers</summary><p>Usually two directed columns, one in each direction. Training observations fit parameters; validation labels select a state. A row split alone does not isolate a graph: held-out relationships may still appear among the encoder's input edges.</p></details>
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 087</p><p><strong>Build on what you know.</strong> <a href="0086-pyg-fundamentals.html">Lesson 86</a> made routing explicit. Link prediction introduces a new boundary: the relationship being predicted must not reveal itself through the message graph. <a href="0055-tabred-temporal-splits.html">Lesson 55</a>'s temporal discipline becomes especially important for future interactions.</p><p><strong>The next question.</strong> <a href="0088-graph-classification.html">Lesson 88</a> treats graph classification directly. SEAL provides the bridge by converting each candidate link into a labeled enclosing graph, while the simpler dot-product model predicts from two node embeddings.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 087</p><p><strong>Build on what you know.</strong> <a href="0086-pyg-fundamentals.html">Lesson 86</a> made routing explicit. Link prediction introduces a new boundary: the relationship being predicted must not reveal itself through the message graph. <a href="0055-tabred-temporal-splits.html">Lesson 55</a>'s temporal discipline becomes especially important for future interactions.</p><p><strong>The next question.</strong> <a href="0088-graph-classification.html">Lesson 88</a> treats graph classification directly. SEAL provides the bridge by converting each candidate link into a labeled enclosing graph, while the simpler dot-product model predicts from two node embeddings.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## A link label is not an input edge
 

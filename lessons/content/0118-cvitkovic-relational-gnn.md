@@ -14,8 +14,6 @@
 
 Study Sections 1–4 first. Then trace the model and implement the notebook tasks. The full-data experiment is a separate research exercise; executing the reference notebook does not establish that you can defend its choices.
 
-[[WARMUP]]
-
 ## 1 · What existed before the RDL blueprint?
 
 [Lesson 117](0117-rdl-bridge.html) began with a database and a prediction request. A **relational entity graph**, or REG, represents each row as a node and each foreign-key reference as a relationship. A **foreign key** is a value identifying a row in another table. A **node feature** describes a row, while a key identifies a relationship; the numerical distance between two customer IDs is generally meaningless.

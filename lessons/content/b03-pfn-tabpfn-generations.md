@@ -6,7 +6,7 @@
 
 [B02](b02-numerical-embeddings-and-ensembles.html) separated numerical representation from ensemble computation. It left a question: must every member learn new weights on your table? A PFN moves much of that learning into pretraining across tasks. At inference, the support table changes the prediction even when model weights stay fixed. For our relational mission, this matters because a flat-table foundation model is a serious baseline—but a strong flat-table result does not establish relational reasoning.
 
-**Retrieve before reading:** What may validation labels select? Which information can a query row use? What distinguishes a checkpoint from a complete prediction pipeline? Prerequisites: conditional probability, weighted averages, attention's query/key/value roles; review [L061](0061-prior-data-fitted-networks.html), [L062](0062-tabpfn-v1.html) and [L064](0064-tabpfn-v2.html) if needed. B02 author preparation is not evidence that you have mastered it.
+Prerequisites: conditional probability, weighted averages, attention's query/key/value roles; review [L061](0061-prior-data-fitted-networks.html), [L062](0062-tabpfn-v1.html) and [L064](0064-tabpfn-v2.html) if needed. B02 author preparation is not evidence that you have mastered it.
 
 ## 1. Learn an inference rule before meeting this table
 

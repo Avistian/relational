@@ -8,9 +8,9 @@ Turn “this looks promising” into **three ranked, falsifiable research questi
 
 [[STATUS]]
 
-## Recall before reading
 
-Without opening your notes, answer: What distinguishes a support-size sweep from a pretraining scaling law? Why must a prediction be keyed by both entity and cutoff? Why does a within-database gain not establish transfer to an unseen database?
+
+
 
 **Prerequisite recap.** An entity can appear at several prediction times, so its ID alone is not a query identity. A *baseline* is the comparison method under the same information and selection rules. *Pretraining* learns before the target task; a *database holdout* excludes the entire target database from that stage. These distinctions connect [L169’s context sweep](0169-scaling-laws-open-questions.html), [L177’s cost accounting](0177-compute-budget-realism.html) and [L182’s composite hypothesis](0182-rdb-pfn-composite-message-passing.html). [L188’s literature-tracking collection](0188-systematic-literature-tracking.html) is still incomplete in our frozen receipt; this lesson does not assume it established coverage.
 

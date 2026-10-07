@@ -10,15 +10,15 @@
 
 A database export arrives every night. You can build a graph from each export, but a graph neural network on today's export does not automatically remember yesterday. **By the end, you will implement a snapshot encoder, identify its recurrent state, and defend which observations a prediction could use.** That is the practical bridge from temporal graphs to periodically refreshed relational systems.
 
-## First retrieve, without notes
 
-<div id="warmup"></div>
+
+
 
 1. An event occurs at 09:05 inside an hourly window. When can a model use the *completed* window?
 2. What must remain fixed when you compare two link-prediction scores?
 3. A GCN shares weights across graphs. Does that give a node temporal memory?
 
-<details><summary>Check after writing your answers</summary>
+
 
 At 10:00, assuming immediate arrival and a reliable completeness policy. Hold questions, candidates, legal history and metric aggregation fixed. Shared parameters learn a general rule; a separately updated state carries a particular history. Revisit [availability](0104-information-leakage-in-time.html), [aggregation loss](0105-continuous-time.html) and [candidate evaluation](0106-temporal-link-prediction.html) if any distinction was unclear.
 

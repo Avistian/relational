@@ -12,11 +12,11 @@ This matters for our relational-learning mission: a learned relational model nee
 
 **Operating point** means the entire prediction configuration: checkpoint, input rows, preprocessing, support size, ensemble, cache, hardware and precision. **Latency** is elapsed time for a declared unit of work. **Peak memory** is the largest observed memory footprint during a declared interval. **Quality** here is root mean squared error (RMSE), in the target's units; lower is better.
 
-## Retrieve before reading
 
-Without notes: What changes during in-context learning? Which rows may supply target labels? Why did B08's extra objective fail to improve every seed? What would make a validation comparison leak test outcomes?
 
-<div id="b09-warmup"></div>
+
+
+
 
 **Prerequisite recap.** A support set contains known features and targets. A query contains features whose target is withheld. An embedding turns a cell into a vector. Attention constructs weighted sums of other vectors. Frozen inference changes representations and context, but does not update learned weights with gradients. A wrapper may still fit scalers or ensemble weights.
 

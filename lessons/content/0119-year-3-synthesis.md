@@ -14,8 +14,6 @@
 
 Take the short route through Sections 1–5 and the writing task. Use Sections 6–8 and the notebook for the empirical audit. This is the synthesis before the Year 3 exit exam, not a new architecture survey.
 
-[[WARMUP]]
-
 ## 1 · Separate information, computation, and evidence
 
 Your mission is to test whether learned relational models unlock predictive value beyond a single-table workflow. The useful question is specific: **which information reaches this predictor, which computation can use it, and under which evaluation protocol does it help?**

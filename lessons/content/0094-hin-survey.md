@@ -6,17 +6,13 @@ Build a defensible map of heterogeneous graph methods. Given a method descriptio
 
 Our mission is to establish when relational structure adds predictive value. A taxonomy helps choose a testable hypothesis. It does not establish that more elaborate structure is better.
 
-**Reading route:** first complete the cold questions; then trace the small graph; finally fill the taxonomy and audit a real released graph in the notebook. You can complete the conceptual core in one sitting and return for the data audit.
+**Reading route:** first trace the small graph; finally fill the taxonomy and audit a real released graph in the notebook. You can complete the conceptual core in one sitting and return for the data audit.
 
-## Retrieve before reading
 
-[[WARMUP]]
 
-Write three short answers from memory before opening the model answers:
 
-1. In L091, what chooses a message's weight matrix?
-2. In L092, what does the designer choose before attention is learned?
-3. In L093, why does adding relative time not guarantee leakage-free prediction?
+
+
 
 <details><summary>Check after attempting</summary><p>R-GCN uses the relation type. HAN starts with selected meta-path neighbor graphs. HGT's time representation changes the computation; availability cutoffs and removal of target edges still have to be enforced by the data pipeline.</p></details>
 

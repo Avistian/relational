@@ -18,11 +18,9 @@ On narrow screens, scroll figures horizontally to keep their labels readable.
 
 [Lesson 136](0136-leaderboard-literacy.html) established whether a score could be reconstructed. It left a practical question open: what should we change when the score is poor? [Lesson 129](0129-manual-feature-engineering.html) established a serious engineered-feature baseline. We now compare its errors with the basic relational GNN, on exactly the same questions.
 
-**Retrieve before reading:** What identifies a temporal query? Which split may select a checkpoint? Does a missing feature prove that the underlying event never happened?
+
 
 <details><summary>Check your retrieval</summary>A query contains an entity and a cutoff. Validation selects a checkpoint. Missingness describes a representation; it can arise from a window, snapshot, join, or source recording process.</details>
-
-[[WARMUP]]
 
 A **relational entity graph (REG)** has database rows as nodes and primary–foreign-key links as edges. A **graph neural network (GNN)** learns by aggregating neighboring representations. **Feature engineering (FE)** explicitly constructs columns from the same database. Neither method is guaranteed to win on every query.
 

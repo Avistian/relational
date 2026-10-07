@@ -12,9 +12,7 @@ Lessons [138](0138-ecommerce-amazon.html) and [139](0139-healthcare-trial.html) 
 
 Your tangible win is a two-task report whose claims can be regenerated from query identities, checkpoint histories and saved predictions. Allow 25 minutes for the core lesson and a separate lab/defense session. Read [RelBench v1 Table 6 and Appendix B.2](https://arxiv.org/html/2407.20060v1#A2.SS1); compare the source configuration before looking at scores.
 
-[[WARMUP]]
 
-**Retrieve first:** why does the same entity at two cutoffs create two queries? What happens to a trial with no qualifying future primary analysis? Which data may choose an epoch?
 
 ## 2 · Freeze two contracts before training
 

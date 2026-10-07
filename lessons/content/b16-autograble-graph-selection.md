@@ -8,10 +8,9 @@ Your tangible win: take eight rows, score every candidate column subset, and exp
 
 **Route:** 20–30 minutes to trace; 30–45 minutes for the lab; revisit after 1, 7 and 30 days. Prerequisites: binary labels, held-out validation, and message passing. Each is restated below. [Student notebook](../labs/b16-autograble-graph-selection.ipynb) · [Executed solution](../labs/html/b16-autograble-graph-selection.html) · [Printable reference](../reference/b16-autograble-graph-selection.html)
 
-## Recall before reading
 
-<div id="b16-warmup"></div>
-<noscript><p>Recall: why must test labels stay out of model selection? Can two different graphs look identical to a message-passing model? What does an encoder's information boundary constrain?</p></noscript>
+
+
 
 ## 1 · A graph is a choice about access
 

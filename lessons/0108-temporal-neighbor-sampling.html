@@ -11,21 +11,18 @@
 
 <p>A node has interacted a million times. A prediction needs its history, but loading all of it for every query is expensive. <strong>By the end, you will implement a bounded temporal sampler and defend a measured speed–accuracy trade-off.</strong> This is directly useful when a relational model reads linked records as they existed at a particular time.</p>
 <p>L107 compressed events into snapshots. Here we retain individual event times and reduce how much history a query reads. The key distinction is between <strong>finding the same records faster</strong> and <strong>choosing different records</strong>. Only the first should preserve predictions exactly.</p>
-<!-- lesson-visuals:start -->
-<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 4 figures</summary><ol><li><a href="#visual-figure-1">Synthetic boundary calculation: two left searches retain both time-3 events and exclude the…</a></li><li><a href="#visual-figure-2">The sampler returns aligned B-by-k identities and timestamps; frozen TGAT turns this context…</a></li><li><a href="#visual-figure-3">The A–B edge at 3 passes cutoff 3 into B’s next query</a></li><li><a href="#visual-figure-4">Author experiment: same questions and negatives, four fixed-weight inference interventions, ten…</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
-<!-- lesson-visuals:end -->
-<h2 id="First-retrieve,-without-notes">First retrieve, without notes<a class="anchor-link" href="#First-retrieve,-without-notes">&#182;</a></h2><div id="warmup"></div>
+
 
 <ol>
 <li>At time 8, can an event stamped exactly 8 enter a strict-past prediction?</li>
 <li>If two systems score the same positives against different negatives, is their accuracy difference a clean model comparison?</li>
 <li>What information does an hourly count snapshot lose?</li>
 </ol>
-<details><summary>Check after writing your answers</summary>
 
-<p>No: strict-past means event time &lt; query time. Different negative candidates change the evaluation problem. A count snapshot loses within-window event order and exact times. Revisit <a href="0104-information-leakage-in-time.html">L104</a>, <a href="0106-temporal-link-prediction.html">L106</a>, and <a href="0107-snapshot-methods.html">L107</a> if needed.</p>
-</details>
 
+<!-- lesson-visuals:start -->
+<nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 4 figures</summary><ol><li><a href="#visual-figure-1">Synthetic boundary calculation: two left searches retain both time-3 events and exclude the…</a></li><li><a href="#visual-figure-2">The sampler returns aligned B-by-k identities and timestamps; frozen TGAT turns this context…</a></li><li><a href="#visual-figure-3">The A–B edge at 3 passes cutoff 3 into B’s next query</a></li><li><a href="#visual-figure-4">Author experiment: same questions and negatives, four fixed-weight inference interventions, ten…</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
+<!-- lesson-visuals:end -->
 <h2 id="1-%C2%B7-Find-the-legal-interval-before-sampling">1 &#183; Find the legal interval before sampling<a class="anchor-link" href="#1-%C2%B7-Find-the-legal-interval-before-sampling">&#182;</a></h2><blockquote>
 <p><strong>In plain terms.</strong> First decide what this query is allowed to know. Only then decide which allowed records to read.</p>
 </blockquote>

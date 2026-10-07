@@ -6,9 +6,7 @@
 
 In [Lesson 159](0159-foundation-model-preview.html), predicting masked values supplied a training objective. It did not establish that what was learned helps a new task or database. [Lesson 160](0160-year-4-exit-exam.html) separated reproducible computation from sufficient evidence. Year 5 asks what could be reused across tasks, and how to test that reuse. The outstanding Year 4 exit requirements remain outstanding.
 
-[[WARMUP]]
 
-Recall before reading: What changes when a frozen model receives new context? Why does a reconstruction score not establish transfer? Which information must be excluded from test-time selection?
 
 > **In plain terms.** A foundation model is a reusable learned starting point. The important questions are what experience produced it and what different jobs it can support.
 

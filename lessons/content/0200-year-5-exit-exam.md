@@ -8,7 +8,7 @@
 
 ## 1 · Close the books first
 
-<div id="warmup"></div>
+
 
 Write three answers before scrolling: What distinguishes released-checkpoint inference from pretraining? Why are ten support draws not ten independent replications? Why does an old event timestamp fail to prove that a feature was available?
 

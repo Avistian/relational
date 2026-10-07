@@ -6,10 +6,9 @@
 
 **Route:** read and trace for 20 minutes; implement the lab for 25–40 minutes; return after 1, 7 and 30 days. Prerequisites are a table row, a binary label and the idea of a held-out query; each is restated below. [Student notebook](../labs/b15-parameter-free-encoders.ipynb) · [Executed solution](../labs/html/b15-parameter-free-encoders.html) · [Reference](../reference/b15-parameter-free-encoders.html)
 
-## Recall before reading
 
-<div id="b15-warmup"></div>
-<noscript><p>Recall B14: which information must remain fixed when comparing two predictors? Why can an old event have a label that is not yet available?</p></noscript>
+
+
 
 ## 1 · Draw the information boundary
 

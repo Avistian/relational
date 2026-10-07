@@ -8,21 +8,19 @@
 
 <p class="subtitle">One tangible win: explain exactly what a future-edge score measures—and expose when an easy candidate set makes memorization look intelligent. Core lesson: 20–30 minutes. Lab: 40–60 minutes, plus the complete source replay.</p>
 
-## 1 · Retrieve before reading
 
-Without opening your notes, answer:
 
-1. Can a prediction just before time 10 read another event timestamped 10?
-2. If a record happened at 3 but arrived at 12, can a query at 8 use it?
-3. Does a daily count-weighted graph retain the order of its interactions?
 
-<details><summary>Check after writing your answers</summary>
+
+
+
+
 
 No, no, and no under our strict before-event contract. Require event time < query and availability ≤ query. Counts preserve multiplicity, not order. Revisit [L104](0104-information-leakage-in-time.html) and [L105](0105-continuous-time.html) if needed.
 
 </details>
 
-<div id="warmup"></div>
+
 
 **The next problem.** L105 established what a representation retains. Now we must decide what prediction we are evaluating. A model can use legal history and still receive an unconvincing test: distinguish a familiar pair from a randomly constructed pair that almost never interacts. For our relational-learning mission, beating that test alone is weak evidence that a learned relational model adds value.
 

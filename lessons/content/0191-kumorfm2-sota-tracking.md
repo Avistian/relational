@@ -8,12 +8,11 @@
 
 [[STATUS]]
 
-## 1 · Retrieve before reading
 
-Without looking back, explain: (1) why replaying a score is different from fresh inference; (2) why choosing a model on test results is unsuitable for deployment; (3) why MAEs from different tasks cannot simply be averaged. Recall [L165](0165-kumorfm-in-context-relational-learning.html) and the [research-gap checkpoint](0190-research-gap-checkpoint.html).
 
-<div id="warmup"></div>
-<noscript><p>Write your three answers above, then check them against the reference card.</p></noscript>
+
+
+
 
 ## 2 · Model architecture: where the task enters
 

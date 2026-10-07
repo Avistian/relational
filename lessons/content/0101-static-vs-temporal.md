@@ -1,10 +1,8 @@
 <div class="package-links"><strong>Your deliverable:</strong> a graph query that cannot read its future, a time-respecting split, and a defensible replay of ten published baseline cells.<br><a href="../labs/0101-static-vs-temporal.ipynb">Student notebook</a> · <a href="../labs/solutions/0101-static-vs-temporal.ipynb">Executed solution</a> · <a href="../labs/html/0101-static-vs-temporal.html">Read the lab</a> · <a href="../labs/l101-reproduction.md">Reproduction contract</a></div>
 
-## 1 · Close the notes: retrieve the old boundaries
 
-[[WARMUP]]
 
-Before reading, write three answers. In L002, why can a correct SQL join still leak? In L055, why can random rows answer a different question from future rows? In L100, why does a sampled context node not automatically receive a label loss?
+
 
 <details><summary>Feedback — open after trying</summary><p>A join can attach a value learned after prediction time. Random rows can mix historical regimes and future information into training. Context supplies messages; only the chosen seeds supply supervised targets. Today we add a time boundary to all those dependencies.</p></details>
 

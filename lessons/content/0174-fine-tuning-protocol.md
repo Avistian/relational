@@ -2,8 +2,6 @@
 
 [171: choose the corpus](0171-corpus-of-databases.html) → [172: encode cells](0172-schema-tokenization.html) → [173: pretrain](0173-multi-task-pretraining.html) → **174: adapt and compare**.
 
-[[WARMUP]]
-
 ## 1 · A checkpoint is a starting point, not a promise
 
 Lesson 173 trained one encoder across 21 masked-cell tasks. Every trained run had worse aggregate test loss than its constant baseline. We therefore begin with an open question: **when later labels arrive, does preserving this representation help, constrain, or hinder learning?** Fine-tuning means updating a pretrained model using an adaptation objective. Its successful execution is not evidence that pretraining was useful.

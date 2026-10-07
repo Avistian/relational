@@ -8,11 +8,11 @@ B12 asked how a new task reaches an already trained model. It left a prior quest
 
 **Route:** read sections 1–4 for the mechanism; use sections 5–7 and the lab for evidence. Bring a written explanation back to the teaching agent. A completed author package does not complete your defense.
 
-## Warm up · retrieve before reading
+
 
 {{WARMUP}}
 
-Without looking back: what is a foreign key? Why can frozen weights produce different predictions after changing support labels? What does B10's relational attention mask permit that ordinary all-to-all attention does not? Check your answer against the definitions below.
+
 
 ## 1 · Three objects that are easy to confuse
 

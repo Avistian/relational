@@ -16,11 +16,9 @@
 
 [Lesson 137](0137-error-analysis-reg.html) showed how to locate a model's errors. It left another question unresolved: does the target measure the real-world outcome we care about? Moving from race results to an online store makes this distinction concrete.
 
-**Retrieve first:** What two values identify a temporal query? Which split selects a checkpoint? Can an error slice establish its own causal explanation?
+
 
 <details><summary>Check your retrieval</summary>An entity and a cutoff identify a query. Validation selects checkpoints. A slice describes an association; a controlled intervention is needed to test a causal explanation.</details>
-
-[[WARMUP]]
 
 A **query** is a customer ID and a date at which we make a prediction. A **target** is the outcome observed after that date. RelBench's Amazon task calls its target *churn*: no recorded product review during the next 91 days. A customer is eligible only if they reviewed a product during the preceding 91 days. The task comes from an Amazon Books review dataset, not a complete purchase ledger. [Released task SQL](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/amazon.py) · [Dataset construction](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/datasets/amazon.py)
 

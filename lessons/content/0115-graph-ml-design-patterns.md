@@ -14,8 +14,6 @@ The core reading takes about 25 minutes. Then spend 25–35 minutes on the three
 
 [Student notebook](../labs/0115-graph-ml-design-patterns.ipynb) · [Executed solution](../labs/html/0115-graph-ml-design-patterns.html) · [Quick reference](../reference/graph-ml-design-patterns.html) · [Reproduction ledger](../labs/l115-reproduction.md)
 
-[[WARMUP]]
-
 ## 1 · Start with the prediction unit
 
 [Lesson 114](0114-ogb-error-analysis.html) asked where a trained GCN fails. Before choosing a replacement, we need a way to describe exactly what would change. An architecture name is insufficient: replacing a decoder, dropping an edge type, changing pooling, or exposing future events can each change the problem.

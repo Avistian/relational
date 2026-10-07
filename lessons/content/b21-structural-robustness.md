@@ -12,7 +12,7 @@ A **primary key (PK)** identifies a row uniquely. A **foreign key (FK)** stores 
 
 A **functional dependency**, written `session → owner`, means that any two events with the same session must have the same owner. Checking each FK against the account table does not check this cross-row rule. **Temporal eligibility** is another condition: our course permits a parent only if it existed when the event occurred. This stronger event-time rule is part of our declared threat model.
 
-<div id="b21-warmup"></div>
+
 
 **Worked prerequisite.** Events0 and1 belong to session0. Their owners are both account0. Changing event0's owner to account1 preserves FK existence but breaks `session → owner`. Changing both owners to account1 preserves both conditions. If account1 did not yet exist, the change would still fail the time rule. Recall the availability boundary from [B19b](b19b-forecasting-contracts.html); the precise event-time rule here is a separate declared constraint.
 

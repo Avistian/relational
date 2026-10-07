@@ -10,8 +10,6 @@
 
 Recall the two building blocks. A **prior** is a distribution of possible tasks. RDB-PFN trains on synthetic tables and relational databases sampled from such a distribution. At deployment, it receives labeled **support examples** and unlabeled **queries**. In-context learning, or **ICL**, predicts queries from that support while model weights remain fixed. RelGNN is a graph model that routes information through foreign-key relationships. Its **composite message** combines a source row and an intermediate row before the destination aggregates them. [RDB-PFN §§4–5](https://arxiv.org/html/2603.03805v5), [RelGNN §4](https://arxiv.org/html/2502.06784v2).
 
-[[WARMUP]]
-
 > **In plain terms.** One paper changes what the model practices on. The other changes how relational information reaches a prediction. Those changes could complement each other, overlap, or conflict.
 
 A **hypothesis** makes a prediction under specified conditions. “Relational prior plus composite routes will win” leaves too much unspecified. Which component changes? Which information is held fixed? What observation would make us abandon the idea?

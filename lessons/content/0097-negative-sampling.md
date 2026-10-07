@@ -1,8 +1,8 @@
 <div class="package-links"><strong>Your tangible win:</strong> implement a typed negative sampler, then separate a training improvement from an easier evaluation.<br><a href="../labs/0097-negative-sampling.ipynb">Student notebook</a> · <a href="../labs/html/0097-negative-sampling.html">Executed solution</a> · <a href="../reference/negative-sampling-contract.html">Reference</a> · <a href="../labs/l097-reproduction.md">Full reproduction contract</a></div>
 
-## 1 · Retrieve before reading
 
-Write three answers before opening the explanation: (1) Why are customer 10 and product 10 different nodes? (2) Why does adding a held-out edge's reverse still leak its label? (3) Can a model's ranking score improve without changing a single parameter?
+
+
 
 <details><summary>Check after writing</summary><p>Identity includes the node type. A reverse relation encodes the same held-out fact. A ranking metric can increase when the candidate set loses competitors, even with frozen scores. Revisit <a href="0095-bipartite-graphs.html">L095</a> if any answer was uncertain.</p></details>
 

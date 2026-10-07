@@ -18,7 +18,7 @@
 
 In [Lesson 133](0133-hetero-conv-reg.html), you opened the relation-specific transforms and the sum across incoming relations. Applying that layer to the whole database at once is unnecessary for seed-query supervision. We can first select the context required by a small set of predictions, then run the same message-passing computation on the sampled coordinates. This is the bridge from correct layer arithmetic to the mission's practical question: can a relational model deliver evidence within our compute budget?
 
-**Retrieve before reading:** What identifies a prediction besides its entity ID? Why can the same database row occur twice in a batch? Which rows receive the supervised loss?
+
 
 <details><summary>Check your retrieval</summary>A prediction is keyed by entity and cutoff. Two queries can refer to one entity at different times, requiring different neighborhoods; disjoint temporal sampling keeps their occurrences separate. The head's first B seed outputs receive the B query labels. Context rows provide messages but are not extra labelled examples.</details>
 

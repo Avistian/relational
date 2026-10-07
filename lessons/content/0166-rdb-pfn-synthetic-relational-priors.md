@@ -8,8 +8,6 @@
 
 Retrieve the PFN idea from [Lesson 061](0061-prior-data-fitted-networks.html): a generator supplies many small supervised problems. A shared model repeatedly sees a labeled support set and predicts held-out labels. Training adjusts its weights across problems. At deployment, a new support set describes the new problem; inference need not optimize the weights again. If you cannot explain support versus query, revisit the first two sections of Lesson 165. L165b is a planned comparison, not an assumed prerequisite.
 
-[[WARMUP]]
-
 **Reading route.** First trace a parent value into its children's summaries. Then trace those summaries through feature attention and support-row attention. Only after those paths are clear, read the benchmark table and its provenance limits. **PFN** expands to prior-data fitted network: its pretraining tasks express a prior, or assumptions about the problems it will later encounter.
 
 “Synthetic” alone does not solve transfer. The generator must produce dependencies that help on real inputs. Independent random tables with valid keys can still omit the useful relationship between a customer's past orders and a future outcome. The learning question becomes: **which relational regularities does the prior expose?**

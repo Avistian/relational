@@ -10,11 +10,9 @@
 
 [Previous: defend a comparison](0146-gnn-vs-graph-transformer.html) · [Reference](../reference/next-generation-architectures.html) · [Student notebook](../labs/0147-next-generation-architectures.ipynb) · [Executed solution](../labs/html/0147-next-generation-architectures.html)
 
-## 0 · Retrieve before you read
 
-[[WARMUP]]
 
-Without looking back: what identifies a temporal prediction query? Can attention use attributes of a row that was never sampled? What does repeating a run with three seeds tell you that testing three databases would not?
+
 
 ## 1 · From a model catalogue to a research question
 

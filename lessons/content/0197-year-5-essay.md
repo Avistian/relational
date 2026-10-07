@@ -8,12 +8,11 @@
 
 [[STATUS]]
 
-## 1 · Retrieve before reading
 
-Without looking back: What distinguishes replay from new training? Why does one score advantage fail to identify its cause? Why is a missing result different from a loss? Use the spaced questions below, then explain one answer aloud.
 
-<div id="warmup"></div>
-<noscript><p>Write your answers to the three questions above. Check them against section 4 before continuing.</p></noscript>
+
+
+
 
 ## 2 · Three strategies, three different questions
 

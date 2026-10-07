@@ -12,7 +12,7 @@ A sales manager sees that customers at badged companies buy more often. A badge-
 
 **Prediction** estimates an outcome under a data-generating process. **Intervention** changes part of that process. A feature can be useful for the first without being a useful lever for the second. Pearl formalizes this distinction by replacing a variable's generating rule while retaining the remaining rules. [Primary reading: Pearl (2009), §§2 and 3.2.1](https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf).
 
-<div id="warmup"></div>
+
 
 ## 2 · Follow the company relationship
 

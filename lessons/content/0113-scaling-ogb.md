@@ -14,9 +14,7 @@ Now ask a practical question: **what must change when the intermediate node repr
 
 > **In plain terms.** Mini-batching decides which part of a graph participates in one update. It can reduce the amount of work held in memory. It also changes what the model sees during that update.
 
-[[WARMUP]]
 
-**Cold retrieval.** Before reading onward: (1) Does masking the loss remove test nodes from propagation? (2) Why must a GCN checkpoint include batch-normalization buffers? (3) What is cut when a cluster is processed alone? Write one sentence per question. Revisit [L089](0089-cluster-gcn.html), [L108](0108-temporal-neighbor-sampling.html), and L112 after attempting the questions.
 
 <details><summary>Check the retrieval</summary><p>Loss masking restricts label supervision; it does not remove feature paths. Batch-normalization running means and variances affect evaluation, so weights alone are insufficient. A cluster processed alone loses edges to excluded nodes; combining clusters can restore edges between those selected clusters.</p></details>
 

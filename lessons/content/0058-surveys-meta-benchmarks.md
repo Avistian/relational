@@ -6,7 +6,7 @@
 
 **The concrete steps.** You will parse actual published results. You will orient metrics so that larger and smaller numbers point the same way. You will rank a fixed pool of models. You will bootstrap paired differences between tasks. You will implement a random-search subset selector. No new predictive model is introduced here. The object we learn to build is an **evaluation procedure** — a recipe for measuring, not a new way to predict.
 
-**Retrieve before reading.** Answer these from memory before continuing. What does an outer test set protect in lesson 057? Why can averaging folds as if they were independent datasets distort lesson 056's leaderboard? Can a method be implemented correctly and still fail to reproduce its paper? Write your answers now. In this lesson the protected information is sometimes an entire **method column**, not a single row's target.
+
 
 ### Three roles a paper can play
 

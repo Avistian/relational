@@ -8,9 +8,9 @@
 
 [Student notebook](../labs/b05-tabdpt-real-data-retrieval.ipynb) · [Executed solution](../labs/html/b05-tabdpt-real-data-retrieval.html) · [Reference](../reference/b05-retrieval-episodes.html) · [Reproduction contract](../labs/b05-reproduction.md)
 
-## 1. Retrieve first, then read
 
-Without reopening notes: what changes during in-context learning if weights stay fixed? What is the difference between a support label and a query label? Why can a different context change a prediction? Prerequisites are row/column indexing, standardization, nearest neighbors and the attention Q/K/V roles. Revisit [B03](b03-pfn-tabpfn-generations.html) for the frozen-model contract. Ask the agent for a worked distance calculation if needed.
+
+
 
 An **episode** is a small prediction task: labeled support rows plus queries to predict. An unlabeled table still contains observed columns. Temporarily designate one as the target, predict its query values from the other columns, and use the observed values to compute a training loss. The target is hidden from model inputs, not absent from the training system. Varying the chosen column and feature subset creates many tasks from the same table; it does not create independent datasets. [TabDPT §3.2](https://arxiv.org/html/2410.18164v3#S3.SS2).
 

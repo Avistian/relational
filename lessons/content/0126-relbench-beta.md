@@ -20,8 +20,6 @@ A **benchmark** fixes a collection of prediction problems and their evaluation r
 
 This directly serves the course mission: evidence that relational learning helps is credible only when the relational model and its baselines face the same task. Today's narrow skill is making that task contract inspectable. This is an API and evaluation lesson; it introduces no new neural architecture. The next planned integer lesson, L127, studies the later RelBench v1 benchmark and its baseline.
 
-[[WARMUP]]
-
 Before reading on, write three short answers: What identifies a graph node? Why does a prediction need a time? Can an event after that time be used to construct the label?
 
 ## 2 · Freeze the version before interpreting the API

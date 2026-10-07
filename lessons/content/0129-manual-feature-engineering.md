@@ -14,8 +14,6 @@
 
 [Lesson 128](0128-task-taxonomy.html) established the query, target, head, loss and metric. That makes the *question* comparable. It does not make the *information available to competing methods* comparable. A tree trained only on a driver's biographical row cannot exploit race history that a relational GNN receives through its edges.
 
-[[WARMUP]]
-
 **Recall first.** What uniquely identifies a task row? Why can the same driver have many labels? When may an event influence a prediction? Which split chooses a model?
 
 Our mission is to test whether relational learning earns its complexity. Its meaningful competitor is a capable practitioner who joins useful related information into a flat table and trains a strong tabular model. The skill from [Lesson 009](0009-feature-engineering.html) now spans multiple tables; the comparative discipline from [Lesson 127](0127-relbench-v1.html) still applies.

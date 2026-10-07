@@ -6,8 +6,6 @@
 </aside>
 <!-- sequence-review:end -->
 
-[[WARMUP]]
-
 ## 1 · The graph exists. What exactly are we predicting?
 
 [Lesson 122](0122-reg-construction.html) built a relational entity graph (REG): each database row became a typed node, and foreign keys became edges. [Lesson 123](0123-temporal-heterogeneous-graphs.html) constrained a query's neighborhood to its prediction time. Neither choice determines the target. The same driver node could support predicting finishing position, retirement, or a qualifying result. A **task table** supplies that missing contract.

@@ -8,8 +8,6 @@
 
 **Recall the objects.** A relational entity graph, or **REG**, represents table rows as nodes and foreign-key links as edges. A **query** identifies an entity and a prediction cutoff. A driver can have many queries, so the full identity is `(driver_id, cutoff)`. A **label** is the future outcome used for training or evaluation. A **feature** is an input available to the predictor. The same raw result can be a label for an earlier query and a legal historical feature for a later query.
 
-[[WARMUP]]
-
 The primary reading is [RelBench, Section 2: Data Splits](https://arxiv.org/html/2407.20060v1#S2), followed by its [released graph construction](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/graph.py). Read the actual input population passed to the feature processor. A temporal sampler does not control every information path.
 
 ## 2 · There are two clocks, and the query owns the cutoff

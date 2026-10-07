@@ -6,12 +6,11 @@
 
 [[STATUS]]
 
-## 1 · Recall before reading
+
 
 From [L192](0192-open-fm-setup-data.html), what must stay consistent between support and query preprocessing? From [L193](0193-open-fm-full-task-set.html), what happens to a task mean if one required seed is missing? Looking ahead to analysis: what evidence would turn a suspected failure mode into a tested explanation?
 
-<div id="warmup"></div>
-<details><summary>Check your recall</summary><p>A fitted category must keep its meaning. Missing seeds leave the full-seed result incomplete. A controlled comparison must change the suspected factor while holding relevant alternatives fixed; a score alone does not identify a cause.</p></details>
+
 
 **Mission connection.** A persuasive case for relational learning needs explanations a skeptic could test. A polished report that hides missing results weakens that case. Today's skill is deciding which sentence the evidence permits.
 

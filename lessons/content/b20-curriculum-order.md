@@ -6,7 +6,7 @@
 
 [Student notebook](../labs/b20-curriculum-order.ipynb) · [Executed solution](../labs/html/b20-curriculum-order.html) · [Download solution](../labs/solutions/b20-curriculum-order.ipynb) · [Printable reference](../reference/b20-curriculum-order.html) · [Frozen reproduction contract](../labs/b20-reproduction.md)
 
-## 1 · Recall the three moving parts
+
 
 A **prior** is a distribution of possible tasks. A synthetic generator samples tasks from that prior. A **task** contains labeled support examples and query examples whose labels the predictor must infer. **Pretraining** updates model weights across many such tasks. **In-context learning** uses support examples to predict query labels with those pretrained weights held fixed.
 
@@ -14,7 +14,7 @@ A **prior** is a distribution of possible tasks. A synthetic generator samples t
 
 **Worked prerequisite.** A customer has three transactions with values 2, 4 and 9. A backward join can produce count3, mean5 and maximum9 beside that customer's own features. **Deep Feature Synthesis (DFS)** repeatedly applies such joins and aggregations to construct a flat row for each target entity. This transformation can lose information: a model cannot recover transaction order from those three statistics.
 
-<div id="b20-warmup"></div>
+
 
 ## 2 · The same examples can produce different weights
 

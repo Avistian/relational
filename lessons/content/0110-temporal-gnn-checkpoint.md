@@ -12,13 +12,13 @@ A good test score is only useful if the predictor could have known its inputs. *
 
 [L102](0102-temporal-graph-networks.html) supplied the TGN computation. [L104](0104-information-leakage-in-time.html) tested information access. [L108](0108-temporal-neighbor-sampling.html) examined strict-past neighborhoods, and [L109](0109-database-timestamp-contracts.html) separated event dates from actual availability. Here those pieces become one executable contract. This serves our mission: results on a relational graph must survive the same scrutiny as features built from database history.
 
-## 1 · Retrieve the contract before opening the code
 
-<div id="warmup"></div>
 
-Write three answers from memory. What does a temporal model remember besides its learned weights? May one event at time 5 update the state used to score another event at time 5? What evidence would establish that an event dated yesterday was available yesterday?
 
-<details><summary>Check after committing your answers</summary>
+
+
+
+
 
 The model also has node memories, last-update clocks and queued messages. A resumable training process additionally needs optimizer state, random-generator state and a stream cursor. Under our strict-time contract, tied events cannot update each other's prediction state. Actual arrival or version history is needed to establish availability; an event date alone does not establish it.
 

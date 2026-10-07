@@ -8,9 +8,9 @@
 
 [Student notebook](../labs/0111-ogb-benchmark-contract.ipynb) · [Executed solution](../labs/html/0111-ogb-benchmark-contract.html) · [Reference card](../reference/ogb-benchmark-contract.html) · [Exact commands](../labs/l111-reproduction.md)
 
-## 1 · Retrieve the distinction before downloading
 
-Write answers first: does a chronological label split prove historical feature availability? Which split selects a checkpoint? Does matching a paper's score prove that you ran its experiment?
+
+
 
 <details><summary>Check your reasoning</summary><p>No: later features or graph edges may still be visible. Validation chooses the checkpoint; test evaluates the frozen choice. An equal number can arise from different data, preprocessing or model settings. A reproduction claim needs the protocol as well as the score.</p></details>
 

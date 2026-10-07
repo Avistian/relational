@@ -6,8 +6,6 @@
 </aside>
 <!-- sequence-review:end -->
 
-[[WARMUP]]
-
 ## 1 · A better score does not identify the useful component
 
 [Lesson 147](0147-next-generation-architectures.html) converted architecture claims into testable questions. Its earlier GNN–transformer comparison changed several mechanisms at once. It could compare complete procedures, but could not attribute the difference to attention. Here you will write an experiment that makes a narrower claim defensible.

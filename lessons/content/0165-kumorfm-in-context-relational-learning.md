@@ -8,8 +8,6 @@ In [Lesson 164](0164-griffin-graph-centric-rdb-fm.html), the selected Griffin tr
 
 Recall the [foundation-model scope lesson](0161-what-is-a-foundation-model.html): adaptation is broader than gradient descent. For a function `prediction = f(weights, query, context)`, freezing `weights` leaves `query` and `context` free to change. It does not make the prediction constant. Conversely, a program that merely averages context labels has not thereby become a pretrained foundation model.
 
-[[WARMUP]]
-
 A **context example** pairs an input with a known outcome. A **query example** supplies an input whose outcome must remain hidden. In relational learning, each input may contain a neighborhood of connected rows. The task is specified by which outcome the labels mean: “purchase next week” and “return an order next week” may need the same database but different labels.
 
 ## 2 · Read the actual v1 proposal

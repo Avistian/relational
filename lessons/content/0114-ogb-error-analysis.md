@@ -16,8 +16,6 @@ A model can win overall and lose on an identifiable part of the graph. Your task
 
 **Read first:** [Hu et al., OGB §4.3 and Table 6](https://arxiv.org/html/2005.00687v6#S4.SS3), then the [pinned MLP source](https://github.com/snap-stanford/ogb/blob/61e9784ca76edeaa6e259ba0f836099608ff0586/examples/nodeproppred/arxiv/mlp.py). Trace `train` before `forward`: which rows enter batch normalization?
 
-[[WARMUP]]
-
 ## 1 · Freeze the questions before studying the mistakes
 
 A **slice** is a subset of evaluation nodes satisfying a rule. “Test papers with one or two unique neighbors” is a slice. “The hardest papers” is not a reproducible rule until you define how hardness was measured and which data selected them.

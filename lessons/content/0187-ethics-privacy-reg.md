@@ -4,9 +4,7 @@ Write a release contract that answers **whose information changes, which records
 
 [[STATUS]]
 
-## Recall before reading
 
-[[WARMUP]]
 
 **Bridge from earlier work.** [Lesson 156](0156-temporal-leakage-audit.html) asked whether information existed at prediction time. [Lesson 181](0181-relbench-v2-autocomplete.html) asked which target cells a model could see. This lesson asks what publishing an answer can reveal about a person. A time-valid, correctly masked model can still expose personal information. [Lesson 186](0186-production-constraints.html) added deadlines and freshness to the serving contract. Here we add what the response may reveal. The needed prerequisites are restated below; its simulator is not required.
 

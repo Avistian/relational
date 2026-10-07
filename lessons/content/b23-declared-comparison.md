@@ -6,11 +6,11 @@
 
 [Student notebook](../labs/b23-declared-comparison.ipynb) · [Executed notebook](../labs/html/b23-declared-comparison.html) · [Reference card](../reference/b23-declared-comparison.html) · [Frozen reproduction contract](../labs/b23-reproduction.md)
 
-## 1 · First recall, then inspect
 
-<div id="b23-warmup"></div>
 
-Without looking back: why must two methods share the same support rows? Why does a valid foreign key fail to prove that information was available at prediction time? What did B22's identity intervention check?
+
+
+
 
 B22 changed one internal operation while preserving the comparison around it. B23 applies the same discipline to an entire experiment. We freeze the population, labeled context, checkpoint, preprocessing and metric. Then we ask two different questions: did the declared computation run faithfully, and what scientific claim does its output support?
 

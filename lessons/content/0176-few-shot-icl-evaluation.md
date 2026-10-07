@@ -2,8 +2,6 @@
 
 [174: change parameters](0174-fine-tuning-protocol.html) → [175: audit information access](0175-zero-shot-evaluation.html) → **176: vary labeled context** → 177: account for compute.
 
-[[WARMUP]]
-
 ## 1 · A frozen model can still learn from examples
 
 Lesson 174 adapted model parameters. Lesson 175 froze them, then found that the original RT sampler violated its declared event-time bound. That experiment stopped before model inference. Freezing weights did not make its inputs safe.

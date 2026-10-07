@@ -10,8 +10,6 @@
 
 Retrieve [TabPFN v2](0064-tabpfn-v2.html) and [TabICL](0066-tabicl-column-row-attention.html): **support** means labeled examples supplied during inference; a **query** is a row whose target must remain hidden. In-context learning changes these inputs while the pretrained weights stay fixed. Pretraining previously changed the weights across many tasks. The distinction is explained in the [TabICL paper](https://proceedings.mlr.press/v267/qu25d.html); Molnar’s [introduction and reading map](https://tabularfoundationmodels.com/introduction) provide a gentle recap.
 
-[[WARMUP]]
-
 Use three separate questions: **What information reaches the model? What prior shaped its weights? How does it adapt to this task?** A model name alone answers none of them completely. This directly serves our mission: before claiming that relational models unlock extra value, make the tabular baseline competitive and identify the actual source of any gain.
 
 ## 2 · Model architecture: trace the handoff

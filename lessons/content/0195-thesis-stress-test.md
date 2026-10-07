@@ -8,12 +8,11 @@
 
 [[STATUS]]
 
-## 1 · Recall the honest bar
 
-Before reading: does an interval crossing zero prove two models equivalent? Does a source-code failure establish poor test performance? If both pipelines use relational aggregates, does their score difference isolate the value of relational information?
 
-<div id="warmup"></div>
-<details><summary>Check your recall</summary><p>No to all three. Crossing zero leaves the direction unresolved under that interval. A source failure can block a valid experiment without measuring its score. A comparison where both systems use relational information cannot isolate adding that information.</p></details>
+
+
+
 
 **Mission connection.** The mission asks whether relational learning unlocks overlooked value. To test that claim, first make it possible to be wrong. A **falsifier** is an observation that would contradict a specified claim under a valid measurement procedure. It is not simply an inconvenient number.
 

@@ -6,8 +6,6 @@
 
 [Lesson 162](0162-the-relational-fm-vision.html) placed a row encoder before graph message passing. That left a gap: what information reaches the graph in the first place? [Lesson 125](0125-pytorch-frame-deep-dive.html) introduced semantic column types. Here we compare a numerical value carried as a number with that same value carried through language-model tokens. Recall also [CARTE in Lesson 74](0074-carte-cross-table-transfer.html): how you represent a row changes what later computation can use.
 
-[[WARMUP]]
-
 Our worked row describes a product: price **10 USD**, weight **2 kg**, colour **red**, condition **used**. A **schema** names and types these fields. An **encoder** turns their values into features a prediction model can use. A **head** is the final fitted mapping from features to the predicted target.
 
 > Before asking which encoder wins, ask what information each path receives, what is fitted, and what stays fixed.

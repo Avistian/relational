@@ -12,8 +12,6 @@
 
 This advances our mission: an architecture idea becomes useful when we can explain its mechanism and test its incremental value. [Lesson 182](0182-rdb-pfn-composite-message-passing.html) practices architecture-combination hypotheses. Here we focus on the extra effect of pretraining; no earlier hypothesis is assumed to have succeeded. Earlier practical exits and learner mastery remain unchanged.
 
-[[WARMUP]]
-
 ## 2 · First narrow the gap
 
 A tempting claim is “relational graph transformers have never been pretrained.” Do not use it. The authors' research overview already connects this architecture family to KumoRFM. A search that finds no exact combination also cannot establish novelty. [Primary research overview](https://docs.nvidia.com/sdgm/research/relational-graph-transformers)

@@ -8,10 +8,9 @@ Your tangible win: trace two target tasks through one encoder, identify exactly 
 
 **Route:** 25–35 minutes for the lesson, then 35–50 minutes for the lab. Prerequisites are vectors, weighted averages and support/query separation, restated below. [Student notebook](../labs/b17-reusable-representations.ipynb) · [Executed solution](../labs/html/b17-reusable-representations.html) · [Printable reference](../reference/b17-reusable-representations.html)
 
-## Recall before reading
 
-<div id="b17-warmup"></div>
-<noscript><p>Recall without notes: can fixed weights produce changing predictions? Why can validation choose a graph while test labels cannot? What information is lost when rows are averaged?</p></noscript>
+
+
 
 ## 1 · Reusable does not mean independent of everything
 

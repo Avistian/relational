@@ -1,13 +1,9 @@
-## Start with retrieval — before reading
-
 Close lesson 82. Write three answers: (1) What could a test node contribute during Cora training even though its label was hidden? (2) Why is the GCN coefficient not an ordinary neighbor mean? (3) Which parameters belong to a node, and which are shared across nodes? Keep your answers; revise them at the end.
-
-[[WARMUP]]
 
 **Today's win:** trace a sampled two-layer GraphSAGE computation, implement its mean aggregator, and demonstrate that training cannot access held-out graphs. The core route takes about 40 minutes; the full experiment is a separate executable lab. This serves our relational mission: new database rows need usable representations before we have labels for them.
 
 <!-- depth-walkthrough:start -->
-<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 083</p><p><strong>Build on what you know.</strong> <a href="0082-gcn.html">Lesson 82</a> performed a full-graph forward pass. GraphSAGE moves attention to a reusable neighborhood function and the dependencies of a root mini-batch. The inductive split must be stated separately from the layer formula.</p><p><strong>The next question.</strong> <a href="0084-gat.html">Lesson 84</a> replaces equal neighbor weighting with attention; <a href="0089-sampling-at-scale.html">Lesson 89</a> changes the sampling unit from nested neighborhoods to clusters. Both inherit the need to account for support nodes.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Work the cold retrieval first, then spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
+<div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 083</p><p><strong>Build on what you know.</strong> <a href="0082-gcn.html">Lesson 82</a> performed a full-graph forward pass. GraphSAGE moves attention to a reusable neighborhood function and the dependencies of a root mini-batch. The inductive split must be stated separately from the layer formula.</p><p><strong>The next question.</strong> <a href="0084-gat.html">Lesson 84</a> replaces equal neighbor weighting with attention; <a href="0089-sampling-at-scale.html">Lesson 89</a> changes the sampling unit from nested neighborhoods to clusters. Both inherit the need to account for support nodes.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
 
 ## Sampling decides the computation you can afford
 

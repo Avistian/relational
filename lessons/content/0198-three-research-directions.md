@@ -10,10 +10,9 @@ The mission is to test whether learned relational models add value beyond strong
 
 [[STATUS]]
 
-## Warm up before looking back
 
-<div id="warmup"></div>
-<noscript><p>Recall: why is (entity_id, cutoff) a complete query key? Why does a released-model comparison not identify an encoder's causal effect? Why is a confidence interval crossing zero not proof of equivalence?</p></noscript>
+
+
 
 **Prerequisite recap.** A *query* is an entity at a prediction time. Its label may describe an outcome during a later window. *Availability* asks whether an input was actually knowable then. A *baseline* is the comparison method under the same information and selection rules. *Pretraining* learns from source tasks before the target task. A *prior* is the distribution of tasks used to teach a foundation predictor. An *encoder* turns rows and relationships into representations used by that predictor.
 
