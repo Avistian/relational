@@ -30,3 +30,9 @@ Sources and worked values were checked against the adjacent `lessons/content/` s
 - Publication uses the clean Git-index Pages build. Live verification is recorded after the push; local results alone do not establish publication.
 
 Implementation lives in `scripts/visual_details.py`, with generated assets in `assets/visual-details/`. The existing finishing script regenerates and checks them, so rebuilding a lesson does not permanently discard its supplement. The shared figure viewer supplies enlargement; no new interaction framework was added.
+
+## Published result
+
+[Pages run 37633697981](https://github.com/Avistian/relational/actions/runs/37633697981) successfully deployed feature commit `c4e632865534819ec5013cb0db6ae8c925f4edd2`. `live-hashes.json` records exact matches for all 41 changed public files. `live/browser.json` records 20 SVG geometry checks, 40 desktop/mobile visits, and 20 no-JS/print cases, with no recorded errors. Representative live screenshots are retained for the adapter, CAST, TACO and forecasting diagrams.
+
+The workflow emitted a capacity warning: the full artifact is **1,764,618,129 bytes**, exceeding the stated 1 GB allowance. Deployment succeeded, but this remains a site-size risk. The new SVGs account for only about 120 KB on disk; this pass does not solve the pre-existing publication footprint.
