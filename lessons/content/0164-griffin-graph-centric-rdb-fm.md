@@ -76,6 +76,12 @@ Our results neighbours [2,4] and [4,2] average to [3,3]. Their relation vector i
 
 [[RELATIONS]]
 
+**An empty neighborhood is not the same as a negative message.** Consider already transformed, relation-weighted messages at one receiver:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Available messages</th><th>Coordinate maximum</th></tr></thead><tbody><tr><td>Relation A: [−3, −1]<br>Relation B: [−2, −4]</td><td>[−2, −1]</td></tr><tr><td>Only relation A</td><td>[−3, −1]</td></tr><tr><td>No incoming relation</td><td>[0, 0]</td></tr></tbody></table>
+
+Initializing the maximum at zero would incorrectly turn the first two cases into `[0,0]`, erasing all negative evidence. The implementation uses negative infinity while reducing nonempty groups, then replaces the still-empty receivers with zero. **Try it:** change relation B to `[−2, +4]`. **Check:** the result is `[−2,+4]`; the first coordinate remains negative. This is an aggregation check, not a new trained result.
+
 The later teammate [20,10] is timestamped 6. It is excluded at cutoff 5, included at cutoff 7. Once eligible, it changes the teammate mean to [14,5.5], the weighted message to [7,11], and the final result to [7,11]. Temporal eligibility is therefore part of the computation, not just bookkeeping around a dataset split.
 
 **A source limitation worth keeping visible.** The main graph sampler passes strict owner cutoffs through its hops; our audit checked 1,494 sampled edges. A separate few-shot helper samples earlier **row indices** and ignores its timestamp argument. We demonstrated why that is unsafe for a generic time-stamped table. For the selected F1 task, those helper roots are static driver rows with sentinel timestamps earlier than every query and no task-label feature. The sampled F1 roots pass this narrow audit. It does not establish historical feature availability or make the helper safe on every database. [Audit receipt](../labs/evidence/l164/source-audit.json)

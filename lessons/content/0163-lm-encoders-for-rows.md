@@ -74,6 +74,14 @@ For each of three fixed splits, both methods get 144 training, 48 validation and
 
 **Read the result causally.** The typed path can directly express the target's numeric and categorical terms. Frozen pooled BART features make that relationship less accessible to this head. Renaming also moves representations away from the distribution used to fit the head. Large coefficients or rescaling of low-variance features can amplify such a shift. Our measurements establish the shift and prediction change; they do not isolate each internal cause or prove a general failure of LM encoders.
 
+**Trace one measured prediction shift.** In split seed 0, the first test row is `p086`. Its target is 106.8246. The frozen BART head predicts 121.6190 from the baseline text and −497.9347 after column renaming. No target, numeric value, scaler or head coefficient changed. The prediction shift is about −619.5537 synthetic target units.
+
+For this fixed linear head, each coordinate contributes `coefficient × (renamed_feature − original_feature) / training_scale`. The two largest contributions by absolute size are:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Feature coordinate</th><th>Change after scaling</th><th>Contribution to prediction</th></tr></thead><tbody><tr><td>326</td><td>−22.2731</td><td>+82.4473</td></tr><tr><td>650</td><td>−18.9601</td><td>−42.6215</td></tr><tr><td>Other 766 combined</td><td>—</td><td>−659.3795</td></tr><tr><td>Total</td><td>—</td><td>−619.5537</td></tr></tbody></table>
+
+Coordinate indices are zero-based array positions, not interpretable database fields. For example, coordinate 326 has coefficient −3.7017: two negative factors produce its positive contribution. Contributions can cancel; this decomposition explains the fixed head's arithmetic, not why BART changed its representations. **Try it:** if only coordinate 326 changed, would the prediction fall? **Check:** it would rise by 82.4473 to about 204.0663. The large negative total comes from the combined changes across the representation. [Saved head parameters](../labs/evidence/l163/selection.json) · [Keyed predictions](../labs/evidence/l163/report.json).
+
 The typed scores repeat across presentation variants because the canonical features are identical. The three test sets overlap, so their SD describes split variation and is not a confidence interval. A train-mean baseline, every split score and all 864 keyed predictions are retained in the report. The numeric result does not establish transfer to new databases, unseen categories, missing values, or meaningful free-text tasks.
 
 ## 5 · What “full reproduction” means here

@@ -43,7 +43,7 @@ with sync_playwright() as pw:
   host.locator('[data-reset]').click();assert host.locator('[data-row]').input_value()=='0' and host.locator('[data-variant]').input_value()=='baseline'
   host.locator('[data-variant]').focus();page.keyboard.press('ArrowDown');page.keyboard.press('Enter');assert host.locator('[data-variant]').input_value()=='reordered'
   host.locator('[data-reset]').click();assert host.locator('[data-variant]').input_value()=='baseline'
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="masked"]').click();predict.locator('.predict-reveal').click();assert '[2,5]' in predict.locator('.predict-outcome').inner_text()
   assert page.locator('#teachback textarea').count()==1
@@ -86,6 +86,7 @@ with tempfile.TemporaryDirectory(prefix='l163-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/row-encoders.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l163/report.json',P/'evidence/l163/widget-data.json']+sorted((P/'figures/l163').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l163.py')],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 after=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 assert before==after,'Builder changed: '+str([str(p) for p,a,b in zip(paths,before,after) if a!=b])
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=2,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')

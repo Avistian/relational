@@ -89,6 +89,12 @@ The standalone notebook provides **15 synthetic protocol records**. Implement th
 
 Predict which record fails before each CHECK. Explain why eight legal target-context examples do not imply pretraining overlap. Then change one field in a failed record and explain which issue remains.
 
+**Repair a plan one contradiction at a time.** Start with the otherwise valid A/B → C fixture: zero backbone updates, zero head updates, eight legal adaptation labels, and execution not yet complete. It incorrectly declares zero-shot prediction and selects its settings on test.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Change</th><th>Remaining issue</th><th>Status</th></tr></thead><tbody><tr><td>Initial plan</td><td>Test selection; wrong route name</td><td>Revise</td></tr><tr><td>Select on validation</td><td>Wrong route name</td><td>Revise</td></tr><tr><td>Declare in-context prediction</td><td>None in this audit</td><td>Ready to run</td></tr></tbody></table>
+
+Renaming the adaptation route fixes a description, not the actual selection leak. Moving selection to validation fixes that separate protocol problem. Eight adaptation labels still do not place C in the pretraining inventory. **Try it:** mark the corrected record completed without attaching predictions. **Check:** its status becomes `READY_FOR_REVIEW`, but transfer performance remains unestablished; the flag requests evidence review and is not evidence itself.
+
 **Status is deliberately narrow.** READY_TO_RUN means the supplied plan passes these consistency rules. READY_FOR_REVIEW means a record also declares execution complete; source artifacts and actual predictions still require inspection. REVISE names remaining contradictions or missing evidence. None establishes the foundation-model label, a measured transfer gain, universal database support or learner mastery. Passing a `temporal_audit=PASS` declaration cannot authenticate an audit.
 
 [[RESULTS]]

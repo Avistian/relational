@@ -75,7 +75,7 @@ def prose(portable=False):
  return text
 
 def doc(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','predict','teachback','foundation-scope','l161-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in ['lesson','atomic-route','checkpoint','lab-access','foundation-scope'])+'</head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0160-year-4-exit-exam.html">Lesson 160</a></nav><header><p class="route-kicker">Year 5 · Quarter 1 · Lesson 161</p><h1>'+title+'</h1></header>'+html+'</article>'+''.join('<script src="../assets/'+x+'.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('What is a foundation model?',prose(),True))
@@ -140,10 +140,10 @@ for solution in [False,True]:
  for i,c in enumerate(book.cells):c.id=f'l161-{i:03d}'
  path=P/('solutions' if solution else '')/(S+'.ipynb')
  if solution and path.exists():
-  old=nb.read(path,4)
-  if [(c.cell_type,c.source) for c in old.cells]==[(c.cell_type,c.source) for c in book.cells]:
-   book.metadata=old.metadata
-   for c,prior in zip(book.cells,old.cells):
-    if c.cell_type=='code':c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
+  old=nb.read(path,4);book.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prior,c in zip(previous,current):
+    c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  nb.write(book,path)
 print('Built lesson, reference, two diagrams and portable student/solution notebooks')

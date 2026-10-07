@@ -54,6 +54,12 @@ A **receptive field** is the set of inputs that can potentially affect an output
 
 Let ℓᵢ denote each row length. The hypothetical whole-table pair count is `(Σᵢ ℓᵢ)²`; independent rows give `Σᵢ ℓᵢ²`. The symbol Σ means “sum over rows.” These are counts for one dense attention score pattern, not measured speed, total model floating-point operations (FLOPs) or memory. Graph computation, decoder work, other transformer operations and padding are absent.
 
+**Hold total tokens fixed.** Eight tokens do not determine the row-wise attention work; their distribution matters:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Row lengths</th><th>Total tokens</th><th>Independent-row pairs</th></tr></thead><tbody><tr><td>8</td><td>8</td><td>8² = 64</td></tr><tr><td>4, 4</td><td>8</td><td>4² + 4² = 32</td></tr><tr><td>1, 7</td><td>8</td><td>1² + 7² = 50</td></tr></tbody></table>
+
+No token is dropped in these fixtures; use limit 8. Uneven lengths increase the sum of squares relative to equally sized rows. This is not permission to arbitrarily split semantic rows: reserialization can add schema tokens, lose interactions and change the task. **Try it:** use lengths 2 and 6. **Check:** 40 ordered pairs, between 32 and 50. All three two-row cases still have a whole-table proxy of 64, and none includes graph or decoder work.
+
 **A wide row can still fail.** The source identifies a 1024-token BART input limit. A row with 1100 serialized tokens exceeds it by 76. Processing rows independently does not solve that case. Truncating loses information; splitting columns may change which facts can interact. Schema and special tokens also consume the real input budget. [Paper §3, wide tables](https://arxiv.org/html/2305.15321v1#S3)
 
 [[TOKENS]]

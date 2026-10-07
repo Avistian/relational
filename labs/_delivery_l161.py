@@ -45,7 +45,7 @@ with sync_playwright() as pw:
     assert boundary.locator('output').inner_text().startswith({'held':'HELD_OUT','seen':'SEEN','unknown':'UNKNOWN'}[inventory]);states+=1
   boundary.locator('[data-reset]').click();box=boundary.locator('[data-context]');box.focus();page.keyboard.press('Space');assert not box.is_checked();boundary.locator('[data-reset]').click()
   assert boundary.locator('[data-inventory]').input_value()=='held' and box.is_checked()
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="few"]').click();predict.locator('.predict-reveal').click();assert 'Zero gradients' in predict.locator('.predict-outcome').inner_text()
   teach=page.locator('#teachback');assert teach.locator('textarea').count()==1
@@ -88,6 +88,7 @@ with tempfile.TemporaryDirectory(prefix='l161-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/foundation-model-scope.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l161/report.json',P/'evidence/l161/report.md']+sorted((P/'figures/l161').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l161.py')],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 after=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 assert before==after,'Builder changed: '+str([str(p) for p,a,b in zip(paths,before,after) if a!=b])
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',
