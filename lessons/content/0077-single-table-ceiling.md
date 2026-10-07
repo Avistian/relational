@@ -41,7 +41,7 @@ For each history, count = 3, sum = 90, mean = 30, maximum = 50. Our flat represe
 
 <!--figure:collision-->
 
-**A collision** occurs when different underlying records map to the same representation. A join can retain both histories as multiple ordered records. The information loss here occurs in the chosen aggregation, which discards event order. A single-table layout can preserve the missing information if we choose richer columns.
+**A collision** occurs when different underlying records map to the same representation. A join can retain both histories as event rows with timestamps; an explicit sort is needed to recover chronological order. A join alone does not guarantee row order. The information loss here occurs in the chosen aggregation, which discards event order. A single-table layout can preserve the missing information if we choose richer columns.
 
 The L035 visual below also varies product identity. Use it as a retrieval exercise: identify which displayed columns collide and which recovered columns distinguish the customers. Our new experiment varies time order only, isolating a single cause.
 
@@ -66,6 +66,16 @@ This bound allows **any** mapping from vectors to labels. A particular trained m
 <!--figure:bound-->
 
 **Random predictions.** If a balanced collision class receives probability `q` of predicting 1, expected accuracy is `0.5q + 0.5(1−q) = 0.5`. Independent randomized predictions can score above 0.5 on a finite draw, but cannot exceed it in expectation. Our measured classifiers are deterministic. Allowing a row index or unique ID changes the information interface and invalidates this particular bound.
+
+**An accuracy ceiling is not a probability prescription.** For a collision group with labels `[0,0,0,1]`, always choosing class 0 attains 75% accuracy. But reporting probability q=0 for class 1 makes its one positive example infinitely costly under unclipped log loss. The best shared probability for this empirical group is its positive fraction, q=1/4. Its average log loss is `−(3/4)ln(3/4)−(1/4)ln(1/4) ≈ 0.5623` nats.
+
+| Shared P(y=1) | Accuracy at threshold 0.5 | Mean log loss |
+|---:|---:|---:|
+| 0.10 | 75% | 0.6547 |
+| 0.25 | 75% | 0.5623 |
+| 0.40 | 75% | 0.6122 |
+
+All three probabilities make the same hard decision, but they represent the unresolved uncertainty differently. These are post-hoc empirical optima, not permission to fit probabilities on test labels. **Try it:** use a balanced collision group. The best shared probability is 0.5 and its minimum log loss is ln 2. No richer classifier can recover the missing distinction while receiving only the same z.
 
 **A population statement.** For our generator, every base history has an equally likely forward and reverse version. Its flat vector is identical in the two cases, so `P(label=1 | z)=0.5`. This establishes the same bound for that defined distribution. On arbitrary real continuous features, absence of exact duplicates does not establish predictability: a finite-sample lookup can achieve a vacuous ceiling of 1 without generalizing.
 

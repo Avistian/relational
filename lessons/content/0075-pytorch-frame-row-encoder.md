@@ -139,6 +139,16 @@ Our lab uses an intentionally small, visible composition. The official feature e
 
 The hidden linear layer mixes information across columns because each hidden unit reads all 40 coordinates. Flattening keeps column positions distinguishable. It consequently requires a stable fitted schema: arbitrary reordering of token positions changes the function. Reordering **DataFrame columns** is safe only because the fitted converter restores the schema; this is not proof of arbitrary schema transfer.
 
+**Worked order check.** Isolate a two-column readout with tokens `amount=[1,0]` and `region=[0,1]`. Flatten in the saved order `[amount,region]` to get `[1,0,0,1]`. A toy linear head with weights `[1,0,0,0]` returns 1. Swapping the token blocks without changing the head gives `[0,1,1,0]` and returns 0, although neither cell changed. The mismatch is between token positions and learned weights.
+
+| Operation | Head output |
+|---|---:|
+| Saved token order | 1 |
+| Swap tokens only | 0 |
+| Swap tokens and corresponding weight blocks | 1 |
+
+This is illustrative readout arithmetic, not the initialized five-column model's measured output. The actual fitted converter protects the contract by recovering its saved column order; changing DataFrame display order is different from scrambling the encoded tensor. **Try it:** mean-pool the two tokens. Both orders give `[0.5,0.5]`, but pooling alone cannot tell which token occupied which named position. Invariance is useful only when the information it discards is unnecessary or retained elsewhere.
+
 The lab checks **row locality**: encoding a query row alone agrees with encoding it in a batch. This composition has no operation that exchanges information between rows. A separate GNN can consume the resulting vectors and edges later. That GNN needs explicit row-to-node identity, foreign-key edges and a time-valid sampling policy. None are supplied by `TensorFrame` itself.
 
 **Gradient check.** A gradient tells a parameter how a differentiable loss changes when the parameter changes. We place a linear head on the row vectors, compute a scalar loss and call `backward()`. Finite gradients reaching the stype encoders establish that the composed path can be optimized. They do not establish good accuracy or correct temporal sampling. The fixed text adapter and categorical vocabulary remain outside that learned path.

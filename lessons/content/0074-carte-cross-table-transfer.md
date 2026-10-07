@@ -158,6 +158,16 @@ Numerical transforms fit on target training rows only. A column constant among i
 
 The main metric is **R²**, `1 − Σ(y − prediction)² / Σ(y − mean_test(y))²`. A perfect prediction scores 1. A negative score means greater squared error than using the held-out target mean as a constant oracle comparator. That denominator is part of the metric, not a predictor fitted on test labels. Comparisons within a dataset share the same test rows and denominator.
 
+**Worked metric check.** Suppose test targets are `[10,12]`, so their mean is 11 and the denominator is `1²+1²=2`. A model predicting `[9,9]` has squared error `1²+3²=10`, giving R² = −4. If the training-target mean was 0, the deployable training-mean baseline predicts `[0,0]`, has squared error 244 and R² = −121. The model is much better than that baseline despite its negative R². The test-mean constant `[11,11]` has R² = 0, but uses information unavailable to a predictor before evaluation.
+
+| Prediction | Squared error | R² |
+|---|---:|---:|
+| Model: `[9,9]` | 10 | −4 |
+| Training mean: `[0,0]` | 244 | −121 |
+| Test-mean oracle: `[11,11]` | 2 | 0 |
+
+This toy example explains the metric, not the cause of the measured Wine Poland failure. **Try it:** keep the same errors but make the test targets nearly constant. The denominator shrinks and R² can become much more negative; inspect error in target units and the denominator as well as R². Exactly constant test targets require a declared metric convention rather than division by zero.
+
 <!--results-->
 
 <!--figure:results-->
@@ -204,7 +214,7 @@ A CARTE row graph organizes relationships *inside one record*. Its node and edge
 
 A relational database graph can additionally connect distinct records through entity relationships such as foreign keys. Those links introduce a new information-access question: which neighboring records existed and were observable at prediction time? Good within-row transfer does not settle that temporal question.
 
-CARTE contributes a way to encode semantically described values across schemas. The next planned unit, **Lesson 75: PyTorch Frame**, makes mixed-type row encoding an explicit reusable component. Later graph models can place such row representations on a graph of related records. Keep the two levels clear: encode a record's contents, then propagate permitted information between records.
+CARTE contributes a way to encode semantically described values across schemas. [Lesson 75: PyTorch Frame](0075-pytorch-frame-row-encoder.html) makes mixed-type row encoding an explicit reusable component. Later graph models can place such row representations on a graph of related records. Keep the two levels clear: encode a record's contents, then propagate permitted information between records.
 
 **Tomorrow, without notes:** draw a text leaf and a numerical leaf; reconstruct the grouped attention denominator; explain why schema acceptance is weaker than evidence of useful transfer. In a week, repeat the explanation with a source table whose target uses different units.
 

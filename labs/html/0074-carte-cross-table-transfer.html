@@ -7848,7 +7848,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l074-4b06c9068a697f3e-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l074-30c1f418a72387df-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8003,7 +8003,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l074-675b71fec5163db9-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l074-cbc5c3f8c6ee1ed5-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8055,6 +8055,34 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </table>
 <p>Numerical transforms fit on target training rows only. A column constant among its observed training values uses standard scaling instead of a fitted power transform. A column entirely missing in training is omitted everywhere for that split. This fallback was added after a constant-volume split produced a power exponent near 35 and float32 overflow; the final experiment reruns every arm under the same rule. Ridge selects among <code>α = 1, 10, 100</code> on validation error; α controls the penalty on large coefficients. Fine-tuning and scratch use the same AdamW optimizer, learning rate <code>10⁻⁴</code>, weight decay <code>10⁻³</code>, 40 epochs, zero dropout and paired target-head initialization. Validation chooses the saved epoch. AdamW is a gradient-based update rule with adaptive coordinate step sizes and a separate weight-decay shrinkage term. An epoch is one pass through the labeled training rows; our small neural run uses all of them in one batch. Zero dropout means no hidden coordinates are randomly suppressed during these runs. Before neural training, target values are centered and scaled using the training target mean and standard deviation; predictions are converted back before scoring. Test scores never choose among these options. The tree recipe is fixed before evaluation.</p>
 <p>The main metric is <strong>R²</strong>, <code>1 − Σ(y − prediction)² / Σ(y − mean_test(y))²</code>. A perfect prediction scores 1. A negative score means greater squared error than using the held-out target mean as a constant oracle comparator. That denominator is part of the metric, not a predictor fitted on test labels. Comparisons within a dataset share the same test rows and denominator.</p>
+<p><strong>Worked metric check.</strong> Suppose test targets are <code>[10,12]</code>, so their mean is 11 and the denominator is <code>1²+1²=2</code>. A model predicting <code>[9,9]</code> has squared error <code>1²+3²=10</code>, giving R² = −4. If the training-target mean was 0, the deployable training-mean baseline predicts <code>[0,0]</code>, has squared error 244 and R² = −121. The model is much better than that baseline despite its negative R². The test-mean constant <code>[11,11]</code> has R² = 0, but uses information unavailable to a predictor before evaluation.</p>
+<table>
+<thead>
+<tr>
+<th>Prediction</th>
+<th style="text-align:right">Squared error</th>
+<th style="text-align:right">R²</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model: <code>[9,9]</code></td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">−4</td>
+</tr>
+<tr>
+<td>Training mean: <code>[0,0]</code></td>
+<td style="text-align:right">244</td>
+<td style="text-align:right">−121</td>
+</tr>
+<tr>
+<td>Test-mean oracle: <code>[11,11]</code></td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<p>This toy example explains the metric, not the cause of the measured Wine Poland failure. <strong>Try it:</strong> keep the same errors but make the test targets nearly constant. The denominator shrinks and R² can become much more negative; inspect error in target units and the denominator as well as R². Exactly constant test targets require a declared metric convention rather than division by zero.</p>
 <p><strong>Author-reference R², mean ± sample SD across three seeds.</strong> These saved values are separate from your fresh notebook run.</p>
 <table>
 <thead>
@@ -8148,7 +8176,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l074-56bf7544b5ff57f5-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l074-fcd6ee3b59a9cfae-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8156,7 +8184,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="7.-The-bridge-to-relational-learning">7. The bridge to relational learning<a class="anchor-link" href="#7.-The-bridge-to-relational-learning">¶</a></h2><p>A CARTE row graph organizes relationships <em>inside one record</em>. Its node and edge labels supply context for each cell. At target inference, our graph for a wine contains no link to another row's producer record, transactions or future events.</p>
 <p>A relational database graph can additionally connect distinct records through entity relationships such as foreign keys. Those links introduce a new information-access question: which neighboring records existed and were observable at prediction time? Good within-row transfer does not settle that temporal question.</p>
-<p>CARTE contributes a way to encode semantically described values across schemas. The next planned unit, <strong>Lesson 75: PyTorch Frame</strong>, makes mixed-type row encoding an explicit reusable component. Later graph models can place such row representations on a graph of related records. Keep the two levels clear: encode a record's contents, then propagate permitted information between records.</p>
+<p>CARTE contributes a way to encode semantically described values across schemas. <a href="https://avistian.github.io/relational/lessons/0075-pytorch-frame-row-encoder.html">Lesson 75: PyTorch Frame</a> makes mixed-type row encoding an explicit reusable component. Later graph models can place such row representations on a graph of related records. Keep the two levels clear: encode a record's contents, then propagate permitted information between records.</p>
 <p><strong>Tomorrow, without notes:</strong> draw a text leaf and a numerical leaf; reconstruct the grouped attention denominator; explain why schema acceptance is weaker than evidence of useful transfer. In a week, repeat the explanation with a source table whose target uses different units.</p>
 </div>
 </div>

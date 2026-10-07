@@ -121,6 +121,16 @@ The sum over an empty set is a zero vector. The denominator guard makes the empt
 
 **Trace the derivative.** If customer 7 has two eligible events, each receives one half of the gradient arriving at their mean vector. The head and event encoder contribute further derivatives. With only one eligible event, that event receives the full aggregate derivative. Excluded event embeddings receive zero gradient through this path. They do not receive a message simply because they were materialized.
 
+**Complete the opening trace with a real derivative.** Return to the illustrative events `[2,4]` and `[6,0]`, mean `[4,2]`, own state `[1,3]` and head `[1,0,−0.5,0]`. The logit was −1. For target y=1, binary cross-entropy is `log(1+exp(1)) ≈ 1.3133`, and its derivative with respect to the logit is `sigmoid(−1)−1 ≈ −0.7311`. Multiply by the head's neighbor weight −0.5: the first mean coordinate receives gradient +0.3655. Divide across its two events: each first event coordinate receives **+0.1828**; each second coordinate receives 0 because this illustrative head ignores it.
+
+| Backward location | First-coordinate derivative |
+|---|---:|
+| Neighbor mean | +0.3655 |
+| Event 1 | +0.1828 |
+| Event 2 | +0.1828 |
+
+A gradient-descent step subtracts this positive derivative. Lower event coordinates reduce the mean, raise the logit through its negative head weight, and reduce the positive-label loss. **Try it:** exclude the second event and recompute the forward pass before differentiating. The new mean is `[2,4]`, logit 0 and loss 0.6931; the sole event receives gradient +0.25. It is not simply twice +0.1828, because changing eligibility also changed the prediction and hence the upstream derivative.
+
 **An important distinction.** Encoder weights are shared across events within a table. Training on visible events can change how an excluded event would be encoded in a later forward pass. That does not mean the excluded event supplied information to the current loss. The verifier checks gradient support on individual event embeddings, not an incorrect requirement that their shared weights never change.
 
 **The accidental break.** Calling `detach()`, converting learned vectors to NumPy, or saving fixed embeddings before fitting only the head prevents loss derivatives from reaching upstream encoders. Frozen features can be an intentional baseline. They are not end-to-end training. The lab asserts nonzero finite gradients in both encoders and in the head.

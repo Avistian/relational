@@ -92,7 +92,7 @@ def build():
     snapshot(78)
     figures()
     head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 078 — '+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/message-passing-viz.css"></head><body><article>'
-    nav=f'<nav><a href="../index.html">Course</a> · <a href="0077-single-table-ceiling.html">Lesson 77</a></nav><header><p>Year 2 · Quarter 4 · Lesson 078</p><h1>{TITLE}</h1></header><aside><a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/{SLUG}.ipynb">Notebook</a> · <a href="../reference/{SLUG}.html">Reference card</a></aside>'
+    nav=f'<nav><a href="../index.html">Course</a> · <a href="0077-single-table-ceiling.html">Lesson 77</a> · <a href="0079-neural-tabular-decision-guide.html">Lesson 79 →</a></nav><header><p>Year 2 · Quarter 4 · Lesson 078</p><h1>{TITLE}</h1></header><aside><a href="../labs/html/{SLUG}.html">Read lab</a> · <a href="../labs/{SLUG}.ipynb">Notebook</a> · <a href="../reference/{SLUG}.html">Reference card</a></aside>'
     body=render(manuscript()).replace('<table>','<div class="mp-table"><table>').replace('</table>','</table></div>')
     scripts=''.join(f'<script src="../assets/{s}.js"></script>' for s in ['retrieval-pool','retrieval-bank','predict','teachback','message-passing-viz','l078-lesson'])
     (ROOT/'lessons'/f'{SLUG}.html').write_text(head+nav+body+'</article>'+scripts+'</body></html>')

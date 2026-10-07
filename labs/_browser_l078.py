@@ -12,22 +12,24 @@ def run():
         for width in [1100,375]:
             page=browser.new_page(viewport={'width':width,'height':950});page.on('pageerror',lambda e:errors.append(str(e)))
             page.goto((ROOT/'lessons'/f'{SLUG}.html').as_uri())
+            page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")')
+            page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
             for selector,baseline,changed in [('#message-viz','4.50','7.50'),('#reach-viz','3.75','5.25'),('#normalization-viz','5.415816','10.314796')]:
                 w=page.locator(selector);assert baseline in w.locator('output').inner_text()
                 w.locator('input').focus();page.keyboard.press('End');assert changed in w.locator('output').inner_text(),w.inner_text()
                 page.keyboard.press('Home');assert w.locator('.value').inner_text()=='0'
                 w.locator('button').click();assert w.locator('.value').inner_text()=='8'
                 w.scroll_into_view_if_needed();dest=f'/tmp/l078-{selector[1:]}-{width}.png';page.screenshot(path=dest);screens.append(dest)
-            assert page.locator('#warmup').inner_text().strip()
+            assert page.locator('#warmup').count()==0
             assert page.locator('#prediction').inner_text().strip()
             assert page.locator('#teachback textarea').count()==1
             assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
             for img in page.locator('figure img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
             for i,img in enumerate(page.locator('figure').all()):
                 img.scroll_into_view_if_needed();dest=f'/tmp/l078-figure{i}-{width}.png';page.screenshot(path=dest);screens.append(dest)
-            page.emulate_media(media='print');assert page.locator('figure img').count()==4
+            page.emulate_media(media='print');assert page.locator('figure img').count()==5
             page.close()
-        page=browser.new_page(java_script_enabled=False);page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==4
+        page=browser.new_page(java_script_enabled=False);page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==6
         for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
         browser.close()
     assert not errors,errors

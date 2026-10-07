@@ -12,6 +12,8 @@ def run():
   for width in [1100,375]:
    page=browser.new_page(viewport={'width':width,'height':950});page.on('pageerror',lambda e:errors.append(str(e)))
    page.goto((ROOT/'lessons'/f'{SLUG}.html').as_uri())
+   page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")')
+   page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
    widget=page.locator('#time-viz');out=widget.locator('output')
    assert '1, 2, 0, 0' in out.inner_text()
    widget.locator('input').focus();page.keyboard.press('End');assert '2, 2, 1, 0' in out.inner_text()
@@ -26,7 +28,7 @@ def run():
      rows=page.evaluate('([t,m])=>RDLStackViz.compute(t,m)',[cutoff,mode]);n42=2 if cutoff>=12 else 1;n99=1 if cutoff>=11 else 0
      assert [r['n'] for r in rows]==[n42,2,n99,0]
      assert rows[1]['value']==([4,3] if mode=='mean' else [8,6])
-   assert page.locator('#warmup').inner_text().strip()
+   assert page.locator('#warmup').count()==0
    assert page.locator('#prediction').inner_text().strip()
    assert page.locator('#teachback textarea').count()==1
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
@@ -35,10 +37,10 @@ def run():
     page.locator(selector).scroll_into_view_if_needed();dest=f'/tmp/l076-{name}-{width}.png';page.screenshot(path=dest);screens.append(dest)
    if width==375:
     scroll=page.locator('.rdl-figure-scroll').first;scroll.focus();page.keyboard.press('ArrowRight');page.wait_for_timeout(250);assert scroll.evaluate('(e)=>e.scrollLeft>0')
-   page.emulate_media(media='print');assert page.locator('figure img').count()==4
+   page.emulate_media(media='print');assert page.locator('figure img').count()==5
    page.close()
   page=browser.new_page(java_script_enabled=False);page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri())
-  assert page.locator('img[src^="data:image/png;base64,"]').count()==4
+  assert page.locator('img[src^="data:image/png;base64,"]').count()==6
   assert page.locator('#lab-exercises').count()==1
   browser.close()
  assert not errors,errors

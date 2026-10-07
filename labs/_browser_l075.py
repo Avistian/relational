@@ -13,6 +13,8 @@ def run():
    page=browser.new_page(viewport={'width':width,'height':950})
    page.on('pageerror',lambda e:errors.append(str(e)))
    page.goto((ROOT/'lessons'/f'{SLUG}.html').as_uri())
+   page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")')
+   page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
    scope=page.locator('#frame-scope');out=scope.locator('output')
    assert 'Current fitted mean: 20.' in out.inner_text()
    scope.locator('input[type=checkbox]').check();assert 'Current fitted mean: 265.' in out.inner_text()
@@ -25,7 +27,7 @@ def run():
    page.keyboard.press('End');assert '→ [4.5, -1.5].' in out.inner_text()
    widget.locator('input[type=checkbox]').check();assert '→ [0.5, 0.5].' in out.inner_text()
    widget.locator('button').click();assert 'Current x=30' in out.inner_text()
-   assert page.locator('#warmup').inner_text().strip()
+   assert page.locator('#warmup').count()==0
    assert page.locator('#prediction').inner_text().strip()
    assert page.locator('#teachback textarea').count()==1
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
@@ -35,11 +37,11 @@ def run():
     assert region.evaluate('(e)=>e.scrollLeft>0')
    for selector,name in [('#frame-numeric','numeric'),('#frame-scope','scope'),('figure:last-of-type','architecture')]:
     page.locator(selector).scroll_into_view_if_needed();dest=f'/tmp/l075-{name}-{width}.png';page.screenshot(path=dest);screens.append(dest)
-   page.emulate_media(media='print');assert page.locator('figure img').count()==4
+   page.emulate_media(media='print');assert page.locator('figure img').count()==5
    page.close()
   page=browser.new_page(java_script_enabled=False)
   page.goto((ROOT/'labs/html'/f'{SLUG}.html').as_uri())
-  assert page.locator('img[src^="data:image/png;base64,"]').count()==4
+  assert page.locator('img[src^="data:image/png;base64,"]').count()==5
   assert page.locator('#lab-exercises').count()==1
   browser.close()
  assert not errors,errors

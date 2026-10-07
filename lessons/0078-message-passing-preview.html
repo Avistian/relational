@@ -1,6 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 078 — Message passing: from a join to a GCN</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/message-passing-viz.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0077-single-table-ceiling.html">Lesson 77</a></nav><header><p>Year 2 · Quarter 4 · Lesson 078</p><h1>Message passing: from a join to a GCN</h1></header><aside><a href="../labs/html/0078-message-passing-preview.html">Read lab</a> · <a href="../labs/0078-message-passing-preview.ipynb">Notebook</a> · <a href="../reference/0078-message-passing-preview.html">Reference card</a></aside>
-
-<p><strong>Today’s win:</strong> compute every node’s new vector after one synchronous round of message passing, then explain precisely what makes a GCN layer different from a plain mean. The core route is sections 1–5 plus the three lab TODOs. The complete Cora experiment is a separate research route.</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 078 — Message passing: from a join to a GCN</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/message-passing-viz.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0077-single-table-ceiling.html">Lesson 77</a> · <a href="0079-neural-tabular-decision-guide.html">Lesson 79 →</a></nav><header><p>Year 2 · Quarter 4 · Lesson 078</p><h1>Message passing: from a join to a GCN</h1></header><aside><a href="../labs/html/0078-message-passing-preview.html">Read lab</a> · <a href="../labs/0078-message-passing-preview.ipynb">Notebook</a> · <a href="../reference/0078-message-passing-preview.html">Reference card</a></aside><p><strong>Today’s win:</strong> compute every node’s new vector after one synchronous round of message passing, then explain precisely what makes a GCN layer different from a plain mean. The core route is sections 1–5 plus the three lab TODOs. The complete Cora experiment is a separate research route.</p>
 <!-- depth-walkthrough:start -->
 
 <div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 078</p><p><strong>Build on what you know.</strong> <a href="0076-encoder-predictor-stack.html">Lesson 76</a> supplied a concrete customer–event join; <a href="0077-single-table-ceiling.html">Lesson 77</a> showed why its retained information matters. We now express the computation without tying it to a particular database schema.</p><p><strong>The next question.</strong> After the Year 2 decision and exit checkpoints, <a href="0081-mpnn-framework.html">Lesson 81</a> formalizes the MPNN interface and <a href="0082-gcn.html">Lesson 82</a> derives GCN. This preview should let you point to the inputs of each operation before learning its spectral motivation.</p><p><a href="../reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
@@ -59,6 +57,29 @@ graph_prediction = R({h_v^T : v in graph})
 
 <p><strong>Relational connection.</strong> A manual <code>GROUP BY customer_id</code> with <code>AVG(amount)</code> performs identity routing and reduction. A graph layer generalizes the message and update functions so supervised training can learn which combinations matter. It does not automatically generalize eligibility rules.</p>
 <p><strong>Time boundary.</strong> Before every hop, restrict nodes, edges and attributes to information available at the prediction cutoff. An event dated before the cutoff but ingested later is unavailable. A two-hop merchant feature computed from future transactions can leak even when the direct order edge is old. Recompute degree normalization on the eligible graph; future edges can otherwise change today’s weights without sending their feature values.</p>
+<p><strong>Worked leakage trace: a future edge can change today's weight.</strong> Reuse A—B—C plus isolated D and states <code>[2,4,8,10]</code>. The eligible graph gives augmented degrees <code>[2,3,2,1]</code>. Suppose an unavailable future edge A—D is mistakenly included when computing degrees, even though D sends no direct message to B. A's degree becomes 3. The coefficient on A→B changes from <code>1/√6</code> to <code>1/3</code>, so B's one-layer GCN value changes from <strong>5.415816</strong> to <strong>5.265986</strong>. The unavailable structure affected B without D's feature reaching B.</p>
+<div class="mp-table"><table>
+<thead>
+<tr>
+  <th>Degree calculation</th>
+  <th style="text-align:right">Weight A→B</th>
+  <th style="text-align:right">B output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Eligible graph</td>
+  <td style="text-align:right">0.408248</td>
+  <td style="text-align:right">5.415816</td>
+</tr>
+<tr>
+  <td>Includes future A—D</td>
+  <td style="text-align:right">0.333333</td>
+  <td style="text-align:right">5.265986</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Try it:</strong> set D's feature to zero. B still changes by the same amount: zeroing an unavailable feature is not enough. Remove the unavailable edge before deriving normalization. This also refines “one-hop receptive field”: feature messages are one-hop here, while their degree-based coefficients depend on the surrounding topology.</p>
 <p><strong>Cora is a different protocol.</strong> The research lane is transductive: all graph structure and node features are supplied during training, while only training-node labels enter the loss. Validation labels determine stopping. Test labels are used only after stopping. This is the declared benchmark; it is not evidence of temporal database safety.</p>
 <h2 id="4-%C2%B7-GCN:-a-weighted-sum,-not-an-ordinary-mean">4 &#183; GCN: a weighted sum, not an ordinary mean<a class="anchor-link" href="#4-%C2%B7-GCN:-a-weighted-sum,-not-an-ordinary-mean">&#182;</a></h2><blockquote>
 <p><strong>In plain terms.</strong> GCN adds each node to its own neighborhood and weights a message using both endpoint degrees.</p>

@@ -80,6 +80,15 @@ On A—B—C, changing C from 8 to 20 leaves A’s first update at 3. But B’s 
 
 **Time boundary.** Before every hop, restrict nodes, edges and attributes to information available at the prediction cutoff. An event dated before the cutoff but ingested later is unavailable. A two-hop merchant feature computed from future transactions can leak even when the direct order edge is old. Recompute degree normalization on the eligible graph; future edges can otherwise change today’s weights without sending their feature values.
 
+**Worked leakage trace: a future edge can change today's weight.** Reuse A—B—C plus isolated D and states `[2,4,8,10]`. The eligible graph gives augmented degrees `[2,3,2,1]`. Suppose an unavailable future edge A—D is mistakenly included when computing degrees, even though D sends no direct message to B. A's degree becomes 3. The coefficient on A→B changes from `1/√6` to `1/3`, so B's one-layer GCN value changes from **5.415816** to **5.265986**. The unavailable structure affected B without D's feature reaching B.
+
+| Degree calculation | Weight A→B | B output |
+|---|---:|---:|
+| Eligible graph | 0.408248 | 5.415816 |
+| Includes future A—D | 0.333333 | 5.265986 |
+
+**Try it:** set D's feature to zero. B still changes by the same amount: zeroing an unavailable feature is not enough. Remove the unavailable edge before deriving normalization. This also refines “one-hop receptive field”: feature messages are one-hop here, while their degree-based coefficients depend on the surrounding topology.
+
 **Cora is a different protocol.** The research lane is transductive: all graph structure and node features are supplied during training, while only training-node labels enter the loss. Validation labels determine stopping. Test labels are used only after stopping. This is the declared benchmark; it is not evidence of temporal database safety.
 
 ## 4 · GCN: a weighted sum, not an ordinary mean

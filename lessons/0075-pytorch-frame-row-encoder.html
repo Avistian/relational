@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson075 — PyTorch Frame: the row encoder</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0074-carte-cross-table-transfer.html">Previous lesson</a></nav><header><p>Year2 · Quarter4 · Lesson075</p><h1>PyTorch Frame: the row encoder</h1><p>Choose types → fit the converter → encode columns → read out a row.</p></header><aside class="lab-access"><nav><a href="../labs/html/0075-pytorch-frame-row-encoder.html">Read lab</a><a href="../labs/0075-pytorch-frame-row-encoder.ipynb" download>Download notebook</a><a href="../labs/html/0075-pytorch-frame-row-encoder.html#lab-exercises">Exercises</a><a href="../reference/0075-pytorch-frame-row-encoder.html">Reference</a><a href="../labs/_verify_l075_results.json">Measured evidence</a><a href="../labs/l075-reproduction.md">Reproduction contract</a></nav><p>Local package; live Colab and deployment NOT_CHECKED.</p></aside><p><strong>Today’s tangible win:</strong> take a table containing numbers, categories, text, timestamps and stored vectors; produce a typed <code>TensorFrame</code>, column tokens and one vector per row; explain which operations learned from which rows. Plan for 35–45 minutes of reading and prediction, then 30–45 minutes in the lab.</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson075 — PyTorch Frame: the row encoder</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/contrastive-views.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0074-carte-cross-table-transfer.html">Previous lesson</a> · <a href="0076-encoder-predictor-stack.html">Next lesson</a></nav><header><p>Year2 · Quarter4 · Lesson075</p><h1>PyTorch Frame: the row encoder</h1><p>Choose types → fit the converter → encode columns → read out a row.</p></header><aside class="lab-access"><nav><a href="../labs/html/0075-pytorch-frame-row-encoder.html">Read lab</a><a href="../labs/0075-pytorch-frame-row-encoder.ipynb" download>Download notebook</a><a href="../labs/html/0075-pytorch-frame-row-encoder.html#lab-exercises">Exercises</a><a href="../reference/0075-pytorch-frame-row-encoder.html">Reference</a><a href="../labs/_verify_l075_results.json">Measured evidence</a><a href="../labs/l075-reproduction.md">Reproduction contract</a></nav><p>Local package; live Colab and deployment NOT_CHECKED.</p></aside><p><strong>Today’s tangible win:</strong> take a table containing numbers, categories, text, timestamps and stored vectors; produce a typed <code>TensorFrame</code>, column tokens and one vector per row; explain which operations learned from which rows. Plan for 35–45 minutes of reading and prediction, then 30–45 minutes in the lab.</p>
 <blockquote>
 <p><strong>In plain terms.</strong> A database row contains several kinds of information. Before a neural network can use it, each kind needs an appropriate translator. PyTorch Frame organizes those translators and their outputs. It does not decide which information was legally available at prediction time.</p>
 </blockquote>
@@ -120,6 +120,30 @@
 <figure id="visual-figure-5"><div class="figure-scroll" tabindex="0" role="region" aria-label="Scrollable architecture diagram"><img src="../labs/figures/l075/architecture.png" alt="Complete local teaching composition. Column mixing occurs inside the flattened MLP. No cross-row message passing or benchmark training is pictured."></div><figcaption>Complete local teaching composition. Column mixing occurs inside the flattened MLP. No cross-row message passing or benchmark training is pictured. Scroll the diagram horizontally on narrow screens.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l075/architecture.png" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>
 
 <p>The hidden linear layer mixes information across columns because each hidden unit reads all 40 coordinates. Flattening keeps column positions distinguishable. It consequently requires a stable fitted schema: arbitrary reordering of token positions changes the function. Reordering <strong>DataFrame columns</strong> is safe only because the fitted converter restores the schema; this is not proof of arbitrary schema transfer.</p>
+<p><strong>Worked order check.</strong> Isolate a two-column readout with tokens <code>amount=[1,0]</code> and <code>region=[0,1]</code>. Flatten in the saved order <code>[amount,region]</code> to get <code>[1,0,0,1]</code>. A toy linear head with weights <code>[1,0,0,0]</code> returns 1. Swapping the token blocks without changing the head gives <code>[0,1,1,0]</code> and returns 0, although neither cell changed. The mismatch is between token positions and learned weights.</p>
+<div class="result-scroll"><table>
+<thead>
+<tr>
+  <th>Operation</th>
+  <th style="text-align:right">Head output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Saved token order</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>Swap tokens only</td>
+  <td style="text-align:right">0</td>
+</tr>
+<tr>
+  <td>Swap tokens and corresponding weight blocks</td>
+  <td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table></div>
+<p>This is illustrative readout arithmetic, not the initialized five-column model's measured output. The actual fitted converter protects the contract by recovering its saved column order; changing DataFrame display order is different from scrambling the encoded tensor. <strong>Try it:</strong> mean-pool the two tokens. Both orders give <code>[0.5,0.5]</code>, but pooling alone cannot tell which token occupied which named position. Invariance is useful only when the information it discards is unnecessary or retained elsewhere.</p>
 <p>The lab checks <strong>row locality</strong>: encoding a query row alone agrees with encoding it in a batch. This composition has no operation that exchanges information between rows. A separate GNN can consume the resulting vectors and edges later. That GNN needs explicit row-to-node identity, foreign-key edges and a time-valid sampling policy. None are supplied by <code>TensorFrame</code> itself.</p>
 <p><strong>Gradient check.</strong> A gradient tells a parameter how a differentiable loss changes when the parameter changes. We place a linear head on the row vectors, compute a scalar loss and call <code>backward()</code>. Finite gradients reaching the stype encoders establish that the composed path can be optimized. They do not establish good accuracy or correct temporal sampling. The fixed text adapter and categorical vocabulary remain outside that learned path.</p>
 <blockquote>

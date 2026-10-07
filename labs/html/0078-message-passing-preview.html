@@ -7846,7 +7846,7 @@ resolve. <strong>On a local venv or your own Jupyter it does nothing — just ru
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l078-f5274a8d070b9596-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l078-9292753b98627e64-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7924,7 +7924,7 @@ graph_prediction = R({h_v^T : v in graph})
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l078-324fba7c81a37a33-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l078-af93bad814fe9a61-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7936,6 +7936,29 @@ graph_prediction = R({h_v^T : v in graph})
 <p>On A—B—C, changing C from 8 to 20 leaves A’s first update at 3. But B’s first update rises from 4.5 to 7.5, so A’s second update rises from 3.75 to 5.25. These numbers follow the same synchronous rule. A <strong>receptive field</strong> is the set of input nodes that can influence an output. With this fixed graph and local updates, after two layers A can depend on C.</p>
 <p><strong>Relational connection.</strong> A manual <code>GROUP BY customer_id</code> with <code>AVG(amount)</code> performs identity routing and reduction. A graph layer generalizes the message and update functions so supervised training can learn which combinations matter. It does not automatically generalize eligibility rules.</p>
 <p><strong>Time boundary.</strong> Before every hop, restrict nodes, edges and attributes to information available at the prediction cutoff. An event dated before the cutoff but ingested later is unavailable. A two-hop merchant feature computed from future transactions can leak even when the direct order edge is old. Recompute degree normalization on the eligible graph; future edges can otherwise change today’s weights without sending their feature values.</p>
+<p><strong>Worked leakage trace: a future edge can change today's weight.</strong> Reuse A—B—C plus isolated D and states <code>[2,4,8,10]</code>. The eligible graph gives augmented degrees <code>[2,3,2,1]</code>. Suppose an unavailable future edge A—D is mistakenly included when computing degrees, even though D sends no direct message to B. A's degree becomes 3. The coefficient on A→B changes from <code>1/√6</code> to <code>1/3</code>, so B's one-layer GCN value changes from <strong>5.415816</strong> to <strong>5.265986</strong>. The unavailable structure affected B without D's feature reaching B.</p>
+<table>
+<thead>
+<tr>
+<th>Degree calculation</th>
+<th style="text-align:right">Weight A→B</th>
+<th style="text-align:right">B output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Eligible graph</td>
+<td style="text-align:right">0.408248</td>
+<td style="text-align:right">5.415816</td>
+</tr>
+<tr>
+<td>Includes future A—D</td>
+<td style="text-align:right">0.333333</td>
+<td style="text-align:right">5.265986</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Try it:</strong> set D's feature to zero. B still changes by the same amount: zeroing an unavailable feature is not enough. Remove the unavailable edge before deriving normalization. This also refines “one-hop receptive field”: feature messages are one-hop here, while their degree-based coefficients depend on the surrounding topology.</p>
 <p><strong>Cora is a different protocol.</strong> The research lane is transductive: all graph structure and node features are supplied during training, while only training-node labels enter the loss. Validation labels determine stopping. Test labels are used only after stopping. This is the declared benchmark; it is not evidence of temporal database safety.</p>
 </div>
 </div>
