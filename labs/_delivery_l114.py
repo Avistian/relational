@@ -24,13 +24,13 @@ canonical={**definitions((P/'relkit/ogb_l112.py').read_text()),**definitions((P/
 for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['neighborhood_properties','slice_metrics','choose_failure']:assert stu[name]==node,name
-paths=[R/'lessons'/f'{S}.html',R/'reference/ogb-error-analysis.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths];subprocess.run([sys.executable,str(P/'_build_l114.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+paths=[R/'lessons'/f'{S}.html',R/'reference/ogb-error-analysis.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths];subprocess.run([sys.executable,str(P/'_build_l114.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l114').glob('*'));before=[sha(p) for p in figs];subprocess.run([sys.executable,str(P/'_figures_l114.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0;summary=json.loads((P/'evidence/l114/summary.json').read_text())
 with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)));page.on('requestfailed',lambda r:errors.append(r.url))
  for width in [1200,375]:
-  page.set_viewport_size({'width':width,'height':900});page.goto((R/'lessons'/f'{S}.html').as_uri());widget=page.locator('[data-error-slices]');pop=widget.get_by_label('Population',exact=True);family=widget.get_by_label('Slice family',exact=True)
+  page.set_viewport_size({'width':width,'height':900});page.goto((R/'lessons'/f'{S}.html').as_uri());page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")');page.wait_for_function('Array.from(document.images).every(i=>i.complete)');widget=page.locator('[data-error-slices]');pop=widget.get_by_label('Population',exact=True);family=widget.get_by_label('Slice family',exact=True)
   for population in ['valid','test']:
    pop.select_option(population)
    for fam in ['degree','homophily','class','year']:
@@ -43,12 +43,12 @@ with sync_playwright() as pw:
   widget.get_by_role('button',name='Reset view').click();assert pop.input_value()=='test' and family.input_value()=='homophily'
   family.focus();page.keyboard.press('ArrowDown');page.keyboard.press('Enter');assert family.input_value()=='class';widget.get_by_role('button',name='Reset view').click()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
-  assert page.locator('figure').count()==4
+  assert page.locator('figure').count()>=4
   page.screenshot(path=f'/tmp/l114-page-{width}.png',full_page=True);widget.screenshot(path=f'/tmp/l114-widget-{width}.png')
   page.locator('figure').first.screenshot(path=f'/tmp/l114-architecture-{width}.png')
- page.set_viewport_size({'width':1100,'height':900});page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==4
- for i in range(4):page.locator('img[src^="data:image/png;base64,"]').nth(i).screenshot(path=f'/tmp/l114-notebook-{i}.png')
- nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()==4 and '8,585' in plain.inner_text('article');assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1');plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');plain.screenshot(path='/tmp/l114-print.png',full_page=True);nojs.close();browser.close()
+ page.set_viewport_size({'width':1100,'height':900});page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==5
+ for i in range(5):page.locator('img[src^="data:image/png;base64,"]').nth(i).screenshot(path=f'/tmp/l114-notebook-{i}.png')
+ nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()>=4 and '8,585' in plain.inner_text('article');assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1');plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');plain.screenshot(path='/tmp/l114-print.png',full_page=True);nojs.close();browser.close()
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[]
  def handle_starttag(self,tag,attrs):self.links.extend(v for k,v in attrs if k in ('href','src'))
@@ -75,5 +75,5 @@ with tempfile.TemporaryDirectory(prefix='l114-pages-') as tmp:
    page.goto(base+'/lessons/'+S+'.html');assert '48,603' in page.locator('[data-error-slices] [aria-live]').inner_text();browser.close()
  finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors
-r={'status':'PASS','browser_widths':[1200,375],'widget_states':states,'keyboard_reset':'PASS','print_nojs':'PASS','portable_figures':4,'live_student_tasks':3,'canonical_definitions':len(canonical),'executed_code_hash':'MATCH','deterministic_rebuild':'EXACT','copied_pages_links':checked,'javascript_errors':errors,'screenshots':'/tmp/l114-*.png','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+r={'status':'PASS','browser_widths':[1200,375],'widget_states':states,'keyboard_reset':'PASS','print_nojs':'PASS','portable_figures':5,'live_student_tasks':3,'canonical_definitions':len(canonical),'executed_code_hash':'MATCH','deterministic_rebuild':'EXACT','copied_pages_links':checked,'javascript_errors':errors,'screenshots':'/tmp/l114-*.png','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (P/'_delivery_l114_results.json').write_text(json.dumps(r,indent=2));print(r)

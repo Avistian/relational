@@ -26,7 +26,6 @@ It does not remove the need to define the target, decide when information become
 
 
 
-<details><summary>Check the distinction</summary><p>A foreign key identifies another entity; its numeric magnitude normally has no useful distance interpretation. A row can be present in today's archive while remaining unavailable at a historical query time. Representation and availability are separate contracts.</p></details>
 
 ## 2 · Three graphs, three different questions
 
@@ -119,6 +118,16 @@ For one directed relation `r` and receiving row `v`, the selected sum-aggregatio
 The heterogeneous layer sums relation outputs for each receiving node type. Notice that each relation has its own root transform; this is not necessarily equivalent to summing all neighbor messages and adding one shared root transform afterward. Then node-wise layer normalization rescales each row across its channels, and ReLU replaces negative coordinates with zero. Repeat the layer twice. Width stays 128.
 
 **Numeric mechanism trace.** A receiver has scalar value 2, with neighbors 3 and 5. Set the neighbor weight to 2, root weight to 1, and bias to 0. The relation output is `2×(3+5)+1×2=18`. A mean-aggregation variant would give `2×4+2=10`. This is a scalar explanation of one operator, before normalization and nonlinearities; it is not a trained benchmark prediction.
+
+**An empty relation can still contribute.** Keep the receiver value 2 and the first relation's output 18. Add a second relation with no sampled edges, root weight 3, and bias 1. If that relation is present in the edge dictionary, its empty neighbor sum is zero, but its root and bias still contribute `3×2+1=7`:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Relation inputs</th><th>Sum before LayerNorm</th></tr></thead><tbody><tr><td>First + empty second</td><td>18 + 7 = 25</td></tr><tr><td>First only; second key omitted</td><td>18</td></tr></tbody></table>
+
+This is why the architecture diagram places a separate root transform inside each relation branch. An empty edge tensor and an omitted relation key are different inputs to the released heterogeneous operator. This scalar trace stops **before** LayerNorm and ReLU; the benchmark uses 128 channels. See the [pinned relation implementation](../labs/sources/l117/primitives/sage_conv.py) and [typed layer construction](../labs/sources/l117/nn.py).
+
+**Try the change.** Keep the empty second relation, but set its root weight and bias to zero. What does the relation sum become? Why does setting only its neighbor weight to zero fail to achieve the same result?
+
+<details><summary>Check the relation trace</summary><p>The sum becomes 18. The empty neighbor sum was already zero, so changing its weight cannot remove the second relation's root contribution of 6 or bias of 1. Removing a relation can change the computation even when it has no sampled edges.</p></details>
 
 Two layers give at most two edges of influence in the sampled graph. They do not expose every useful relational path. For example, `customer → purchase → product → purchase → customer` needs four edge traversals in this representation. Fey §4.3 makes this limitation an architectural research opportunity.
 

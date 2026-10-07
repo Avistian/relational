@@ -44,7 +44,7 @@ def prose(portable=False):
  return s
 
 def document(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=''.join('<script src="../assets/'+n+'.js"></script>' for n in ['retrieval-pool','retrieval-bank','teachback','error-slices','l114-lesson']) if interactive else ''
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"><link rel="stylesheet" href="../assets/reproduction.css"><link rel="stylesheet" href="../assets/error-slices.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0113-scaling-ogb.html">Lesson 113</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 114</p><h1>'+title+'</h1></header>'+html+'</article>'+scripts+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(document(TITLE,prose(),True))

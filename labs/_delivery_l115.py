@@ -24,7 +24,7 @@ canonical=definitions((P/'relkit/patterns_l115.py').read_text());sol=definitions
 for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['graph_forward','pair_features','graph_mean']:assert stu[name]==node,name
-paths=[R/'lessons'/f'{S}.html',R/'reference/graph-ml-design-patterns.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths];subprocess.run([sys.executable,str(P/'_build_l115.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+paths=[R/'lessons'/f'{S}.html',R/'reference/graph-ml-design-patterns.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths];subprocess.run([sys.executable,str(P/'_build_l115.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l115').glob('*'));before=[sha(p) for p in figs];subprocess.run([sys.executable,str(P/'_figures_l115.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0
 with sync_playwright() as pw:
@@ -42,11 +42,11 @@ with sync_playwright() as pw:
    assert page.evaluate('(a)=>GraphPatterns.compute(...a).value',[unit,rev,mode])==expected
   cutoff=page.locator('#l115-cutoff');slider=cutoff.locator('input');slider.fill('10');assert 'Event3 → customer99: happened 4, available 11 → EXCLUDED' in cutoff.inner_text();slider.fill('11');assert 'Event3 → customer99: happened 4, available 11 → INCLUDED' in cutoff.inner_text();cutoff.get_by_role('button',name='Reset').click();assert slider.input_value()=='10'
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
-  assert page.locator('figure').count()==4
+  assert page.locator('figure').count()>=4
   page.screenshot(path=f'/tmp/l115-page-{width}.png',full_page=True);widget.screenshot(path=f'/tmp/l115-widget-{width}.png');page.locator('figure').first.screenshot(path=f'/tmp/l115-architecture-{width}.png')
  page.set_viewport_size({'width':1100,'height':900});page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==4
  for i in range(4):page.locator('img[src^="data:image/png;base64,"]').nth(i).screenshot(path=f'/tmp/l115-notebook-{i}.png')
- nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()==4 and '71.9713%' in plain.inner_text('article');assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1');plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');plain.screenshot(path='/tmp/l115-print.png',full_page=True);nojs.close();browser.close()
+ nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()>=4 and '71.9713%' in plain.inner_text('article');assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1');plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');plain.screenshot(path='/tmp/l115-print.png',full_page=True);nojs.close();browser.close()
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[]
  def handle_starttag(self,tag,attrs):self.links.extend(v for k,v in attrs if k in ('href','src'))

@@ -23,13 +23,14 @@ canonical=definitions((P/'relkit/rdl_l117.py').read_text());sol=definitions(code
 for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['foreign_key_edges','temporal_nodes','query_targets']:assert stu[name]==node,name
-paths=[R/'lessons'/f'{S}.html',R/'reference/rdl-bridge.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths];subprocess.run([sys.executable,str(P/'_build_l117.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+paths=[R/'lessons'/f'{S}.html',R/'reference/rdl-bridge.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths];subprocess.run([sys.executable,str(P/'_build_l117.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l117').glob('*'));before=[sha(p) for p in figs];subprocess.run([sys.executable,str(P/'_figures_l117.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0
 with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
  for width in [1200,375]:
   page.set_viewport_size({'width':width,'height':900});page.goto((R/'lessons'/f'{S}.html').as_uri())
+  page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")');page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
   w=page.locator('#l117-cutoff');t=w.locator('[data-time]');h=w.locator('[data-hops]');enforce=w.locator('[data-enforce]');out=w.locator('output')
   assert '3 nodes; 0 future rows' in out.inner_text()
   t.fill('11');assert '4 nodes; 0 future rows' in out.inner_text()

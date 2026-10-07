@@ -71,6 +71,16 @@ return loss.detach()
 
 <details><summary>Repair and explanation</summary><p>Call <code>optimizer.step()</code> after backward. Snapshot parameter values before the call and compare afterward. Clipping only modifies gradients; it cannot execute an absent parameter update. Retain zeroing before the next backward so unrelated batches do not accumulate gradients. Deliberate gradient accumulation is a different, explicitly scaled protocol.</p></details>
 
+**The converse needs optimizer state.** A zero current gradient does not always mean zero parameter movement. Start with scalar θ=1 and Adam with learning rate 0.1, β₁=0.9, β₂=0.999, ε=10⁻⁸ and **no weight decay**. One step with gradient 1 gives θ≈0.900000001. Its stored first and second moments are 0.1 and 0.001. Clone that parameter and optimizer state before comparing the next call:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Next gradient</th><th>θ (rounded)</th></tr></thead><tbody><tr><td>A zero tensor</td><td>0.832994177</td></tr><tr><td>None</td><td>0.900000001</td></tr></tbody></table>
+
+With a zero tensor, Adam still updates its moments to 0.09 and 0.000999, applies step-2 bias correction, and moves θ by about −0.067006. With `grad=None`, this PyTorch optimizer skips that parameter, including its step counter. [The optimizer documentation](https://docs.pytorch.org/docs/stable/generated/torch.optim.Optimizer.zero_grad.html) distinguishes these two cases. Setting gradients to None before backward does not prevent active parameters from receiving fresh gradients; parameters untouched by that backward remain None.
+
+**Try it:** replace Adam with a fresh optimizer at θ≈0.9, then give it a zero gradient. Should the parameter move? Use this to explain why a valid optimization resume needs saved optimizer state as well as weights.
+
+<details><summary>Check the optimizer-memory control</summary><p>The fresh optimizer has zero moments, so with zero gradient and no weight decay it leaves θ unchanged. The earlier movement came from stored optimizer state, not a new loss signal. Resetting that state every batch would change the training procedure. When debugging, record the gradient, whether it is None, the actual parameter change and the relevant optimizer state; no one norm answers all four questions.</p></details>
+
 **Task 1 — authorize labels.** Implement `training_loss(log_probs, labels, train_idx)`. The check changes held-out labels and verifies both unchanged loss and zero supervised gradient on held-out output rows. It does not demand zero gradient on held-out input features: message passing can use those features legitimately.
 
 **Task 2 — repair the update.** Implement `train_step(model, optimizer, x, adj, y, train_idx)`. Restore training mode, clear old gradients, use your Task 1 loss, run backward, step, and return the detached loss. The check compares two consecutive updates to a reference loop. Two steps are necessary to catch an omitted `zero_grad()` that a first-step-only check would miss. A separate GCN check preserves dropout RNG and verifies weights, gradients and BN buffers across three updates.

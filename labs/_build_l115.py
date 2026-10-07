@@ -35,7 +35,7 @@ def prose(portable=False):
  return s
 
 def document(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=''.join('<script src="../assets/'+n+'.js"></script>' for n in ['retrieval-pool','retrieval-bank','teachback','rdl-stack-viz','graph-patterns','l115-lesson']) if interactive else ''
  styles=''.join('<link rel="stylesheet" href="../assets/'+n+'.css">' for n in ['lesson','event-snapshot','reproduction','rdl-stack-viz','graph-patterns'])
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+styles+'</head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0114-ogb-error-analysis.html">Lesson 114</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 115</p><h1>'+title+'</h1></header>'+html+'</article>'+scripts+'</body></html>'

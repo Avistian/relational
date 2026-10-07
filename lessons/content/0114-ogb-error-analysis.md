@@ -116,6 +116,18 @@ Looking through many slices and reporting the most dramatic test gap is an **exp
 
 **Do not force the expected story.** Low homophily can coincide with difficult features, uncommon classes, low degree or distribution shift. A low-homophily gap does not prove that message passing caused the errors. A GCN advantage in a slice also does not prove the same advantage for a new dataset.
 
+**Work a composition reversal.** The following invented counts describe one fixed model, not the OGB results. Compare low- and high-homophily nodes inside two true classes. Each cell is **correct / total**:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>True class</th><th>Low homophily</th><th>High homophily</th></tr></thead><tbody><tr><td>A</td><td>18 / 20</td><td>64 / 80</td></tr><tr><td>B</td><td>24 / 80</td><td>4 / 20</td></tr><tr><td>All nodes</td><td>42 / 100</td><td>68 / 100</td></tr></tbody></table>
+
+Within class A, low homophily has higher accuracy: 90% versus 80%. Within B, it also has higher accuracy: 30% versus 20%. Yet the pooled comparison reverses: 42% versus 68%. The low-homophily population contains many more class-B nodes, on which this model is less accurate. Equal total population sizes did not equalize their composition.
+
+This arithmetic is a **Simpson reversal**: conditioning on another variable can reverse an observed association. [Pearl’s analysis](https://ftp.cs.ucla.edu/pub/stat_ser/r414.pdf) explains why choosing a causal interpretation needs assumptions beyond the table. Here neither the pooled gap nor the within-class gaps establish what would happen if we changed the graph.
+
+**Try it:** give A and B equal weight in both homophily groups. Compute the two standardized accuracies. Does that make the result a causal effect?
+
+<details><summary>Check the common composition</summary><p>Low homophily gives (90% + 30%)/2 = 60%; high gives (80% + 20%)/2 = 50%. This compares the groups at a common class mixture. It is a descriptive reweighting, not an intervention on neighbors. It also uses true class for retrospective analysis, so it does not supply a serving-time routing rule.</p></details>
+
 **A discriminating next experiment.** Keep the architecture, initial parameters, normalization population, split and training budget fixed; vary access to particular neighbor messages, then retrain all declared seeds. Decide the intervention from validation evidence, and protect a new holdout if you have already used test findings to redesign the model. Compare that experiment with the weaker fixed-weight inference intervention: changing edges without retraining also changes the trained model's input distribution.
 
 ## 7 · Write the error report
