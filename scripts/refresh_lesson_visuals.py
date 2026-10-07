@@ -11,6 +11,7 @@ import re
 import sys
 from visual_story_specs import STORIES, EXTRA_STORIES
 from visual_story_drawings import svg_scene
+import visual_details
 ROOT=Path(__file__).resolve().parents[1]
 START='<!-- lesson-visuals:start -->'; END='<!-- lesson-visuals:end -->'
 TOOLS_START='<!-- visual-tools:start -->'; TOOLS_END='<!-- visual-tools:end -->'
@@ -54,13 +55,14 @@ def story_html(key,s):
     return ''.join(parts), ''.join(svg)
 
 def update(path):
-    text=path.read_text()
+    text=visual_details.strip(path.read_text())
     # Marked regions are the only generated lesson content removed on refresh.
     text=re.sub(re.escape(START)+r'.*?'+re.escape(END)+'\n?', '',text,flags=re.S)
     text=re.sub(re.escape(TOOLS_START)+r'.*?'+re.escape(TOOLS_END), '',text,flags=re.S)
     text=re.sub(r'\s*<link\b[^>]*href=["\x27]../assets/visual-stories.css["\x27][^>]*>', '',text)
     text=re.sub(r'\s*<script\b[^>]*src=["\x27]../assets/visual-stories.js["\x27][^>]*>\s*</script>', '',text)
     key=key_for(path); links=[]; index=0
+    text=visual_details.inject(text,key)
     def figure(m):
         nonlocal index
         full=m[0]
@@ -126,6 +128,8 @@ def main():
     for path in selected():
         html,svg,record=update(path);emit(path,html);coverage.append(record)
         if svg:emit(ROOT/'assets/visual-stories'/f'{key_for(path)}.svg',svg)
+    for key in visual_details.DETAILS:
+        emit(ROOT/'assets/visual-details'/f'{key}.svg',visual_details.render(key))
     for keys in EXTRA_STORIES.values():
         for key in keys:emit(ROOT/'assets/visual-stories'/f'{key}.svg',story_html(key,STORIES[key])[1])
     emit(ROOT/'reference/visual-reading-guide.html',reference())

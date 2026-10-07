@@ -6,8 +6,8 @@ from playwright.sync_api import sync_playwright
 from refresh_lesson_visuals import selected, key_for, ROOT
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,default=ROOT);parser.add_argument('--base-url');parser.add_argument('--sample',action='store_true');args=parser.parse_args()
-    report_dir=ROOT/'reviews/lesson-visuals-2026-10-07';report_dir.mkdir(exist_ok=True)
+    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,default=ROOT);parser.add_argument('--base-url');parser.add_argument('--sample',action='store_true');parser.add_argument('--report-dir',type=Path,default=ROOT/'reviews/lesson-visuals-2026-10-07');args=parser.parse_args()
+    report_dir=args.report_dir;report_dir.mkdir(parents=True,exist_ok=True)
     class Quiet(SimpleHTTPRequestHandler):
         def log_message(self,*args):pass
     server=None
