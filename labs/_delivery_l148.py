@@ -34,7 +34,7 @@ with sync_playwright() as pw:
   slider.focus();page.keyboard.press('ArrowRight');assert inter.get_attribute('data-interaction')=='0';inter.locator('button').click()
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="interact"]').click();predict.locator('.predict-reveal').click();assert 'interaction' in predict.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   if width==375:
@@ -42,7 +42,7 @@ with sync_playwright() as pw:
   page.screenshot(path=f'/tmp/l148-top-{width}.png');host.screenshot(path=f'/tmp/l148-map-{width}.png')
   for i in range(4):page.locator('figure').nth(i).screenshot(path=f'/tmp/l148-figure-{i}-{width}.png')
  page.emulate_media(media='print');page.pdf(path='/tmp/l148-print.pdf',format='A4');assert Path('/tmp/l148-print.pdf').stat().st_size>20000
- context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert pg.locator('noscript').count()==5;assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
+ context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert pg.locator('noscript').count()==4;assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
  # Inspect rendered notebook figure payloads and its generated result table.
  page.emulate_media(media='screen');page.goto((P/'html'/(S+'.html')).as_uri())
  assert page.locator('img[src^="data:image/png"]').count()==4
@@ -72,6 +72,8 @@ with tempfile.TemporaryDirectory(prefix='l148-pages-') as tmp:
    if part.scheme or not part.path:continue
    dest=(path.parent/unquote(part.path)).resolve();assert dest.exists(),str(dest);count+=1
 paths=[R/'lessons'/(S+'.html'),R/'reference/ablation-discipline.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]
-before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l148.py')],check=True,capture_output=True);assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
+before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l148.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
+assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',portable_figures=4,notebook_code_cells=sum(c.cell_type=='code' for c in sol.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l148_results.json').write_text(json.dumps(r,indent=2));print(r)

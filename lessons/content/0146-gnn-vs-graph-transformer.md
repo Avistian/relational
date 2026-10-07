@@ -48,6 +48,14 @@ A **checkpoint** is the saved state after an epoch. A **configuration** specifie
 
 **Your rule in the lab.** `select_config(configs, validation)` accepts no test scores. It chooses the first minimum and rejects incomplete or nonfinite scores. The same live function chooses checkpoints in the course trainer. This deliberately differs from the release's last-tie rule. A function signature cannot police where callers obtained a number; the protocol and audit still matter.
 
+**Keep selection precision separate from display precision.** Here is a synthetic two-configuration example, not a reconstruction of the paper's hidden scores:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Config</th><th>Stored validation MAE</th><th>Printed to 4 decimals</th></tr></thead><tbody><tr><td>A</td><td>3.10464</td><td>3.1046</td></tr><tr><td>B</td><td>3.10461</td><td>3.1046</td></tr></tbody></table>
+
+The actual first-minimum selector chooses **B** from stored values. Applied to printed values, it sees a tie and chooses **A**. Display rounding has discarded selection evidence. Store the original metric and selected identity together; round only the presentation. This explains one limit of a printed-table audit without asserting that rounding caused the published discrepancy above.
+
+**Try it after the example.** Reverse the configuration order. Which answer changes under exact values, and which changes under rounded values? <details><summary>Check your reasoning</summary>The exact minimum remains B. Under the rounded tie, the first item is now B, so the answer changes with order. A deterministic tie rule cannot recover precision that has already been discarded.</details>
+
 ## 3 · Freeze a comparison that can actually run
 
 The paper experiment and the course experiment answer different questions. The complete paper-aligned RelGT runner retains all nine 100-epoch schedules. Lesson 145's temporal failure and cost estimate prevent calling its outputs a clean reproduction. We retain that runner and the canonical RDL runner; neither receives a fresh full paper-protocol fit in this lesson.

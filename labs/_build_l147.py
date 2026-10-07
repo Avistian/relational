@@ -25,7 +25,7 @@ def prose(portable=False):
 
 def document(title,body,interactive=False):
  scripts=['retrieval-pool','retrieval-bank','predict','teachback','research-map','l147-lesson'] if interactive else []
- html=render(body).replace('<table>','<div class="research-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="research-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/research-map.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Labs</a></nav><header><p class="eyebrow">Year 4 · Quarter 3 · Lesson 147</p><h1>'+title+'</h1></header>'+html+'</article>'+''.join(f'<script src="../assets/{s}.js"></script>' for s in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(document(TITLE,prose(),True))
 ref='''## Turn an open problem into a falsifiable test
@@ -116,7 +116,10 @@ for solution in [False,True]:
  for i,c in enumerate(cells):c.id=hashlib.sha256((str(i)+c.source).encode()).hexdigest()[:12]
  path=P/('solutions' if solution else '')/(S+'.ipynb')
  if solution and path.exists():
-  old=nb.read(path,4)
-  if [c.source for c in old.cells]==[c.source for c in cells]:notebook=old
+  old=nb.read(path,4);notebook.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for before,after in zip(previous,current):
+    after.outputs=before.outputs;after.execution_count=before.execution_count;after.metadata=before.metadata
  nb.write(notebook,path)
 print('Built Lesson 147, reference and two portable notebooks')

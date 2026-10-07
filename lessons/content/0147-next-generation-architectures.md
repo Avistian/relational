@@ -78,6 +78,14 @@ Our deliberately simple policy filters by readiness, hours and dollars; sorts re
 
 **Worked example.** At four hours, the ranking is selection → ownership → routes. Coverage needs an estimated six hours. Transfer is not ready even with forty hours because a corpus and held-out-database protocol are missing. The forty-hour/$10 entry is an illustrative placeholder, not a priced foundation-model training plan. Your job is to challenge these judgments before treating the ordering as advice.
 
+**A ranked shortlist is not a four-hour schedule.** Use the actual estimates in the question ledger:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Question</th><th>Own hours</th><th>Cumulative hours</th></tr></thead><tbody><tr><td>Selection</td><td>1</td><td>1</td></tr><tr><td>Ownership</td><td>2</td><td>3</td></tr><tr><td>Routes</td><td>3</td><td>6</td></tr></tbody></table>
+
+Every individual question passes the four-hour filter, but doing all three requires six estimated hours. If the constraint instead means **four hours total**, selection + ownership fits in three hours, and selection + routes fits in four. Ownership + routes exceeds it. The ranking rule does not choose between those feasible bundles, account for shared setup time, or assign a numerical research value that could justify an optimal portfolio.
+
+**Try it after the example.** Reserve one of the four hours for writing and verification. Which two-question bundles remain feasible under additive estimates? <details><summary>Check your reasoning</summary>Only selection + ownership fits the remaining three hours. The reserve changes the schedule constraint; it does not strengthen the evidence behind either question.</details>
+
 **Sensitivity exercise.** Change ownership's evidence level from 3 to 1 in the notebook. Predict the new order before running. Then argue whether that edit reflects weaker evidence or merely your preference. The ranking cannot make that distinction for you.
 
 ## 5 · Lab: write the contracts, then defend one question

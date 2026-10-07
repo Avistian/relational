@@ -68,6 +68,14 @@ A **centroid** summarizes a cluster of root representations. RelGT stores 4,096 
 
 The root attends to centroid keys and values. The released global branch scales scores by `√512`, and adds `log(centroid occupancy)`. Occupancy counts the assignments in its node-to-centroid buffer. A zero count gives a negative-infinite logit, removing that centroid's attention weight. This buffer is initialized randomly; it must not be presented as an exact census of historically observed database rows.
 
+**Equal similarity does not mean equal global weight.** Use two centroid values, 2 and 10, with equal query–key scores and no dropout. The `log(count)` term makes softmax weights proportional to occupancy:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Counts</th><th>Weights</th><th>Global value</th></tr></thead><tbody><tr><td>1,3</td><td>1/4,3/4</td><td>8</td></tr><tr><td>3,1</td><td>3/4,1/4</td><td>4</td></tr><tr><td>4,0</td><td>1,0</td><td>2</td></tr></tbody></table>
+
+The first result is `(1×2 + 3×10)/4`. This is the **released global attention calculation** in a scalar diagnostic, before the later normalization and prediction head. Changing only the assignment-count buffer changes the result even though the query, centroids and learned weights are unchanged. That buffer must travel with the checkpoint. Its randomly initialized assignments still do not become a census of observed historical rows. [Released global forward](../labs/sources/l145/model.py)
+
+**Try it after the example.** Double both positive counts in the first row. Then instead move all four assignments to the second centroid. What are the two outputs? <details><summary>Check your reasoning</summary>Doubling all counts preserves their proportions and gives 8. Counts [0,4] remove the first centroid and give 10. The zero-count case is a mask, not a finite additive penalty.</details>
+
 The local and global vectors are separately normalized, concatenated to `B × 1024`, and passed through a feed-forward network and scalar prediction head. Training minimizes **mean absolute error (MAE)**: the mean of `|prediction − target|`. Evaluation clips predictions to the training targets' second and ninety-eighth percentiles, following the source.
 
 **State boundary.** Centroid updates happen during training; evaluation freezes centroid and normalization state. Save those buffers with a checkpoint. However, the released scaled-dot-product attention receives its dropout probability unconditionally. **Dropout** randomly removes contributions; it remains active in this local attention operation during evaluation. Along with resampled structural features, this means repeated predictions can differ even after `model.eval()`.

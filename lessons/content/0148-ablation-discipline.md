@@ -88,6 +88,14 @@ Let `F`, `E`, `M`, and `EM` be the four paired MAEs for full, shallow encoder, n
 
 **Worked example.** `F=4, E=5, M=6, EM=6.5`. Separate penalties are 1 and 2. Their sum predicts MAE 7 under additivity. Observed combined MAE is 6.5, so interaction is −0.5. On this error scale, the combined penalty is smaller than the sum. This does not prove a biological-style synergy or provide percentages of total “credit.”
 
+**The metric scale is part of the interaction claim.** Consider a separate hypothetical query with target 0. Four procedures predict 1, 2, 3 and 4. Suppose this pattern repeats in both seed runs:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Procedure</th><th>Absolute error</th><th>Squared error</th></tr></thead><tbody><tr><td>F</td><td>1</td><td>1</td></tr><tr><td>E</td><td>2</td><td>4</td></tr><tr><td>M</td><td>3</td><td>9</td></tr><tr><td>EM</td><td>4</td><td>16</td></tr></tbody></table>
+
+On MAE, interaction is `4−2−3+1=0`. On mean squared error, it is `16−4−9+1=4`. Predictions and procedure ordering did not change. Squaring errors changed the scale on which additivity was assessed. A zero MAE interaction therefore does not establish metric-independent independence of components. For the measured experiment below, keep MAE fixed as declared in the protocol; do not choose a metric after seeing which gives the desired interaction.
+
+**Try it after the example.** Add a common constant to all four MAEs, then multiply them all by two. What happens to the interaction? <details><summary>Check your reasoning</summary>The constant cancels, and multiplication scales the interaction by two. The zero in this example stays zero. A nonlinear change such as squaring need not preserve zero.</details>
+
 **Read the interaction cautiously.** The test interaction averages +0.0554 MAE with sample SD 0.2850, and individual seeds have both signs. That describes weak directional consistency across these five fits; it does not establish either independence or a reliable positive interaction.
 
 [[FIG:interaction]]

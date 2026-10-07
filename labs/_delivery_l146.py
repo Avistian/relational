@@ -44,13 +44,15 @@ with sync_playwright() as pw:
   predict=page.locator('#cmp-predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="reversal"]').click();predict.locator('.predict-reveal').click()
   assert 'GNN wins all three test pairs' in predict.locator('.predict-outcome').inner_text();states+=1
-  assert page.locator('#warmup button').count()>0 and page.locator('#cmp-teachback textarea').count()==1
-  assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
+  assert page.locator('#warmup button').count()==0 and page.locator('#cmp-teachback textarea').count()==1
+  page.locator('figure img').evaluate_all('(xs)=>xs.forEach(x=>x.loading="eager")')
+  page.wait_for_function('Array.from(document.querySelectorAll("figure img")).every(x=>x.complete&&x.naturalWidth>0)')
+  assert page.locator('figure img').evaluate_all('(xs)=>xs.length===5&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   page.screenshot(path=f'/tmp/l146-top-{width}.png');host.screenshot(path=f'/tmp/l146-path-{width}.png');selection.screenshot(path=f'/tmp/l146-select-{width}.png')
-  for i in range(4):page.locator('figure').nth(i).screenshot(path=f'/tmp/l146-figure-{i}-{width}.png')
+  for i in range(5):page.locator('figure').nth(i).screenshot(path=f'/tmp/l146-figure-{i}-{width}.png')
  page.emulate_media(media='print');page.pdf(path='/tmp/l146-print.pdf',format='A4');assert Path('/tmp/l146-print.pdf').stat().st_size>20000
- nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=nojs.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert pg.locator('noscript').count()==5;assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');nojs.close()
+ nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=nojs.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert pg.locator('noscript').count()==4;assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');nojs.close()
  # Geometry checks use SVG native coordinates; background excluded from box overlaps.
  for name in ['paths','selection','architecture','results']:
   page.goto((P/f'figures/l146/{name}.svg').as_uri())
@@ -79,6 +81,8 @@ with tempfile.TemporaryDirectory(prefix='l146-pages-') as tmp:
    if part.scheme or not part.path:continue
    dest=(path.parent/unquote(part.path)).resolve();assert dest.exists(),str(dest);count+=1
 paths=[R/'lessons'/(S+'.html'),R/'reference/gnn-vs-graph-transformer.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]
-before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l146.py')],check=True,capture_output=True);assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
-r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',portable_figures=4,svg_geometry_figures=geometry,notebook_code_cells=sum(c.cell_type=='code' for c in sol.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
+before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l146.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
+assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
+r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',page_figures=5,portable_figures=4,svg_geometry_figures=geometry,notebook_code_cells=sum(c.cell_type=='code' for c in sol.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l146_results.json').write_text(json.dumps(r,indent=2));print(r)

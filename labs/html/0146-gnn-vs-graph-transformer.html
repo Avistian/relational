@@ -7854,7 +7854,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4b1c47d94faf">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=34b2000343db">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7888,7 +7888,7 @@ Baseline: circuit sampled, bridge legal, two GNN layers. Root-readout GNN cannot
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=179046130f69">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7aa87cb9ae9d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7907,6 +7907,10 @@ Validation minimum: L4/.3 → test4.6316. Test minimum: L1/.5 → test3.917. His
 <p><strong>Scope check.</strong> This is an arithmetic audit of <a href="https://arxiv.org/html/2505.10960v1#A4">Tables 1 and 6</a>, not new training and not an accusation of test-set tuning. Historical selection is <strong>NOT_ESTABLISHED</strong>. <a href="https://avistian.github.io/relational/labs/evidence/l146/paper-table.json">Machine-readable table and calculation</a>.</p>
 </blockquote>
 <p><strong>Your rule in the lab.</strong> <code>select_config(configs, validation)</code> accepts no test scores. It chooses the first minimum and rejects incomplete or nonfinite scores. The same live function chooses checkpoints in the course trainer. This deliberately differs from the release's last-tie rule. A function signature cannot police where callers obtained a number; the protocol and audit still matter.</p>
+<p><strong>Keep selection precision separate from display precision.</strong> Here is a synthetic two-configuration example, not a reconstruction of the paper's hidden scores:</p>
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Config</th><th>Stored validation MAE</th><th>Printed to 4 decimals</th></tr></thead><tbody><tr><td>A</td><td>3.10464</td><td>3.1046</td></tr><tr><td>B</td><td>3.10461</td><td>3.1046</td></tr></tbody></table>
+<p>The actual first-minimum selector chooses <strong>B</strong> from stored values. Applied to printed values, it sees a tie and chooses <strong>A</strong>. Display rounding has discarded selection evidence. Store the original metric and selected identity together; round only the presentation. This explains one limit of a printed-table audit without asserting that rounding caused the published discrepancy above.</p>
+<p><strong>Try it after the example.</strong> Reverse the configuration order. Which answer changes under exact values, and which changes under rounded values? <details><summary>Check your reasoning</summary>The exact minimum remains B. Under the rounded tie, the first item is now B, so the answer changes with order. A deterministic tie rule cannot recover precision that has already been discarded.</details></p>
 </div>
 </div>
 </div>
