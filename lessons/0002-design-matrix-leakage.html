@@ -84,7 +84,9 @@
     <li>
       <strong>Duplicate keys after join.</strong> Joining orders to customers without
       <code>GROUP BY customer_id</code> produces one row per order, not per customer.
-      Labels defined at customer level no longer align with feature rows.
+      Repeating the customer label on every order can preserve positional alignment while
+      silently changing the unit of analysis and giving frequent buyers more weight.
+      First declare whether one example is a customer, an order, or a customer at a cutoff.
     </li>
     <li>
       <strong>Left vs inner join.</strong> Inner joins drop customers with zero orders,
@@ -92,7 +94,7 @@
       always leakage — but it invalidates comparison to a full cohort.
     </li>
     <li>
-      <strong>Train and test built separately.</strong> Fitting a scaler or target encoder
+      <strong>Preprocessing fitted before the split.</strong> Fitting a scaler or target encoder
       on the full dataset before the split leaks test statistics into train features.
       Pipelines must fit transforms on train only.
     </li>
@@ -102,16 +104,24 @@
   <p>
     Every leakage audit starts with one question: <em>what did we know at decision time
     <code>t</code>?</em> For churn, <code>t</code> might be “last day of the billing period.”
-    For credit, <code>t</code> is application time. Features may use data strictly
-    <strong>≤ t</strong>. Labels describe outcomes strictly <strong>after t</strong>
+    For credit, <code>t</code> is application time. Features may use only values <strong>available to the prediction system by t</strong>.
+    An event timestamp on or before t is necessary for a past-event feature, but does not
+    prove the record had arrived or had its present value then. Labels describe outcomes strictly <strong>after t</strong>
     (e.g. cancel within 30 days). Anything from the label window in the features is leakage.
   </p>
 
   <pre>timeline:  ─── past features ───| t |─── label window ───▶
-allowed:     order_date ≤ t          ^     cancel_date ∈ (t, t+30d]</pre>
+required:    event_time ≤ t AND available_at ≤ t
+labels:                              cancel_date ∈ (t, t+30d]</pre>
+
+  <p><strong>Two clocks, one cutoff.</strong> Event time says when something happened;
+  availability time says when the system could use it. An order placed on day 42 but
+  ingested on day 58 is unavailable for a prediction on day 50. A database queried today
+  may contain that row, so an event-date filter alone can reconstruct an impossible past.
+  Versioned attributes need the value available at the cutoff, not today’s corrected value.</p>
 
   <h2>Join sketch</h2>
-  <p>Task: predict whether customer <code>c</code> churns in the 30 days <em>after</em> date <code>t</code>.</p>
+  <p>Task: predict whether customer <code>c</code> churns in the 30 days <em>after</em> date <code>t</code>. For the initial sketch, assume past records arrived immediately and customer attributes are historical snapshots. The control below deliberately breaks the arrival assumption.</p>
 
   <div class="sketch">
 <span class="tbl">customers</span>(customer_id, signup_date, country)
@@ -129,6 +139,12 @@ Feature ideas built by joining on customer_id:
 
   <h3>Interactive — which orders does each feature see?</h3>
   <div id="leak-viz"></div>
+
+  <p><strong>Worked intervention.</strong> At day 50, spend in (20,50] is 55+30=85 and
+  time since the last order is 50−42=8 days. Delay the day-42 order until day 58: the
+  eligible spend becomes <strong>55</strong> and recency becomes <strong>25 days</strong>.
+  The event dates, amounts, cutoff and labels stay fixed. Only availability changes.
+  Explain which feature row a real day-50 job could have produced before checking the control.</p>
 
   <h2>Find the leakage</h2>
   <p>Which features smuggle information that would not exist at prediction time <code>t</code>?</p>
@@ -150,7 +166,7 @@ Feature ideas built by joining on customer_id:
       <tr>
         <td>B — spend_30d</td>
         <td class="verdict-safe">Safe</td>
-        <td>Window ends at <code>t</code>; only past behavior</td>
+        <td>Window ends at <code>t</code>; safe only for records available by <code>t</code></td>
       </tr>
       <tr>
         <td>C — future_orders</td>
@@ -165,7 +181,7 @@ Feature ideas built by joining on customer_id:
       <tr>
         <td>E — days_since_last_order</td>
         <td class="verdict-safe">Safe</td>
-        <td><code>MAX</code> restricted to orders ≤ <code>t</code></td>
+        <td><code>MAX</code> restricted to orders that occurred and were available by <code>t</code></td>
       </tr>
       <tr>
         <td>F — avg_order_after_t</td>
@@ -214,9 +230,10 @@ Feature ideas built by joining on customer_id:
   <h2>Primary reading (today)</h2>
   <p>
     <a href="https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/">Chip Huyen — <em>Designing Machine Learning Systems</em></a>,
-    Chapters 2–3 (data fundamentals and feature engineering). Read both chapters in full
-    if you have time; minimum is §2.3 on data leakage and §3 on feature engineering
-    pipelines. Note how train/valid/test splits interact with batch feature jobs.
+    Chapter 3 (Data Engineering Fundamentals) and Chapter 5 (Feature Engineering),
+    especially Chapter 5’s Data Leakage section. For an openly accessible companion, read the
+    <a href="https://scikit-learn.org/stable/common_pitfalls.html#data-leakage">scikit-learn leakage guide</a>.
+    Separate fitting preprocessing on held-out rows from using historically unavailable values: a pipeline addresses the former, not automatically the latter.
   </p>
 
   <h2>Lab preview</h2>
@@ -272,7 +289,7 @@ Feature ideas built by joining on customer_id:
   });
 
   Quiz.mount(document.getElementById("quiz3"), {
-    question: "Feature E: days_since_last_order with MAX(order_date) ≤ t. Verdict?",
+    question: "Feature E under the stated immediate-arrival assumption: days_since_last_order using only orders dated ≤ t. Verdict?",
     options: [
       { label: "Leaks — uses future orders", value: "a" },
       { label: "Safe — static customer trait", value: "b" },
@@ -280,7 +297,7 @@ Feature ideas built by joining on customer_id:
       { label: "Leaks — uses the label column", value: "d" }
     ],
     correct: "c",
-    explain: "The MAX is restricted to orders on or before t, so only past behavior enters the feature."
+    explain: "Under the sketch’s immediate-arrival assumption, MAX uses only orders known at t. With delayed ingestion, also filter available_at ≤ t; the order-date restriction alone is insufficient."
   });
 </script><script src="../assets/visual-stories.js" defer></script></body>
 </html>

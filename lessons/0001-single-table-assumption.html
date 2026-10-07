@@ -30,16 +30,18 @@
 
   <p>
     The contract is strict: row <code>i</code> of <code>X</code> must align with label
-    <code>y[i]</code>. The learner never sees table names, foreign keys, or join graphs —
-    only numbers in a rectangle. Every relational ML project therefore has two systems:
-    the <em>database</em> (truth) and the <em>design matrix</em> (what the model sees).
+    <code>y[i]</code>. The learner receives feature values, not the original tables and joins. Numeric or
+    categorical identifiers can be included as features, but their presence does not
+    automatically tell the model which rows are linked. Every relational ML project therefore has two systems:
+    the <em>database</em> (recorded observations) and the <em>design matrix</em> (what the model sees).
     Lesson 002 makes that second system precise.
   </p>
 
   <div class="callout">
     <strong>Fey et al. (ICML 2024):</strong> feature engineering on relational data is
-    “slow, error prone and leads to suboptimal models” because no standard learner consumes
-    multiple connected tables end-to-end.
+    argued to be costly and vulnerable to mistakes. The paper proposes learning over
+    connected tables instead. This is a research proposal, not proof that every graph model
+    outperforms a well-engineered flat-table model.
     <br>
     <a href="https://proceedings.mlr.press/v235/fey24a.html">Position: Relational Deep Learning</a>
   </div>
@@ -55,21 +57,65 @@ support_tickets(ticket_id, customer_id, opened_at, resolved_at, topic)</pre>
 
   <p>
     The business question: <em>will customer <code>c</code> cancel in the next 30 days?</em>
-    A data scientist’s notebook almost always begins with SQL like:
+    First define the prediction cutoff <code>t</code>. A <strong>primary key</strong> uniquely
+    identifies a row; a <strong>foreign key</strong> points to a row in another table.
+    Several orders can point to the same customer, so joining child tables can multiply rows.
+    Aggregate each child table to one row per customer before joining its features:
   </p>
-  <pre>SELECT c.customer_id,
-       DATEDIFF('day', c.signup_date, :as_of_date) AS tenure,
-       COUNT(o.order_id) AS order_count_90d,
-       AVG(s.pages_viewed) AS avg_pages,
-       COUNT(t.ticket_id) AS ticket_count
-FROM customers c
-LEFT JOIN orders o ON ... AND o.order_date BETWEEN ...
-LEFT JOIN sessions s ON ...
-LEFT JOIN support_tickets t ON ...
-GROUP BY c.customer_id</pre>
+  <pre>WITH order_features AS (
+  SELECT customer_id, COUNT(*) AS order_count_90d
+  FROM orders
+  WHERE order_date &gt; date(:cutoff, &#x27;-90 days&#x27;)
+    AND order_date &lt;= :cutoff
+  GROUP BY customer_id
+), session_features AS (
+  SELECT customer_id, AVG(pages_viewed) AS avg_pages
+  FROM sessions
+  WHERE start_time &lt;= :cutoff
+  GROUP BY customer_id
+), ticket_features AS (
+  SELECT customer_id, COUNT(*) AS ticket_count
+  FROM support_tickets
+  WHERE opened_at &lt;= :cutoff
+  GROUP BY customer_id
+)
+SELECT c.customer_id,
+       CAST(julianday(:cutoff) - julianday(c.signup_date)
+            AS INTEGER) AS tenure,
+       COALESCE(o.order_count_90d, 0) AS order_count_90d,
+       s.avg_pages,
+       COALESCE(t.ticket_count, 0) AS ticket_count
+FROM customers AS c
+LEFT JOIN order_features AS o USING (customer_id)
+LEFT JOIN session_features AS s USING (customer_id)
+LEFT JOIN ticket_features AS t USING (customer_id)
+WHERE c.signup_date &lt;= :cutoff;</pre>
+
+  <p><strong>Read the SQL.</strong> Each <code>WITH</code> clause names an intermediate table.
+  <code>GROUP BY</code> returns one row per customer in that table. <code>LEFT JOIN</code>
+  retains customers with no history; <code>COALESCE(...,0)</code> makes their counts zero.
+  A missing session average stays NULL: no sessions is not the same observation as zero pages.
+  This is executable SQLite syntax with ISO date strings and a bound <code>:cutoff</code>.
+  It assumes events were available when they occurred and customer attributes were not
+  retrospectively overwritten. Lesson 2 separates those assumptions from timestamp filtering.</p>
+
+  <h3>Trace the row multiplication before trusting a count</h3>
+  <p>Customer 1 has two orders (amounts 20 and 30), two sessions (4 and 8 pages), and one ticket,
+  all before the cutoff. Joining all three raw child tables makes 2 × 2 × 1 = 4 rows:</p>
+  <table><thead><tr><th>Order</th><th>Session</th><th>Ticket</th></tr></thead><tbody>
+  <tr><td>20</td><td>4 pages</td><td>ticket 1</td></tr>
+  <tr><td>20</td><td>8 pages</td><td>ticket 1</td></tr>
+  <tr><td>30</td><td>4 pages</td><td>ticket 1</td></tr>
+  <tr><td>30</td><td>8 pages</td><td>ticket 1</td></tr></tbody></table>
+  <p>A raw-join <code>COUNT(order_id)</code> returns 4, and so does <code>COUNT(ticket_id)</code>.
+  Pre-aggregation gives <strong>order_count_90d=2, avg_pages=6, ticket_count=1</strong>, matching
+  the diagram below. The average happens to survive this balanced multiplication; the counts
+  do not. A future order must affect neither count. An eligible customer with no child rows
+  must still produce one feature row, with counts zero and average NULL.</p>
 
   <p>
-    Notice what happened. Four tables became one row per customer. Join keys disappeared.
+    Notice what happened. Four tables became one row per eligible customer at this cutoff. The customer key
+    remains for joining labels and auditing rows, but need not be a model input.
     The graph of “who bought what, when, and after which session” collapsed into four
     hand-picked aggregates. That collapse is not neutral — it is a modeling choice baked
     into SQL that the gradient booster will never question.
@@ -87,16 +133,17 @@ GROUP BY c.customer_id</pre>
     </li>
     <li>
       <strong>Leakage risk.</strong> A careless join can smuggle future information into
-      features. Temporal relational data needs time-respecting splits — the REG in RDL marks
-      what was known when. A feature that sums <em>all</em> orders, not just orders before
+      features. Temporal relational data needs explicit availability rules and time-respecting
+      splits. A relational entity graph does not establish historical availability by itself. A feature that sums <em>all</em> orders, not just orders before
       the prediction date, can look predictive while cheating.
     </li>
     <li>
       <strong>Suboptimal signal.</strong> RelBench’s user study found GNNs on the full
       relational graph matched or beat an experienced data scientist’s manual features while
       cutting human effort by an order of magnitude
-      (<a href="https://arxiv.org/abs/2407.08570">Robinson et al., NeurIPS 2024</a>).
-      That is the gap your thesis bets on — but only if evaluation is fair.
+      (<a href="https://arxiv.org/abs/2407.20060">Robinson et al., NeurIPS 2024</a>).
+      This is evidence from the paper’s particular tasks and user-study protocol,
+      not a guarantee of the same accuracy or labor savings on another database.
     </li>
   </ol>
 
@@ -131,9 +178,12 @@ GROUP BY c.customer_id</pre>
     </dd>
     <dt>“GBDTs already win Kaggle tabular.”</dt>
     <dd>
-      On <em>single-table</em> competitions, yes — Grinsztajn et al. and TabArena confirm
-      this under honest temporal splits. Your bet is that production data is rarely truly
-      single-table, and that relational models close the gap once evaluation respects time.
+      Tree ensembles are strong single-table baselines, but there is no universal winner.
+      <a href="https://arxiv.org/abs/2207.08815">Grinsztajn et al.</a> compare methods under
+      their declared tabular protocol; that is not evidence about temporal deployment.
+      Later lessons distinguish random-split benchmarks from temporal evaluation.
+      Whether relational models add useful signal must be tested with the same eligible
+      information, population and selection budget.
     </dd>
   </dl>
 
@@ -167,8 +217,7 @@ GROUP BY c.customer_id</pre>
   <p>
     Without reopening this page, sketch the four-table e-commerce example from memory.
     Draw arrows for foreign keys. Circle one aggregate a flat model would use and one
-    relationship it cannot see. If that feels hard, re-read the worked example — retrieval
-    tomorrow will ask for it.
+    relationship it cannot see. If that feels hard, re-read the worked example — a second sketch tomorrow can show which relationships you retained.
   </p>
 
   <div class="teacher-note">

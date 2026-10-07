@@ -12,7 +12,7 @@
     B: {
       label: "B — spend_30d",
       safe: true,
-      caption: "Safe: sums orders in (t−30d, t] — only past behavior."
+      caption: "Safe: sums orders in (t−30d, t] — past events that were also available by t."
     },
     C: {
       label: "C — future_orders",
@@ -27,7 +27,7 @@
     E: {
       label: "E — days_since_last_order",
       safe: true,
-      caption: "Safe: MAX(order_date) restricted to orders ≤ t."
+      caption: "Safe: MAX(order_date) over orders dated and available by t."
     }
   };
 
@@ -41,6 +41,18 @@
   ];
 
   var CUTOFF = 50;
+
+  function calculate(key, delayed) {
+    var rows = ORDERS.filter(function (o) {
+      var known = (delayed && o.day === 42 ? 58 : o.day) <= CUTOFF;
+      if (key === "B") return o.day > CUTOFF - 30 && o.day <= CUTOFF && known;
+      if (key === "E") return o.day <= CUTOFF && known;
+      return o.day > CUTOFF;
+    });
+    var value = key === "C" ? rows.length : key === "E" ? CUTOFF - Math.max.apply(null, rows.map(function(o){return o.day;})) : rows.reduce(function(sum,o){return sum+o.amount;},0);
+    if (key === "F") value = rows.length ? value/rows.length : null;
+    return {days: rows.map(function(o){return o.day;}), value:value};
+  }
 
   function mount(container) {
     container.innerHTML = "";
@@ -56,6 +68,12 @@
     var controls = document.createElement("div");
     controls.className = "leak-viz-controls";
     container.appendChild(controls);
+    var delayLabel = document.createElement("label");
+    var delay = document.createElement("input");
+    delay.type = "checkbox";
+    delayLabel.appendChild(delay);
+    delayLabel.appendChild(document.createTextNode(" Day-42 order arrives on day 58"));
+    container.appendChild(delayLabel);
 
     var timeline = document.createElement("div");
     timeline.className = "leak-viz-timeline";
@@ -76,9 +94,15 @@
     container.appendChild(caption);
 
     var active = "B";
+    caption.setAttribute("aria-live", "polite");
+    var values = document.createElement("p");
+    values.className = "leak-viz-value";
+    container.appendChild(values);
+    delay.addEventListener("change", function(){renderTrack(active);});
 
     function renderTrack(featKey) {
       track.innerHTML = "";
+      var result=calculate(featKey,delay.checked);
       ORDERS.forEach(function (o) {
         var dot = document.createElement("div");
         dot.className = "leak-viz-order";
@@ -87,15 +111,11 @@
 
         var inPast = o.day <= CUTOFF;
         var inFuture = o.day > CUTOFF;
-        var used = false;
-
-        if (featKey === "B") {
-          used = o.day > CUTOFF - 30 && o.day <= CUTOFF;
-        } else if (featKey === "C" || featKey === "F") {
-          used = inFuture;
-        } else if (featKey === "E") {
-          used = inPast;
-        }
+        var used = result.days.indexOf(o.day) !== -1;
+        var arrival = delay.checked && o.day===42 ? 58 : o.day;
+        dot.title += "; available day " + arrival;
+        dot.setAttribute("aria-label",dot.title);
+        dot.setAttribute("role","img");
 
         if (used) dot.classList.add("leak-viz-used");
         if (inFuture) dot.classList.add("leak-viz-future");
@@ -109,6 +129,8 @@
 
       var f = FEATURES[featKey];
       caption.textContent = f.caption;
+      values.textContent = "Selected event days: " + result.days.join(", ") + ". " +
+        (featKey === "B" ? "Spend = " : featKey === "E" ? "Days since last order = " : featKey === "C" ? "Future order count = " : "Future average amount = ") + result.value + ".";
       caption.className = "leak-viz-caption " + (f.safe ? "leak-viz-safe" : "leak-viz-leak");
     }
 
@@ -131,5 +153,5 @@
     renderTrack(active);
   }
 
-  global.LeakageViz = { mount: mount };
+  global.LeakageViz = { mount: mount, calculate: calculate };
 })(window);

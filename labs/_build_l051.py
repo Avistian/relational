@@ -32,13 +32,11 @@ def build(solution=False):
 
 **Skill:** design and implement an intervention that distinguishes information content from learning behavior. **Scope: key parts** of Grinsztajn et al. §5; familiar numeric MLP and FT-T from L050 are displayed in full. XGBoost is a packaged baseline. You write four live functions, then the visible harness calls them in the actual experiment.
 
-**Route:** recall → smoothing → rotation → noise → paired effects → complete training code → three-task run → EXIT → required larger run. PROVIDED is read/run; TODO is your implementation; CHECK gives diagnostics. Author-reference figures are measured snapshots, separate from your current outputs.
+**Route:** smoothing → rotation → noise → paired effects → complete training code → three-task run → EXIT → required larger run. PROVIDED is read/run; TODO is your implementation; CHECK gives diagnostics. Author-reference figures are measured snapshots, separate from your current outputs.
 
 **Data contract:** Tier A, electricity 44120, MagicTelescope 44125 and bank-marketing 44126 from the authors' January 2023 OpenML suite 337. The learning lab uses 1800 rows per task, 60/20/20 stratified split seed 51, model seeds 0/1/2, fixed intervention seed 51. The suite is a later release than the 2022 paper v1 read here. Numeric binary classification only. Three tasks and fixed recipes do not reproduce the benchmark search curves: **INCOMPARABLE**.
 
-The historical comparison took about two CPU minutes; the added one-task bandwidth diagnosis is a separate bounded run. Understanding and implementation take longer. Seven portable inline PNGs require no execution. Local packaging checks do not certify the live Colab UI.
-
-**Recall first:** why did three seeds in L050 not create three new datasets? Write your answer before proceeding.''')
+The historical comparison took about two CPU minutes; the added one-task bandwidth diagnosis is a separate bounded run. Understanding and implementation take longer. Seven portable inline PNGs require no execution. Local packaging checks do not certify the live Colab UI.''')
  md('''## Concept recap · a controlled change to the learning problem
 An inductive bias is a learning procedure's preference among possible explanations of limited data. Here you manipulate supervision, coordinates or input width and measure how a fixed training procedure responds. Expressivity means the functions a model can represent; it does not tell us which function finite training finds.
 

@@ -32,9 +32,7 @@ def build(solution=False):
 
 **Scope:** full numeric FT-Transformer, XGBoost and MLP on three real OpenML tasks. This reviews an existing model, strengthens its implementation fidelity, and tests your protocol discipline. No categorical, regression or multiclass branch. A post-comparison three-model probability ensemble is a diagnostic exercise, not the paper Table 4 recipe. Local results are INCOMPARABLE to the paper benchmark. Required next step: a larger Higgs Small attempt with a printed ledger.
 
-**Environment:** CPU sufficient for the learning lab (author run ~91 seconds; implementation and reading take longer). Colab bootstrap is the first code cell. PNG figures are embedded and need no execution. Author-reference snapshots are labeled; they are not your kernel output.
-
-**Recall without opening L049:** why can exact model-output parity coexist with an INCOMPARABLE benchmark number? Write two sentences before proceeding.''')
+**Environment:** CPU sufficient for the learning lab (author run ~91 seconds; implementation and reading take longer). Colab bootstrap is the first code cell. PNG figures are embedded and need no execution. Author-reference snapshots are labeled; they are not your kernel output.''')
     for c in bootstrap_cells():
         cells.append(nbf.v4.new_markdown_cell(c['source']) if c['cell_type']=='markdown' else nbf.v4.new_code_cell(c['source']))
     section('question')
