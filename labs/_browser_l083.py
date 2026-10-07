@@ -11,7 +11,7 @@ with sync_playwright() as p:
  for width in [1100,375]:
   page=browser.new_page(viewport={'width':width,'height':950});page.on('pageerror',lambda e:errors.append(str(e)))
   page.goto((ROOT/'lessons/0083-graphsage.html').as_uri())
-  assert page.locator('#warmup').inner_text().strip()
+  assert page.locator('#warmup').count()==0
   assert 'Mean: [3,2]' in page.locator('#mean output').inner_text()
   control=page.locator('#mean input');control.fill('9');control.dispatch_event('input')
   assert 'Mean: [5,2]' in page.locator('#mean output').inner_text()
@@ -26,19 +26,21 @@ with sync_playwright() as p:
   page.locator('#budget button').click()
   assert page.locator('#predict button').count()>=3
   assert page.locator('#teachback textarea').count()==1
+  page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+  page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
   for img in page.locator('figure img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1'),'page overflow'
   for section in ['mean','budget']:
    page.locator('#'+section).scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l083-{section}-{width}.png')
-  page.locator('img[alt^="Complete released"]').scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l083-architecture-{width}.png')
+  page.locator('img[alt^="Complete released"]').locator('xpath=ancestor::figure').scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l083-architecture-{width}.png')
   page.emulate_media(media='print');assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1')
   page.close()
  page=browser.new_page(java_script_enabled=False);page.goto((ROOT/'labs/html/0083-graphsage.html').as_uri())
- assert page.locator('img[src^="data:image/png;base64,"]').count()==4
+ assert page.locator('img[src^="data:image/png;base64,"]').count()==6
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
  page.screenshot(path='/tmp/l083-notebook.png')
  page.goto((ROOT/'notebooks.html').as_uri());assert page.locator('#lab-83 a').count()==4
  browser.close()
 assert not errors,errors
-r={'status':'PASS','widths':[1100,375],'mean_states':[5,9,8,1,5],'fanout_states':[[10,25],[1,1],[25,25],[10,25]],'portable_figures':4,'no_js_gallery':True,'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+r={'status':'PASS','widths':[1100,375],'mean_states':[5,9,8,1,5],'fanout_states':[[10,25],[1,1],[25,25],[10,25]],'portable_figures':6,'no_js_gallery':True,'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (ROOT/'labs/_browser_l083_results.json').write_text(json.dumps(r,indent=2)+'\n');print(r)

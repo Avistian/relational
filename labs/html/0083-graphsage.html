@@ -7824,14 +7824,12 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l083-36c4736f340120e6-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l083-40250ad75a7ea15d-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Close lesson 82. Write three answers: (1) What could a test node contribute during Cora training even though its label was hidden? (2) Why is the GCN coefficient not an ordinary neighbor mean? (3) Which parameters belong to a node, and which are shared across nodes? Keep your answers; revise them at the end.</p>
-<p><strong>Pause: write your prediction or teach-back before continuing.</strong></p>
 <p><strong>Today's win:</strong> trace a sampled two-layer GraphSAGE computation, implement its mean aggregator, and demonstrate that training cannot access held-out graphs. The core route takes about 40 minutes; the full experiment is a separate executable lab. This serves our relational mission: new database rows need usable representations before we have labels for them.</p>
 <!-- depth-walkthrough:start -->
 <div class="learning-route"><p class="route-kicker">THE BIG PICTURE · LESSON 083</p><p><strong>Build on what you know.</strong> <a href="https://avistian.github.io/relational/lessons/0082-gcn.html">Lesson 82</a> performed a full-graph forward pass. GraphSAGE moves attention to a reusable neighborhood function and the dependencies of a root mini-batch. The inductive split must be stated separately from the layer formula.</p><p><strong>The next question.</strong> <a href="https://avistian.github.io/relational/lessons/0084-gat.html">Lesson 84</a> replaces equal neighbor weighting with attention; <a href="https://avistian.github.io/relational/lessons/0089-sampling-at-scale.html">Lesson 89</a> changes the sampling unit from nested neighborhoods to clusters. Both inherit the need to account for support nodes.</p><p><a href="https://avistian.github.io/relational/reference/0071-0090-model-map.html">Open the SSL → relational → graph model map</a> · Spend 15–20 minutes tracing this overview before the detailed mechanism and lab.</p></div>
@@ -7878,6 +7876,36 @@ a.anchor-link {
 <p><strong>Pause: write your prediction or teach-back before continuing.</strong></p>
 <p>Sampling bounds the expansion, but it introduces variability and can miss rare informative neighbors. If a node has one decisive neighbor among 100, sampling 10 without replacement includes it with probability 0.1. The sampled mean is unbiased for the full mean under uniform sampling from the true list, but a nonlinear multilayer prediction generally is not an unbiased estimate of full-neighborhood prediction.</p>
 <p>There is another approximation in the release: each adjacency row is capped or padded to 128 entries <strong>once</strong>, then minibatches sample its columns. High-degree neighbors excluded from this fixed table cannot appear later. Low-degree rows are filled by sampling with replacement; duplicates alter that table's empirical mean. We reproduce this table construction. At each hop the released sampler shuffles columns with one shared permutation across rows; the samples are not independent per row. These details can affect variance even when marginal sampling looks reasonable.</p>
+<h3 id="An-unbiased-mean-can-still-change-the-prediction">An unbiased mean can still change the prediction<a class="anchor-link" href="#An-unbiased-mean-can-still-change-the-prediction">¶</a></h3><p>Take one scalar coordinate of two neighbors: −2 and +2. Their full mean is 0. Draw one neighbor uniformly. The sampled mean is −2 or +2, each with probability ½, so its expectation is still 0. Now apply ReLU to that mean: the output is 0 or 2, averaging <strong>1</strong>, whereas ReLU of the full mean is <strong>0</strong>. This is one branch of a teaching layer, with identity weight; it isolates the nonlinearity rather than approximating the full trained network.</p>
+<table>
+<thead>
+<tr>
+<th>Computation</th>
+<th style="text-align:right">Mean before ReLU</th>
+<th style="text-align:right">Output after ReLU</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full two-neighbor list</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>Sample the negative neighbor</td>
+<td style="text-align:right">−2</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>Sample the positive neighbor</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">2</td>
+</tr>
+</tbody>
+</table>
+<p>Averaging arbitrarily many independently sampled <strong>outputs</strong> approaches 1 here, not 0. Averaging their <strong>means before ReLU</strong> instead approaches 0. The order of aggregation and nonlinear computation matters.</p>
+<p>The fixed adjacency table introduces a second effect. Suppose padding realizes <code>[-2,-2,+2]</code>. Uniformly drawing one table entry now has expected mean −2/3 and expected ReLU output 2/3. More minibatches do not remove this conditional table imbalance. Across freshly constructed tables the expectation can differ; the release keeps one realization. This three-slot table is an illustration, not the actual width-128 configuration.</p>
+<p><strong>Try it:</strong> enumerate all four ordered draws of two neighbors with replacement from the original list. Their means are −2,0,0,2, so their average ReLU output is 0.5. Taking both distinct neighbors without replacement gives 0 every time. State the sampling scheme before calling an estimate unbiased.</p>
 <h2 id="5-%C2%B7-Mean,-pooling,-LSTM:-what-information-survives?">5 · Mean, pooling, LSTM: what information survives?<a class="anchor-link" href="#5-%C2%B7-Mean,-pooling,-LSTM:-what-information-survives?">¶</a></h2><table>
 <thead>
 <tr>
@@ -7949,7 +7977,7 @@ a.anchor-link {
 </ol>
 <p>Change a mean to a sum deliberately. Predict which check fails and why node degree now changes the scale. Restore it. After two days, reconstruct the three support tensors without looking at the code. After one week, explain the complete path from a newly arrived row to its predicted label, naming exactly which data were available during training.</p>
 <p><strong>Pause: write your prediction or teach-back before continuing.</strong></p>
-<h2 id="Where-this-leads">Where this leads<a class="anchor-link" href="#Where-this-leads">¶</a></h2><p>Mean aggregation gives every sampled neighbor equal weight. Lesson 84's planned GAT unit asks whether learned attention can distinguish neighbors before combining their messages. It must still answer our access and sampling questions; attention does not excuse leakage. For now, use the <a href="https://avistian.github.io/relational/reference/0083-graphsage.html">reference card</a> and read <strong>§3, Algorithm 2 and Appendix C</strong> of the <a href="https://arxiv.org/html/1706.02216v4">primary paper</a>. Ask the agent follow-up questions about any tensor shape, sampling decision or mismatch you cannot explain from memory.</p>
+<h2 id="Where-this-leads">Where this leads<a class="anchor-link" href="#Where-this-leads">¶</a></h2><p>Mean aggregation gives every sampled neighbor equal weight. <a href="https://avistian.github.io/relational/lessons/0084-gat.html">Lesson 84</a> asks whether learned attention can distinguish neighbors before combining their messages. It must still answer our access and sampling questions; attention does not excuse leakage. For now, use the <a href="https://avistian.github.io/relational/reference/0083-graphsage.html">reference card</a> and read <strong>§3, Algorithm 2 and Appendix C</strong> of the <a href="https://arxiv.org/html/1706.02216v4">primary paper</a>. Ask the agent follow-up questions about any tensor shape, sampling decision or mismatch you cannot explain from memory.</p>
 </div>
 </div>
 </div>

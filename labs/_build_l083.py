@@ -15,7 +15,7 @@ def prose(portable=False):
  for n,c in CAPTIONS.items():
   src='data:image/png;base64,'+base64.b64encode((LAB/'figures/l083'/f'{n}.png').read_bytes()).decode() if portable else f'../labs/figures/l083/{n}.png'
   s=s.replace('[[FIG:'+n+']]',f'<figure class="mpnn-figure"><small>Scroll to inspect the full diagram on narrow screens.</small><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{c}"></div><figcaption>{c}</figcaption></figure>')
- for n in ['warmup','predict','mean','budget','teachback']:
+ for n in ['predict','mean','budget','teachback']:
   s=s.replace('[['+n.upper()+']]', '**Pause: write your prediction or teach-back before continuing.**' if portable else '<div id="'+n+'"></div>')
  r=json.loads((LAB/'_paper_l083_results.json').read_text())
  rows='\n'.join(f'| {v["seed"]} | {v["selected_lr"]} | {v["test"]["micro_f1"]:.5f} |' for v in r['runs'])

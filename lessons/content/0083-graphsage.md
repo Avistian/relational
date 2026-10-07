@@ -1,5 +1,3 @@
-Close lesson 82. Write three answers: (1) What could a test node contribute during Cora training even though its label was hidden? (2) Why is the GCN coefficient not an ordinary neighbor mean? (3) Which parameters belong to a node, and which are shared across nodes? Keep your answers; revise them at the end.
-
 **Today's win:** trace a sampled two-layer GraphSAGE computation, implement its mean aggregator, and demonstrate that training cannot access held-out graphs. The core route takes about 40 minutes; the full experiment is a separate executable lab. This serves our relational mission: new database rows need usable representations before we have labels for them.
 
 <!-- depth-walkthrough:start -->
@@ -95,6 +93,22 @@ Sampling bounds the expansion, but it introduces variability and can miss rare i
 
 There is another approximation in the release: each adjacency row is capped or padded to 128 entries **once**, then minibatches sample its columns. High-degree neighbors excluded from this fixed table cannot appear later. Low-degree rows are filled by sampling with replacement; duplicates alter that table's empirical mean. We reproduce this table construction. At each hop the released sampler shuffles columns with one shared permutation across rows; the samples are not independent per row. These details can affect variance even when marginal sampling looks reasonable.
 
+### An unbiased mean can still change the prediction
+
+Take one scalar coordinate of two neighbors: −2 and +2. Their full mean is 0. Draw one neighbor uniformly. The sampled mean is −2 or +2, each with probability ½, so its expectation is still 0. Now apply ReLU to that mean: the output is 0 or 2, averaging **1**, whereas ReLU of the full mean is **0**. This is one branch of a teaching layer, with identity weight; it isolates the nonlinearity rather than approximating the full trained network.
+
+| Computation | Mean before ReLU | Output after ReLU |
+|---|---:|---:|
+| Full two-neighbor list | 0 | 0 |
+| Sample the negative neighbor | −2 | 0 |
+| Sample the positive neighbor | 2 | 2 |
+
+Averaging arbitrarily many independently sampled **outputs** approaches 1 here, not 0. Averaging their **means before ReLU** instead approaches 0. The order of aggregation and nonlinear computation matters.
+
+The fixed adjacency table introduces a second effect. Suppose padding realizes `[-2,-2,+2]`. Uniformly drawing one table entry now has expected mean −2/3 and expected ReLU output 2/3. More minibatches do not remove this conditional table imbalance. Across freshly constructed tables the expectation can differ; the release keeps one realization. This three-slot table is an illustration, not the actual width-128 configuration.
+
+**Try it:** enumerate all four ordered draws of two neighbors with replacement from the original list. Their means are −2,0,0,2, so their average ReLU output is 0.5. Taking both distinct neighbors without replacement gives 0 every time. State the sampling scheme before calling an estimate unbiased.
+
 ## 5 · Mean, pooling, LSTM: what information survives?
 
 | Aggregator | Mechanism | What to test |
@@ -137,4 +151,4 @@ Change a mean to a sum deliberately. Predict which check fails and why node degr
 
 ## Where this leads
 
-Mean aggregation gives every sampled neighbor equal weight. Lesson 84's planned GAT unit asks whether learned attention can distinguish neighbors before combining their messages. It must still answer our access and sampling questions; attention does not excuse leakage. For now, use the [reference card](../reference/0083-graphsage.html) and read **§3, Algorithm 2 and Appendix C** of the [primary paper](https://arxiv.org/html/1706.02216v4). Ask the agent follow-up questions about any tensor shape, sampling decision or mismatch you cannot explain from memory.
+Mean aggregation gives every sampled neighbor equal weight. [Lesson 84](0084-gat.html) asks whether learned attention can distinguish neighbors before combining their messages. It must still answer our access and sampling questions; attention does not excuse leakage. For now, use the [reference card](../reference/0083-graphsage.html) and read **§3, Algorithm 2 and Appendix C** of the [primary paper](https://arxiv.org/html/1706.02216v4). Ask the agent follow-up questions about any tensor shape, sampling decision or mismatch you cannot explain from memory.

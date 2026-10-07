@@ -7826,13 +7826,12 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l081-c5ddcafeb891d6be-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l081-c21570a13eb2bee4-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p><strong>Cold recall:</strong> write your answers in a markdown cell before reading further.</p>
 <p><strong>Your tangible win:</strong> implement message → aggregate → update → readout, and show that renaming nodes changes their positions rather than the graph prediction. The core takes about 30 minutes; reserve another session for the molecular model and reproduction audit.</p>
 <p><a href="https://avistian.github.io/relational/lessons/0078-message-passing-preview.html">Lesson 78</a> made one neighbor calculation concrete. <a href="https://avistian.github.io/relational/lessons/0080-year-2-exit-exam.html">Lesson 80</a> demanded a defensible experiment. Year 3 combines these skills: make graph operations explicit, then test what the resulting model actually learns. This is the foundation for learning over entity relationships in a database.</p>
 <p><strong>Primary reading:</strong> Gilmer et al., <a href="https://proceedings.mlr.press/v70/gilmer17a.html">Neural Message Passing for Quantum Chemistry</a>, §2 for the framework and §§6–8 for the experiment. Read the <a href="https://proceedings.mlr.press/v70/gilmer17a/gilmer17a-supp.pdf">supplement</a>, Table 3, after the core lab.</p>
@@ -7990,6 +7989,40 @@ candidate = tanh(m W + (r ⊙ h) U)
 h_new = (1 − z) ⊙ h + z ⊙ candidate
 </pre></div>
 <p>The source has no gate biases. We implement these equations directly: PyTorch's standard GRU cell uses a different reset placement in its candidate calculation. The same message and update weights are reused for six rounds in the smoke recipe. In the search, the number of rounds varies from three through eight.</p>
+<h3 id="Why-the-position-of-the-reset-gate-matters">Why the position of the reset gate matters<a class="anchor-link" href="#Why-the-position-of-the-reset-gate-matters">¶</a></h3><p>A scalar example cannot expose this difference: scalar multiplication commutes. Use two coordinates instead. Let the old state be <code>h=[1,2]</code>, the reset gate <code>r=[0.25,0.75]</code>, and the recurrent matrix <code>U=[[0,1],[1,0]]</code>, which swaps coordinates. Set the message contribution to zero and the update gate to <code>[0.5,0.5]</code> to isolate the candidate calculation.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Reset before U</th>
+<th>Reset after U</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First operation</td>
+<td>r⊙h = [0.25, 1.5]</td>
+<td>hU = [2, 1]</td>
+</tr>
+<tr>
+<td>Candidate input</td>
+<td>(r⊙h)U = [1.5, 0.25]</td>
+<td>r⊙(hU) = [0.5, 0.75]</td>
+</tr>
+<tr>
+<td>tanh candidate</td>
+<td>[0.9051, 0.2449]</td>
+<td>[0.4621, 0.6351]</td>
+</tr>
+<tr>
+<td>New state</td>
+<td>[0.9526, 1.1225]</td>
+<td>[0.7311, 1.3176]</td>
+</tr>
+</tbody>
+</table>
+<p>In the released source, the gate chooses which <strong>old coordinates</strong> can influence other coordinates through U. Applying the gate afterward filters the <strong>mixed output coordinates</strong> instead. The <a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.GRUCell.html">PyTorch GRUCell equation</a> uses the latter placement and also defines the update gate with the opposite interpolation convention. Setting both update gates to 0.5 here isolates reset placement; this is not a recipe for copying arbitrary GRU weights.</p>
+<p><strong>Try the boundary case:</strong> replace U with the identity matrix. Both reset placements now agree. Explain why a test restricted to diagonal recurrent matrices could miss the wrong implementation. Then restore the swap matrix and verify both new states numerically.</p>
 <p><strong>Readout.</strong> Concatenate each final state with its original 13 features. Feed this 63-dimensional vector into two separate 63→200→1 networks with ReLU hidden activations. Multiply a sigmoid gate from one by the unrestricted scalar value from the other. Sum those contributions <strong>within each molecule</strong>, not across the batch. Original features remain available even after repeated updates.</p>
 <p><strong>Training and inference.</strong> Standardize the dipole targets using only training molecules. Minimize mean squared error in standardized units using Adam. Validation MAE chooses the checkpoint and trial. At inference undo target scaling; report mean absolute error in Debye, a unit of dipole moment. Loss uses training targets only. No training dropout is used. All model weights are trainable; the graph structure and atom features remain fixed.</p>
 <blockquote>

@@ -156,6 +156,21 @@ h_new = (1 − z) ⊙ h + z ⊙ candidate
 
 The source has no gate biases. We implement these equations directly: PyTorch's standard GRU cell uses a different reset placement in its candidate calculation. The same message and update weights are reused for six rounds in the smoke recipe. In the search, the number of rounds varies from three through eight.
 
+### Why the position of the reset gate matters
+
+A scalar example cannot expose this difference: scalar multiplication commutes. Use two coordinates instead. Let the old state be `h=[1,2]`, the reset gate `r=[0.25,0.75]`, and the recurrent matrix `U=[[0,1],[1,0]]`, which swaps coordinates. Set the message contribution to zero and the update gate to `[0.5,0.5]` to isolate the candidate calculation.
+
+| Operation | Reset before U | Reset after U |
+|---|---|---|
+| First operation | r⊙h = [0.25, 1.5] | hU = [2, 1] |
+| Candidate input | (r⊙h)U = [1.5, 0.25] | r⊙(hU) = [0.5, 0.75] |
+| tanh candidate | [0.9051, 0.2449] | [0.4621, 0.6351] |
+| New state | [0.9526, 1.1225] | [0.7311, 1.3176] |
+
+In the released source, the gate chooses which **old coordinates** can influence other coordinates through U. Applying the gate afterward filters the **mixed output coordinates** instead. The [PyTorch GRUCell equation](https://docs.pytorch.org/docs/stable/generated/torch.nn.GRUCell.html) uses the latter placement and also defines the update gate with the opposite interpolation convention. Setting both update gates to 0.5 here isolates reset placement; this is not a recipe for copying arbitrary GRU weights.
+
+**Try the boundary case:** replace U with the identity matrix. Both reset placements now agree. Explain why a test restricted to diagonal recurrent matrices could miss the wrong implementation. Then restore the swap matrix and verify both new states numerically.
+
 **Readout.** Concatenate each final state with its original 13 features. Feed this 63-dimensional vector into two separate 63→200→1 networks with ReLU hidden activations. Multiply a sigmoid gate from one by the unrestricted scalar value from the other. Sum those contributions **within each molecule**, not across the batch. Original features remain available even after repeated updates.
 
 **Training and inference.** Standardize the dipole targets using only training molecules. Minimize mean squared error in standardized units using Adam. Validation MAE chooses the checkpoint and trial. At inference undo target scaling; report mean absolute error in Debye, a unit of dipole moment. Loss uses training targets only. No training dropout is used. All model weights are trainable; the graph structure and atom features remain fixed.

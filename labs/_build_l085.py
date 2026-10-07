@@ -18,7 +18,7 @@ def prose(portable=False):
         if not p.exists():text=text.replace('[[FIG:'+name+']]','Figure pending execution.');continue
         src='data:image/png;base64,'+base64.b64encode(p.read_bytes()).decode() if portable else f'../labs/figures/l085/{name}.png'
         text=text.replace('[[FIG:'+name+']]',f'<figure class="mpnn-figure"><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"></div><figcaption>{caption}</figcaption></figure>')
-    for key,id in [('WARMUP','warmup'),('VIZ','smoothing'),('TEACHBACK','teachback')]:
+    for key,id in [('VIZ','smoothing'),('TEACHBACK','teachback')]:
         text=text.replace('[['+key+']]','Write your prediction or explanation before continuing. Use the lesson page for the interactive control.' if portable else f'<div id="{id}"></div>')
     p=LAB/'_depth_l085_results.json'
     if p.exists():

@@ -11,7 +11,7 @@ with sync_playwright() as p:
     for width in [1100,375]:
         page=browser.new_page(viewport={'width':width,'height':950});page.on('pageerror',lambda e:errors.append(str(e)))
         page.goto((ROOT/'lessons/0081-mpnn-framework.html').as_uri())
-        assert page.locator('#warmup').inner_text().strip()
+        assert page.locator('#warmup').count()==0
         assert '4.50' in page.locator('#messages output').inner_text()
         for ident,expected in [('messages','7.50'),('reach','5.25'),('normalized','10.314')]:
             control=page.locator('#'+ident+' input')
@@ -20,17 +20,19 @@ with sync_playwright() as p:
             control.focus();page.keyboard.press('ArrowLeft');assert control.input_value()=='19'
             page.locator('#'+ident+' button').click();assert control.input_value()=='8'
         assert page.locator('#teachback textarea').count()==1
+        page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+        page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
         for img in page.locator('figure img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1'),'page overflow'
         page.locator('#messages').scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l081-interaction-{width}.png')
-        page.locator('img[alt^="Complete sparse"]').scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l081-architecture-{width}.png')
+        page.locator('img[alt^="Complete sparse"]').locator('xpath=ancestor::figure').scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l081-architecture-{width}.png')
         page.close()
     page=browser.new_page(java_script_enabled=False)
     page.goto((ROOT/'labs/html/0081-mpnn-framework.html').as_uri())
-    assert page.locator('img[src^="data:image/png;base64,"]').count()==3
+    assert page.locator('img[src^="data:image/png;base64,"]').count()==4
     for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
     page.goto((ROOT/'notebooks.html').as_uri());assert page.locator('#lab-81 a').count()==4
     browser.close()
 assert not errors,errors
-report={'status':'PASS','widths':[1100,375],'widgets':['messages','reach','normalized'],'states':[8,20,19,8],'notebook_portable_images':3,'no_js_gallery':True,'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+report={'status':'PASS','widths':[1100,375],'widgets':['messages','reach','normalized'],'states':[8,20,19,8],'notebook_portable_images':4,'no_js_gallery':True,'page_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (ROOT/'labs/_browser_l081_results.json').write_text(json.dumps(report,indent=2)+'\n');print(report)

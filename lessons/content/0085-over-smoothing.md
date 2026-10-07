@@ -94,6 +94,21 @@ mean_cosine = (u.sum(0).square().sum() - len(u)) / (len(u)*(len(u)-1))
 
 **Use both.** Also inspect feature RMS, the square root of the average squared coordinate, and training accuracy. If accuracy drops while similarity stays modest, optimization or a poor representation may be involved. If variance drops only because RMS shrinks, you have not established directional collapse. There is no universal similarity threshold for task failure.
 
+### Cosine one can occur before any mixing
+
+Return to the same path with scalar states `[2,4,8]`. Every pair already has cosine 1: dividing any positive scalar by its magnitude gives 1. Nevertheless, these states retain different magnitudes. For the illustrative labels `[0,0,1]`, the rule “predict 1 when h>6” is initially perfect.
+
+| Stage | Raw node states | Mean cosine |
+|---|---|---:|
+| Before propagation | [2, 4, 8] | 1 |
+| Exact limiting projection | [4.257, 5.213, 4.257] | 1 |
+
+At the exact limit, A and C have identical representations but different labels. A classifier receiving only that final scalar must give them the same prediction, so its maximum accuracy on these three nodes is 2/3. Node IDs, skip-connected original features, or other inputs would change that restriction. At finite depth, tiny differences can remain; numerical closeness and an exact mathematical collision are different claims.
+
+The cosine statistic is 1 both when the threshold solves this toy task and when an exact collision prevents perfect classification. It is useful for direction, but blind to information carried only by magnitude. Pair it with the degree-adjusted spread and a task-relevant prediction check; a single value of 1 is not proof that smoothing caused a failure.
+
+**Try it:** multiply the initial states by 0.001 and move the threshold from 6 to 0.006. Accuracy and cosine stay unchanged, while degree-corrected variance falls by a factor of one million. This is rescaling, not lost information.
+
 ## Reproduce the paper’s actual figure
 
 **Named target: Li et al. Figure 2.** All 34 karate-club nodes, 78 undirected binary edges, identity features of shape `[34,34]`, GCN depths 1–5, hidden width 16, output width 2, and Glorot random initialization. Glorot uniform draws each weight from a symmetric interval with bound `√(6/(fan_in+fan_out))`. The networks are **untrained**. Class labels color the output points; they never enter the forward pass. There is no optimizer, objective, training split, checkpoint selection, or accuracy target in this experiment. [Paper §3](https://arxiv.org/abs/1801.07606).

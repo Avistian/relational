@@ -19,14 +19,16 @@ with sync_playwright() as p:
   slider=page.locator('#attention input[type=range]');slider.fill('-2');slider.dispatch_event('input');assert 'Scores: [0.00, 1.00, -0.40]' in out.inner_text()
   slider.focus();page.keyboard.press('ArrowRight');assert slider.input_value()=='-1.9'
   page.locator('#attention button').click();assert slider.input_value()=='2'
+  page.locator('img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+  page.wait_for_function("Array.from(document.images).every(x=>x.complete)")
   for img in page.locator('figure img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1'),'page overflow'
   page.locator('#attention').scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l084-intervention-{width}.png')
-  page.locator('img[alt^="Full Cora"]').scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l084-architecture-{width}.png')
+  page.locator('img[alt^="Full Cora"]').locator('xpath=ancestor::figure').scroll_into_view_if_needed();page.screenshot(path=f'/tmp/l084-architecture-{width}.png')
   page.emulate_media(media='print');assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1')
   page.close()
  page=browser.new_page(java_script_enabled=False);page.goto((ROOT/'labs/html/0084-gat.html').as_uri())
- figures=page.locator('img[src^="data:image/png;base64,"]').count();assert figures>=3
+ figures=page.locator('img[src^="data:image/png;base64,"]').count();assert figures==6
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
  page.goto((ROOT/'notebooks.html').as_uri());assert page.locator('#lab-84 a').count()==4
  class QuietHandler(SimpleHTTPRequestHandler):
@@ -37,8 +39,8 @@ with sync_playwright() as p:
  try:
   page.goto(f'http://127.0.0.1:{server.server_port}/index.html')
   tile=page.locator('#lesson-nav a[href="lessons/0084-gat.html"]');tile.wait_for(state='attached')
-  assert 'GAT: learn which neighbors to weight' in tile.inner_text()
-  tile.evaluate('(e)=>e.closest("details").open=true')
+  assert 'GAT: learn which neighbors to weight' in tile.text_content()
+  tile.evaluate('(e)=>{for(let p=e.parentElement;p;p=p.parentElement){if(p.tagName==="DETAILS")p.open=true}}')
   tile.click();assert page.locator('h1').inner_text()=='GAT: learn which neighbors to weight'
  finally:
   server.shutdown();server.server_close()

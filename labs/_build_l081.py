@@ -18,8 +18,8 @@ def figure(name,portable=False):
 def prose(portable=False):
     s=(ROOT/'lessons/content'/f'{SLUG}.md').read_text()
     for name in CAPTIONS:s=s.replace('[[FIG:'+name+']]',figure(name,portable))
-    for name in ['warmup','predict','messages','reach','normalized','teachback']:
-        fallback={'warmup':'**Cold recall:** write your answers in a markdown cell before reading further.','predict':'**Predict first:** compute B before reading the trace below.','messages':'**Intervention:** replace C=8 with C=20 in your live code.','reach':'**Predict:** after two rounds A changes from 3.75 to 5.25. Explain the route.','normalized':'**Predict:** why is the GCN weight not 1/degree(B)?','teachback':'**Write your teach-back before comparing with the reference.**'}[name]
+    for name in ['predict','messages','reach','normalized','teachback']:
+        fallback={'predict':'**Predict first:** compute B before reading the trace below.','messages':'**Intervention:** replace C=8 with C=20 in your live code.','reach':'**Predict:** after two rounds A changes from 3.75 to 5.25. Explain the route.','normalized':'**Predict:** why is the GCN weight not 1/degree(B)?','teachback':'**Write your teach-back before comparing with the reference.**'}[name]
         s=s.replace('[['+name.upper()+']]',fallback if portable else f'<div id="{name}"></div>')
     runs=[json.loads((LAB/'evidence/l081'/str(seed)/'result.json').read_text()) for seed in [81,82,83]]
     table='**Author-reference smoke evidence; not student output or paper-result reproduction.**\n\n| Split + initialization seed | Test MAE (Debye) | Updates | Status |\n|---|---:|---:|---|\n'

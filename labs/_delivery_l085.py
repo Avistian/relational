@@ -30,7 +30,7 @@ with sync_playwright() as p:
         assert page.evaluate('document.documentElement.scrollWidth<=window.innerWidth+1'), 'page overflow'
     for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
     page.goto((LAB/'html/0085-over-smoothing.html').as_uri())
-    assert page.locator('img[src^="data:image/png;base64,"]').count()>=5
+    assert page.locator('img[src^="data:image/png;base64,"]').count()==7
     for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete && e.naturalWidth>0')
     assert not errors,errors
     browser.close()
@@ -59,5 +59,5 @@ with tempfile.TemporaryDirectory(prefix='l085-pages-') as tmp:
             target=(path.parent/unquote(part.path)).resolve()
             assert target.exists(),(path,url)
             checks+=1
-result={'status':'PASS','browser_widths':[1200,375],'widget_states':24,'page_errors':errors,'portable_notebook_images':5,'copied_pages_local_links':checks,'pages_scope':'L085 page/reference and copied shared asset trees; no symlinks','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+result={'status':'PASS','browser_widths':[1200,375],'widget_states':24,'page_errors':errors,'portable_notebook_images':7,'copied_pages_local_links':checks,'pages_scope':'L085 page/reference and copied shared asset trees; no symlinks','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l085_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

@@ -11,7 +11,7 @@ assert all(not c.outputs and c.execution_count is None for c in student.cells if
 assert all(c.execution_count is not None and all(o.output_type!='error' for o in c.outputs) for c in teacher.cells if c.cell_type=='code')
 for nb in [student,teacher]:
  text='\n'.join(c.source for c in nb.cells);images=re.findall(r'data:image/png;base64,([A-Za-z0-9+/=]+)',text)
- assert len(images)==4 and all(base64.b64decode(x).startswith(b'\x89PNG') for x in images)
+ assert len(images)==6 and all(base64.b64decode(x).startswith(b'\x89PNG') for x in images)
  assert 'attachment:' not in text
 expected={n.name:ast.dump(n,include_attributes=False) for n in ast.parse((LAB/'relkit/graphsage_l083.py').read_text()).body if isinstance(n,(ast.FunctionDef,ast.ClassDef))}
 actual={}
@@ -54,5 +54,5 @@ with tempfile.TemporaryDirectory(prefix='l083-pages-') as tmp:
    checked+=1
  assert (stage/'labs/relkit/graphsage_l083.py').is_file()
  assert (stage/'labs/solutions'/f'{SLUG}.ipynb').is_file()
-report={'status':'PASS','copied_pages_links':checked,'inline_definitions':len(actual),'student_todos':3,'portable_figures':4,'full_ppi_searches':3,'mean':r['mean'],'sample_sd':r['sample_sd'],'historical_parity':'INCOMPARABLE','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+report={'status':'PASS','copied_pages_links':checked,'inline_definitions':len(actual),'student_todos':3,'portable_figures':6,'full_ppi_searches':3,'mean':r['mean'],'sample_sd':r['sample_sd'],'historical_parity':'INCOMPARABLE','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (LAB/'_delivery_l083_results.json').write_text(json.dumps(report,indent=2)+'\n');print(report)

@@ -27,7 +27,7 @@ def prose(portable=False):
         src='data:image/png;base64,'+base64.b64encode((LAB/'figures/l082'/f'{name}.png').read_bytes()).decode() if portable else f'../labs/figures/l082/{name}.png'
         mobile=mobile_channels() if name=='channels' and not portable else ''
         s=s.replace('[[FIG:'+name+']]',f'<figure class="mpnn-figure">{mobile}<small>Scroll horizontally on narrow screens to inspect the full computation.</small><div class="figure-scroll" tabindex="0"><img src="{src}" alt="{caption}"></div><figcaption>{caption}</figcaption></figure>')
-    for name in ['warmup','predict','normalized','teachback']:
+    for name in ['predict','normalized','teachback']:
         s=s.replace('[['+name.upper()+']]', '**Pause and write your prediction before reading the explanation.**' if portable else '<div id="'+name+'"></div>')
     r=json.loads((LAB/'_paper_l082_results.json').read_text())
     s=s.replace('[[RESULTS]]',f'**Saved author benchmark (not rerun by this exercise review):** {len(r["runs"])} initializations; mean **{100*r["mean"]:.3f}%**, sample SD **{100*r["sample_sd"]:.3f} percentage points**, standard error **{100*r["se"]:.3f} percentage points**. Difference from paper target: **{100*(r["mean"]-.815):+.3f} percentage points**. [Per-seed scores and complete validation traces](../labs/_paper_l082_results.json). These are measured port results, not original-framework parity.')
