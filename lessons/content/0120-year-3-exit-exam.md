@@ -12,15 +12,9 @@
 
 [Student notebook](../labs/0120-year-3-exit-exam.ipynb) · [Executed reference](../labs/html/0120-year-3-exit-exam.html) · [Exam submission](../labs/l120-submission.md) · [Quick reference](../reference/year-3-exit-exam.html) · [Full reproduction contract](../labs/l120-reproduction.md)
 
-This is a deliverable-based exam. Start with the closed-notes questions, then implement the five functions in the notebook. Consult the worked explanation when stuck; record the assistance in your submission. Plan several one-hour sessions for implementation, full-paper reading, execution and defense. Finishing this page is not the Year 3 exit criterion.
+This is a deliverable-based exam. Start by drawing the database graph below, then implement the five functions in the notebook. Consult the worked explanation when stuck; record the assistance in your submission. Plan several one-hour sessions for implementation, full-paper reading, execution and defense. Finishing this page is not the Year 3 exit criterion.
 
-
-
-
-
-
-
-
+## 1 · Bring the contracts together
 
 [Lesson 100](0100-heterogeneous-gnn-checkpoint.html) supplies heterogeneous graph discipline; [Lesson 110](0110-temporal-gnn-checkpoint.html) supplies time discipline; [Lesson 116](0116-debug-gnn-training.html) supplies diagnostic discipline. [Lesson 119](0119-year-3-synthesis.html) asks what the resulting evidence actually supports. This exam joins those contracts.
 
@@ -74,6 +68,16 @@ For relation `r: s→d`, a message is `W_r h_s`; the receiving state is `ReLU(W_
 **TODO 5 — `typed_messages`:** accumulate into the receiving table at the receiving local index. Multiple incoming edges must sum; assignment that overwrites the previous message is incorrect. The model applies its relation-specific transforms before calling your function.
 
 **TODO 4 — `seed_loss`:** calculate mean absolute error only at query roots, rejecting training labels unavailable by the fit cutoff. Input visibility is checked at each query's prediction time; label maturity is checked at the model's fitting time. These are different clocks. A day7 question can legitimately train a model fitted at day10 using an outcome that became available on day9.
+
+**Put the three dates on one timeline.** Keep the historical training query `(person90, day7)` and suppose its target becomes available on day9:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Decision</th><th>Rule for this query</th></tr></thead><tbody><tr><td>Construct inputs</td><td>Both feature clocks ≤ 7</td></tr><tr><td>Fit on day8</td><td>Exclude: label is not ready</td></tr><tr><td>Fit on day10</td><td>May include: label is ready</td></tr></tbody></table>
+
+Waiting until day10 permits using the label; it does **not** permit rebuilding this training example with day10 features. Nor can the day10 model be presented as the model that issued a real prediction on day7: it learned an outcome unavailable then. For a historical deployment prediction, the model's fitting time must also precede or equal its deployment query time. The older day7 query can legitimately be a training example for later predictions.
+
+**Try the boundary.** Fit on day9 instead. Is the label eligible? Does event2, which arrived on day8, now belong in this day7 example's input?
+
+<details><summary>Check the clocks</summary><p>The label is eligible because the maturity comparison is inclusive. Event2 remains excluded: changing fitting time does not change the original prediction cutoff of 7. Label eligibility and feature eligibility answer separate questions.</p></details>
 
 The default notebook trains on six authored queries at days4/7, whose synthetic next-period labels are mature by day10. It runs 120 optimizer steps and predicts two day10 queries. It verifies that the training loss falls and that batching preserves predictions. There is no held-out target score or model selection in this tiny mechanism exercise; falling training loss is not evidence of generalization.
 

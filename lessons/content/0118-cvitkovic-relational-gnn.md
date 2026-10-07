@@ -162,6 +162,16 @@ For nodes belonging to graph g:
 
 **Worked example.** If two gate scores are equal and the value vectors are `[1,2]` and `[5,6]`, the pooled vector is `[3,4]`. Put a third node `[9,10]` in a different applicant’s graph: that applicant’s pooled vector is `[9,10]`, and the first applicant’s vector must remain `[3,4]`. A batch-wide softmax violates this independence.
 
+**A distant row can reach the readout without reaching the root.** Take the chain `Application 0 — Loan 1 — Payment 2`, with both directions and one self edge per node. Degrees are `[2,3,2]`. Freeze the graph and change only Payment's input. To isolate information access, use one scalar coordinate, identity message weights and value branch, zero bias, and equal gate scores. Stop before the release's SELU and learned readout networks; this is a controlled mechanism example.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Input values</th><th>Root after one layer</th><th>All-node pool</th></tr></thead><tbody><tr><td>[0, 0, 0]</td><td>0</td><td>0</td></tr><tr><td>[0, 0, 6]</td><td>0</td><td>1.8165</td></tr></tbody></table>
+
+In the second row, the updated states are `[0, 6/√6, 3]`. The root cannot receive Payment's value across two edges in one layer. Uniform pooling nevertheless reads all three updated states, giving `(0+6/√6+3)/3 ≈ 1.8165`. The distant row affects both its own value and its neighbor's value. This makes the extraction-to-pooling path in the architecture diagram consequential even with only one GCN layer.
+
+**Try the change.** Double Payment's input to 12 without changing edges or gates. Predict the root and pooled values. Then replace the readout with the root state alone.
+
+<details><summary>Check the information path</summary><p>The root stays 0; the pooled value doubles to about 3.6330. A root-only readout gives 0 in all three cases. This trace establishes a possible path of influence. Learned weights can suppress that path, so it does not promise a useful signal in real data.</p></details>
+
 **Task 3.** Implement `attention_pool`. Its CHECK changes another graph’s scores and adds a large constant within a graph. Neither change should alter that graph’s intended softmax ratios. For numerical stability, subtract the maximum gate within each graph before exponentiation.
 
 A final linear layer maps the 256-number summary to two **logits**, unnormalized scores for the two outcome classes. Softmax turns them into probabilities. Training uses **cross entropy**, which penalizes low probability assigned to the observed class, and **AdamW**, an optimizer that updates parameters using running gradient statistics. This release sets weight decay to zero and learning rate to `0.0001`.
@@ -223,7 +233,7 @@ Submit your three functions, `l118-task-report.json`, and a short defense coveri
 
 **Tomorrow:** redraw the extraction passes without notes. **In one week:** reconstruct the two readout branches and explain their batch boundary. **In one month:** compare Cvitkovic, Lesson 117’s model, and a DFS baseline under a matched information budget.
 
-Lesson 119’s planned synthesis can now ask a sharper question: when do relational rows supply useful information, and which computation best exploits it? A row-to-node mapping alone does not settle that empirical question.
+[Lesson 119’s synthesis](0119-year-3-synthesis.html) can now ask a sharper question: when do relational rows supply useful information, and which computation best exploits it? A row-to-node mapping alone does not settle that empirical question.
 
 **Primary reading:** expanded paper §3, Table 1, Algorithm 1, Table 4, and Appendix C. Read the released extractor and GCN recipe beside them. Ask the teaching agent about any unclear step, and bring your written defense for feedback. Learner status remains **PENDING_WRITTEN_DEFENSE** until you supply that evidence.
 

@@ -25,7 +25,7 @@ for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['collision_ceiling','typed_sum','eligible_nodes','aligned_mae']:assert stu[name]==node,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/year-3-synthesis.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l119.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l119.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l119').glob('*'));before=[sha(p) for p in figs]
 subprocess.run([sys.executable,str(P/'_figures_l119.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0

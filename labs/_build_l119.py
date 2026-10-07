@@ -49,7 +49,7 @@ def prose(portable=False):
  return text
 
 def document(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  styles=''.join(f'<link rel="stylesheet" href="../assets/{name}.css">' for name in ['lesson','event-snapshot','reproduction','message-passing-viz'])
  scripts=''.join(f'<script src="../assets/{name}.js"></script>' for name in ['retrieval-pool','retrieval-bank','teachback','message-passing-viz','representation-collision-viz','l119-lesson']) if interactive else ''
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+styles+'</head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0118-cvitkovic-relational-gnn.html">Lesson 118</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 119</p><h1>'+title+'</h1></header>'+html+'</article>'+scripts+'</body></html>'

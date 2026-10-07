@@ -28,7 +28,7 @@ def prose(portable=False):
  return text
 
 def document(title,text,interactive=False):
- body=render(text).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(text)).replace('</table>','</table></div>')
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join(f'<link rel="stylesheet" href="../assets/{x}.css">' for x in ['lesson','event-snapshot','reproduction'])+'</head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0119-year-3-synthesis.html">Lesson 119</a></nav><header><p class="stream-kicker">Year 3 · Quarter 4 · Lesson 120</p><h1>'+title+'</h1></header>'+body+'</article>'+('<script src="../assets/l120-lesson.js"></script>' if interactive else '')+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(document(TITLE,prose(),True))
 previous=nbf.read(P/'solutions/0119-year-3-synthesis.ipynb',as_version=4)

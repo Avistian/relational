@@ -23,13 +23,14 @@ canonical=definitions((P/'relkit/cvitkovic_l118.py').read_text());sol=definition
 for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['rdb_to_graph','normalized_sum','attention_pool']:assert stu[name]==node,name
-paths=[R/'lessons'/f'{S}.html',R/'reference/cvitkovic-relational-gnn.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths];subprocess.run([sys.executable,str(P/'_build_l118.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+paths=[R/'lessons'/f'{S}.html',R/'reference/cvitkovic-relational-gnn.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths];subprocess.run([sys.executable,str(P/'_build_l118.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l118').glob('*'));before=[sha(p) for p in figs];subprocess.run([sys.executable,str(P/'_figures_l118.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0
 with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
  for width in [1200,375]:
   page.set_viewport_size({'width':width,'height':900});page.goto((R/'lessons'/f'{S}.html').as_uri())
+  page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")');page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
   w=page.locator('#l118-extraction');t=w.locator('[data-time]');mode=w.locator('[data-mode]');enforce=w.locator('[data-filter]');out=w.locator('output')
   assert out.inner_text().startswith('4 nodes:')
   mode.select_option('radius');assert out.inner_text().startswith('5 nodes:')

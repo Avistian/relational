@@ -153,6 +153,16 @@ This is a new execution of the complete selected protocol from Lesson 117: all n
 
 The published Table 7 F1 test means are 4.022 for RDL and 4.170 for LightGBM. Those are **cited paper measurements**. Only the RDL column was freshly trained here. Subtracting our new RDL score from the historical LightGBM mean does not create a matched comparison, a paired confidence interval, or a new claim of statistical superiority. The paper itself marks both test entries as best or not statistically different from best.
 
+**A matched comparison still needs the chosen metric.** Here is an authored four-query example, not another paper measurement. Suppose the absolute errors on the same four entity/time keys are:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Query</th><th>GNN error</th><th>Flat-model error</th></tr></thead><tbody><tr><td>(90, 1)</td><td>0</td><td>1</td></tr><tr><td>(90, 2)</td><td>0</td><td>1</td></tr><tr><td>(40, 1)</td><td>0</td><td>1</td></tr><tr><td>(40, 2)</td><td>8</td><td>1</td></tr></tbody></table>
+
+The GNN wins three of four queries but has worse MAE: `8/4=2` versus `4/4=1`. Its paired error differences are `[-1,-1,-1,+7]`, averaging `+1`; positive means worse for the GNN here. Counting wins ignores error magnitude. Query pairing makes the comparison well-defined; it does not make these two summaries equivalent or establish significance.
+
+**Try the change.** Reduce the last GNN error from 8 to 4. What happens to MAE and the number of wins? Keep both records for driver 90; they are distinct prediction queries.
+
+<details><summary>Check the comparison</summary><p>Both MAEs become 1, while the GNN still wins three queries. The mean paired difference becomes zero. Report the predeclared query-level MAE and describe any win count separately. Grouping by driver instead would answer a different weighting question.</p></details>
+
 The plotted spread across five seeds describes training variability on one fixed task and split. It does not estimate variation across databases, future calendar periods, or feature-engineering choices. `CLOSE` uses a predeclared absolute mean tolerance of .2 MAE; it is a descriptive criterion, not an equivalence test.
 
 > **Scope check.** The release samples fanout `[128,64]`, whereas the paper's hyperparameter table lists 128. Preprocessing statistics use the test-censored database rather than a train-only fit. Historical seeds/runtime and real ingestion or revision histories are unavailable. Full selected released-protocol execution can be COMPLETE while historical identity and whole-paper parity remain NOT_ESTABLISHED. The [contract](../labs/l119-reproduction.md) lists each deviation.
