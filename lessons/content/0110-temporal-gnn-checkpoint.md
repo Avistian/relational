@@ -20,10 +20,6 @@ A good test score is only useful if the predictor could have known its inputs. *
 
 
 
-The model also has node memories, last-update clocks and queued messages. A resumable training process additionally needs optimizer state, random-generator state and a stream cursor. Under our strict-time contract, tied events cannot update each other's prediction state. Actual arrival or version history is needed to establish availability; an event date alone does not establish it.
-
-</details>
-
 **Primary reading:** [Rossi et al., Temporal Graph Networks, v3](https://arxiv.org/abs/2006.10637v3), §3 for memory/messages/embeddings and Table 2 for the selected Wikipedia results. Read the [released trainer](https://github.com/twitter-research/tgn/blob/e38cdf85998c6ca077167610dc4e769a688efa95/train_self_supervised.py) alongside the paper. The two are distinct evidence sources: prose defines the method; executable code resolves many protocol details.
 
 ## 2 · Model architecture: score the event before learning from it
@@ -82,7 +78,17 @@ The clean-arm restore is small because the important work is defining the comple
 
 [[CODE:restore_checkpoint]]
 
-The snapshot contains memory, last-update clocks and cloned queued messages. Cloning prevents later evaluation from silently changing the saved object. Each test branch restores the same selected post-validation snapshot, so running the all-event branch cannot contaminate the new-node branch.
+The restore first checks that every learned weight and required buffer is present, and rejects unknown keys. Dataset feature buffers may be omitted because `capture_checkpoint` deliberately supplies them from the authenticated input; that exception must not permit missing learned weights. The snapshot contains memory, last-update clocks and cloned queued messages. Cloning prevents later evaluation from silently changing the saved object. Each test branch restores the same selected post-validation snapshot, so running the all-event branch cannot contaminate the new-node branch.
+
+**Watch the missing queue change a real prediction.** In a small four-dimensional instance of this visible TGN, warm the state with interactions `(1,3)` at time 1 and `(1,4)` at time 3. Save weights, memory, clocks and pending messages. Now score `(2,3)` at time 4, with page 4 as the negative candidate. Dropout is zero and every branch uses identical weights, features and sampled history.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Restored state</th><th>Positive / negative score</th></tr></thead><tbody><tr><td>Complete checkpoint</td><td>0.396784 / 0.397132</td></tr><tr><td>Same state, empty queue</td><td>0.396152 / 0.398773</td></tr><tr><td>Complete checkpoint again</td><td>0.396784 / 0.397132</td></tr></tbody></table>
+
+The missing queue contains old observations waiting for the GRU. Removing it changes the candidate memories and therefore the scores, even though no parameter changed. Complete restoration recovers the original probabilities **exactly before rounding**. These synthetic scores test state identity; their magnitude is not a benchmark accuracy claim. The released model’s separate message dictionary explains why a weight-file check alone misses this failure.
+
+**Debugging exercise:** a test asserts only that restored parameters equal the saved parameters. Would it reject the empty-queue branch? Add a behavioral check using the next fixed event and negative candidate, then run it twice from independently restored state.
+
+<details><summary>What the behavioral check must establish</summary><p>The parameter-only test passes both branches. The next positive and negative probabilities must both match the saved reference, and the saved checkpoint itself must remain unchanged after either replay. Restore cloned temporal state before each branch; do not let the first branch consume the second branch’s pending messages.</p></details>
 
 **Prediction replay versus optimization resume.** Our saved artifacts support replaying evaluation. They are not full mid-epoch optimizer resumes: optimizer moments, random-generator state and exact stream position would also be necessary. Completed fits are durable artifacts; partially completed fits do not count as completed seeds.
 

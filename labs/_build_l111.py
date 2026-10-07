@@ -15,7 +15,7 @@ caption='One graph, three label roles. Label splitting and feature visibility ar
 fig=f'<figure class="stream-figure" tabindex="0"><img src="../labs/figures/l111/contract.svg" alt="{caption}"><figcaption>{caption}</figcaption></figure>'
 text=text.replace('[[FIG:contract]]',fig)
 def doc(title,body):
- return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 111 — '+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0110-temporal-gnn-checkpoint.html">Lesson 110</a></nav><h1>'+title+'</h1>'+render(body).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')+'</article></body></html>'
+ return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 111 — '+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0110-temporal-gnn-checkpoint.html">Lesson 110</a></nav><h1>'+title+'</h1>'+re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')+'</article></body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc('OGB setup and the benchmark contract',text))
 ref='''## Five objects
 

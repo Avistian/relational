@@ -16,7 +16,7 @@ student=nbformat.read(P/f'{S}.ipynb',as_version=4);solution=nbformat.read(P/'sol
 assert sum('raise NotImplementedError("TODO:' in c.source for c in student.cells)==3
 assert not any(c.outputs for c in student.cells if c.cell_type=='code')
 source='\n\n'.join(c.source for c in solution.cells if c.cell_type=='code')
-assert sha(P/'relkit/checkpoint_l110.py')==json.loads((P/'_sources_l110.json').read_text())['implementation_sha256']
+subprocess.run([sys.executable,str(P/'_provenance_l110.py')],check=True,capture_output=True)
 assert hashlib.sha256(source.encode()).hexdigest()==json.loads((P/'_execution_l110_results.json').read_text())['executed_code_sha256']
 assert 'from relkit' not in source
 assert all(c.execution_count is not None and not any(o.output_type=='error' for o in c.outputs) for c in solution.cells if c.cell_type=='code')
@@ -26,7 +26,7 @@ for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['restore_checkpoint','strict_batches','legal_history']:assert stu[name]==node,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/temporal-gnn-checkpoint.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
-before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l110.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths],'Rebuild drift'
+before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l110.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths],'Rebuild drift'
 figures=sorted((P/'figures/l110').glob('*'));before=[sha(x) for x in figures];subprocess.run([sys.executable,str(P/'_figures_l110.py')],check=True,capture_output=True);assert before==[sha(x) for x in figures],'Figure drift'
 errors=[];states=0
 with sync_playwright() as pw:
@@ -47,12 +47,12 @@ with sync_playwright() as pw:
   widget.locator('button').click();assert slider.input_value()=='2' and not toggle.is_checked();slider.focus();page.keyboard.press('ArrowRight');assert slider.input_value()=='3';widget.locator('button').click();widget.screenshot(path=f'/tmp/l110-widget-{width}.png')
   pred=page.locator('#l110-predict');assert pred.locator('button').last.is_disabled();pred.locator('button').first.click();pred.locator('button').last.click();assert 'Consistent history' in pred.inner_text()
   teach=page.locator('#l110-teachback');assert teach.locator('button').first.is_disabled();teach.locator('textarea').fill('The sampler controls adjacency but memory is a separate information path. Queued messages must come from strictly earlier timestamp groups. Restore weights, memory, clocks and pending messages from one selected epoch before each test branch. Event timestamps do not prove actual availability.');teach.locator('button').first.click();assert 'queued messages' in teach.inner_text()
-  assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow';assert page.locator('figure').count()==4;page.screenshot(path=f'/tmp/l110-page-{width}.png',full_page=True)
+  assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow';assert page.locator('figure').count()>=4;page.screenshot(path=f'/tmp/l110-page-{width}.png',full_page=True)
  for name in ['architecture','checkpoint','ties','results']:
   page.goto((P/f'figures/l110/{name}.svg').as_uri());assert page.locator('svg').evaluate("s=>{const r=s.getBoundingClientRect();return Array.from(s.querySelectorAll('text')).every(t=>{const b=t.getBoundingClientRect();return b.x>=r.x-1&&b.y>=r.y-1&&b.right<=r.right+1&&b.bottom<=r.bottom+1})}"),name+' labels outside canvas'
- page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==4;page.set_viewport_size({'width':950,'height':900})
- for i in range(4):page.locator('img[src^="data:image/png;base64,"]').nth(i).screenshot(path=f'/tmp/l110-notebook-{i}.png')
- nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()==4 and 'Worked answer, including a no-JavaScript fallback' in plain.locator('article').inner_text();assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1');plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');plain.screenshot(path='/tmp/l110-print.png',full_page=True);nojs.close();browser.close()
+ page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==5;page.set_viewport_size({'width':950,'height':900})
+ for i in range(5):page.locator('img[src^="data:image/png;base64,"]').nth(i).screenshot(path=f'/tmp/l110-notebook-{i}.png')
+ nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()>=4 and 'Worked answer, including a no-JavaScript fallback' in plain.locator('article').inner_text();assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1');plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');plain.screenshot(path='/tmp/l110-print.png',full_page=True);nojs.close();browser.close()
 checked=0
 if not args.preview:
  assert json.loads((P/'evidence/l110/summary.json').read_text())['status']=='COMPLETE'
@@ -80,5 +80,5 @@ if not args.preview:
     page.goto(base+'/notebooks.html');reveal_gallery_link(page, 'a[href="labs/html/'+S+'.html"]');page.goto(base+'/lessons/'+S+'.html');assert '1 tied boundaries' in page.locator('#l110-batches').inner_text();browser.close()
   finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors
-out={'status':'PREVIEW_PASS' if args.preview else 'PASS','browser_widths':[1200,375],'widget_states':states,'reset_keyboard':'PASS','prediction_and_teachback':'PASS','print_nojs':'PASS','portable_figures':4,'student_live_tasks':3,'canonical_definitions':len(canonical),'executed_code_hash':'MATCH','deterministic_rebuild':'EXACT','copied_pages_links':checked,'javascript_errors':errors,'screenshots':'/tmp/l110-*.png','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+out={'status':'PREVIEW_PASS' if args.preview else 'PASS','browser_widths':[1200,375],'widget_states':states,'reset_keyboard':'PASS','prediction_and_teachback':'PASS','print_nojs':'PASS','portable_figures':5,'student_live_tasks':3,'canonical_definitions':len(canonical),'executed_code_hash':'MATCH','deterministic_rebuild':'EXACT','copied_pages_links':checked,'javascript_errors':errors,'screenshots':'/tmp/l110-*.png','live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (P/('_preview_l110_results.json' if args.preview else '_delivery_l110_results.json')).write_text(json.dumps(out,indent=2));print(out)

@@ -66,6 +66,22 @@ This is not a simple neighbor mean. The central coefficient is 1/3 and endpoint 
 
 **Task 1 · TODO → CHECK:** implement `normalized_adjacency`. The independent dense oracle checks both its values and gradients through a feature matrix. Explain why reversing every raw edge and merely summing duplicates is insufficient.
 
+### A held-out node can matter even without a graph path
+
+Batch normalization creates a second route between node activations. Take three **isolated** nodes, so the normalized adjacency is the identity. Let one hidden coordinate before the first batch-normalization layer be `[4, 0, 2]`; only node 0 has a training label. Set the normalization scale to 1 and offset to 0. In training mode the layer uses all three nodes: mean 2, population variance 8/3. Node 0 becomes `(4−2)/sqrt(8/3 + ε) ≈ 1.224742`, with the implementation’s ε = 0.00001.
+
+Now change only held-out node 2’s feature so that this coordinate becomes 8. The graph still has no cross-node edges:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Quantity</th><th>Before → after</th></tr></thead><tbody><tr><td>Hidden values</td><td>[4, 0, 2] → [4, 0, 8]</td></tr><tr><td>Batch mean</td><td>2 → 4</td></tr><tr><td>Population variance</td><td>8/3 → 32/3</td></tr><tr><td>Node 0 after normalization</td><td>1.224742 → 0</td></tr></tbody></table>
+
+ReLU therefore changes node 0’s next activation too, without a message-passing path or any use of held-out labels. This is permitted by the declared transductive protocol. It would need reconsideration under a contract that forbids held-out features during fitting.
+
+**Training versus evaluation:** with fixed saved running statistics, evaluation-mode normalization acts on each node independently. Changing another isolated node’s current feature no longer changes node 0 through this layer. The saved statistics still reflect the nodes used during training. This is why the checkpoint must include those buffers.
+
+**Try it:** would removing graph edges alone prevent this influence during fitting? What else would a historically restricted experiment need to specify?
+
+<details><summary>Check the second information path</summary><p>No: this example already has no cross-node edges. The normalization population must also obey the chosen feature-visibility policy. A restricted experiment would define which nodes provide normalization statistics, alongside graph and feature cutoffs; it would be a changed protocol requiring separate evaluation. Changing held-out labels alone still cannot affect the training objective.</p></details>
+
 ## 4 · Mask the objective, then select one whole predictor
 
 Once messages reach the output, we need to decide which answers may teach the model. The model produces a score for every node, but the objective indexes only `train_idx`:

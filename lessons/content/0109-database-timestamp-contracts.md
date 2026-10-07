@@ -16,16 +16,6 @@ This is the hand-off from [L096’s SQL-to-graph mapping](0096-multi-relational-
 
 
 
-1. An event happened on day 2 and arrived on day 7. Can a day-5 prediction use it?
-2. Why can a correct foreign-key join still leak future information?
-3. What separates a target’s prediction time from the time it becomes safe to train on it?
-
-<details><summary>Check after writing</summary>
-
-No: it was not available by day 5. A key can link to a future row or a corrected value that was unknown at the query time. A future-window target must wait until the window has ended and the necessary outcomes are available, under a declared completeness policy.
-
-</details>
-
 ## 1 · Name the clocks before choosing a column
 
 > **In plain terms.** “When did this happen?” and “When could our predictor know it?” are separate questions.
@@ -66,6 +56,18 @@ Our bounded state representation stores `id`, `valid_from`, `observed_at`, `revi
 [[FIG:versions]]
 
 At query 6, choose `r → A` and A’s value 1. At query 8, choose `r → B` and B’s value 2. At query 10, select the deletion and remove `r`. Dropping deletion records *before* version selection would incorrectly resurrect `r`.
+
+**A late correction does not always replace the current state.** One account has these three stored versions; all are live, not tombstones:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Version · value</th><th>Effective / observed day</th></tr></thead><tbody><tr><td>1 · Basic</td><td>2 / 3</td></tr><tr><td>2 · Pro</td><td>5 / 6</td></tr><tr><td>3 · Trial</td><td>2 / 9</td></tr></tbody></table>
+
+At query 4, only version 1 is eligible: **Basic**. At query 7, version 2 starts a later effective step: **Pro**. At query 10, version 3 corrects the step beginning on day 2, but does not erase the step beginning on day 5: the current answer is still **Pro**. Sorting only by arrival would incorrectly return Trial. The leading `valid_from` in the selection tuple is doing real work.
+
+There is a different question: “What applied on day 3, using everything known by day 10?” Filter by `valid_from <= 3` and `observed_at <= 10`; version 3 wins, giving **Trial**. Using only knowledge available by day 4 gives **Basic** instead. This is the separate-cutoff question in [Fowler’s two-dimensional history](https://martinfowler.com/articles/bitemporal-history.html#TheTwoDimensions). Our `asof_versions(rows, t)` API sets both cutoffs to `t`; calling it with 10 answers the current-state question, not this retrospective one.
+
+**Try the rule:** change version 3’s effective day from 2 to 8, leaving its arrival at 9. What changes at queries 7 and 10?
+
+<details><summary>Check the changed effective date</summary><p>Query 7 stays Pro because the changed version is not yet effective or observed. Query 10 becomes Trial because effective day 8 is now the greatest eligible step. A later arrival alone did not cause the first example’s answer to change; a later effective step does here.</p></details>
 
 [[CODE:asof_versions]]
 

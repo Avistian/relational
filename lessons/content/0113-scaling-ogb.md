@@ -16,7 +16,7 @@ Now ask a practical question: **what must change when the intermediate node repr
 
 
 
-<details><summary>Check the retrieval</summary><p>Loss masking restricts label supervision; it does not remove feature paths. Batch-normalization running means and variances affect evaluation, so weights alone are insufficient. A cluster processed alone loses edges to excluded nodes; combining clusters can restore edges between those selected clusters.</p></details>
+
 
 The primary reading is [Hu et al., OGB §4.1 and Table 4](https://arxiv.org/html/2005.00687v6#S4.SS1). Pair it with [Chiang et al., Cluster-GCN](https://arxiv.org/abs/1905.07953) for the sampling mechanism. Read OGB's footnote about the aggregation architecture before interpreting the result.
 
@@ -118,6 +118,16 @@ Training on induced subgraphs does not require evaluating on those same cut grap
 For layer 1, keep the input feature matrix fixed. For each receiver chunk, fetch **all** of its incoming neighbors and compute that chunk's outputs. Write them to their global rows. Only after every node's layer-1 output exists may layer 2 begin. Repeat for all three layers. Disable dropout. Finally choose the largest logit per node.
 
 **Why is this exact?** Within a fixed layer, a receiver's output depends on previous-layer features, not on another receiver's newly computed current-layer output. Chunking receivers therefore changes the execution order without cutting neighbor context. Running all three layers on each isolated chunk would violate that condition and cut dependencies.
+
+**Why the output needs a separate buffer.** Use the path 0—1—2, old scalar features `[1, 2, 4]`, root and neighbor weights 1, and bias 0. Ignore the final classifier and inspect one SAGE layer. With the old feature matrix fixed, the outputs are:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Receiver</th><th>Old root + old neighbor mean</th></tr></thead><tbody><tr><td>0</td><td>1 + 2 = 3</td></tr><tr><td>1</td><td>2 + (1 + 4)/2 = 4.5</td></tr><tr><td>2</td><td>4 + 2 = 6</td></tr></tbody></table>
+
+An incorrect in-place loop processes receiver 0 and overwrites its input with 3. Receiver 1 then reads that new value, producing `2 + (3 + 4)/2 = 5.5`. Receiver 2 reads the newly overwritten 5.5 and produces `4 + 5.5 = 9.5`. The result `[3, 5.5, 9.5]` is a different computation from `[3, 4.5, 6]`, even though every edge was visited. It has mixed old and new layers.
+
+**Try it:** reverse the receiver order. A correct separate-buffer implementation gives the same output. What does the in-place loop give?
+
+<details><summary>Check the order dependence</summary><p>Updating 2, then 1, then 0 gives values 6, 5.5 and 6.5 respectively, or [6.5, 5.5, 6] in node order. This order dependence exposes the bug. Complete the output buffer for every receiver before using it as the next layer’s input. All values here are positive, so adding ReLU does not remove the discrepancy; dropout is off during this inference trace.</p></details>
 
 The visible implementation keeps the previous feature matrix on the device and streams sparse adjacency rows into receiver chunks. It retains output features on the CPU between layers. This still requires one complete previous-layer feature matrix to fit on the GPU. It is sufficient for this products experiment; a larger graph may require gathering neighbor features from CPU memory or storage. Small training batches alone do not establish end-to-end scalability. This is a modern execution strategy; it is not a claim of historical runtime identity. The CHECK compares three chunk sizes, including one receiver at a time, against a dense full-graph calculation.
 

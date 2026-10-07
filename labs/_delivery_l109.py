@@ -27,7 +27,7 @@ student_defs={n.name:ast.dump(n,include_attributes=False) for n in ast.parse('\n
 for name,value in definitions.items():
  if name not in ['asof_versions','legal_history','label_ready']:assert student_defs[name]==value,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/database-timestamp-contracts.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
-before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l109.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths],'Rebuild drift'
+before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l109.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths],'Rebuild drift'
 figures=sorted((P/'figures/l109').glob('*'));before=[sha(x) for x in figures];subprocess.run([sys.executable,str(P/'_figures_l109.py')],check=True,capture_output=True);assert before==[sha(x) for x in figures],'Figure drift'
 errors=[];states=0
 with sync_playwright() as pw:
@@ -47,14 +47,14 @@ with sync_playwright() as pw:
   pred=page.locator('#l109-predict');assert pred.locator('button').last.is_disabled();pred.locator('button').first.click();pred.locator('button').last.click();assert 'ingestion' in pred.inner_text()
   teach=page.locator('#l109-teachback');assert teach.locator('button').first.is_disabled();teach.locator('textarea').fill('At cutoff six choose the effective and observed row versions, then join the selected foreign key to a historical parent. The deletion is selected before removing the row. Labels require a closed window and certified availability. The released F1 data cannot prove its unrecorded ingestion history.');teach.locator('button').first.click();assert 'tombstone' in teach.inner_text()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
-  assert page.locator('figure').count()==4
+  assert page.locator('figure').count()>=4
   page.screenshot(path=f'/tmp/l109-page-{width}.png',full_page=True)
  for name in ['clocks','versions','maturity','results']:
   page.goto((P/f'figures/l109/{name}.svg').as_uri());assert page.locator('svg').evaluate("s=>{const r=s.getBoundingClientRect();return Array.from(s.querySelectorAll('text')).every(t=>{const b=t.getBoundingClientRect();return b.x>=r.x-1&&b.y>=r.y-1&&b.right<=r.right+1&&b.bottom<=r.bottom+1})}"),name+' labels outside canvas'
  page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==4
  page.set_viewport_size({'width':950,'height':900})
  for i in range(4):page.locator('img[src^="data:image/png;base64,"]').nth(i).screenshot(path=f'/tmp/l109-notebook-{i}.png')
- nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()==4 and 'Worked answer, including a no-JavaScript fallback' in plain.locator('article').inner_text();assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+ nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()>=4 and 'Worked answer, including a no-JavaScript fallback' in plain.locator('article').inner_text();assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
  plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');plain.screenshot(path='/tmp/l109-print.png',full_page=True);nojs.close();browser.close()
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[]

@@ -16,7 +16,16 @@ for cell in nb.cells:
  except (AssertionError,RuntimeError):checked.append(label)
  else:raise AssertionError('Notebook CHECK accepted '+label)
  ns[task]=good
-assert len(checked)==3
+# The old permissive restore must also fail the newly visible key-validation CHECK.
+old=(P/'sources/l110/checkpoint_before_key_validation.py').read_text()
+node=next(n for n in ast.parse(old).body if isinstance(n,ast.FunctionDef) and n.name=='restore_checkpoint')
+good=ns['restore_checkpoint'];exec(ast.get_source_segment(old,node),ns)
+cell=next(c for c in nb.cells if c.cell_type=='code' and 'check_checkpoint_keys(restore_checkpoint)' in c.source)
+try:exec(cell.source,ns)
+except AssertionError:checked.append('silent_partial_weights')
+else:raise AssertionError('Notebook CHECK accepted missing learned weights')
+ns['restore_checkpoint']=good
+assert len(checked)==4
 student=nbformat.read(P/'0110-temporal-gnn-checkpoint.ipynb',as_version=4)
 assert sum('raise NotImplementedError("TODO:' in c.source for c in student.cells)==3
 r={'status':'PASS','rejected_notebook_mutants':checked,'live_functions':'restore_checkpoint called by clean trainer; strict_batches by train/evaluate/frontier checks; legal_history by complete frontier audit','student_blanks':3}

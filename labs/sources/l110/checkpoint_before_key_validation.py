@@ -233,13 +233,6 @@ def load_wikipedia(directory):
 
 def restore_checkpoint(model, checkpoint):
     """Restore weights and all temporal state from the same selected epoch."""
-    # Feature buffers are supplied by the authenticated dataset, not capture_checkpoint.
-    expected = set(model.state_dict())
-    supplied = set(checkpoint['weights'])
-    required = expected - {'node_features', 'edge_features'}
-    missing, unexpected = required - supplied, supplied - expected
-    if missing or unexpected:
-        raise ValueError(f'Invalid checkpoint weights: missing={sorted(missing)}, unexpected={sorted(unexpected)}')
     model.load_state_dict(checkpoint['weights'], strict=False)
     model.restore(checkpoint['temporal_state'])
 

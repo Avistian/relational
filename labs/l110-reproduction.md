@@ -122,3 +122,7 @@ Twenty fits completed: release 293 epochs across ten seeds, clean 265 epochs acr
 Uncertainty is sample seed SD. Independent AP reconstruction covers 706,720 positive questions and their paired negatives, with maximum AP error 1.11e-16. All forty population/checkpoint replay branches pass in the distinct CPU runtime. Original-source full release seed0 AP agrees exactly in both populations. Completed-call resource estimate including pilot: USD4.6912; other overhead is not itemized. Browser and copied-Pages delivery PASS; live Colab/deployment NOT_CHECKED.
 
 <!-- /L110 measured evidence -->
+
+## October 2026 checkpoint validation maintenance
+
+The visible `restore_checkpoint` now rejects missing learned weights and unexpected state keys before loading. Only authenticated dataset feature buffers remain optional. A failing missing-parameter regression established the old silent partial-load behavior. The executed training source is retained at `sources/l110/checkpoint_before_key_validation.py` with its original registered SHA-256; provenance checks require every AST outside this restore function to remain unchanged. Fresh valid restores are compared to the archived implementation. Historical 20-fit training results retain their original identity; this maintenance does not claim new full training.

@@ -44,7 +44,23 @@ def aliasing_restore(model,checkpoint):
  model.load_state_dict(checkpoint['weights'])
  model.memory,model.last_update,model.pending=checkpoint['temporal_state']
 
+# A missing learned tensor must not silently retain the target model's value.
+def check_checkpoint_keys(restore):
+ torch.manual_seed(31)
+ m=base.TGN(np.zeros((5,4),np.float32),np.zeros((6,4),np.float32),dropout=0)
+ valid={'weights':{k:v.detach().clone() for k,v in m.state_dict().items() if k not in ['node_features','edge_features']},'temporal_state':m.snapshot()}
+ assert not {'node_features','edge_features'} & valid['weights'].keys()
+ restore(m,valid)
+ for kind in ['missing_parameter','unexpected_parameter']:
+  bad=copy.deepcopy(valid)
+  if kind=='missing_parameter':bad['weights'].pop(next(iter(dict(m.named_parameters()))))
+  else:bad['weights']['unknown_parameter']=torch.zeros(1)
+  try:restore(m,bad)
+  except ValueError:pass
+  else:raise AssertionError('Incomplete or incompatible checkpoint accepted: '+kind)
+
 if __name__=='__main__':
+ check_checkpoint_keys(c.restore_checkpoint)
  restore=getattr(c,'restore_checkpoint',lambda m,s:m.load_state_dict(s['weights']))
  check_restore(restore)
  check_batches(c.strict_batches)
@@ -54,5 +70,5 @@ if __name__=='__main__':
   try:check(fn)
   except (AssertionError,RuntimeError):rejected.append(name)
   else:raise AssertionError('Mutant survived: '+name)
- out={'status':'PASS','rejected_mutants':rejected,'atomic_prediction_recovery':'EXACT','strict_ties':'PASS','two_clock_eligibility':'PASS'}
+ out={'status':'PASS','rejected_mutants':rejected,'checkpoint_key_validation':'PASS missing and unexpected rejected; dataset buffers optional','atomic_prediction_recovery':'EXACT','strict_ties':'PASS','two_clock_eligibility':'PASS'}
  Path(__file__).with_name('_check_l110_results.json').write_text(json.dumps(out,indent=2));print(out)
