@@ -7890,22 +7890,6 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<ol>
-<li>An event occurs at 09:05 inside an hourly window. When can a model use the <em>completed</em> window?</li>
-<li>What must remain fixed when you compare two link-prediction scores?</li>
-<li>A GCN shares weights across graphs. Does that give a node temporal memory?</li>
-</ol>
-
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-004">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="1-%C2%B7-Turn-a-stream-into-a-sequence-of-questions">1 · Turn a stream into a sequence of questions<a class="anchor-link" href="#1-%C2%B7-Turn-a-stream-into-a-sequence-of-questions">¶</a></h2><p>A <strong>snapshot</strong> is a graph attached to a discrete time interval. Here snapshot k contains interactions in <code>[kΔ, (k+1)Δ)</code>, where Δ is the window width. It is an interaction graph, not a claim that every edge remains an active relationship. Repeated interactions become an edge weight. The graph becomes available at its closing boundary <code>(k+1)Δ</code>; exact event times are no longer part of its count-only adjacency.</p>
 <p><strong>Forecast contract:</strong> use a completed graph to score later events. An hourly model answering at 09:05 can use the 08:00–09:00 snapshot. Using the finished 09:00–10:00 graph would reveal the future. A final incomplete window still has its scheduled closing boundary. We assume availability equals event time in these datasets; real late arrivals require the additional policy from L104.</p>
 <p>This differs from <em>nowcasting</em> a missing edge inside a graph already observed at time k. Neither task is intrinsically wrong, but their scores answer different questions. The SBM reproduction below predicts edges in snapshot t+1 from history through t, following the <a href="https://arxiv.org/html/1902.10191v3#S4.SS2">paper's link-prediction definition, §4.2</a>.</p>
@@ -7913,7 +7897,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-005">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-004">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7970,7 +7954,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-006">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-005">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7985,7 +7969,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-007">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-006">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7997,11 +7981,21 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 <p><strong>Predict before moving the control:</strong> if the new candidate is larger than the previous state, does increasing the retention gate increase or decrease the output?</p>
 <p><strong>Portable node-gate trace:</strong> initial 0.20; candidates [0.80, 0.10, 0.60]; retention gate 0.25 gives states [0.6500, 0.2375, 0.5094]. Predict first, then calculate.</p>
 <p>The control is a scalar gate illustration with supplied candidates, not a fitted neural network. It isolates interpolation. In the real GRU, candidate and gate values are functions of the input and previous state.</p>
+<h3 id="Detaching-the-state-cuts-gradients,-not-the-remembered-value">Detaching the state cuts gradients, not the remembered value<a class="anchor-link" href="#Detaching-the-state-cuts-gradients,-not-the-remembered-value">¶</a></h3><p>Use a controlled one-coordinate <a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.GRUCell.html">PyTorch GRU</a>. Set its candidate to <code>tanh(x)</code> with no recurrent candidate term, and hold its shared retention gate at <code>z = sigmoid(b) = 0.25</code>. Start at state 0. The first input is <code>atanh(0.8)</code>, so its candidate is 0.8; the second input is 0, so its candidate is 0. Use identical weights in both steps, with no optimizer update between them.</p>
+<p>The states are <code>s₁ = 0.75×0.8 + 0.25×0 = 0.6</code>, then <code>s₂ = 0.75×0 + 0.25×0.6 = 0.15</code>. Let the only loss be <code>L = s₂² = 0.0225</code>.</p>
+<p>Repeat the calculation with <code>s₁.detach()</code> passed into the second step. <strong>Both states and the loss stay identical.</strong> The old input still affects the prediction through the stored number 0.6. Autograd, however, treats that number as fixed when differentiating the second step.</p>
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Loss gradient</th><th>Full path</th><th>Detach s₁</th></tr></thead>
+<tbody><tr><td>First input x₁</td><td>0.02025</td><td>0</td></tr>
+<tr><td>Shared gate bias b</td><td>0.02250</td><td>0.03375</td></tr></tbody></table>
+<p>The shared gate bias still receives a gradient through its use in step 2. Truncation removes the path through step 1; it does not generally make all recurrent-weight gradients zero. The visible Wikipedia baseline detaches across windows, so distinguish <strong>how long values can carry information</strong> from <strong>how far this loss can train earlier computations</strong>.</p>
+<p><strong>Work it through.</strong> Replace detaching with resetting the carried state to zero. What happens to s₂? Why is that a different intervention from truncating the gradient?</p>
+<details><summary>Check values and learning paths</summary><p>Resetting gives s₂ = 0, erasing the earlier information. Detaching keeps s₂ = 0.15. For the untruncated input gradient, multiply 2s₂ × z × (1−z) × (1−0.8²) = 0.02025. For the shared bias, full differentiation includes both occurrences of z in s₂ = 0.8z(1−z); detaching treats s₁ = 0.6 as fixed and differentiates only z×0.6. These are controlled GRU derivatives, not measured gradients from the trained benchmark.</p></details>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-008">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-007">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8023,7 +8017,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-009">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-008">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8101,7 +8095,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-010">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-009">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8126,7 +8120,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-011">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-010">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8137,7 +8131,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-012">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-011">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8147,7 +8141,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-013">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-012">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8176,7 +8170,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-014">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-013">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8186,7 +8180,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-015">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-014">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8204,7 +8198,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-016">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-015">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8214,7 +8208,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_solution" id="cell-id=l107-017">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_solution" id="cell-id=l107-016">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8239,7 +8233,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_check" id="cell-id=l107-018">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_check" id="cell-id=l107-017">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8288,7 +8282,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-019">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-018">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8298,7 +8292,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_solution" id="cell-id=l107-020">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_solution" id="cell-id=l107-019">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8318,7 +8312,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_check" id="cell-id=l107-021">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_check" id="cell-id=l107-020">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8367,7 +8361,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-022">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-021">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8377,7 +8371,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-023">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-022">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8400,7 +8394,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-024">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-023">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8410,7 +8404,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-025">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-024">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8512,7 +8506,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-026">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-025">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8522,7 +8516,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_solution" id="cell-id=l107-027">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_solution" id="cell-id=l107-026">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8541,7 +8535,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_check" id="cell-id=l107-028">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_check" id="cell-id=l107-027">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8574,7 +8568,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-029">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-028">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8584,7 +8578,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-030">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-029">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8615,7 +8609,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-031">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-030">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8625,7 +8619,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-032">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-031">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8656,7 +8650,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-033">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-032">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8666,7 +8660,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-034">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-033">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8700,7 +8694,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-035">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-034">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8710,7 +8704,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-036">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-035">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8730,7 +8724,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-037">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-036">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8740,7 +8734,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-038">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-037">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8759,7 +8753,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-039">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-038">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8769,7 +8763,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-040">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-039">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8793,7 +8787,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-041">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-040">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8803,7 +8797,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-042">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-041">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8859,7 +8853,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-043">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-042">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8869,7 +8863,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-044">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-043">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8905,7 +8899,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-045">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-044">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8915,7 +8909,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-046">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-045">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9055,7 +9049,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-047">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-046">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9065,7 +9059,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-048">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-047">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9135,7 +9129,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-049">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-048">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9145,7 +9139,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-050">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-049">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9335,7 +9329,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-051">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-050">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9345,7 +9339,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-052">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-051">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9374,7 +9368,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-053">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-052">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9384,7 +9378,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-054">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-053">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9455,7 +9449,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-055">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-054">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9465,7 +9459,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-056">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-055">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9515,7 +9509,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-057">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-056">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9525,7 +9519,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-058">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-057">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9552,7 +9546,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-059">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-058">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9562,7 +9556,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-060">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-059">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9600,7 +9594,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-061">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-060">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9610,7 +9604,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-062">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-061">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9774,7 +9768,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-063">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-062">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9784,7 +9778,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-064">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-063">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9811,7 +9805,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-065">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-064">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9821,7 +9815,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-066">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-065">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9839,7 +9833,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-067">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-066">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9849,7 +9843,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-068">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-067">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9890,7 +9884,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-069">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-068">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9900,7 +9894,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-070">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-069">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9934,7 +9928,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-071">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-070">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -9944,7 +9938,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-072">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-071">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10063,7 +10057,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-073">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-072">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10073,7 +10067,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-074">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-073">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10096,7 +10090,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-075">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-074">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10106,7 +10100,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-076">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-075">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10228,7 +10222,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-077">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-076">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10238,7 +10232,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_check" id="cell-id=l107-078">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_check" id="cell-id=l107-077">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10284,7 +10278,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-079">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs celltag_provided" id="cell-id=l107-078">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10321,7 +10315,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-080">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-079">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10331,7 +10325,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-081">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-080">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10458,7 +10452,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-082">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-081">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10468,7 +10462,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-083">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-082">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10509,7 +10503,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-084">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-083">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10519,7 +10513,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_exit" id="cell-id=l107-085">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_exit" id="cell-id=l107-084">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10609,7 +10603,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-086">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-085">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10619,7 +10613,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-087">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-086">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10663,7 +10657,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-088">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l107-087">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -10673,7 +10667,7 @@ Author comparisons used Python 3.12, Torch 2.8.0 and NumPy 2.2.6 on T4.
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-089">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell celltag_provided" id="cell-id=l107-088">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

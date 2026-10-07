@@ -14,15 +14,6 @@ A database export arrives every night. You can build a graph from each export, b
 
 
 
-1. An event occurs at 09:05 inside an hourly window. When can a model use the *completed* window?
-2. What must remain fixed when you compare two link-prediction scores?
-3. A GCN shares weights across graphs. Does that give a node temporal memory?
-
-
-
-At 10:00, assuming immediate arrival and a reliable completeness policy. Hold questions, candidates, legal history and metric aggregation fixed. Shared parameters learn a general rule; a separately updated state carries a particular history. Revisit [availability](0104-information-leakage-in-time.html), [aggregation loss](0105-continuous-time.html) and [candidate evaluation](0106-temporal-link-prediction.html) if any distinction was unclear.
-
-</details>
 
 ## 1 · Turn a stream into a sequence of questions
 
@@ -80,6 +71,25 @@ A course forward pass is: completed graph → two GCN layers → rowwise GRU →
 [[NODE_WIDGET]]
 
 The control is a scalar gate illustration with supplied candidates, not a fitted neural network. It isolates interpolation. In the real GRU, candidate and gate values are functions of the input and previous state.
+
+### Detaching the state cuts gradients, not the remembered value
+
+Use a controlled one-coordinate [PyTorch GRU](https://docs.pytorch.org/docs/stable/generated/torch.nn.GRUCell.html). Set its candidate to `tanh(x)` with no recurrent candidate term, and hold its shared retention gate at `z = sigmoid(b) = 0.25`. Start at state 0. The first input is `atanh(0.8)`, so its candidate is 0.8; the second input is 0, so its candidate is 0. Use identical weights in both steps, with no optimizer update between them.
+
+The states are `s₁ = 0.75×0.8 + 0.25×0 = 0.6`, then `s₂ = 0.75×0 + 0.25×0.6 = 0.15`. Let the only loss be `L = s₂² = 0.0225`.
+
+Repeat the calculation with `s₁.detach()` passed into the second step. **Both states and the loss stay identical.** The old input still affects the prediction through the stored number 0.6. Autograd, however, treats that number as fixed when differentiating the second step.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Loss gradient</th><th>Full path</th><th>Detach s₁</th></tr></thead>
+<tbody><tr><td>First input x₁</td><td>0.02025</td><td>0</td></tr>
+<tr><td>Shared gate bias b</td><td>0.02250</td><td>0.03375</td></tr></tbody></table>
+
+The shared gate bias still receives a gradient through its use in step 2. Truncation removes the path through step 1; it does not generally make all recurrent-weight gradients zero. The visible Wikipedia baseline detaches across windows, so distinguish **how long values can carry information** from **how far this loss can train earlier computations**.
+
+**Work it through.** Replace detaching with resetting the carried state to zero. What happens to s₂? Why is that a different intervention from truncating the gradient?
+
+<details><summary>Check values and learning paths</summary><p>Resetting gives s₂ = 0, erasing the earlier information. Detaching keeps s₂ = 0.15. For the untruncated input gradient, multiply 2s₂ × z × (1−z) × (1−0.8²) = 0.02025. For the shared bias, full differentiation includes both occurrences of z in s₂ = 0.8z(1−z); detaching treats s₁ = 0.6 as fixed and differentiates only z×0.6. These are controlled GRU derivatives, not measured gradients from the trained benchmark.</p></details>
 
 ## 5 · Let the graph convolution's weights remember
 

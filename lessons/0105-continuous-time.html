@@ -9,9 +9,6 @@
 
 <p class="subtitle">One tangible win: build two representations of the same interactions, then defend which information your prediction needs. Core reading: 15 minutes · lab: 35–50 minutes.</p>
 
-
-
-
 <p><strong>The next problem.</strong> L102 and L103 consume timestamped interactions. L104 asks whether those interactions were knowable. Now suppose your data pipeline hands the model one graph per day. Even a perfectly causal daily graph may have discarded information the task needs. Our mission is to build defensible relational systems: representation choices belong in that argument, before choosing a neural architecture.</p>
 <!-- lesson-visuals:start -->
 <nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 4 figures</summary><ol><li><a href="#visual-figure-1">Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six</a></li><li><a href="#visual-figure-2">Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can…</a></li><li><a href="#visual-figure-3">Synthetic query at 6 seconds: three eligible records are withheld by closed-window access</a></li><li><a href="#visual-figure-4">Measured full Wikipedia census, not a prediction benchmark</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
@@ -33,6 +30,17 @@
 <figure class="stream-figure" tabindex="0" id="visual-figure-2"><img src="../labs/figures/l105/order.svg" alt="Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability."><figcaption>Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l105/order.svg" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>
 
 <p>History I has A→B at 1, then B→C at 2: information starting at A can reach C. History II reverses those times: it cannot. Both weighted snapshots contain AB:1 and BC:1. A downstream model receiving only those counts cannot distinguish the histories. Adding first/last times makes a richer summary, but does not generally recover every repeated event’s timing.</p>
+<h3 id="Do-first-and-last-timestamps-recover-the-missing-order?">Do first and last timestamps recover the missing order?<a class="anchor-link" href="#Do-first-and-last-timestamps-recover-the-missing-order?">&#182;</a></h3><p>Keep the same synthetic directed-contact setting, but let a message first become available at <strong>A at time 2</strong>. Compare these two histories inside [0,10):</p>
+<div class="stream-scroll" tabindex="0"><table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Contact times</th><th>History I</th><th>History II</th></tr></thead>
+<tbody><tr><td>A→B</td><td>1, 4, 9</td><td>1, 6, 9</td></tr>
+<tr><td>B→C</td><td>5</td><td>5</td></tr></tbody></table></div>
+
+<p>Both summaries report A→B <strong>count 3, first 1, last 9</strong>, and B→C <strong>count 1, first 5, last 5</strong>. The existing aggregation function returns the same count, first/last and release metadata for both. Yet only History I delivers this message to C: A sends at 4, then B forwards at 5. In History II, the contact at 1 occurred before the message existed; the next A→B contact at 6 misses B→C at 5.</p>
+<p>The relevant question includes the message's start time. If the message were already at A before time 1, both histories could deliver it at 5. Without that start-time condition, this counterexample would be wrong.</p>
+<p><strong>Work it through.</strong> Move the middle A→B contact to time 3, then to time 7, leaving its first and last contacts fixed. Which histories can deliver the message? Could a decoder given only these identical summaries answer correctly for every history?</p>
+<details><summary>Check what the summary can prove</summary><p>Time 3 permits A→B@3 then B→C@5; time 7 misses the forwarding contact. A deterministic decoder receiving identical summaries must give the same answer, so it cannot be correct for both. First/last times add information but do not make the summary lossless. For a pair with exactly two contacts, count plus first and last does determine its two timestamps; a third contact is enough to hide an interior time.</p></details>
+
 <div id="l105-predict"></div>
 
 <p><strong>The right conclusion is task-dependent.</strong> If the question is “how many edits did this pair make in the completed day?”, count weights preserve the answer. If it is “which interaction preceded the complaint?”, those counts may be insufficient. This is an information argument, not evidence that one model has higher AP. A stream encoder can also discard history internally, through sampling, pooling, or memory updates.</p>

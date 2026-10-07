@@ -50,7 +50,7 @@ def prose(portable=False):
 
 def document(title,body,ref=False):
  scripts=[] if ref else ['retrieval-pool','retrieval-bank','predict','teachback','snapshot-state-viz','l107-lesson']
- return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0106-temporal-link-prediction.html">Lesson 106</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 107</p><h1>'+title+'</h1></header>'+render(body).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in scripts)+'</body></html>'
+ return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0106-temporal-link-prediction.html">Lesson 106</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 107</p><h1>'+title+'</h1></header>'+re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/f'{SLUG}.html').write_text(document(TITLE,prose()))
 ref='''## Forecast contract
 
@@ -224,8 +224,12 @@ else:
  if solution and path.exists():
   old=nbf.read(path,as_version=4)
   nb.metadata=old.metadata
-  for new,previous in zip(nb.cells,old.cells):
-   if new.cell_type=='code' and previous.cell_type=='code' and new.source==previous.source:new.outputs=previous.outputs;new.execution_count=previous.execution_count;new.metadata=previous.metadata
+  before=[c for c in old.cells if c.cell_type=='code']
+  after=[c for c in nb.cells if c.cell_type=='code']
+  # Markdown insertions cannot shift output ownership. Changed code requires fresh execution.
+  if [c.source for c in before]==[c.source for c in after]:
+   for new,previous in zip(after,before):
+    new.outputs=previous.outputs;new.execution_count=previous.execution_count;new.metadata=previous.metadata
  nbf.write(nb,path)
  return nb
 student=build(False);solution=build(True)

@@ -14,6 +14,7 @@ def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 student=nbformat.read(P/f'{S}.ipynb',as_version=4);solution=nbformat.read(P/'solutions'/f'{S}.ipynb',as_version=4)
 assert sum('raise NotImplementedError("TODO:' in c.source for c in student.cells)==3
 assert not any(c.outputs for c in student.cells if c.cell_type=='code')
+assert all(c.execution_count is not None and not any(o.output_type=='error' for o in c.outputs) for c in solution.cells if c.cell_type=='code')
 source='\n\n'.join(c.source for c in solution.cells if c.cell_type=='code')
 assert hashlib.sha256(source.encode()).hexdigest()==json.loads((P/'_execution_l107_results.json').read_text())['executed_code_sha256']
 parsed=ast.parse(source);definitions={n.name:ast.dump(n,include_attributes=False) for n in parsed.body if isinstance(n,(ast.FunctionDef,ast.ClassDef))}
@@ -26,7 +27,7 @@ figure_hashes=[sha(x) for x in figure_paths]
 subprocess.run([sys.executable,str(P/'_figures_l107.py')],check=True,capture_output=True)
 assert figure_hashes==[sha(x) for x in figure_paths],'Figure rebuild drift'
 paths=[R/'lessons'/f'{S}.html',R/'reference/snapshot-state-contracts.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
-before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l107.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths],'Rebuild drift'
+before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l107.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths],'Rebuild drift'
 errors=[];states=0
 with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote'])
@@ -48,12 +49,13 @@ with sync_playwright() as pw:
   teach=page.locator('#l107-teachback');teach.locator('textarea').fill('At 09:05 I can use a graph closed at 09:00. The GCN computes spatial features; the recurrent state either has rows indexed by node identity or coordinates indexed by feature dimensions. Candidate scoring precedes updating with new observations. I would fix model weights and candidates while changing the historical access cutoff. A source replay differs from historical reproduction when recurrence and runtime are different.');teach.locator('button').first.click();assert 'snapshot' in teach.inner_text()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'page overflow'
   assert page.locator('figure').count()==6
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   page.screenshot(path=f'/tmp/l107-page-{width}.png',full_page=True)
  for name in ['architecture','normalization','summary','recurrence','history','results']:
   page.goto((P/f'figures/l107/{name}.svg').as_uri());assert page.locator('svg').evaluate("s=>{const r=s.getBoundingClientRect();return Array.from(s.querySelectorAll('text')).every(t=>{const b=t.getBoundingClientRect();return b.x>=r.x-1&&b.y>=r.y-1&&b.right<=r.right+1&&b.bottom<=r.bottom+1})}"),name+' labels outside canvas'
  page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==6
  page.set_viewport_size({'width':950,'height':900});page.locator('img[src^="data:image/png;base64,"]').nth(2).screenshot(path='/tmp/l107-notebook-summary.png')
- nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()==6;assert 'First retrieve' in plain.locator('article').inner_text();assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+ nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri());assert plain.locator('figure').count()==6;assert 'Detaching the state cuts gradients' in plain.locator('article').inner_text();assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
  plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');nojs.close();browser.close()
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[]

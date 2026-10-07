@@ -24,7 +24,7 @@ for name in ['sampling_l108.py','tgat_l103.py']:
 r=json.loads((P/'_analysis_l108_results.json').read_text());assert r['status']=='COMPLETE'
 for name,h in r['artifacts'].items():assert sha(P/'evidence/l108'/name)==h,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/temporal-sampling.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
-before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l108.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths],'Rebuild drift'
+before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l108.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths],'Rebuild drift'
 figures=sorted((P/'figures/l108').glob('*'));before=[sha(x) for x in figures];subprocess.run([sys.executable,str(P/'_figures_l108.py')],check=True,capture_output=True);assert before==[sha(x) for x in figures],'Figure drift'
 errors=[];states=0
 with sync_playwright() as pw:
@@ -46,6 +46,7 @@ with sync_playwright() as pw:
   teach=page.locator('#l108-teachback');teach.locator('textarea').fill('For cutoff eight and width five I use the half-open interval from three to eight. A selected edge at three passes cutoff three into the next hop. Two searches can preserve exact records; changing fanout changes the context. I compare the same questions and negative candidates, synchronize GPU timing, and distinguish fixed-weight inference from fresh training.');teach.locator('button').first.click();assert 'frozen model' in teach.inner_text()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
   assert page.locator('figure').count()==4
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   page.screenshot(path=f'/tmp/l108-page-{width}.png',full_page=True)
  for name in ['interval','pipeline','recursion','results']:
   page.goto((P/f'figures/l108/{name}.svg').as_uri());assert page.locator('svg').evaluate("s=>{const r=s.getBoundingClientRect();return Array.from(s.querySelectorAll('text')).every(t=>{const b=t.getBoundingClientRect();return b.x>=r.x-1&&b.y>=r.y-1&&b.right<=r.right+1&&b.bottom<=r.bottom+1})}"),name+' labels outside canvas'

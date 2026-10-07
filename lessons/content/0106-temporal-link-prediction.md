@@ -16,9 +16,6 @@
 
 
 
-No, no, and no under our strict before-event contract. Require event time < query and availability ≤ query. Counts preserve multiplicity, not order. Revisit [L104](0104-information-leakage-in-time.html) and [L105](0105-continuous-time.html) if needed.
-
-</details>
 
 
 
@@ -49,6 +46,24 @@ The Wikipedia experiment supplies the positive event times and an equal number o
 **Unlimited memory** retains every supplied historical pair. **Window memory** forgets older events before forming the set. Recency can remove obsolete connections, reducing false positives. It can also forget a genuinely recurring pair, reducing true positives. Neither memory discovers a first-ever edge.
 
 The paper describes a recent fixed-duration window related to test duration. The released `fixed` implementation instead computes the 0.85 quantile of the current history's event times and retains events at or above it. Its duration changes with event density and history growth. Our named replay uses that released operator, with this deviation visible. There is no optimizer, loss, epoch schedule or checkpoint to tune. [Paper §4](https://arxiv.org/html/2207.10128v2#S4) · [pinned implementation](https://github.com/fpour/DGB/blob/7793e9449f5321c7e39b24c0585e3c3de7cf9f5e/EdgeBank/link_pred/edge_bank_baseline.py).
+
+### A quantile window does not expire during idle time
+
+Take ten supplied history events at times **[0,1,2,3,4,5,6,7,7,7]**. One of the time-7 events is A→X; none of the other events use that pair. The 0.85 quantile is **7**, so the released operator keeps all three time-7 events. Ties mean it retains **30% of events**, not exactly 15%.
+
+Score A→X at time 8, then again at time 100 after no new events. The history and quantile are unchanged, so both scores are 1. This operator does not receive the query time; elapsed wall-clock time alone cannot evict the pair.
+
+Now append two unrelated events at times 101 and 102, and query at 103. There are twelve history events. With the released linear quantile convention, the fractional zero-based index is `0.85 × 11 = 9.35`. Positions 9 and 10 contain times 7 and 101, so the boundary becomes `7 + 0.35 × (101−7) = 39.9`. Only the events at 101 and 102 remain; A→X now scores 0.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Query time</th><th>Boundary</th><th>A→X score</th></tr></thead>
+<tbody><tr><td>8</td><td>7</td><td>1</td></tr>
+<tr><td>100</td><td>7</td><td>1</td></tr>
+<tr><td>103</td><td>39.9</td><td>0</td></tr></tbody></table>
+
+**Work it through.** Compare a different policy that retains history from the last ten time units before the query. Would A→X still score 1 at time 100? Explain which input caused the released operator to forget it at time 103.
+
+<details><summary>Check the retention rule</summary><p>A ten-unit clock window at time 100 excludes the event at 7, so its score is 0. The released quantile operator retains it until the supplied event-time distribution changes. Two other pairs' later events move the quantile and evict A→X. Both are possible memory policies, but they answer different notions of recency; the named replay preserves the released one.</p></details>
 
 **Trace the clock.** The source evaluates batches of 200 positives using training/validation history plus earlier test batches. It then adds the observed positives for later batches. This delays within-batch updates. Equal timestamps can cross batch boundaries; row order alone cannot establish a strict before-event history. The replay reports such exposure. The lab's `legal_history` exercise implements the stricter clock as a separate contract.
 

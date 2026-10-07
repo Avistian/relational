@@ -16,15 +16,6 @@ L107 compressed events into snapshots. Here we retain individual event times and
 
 
 
-1. At time 8, can an event stamped exactly 8 enter a strict-past prediction?
-2. If two systems score the same positives against different negatives, is their accuracy difference a clean model comparison?
-3. What information does an hourly count snapshot lose?
-
-
-
-No: strict-past means event time < query time. Different negative candidates change the evaluation problem. A count snapshot loses within-window event order and exact times. Revisit [L104](0104-information-leakage-in-time.html), [L106](0106-temporal-link-prediction.html), and [L107](0107-snapshot-methods.html) if needed.
-
-</details>
 
 ## 1 · Find the legal interval before sampling
 
@@ -89,6 +80,25 @@ For B queries, two batched binary searches maintain B lower/upper position pairs
 [[FIG:recursion]]
 
 The index is queried once per `(node, cutoff)` pair. Two visits to node B at different cutoffs may have different valid histories. A cache keyed only by node ID is unsafe. Even a `(node, cutoff)` cache needs layer, sampler policy, window, model state and stochastic-sampling semantics considered; reusing a random sample can change the estimator's dependence structure. This lesson does not introduce such a cache.
+
+### Precision is part of the recursive cutoff
+
+The index searches float64 timestamps but returns float32 times to TGAT. The authenticated Wikipedia times round-trip exactly, which the audit checks. That property is a condition of this replay, not a guarantee for arbitrary timestamps.
+
+**A concrete limit.** Let `T = 2²⁴ = 16,777,216`. At this scale, float32 cannot represent every consecutive integer. Consider two events, A–B and B–C, both at **T+3**, and a root query for A at **T+5**. The root correctly retrieves A–B. Returning its timestamp as float32 rounds **T+3 to T+4**.
+
+TGAT then queries B with that returned time. The intended child cutoff was T+3, which excludes the tied B–C event. The rounded cutoff T+4 admits it:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Child cutoff</th><th>B–C at T+3</th></tr></thead>
+<tbody><tr><td>Exact T+3</td><td>Excluded</td></tr>
+<tr><td>Rounded T+4</td><td>Included</td></tr></tbody></table>
+
+The scalar and batched implementations agree on this fixture. The timestamp audit also reports zero nonpast records **relative to the rounded request**. Neither check notices that the child's request already changed meaning. This is an adapter precision failure outside the checked Wikipedia timestamp range; it does not demonstrate leakage in the recorded Wikipedia run.
+
+**Work it through.** Where must the exact time survive to keep the second hop correct? Would converting the rounded float32 value back to float64 restore it?
+
+<details><summary>Check the precision boundary</summary><p>Preserve exact event times through neighbor retrieval and the next recursive lookup, using a suitable integer or float64 representation. Convert elapsed durations for the neural encoder only after establishing the legal lookup boundaries, with that conversion separately checked. Casting T+4 back to float64 cannot recover the lost T+3. Scalar/vector agreement establishes implementation parity; a separate exact-time oracle establishes this temporal meaning.</p></details>
 
 For neighbor expansion alone, L layers with constant fanout k can expose up to `1 + k + k² + … + kᴸ` tree slots per root before deduplication. With two layers, k = 20 gives 421; k = 5 gives 31. These are **tree slot bounds**, not unique nodes, exact FLOPs, or memory measurements. This TGAT implementation also recursively computes the source representation at each layer, and scores source, positive destination and negative destination. Its actual work exceeds the neighbor-tree sketch; use measured inference timing.
 

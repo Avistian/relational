@@ -22,7 +22,7 @@ source='\n\n'.join(c.source for c in solution.cells if c.cell_type=='code')
 assert hashlib.sha256(source.encode()).hexdigest()==json.loads((P/'_execution_l106_results.json').read_text())['executed_code_sha256']
 for chunk in re.split(r'^# %% ',(P/'relkit/edgebank_l106.py').read_text(),flags=re.M)[1:]:assert chunk.split('\n',1)[1].strip() in source
 paths=[R/'lessons'/f'{S}.html',R/'reference/temporal-link-evaluation.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
-before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l106.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths]
+before=[sha(x) for x in paths];subprocess.run([sys.executable,str(P/'_build_l106.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(x) for x in paths]
 errors=[];states=0
 with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote'])
@@ -36,6 +36,7 @@ with sync_playwright() as pw:
   pred=page.locator('#l106-predict');assert pred.locator('button').last.is_disabled();pred.locator('button').first.click();pred.locator('button').last.click();assert 'without changing the scorer' in pred.inner_text()
   teach=page.locator('#l106-teachback');teach.locator('textarea').fill('The score compares supplied positives with sampled negatives at supplied query times. Historical negatives test obsolete memories, not just unseen endpoint combinations. I need a declared history and forecast horizon, and I must distinguish batch means from pooled scores. Matching released predictions does not certify historical paper or deployment identity.');teach.locator('button').first.click();assert 'Sparse random pairs' in teach.inner_text()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'page overflow'
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   page.screenshot(path=f'/tmp/l106-page-{width}.png',full_page=True)
   assert page.locator('figure').count()==4
  for name in ['architecture','candidates','metrics','results']:
@@ -44,7 +45,7 @@ with sync_playwright() as pw:
  page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==4
  page.set_viewport_size({'width':950,'height':900});page.locator('img[src^="data:image/png;base64,"]').nth(2).screenshot(path='/tmp/l106-notebook-metrics.png')
  nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri())
- assert plain.locator('figure').count()==4 and 'Without opening your notes' in plain.locator('article').inner_text();assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+ assert plain.locator('figure').count()==4 and 'A quantile window does not expire' in plain.locator('article').inner_text();assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
  plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()');nojs.close();browser.close()
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[]

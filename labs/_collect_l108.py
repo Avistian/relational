@@ -1,10 +1,26 @@
 """Download and independently reconstruct all metrics from authenticated predictions."""
-import argparse,hashlib,json,subprocess,sys
+import argparse,ast,hashlib,json,subprocess,sys
 from pathlib import Path
 import numpy as np
 from sklearn.metrics import average_precision_score
-from _run_l108 import fingerprint,sha,ARMS
+from _run_l108 import fingerprint,sha,ARMS,FILES
 P=Path(__file__).resolve().parent;R=P.parent
+
+def checked_evidence_fingerprint(expected):
+ # An old run retains its executed source hash after L104 validation hardening.
+ current=fingerprint()
+ if expected==current:return current
+ archived=P/'sources/l104/leakage_before_alignment.py'
+ assert sha(archived)=='5bf6ce747dcbde33e256f2814856c339e5570c71a5ad454327bfed2729d6fdb3','Historical helper archive changed'
+ def computation(path):
+  tree=ast.parse(path.read_text())
+  tree.body=[n for n in tree.body if not (isinstance(n,ast.FunctionDef) and n.name=='paired_ap')]
+  return ast.dump(tree,include_attributes=False)
+ assert computation(archived)==computation(P/'relkit/leakage_l104.py'),'Changes beyond paired-AP validation'
+ hashes=[sha(archived if name=='relkit/leakage_l104.py' else P/name) for name in FILES]
+ historical=hashlib.sha256(''.join(hashes).encode()).hexdigest()
+ assert expected==historical,'Executed dependency identity mismatch'
+ return historical
 
 def ap(p,n):return float(average_precision_score(np.r_[np.ones(len(p)),np.zeros(len(n))],np.r_[p,n]))
 def stats(values):
@@ -16,6 +32,7 @@ def collect(download=False):
  pins=json.loads((P/'_inputs_l108.json').read_text())
  for seed in range(10):
   folder=root/'full'/f'seed-{seed}';r=json.loads((folder/'result.json').read_text());assert r['status']=='COMPLETE'
+  if seed==0:digest=checked_evidence_fingerprint(r['identity']['fingerprint'])
   assert r['identity']['fingerprint']==digest and r['identity']['seed']==seed and r['identity']['checkpoint']==pins['seeds'][str(seed)]['selected.pt']
   assert r['predictions_sha256']==sha(folder/'predictions.npz')
   records.append(r)

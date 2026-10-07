@@ -11,15 +11,6 @@
 
 <p>A node has interacted a million times. A prediction needs its history, but loading all of it for every query is expensive. <strong>By the end, you will implement a bounded temporal sampler and defend a measured speed–accuracy trade-off.</strong> This is directly useful when a relational model reads linked records as they existed at a particular time.</p>
 <p>L107 compressed events into snapshots. Here we retain individual event times and reduce how much history a query reads. The key distinction is between <strong>finding the same records faster</strong> and <strong>choosing different records</strong>. Only the first should preserve predictions exactly.</p>
-
-
-<ol>
-<li>At time 8, can an event stamped exactly 8 enter a strict-past prediction?</li>
-<li>If two systems score the same positives against different negatives, is their accuracy difference a clean model comparison?</li>
-<li>What information does an hourly count snapshot lose?</li>
-</ol>
-
-
 <!-- lesson-visuals:start -->
 <nav class="visual-reading" data-visual-reading="" aria-label="Visual reading route"><details><summary>Visual reading route · 4 figures</summary><ol><li><a href="#visual-figure-1">Synthetic boundary calculation: two left searches retain both time-3 events and exclude the…</a></li><li><a href="#visual-figure-2">The sampler returns aligned B-by-k identities and timestamps; frozen TGAT turns this context…</a></li><li><a href="#visual-figure-3">The A–B edge at 3 passes cutoff 3 into B’s next query</a></li><li><a href="#visual-figure-4">Author experiment: same questions and negatives, four fixed-weight inference interventions, ten…</a></li></ol><p>Start with the overall idea, then inspect the mechanism and evidence. Use “Enlarge figure” for dense diagrams; press Escape to return.</p></details></nav>
 <!-- lesson-visuals:end -->
@@ -80,6 +71,18 @@
 <figure class="stream-figure" tabindex="0" id="visual-figure-3"><img src="../labs/figures/l108/recursion.svg" alt="The A–B edge at 3 passes cutoff 3 into B’s next query. A B–C edge at 6 is excluded on this path."><figcaption>The A–B edge at 3 passes cutoff 3 into B’s next query. A B–C edge at 6 is excluded on this path.</figcaption><!-- visual-tools:start --><div class="vs-figure-tools"><a href="../labs/figures/l108/recursion.svg" data-enlarge="">Open original figure</a></div><!-- visual-tools:end --></figure>
 
 <p>The index is queried once per <code>(node, cutoff)</code> pair. Two visits to node B at different cutoffs may have different valid histories. A cache keyed only by node ID is unsafe. Even a <code>(node, cutoff)</code> cache needs layer, sampler policy, window, model state and stochastic-sampling semantics considered; reusing a random sample can change the estimator's dependence structure. This lesson does not introduce such a cache.</p>
+<h3 id="Precision-is-part-of-the-recursive-cutoff">Precision is part of the recursive cutoff<a class="anchor-link" href="#Precision-is-part-of-the-recursive-cutoff">&#182;</a></h3><p>The index searches float64 timestamps but returns float32 times to TGAT. The authenticated Wikipedia times round-trip exactly, which the audit checks. That property is a condition of this replay, not a guarantee for arbitrary timestamps.</p>
+<p><strong>A concrete limit.</strong> Let <code>T = 2²⁴ = 16,777,216</code>. At this scale, float32 cannot represent every consecutive integer. Consider two events, A–B and B–C, both at <strong>T+3</strong>, and a root query for A at <strong>T+5</strong>. The root correctly retrieves A–B. Returning its timestamp as float32 rounds <strong>T+3 to T+4</strong>.</p>
+<p>TGAT then queries B with that returned time. The intended child cutoff was T+3, which excludes the tied B–C event. The rounded cutoff T+4 admits it:</p>
+<div class="stream-scroll" tabindex="0"><table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Child cutoff</th><th>B–C at T+3</th></tr></thead>
+<tbody><tr><td>Exact T+3</td><td>Excluded</td></tr>
+<tr><td>Rounded T+4</td><td>Included</td></tr></tbody></table></div>
+
+<p>The scalar and batched implementations agree on this fixture. The timestamp audit also reports zero nonpast records <strong>relative to the rounded request</strong>. Neither check notices that the child's request already changed meaning. This is an adapter precision failure outside the checked Wikipedia timestamp range; it does not demonstrate leakage in the recorded Wikipedia run.</p>
+<p><strong>Work it through.</strong> Where must the exact time survive to keep the second hop correct? Would converting the rounded float32 value back to float64 restore it?</p>
+<details><summary>Check the precision boundary</summary><p>Preserve exact event times through neighbor retrieval and the next recursive lookup, using a suitable integer or float64 representation. Convert elapsed durations for the neural encoder only after establishing the legal lookup boundaries, with that conversion separately checked. Casting T+4 back to float64 cannot recover the lost T+3. Scalar/vector agreement establishes implementation parity; a separate exact-time oracle establishes this temporal meaning.</p></details>
+
 <p>For neighbor expansion alone, L layers with constant fanout k can expose up to <code>1 + k + k² + … + kᴸ</code> tree slots per root before deduplication. With two layers, k = 20 gives 421; k = 5 gives 31. These are <strong>tree slot bounds</strong>, not unique nodes, exact FLOPs, or memory measurements. This TGAT implementation also recursively computes the source representation at each layer, and scores source, positive destination and negative destination. Its actual work exceeds the neighbor-tree sketch; use measured inference timing.</p>
 <p><strong>Check:</strong> two queries request B at times 3 and 8. Can they share the same latest embedding solely because their node IDs match? Explain a counterexample before opening the answer.</p>
 <details><summary>Check the cache counterexample</summary>

@@ -28,6 +28,7 @@ for chunk in re.split(r'^# %% ',canonical,flags=re.M)[1:]:assert chunk.split('\n
 paths=[R/'lessons'/f'{S}.html',R/'reference/event-stream-snapshots.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb']
 before=[sha(p) for p in paths]
 subprocess.run([sys.executable,str(P/'_build_l105.py')],check=True,capture_output=True)
+subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[sha(p) for p in paths],'nondeterministic lesson/notebook rebuild'
 errors=[];states=0
 with sync_playwright() as pw:
@@ -55,6 +56,7 @@ with sync_playwright() as pw:
   pred=page.locator('#l105-predict');assert pred.locator('button').last.is_disabled();pred.locator('button').nth(1).click();pred.locator('button').last.click();assert 'identical endpoint counts' in pred.inner_text()
   teach=page.locator('#l105-teachback');teach.locator('textarea').fill('I retain event time and availability for immediate prediction. Count-weighted windows preserve pair totals, but discard within-window order. At query 10 the window [0,10) is legal only when all records have arrived. A complete current window at noon can contain future events. The audit measures representation counts, not predictive performance.');teach.locator('button').first.click()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'page overflow'
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   page.screenshot(path=f'/tmp/l105-full-{width}.png',full_page=True)
   agg.screenshot(path=f'/tmp/l105-aggregation-{width}.png');clock.screenshot(path=f'/tmp/l105-release-{width}.png')
@@ -67,7 +69,7 @@ with sync_playwright() as pw:
  page.goto((P/'html'/f'{S}.html').as_uri());figures=page.locator('img[src^="data:image/png;base64,"]').count();assert figures==4
  page.set_viewport_size({'width':950,'height':900});page.locator('img[src^="data:image/png;base64,"]').nth(2).screenshot(path='/tmp/l105-notebook-release.png')
  nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});plain=nojs.new_page();plain.goto((R/'lessons'/f'{S}.html').as_uri())
- assert 'Without opening L104' in plain.locator('article').inner_text() and plain.locator('figure').count()==4
+ assert 'Do first and last timestamps' in plain.locator('article').inner_text() and plain.locator('figure').count()==4
  assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
  plain.emulate_media(media='print');assert plain.locator('details p').first.evaluate('(e)=>e.checkVisibility()')
  nojs.close();browser.close()

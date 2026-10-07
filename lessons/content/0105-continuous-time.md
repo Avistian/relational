@@ -16,9 +16,6 @@
 
 
 
-Under our before-event contract: **no**, **no**, and **no**. We require event time < query time and availability time ≤ query time. A row number is a reproducible identity, not evidence of an unrecorded causal order. If you missed one, revisit [L104’s prediction-time boundary](0104-information-leakage-in-time.html) before proceeding.
-
-</details>
 
 **The next problem.** L102 and L103 consume timestamped interactions. L104 asks whether those interactions were knowable. Now suppose your data pipeline hands the model one graph per day. Even a perfectly causal daily graph may have discarded information the task needs. Our mission is to build defensible relational systems: representation choices belong in that argument, before choosing a neural architecture.
 
@@ -53,6 +50,23 @@ Keep the same pair counts but exchange the times of two contacts. The resulting 
 [[FIG:order]]
 
 History I has A→B at 1, then B→C at 2: information starting at A can reach C. History II reverses those times: it cannot. Both weighted snapshots contain AB:1 and BC:1. A downstream model receiving only those counts cannot distinguish the histories. Adding first/last times makes a richer summary, but does not generally recover every repeated event’s timing.
+
+### Do first and last timestamps recover the missing order?
+
+Keep the same synthetic directed-contact setting, but let a message first become available at **A at time 2**. Compare these two histories inside [0,10):
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em">
+<thead><tr><th>Contact times</th><th>History I</th><th>History II</th></tr></thead>
+<tbody><tr><td>A→B</td><td>1, 4, 9</td><td>1, 6, 9</td></tr>
+<tr><td>B→C</td><td>5</td><td>5</td></tr></tbody></table>
+
+Both summaries report A→B **count 3, first 1, last 9**, and B→C **count 1, first 5, last 5**. The existing aggregation function returns the same count, first/last and release metadata for both. Yet only History I delivers this message to C: A sends at 4, then B forwards at 5. In History II, the contact at 1 occurred before the message existed; the next A→B contact at 6 misses B→C at 5.
+
+The relevant question includes the message's start time. If the message were already at A before time 1, both histories could deliver it at 5. Without that start-time condition, this counterexample would be wrong.
+
+**Work it through.** Move the middle A→B contact to time 3, then to time 7, leaving its first and last contacts fixed. Which histories can deliver the message? Could a decoder given only these identical summaries answer correctly for every history?
+
+<details><summary>Check what the summary can prove</summary><p>Time 3 permits A→B@3 then B→C@5; time 7 misses the forwarding contact. A deterministic decoder receiving identical summaries must give the same answer, so it cannot be correct for both. First/last times add information but do not make the summary lossless. For a pair with exactly two contacts, count plus first and last does determine its two timestamps; a third contact is enough to hide an interior time.</p></details>
 
 [[PREDICT]]
 

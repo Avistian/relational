@@ -2,6 +2,7 @@
 import ast,base64,json,re
 from pathlib import Path
 import nbformat as nbf
+from nbconvert import HTMLExporter
 from nbconvert.filters.markdown import markdown2html_mistune as render
 P=Path(__file__).resolve().parent;R=P.parent;S='0105-continuous-time';TITLE='Continuous time: event streams versus snapshots'
 CAP={'aggregation':'Synthetic six-event stream: width 10 yields five binary snapshot edges; count weights sum to six. Timestamp ties remain simultaneous.','order':'Synthetic directed contacts, separate from Wikipedia: identical count-weighted snapshots can conceal opposite temporal reachability.','release':'Synthetic query at 6 seconds: three eligible records are withheld by closed-window access. Reading the completed current window exposes the event at 8. Vertically separated dots at 3 represent two tied events.','results':'Measured full Wikipedia census, not a prediction benchmark. Fixed widths from origin zero; weights preserve the event total. Wait assumes availability equals event time.'}
@@ -27,7 +28,7 @@ def prose(portable=False):
   s=re.sub(r'\]\((\d{4}-[^)]+\.html)\)',r'](https://avistian.github.io/relational/lessons/\1)',s)
  return s
 head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 105 — '+TITLE+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/event-snapshot.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="0104-information-leakage-in-time.html">Lesson 104</a></nav><header><p class="stream-kicker">Year 3 · Quarter 3 · Lesson 105</p><h1>'+TITLE+'</h1></header>'
-body=render(prose()).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+body=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(prose())).replace('</table>','</table></div>')
 (R/'lessons'/f'{S}.html').write_text(head+body+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in ['predict','teachback','event-snapshot-viz','l105-lesson'])+'</body></html>')
 fixture="""# PROVIDED — the teaching example, separate from Wikipedia.
 def fixture(t,u=None,v=None,a=None):
@@ -142,6 +143,9 @@ for solution in [False,True]:
    nb.metadata=old.metadata
    for a,b in zip(after,before):a.outputs=b.outputs;a.execution_count=b.execution_count;a.metadata=b.metadata
  nbf.write(nb,path)
+ if solution:
+  lab_html,_=HTMLExporter().from_notebook_node(nb)
+  (P/'html'/f'{S}.html').write_text(lab_html)
 ref='''# Event streams and snapshots · reference
 
 **CTDG:** timed changes or interactions. **DTDG:** graph sequence on a chosen time grid. Continuous-time representation does not require a point-process model. Ties remain simultaneous unless a reliable secondary clock exists.
