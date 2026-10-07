@@ -7806,6 +7806,17 @@ a.anchor-link {
 </div>
 </div>
 </div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=course-visual-138">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+
+</div>
+</div>
+</div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=l138-001">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
@@ -7854,7 +7865,6 @@ a.anchor-link {
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="1-%C2%B7-A-new-domain-changes-the-meaning-of-the-question">1 · A new domain changes the meaning of the question<a class="anchor-link" href="#1-%C2%B7-A-new-domain-changes-the-meaning-of-the-question">¶</a></h2><p><a href="https://avistian.github.io/relational/lessons/0137-error-analysis-reg.html">Lesson 137</a> showed how to locate a model's errors. It left another question unresolved: does the target measure the real-world outcome we care about? Moving from race results to an online store makes this distinction concrete.</p>
-<details><summary>Check your retrieval</summary>An entity and a cutoff identify a query. Validation selects checkpoints. A slice describes an association; a controlled intervention is needed to test a causal explanation.</details>
 <p>A <strong>query</strong> is a customer ID and a date at which we make a prediction. A <strong>target</strong> is the outcome observed after that date. RelBench's Amazon task calls its target <em>churn</em>: no recorded product review during the next 91 days. A customer is eligible only if they reviewed a product during the preceding 91 days. The task comes from an Amazon Books review dataset, not a complete purchase ledger. <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/tasks/amazon.py">Released task SQL</a> · <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/datasets/amazon.py">Dataset construction</a></p>
 <blockquote>
 <p><strong>In plain terms.</strong> The label answers “Will this recent reviewer stop reviewing for a while?” It cannot establish “Will this customer stop buying?”</p>
@@ -8178,6 +8188,10 @@ a.anchor-link {
 </pre></div>
 <p><strong>Lab task 3:</strong> compute AUROC by score groups, preserving half credit for ties. CHECK compares your result against a separate pairwise enumeration and rejects single-class inputs. The notebook also compares your implementation with the archived full validation and test recency predictions.</p>
 <p><strong>Average precision (AP)</strong> averages precision at recall increases as a threshold moves through ranked predictions. <strong>Precision</strong> is the fraction of selected queries that really have label 1. <strong>Recall</strong> is the fraction of all label-1 queries selected. AP's scale depends strongly on positive prevalence; AUROC and AP answer different questions. A very common churn label can yield a high AP even when ordering is only moderately useful. <a href="https://scikit-learn.org/stable/modules/model_evaluation.html#classification-metrics">Metric definitions</a></p>
+<p><strong>Put AP beside a no-ranking baseline.</strong> Assign the same score to every query. There is one tied score group: admitting it gives recall 1 and precision equal to the positive fraction. Thus AP equals prevalence, while AUROC is 0.5 because every positive–negative pair ties. On the actual saved task labels:</p>
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Split</th><th>Churn-positive / queries</th><th>Constant-score AP</th></tr></thead><tbody><tr><td>Validation</td><td>263,098 / 409,792</td><td>0.6420</td></tr><tr><td>Test</td><td>213,400 / 351,885</td><td>0.6064</td></tr></tbody></table>
+<p>Both constant-score AUROCs are <strong>0.5</strong>. The AP difference comes entirely from the label proportions; neither split received a useful ordering. This baseline uses no fit and no score tuning. It makes the actual recency AP easier to interpret alongside AUROC and prevalence. <a href="https://avistian.github.io/relational/labs/evidence/l138/recency_predictions.npz">Saved query labels and recency predictions</a>.</p>
+<p><strong>Transfer check.</strong> Change the common score from 0 to 100. All ties remain, so both ranking metrics remain unchanged. Explain why the score magnitude cannot supply a contact policy or a calibrated probability, and why comparing AP between these two splits needs the prevalence context.</p>
 <p>A practical next experiment would choose a contact budget using validation, freeze the policy, and measure a suitable outcome on a later period. An actual retention claim additionally needs evidence about the intervention's effect, not just an observational review-absence model.</p>
 </div>
 </div>

@@ -27,7 +27,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- body=render(body).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','teachback','reproduction-gates-viz'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 140 — '+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/tuning-budget.css"><link rel="stylesheet" href="../assets/reproduction-gates.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0139-healthcare-trial.html">Lesson 139</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Checkpoint 140</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))

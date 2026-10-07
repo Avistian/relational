@@ -1,4 +1,5 @@
 """Notebook identity, responsive interactions, print/no-JS and copied Pages checks."""
+from _gallery_delivery import reveal_gallery_link
 import ast,base64,functools,hashlib,json,os,re,subprocess,sys,tempfile,threading
 from pathlib import Path
 from html.parser import HTMLParser
@@ -26,7 +27,7 @@ assert 'from relkit' not in code
 images=re.findall('data:image/png;base64,([A-Za-z0-9+/=]+)','\n'.join(c.source for c in student.cells));assert len(images)==5
 for data in images:assert base64.b64decode(data).startswith(b'\x89PNG')
 paths=[R/'lessons'/f'{S}.html',R/'reference/error-analysis-reg.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l137.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l137.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l137').glob('*'));before=[sha(p) for p in figs]
 subprocess.run([sys.executable,str(P/'_figures_l137.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 html,_=HTMLExporter(template_name='lab').from_notebook_node(solution);(P/'html'/f'{S}.html').write_text(html)
@@ -43,10 +44,10 @@ with sync_playwright() as pw:
   for value,expected in [('AA','0 / 4 queries = 0'),('AB','6 / 3 queries = 2'),('BB','12 / 2 queries = 6')]:
    control.select_option(value);assert expected in cluster.locator('.audit-result').inner_text();states+=1
   cluster.locator('button').click();assert control.input_value()=='AB';control.focus();page.keyboard.press('ArrowDown');assert control.input_value()=='BB';cluster.locator('button').click()
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   teach=page.locator('#l137-teachback');teach.locator('textarea').fill('A validation-selected association does not isolate architecture, optimization or feature access; test support and a controlled intervention are needed.')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
-  assert page.locator('figure img').evaluate_all('(xs)=>xs.length===5 && xs.every(x=>x.complete&&x.naturalWidth>0)')
+  page.locator('figure img').evaluate_all('(xs)=>xs.forEach(x=>x.loading="eager")');page.wait_for_function('Array.from(document.querySelectorAll("figure img")).every(x=>x.complete && x.naturalWidth>0)');assert page.locator('figure img').evaluate_all('(xs)=>xs.length===5 && xs.every(x=>x.complete&&x.naturalWidth>0)')
   page.evaluate('window.scrollTo(0,0)');page.screenshot(path=f'/tmp/l137-top-{width}.png')
   for i in range(5):
    figure=page.locator('figure').nth(i);figure.screenshot(path=f'/tmp/l137-figure-{i}-{width}.png')
@@ -81,8 +82,8 @@ with tempfile.TemporaryDirectory(prefix='l137-pages-') as tmp:
  try:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(**launch);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)));base=f'http://127.0.0.1:{server.server_port}'
-   page.goto(base+'/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]');assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
-   page.goto(base+'/notebooks.html');page.wait_for_selector('a[href="labs/html/'+S+'.html"]')
+   page.goto(base+'/index.html');reveal_gallery_link(page, 'a[href="lessons/'+S+'.html"]');assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
+   page.goto(base+'/notebooks.html');reveal_gallery_link(page, 'a[href="labs/html/'+S+'.html"]')
    page.goto(base+'/lessons/'+S+'.html');assert '0.00' in page.locator('#l137-pair .audit-result').inner_text();browser.close()
  finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors

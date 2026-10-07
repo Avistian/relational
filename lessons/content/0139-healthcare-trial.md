@@ -33,6 +33,14 @@ Imagine a study that started on day −40. At cutoff day 0, we ask about primary
 
 The source first joins analyses to outcomes and studies. It keeps primary outcomes with p-values in [0,1] and excludes modifier `>`; it then requires the study to have started by the cutoff and the analysis to occur within the future window. For each study/cutoff, it tests whether the minimum remaining numeric p-value is at most .05. A `<` modifier is retained but not interpreted as a numeric interval: `<.051` is handled as .051. Preserve this source behavior in a replay and describe its limit.
 
+**Trace the minimum after filtering.** Keep the same study start day −40 and cutoff 0; place every analysis on future day 100. All modifiers are absent. Compare these three records:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Record</th><th>Primary p-values</th><th>Secondary p-value</th><th>Label</th></tr></thead><tbody><tr><td>A</td><td>0.12</td><td>None</td><td>0</td></tr><tr><td>B</td><td>0.12, 0.04</td><td>None</td><td>1</td></tr><tr><td>C</td><td>0.12</td><td>0.001</td><td>0</td></tr></tbody></table>
+
+B becomes positive because the minimum qualifying value is 0.04. Averaging 0.12 and 0.04 gives 0.08 and would implement a different label. C stays negative because the secondary analysis is filtered out *before* taking the minimum. A small number in a related row is insufficient unless that row meets the complete task contract.
+
+**Transfer check.** Duplicate A's primary-analysis row ten times. The minimum and label remain unchanged. Add one qualifying primary analysis with p = 0.04 and the label changes to 1. Explain why this operational label depends on which qualifying analyses were recorded; it is not an average measure of treatment benefit.
+
 [[FIG:eligibility]]
 
 **Predict:** a primary analysis exactly at day 365 has p=.05. Is the study included, and with which label? Move the analysis to day 366 before revealing the result.

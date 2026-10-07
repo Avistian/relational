@@ -26,7 +26,7 @@ for source,names in [(P/'_full_l140.py',['full_run','materialize','sha']),(P/'re
 images=re.findall('data:image/png;base64,([A-Za-z0-9+/=]+)','\n'.join(c.source for c in student.cells));assert len(images)==4
 for data in images:assert base64.b64decode(data).startswith(b'\x89PNG')
 paths=[R/'lessons'/f'{S}.html',R/'reference/rdl-reproduction-checkpoint.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l140.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l140.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l140').glob('*'));before=[sha(p) for p in figs];subprocess.run([sys.executable,str(P/'_figures_l140.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs]
 errors=[];states=0
 with sync_playwright() as pw:
@@ -49,8 +49,8 @@ with sync_playwright() as pw:
      assert 'Historical identity: NOT_ESTABLISHED.' in text;states+=1
   box.locator('button').click();assert n.input_value()=='5' and gap.input_value()=='0.2' and not match.is_checked()
   gap.focus();page.keyboard.press('ArrowRight');assert gap.input_value()=='0.3';box.locator('button').click()
-  assert page.locator('#warmup button').count()>0 and page.locator('#l140-teachback textarea').count()==1
-  assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
+  assert page.locator('#warmup button').count()==0 and page.locator('#l140-teachback textarea').count()==1
+  page.locator('figure img').evaluate_all('(xs)=>xs.forEach(x=>x.loading="eager")');page.wait_for_function('Array.from(document.querySelectorAll("figure img")).every(x=>x.complete && x.naturalWidth>0)');assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   page.screenshot(path=f'/tmp/l140-top-{width}.png')
   for i in range(4):page.locator('figure').nth(i).screenshot(path=f'/tmp/l140-figure-{i}-{width}.png')

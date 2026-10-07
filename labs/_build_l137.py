@@ -27,7 +27,7 @@ def prose(portable=False,student=False):
  return s
 
 def doc(title,s,interactive=False):
- body=render(s).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(s)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','teachback','paired-reg-errors'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/tuning-budget.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0136-leaderboard-literacy.html">Lesson 136</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Lesson 137</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))

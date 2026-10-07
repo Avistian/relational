@@ -80,6 +80,14 @@ These questions can have different answers. For Amazon, the archived training ta
 
 The ±1pp rule is a **descriptive comparison**, not a statistical equivalence test. Seed SD measures variation from this training procedure conditional on this split and preprocessing. It is neither a confidence interval over future deployments nor a cross-database uncertainty estimate. Seed0 on Amazon and seed0 on trial are unrelated runs, not paired observations for a cross-domain test. Two tasks also do not establish general RDL superiority.
 
+**The same close mean can hide very different runs.** Use the Amazon paper test target 0.7042 and two illustrative sets of five completed fits. Set A has scores `[0.7022, 0.7032, 0.7042, 0.7052, 0.7062]`. Set B has `[0.5042, 0.6042, 0.7042, 0.8042, 0.9042]`.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Set</th><th>Mean AUROC</th><th>Sample SD, pp</th><th>Mean verdict</th></tr></thead><tbody><tr><td>A</td><td>0.7042</td><td>0.1581</td><td>CLOSE</td></tr><tr><td>B</td><td>0.7042</td><td>15.8114</td><td>CLOSE</td></tr></tbody></table>
+
+The numerical gate evaluates the mean, so both pass. It does not certify low run-to-run variability, and it does not compare that variability with the paper's reported SD. Report the five points and sample SD beside the mean. These values illustrate the gate; they are not the measured author scores below. Protocol and historical-identity verdicts remain separate.
+
+**Boundary exercise.** Add 0.05 to just one score in A. The mean rises by 0.01: exactly one percentage point, so the inclusive ±1pp rule still says CLOSE. Adding 0.051 instead raises the mean by 0.0102 and gives OUTSIDE_TOLERANCE. Explain why a change to one run is divided by five when it changes the mean, and why this arithmetic gives no reason to rerun or replace that seed.
+
 ## 6 · Inspect the fresh author evidence
 
 **Predict before revealing:** which task should have wider seed variation? What evidence would make you reject a close mean? Then compare the points, not just the aggregate.
