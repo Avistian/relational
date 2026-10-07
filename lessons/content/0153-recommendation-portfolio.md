@@ -6,7 +6,7 @@
 
 [Lesson 151](0151-classification-portfolio.html) ranked binary outcomes using a classification score; [Lesson 152](0152-regression-portfolio.html) asked for a scalar. A recommendation query asks **which candidates belong near the top**. An apparently better score can come from removing difficult candidates, even if the model never changes. That is the new failure mode this entry must rule out.
 
-Prerequisites: `(entity, cutoff)` query keys from L124, temporal neighborhood ownership from L123, and local-versus-global candidate scoring from [ContextGNN, Lesson 144](0144-contextgnn.html). Recall why the same entity at two cutoffs represents two distinct queries. Then recall why validation can choose a checkpoint while test cannot.
+Prerequisites: `(entity, cutoff)` query keys from [Lesson 124](0124-entity-task-tables.html), temporal neighborhood ownership from [Lesson 123](0123-temporal-heterogeneous-graphs.html), and local-versus-global candidate scoring from [ContextGNN, Lesson 144](0144-contextgnn.html).
 
 The task is **`rel-trial/site-sponsor-run`**: for a facility at cutoff *t*, rank sponsors that will run a study there during the next 365 days. A query may have several relevant sponsors. “Site” means a clinical-trial facility here, not a website. This is a retrospective benchmark prediction task, not a clinical decision tool. [RelBench task definitions](https://arxiv.org/html/2407.20060v1#A1)
 
@@ -61,6 +61,12 @@ MAP is the arithmetic mean of AP across queries. **Hit@k** is 1 if at least one 
 [[FIG:ranking]]
 
 With R=`{A,C}` and ranking `[A,B,C,D]`, `AP@3=(1+2/3)/2=5/6`, `Hit@3=1`, and `Recall@3=1`. At k=2, AP and Recall both become 1/2 while Hit remains 1. For a query with 20 relevant sponsors and ten perfect recommendations, AP@10 is 1 but Recall@10 is 1/2. State the denominator. [Released RelBench metric implementation](https://github.com/stanford-star/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/metrics.py)
+
+**Hold the scores fixed.** Let B score .9, A .8, C .7 and D .1, with relevant set `{A,C}` and k=2. Only the allowed candidate set changes:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Allowed set</th><th>Top 2</th><th>AP / Recall / Hit</th></tr></thead><tbody><tr><td>A, B, C, D</td><td>B, A</td><td>.25 / .5 / 1</td></tr><tr><td>A, C, D</td><td>A, C</td><td>1 / 1 / 1</td></tr></tbody></table>
+
+In the full set, only rank 2 contributes: `(1/2)/2=.25`. Removing B moves both relevant items into the list: `(1+1)/2=1`. This is a different candidate protocol, not a learned improvement. Hit cannot distinguish these outcomes. **Try it:** restore B but remove D instead. Predict all three metrics before checking. **Check:** the top two remain B,A, so all three metrics retain their full-set values.
 
 [[PREDICT]]
 [[RANKING_WIDGET]]

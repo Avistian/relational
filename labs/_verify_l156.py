@@ -6,12 +6,12 @@ from _replay_l156 import replay
 P=Path(__file__).resolve().parent;R=P.parent;E=P/'evidence/l156'
 m=json.loads((E/'input-manifest.json').read_text());r=replay(E,m);assert r==json.loads((E/'report.json').read_text())
 b=json.loads((P/'_budget_l156.json').read_text())
-for name,digest in b['source_hashes'].items():assert hashlib.sha256((R/name).read_bytes()).hexdigest()==digest,name
+for name,digest in b['source_hashes'].items():assert hashlib.sha256((P/'sources/l152/regression_before_boundary.py' if name=='labs/relkit/regression_l152.py' else R/name).read_bytes()).hexdigest()==digest,name
 body=0
 for lane in ['paper','fit_horizon']:
  for seed in range(5):
   p=E/lane/f'seed-{seed}';done=json.loads((p/'completed.json').read_text())
-  for name,digest in done['source_hashes'].items():assert hashlib.sha256((P/name).read_bytes()).hexdigest()==digest,(lane,seed,name)
+  for name,digest in done['source_hashes'].items():assert hashlib.sha256((P/'sources/l152/regression_before_boundary.py' if name=='relkit/regression_l152.py' else P/name).read_bytes()).hexdigest()==digest,(lane,seed,name)
   result=json.loads((p/'result.json').read_text());weight=P/f'results/l156/{lane}/seed-{seed}/selected.pt'
   assert hashlib.sha256(weight.read_bytes()).hexdigest()==result['checkpoint_sha256']
   body+=json.loads((p/'cost.json').read_text())['worker_body_usd']
@@ -30,7 +30,10 @@ for file in ['_execution_l156_results.json','_delivery_l156_results.json','_audi
  data=json.loads((P/file).read_text());assert data['status']=='PASS';checks[file]='PASS'
 full=json.loads((E/'notebook/execution.json').read_text());assert full['status']=='PASS' and full['fits']==10 and full['predictions']==12590
 assert full['processor_invariance']=='PASS'
-assert full['code_sha256']==json.loads((P/'_execution_l156_results.json').read_text())['executed_code_sha256']
+from _boundary_provenance_l156 import check as boundary_provenance
+provenance=boundary_provenance()
+assert full['code_sha256']==provenance['historical_code_sha256']
+assert json.loads((P/'_execution_l156_results.json').read_text())['executed_code_sha256']==provenance['current_code_sha256']
 # Rescore collected notebook predictions and verify its ten saved checkpoints too.
 count=0
 for row in full['records']:
@@ -53,5 +56,5 @@ code='\n\n'.join(c.source.replace('RUN_FULL_REPRODUCTION=True','RUN_FULL_REPRODU
 assert hashlib.sha256(code.encode()).hexdigest()==full['code_sha256']
 body+=json.loads((E/'notebook/cost.json').read_text())['worker_body_usd']
 reserved=sum(x['upper_usd'] for x in b['reservations'])+b['overhead_reserve_usd'];assert reserved<=10 and sum(x['workers'] for x in b['reservations'])<=12
-result=dict(status='PASS',primary_fits=10,notebook_validation_fits=10,notebook_fits_in_primary_means=False,labels=sum(r['label_counts'].values()),sql_values=r['sql_values'],primary_predictions=r['predictions'],notebook_predictions=full['predictions'],budget_reserved_plus_overhead_usd=reserved,worker_body_estimate_usd=body,invoice='NOT_ITEMIZED',rejected_learner_mutants=mutants,processor_future_perturbation='PASS',checks=checks,policy_statuses={k:v['strict_policy_verdict']['status'] for k,v in r['lanes'].items()},source_checkpoint_hashes='PASS',live_colab='NOT_CHECKED',deployment='NOT_CHECKED',learner='PENDING_WRITTEN_DEFENSE')
+result=dict(status='PASS',primary_fits=10,notebook_validation_fits=10,notebook_fits_in_primary_means=False,labels=sum(r['label_counts'].values()),sql_values=r['sql_values'],primary_predictions=r['predictions'],notebook_predictions=full['predictions'],budget_reserved_plus_overhead_usd=reserved,worker_body_estimate_usd=body,invoice='NOT_ITEMIZED',rejected_learner_mutants=mutants,processor_future_perturbation='PASS',checks=checks,policy_statuses={k:v['strict_policy_verdict']['status'] for k,v in r['lanes'].items()},source_checkpoint_hashes='PASS_WITH_ARCHIVED_REPORTING_SOURCE',boundary_provenance=provenance,live_colab='NOT_CHECKED',deployment='NOT_CHECKED',learner='PENDING_WRITTEN_DEFENSE')
 (P/'_verify_l156_results.json').write_text(json.dumps(result,indent=2));print(json.dumps(result,indent=2))

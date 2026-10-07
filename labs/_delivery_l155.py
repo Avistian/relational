@@ -49,7 +49,7 @@ with sync_playwright() as pw:
   host.locator('[data-reset]').click();assert scope.input_value()=='marginal' and tasks.input_value()=='1' and observed.is_checked()
   observed.focus();page.keyboard.press('Space');assert not observed.is_checked();host.locator('[data-reset]').click()
   tasks.focus();page.keyboard.press('ArrowRight');assert tasks.input_value()=='2';host.locator('[data-reset]').click()
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="compare"]').click();predict.locator('.predict-reveal').click();assert 'matched query losses' in predict.locator('.predict-outcome').inner_text()
   assert page.locator('#teachback textarea').count()==1
@@ -87,6 +87,7 @@ with tempfile.TemporaryDirectory(prefix='l155-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/compare-manual-fe.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l155/report.json',P/'evidence/l155/report.md']+sorted((P/'figures/l155').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l155.py')],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Builder is not deterministic'
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=3,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l155_results.json').write_text(json.dumps(r,indent=2)+'\n');print(r)

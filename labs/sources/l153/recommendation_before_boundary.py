@@ -42,5 +42,5 @@ def portfolio_entry(records, protocol_hash, expected_counts):
         if r['status']!='COMPLETE' or r['protocol_hash']!=protocol_hash or r['counts']!=expected_counts or r['temporal_violations']!=0:raise ValueError('Incomplete, mixed or temporally invalid evidence')
         if any(not math.isfinite(r['scores'][s]) or not 0<=r['scores'][s]<=1 for s in ['val','test']):raise ValueError('Invalid MAP')
     out={s:dict(mean=statistics.mean(r['scores'][s] for r in records),sample_sd=statistics.stdev(r['scores'][s] for r in records)) for s in ['val','test']}
-    out.update(status='COMPLETE',paper_target=.107,tolerance=.02,paper_comparison='CLOSE' if abs(out['test']['mean']-.107)<=.02+8*math.ulp(.107) else 'OUTSIDE_TOLERANCE',historical_identity='NOT_ESTABLISHED',whole_paper='NOT_RUN',learner='PENDING_WRITTEN_DEFENSE')
+    out.update(status='COMPLETE',paper_target=.107,tolerance=.02,paper_comparison='CLOSE' if abs(out['test']['mean']-.107)<=.02 else 'OUTSIDE_TOLERANCE',historical_identity='NOT_ESTABLISHED',whole_paper='NOT_RUN',learner='PENDING_WRITTEN_DEFENSE')
     return out

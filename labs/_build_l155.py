@@ -32,7 +32,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- body=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','predict','teachback','effort-accounting','l155-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 155 — '+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in ['lesson','atomic-route','checkpoint','effort-accounting'])+'</head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0154-portfolio-synthesis.html">Lesson 154</a></nav><header><p class="route-kicker">Year 4 · Quarter 4 · Lesson 155</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join('<script src="../assets/'+x+'.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))
@@ -176,7 +176,9 @@ print('Exported comparison; learner PENDING_WRITTEN_DEFENSE')
  notebook=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python3','language':'python','name':'python3'}});path=P/('solutions' if solution else '')/(S+'.ipynb')
  if solution and path.exists():
   previous=nb.read(path,4);notebook.metadata=previous.metadata
-  for new,oldcell in zip(notebook.cells,previous.cells):
-   if new.cell_type==oldcell.cell_type=='code' and new.source==oldcell.source:new.outputs=oldcell.outputs;new.execution_count=oldcell.execution_count;new.metadata=oldcell.metadata
+  before=[c for c in previous.cells if c.cell_type=='code'];after=[c for c in notebook.cells if c.cell_type=='code']
+  if [c.source for c in before]==[c.source for c in after]:
+   for oldcell,new in zip(before,after):
+    new.outputs=oldcell.outputs;new.execution_count=oldcell.execution_count;new.metadata=oldcell.metadata
  nb.write(notebook,path)
 print('Built lesson, reference and portable notebooks')

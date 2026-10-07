@@ -1,5 +1,5 @@
 """Portable independent audit replay; all three learner functions are injected."""
-import hashlib,json,statistics,math
+import hashlib,json,statistics
 from pathlib import Path
 import numpy as np
 from relkit.temporal_audit_l156 import audit_observations,audit_label_windows,audit_verdict
@@ -59,7 +59,7 @@ def replay(root,manifest,observations=audit_observations,labels=audit_label_wind
         assert signoff['status']==('FAIL' if lane=='paper' else 'NOT_ESTABLISHED')
         lanes[lane]=dict(records=records,metrics=metrics,coverage=coverage,checks=checks,strict_policy_verdict=signoff,first_backward_nonfinite=gradient,original_model_max_error=maxerr)
     delta={s:lanes['fit_horizon']['metrics'][s]['mean']-lanes['paper']['metrics'][s]['mean'] for s in ['val','test']}
-    return dict(status='PASS',experiment='L156 full F1 temporal audit',label_counts=label_counts,dependencies=deps,sql_values=sql['total_values'],lanes=lanes,corrected_minus_released_mae=delta,predictions=all_predictions,reference_paper_band={s:'CLOSE' if abs(lanes['paper']['metrics'][s]['mean']-target)<=.2+8*math.ulp(target) else 'OUTSIDE_TOLERANCE' for s,target in [('val',3.193),('test',4.022)]},availability='NOT_ESTABLISHED',whole_paper='NOT_RUN',learner='PENDING_WRITTEN_DEFENSE')
+    return dict(status='PASS',experiment='L156 full F1 temporal audit',label_counts=label_counts,dependencies=deps,sql_values=sql['total_values'],lanes=lanes,corrected_minus_released_mae=delta,predictions=all_predictions,reference_paper_band={s:'CLOSE' if abs(lanes['paper']['metrics'][s]['mean']-target)<=.2 else 'OUTSIDE_TOLERANCE' for s,target in [('val',3.193),('test',4.022)]},availability='NOT_ESTABLISHED',whole_paper='NOT_RUN',learner='PENDING_WRITTEN_DEFENSE')
 
 def render_report(r):
     lines=['# Lesson156 · Temporal audit report','', 'Full archived F1 audit and five fresh complete fits per lane. Author evidence; learner PENDING_WRITTEN_DEFENSE.','', '| Lane | Validation MAE mean ± seed SD | Test MAE mean ± seed SD | Strict policy verdict |','|---|---:|---:|---|']

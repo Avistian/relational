@@ -60,6 +60,12 @@ The [RelBench human study, Section 6](https://arxiv.org/html/2407.20060v1#S6), f
 
 **Worked example, synthetic.** FE needs 2 hours of active task work; RDL needs 0.5 hours. The marginal ratio is `2 / 0.5 = 4×`. RDL uses `100 × (1 − 0.5 / 2) = 75%` less active time. If RDL also needs 1.5 hours of shared setup and FE has none in this example, first-task total effort is 2 hours for each: ratio 1×. Spreading that setup across 10 tasks gives 0.65 hours per RDL task and about 3.08×. All three statements can be arithmetically correct; they answer different questions.
 
+The denominator changes as reusable setup is amortized. Keep the same synthetic inputs and make the accounting explicit:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Task count N</th><th>FE hours / task</th><th>RDL hours / task</th><th>FE / RDL</th></tr></thead><tbody><tr><td>1</td><td>2</td><td>.5 + 1.5 = 2</td><td>1×</td></tr><tr><td>2</td><td>2</td><td>.5 + .75 = 1.25</td><td>1.6×</td></tr><tr><td>10</td><td>2</td><td>.5 + .15 = .65</td><td>3.08×</td></tr></tbody></table>
+
+Here RDL total human time is `1.5 + .5N`, so its per-task cost is `.5 + 1.5/N`. The marginal-only 4× ratio is approached as setup is spread over many tasks; it is not the first-task result. **Try it:** if FE also needs 1 hour of shared setup, recompute the first-task ratio. **Check:** `(1+2)/(1.5+.5)=1.5×`. Machine time still belongs in its own column, and these invented hours must never enter the measured report.
+
 Predict before interacting: if the accuracy values stay fixed, can including shared setup change the apparent effort advantage?
 
 [[WIDGET]]

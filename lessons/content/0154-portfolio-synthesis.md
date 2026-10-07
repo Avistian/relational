@@ -73,6 +73,12 @@ The upstream label audits are retained. L154 does not rerun source SQL, graph co
 
 **Lab task 3 — `portfolio_verdict`.** Count each required task once. Report two completed test tasks out of three and zero fresh matched comparator tasks. A published comparison cannot increase the local comparator count; a recommendation pilot cannot increase completed-test coverage. Emit `NOT_ESTABLISHED` for local superiority and keep learner status `PENDING_WRITTEN_DEFENSE`.
 
+**Three different questions, three different gates.** Follow this hypothetical continuation of the current portfolio:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Evidence available</th><th>Complete test tasks</th><th>Matched comparisons</th></tr></thead><tbody><tr><td>Current packet</td><td>2 / 3</td><td>0 / 3</td></tr><tr><td>Finish recommendation</td><td>3 / 3</td><td>0 / 3</td></tr><tr><td>Also run all matched baselines</td><td>3 / 3</td><td>3 / 3</td></tr></tbody></table>
+
+The second row completes benchmark coverage but still cannot support a local-superiority claim. The third row permits comparison; it does not guarantee three wins. Only if every declared local comparison favors the model can the function report descriptive wins on these selected tasks. None of these rows proves general superiority across databases. **Try it:** assume the third row has two wins and one tie. **Check:** coverage remains complete and there are three matched comparisons, but the all-task superiority field stays `NOT_ESTABLISHED`.
+
 ## 6 · Exit: defend the missing cell
 
 [Open the worked notebook](../labs/html/0154-portfolio-synthesis.html) · [Download student lab](../labs/0154-portfolio-synthesis.ipynb) · [Teacher solution](../labs/solutions/0154-portfolio-synthesis.ipynb) · [Generated report](../labs/evidence/l154/report.md) · [Report JSON](../labs/evidence/l154/report.json) · [Quick reference](../reference/portfolio-synthesis.html) · [Reproduction contract](../labs/l154-reproduction.md).

@@ -26,7 +26,7 @@ The first real backward pass contained **{nonfinite:,} nonfinite gradient entrie
 
 Current immutable resource reservations plus the USD3 overhead allowance total **USD{ceiling:.6f}** under the USD10 cap. Recorded main-worker body estimate: **USD{summary['worker_body_usd']:.6f}**; this excludes unitemized overhead and is not an invoice. [Budget](../labs/_budget_l153.json) · [Evidence](../labs/evidence/l153/summary.json).
 """
-if (P/'_notebook_l153_results.json').exists():audit+='\nAll default notebook cells also passed in an isolated pinned runtime. The full training gate was not executed in this check; live Colab remains NOT_CHECKED.\n'
+if (P/'_notebook_l153_results.json').exists():audit+='\nThe archived default notebook passed in an isolated pinned runtime. After correcting only the inclusive score-tolerance boundary and its check, all revised default cells passed locally on CPU. The original module and notebook hashes are retained for the pinned execution; the source model and trainer are unchanged. The full training gate remains NOT_RUN; live Colab remains NOT_CHECKED.\n'
 captions={'architecture':'Shared temporal row/graph encoder, three training root groups, BPR comparisons and full-catalog inference. Shapes describe actual computation.','negatives':'A two-query shared pool has two positive collisions. Observed availability can reveal a different pair of violations; missing arrival history stays unknown.','ranking':'AP counts precision at each relevant rank and divides by min(k,positive count). Hit and Recall use different denominators.','evidence':'Measured execution scope and the cost gate. A pilot validation score cannot replace five completed test runs.'}
 def prose(portable=False):
  s=(R/'lessons/content'/f'{S}.md').read_text().replace('[[RESULTS]]',results).replace('[[AUDIT]]',audit)
@@ -41,7 +41,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- body=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','predict','teachback','recommendation-ranking-viz','l153-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 153 — '+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/atomic-route.css"><link rel="stylesheet" href="../assets/checkpoint.css"></head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0152-regression-portfolio.html">Lesson 152</a></nav><header><p class="route-kicker">Year 4 · Quarter 4 · Lesson 153</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join(f'<script src="../assets/{x}.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))
@@ -74,7 +74,7 @@ Do not equate a checked notebook, pilot or source parity with five completed ben
 def defs(path):
  s=path.read_text();return {n.name:ast.get_source_segment(s,n) for n in ast.parse(s).body if isinstance(n,ast.FunctionDef)}
 functions=defs(P/'relkit/recommendation_l153.py');checks=defs(P/'_check_l153.py')
-files={str(p.relative_to(P)):p.read_text() for p in sorted((P/'sources/l153').glob('*')) if p.is_file()}
+files={str(p.relative_to(P)):p.read_text() for p in sorted((P/'sources/l153').glob('*')) if p.is_file() and 'before_boundary' not in p.name}
 for name in ['_prepare_l153.py','_run_l153.py','_labels_l153.py','_mechanism_l153.py','relkit/recommendation_model_l153.py','relkit/recommendation_l153.py','relkit/batch_audit_l123.py','requirements-l117-runtime.txt']:files[name]=(P/name).read_text()
 payload={}
 for directory in [E/'pilot']+[E/f'seed-{s}' for s in range(5)]:
@@ -170,8 +170,10 @@ for solution in [False,True]:
  notebook=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'}});path=P/('solutions' if solution else '')/f'{S}.ipynb'
  if solution and path.exists():
   old=nb.read(path,4);notebook.metadata=old.metadata
-  for new,prev in zip(notebook.cells,old.cells):
-   if new.cell_type==prev.cell_type=='code' and new.source==prev.source:new.outputs=prev.outputs;new.execution_count=prev.execution_count;new.metadata=prev.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in notebook.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prev,new in zip(previous,current):
+    new.outputs=prev.outputs;new.execution_count=prev.execution_count;new.metadata=prev.metadata
  nb.write(notebook,path)
 from nbconvert import HTMLExporter
 from nbconvert.preprocessors import TagRemovePreprocessor

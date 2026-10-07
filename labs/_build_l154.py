@@ -58,7 +58,7 @@ def prose(portable=False):
  return text
 
 def doc(title,body,interactive=False):
- body=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','predict','teachback','portfolio-evidence','l154-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 154 — '+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+name+'.css">' for name in ['lesson','atomic-route','checkpoint','portfolio-evidence'])+'</head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0153-recommendation-portfolio.html">Lesson 153</a></nav><header><p class="route-kicker">Year 4 · Quarter 4 · Lesson 154</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join('<script src="../assets/'+name+'.js"></script>' for name in scripts)+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(doc(TITLE,prose(),True))
@@ -156,8 +156,9 @@ workspace.cleanup()
  path=P/('solutions' if solution else '')/(S+'.ipynb')
  if solution and path.exists():
   old=nb.read(path,4);notebook.metadata=old.metadata
-  for new,prev in zip(notebook.cells,old.cells):
-   if new.cell_type==prev.cell_type=='code' and new.source==prev.source:
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in notebook.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prev,new in zip(previous,current):
     new.outputs=prev.outputs;new.execution_count=prev.execution_count;new.metadata=prev.metadata
  nb.write(notebook,path)
 from nbconvert import HTMLExporter

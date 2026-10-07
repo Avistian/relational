@@ -30,6 +30,12 @@ def check_negatives(fn):
 def check_portfolio(fn):
     records=[dict(seed=i,status='COMPLETE',protocol_hash='p',counts={'val':2,'test':3},scores={'val':.2,'test':.107},temporal_violations=0) for i in range(5)]
     r=fn(records,'p',{'val':2,'test':3});assert r['paper_comparison']=='CLOSE' and r['test']['sample_sd']==0
+    for boundary in (.107-.02,.107+.02):
+        edge=[dict(r,scores={'val':.2,'test':boundary}) for r in records]
+        assert fn(edge,'p',{'val':2,'test':3})['paper_comparison']=='CLOSE', 'Inclusive tolerance boundary'
+    for outside in (.107-.02-1e-9,.107+.02+1e-9):
+        edge=[dict(r,scores={'val':.2,'test':outside}) for r in records]
+        assert fn(edge,'p',{'val':2,'test':3})['paper_comparison']=='OUTSIDE_TOLERANCE'
     rejects(lambda:fn(records[:4],'p',{'val':2,'test':3}))
     for field,value in [('seed',1),('status','PARTIAL_TIMING_PILOT'),('protocol_hash','q'),('temporal_violations',1),('counts',{'val':1,'test':3})]:
         bad=copy.deepcopy(records);bad[0][field]=value;rejects(lambda:fn(bad,'p',{'val':2,'test':3}))

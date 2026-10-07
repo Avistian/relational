@@ -42,7 +42,7 @@ with sync_playwright() as pw:
       assert host.locator('[data-coverage]').inner_text().startswith('1/1' if c else '0/1');states+=1
   host.locator('button').click();assert metric.input_value()=='MAE' and origin.input_value()=='published' and complete.is_checked()
   complete.focus();page.keyboard.press('Space');assert not complete.is_checked();host.locator('button').click()
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="context"]').click();predict.locator('.predict-reveal').click();assert 'fresh matched baseline' in predict.locator('.predict-outcome').inner_text()
   assert page.locator('#teachback textarea').count()==1
@@ -83,6 +83,7 @@ with tempfile.TemporaryDirectory(prefix='l154-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/portfolio-synthesis.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l154/report.json',P/'evidence/l154/report.md']+sorted((P/'figures/l154').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l154.py')],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Builder is not deterministic'
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',
        inline_source_parity='PASS',portable_figures=2,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),

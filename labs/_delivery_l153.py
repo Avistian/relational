@@ -14,7 +14,7 @@ student=nbformat.read(P/(S+'.ipynb'),4);sol=nbformat.read(P/'solutions'/(S+'.ipy
 assert sum('raise NotImplementedError("TODO:' in c.source for c in student.cells)==3
 assert all(not c.outputs for c in student.cells if c.cell_type=='code')
 assert all(c.execution_count is not None and not any(o.output_type=='error' for o in c.outputs) for c in sol.cells if c.cell_type=='code')
-assert sum(c.source.count('data:image/png;base64,') for c in sol.cells)==4
+assert sum(c.source.count('data:image/png;base64,') for c in sol.cells)==5
 code='\n\n'.join(c.source for c in sol.cells if c.cell_type=='code')
 assert hashlib.sha256(code.encode()).hexdigest()==json.loads((P/'_execution_l153_results.json').read_text())['executed_code_sha256']
 inline_nodes={n.name:n for n in ast.parse(code).body if isinstance(n,(ast.FunctionDef,ast.ClassDef))}
@@ -40,7 +40,7 @@ with sync_playwright() as pw:
   slider.focus();page.keyboard.press('ArrowRight');assert slider.input_value()=='4';host.locator('button').click()
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="changes"]').click();predict.locator('.predict-reveal').click();assert 'candidate protocol changed' in predict.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
   if width==375:
@@ -51,7 +51,7 @@ with sync_playwright() as pw:
  context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert pg.locator('noscript').count()==2;assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
  # Inspect rendered notebook figure payloads and its generated result table.
  page.emulate_media(media='screen');page.goto((P/'html'/(S+'.html')).as_uri())
- assert page.locator('img[src^="data:image/png"]').count()==4
+ assert page.locator('img[src^="data:image/png"]').count()==5
  assert 'AUTHOR_PACKET_INDEPENDENTLY_RESCORED' in page.locator('body').inner_text()
  browser.close()
 assert not errors,errors
@@ -78,6 +78,6 @@ with tempfile.TemporaryDirectory(prefix='l153-pages-') as tmp:
    if part.scheme or not part.path:continue
    dest=(path.parent/unquote(part.path)).resolve();assert dest.exists(),str(dest);count+=1
 paths=[R/'lessons'/(S+'.html'),R/'reference/recommendation-portfolio.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]
-before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l153.py')],check=True,capture_output=True);assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
-r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',portable_figures=4,notebook_code_cells=sum(c.cell_type=='code' for c in sol.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
+before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l153.py')],check=True,capture_output=True);subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
+r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',portable_figures=5,notebook_code_cells=sum(c.cell_type=='code' for c in sol.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l153_results.json').write_text(json.dumps(r,indent=2));print(r)

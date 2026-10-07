@@ -47,7 +47,7 @@ with sync_playwright() as pw:
   host.locator('button').click();assert host.get_attribute('data-status')=='PASS'
   select=host.locator('[data-arrival]');select.focus();page.keyboard.press('ArrowDown');assert select.input_value()=='12' and host.get_attribute('data-status')=='FAIL'
   host.locator('button').click();assert select.input_value()=='9'
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="unknown"]').click();predict.locator('.predict-reveal').click();assert 'availability' in predict.locator('.predict-outcome').inner_text().lower()
   assert page.locator('#teachback textarea').count()==1
@@ -85,6 +85,7 @@ with tempfile.TemporaryDirectory(prefix='l156-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/reg-temporal-leakage-audit.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]+sorted((P/'figures/l156').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for builder in ['_figures_l156.py','_build_l156.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/builder)],check=True,capture_output=True)
+subprocess.run(['python3',str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Builder is not deterministic'
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=4,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l156_results.json').write_text(json.dumps(r,indent=2));print(r)
