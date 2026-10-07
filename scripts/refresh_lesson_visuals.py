@@ -130,6 +130,7 @@ def main():
         if svg:emit(ROOT/'assets/visual-stories'/f'{key_for(path)}.svg',svg)
     for key in visual_details.DETAILS:
         emit(ROOT/'assets/visual-details'/f'{key}.svg',visual_details.render(key))
+        emit(ROOT/'assets/visual-details'/f'{key}-mobile.svg',visual_details.render_mobile(key))
     for keys in EXTRA_STORIES.values():
         for key in keys:emit(ROOT/'assets/visual-stories'/f'{key}.svg',story_html(key,STORIES[key])[1])
     emit(ROOT/'reference/visual-reading-guide.html',reference())

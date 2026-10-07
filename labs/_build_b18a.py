@@ -11,7 +11,7 @@ P=Path(__file__).resolve().parent;R=P.parent;S='b18a-context-state';F=P/'figures
 r=json.loads((E/'summary.json').read_text())
 
 def fig(name,caption,portable=False):
-    src='data:image/png;base64,'+base64.b64encode((F/(name+'.png')).read_bytes()).decode() if portable else '../labs/figures/b18a/'+name+'.png'
+    src='data:image/png;base64,'+base64.b64encode((F/('architecture-refined.png' if name=='architecture' else name+'.png')).read_bytes()).decode() if portable else '../labs/figures/b18a/'+name+'.png'
     return f'<figure class="state-figure" tabindex="0" role="region" aria-label="{caption}"><img src="{src}" alt="{caption}"><figcaption>{caption} <span class="state-scroll-hint">On small screens, swipe the figure or focus it and use arrow keys.</span></figcaption></figure>'
 
 rows=r['records'];fig1,axs=plt.subplots(1,2,figsize=(9,4.5));labels=['POT full','POT selected','TACO 4%'];arms=['POT-full','POT-selected','TACO4']

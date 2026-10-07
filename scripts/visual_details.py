@@ -5,6 +5,7 @@ specific retrieval question, text alternative and link to the lesson source.
 """
 from html import escape
 import re
+from visual_detail_layouts import PRIMARY, MODEL_PANELS, render_board
 
 TEAL='#087f83'; PURPLE='#7656a6'; GOLD='#ab650a'; RED='#b54e55'; INK='#233c50'; GRAY='#657b8b'
 DETAILS = {
@@ -311,10 +312,19 @@ DRAWINGS={'sampling':sampling,'recursive':recursive,'root':lambda c:recursive(c,
 DRAWINGS.update(DRAWINGS_MORE)
 
 def render(key):
-    title,desc,_,_,kind=DETAILS[key];c=Canvas(title,desc);DRAWINGS[kind](c);return c.done()
+    title,desc,_,_,kind=DETAILS[key]
+    if key in PRIMARY:return render_board(key,title,desc,mobile=False)
+    c=Canvas(title,desc);DRAWINGS[kind](c);return c.done()
+
+def render_mobile(key):
+    title,desc,*_=DETAILS[key]
+    return render_board(key,title,desc)
 
 START='<!-- visual-detail:start -->';END='<!-- visual-detail:end -->'
-def strip(text):return re.sub(re.escape(START)+r'.*?'+re.escape(END)+'\n?', '',text,flags=re.S)
+def strip(text):
+    text=re.sub(re.escape(START)+r'.*?'+re.escape(END)+'\n?', '',text,flags=re.S)
+    text=re.sub(r'<!-- visual-reference:start -->.*?<!-- visual-reference:content -->','',text,flags=re.S)
+    return text.replace('<!-- visual-reference:close --></details><!-- visual-reference:end -->','')
 
 def inject(text,key):
     if key not in DETAILS:return text
@@ -324,16 +334,37 @@ def inject(text,key):
     figures=list(re.finditer(r'<figure\b[^>]*>.*?</figure>',text,re.S))
     if not figures:raise ValueError(f'No existing figure to anchor detail {key}')
     candidates=[f for f in figures if re.search(r'architecture|Architecture|whole.solution|model.map',f[0])]
-    pos=(candidates or figures)[0].start()
+    target=(candidates or figures)[0]
+    pos=target.start();end=target.end()
     if key=='b09':
         pos=text.rfind('<div class="b09-desktop-architecture">',0,pos)
         if pos<0:raise ValueError('Missing B09 architecture wrapper')
-    block=f'''{START}<figure class="visual-detail" id="visual-detail-{key}">
+        mobile=re.search(r'<div class="b09-mobile-architecture">.*?</div>',text[end:],re.S)
+        if not mobile:raise ValueError('Missing B09 mobile reference')
+        end+=mobile.end()
+    primary=key in PRIMARY
+    alt=desc+' '+ ' '.join(f'{heading}: {caption}' for heading,caption in MODEL_PANELS[key]) if primary else desc
+    source={
+        'b09':'https://arxiv.org/html/2608.25774v1#S2',
+        'b18a':'https://arxiv.org/html/2602.05649v2#S3',
+        'b19b':'https://arxiv.org/html/2501.02945v4#S3',
+    }.get(key)
+    scopes={
+        'b09':'Pinned regression release: width 192, 6 heads, 12 layers; glyph counts are schematic. SSMax weighting is not illustrated numerically.',
+        'b18a':'Paper shape shown. The pinned release groups two features per token; its latent feature axis is groups plus target. Joint pretraining is not rerun here.',
+        'b19b':'Paper predictor route. The course notebook executes feature/availability contracts and a ridge diagnostic, not pretrained attention. Forecast distributions shown are schematic.',
+    }
+    caption=scopes.get(key,'Teaching schematic. Values and scope follow the adjacent worked example.')
+    if source:caption+=f' <a href="{source}">Architecture source</a>.'
+    block=f'''{START}<figure class="visual-detail{' vd-primary' if primary else ''}" id="visual-detail-{key}">
 <h3>{escape(title)}</h3><p>{escape(desc)}</p>
-<p class="vd-scroll-hint">On a narrow screen, scroll the drawing sideways or enlarge it. Arrow keys scroll when the drawing is focused.</p>
-<div class="vd-scroll" tabindex="0" role="region" aria-label="{escape(title,quote=True)} — scrollable drawing"><img src="../assets/visual-details/{key}.svg" alt="{escape(desc,quote=True)}" width="1000" height="620" loading="lazy"/></div>
-<figcaption>{escape(title)}. Teaching schematic; read alongside the original architecture and source notes below.</figcaption>
-<details><summary>Predict: {escape(question)}</summary><p>{escape(answer)}</p></details>
+<picture><source media="screen and (max-width: 700px)" srcset="../assets/visual-details/{key}-mobile.svg"><img src="../assets/visual-details/{key}.svg" alt="{escape(alt,quote=True)}" loading="lazy"/></picture>
+<details class="vd-question"><summary>Predict: {escape(question)}</summary><p>{escape(answer)}</p></details>
 <p class="vs-print-answer"><strong>Answer:</strong> {escape(answer)}</p>
+<figcaption>{caption} <a class="vd-mobile-link" href="../assets/visual-details/{key}-mobile.svg">Open narrow drawing</a></figcaption>
 </figure>{END}\n'''
+    if primary:
+        original=text[pos:end]
+        archive='<!-- visual-reference:start --><details class="vd-reference"><summary>Previous overview and release settings</summary><!-- visual-reference:content -->'+original+'<!-- visual-reference:close --></details><!-- visual-reference:end -->'
+        return text[:pos]+block+archive+text[end:]
     return text[:pos]+block+text[pos:]

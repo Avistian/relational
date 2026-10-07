@@ -1,0 +1,7 @@
+# Refine teaching quality, not figure count
+
+The user approved this correction with “do it then” after the assistant identified weak mobile reading, opaque CAST/TACO/forecasting operations, and redundant supplements. Existing push authorization persists.
+
+Use L043's architecture as a concrete reference: input/output identities, actual internal operations, and the feedback or context paths that distinguish the method. Redraw the three weak main architectures, retain model/paper/release distinctions and connect the diagrams to the existing worked examples. Give all 20 second-pass diagrams a purpose-drawn narrow layout instead of horizontal scrolling as the default. Keep the detailed desktop export available. Put superseded maps behind native reference disclosure rather than making the reader traverse two architecture introductions.
+
+Reuse SVG generation and the existing viewer. Preserve original lesson text, runtime widgets, notebook code and execution outputs. Carry the three replacement architecture drawings into the portable notebooks and keep notebook generation aligned. Verify preserved notebook code/output identities, regeneration, readable actual 375px views, keyboard/no-JS/print behavior, and source-specific content. Inspect all rendered new drawings before publishing. Run clean-index Pages validation, push, and verify live bytes and behavior. Do not claim a course-wide quality certification.
