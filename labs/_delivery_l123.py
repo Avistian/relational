@@ -25,7 +25,7 @@ for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['eligible','sample_temporal','audit_sample']:assert stu[name]==node,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/temporal-heterogeneous-graphs.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l123.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l123.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l123').glob('*'));before=[sha(p) for p in figs]
 subprocess.run([sys.executable,str(P/'_figures_l123.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0
@@ -33,6 +33,7 @@ with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
  for width in [1200,375]:
   page.set_viewport_size({'width':width,'height':900});page.goto((R/'lessons'/f'{S}.html').as_uri())
+  page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")');page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
   w=page.locator('#l123-temporal');control=w.locator('select');out=w.locator('output');check=w.locator('input')
   assert '3 nodes, 2 edges' in out.inner_text()
   for cutoff,count in [('8','3 nodes, 2 edges'),('10','4 nodes, 3 edges'),('12','6 nodes, 5 edges')]:
@@ -42,11 +43,11 @@ with sync_playwright() as pw:
   control.focus();page.keyboard.press('ArrowDown');page.keyboard.press('Enter');assert control.input_value()=='10'
   w.get_by_role('button',name='Reset',exact=True).click()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
-  assert page.locator('figure').count()==3
+  assert page.locator('figure').count()==4
   assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)')
   page.screenshot(path=f'/tmp/l123-page-{width}.png')
   w.screenshot(path=f'/tmp/l123-cutoff-{width}.png')
-  for i in range(3):page.locator('figure').nth(i).screenshot(path=f'/tmp/l123-figure-{i}-{width}.png')
+  for i in range(4):page.locator('figure').nth(i).screenshot(path=f'/tmp/l123-figure-{i}-{width}.png')
  page.set_viewport_size({'width':1000,'height':900});page.goto((P/'html'/f'{S}.html').as_uri())
  assert page.locator('figure img[src^="data:image/png;base64,"]').count()==3
  page.locator('figure').nth(0).screenshot(path='/tmp/l123-notebook-collision.png')
@@ -54,7 +55,7 @@ with sync_playwright() as pw:
  assert 'Static trace:' in plain.inner_text('article') and 'PENDING_WRITTEN_DEFENSE' in plain.inner_text('article')
  assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
  plain.set_viewport_size({'width':900,'height':1000});plain.emulate_media(media='print')
- assert plain.locator('figure').count()==3
+ assert plain.locator('figure').count()==4
  assert plain.locator('figure img').evaluate_all('(xs)=>xs.every(x=>getComputedStyle(x).minWidth==="0px")')
  plain.screenshot(path='/tmp/l123-print.png');nojs.close();browser.close()
 class Links(HTMLParser):

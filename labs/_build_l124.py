@@ -36,7 +36,7 @@ def prose(portable=False):
  return text
 
 def document(title,text,interactive=False):
- body=render(text).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(text)).replace('</table>','</table></div>')
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join(f'<link rel="stylesheet" href="../assets/{x}.css">' for x in ['lesson','event-snapshot','reproduction','task-table'])+'</head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0123-temporal-heterogeneous-graphs.html">Lesson 123</a></nav><header><p class="stream-kicker">Year 4 · Quarter 1 · Lesson 124</p><h1>'+title+'</h1></header>'+body+'</article>'+(''.join('<script src="../assets/'+x+'.js"></script>' for x in ['retrieval-pool','retrieval-bank','teachback','task-table-viz','l124-lesson']) if interactive else '')+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(document(TITLE,prose(),True))
 previous=nbf.read(P/'solutions/0119-year-3-synthesis.ipynb',as_version=4)

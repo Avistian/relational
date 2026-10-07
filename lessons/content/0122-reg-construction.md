@@ -111,6 +111,18 @@ The default notebook builds the small graph and reconstructs all released F1 key
 
 Counts alone are insufficient: two incorrect edge lists can have the same length. We compare exact endpoint pairs, distinguish edge-order conventions from semantics, and check every reverse edge. We also test permutation equivariance at the identity level, repeated endpoint observations, isolated rows, nulls, and missing parents.
 
+**A valid tensor can encode the wrong database.** Keep the three transfer rows and person-row order from Section 2, but swap the receivers of transfers7 and8:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Transfer key</th><th>Correct receiver key</th><th>Wrong receiver key</th></tr></thead><tbody><tr><td>7</td><td>90</td><td>10</td></tr><tr><td>8</td><td>10</td><td>90</td></tr><tr><td>9</td><td>90</td><td>90</td></tr></tbody></table>
+
+The correct destination indices are `[0,1,0]`; the wrong ones are `[1,0,0]`. Both have three edges and receiver degrees `[2,1,0]`. All indices are in bounds. Rebuilding the reverse relation from the wrong tensor preserves the reverse-edge check too. PyG's [`validate`](https://pytorch-geometric.readthedocs.io/en/2.6.1/_modules/torch_geometric/data/hetero_data.html#HeteroData.validate) checks structural consistency; it does not have the original database foreign-key values to verify these links.
+
+Decode each endpoint back to its raw key and compare the exact pairs with an independent SQL join. That rejects the swapped links. A count, degree sequence, or successful tensor operation would not.
+
+**Try the diagnostic.** Send the original amounts `[5,8,2]` through the wrong receiver tensor. What changes? What if every amount were 1?
+
+<details><summary>Check the swapped endpoints</summary><p>The wrong sum is [10,5,0], instead of [7,8,0]. With all amounts equal to 1, both graphs give [2,1,0], so this value diagnostic becomes blind to the mistake. The exact key-pair comparison still rejects it.</p></details>
+
 The local original-code topology comparison uses constant features and omits time attributes because the historical helper attempts an in-place write to a read-only array under the current pandas runtime. This is recorded in the audit. Every GPU fit separately executes the full released feature/time path in the pinned runtime. The local topology check does not establish feature, timestamp, or score parity by itself.
 
 ## 7 · Follow the graph into the full selected reproduction

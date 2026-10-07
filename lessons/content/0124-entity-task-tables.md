@@ -77,6 +77,16 @@ assert rows.label_end.le(fit_time).all()
 
 A chronological split should be justified using both query times and label windows. If a query is dated before the fitting cutoff but its label matures afterwards, its target was not available for that fit. Selecting a model on validation labels also requires those labels to have matured before the claimed selection time.
 
+**Chronological query dates can still have overlapping label windows.** Reuse Driver0's outcomes: position 2 on day1 and position 6 on day60. Assume the complete event record is observed through day90 and contains no other races after day0:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Query day</th><th>Target interval</th><th>Mean</th><th>Mature on</th></tr></thead><tbody><tr><td>0</td><td>(0, 60]</td><td>4</td><td>60</td></tr><tr><td>30</td><td>(30, 90]</td><td>6</td><td>90</td></tr></tbody></table>
+
+The day60 race contributes to both labels. Distinct query keys do not imply independent outcomes. More urgently, a model fitted to predict on day30 cannot train on the day0 label: its window is unfinished. Sorting query dates alone would miss this problem. The day30 label also stays immature until day90 under our full-window contract, even though its last recorded race is on day60.
+
+**Try the split.** Move the later prediction cutoff from day30 to day60. Is the day0 training label mature under the no-delay convention? Does the race on day60 belong to the later target window?
+
+<details><summary>Check the window boundary</summary><p>The earlier label is mature at day60, assuming all its outcomes are available then. The later target window is (60,120], so it excludes the day60 race. These boundary checks address this window overlap; they do not establish independence across drivers, races, or other shared context.</p></details>
+
 The pinned split builder generates training cutoffs backwards from `validation_start - 60 days`; validation cutoffs stop no later than `test_start - 60 days`; test cutoffs stop before the database's final complete 60-day horizon. Empty windows can produce no task rows. [Pinned split builder](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/base/task_base.py).
 
 [[TASK_RESULTS]]

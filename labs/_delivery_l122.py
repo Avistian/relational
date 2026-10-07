@@ -25,7 +25,7 @@ for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['key_index','relation_edges','construct_reg']:assert stu[name]==node,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/reg-construction.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l122.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l122.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l122').glob('*'));before=[sha(p) for p in figs]
 subprocess.run([sys.executable,str(P/'_figures_l122.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0
@@ -33,6 +33,7 @@ with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
  for width in [1200,375]:
   page.set_viewport_size({'width':width,'height':900});page.goto((R/'lessons'/f'{S}.html').as_uri())
+  page.locator('img').evaluate_all('es=>es.forEach(e=>e.loading="eager")');page.wait_for_function('Array.from(document.images).every(i=>i.complete)')
   w=page.locator('#l122-reg');control=w.locator('select');out=w.locator('output')
   assert '[7, 8, 0]' in out.inner_text()
   for key,sums in [('90',[7,8,0]),('10',[2,13,0]),('300',[2,8,5]),('null',[2,8,0]),('999',None)]:
@@ -45,11 +46,11 @@ with sync_playwright() as pw:
   control.focus();page.keyboard.press('ArrowDown');page.keyboard.press('Enter');assert control.input_value()=='10'
   w.get_by_role('button',name='Reset key').click()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
-  assert page.locator('figure').count()==3
+  assert page.locator('figure').count()==4
   assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)')
   page.screenshot(path=f'/tmp/l122-page-{width}.png')
   w.screenshot(path=f'/tmp/l122-cutoff-{width}.png')
-  for i in range(3):page.locator('figure').nth(i).screenshot(path=f'/tmp/l122-figure-{i}-{width}.png')
+  for i in range(4):page.locator('figure').nth(i).screenshot(path=f'/tmp/l122-figure-{i}-{width}.png')
  page.set_viewport_size({'width':1000,'height':900});page.goto((P/'html'/f'{S}.html').as_uri())
  assert page.locator('figure img[src^="data:image/png;base64,"]').count()==3
  page.locator('figure').nth(0).screenshot(path='/tmp/l122-notebook-collision.png')
@@ -57,7 +58,7 @@ with sync_playwright() as pw:
  assert 'Static trace:' in plain.inner_text('article') and 'PENDING_WRITTEN_DEFENSE' in plain.inner_text('article')
  assert plain.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
  plain.set_viewport_size({'width':900,'height':1000});plain.emulate_media(media='print')
- assert plain.locator('figure').count()==3
+ assert plain.locator('figure').count()==4
  assert plain.locator('figure img').evaluate_all('(xs)=>xs.every(x=>getComputedStyle(x).minWidth==="0px")')
  plain.screenshot(path='/tmp/l122-print.png');nojs.close();browser.close()
 class Links(HTMLParser):

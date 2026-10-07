@@ -76,6 +76,16 @@ The released F1 graph stores timestamps on dated **nodes**, not separately obser
 
 **Task 3:** implement `audit_sample`. Verify the root is present, every included node is visible, every edge identity exists, both endpoints belong to this sample, and any explicit relationship timestamp is eligible. This audit proves visibility and endpoint closure. It does **not** prove that all eligible nodes were included or that every node lies within the requested hop distance. Independent SQL and native-loader comparisons supply those additional checks for our tested queries.
 
+**A passing visibility audit can still hide an incomplete sampler.** At day8, compare three proposed outputs for the same two-hop request:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Returned sample</th><th>Visibility audit</th><th>Exact two-hop result?</th></tr></thead><tbody><tr><td>Person0 alone</td><td>PASS</td><td>No</td></tr><tr><td>Person0, Transfer0, Memo1; both edges</td><td>PASS</td><td>Yes</td></tr><tr><td>All six nodes and five edges</td><td>FAIL</td><td>No</td></tr></tbody></table>
+
+The root-only output contains no illegal row or edge, so the narrow audit correctly passes it. It still misses two eligible nodes and their message path. Comparing with an independent exhaustive query catches that omission. Conversely, a sampled-fanout contract may intentionally omit eligible neighbors; it needs the declared sampling checks rather than equality with the exhaustive result. Name the property you checked before reporting “PASS.”
+
+**Try the contract change.** Keep the root-only output but change the requested hop count from 2 to 0. Does its visibility change? Does its completeness change?
+
+<details><summary>Check the audit scope</summary><p>Visibility is unchanged and still passes. The root-only output is now the exact requested zero-hop result. A check of returned timestamps cannot infer the intended hop budget or sampling policy; those belong to the construction contract.</p></details>
+
 ## 5 · One entity, two prediction times
 
 Person0 at day 8 and Person0 at day 12 are two queries. They share the same global entity identity but need different local neighborhoods. At day 12, all six nodes and five edges in the fixture are visible. A batch that merges them into one shared neighborhood can let the earlier prediction receive later information.

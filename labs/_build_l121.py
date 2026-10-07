@@ -42,7 +42,7 @@ def prose(portable=False):
  return text
 
 def document(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  styles=''.join(f'<link rel="stylesheet" href="../assets/{n}.css">' for n in ['lesson','event-snapshot','reproduction'])
  scripts=''.join(f'<script src="../assets/{n}.js"></script>' for n in ['retrieval-pool','retrieval-bank','teachback','l121-lesson']) if interactive else ''
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+styles+'</head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0120-year-3-exit-exam.html">Lesson 120</a></nav><header><p class="stream-kicker">Year 4 · Quarter 1 · Lesson 121</p><h1>'+title+'</h1></header>'+html+'</article>'+scripts+'</body></html>'

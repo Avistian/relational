@@ -7854,7 +7854,6 @@ a.anchor-link {
 <details><summary>Quick prerequisite reminder</summary><p>A seed is the entity being predicted. A node occurrence is its copy inside one sampled query graph. Here every hop uses the root cutoff; TGAT in L103 used decreasing child cutoffs.</p></details>
 </aside>
 <!-- sequence-review:end -->
-<p>Recall without notes: distinguish entity identity from a graph index, and an event time from a prediction cutoff.</p>
 </div>
 </div>
 </div>
@@ -7997,6 +7996,11 @@ a.anchor-link {
 <p>A reverse edge changes the direction in which information can flow; it does not change when the underlying relationship became available. If you explicitly timestamp forward edges, the reverse store must preserve the same relationship time. Do not give reverse edges an artificial ancient timestamp to make sampling convenient.</p>
 <p>The released F1 graph stores timestamps on dated <strong>nodes</strong>, not separately observed relationship-availability times. The source constructor attaches <code>table.time_col</code> to the node store and constructs PK/FK links plus reverse relations. This lesson therefore audits real endpoint timestamps and edge identity, while leaving unobserved relationship updates unverified. <a href="https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/relbench/modeling/graph.py">Pinned constructor</a>.</p>
 <p><strong>Task 3:</strong> implement <code>audit_sample</code>. Verify the root is present, every included node is visible, every edge identity exists, both endpoints belong to this sample, and any explicit relationship timestamp is eligible. This audit proves visibility and endpoint closure. It does <strong>not</strong> prove that all eligible nodes were included or that every node lies within the requested hop distance. Independent SQL and native-loader comparisons supply those additional checks for our tested queries.</p>
+<p><strong>A passing visibility audit can still hide an incomplete sampler.</strong> At day8, compare three proposed outputs for the same two-hop request:</p>
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Returned sample</th><th>Visibility audit</th><th>Exact two-hop result?</th></tr></thead><tbody><tr><td>Person0 alone</td><td>PASS</td><td>No</td></tr><tr><td>Person0, Transfer0, Memo1; both edges</td><td>PASS</td><td>Yes</td></tr><tr><td>All six nodes and five edges</td><td>FAIL</td><td>No</td></tr></tbody></table>
+<p>The root-only output contains no illegal row or edge, so the narrow audit correctly passes it. It still misses two eligible nodes and their message path. Comparing with an independent exhaustive query catches that omission. Conversely, a sampled-fanout contract may intentionally omit eligible neighbors; it needs the declared sampling checks rather than equality with the exhaustive result. Name the property you checked before reporting “PASS.”</p>
+<p><strong>Try the contract change.</strong> Keep the root-only output but change the requested hop count from 2 to 0. Does its visibility change? Does its completeness change?</p>
+<details><summary>Check the audit scope</summary><p>Visibility is unchanged and still passes. The root-only output is now the exact requested zero-hop result. A check of returned timestamps cannot infer the intended hop budget or sampling policy; those belong to the construction contract.</p></details>
 </div>
 </div>
 </div>
