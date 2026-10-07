@@ -232,7 +232,7 @@ def build_package(notebooks=True,render=True):
   else:body+=markdown2html_mistune(p)
  head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 067 · '+TITLE+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in ['lesson','foundation-course','lab-access','l067-localpfn'])+'</head><body class="l067"><article>'
  scripts=''.join('<script src="../assets/'+x+'.js"></script>' for x in ['retrieval-pool','retrieval-bank','predict','teachback','l067-localpfn-viz'])
- page=head+'<nav><a href="../index.html">Course</a> · <a href="0066-tabicl-column-row-attention.html">← Lesson 066</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 067</p><h1>'+TITLE+'</h1>'+launcher()+'<h2>Retrieve before reading</h2><div id="warmup"></div><div id="prediction"></div>'+body+'<section id="lab"><h2>Run the companion lab</h2>'+launcher()+'<div id="teachback"></div></section></article>'+scripts+'</body></html>'
+ page=head+'<nav><a href="../index.html">Course</a> · <a href="0066-tabicl-column-row-attention.html">← Lesson 066</a> · <a href="0068-pfns-under-temporal-shift.html">Lesson 068 →</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 067</p><h1>'+TITLE+'</h1>'+launcher()+'<div id="prediction"></div>'+body+'<section id="lab"><h2>Run the companion lab</h2>'+launcher()+'<div id="teachback"></div></section></article>'+scripts+'</body></html>'
  soup=BeautifulSoup(page,'html.parser')
  for t in soup.find_all('table'):t.wrap(soup.new_tag('div',attrs={'class':'table-scroll','tabindex':'0','role':'region','aria-label':'Scrollable evidence table'}))
  (ROOT.parent/'lessons'/(SLUG+'.html')).write_text(str(soup))

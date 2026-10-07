@@ -166,9 +166,11 @@ def build_package(notebooks=True,render=True):
   else:body+=markdown2html_mistune(p)
  head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 065 · '+TITLE+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in ['lesson','foundation-course','lab-access','l065-query-embeddings'])+'</head><body class="l065"><article>'
  scripts=''.join('<script src="../assets/'+x+'.js"></script>' for x in ['retrieval-pool','retrieval-bank','predict','teachback','l065-query-embeddings-viz'])
- page=head+'<nav><a href="../index.html">Course</a> · <a href="0064-tabpfn-v2.html">← Lesson 064</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 065</p><h1>'+TITLE+'</h1>'+launcher()+'<h2>Retrieve before reading</h2><div id="warmup"></div><div id="prediction"></div>'+body+'<section id="lab"><h2>Run the companion lab</h2>'+launcher()+'<div id="teachback"></div></section></article>'+scripts+'</body></html>'
+ page=head+'<nav><a href="../index.html">Course</a> · <a href="0064-tabpfn-v2.html">← Lesson 064</a> · <a href="0066-tabicl-column-row-attention.html">Lesson 066 →</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 065</p><h1>'+TITLE+'</h1>'+launcher()+'<div id="prediction"></div>'+body+'<section id="lab"><h2>Run the companion lab</h2>'+launcher()+'<div id="teachback"></div></section></article>'+scripts+'</body></html>'
  soup=BeautifulSoup(page,'html.parser')
- for t in soup.find_all('table'):t.wrap(soup.new_tag('div',attrs={'class':'table-scroll','tabindex':'0','role':'region','aria-label':'Scrollable evidence table'}))
+ for t in soup.find_all('table'):
+  if [h.get_text(strip=True) for h in t.select('thead th')]==['Method','Diabetes','Transfusion','WDBC']:t['class']=['compact-results']
+  t.wrap(soup.new_tag('div',attrs={'class':'table-scroll','tabindex':'0','role':'region','aria-label':'Scrollable evidence table'}))
  (ROOT.parent/'lessons'/(SLUG+'.html')).write_text(str(soup))
  ref=head+'<nav><a href="../lessons/'+SLUG+'.html">Lesson 065</a></nav><h1>Query embeddings: information and selection card</h1>'+launcher()+figure('architecture')+markdown2html_mistune('''
 ## Operation card

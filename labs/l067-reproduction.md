@@ -47,3 +47,7 @@ First reconcile the actual experiment roster: final Tables 2/3 list only 37/42 n
 The local/Colab notebook path retains adapted state files alongside its evidence. No Modal job was run; the older generic Modal helper is not advertised as an adapted-state export operator for this lesson. Its current result export does not retain this runner’s cached checkpoint files.
 
 Local source checks, copied Pages access, browser layout, live Colab and deployed byte matching are independent verification statements. Learner mastery is unassessed until the completed EXIT explanation is reviewed.
+
+### October 2026 independent replay limitation
+
+The new audit reports `PASS_WITH_BASELINE_REPLAY_LIMITATION`: step-0 validation probabilities were not archived. Fresh local and original-source baseline inference give AUC 0.6920078 on blood_transfusion seed 7, versus the archived scalar 0.6934698. The cause is not established. All independently selected checkpoints agree; adapted-state probability checks remain enforced. This does not establish exact baseline replay or rerun the adaptation trajectory. See `reviews/course-iteration-2026-10-07/l067-evidence.json`.

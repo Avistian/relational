@@ -44,6 +44,8 @@ The [historical 2.0.9 release](https://pypi.org/project/tabpfn/2.0.9/) makes a s
 
 **Why this is the whole point.** Consider two identical feature rows assigned opposite labels. Their context target inputs differ immediately. A head may learn to read that difference after the transformer, even though a new query with identical features has no corresponding observed label channel. A perfect training plot can therefore be a symptom of information-role mismatch. Scaling or rotating those coordinates cannot restore an unavailable deployment input.
 
+**Worked example: a perfect plot with no predictive feature.** This is a deliberately simple label-copying encoder, not a measured TabPFN layer. Two rows both have feature `x=0`, but their labels are 0 and 1. Give context rows the representation `z=(x,y)` and query rows `z=(x,.5)`. The linear head with logit `10z₂−5` assigns context probabilities .0067 and .9933, so its training accuracy is 100%. As queries, both rows get probability .5; any fixed tie rule gets only one of the two labels right. Its mean query log loss is `−ln(.5)≈.6931`, versus about .0067 on the labeled-context vectors. **Try it:** exclude each row's label during extraction. The second coordinate is now .5 in both training vectors too, so the apparent separation disappears. The role mismatch was the entire signal in this fixture; actual TabPFN states can also carry useful feature/context information, which the later experiment measures.
+
 <!--figure:roles-->
 
 ### Holding the right things fixed
@@ -118,13 +120,17 @@ The counterfactual must hold the relevant operator fixed. In the lab we flip row
 
 ### Reading the results table
 
-Mean test accuracy across the three saved seeds is shown below. These are local descriptive means; each dataset receives its own row, and the individual runs remain visible above.
+Mean test accuracy across the three saved seeds is shown below. These are local descriptive means; each dataset receives its own column, and the individual runs remain visible above.
 
-| Dataset | Raw | Vanilla | Layer 6 | Layer 9 | Layer 12 | Combined | Native |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| diabetes | 0.7619 | 0.7121 | 0.7468 | 0.7532 | 0.7641 | 0.7403 | 0.7597 |
-| blood_transfusion | 0.7800 | 0.5044 | 0.7600 | 0.7778 | 0.7844 | 0.7711 | 0.7956 |
-| wdbc | 0.9825 | 0.7895 | 0.9649 | 0.9708 | 0.9737 | 0.9649 | 0.9766 |
+| Method | Diabetes | Transfusion | WDBC |
+|---|---:|---:|---:|
+| Raw | 0.7619 | 0.7800 | 0.9825 |
+| Vanilla | 0.7121 | 0.5044 | 0.7895 |
+| Layer 6 | 0.7468 | 0.7600 | 0.9649 |
+| Layer 9 | 0.7532 | 0.7778 | 0.9708 |
+| Layer 12 | 0.7641 | 0.7844 | 0.9737 |
+| Combined | 0.7403 | 0.7711 | 0.9649 |
+| Native | 0.7597 | 0.7956 | 0.9766 |
 
 > **Scope check.** The selected combination does not beat native v2 on any of these nine test splits (one tie). Raw features also remain competitive. This is useful negative evidence about this local extraction/search recipe, not a refutation of the paper's different benchmark. The vanilla head is especially weak on blood transfusion despite highly accurate fitted training predictions; inspect the paired scores below before attributing separability to a useful deployment representation.
 

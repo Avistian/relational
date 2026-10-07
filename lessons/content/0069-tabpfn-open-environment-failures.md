@@ -75,6 +75,8 @@ These are four distinct questions, even when all are called “robustness.” Th
 
 **Average precision, and why its baseline moves.** **Average precision (AP)** sums recall increments weighted by precision at each distinct score threshold. It differs from the trapezoidal area under a precision–recall curve; the released API is [`average_precision_score`](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html), even though the paper calls the column AUPR. The example's continuous AP is `.9167`, versus `.5` for the binary interval. AP's baseline depends on novel prevalence. For a constant score it equals the positive fraction, so a balanced task's `.5` baseline cannot be carried into a rare-novelty task unchanged.
 
+**Worked base-rate check.** Hold a novelty detector's true-positive rate at 80% and its false-positive rate at 10%. In a balanced set of 10,000 rows it flags 4,000 novel and 500 known rows, so precision is `4000/4500≈88.9%`. If novelty prevalence is instead 1%, the same conditional rates flag 80 novel and 990 known rows: precision is only `80/1070≈7.48%`. The detector's ROC operating point did not change; the meaning of an alert did. These are invented counts holding the conditional rates fixed, not a reanalysis of the two local protocols, which also change context and query composition.
+
 ## Keep the unsupported rows in the loss
 
 > **In plain terms.** When the true answer is a class the model cannot output, it is tempting to drop that row from the score. Doing so hides the failure. We keep the row and give it an explicit, finite penalty.
@@ -87,13 +89,15 @@ These are four distinct questions, even when all are called “robustness.” Th
 
 ## Feature removal: compare the same row with a declared fallback
 
-> **In plain terms.** If a sensor disappears, the model still needs some number in that column. We fill it with the context average, which keeps the input shape valid while genuinely removing information.
+> **In plain terms.** If a sensor disappears, the model still needs some number in that column. We fill it with the context average, which keeps the input shape valid while removing that column’s query-specific values.
 
-**Schema and the fallback rule.** A **schema** identifies columns by meaning and order. Deleting a required column makes the old input invalid. A mean-imputation fallback restores the original width, but gives the model strictly less information: for a removed numeric column `j`, replace every query value with the mean of context column `j`. Context and weights stay fixed. This corresponds to the numeric path of the released feature-shift experiment. Its categorical path uses the training mode; our measured panel has numeric input only.
+**Schema and the fallback rule.** A **schema** identifies columns by meaning and order. Deleting a required column makes the old input invalid. A mean-imputation fallback restores the original width and removes the affected column’s row-specific values: for a removed numeric column `j`, replace every query value with the mean of context column `j`. Context and weights stay fixed. This corresponds to the numeric path of the released feature-shift experiment. Its categorical path uses the training mode; our measured panel has numeric input only.
 
 <!--figure:features-->
 
 **Worked example.** Context sensor values `[2,4,6]` give mean 4. Query readings 1 and 7 become 4 and 4, while a second column `[10,20]` remains unchanged. The sensor no longer distinguishes these two rows. Notice a testing trap: using their query mean would accidentally give 4 in this example too, so change the second query from 7 to 9 and the error becomes visible. An invariant test must vary exactly the values that would distinguish the competing implementations.
+
+**A redundancy control.** Suppose a second sensor always records twice the first: `X2=2X1`. Replacing X1 with a constant still leaves its value recoverable as `X2/2`. Removing a column therefore cannot add underlying information under this fixed fallback, but need not remove information about the target if another column contains the same signal. Predictive performance can also improve when a fixed model relied on a distracting feature. **Try it:** contrast the redundant sensor with one that is the only available predictor of the label. This is why the experiment measures removal curves rather than assuming that each step must hurt.
 
 **How removal levels are chosen.** The local run uses six predeclared nominal levels: 0%, 20%, 40%, 60%, 80%, 100%. For `F` features it removes `floor(level × F)` columns from one seeded random permutation. The levels are nested and use no labels. On Iris, 20% means `floor(.2 × 4) = 0`; the actual removed fraction is saved, so the duplicate baseline cannot masquerade as a one-feature intervention. Three seeds vary the real train/test split **and** the mask ordering jointly. They do not separately estimate those two variance components.
 

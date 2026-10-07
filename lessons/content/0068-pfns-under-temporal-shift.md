@@ -36,6 +36,9 @@ The lab assumes matrix multiplication, sample standard deviation and softmax; ea
 
 > **Scope check.** But two trajectories can agree on all observed domains and diverge tomorrow. Extrapolation requires an assumption; timestamp encoding does not make the future uniquely identifiable.
 
+**Worked counterexample: the clock cannot identify tomorrow's rule.** Suppose the observed domains are c=0 and c=1. Both trajectories `a₁(c)=c` and `a₂(c)=c−2c(c−1)` give coefficients 0 and 1 there, so every observed feature vector receives the same label under either world. At c=2, however, the coefficients are +2 and −2. For the future query `(X1,X2)=(0,1)`, the first world predicts class 1 and the second class 0. No amount of data restricted to those two historical domains distinguishes these trajectories. The temporal prior supplies assumptions about which continuations are plausible. **Try it:** compute the coefficient and label in each world before deciding what evidence an additional observed domain would provide.
+
+
 ## The prior: a graph changes through another graph
 
 > **In plain terms.** The training data is invented by two graphs. One graph builds each dataset's cause-and-effect structure. A *second* graph reads the clock and slowly rewrites the first graph's weights, so the relationships drift over time in a coherent way.
@@ -161,6 +164,8 @@ The author panel uses exact released dataset preparation and full datasets: Elec
 We predeclare source fractions 0.40, 0.55 and 0.70 of ordered domains, rounded down to whole domains. Context stays frozen before each boundary. Ten percent of each source domain (floor, at least one) is held out as ID test. All remaining future domains are OOD test. Their labels never enter prediction calls. Seeds 0, 1, 2 choose source holdouts and pair with original base/drift checkpoints 1, 2, 3 and group-vector seeds 17, 18, 19. **All rows are retained** in the final panel.
 
 > **Scope check.** The capped and rounded-scale pilots retain separate evidence/operator identities. These repetitions vary cutoff, holdout and pretrained initialization together. Sample SD describes those declared repetitions; it neither separates variance components nor estimates uncertainty across independent datasets. Only NoT2V checkpoint 1 is released, so it is reused. Some ID slices lack a class: accuracy and log loss remain defined, but full-class AUC is unavailable. We do not retry labels into a more convenient ID sample.
+
+**A deployment boundary beyond domain order.** A row can belong to an old domain while its label becomes available only later. For a prediction at domain 2, row A with event domain 0 and label-availability domain 3 is not yet labeled context; row B with event and label-availability domain 1 is eligible. A filter on event domain alone would admit A's future outcome. In a deployment audit, require both legal feature snapshots and labels available before prediction. This benchmark's ordered-domain protocol does not by itself establish those real-world label-arrival times. The example is a deployment check, not a change to the published benchmark or the saved local panel.
 
 ### The five arms
 

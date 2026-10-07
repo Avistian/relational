@@ -144,6 +144,15 @@ After the last column block, two distinct learned projections generate W and B. 
 
 **Worked example.** With C=400, Q=100 and F=8, these counts are 11,059,200 for the column stage, 1,728,000 for the row stage, and 9,600,000 for dataset ICL. Holding Q and F fixed while doubling C makes the ICL term grow from 9.6 million to 34.56 million. The inducing column computation grows linearly in row count for fixed m; the complete system retains a context-quadratic ICL term. For small contexts, 128 inducing readers can even cost more score elements than direct context attention in that one column. The design targets a favorable regime, not an algebraic win at every C.
 
+**Worked counterexample: inducing memory is not always cheaper.** Compare only one column block and one head. Direct context-only attention uses `N×C` score entries; the two inducing reads use `m×C+N×m`. Hold m=128 fixed:
+
+| Context / query rows | Direct scores | Inducing scores |
+|---|---:|---:|
+| C=64, Q=16 | 5,120 | 18,432 |
+| C=400, Q=100 | 200,000 | 115,200 |
+
+At the smaller context, the inducing route creates 3.6 times as many scores; at the larger context it creates .576 times as many. These are alternative attention mechanisms, not interchangeable computations with equal predictive quality. **Try it:** use m=32 in the second row and obtain 28,800 scores. Explain why changing the number of learned readers would also change the architecture and cannot be counted as a free optimization of this fixed checkpoint. The projection, residual and feed-forward costs are still outside this score-only comparison.
+
 > **Scope check.** These are operation counts, not a peak-memory estimator. Our visible `attention_mix` materializes its score matrix. The paper's efficient implementation uses FlashAttention, stage-specific batching, and activation offload. FlashAttention can avoid storing a full quadratic score matrix while still performing quadratic attention work. Reducing memory complexity does not automatically reduce arithmetic complexity.
 
 > **Scope check — a system configuration we did not run.** Appendix D.2 changes the batching unit by stage: columns for the column encoder, rows for row interaction, and tables for ICL. Its memory predictor is fitted on an A100 and guides those batch sizes. In the 500,000-row, 500-feature example, 80% of rows are context and 20% queries; the appendix reports less than 14 GB GPU memory but roughly 120 GB CPU memory before optional disk offload. That is a specific demonstrated system configuration, not a promise that our eager CPU implementation fits the same table or that a 14 GB GPU alone suffices. The 500K experiment remains **NOT_RUN** here.

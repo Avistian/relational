@@ -10,16 +10,6 @@ This distinction matters for our relational mission. A neighborhood retrieved fr
 
 > **Scope check.** This is the original whole-row TabPFN v1 backbone. The feature-token v2 model from Lesson 064 and the TabICL model from Lesson 066 are different models and do not silently replace it.
 
-### Retrieve before reading
-
-Answer these from memory, in writing, before reading on.
-
-- Without looking back, explain why a query label must be withheld even when its feature vector is present.
-- Then distinguish a train-fitted normalizer from one fitted on the current query batch.
-- Finally, predict whether changing the training examples can alter a frozen model's output.
-
-These are the ingredients we now combine; an answer about “no gradients” alone does not establish no leakage.
-
 ## Why a local context can make a frozen model more expressive
 
 > **In plain terms.** A frozen model has exactly one fixed rule. But if you hand each query a *different* set of nearby examples, the composed system behaves differently in different regions — even though no weight ever changes.
@@ -130,6 +120,8 @@ That last clause prevents an easy bug. If a retrieved context contains only clas
 
 Exclusion must use row identity. Two distinct customers can have identical feature values. Removing every distance-zero row would remove both; removing the first sorted neighbor can leave the anchor under ties. Our stable tie policy preserves candidate row order and masks the matching original ID. Context and query IDs are disjoint within each episode. Episodes may overlap each other because every one is drawn from the authorized outer training pool. Such overlap is ordinary minibatch reuse, not test leakage.
 
+**Worked identity trace.** Memory rows are `A: x=0`, `B: x=0`, and `C: x=1`. For an episode anchored at A, exclude only ID A. With k=2, the eligible neighbors are B and C at squared distances 0 and 1. Rejecting every zero-distance row would wrongly remove B. If the candidate order is `[B,A,C]`, a stable sort gives `[B,A,C]`; blindly deleting the first result would remove B and leave the anchor A. **Try it:** reorder those candidates and check that identity-based exclusion always removes A while allowing B. The separate context/query split must then keep original IDs disjoint.
+
 > **Scope check.** There is a paper/source discrepancy worth preserving rather than hiding: final paper footnote 2 explicitly excludes the anchor, while the released `train_ft_knn` retains it in the search result before shuffling. Retaining one anchor does not itself put the same row into both context and query, but it changes the sampling distribution. The active lab follows the paper's exclusion rule and records every anchor and episode. Copied-input source checks compare the same constructed episodes; they do not certify equality of those two samplers.
 
 ## How much computation does sharing save?
@@ -154,7 +146,7 @@ Exclusion must use row identity. Two distinct customers can have identical featu
 
 ## Fine-tune the query loss, then select using validation only
 
-> **In plain terms.** Fine-tuning trains on the *query* labels only, never the context labels. Then a separate validation set — not the test set — picks which training step to keep, and “keep the frozen model” is always allowed to win.
+> **In plain terms.** The loss directly scores only the episode’s query labels. Context labels still shape the forward computation and therefore its gradients; a row can switch roles in a later training episode. Then a separate validation set — not the test set — picks which training step to keep, and “keep the frozen model” is always allowed to win.
 
 ### The loss
 
@@ -177,6 +169,8 @@ AdamW maintains first and second moving averages of each gradient. After bias co
 Validation AUC selects a state before test scoring. **AUC** is the fraction of positive-negative pairs ranked in the correct order, with half credit for ties. Step 0 must be a candidate: when later adaptation harms validation ranking, retaining the frozen state is a valid result. Our strict earliest-maximum rule retains the earlier state on ties. We evaluate step 0 and step 30, then score only the selected state on the test set.
 
 > **Scope check.** This is two-candidate selection, not a reproduction of a long early-stopping trajectory. Parameter change at the final step can be nonzero even when the selected step is zero.
+
+> **Replay limitation found in the independent audit.** The archived step-0 trace contains an AUC and weight hash, but no validation probabilities. On blood transfusion, seed 7, its saved AUC is 0.69347; fresh local and original-source inference both give 0.69201. Without the original probabilities we cannot establish the cause or claim exact baseline replay. The fresh source audit still selects the same checkpoint in every declared run and checks the saved adapted predictions. Agreement on the selected state does not repair the missing baseline evidence. A new experiment should archive validation probabilities for every candidate, including step 0.
 
 <!--figure:selection-->
 
