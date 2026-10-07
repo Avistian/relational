@@ -271,7 +271,7 @@ def build_package(notebooks=True,render=True):
   if m:body+=figure(m[1])+('<div id="l064-cost" class="l064-widget"><p>Interactive dimension controls require JavaScript. The figure above retains the baseline arithmetic.</p></div>' if m[1]=='cost' else '')
   else:body+=markdown2html_mistune(part)
  head=f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 064 · {TITLE}</title>'+''.join(f'<link rel="stylesheet" href="../assets/{x}.css">' for x in ['lesson','foundation-course','lab-access','l064-tabpfn'])+'</head><body class="l064"><article>'
- opening='<nav><a href="../index.html">Course</a> · <a href="0063-synthetic-scm-prior.html">← Lesson 063</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 064</p><h1>'+TITLE+'</h1>'+launcher()+'<section id="retrieval"><h2>Retrieve before reading</h2><div id="warmup"></div></section><div id="prediction"></div>'
+ opening='<nav><a href="../index.html">Course</a> · <a href="0063-synthetic-scm-prior.html">← Lesson 063</a> · <a href="0065-tabpfn-query-embeddings.html">Lesson 065 →</a></nav><p class="mission-tag">Year 2 · Quarter 3 · Lesson 064</p><h1>'+TITLE+'</h1>'+launcher()+'<div id="prediction"></div>'
  scripts=''.join(f'<script src="../assets/{x}.js"></script>' for x in ['retrieval-pool','retrieval-bank','predict','teachback','l064-tabpfn-viz'])
  page=head+opening+body+'<section id="lab"><h2>Run the companion lab</h2>'+launcher()+'<div id="teachback"></div></section></article>'+scripts+'</body></html>'
  soup=BeautifulSoup(page,'html.parser')

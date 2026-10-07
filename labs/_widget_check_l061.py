@@ -21,8 +21,8 @@ with sync_playwright() as p:
   page.locator('#gp-reset').click();assert page.locator('#gp-query').input_value()=='0.8'
   page.locator('#gp-query').focus();page.keyboard.press('ArrowLeft');assert page.locator('#gp-query').input_value()=='0.79'
   page.locator('#gp-reset').click();page.locator('#gp-conditioning-viz').screenshot(path=f'/tmp/l061-widget-{width}.png')
-  page.locator('.arch-atlas').screenshot(path=f'/tmp/l061-architecture-{width}.png')
-  page.emulate_media(media='print');assert page.locator('.arch-atlas').is_visible()
+  page.locator('.solution-map').first.screenshot(path=f'/tmp/l061-architecture-{width}.png')
+  page.emulate_media(media='print');assert page.locator('.solution-map').first.is_visible()
   page.close()
  browser.close()
 server.shutdown();assert not errors,errors

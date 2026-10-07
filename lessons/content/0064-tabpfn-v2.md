@@ -176,6 +176,16 @@ A **view** is a transformed presentation of the same context/query task. In rele
 
 **How views are combined.** The default classifier averages four inference views; the regression default uses eight. Shuffling class labels requires undoing that permutation on output coordinates. The historical classifier normally averages **probabilities**, not logits: softmax each aligned view at temperature 0.9, then average. Since softmax is nonlinear, swapping these operations defines another predictor. Post-hoc ensembling adds a further selection procedure with held-out data; it is different from averaging four fixed views.
 
+**Worked example: hold the logits and temperature fixed.** Suppose two views have already been aligned to the same class order. Their logits are `[3,0]` and `[0,1]`. At temperature .9:
+
+| View | P(class 0) | P(class 1) |
+|---|---:|---:|
+| A: softmax([3,0]/.9) | .965555 | .034445 |
+| B: softmax([0,1]/.9) | .247664 | .752336 |
+| Mean probabilities | .606609 | .393391 |
+
+That last row is the v2-style combination. Averaging the logits first gives `[1.5,.5]`, whose softmax at the same temperature is `[.752336,.247664]`. The class choice happens to agree here, but the probabilities differ substantially. This isolates the combining operation from temperature; Lesson 062's historical v1 recipe also uses a different temperature, .8. **Try it:** make both views identical and verify that the two combining orders agree. Then explain why agreement on identical views cannot test whether an ensemble implementation uses the intended order.
+
 > **Scope check.** Read [Supplementary Tables 1–4](https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41586-024-08328-6/MediaObjects/41586_2024_8328_MOESM1_ESM.pdf) for raw per-dataset scores and [Tables 5–6](https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41586-024-08328-6/MediaObjects/41586_2024_8328_MOESM2_ESM.pdf) for development datasets. Development choices can use real datasets even when gradient pretraining is synthetic. "Synthetic-only pretraining" does not mean no real data informed architecture or inference defaults.
 
 ## New local evidence: do the labels supply useful information?
@@ -184,7 +194,7 @@ A **view** is a transformed presentation of the same context/query task. In rele
 
 **Predict before inspecting the plot.** Keep the checkpoint, context features, query features, split, class counts and temperature fixed. Randomly permute only the context labels. Should query log loss improve or worsen? Would the result prove that attention recovered a correct causal graph? Explain your expectation before running.
 
-**The panel.** The author panel performs fresh visible-model inference on every row of diabetes, blood transfusion and Wisconsin diagnostic breast cancer, with three stratified 50/50 split seeds per dataset. WDBC uses sklearn's 569×30 UCI copy; it is not claimed to reconstruct an official OpenML task split. Each split has observed and shuffled-label conditions, evaluated on exactly the same held-out targets. The shuffled condition preserves label counts but destroys the feature–label association within the context. It is an intervention on inputs to a frozen model, not a newly trained competing method.
+**The panel.** The author panel performs fresh visible-model inference on every row of diabetes, blood transfusion and Wisconsin diagnostic breast cancer, with three stratified 50/50 split seeds per dataset. WDBC uses sklearn's 569×30 UCI copy; it is not claimed to reconstruct an official OpenML task split. Each split has observed and shuffled-label conditions, evaluated on exactly the same held-out targets. The shuffled condition preserves label counts but breaks the original feature–label pairing within the context. Chance association can remain in a finite permutation; worse loss on every split is an empirical result, not a guarantee. It is an intervention on inputs to a frozen model, not a newly trained competing method.
 
 <!--figure:results-->
 

@@ -31,6 +31,34 @@ p(y | x,D) = ∫ p(y | x,t) p(t | D) dt
 <div class="highlight"><pre><span></span>P(next label = 1 | D) = (α+s)/(α+β+s+f)
 Beta(1,1), labels [1,0,1] -&gt; Beta(3,2) -&gt; 3/5 = 0.6
 </pre></div>
+<p><strong>One prediction versus a joint prediction.</strong> Keep the same <code>Beta(3,2)</code> posterior and ask for two future labels. Each has success probability .6, but their joint success probability is <code>E[θ²|D] = 3×4/(5×6) = .4</code>, not <code>.6² = .36</code>. Both labels share the same uncertain coin bias. They are independent given θ, but become dependent when we average over θ.</p>
+<div aria-label="Scrollable comparison table" class="lesson-table-scroll" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>Future pair</th>
+<th style="text-align:right">Joint probability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1, 1</td>
+<td style="text-align:right">.4</td>
+</tr>
+<tr>
+<td>1, 0</td>
+<td style="text-align:right">.2</td>
+</tr>
+<tr>
+<td>0, 1</td>
+<td style="text-align:right">.2</td>
+</tr>
+<tr>
+<td>0, 0</td>
+<td style="text-align:right">.2</td>
+</tr>
+</tbody>
+</table></div>
+<p>The entries sum to one and each label's marginal success probability is .6. Multiplying two separately correct marginal predictions therefore need not recover the correct joint distribution. <strong>Try it:</strong> after the first future label is 1, update to <code>Beta(4,2)</code>; the second success probability becomes <code>4/6</code>, which also gives <code>.6×4/6=.4</code> for the pair. Later in this lesson, the GP oracle has a joint query covariance while the PFN head emits separate query marginals. This distinction explains what that head can and cannot report.</p>
 <p><strong>What the number tells you.</strong> This shrinks the empirical rate <code>2/3</code> toward the prior mean <code>1/2</code>. With no observations it returns the prior mean; with many observations the prior's relative weight decreases. Counts retain everything needed for this exchangeable coin task, but they cannot encode where a function was observed. Two regression contexts with identical target counts but different feature locations usually give different predictions.</p>
 <blockquote>
 <p><strong>Scope check.</strong> The historical package trained a <strong>CountPFN</strong>, an MLP of those sufficient statistics. Its <a href="../labs/_verify_l061_results.json">old measurements</a> remain available with their original operator identity. That is a useful objective sanity check, but it omits learned row representations, attention and a regression density. The current lab implements the learned row representations, attention and regression density that the coin experiment omits.</p>

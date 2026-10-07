@@ -36,6 +36,17 @@ P(next label = 1 | D) = (α+s)/(α+β+s+f)
 Beta(1,1), labels [1,0,1] -> Beta(3,2) -> 3/5 = 0.6
 ```
 
+**One prediction versus a joint prediction.** Keep the same `Beta(3,2)` posterior and ask for two future labels. Each has success probability .6, but their joint success probability is `E[θ²|D] = 3×4/(5×6) = .4`, not `.6² = .36`. Both labels share the same uncertain coin bias. They are independent given θ, but become dependent when we average over θ.
+
+| Future pair | Joint probability |
+|---|---:|
+| 1, 1 | .4 |
+| 1, 0 | .2 |
+| 0, 1 | .2 |
+| 0, 0 | .2 |
+
+The entries sum to one and each label's marginal success probability is .6. Multiplying two separately correct marginal predictions therefore need not recover the correct joint distribution. **Try it:** after the first future label is 1, update to `Beta(4,2)`; the second success probability becomes `4/6`, which also gives `.6×4/6=.4` for the pair. Later in this lesson, the GP oracle has a joint query covariance while the PFN head emits separate query marginals. This distinction explains what that head can and cannot report.
+
 **What the number tells you.** This shrinks the empirical rate `2/3` toward the prior mean `1/2`. With no observations it returns the prior mean; with many observations the prior's relative weight decreases. Counts retain everything needed for this exchangeable coin task, but they cannot encode where a function was observed. Two regression contexts with identical target counts but different feature locations usually give different predictions.
 
 > **Scope check.** The historical package trained a **CountPFN**, an MLP of those sufficient statistics. Its [old measurements](../labs/_verify_l061_results.json) remain available with their original operator identity. That is a useful objective sanity check, but it omits learned row representations, attention and a regression density. The current lab implements the learned row representations, attention and regression density that the coin experiment omits.

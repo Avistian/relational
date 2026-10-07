@@ -189,11 +189,12 @@ def revise_notebook(n,path):
     placements=[]
     def find(anchor):
         aliases={48:{'Derive the cross layer':'Task 1 — the dense cross update','Why the degree grows':'Task 2 — a low-rank cross','Low rank:':'Task 2 — a low-rank cross','Where does the deep':'Task 3 — route the deep branch','Extension: a mixture':'Task 4 — mix nonlinear expert updates','The local evidence':'Train the comparison','Reproduction:':'The full-data paper-results attempt'},57:{'Different mistakes':'Concept recap','Measure the gain':'Interpretation checkpoint'},63:{'Sparsity is a task':'Sparsity changes the world'},62:{'Combining several views':'Ensembling means aligning','What the experiment measured':'What was measured here'}}
-        anchor=aliases.get(n,{}).get(anchor,anchor)
-        for i,c in enumerate(nb.cells):
-            if c.cell_type!='markdown' or c.metadata.get('solution_map') or c.metadata.get('solution_story'):continue
-            headings=re.findall(r'^#{1,3}\s+(.+)',c.source,re.M)
-            if any(normalize(anchor) in normalize(BeautifulSoup(h,'html.parser').get_text()) for h in headings):return i
+        # Current manuscript headings take precedence; aliases support old notebooks.
+        for candidate in dict.fromkeys([anchor, aliases.get(n,{}).get(anchor,anchor)]):
+            for i,c in enumerate(nb.cells):
+                if c.cell_type!='markdown' or c.metadata.get('solution_map') or c.metadata.get('solution_story'):continue
+                headings=re.findall(r'^#{1,3}\s+(.+)',c.source,re.M)
+                if any(normalize(candidate) in normalize(BeautifulSoup(h,'html.parser').get_text()) for h in headings):return i
         return None
     for i,(anchor,text) in enumerate(story['seams']):
         idx=find(anchor);assert idx is not None,(n,'notebook section missing',anchor)

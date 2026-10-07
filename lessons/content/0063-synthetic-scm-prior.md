@@ -6,6 +6,8 @@ Start with a fact about real tables. The columns of a database table can depend 
 
 Correlation has more than one source. Two observed columns can correlate because one causes the other. They can also correlate because they share an unobserved cause. They can even correlate because the process that selected the rows coupled them. A useful supervised predictor can exploit those associations without identifying which causal story is true.
 
+**A small selection example.** Let two independent binary variables X and Y each be 1 with probability one half. The four pairs `00,01,10,11` are equally likely. Now keep a row only if at least one variable is 1. The selected table has only `01,10,11`, each with conditional probability one third. Within it, `P(Y=1 | X=0, selected)=1`, while `P(Y=1 | X=1, selected)=1/2`. Selection created an association even though neither variable caused the other. In graph notation, `X → S ← Y` means both determine the selection flag S; conditioning on `S=1` couples them. **Try it:** retain all four pairs again and verify that both conditional probabilities return to one half. The row-selection rule belongs on a prior card alongside the graph.
+
 **Where this sits in the sequence.** Lesson 061 trained a prior-data fitted network, or **PFN**, to predict from a context. A **context** is a set of labeled examples of a new task. Lesson 062 traced a released TabPFN v1 checkpoint through a real prediction. Here we open the other half of that system: the **distribution of synthetic tasks** used to teach such an inference algorithm.
 
 Your tangible outcome is a runnable prior card. You will sample one mechanism. You will generate a table through it. You will inspect what becomes visible, form classes, and diagnose which assumptions change a prediction.
@@ -132,11 +134,13 @@ For the relational mission, these are still single-row variable graphs. A custom
 
 ## How a continuous mechanism becomes an imbalanced multiclass task
 
-> **In plain terms.** The generator first produces a single real number per row. To make class labels, it slices that number line at random cut points and then *renames* the slices. Renaming is what makes the classes unordered and lets classes be imbalanced.
+> **In plain terms.** The generator first produces a single real number per row. To make class labels, it slices that number line at random cut points and then *renames* the slices. The cut points determine class counts and can create imbalance. Renaming removes the ordering of class IDs without changing those counts.
 
 **The rule.** The generator first supplies a real-valued target z. Section 4.5 samples K−1 target values as class bounds and counts how many bounds each target strictly exceeds: `r_i = Σ_j 1[z_i > B_j]`. It may then permute class identities. Integer labels are names; a class labeled 2 need not be semantically between classes 1 and 3.
 
 **Worked example.** For targets `(-1,−.1,.2,.5,1)`, choose bounds `(-.1,.5)`. The ranks are `(0,0,1,1,2)`: equality belongs to the lower interval because the comparison is strict. Relabel ranks through permutation `(2,0,1)` and the observed labels become `(2,2,0,0,1)`. A mean or median threshold cannot reproduce this multiclass rule.
+
+**Check the counts.** Before relabeling, the counts are `(2,2,1)`; afterward they are `(2,1,2)`. The smallest class still has one row. Change the first bound from −.1 to .2 while holding the targets fixed: strict-threshold counts become `(3,1,1)`. Moving a bound changes class balance; renaming the classes does not. Trace both operations separately in your prior card.
 
 **Two consequences to expect.** Sampling bounds with replacement can repeat a value, making an interval empty. Repeated targets can also create ties. Do not force every class to appear merely because K was sampled.
 
