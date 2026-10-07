@@ -24,7 +24,7 @@ for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['sum_neighbors','relation_output','merge_relations']:assert stu[name]==node,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/hetero-conv-reg.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l133.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l133.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l133').glob('*'));before=[sha(p) for p in figs]
 subprocess.run([sys.executable,str(P/'_figures_l133.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0
@@ -43,10 +43,10 @@ with sync_playwright() as pw:
   slider.focus();page.keyboard.press('ArrowRight');assert slider.input_value()=='5'
   w.get_by_role('button',name='Reset',exact=True).click()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
-  assert page.locator('figure').count()==4
-  assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)')
+  assert page.locator('figure').count()==5
+  page.locator('figure img').evaluate_all('(xs)=>xs.forEach(x=>x.loading="eager")');page.wait_for_function('Array.from(document.querySelectorAll("figure img")).every(x=>x.complete && x.naturalWidth>0)');assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)')
   page.locator('figure').nth(1).screenshot(path=f'/tmp/l133-arithmetic-{width}.png');w.screenshot(path=f'/tmp/l133-widget-{width}.png')
- page.emulate_media(media='print');assert page.locator('article').is_visible();assert page.locator('figure').count()==4;page.emulate_media(media='screen')
+ page.emulate_media(media='print');assert page.locator('article').is_visible();assert page.locator('figure').count()==5;page.emulate_media(media='screen')
  page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('figure img[src^="data:image/png;base64,"]').count()==4
  nojs=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});np=nojs.new_page();np.goto((R/'lessons'/f'{S}.html').as_uri());assert 'empty →10' in np.locator('noscript').inner_text();assert not np.evaluate('document.documentElement.scrollWidth>innerWidth+1');nojs.close();browser.close()
 class Links(HTMLParser):

@@ -19,7 +19,7 @@ for r in scale['configurations']:
 results+=f"\nPreprocessing: **{scale['preprocessing_s']:.2f} s**. Peak process host RSS: **{scale['peak_host_rss_kib']/1024:.1f} MiB**, distinct from GPU memory. Measured on **{scale['gpu']}**. Loader construction and warmups are retained in the raw evidence.\n"
 results+='\n[Raw scale measurements](../labs/evidence/l134/scale/scale.json). The official database endpoint served bytes differing from the historical registry: the first attempt stopped before training, and the recovery pins the obtained SHA256. This scale lane uses that pinned official archive; historical database identity is NOT_ESTABLISHED. F1 archives match their expected hashes.\n'
 if (P/'_notebook_gpu_l134_results.json').exists():
- results+='\n**Portable full-training path: PASS.** All 22 notebook code cells ran in a separate pinned GPU Python namespace, including five fresh complete F1 fits and another 6,295 independently checked predictions. These are validation runs, not replacements for the primary five-seed result. Live Colab frontend remains NOT_CHECKED. [GPU code-path evidence](../labs/_notebook_gpu_l134_results.json).\n'
+ results+='\n**Archived portable full-training path: PASS.** All 22 original notebook code cells ran in a separate pinned GPU Python namespace, including five fresh complete F1 fits and another 6,295 independently checked predictions. These are validation runs, not replacements for the primary five-seed result. The current notebook adds per-record timing/count validation and its checks; all other code is AST-identical to the archived executed code. Fresh local replay validates that change; the GPU training has not been rerun. Live Colab frontend remains NOT_CHECKED. [GPU code-path evidence](../labs/_notebook_gpu_l134_results.json).\n'
 captions={'batch':'From full host graph to query-owned sampled coordinates, encoded occurrences, typed layers and seed-only loss.','frontier':'A typed no-collision expansion counts 32 occurrences and 30 edges; it is not measured peak memory.','scores':'Five fresh complete F1 runs against published means. Sample seed variability is not a confidence interval.','measurements':'Measured full-topology scale workload with simplified features; sampling, transfer and optimizer step are timed separately.'}
 def prose(portable=False,student=False):
  text=(R/'lessons/content'/f'{S}.md').read_text().replace('[[RESULTS]]',results)
@@ -34,7 +34,7 @@ def prose(portable=False,student=False):
  return text
 
 def document(title,text,interactive=False):
- body=render(text).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(text)).replace('</table>','</table></div>')
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join(f'<link rel="stylesheet" href="../assets/{x}.css">' for x in ['lesson','event-snapshot','reproduction','rdl-stack-viz'])+'</head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0133-hetero-conv-reg.html">Lesson133</a></nav><header><p class="stream-kicker">Year4 · Quarter2 · Lesson134</p><h1>'+title+'</h1></header>'+body+'</article>'+('<script src="../assets/l134-lesson.js"></script>' if interactive else '')+'</body></html>'
 (R/'lessons'/f'{S}.html').write_text(document(TITLE,prose(),True))
 reference='''## A batch has three identities

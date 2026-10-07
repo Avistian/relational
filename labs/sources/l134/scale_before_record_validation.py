@@ -43,17 +43,6 @@ def audit_queries(times, owners, cutoffs, edges):
 def profile_summary(records):
     """Ratio of totals, with audit overhead reported separately; callers exclude warmups."""
     if not records:raise ValueError('No measured batches')
-    # Validate each observation before aggregation: bad rows can cancel in a sum.
-    try:
-        for row in records:
-            if any(not math.isfinite(float(row[k])) or float(row[k]) < 0
-                   for k in ['sample_s', 'transfer_s', 'step_s', 'audit_s']):
-                raise ValueError('Invalid batch timing')
-            count = row['queries']
-            if isinstance(count, bool) or int(count) != count or count <= 0:
-                raise ValueError('Batch queries must be positive integers')
-    except (KeyError, TypeError, OverflowError) as exc:
-        raise ValueError('Malformed batch measurement') from exc
     timing={k:sum(float(r[k]) for r in records) for k in ['sample_s','transfer_s','step_s','audit_s']}
     if any(not math.isfinite(v) or v<0 for v in timing.values()):raise ValueError('Invalid timing')
     seconds=sum(timing[k] for k in ['sample_s','transfer_s','step_s'])

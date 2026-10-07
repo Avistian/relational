@@ -17,7 +17,8 @@ assert not any(c.outputs for c in student.cells if c.cell_type=='code')
 code='\n\n'.join(c.source for c in solution.cells if c.cell_type=='code')
 assert all(c.execution_count is not None and not any(o.output_type=='error' for o in c.outputs) for c in solution.cells if c.cell_type=='code')
 assert hashlib.sha256(code.encode()).hexdigest()==json.loads((P/'_execution_l134_results.json').read_text())['executed_code_sha256']
-assert hashlib.sha256(code.encode()).hexdigest()==json.loads((P/'_notebook_gpu_l134_results.json').read_text())['code_sha256']
+from _profile_provenance_l134 import verify_profile_provenance
+verify_profile_provenance(code)
 def definitions(s):return {n.name:ast.dump(n,include_attributes=False) for n in ast.parse(s).body if isinstance(n,(ast.FunctionDef,ast.ClassDef))}
 canonical=definitions((P/'relkit/scale_l134.py').read_text());sol=definitions(code);stu=definitions('\n\n'.join(c.source for c in student.cells if c.cell_type=='code'))
 for name,node in canonical.items():
@@ -25,7 +26,7 @@ for name,node in canonical.items():
  assert sol[name]==node,name
  if name not in ['frontier_bound','audit_queries','profile_summary']:assert stu[name]==node,name
 paths=[R/'lessons'/f'{S}.html',R/'reference/training-at-scale.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb'];before=[sha(p) for p in paths]
-subprocess.run([sys.executable,str(P/'_build_l134.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
+subprocess.run([sys.executable,str(P/'_build_l134.py')],check=True,capture_output=True);subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert before==[sha(p) for p in paths],'Builder drift'
 figs=sorted((P/'figures/l134').glob('*'));before=[sha(p) for p in figs]
 subprocess.run([sys.executable,str(P/'_figures_l134.py')],check=True,capture_output=True);assert before==[sha(p) for p in figs],'Figure drift'
 errors=[];states=0
@@ -46,7 +47,7 @@ with sync_playwright() as pw:
   w.get_by_role('button',name='Reset',exact=True).click()
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflow'
   assert page.locator('figure').count()==4
-  assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)')
+  page.locator('figure img').evaluate_all('(xs)=>xs.forEach(x=>x.loading="eager")');page.wait_for_function('Array.from(document.querySelectorAll("figure img")).every(x=>x.complete && x.naturalWidth>0)');assert page.locator('figure img').evaluate_all('(xs)=>xs.every(x=>x.complete && x.naturalWidth>0)')
   page.locator('figure').nth(1).screenshot(path=f'/tmp/l134-arithmetic-{width}.png');w.screenshot(path=f'/tmp/l134-widget-{width}.png')
  page.emulate_media(media='print');assert page.locator('article').is_visible();assert page.locator('figure').count()==4;page.emulate_media(media='screen')
  page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('figure img[src^="data:image/png;base64,"]').count()==4
@@ -80,5 +81,5 @@ with tempfile.TemporaryDirectory(prefix='l134-pages-') as tmp:
    page.goto(base+'/lessons/'+S+'.html');assert 'Total 32 occurrences;' in page.locator('#l134-budget output').inner_text();browser.close()
  finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors
-r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',print_nojs='PASS',portable_figures=4,live_tasks=3,full_training_code_path='PASS; separate pinned GPU namespace',canonical_definitions=len(canonical),executed_code_hash='MATCH',deterministic_rebuild='EXACT',copied_pages_links=checked,javascript_errors=errors,screenshots='/tmp/l134-*.png',live_colab='NOT_CHECKED',deployment='NOT_CHECKED',clean_committed_checkout='NOT_CHECKED; working-tree staging only')
+r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',print_nojs='PASS',portable_figures=4,live_tasks=3,full_training_code_path='ARCHIVED_PASS; unchanged training AST, current measurement guards checked locally',canonical_definitions=len(canonical),executed_code_hash='MATCH',deterministic_rebuild='EXACT',copied_pages_links=checked,javascript_errors=errors,screenshots='/tmp/l134-*.png',live_colab='NOT_CHECKED',deployment='NOT_CHECKED',clean_committed_checkout='NOT_CHECKED; working-tree staging only')
 (P/'_delivery_l134_results.json').write_text(json.dumps(r,indent=2));print(r)

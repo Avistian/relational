@@ -66,3 +66,20 @@ Completed all three configurations on 4,247,264 nodes and 11,625,774 directed ed
 Mean sampled occurrences per batch 3066.5/4913.3/9687.3; core throughput 2198.2/2148.9/4076.4 queries/s for B64[8,4],B64[16,8],B128[16,8]. Peak allocated 25.0/30.56/42.22 MiB; peak host RSS 5639.8 MiB. Preprocessing 17.01 s. All 6,144measured query occurrences pass ownership/time/source-edge checks. Warmup updates and per-batch loss/timing/memory/query IDs are retained. These timings are descriptive, single-pass, fixed-order measurements.
 
 Final verification: all eight named evidence groups PASS (`_final_l134_results.json`). Separate portable GPU validation executed all22cells and five complete fresh fits; its validation/test means3.194139/4.144983MAE remain separate from primary results. All6295validation-run predictions independently rescored. Desktop/mobile54interactive states, keyboard/reset/noJS/print, deterministic builders and43copied-Pageslinks PASS. Total recorded worker estimate USD0.145069; conservative allocation ceilingUSD9.625184. No liveColab/deployment or clean-committed-checkout claim.
+
+### Timing-record validation correction, October 2026
+
+The current `profile_summary` rejects each negative/nonfinite duration and each
+nonpositive/nonintegral query count before aggregation. The archived version
+could hide a negative duration behind a positive one, and truncate a fractional
+query count. Run `python labs/_profile_record_check_l134.py` for the regression
+and exact comparison of all three saved workload summaries.
+
+Original source and GPU-notebook bytes are preserved under
+`sources/l134/scale_before_record_validation.py` and
+`sources/l134/notebook_before_record_validation.py.gz`. The provenance check
+matches their historical hashes and permits only the summarizer and its checker
+to differ in current notebook code. The revised 22-cell default notebook was
+executed locally. Historical GPU training was not rerun. The summary's reserved
+scale ceiling was also recomputed over all six existing reservations; no new
+worker was dispatched.

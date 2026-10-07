@@ -12,7 +12,7 @@
 
 On a narrow screen, scroll diagrams horizontally to keep their labels readable.
 
-**Route:** retrieve → align one prediction table → trace normalization → audit board coverage → defend a claim. The core lesson takes about 45–60 minutes. Full author experiments are evidence to inspect; they do not count as your mastery.
+**Route:** align one prediction table → trace normalization → audit board coverage → defend a claim. The core lesson takes about 45–60 minutes. Full author experiments are evidence to inspect; they do not count as your mastery.
 
 [Student notebook](../labs/0136-leaderboard-literacy.ipynb) · [Executed reference](../labs/html/0136-leaderboard-literacy.html) · [Solution notebook](../labs/solutions/0136-leaderboard-literacy.ipynb) · [Reference card](../reference/leaderboard-literacy.html) · [Commands and evidence](../labs/l136-reproduction.md)
 
@@ -22,7 +22,7 @@ On a narrow screen, scroll diagrams horizontally to keep their labels readable.
 
 
 
-<details><summary>Check your retrieval</summary>A temporal query is an entity and a prediction cutoff. Validation selects the checkpoint. Five seeds probe fitting variability on the chosen task and split, not variation across databases.</details>
+
 
 Our mission is to make evidence for relational learning credible to a skeptic. Ranking a method is useful only after identifying what was ranked. This lesson therefore carries three separate statements through the same workflow: the score is correct; the training setup is recoverable; the comparison supports the claim. Each needs different evidence.
 
@@ -78,6 +78,14 @@ For F1 the pinned denominator is **7.025733902396073**. A historical result of `
 The pinned regression board contains **nine tasks**. Each contributes one ninth of the aggregate, regardless of its number of test queries. This is an arithmetic mean of task NMAEs; it is not a mean of ranks and not a pooled average over every query.
 
 **Worked example.** Two illustrative tasks have scores `0.1` and `0.5`. Their board mean is `(0.1+0.5)/2 = 0.3`. If the second task is omitted, `0.1` is only a partial mean. It is not a better complete-board result.
+
+**Weighting can reverse the winner.** Consider two illustrative tasks with fixed normalization scales. Model A is better on the small task; B is better on the large task:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Task</th><th>Queries</th><th>A NMAE</th><th>B NMAE</th></tr></thead><tbody><tr><td>Small</td><td>10</td><td>0.1</td><td>0.3</td></tr><tr><td>Large</td><td>90</td><td>0.9</td><td>0.8</td></tr></tbody></table>
+
+An equal-task mean gives **A = 0.50, B = 0.55**, so A wins. Weighting each task by its query count gives **A = 0.82, B = 0.75**, so B wins. The latter averages per-query *normalized* errors; it does not mix raw errors in different units. These are two different declared objectives. The pinned board uses the first: each task has equal weight.
+
+**Transfer check.** Duplicate every query in the large task while preserving predictions, labels and normalization. Its NMAE and the equal-task board score remain unchanged; a query-weighted score changes. Explain why a correct per-task score alone cannot establish that an aggregate implements the board's contract. Choose the weighting rule before comparing winners.
 
 [[FIG:coverage]]
 [[COVERAGE_WIDGET]]

@@ -28,6 +28,16 @@ def check_summary(fn):
     r=fn(rows)
     assert r['queries']==8 and math.isclose(r['queries_per_second'],8/6) and r['peak_allocated_bytes']==120
     assert math.isclose(r['audited_queries_per_second'],8/24)
+    # Negative observations must not hide behind a positive aggregate.
+    for field in ['sample_s', 'transfer_s', 'step_s', 'audit_s']:
+        broken=[dict(rows[0], **{field:-1.}), dict(rows[1], **{field:2.})]
+        try:fn(broken)
+        except ValueError:pass
+        else:raise AssertionError('Negative batch timing accepted: '+field)
+    for count in [-1, 0, 1.5, True, float('nan'), float('inf')]:
+        try:fn([dict(rows[0],queries=count)])
+        except ValueError:pass
+        else:raise AssertionError('Invalid query count accepted')
     try:fn([])
     except ValueError:pass
     else:raise AssertionError('Empty timing accepted')
@@ -45,5 +55,5 @@ if __name__=='__main__':
     assert path.exists(),'Missing visible sampling implementation'
     from relkit.scale_l134 import frontier_bound,audit_queries,profile_summary,reserve_cost
     for check,fn in [(check_bound,frontier_bound),(check_audit,audit_queries),(check_summary,profile_summary),(check_budget,reserve_cost)]:check(fn)
-    r=dict(status='PASS',contracts=4,negative_cases=6)
+    r=dict(status='PASS',contracts=4,negative_cases=18)
     Path(__file__).with_name('_check_l134_results.json').write_text(json.dumps(r,indent=2));print(r)

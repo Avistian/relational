@@ -29,7 +29,7 @@ def prose(portable=False,student=False):
  return text
 
 def doc(title,text,interactive=False):
- body=render(text).replace('<table>','<div class="stream-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="stream-scroll" tabindex="0"><table\1>',render(text)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','teachback','leaderboard-contract-viz'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join(f'<link rel="stylesheet" href="../assets/{s}.css">' for s in ['lesson','tuning-budget'])+'</head><body><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0135-tuning-on-reg.html">Lesson 135</a></nav><header><p class="stream-kicker">Year 4 · Quarter 2 · Lesson 136</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join(f'<script src="../assets/{s}.js"></script>' for s in scripts)+'</body></html>'
 (R/'lessons'/f'{SLUG}.html').write_text(doc(TITLE,prose(),True))

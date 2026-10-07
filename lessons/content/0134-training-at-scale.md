@@ -10,7 +10,7 @@
 
 **Your win:** configure a temporal heterogeneous mini-batch, prove that its messages belong to the right prediction query, and defend a measured throughput/memory trade-off.
 
-**Route:** 5 minutes of retrieval → 15 minutes tracing a batch → 20 minutes of live code → 10 minutes defending the measurements. The full reproduction is an author/reference experiment; executing it is optional and does not replace your answers.
+**Route:** 15 minutes tracing a batch → 20 minutes of live code → 10 minutes defending the measurements. The full reproduction is an author/reference experiment; executing it is optional and does not replace your answers.
 
 [Student notebook](../labs/0134-training-at-scale.ipynb) · [Executed reference](../labs/html/0134-training-at-scale.html) · [Solution notebook](../labs/solutions/0134-training-at-scale.ipynb) · [Quick reference](../reference/training-at-scale.html) · [Reproduction commands](../labs/l134-reproduction.md)
 
@@ -20,7 +20,7 @@ In [Lesson 133](0133-hetero-conv-reg.html), you opened the relation-specific tra
 
 
 
-<details><summary>Check your retrieval</summary>A prediction is keyed by entity and cutoff. Two queries can refer to one entity at different times, requiring different neighborhoods; disjoint temporal sampling keeps their occurrences separate. The head's first B seed outputs receive the B query labels. Context rows provide messages but are not extra labelled examples.</details>
+
 
 The primary reading is the [RelBench v1 paper, §4 and Appendix B](https://arxiv.org/html/2407.20060v1), followed by the [pinned released loader configuration](https://github.com/snap-stanford/relbench/blob/9aa346267c2e1c560bd92da07d6f4ad1ca2f0639/examples/gnn_node.py). This lesson preserves that release's inclusive node-time cutoff and uniform strategy. A stricter deployment rule is a different experiment.
 
@@ -69,6 +69,16 @@ GPU operations are asynchronous. Wall-clock timing around a forward call without
 
 **TODO 3:** aggregate throughput as total seed queries divided by total measured seconds. Do not average per-batch rates: small final batches and unequal durations make that biased. Return both a core rate (sample + transfer + step) and an audit-inclusive rate. Peak allocated memory measures live tensor allocations; peak reserved memory includes the CUDA caching allocator's pool. Neither is total process GPU usage.
 
+**Worked throughput trace.** Suppose one batch completes 100 queries in 1 second of core time, and a second completes 20 in 3 seconds. Core time here includes sampling, transfer and the optimizer step. Each batch also takes 0.5 seconds of audit time.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:.4em .25em"><thead><tr><th>Batch</th><th>Queries</th><th>Core seconds</th><th>Queries/s</th></tr></thead><tbody><tr><td>A</td><td>100</td><td>1</td><td>100</td></tr><tr><td>B</td><td>20</td><td>3</td><td>6.667</td></tr></tbody></table>
+
+Together they complete **120 / 4 = 30 queries/s**. Averaging the two rates gives about 53.33, which answers a different question. Including the one second of audits gives **120 / 5 = 24 queries/s**. These are illustrative timings, not the measured workload below.
+
+**Check the inputs first.** A batch duration of −1 second followed by +2 seconds has a plausible positive total but contains an invalid observation. Reject each negative or nonfinite timing before summing. Query counts must be positive integers; truncating 1.5 to 1 conceals malformed evidence. The live checker tests these cases.
+
+**Transfer check.** Split batch B into two records of 10 queries and 1.5 core seconds, dividing its audit time equally. The aggregate rates must remain 30 and 24. Explain why changing logging granularity should not change throughput.
+
 [[SUMMARY_CODE]]
 
 **Predict:** if sampling takes 0.8 seconds and device work takes 0.2 seconds, making device work twice as fast changes a one-second batch to 0.9 seconds—only about an 11% throughput gain. First measure which stage dominates.
@@ -87,7 +97,7 @@ The **scale lane** retains all `rel-stack` rows through the released test cap an
 
 ## 7 · Make scale fit a scientific budget
 
-Our total cap is **USD10** including seeds, retries and validation. We reserved USD2 for F1/validation, USD5 for the scale lane and USD3 for overhead/recovery. At the checked base prices, T4 + two CPU cores + 32 GiB is approximately USD0.940464/hour. The runner reserves maximum worker time before dispatch and disables automatic retries. A pilot informs whether to dispatch the full F1 set. [Current price source](https://modal.com/pricing)
+Our total cap is **USD10** including seeds, retries and validation. We reserved USD2 for F1/validation, USD5 for the scale lane and USD3 for overhead/recovery. At the checked base prices, T4 + two CPU cores + 32 GiB is approximately USD0.940464/hour. The runner reserves maximum worker time before dispatch and disables automatic retries. A pilot informs whether to dispatch the full F1 set. [Pricing source used by the recorded run](https://modal.com/pricing)
 
 A stopped or shortened run retains its actual status. It cannot be turned into a full reproduction by extrapolating its speed or quoting another lesson's scores. The release's statistics use the database through the test cap, historical seeds/runtime are unavailable, and ingestion histories are missing. We preserve those facts in the [protocol ledger](../labs/l134-reproduction.md). Whole-paper parity and historical identity remain NOT_ESTABLISHED.
 
