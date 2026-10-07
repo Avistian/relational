@@ -4,7 +4,7 @@
 
 
 
-<details><summary>Check after writing</summary><p>Identity includes the node type. A reverse relation encodes the same held-out fact. A ranking metric can increase when the candidate set loses competitors, even with frozen scores. Revisit <a href="0095-bipartite-graphs.html">L095</a> if any answer was uncertain.</p></details>
+
 
 **The bridge.** [L096](0096-multi-relational-data.html) preserved observed database facts in a typed graph. [L087](0087-link-prediction.html) scored possible links. Training that scorer needs comparisons: what should score lower than an observed positive? The choice determines which mistakes receive gradient updates. This is part of our mission to test relational models fairly; changing the negatives can change the task while the architecture remains identical.
 
@@ -122,6 +122,45 @@ Uniform and degree sampling put different weights on the same possible mistakes.
 The hard arm chooses a candidate using **detached current scores**. Gradients pass through the chosen pair's loss, not through the discrete selection. Because this policy depends on the evolving scorer, it is not the fixed `degree` distribution. Its four-candidate scoring budget is larger even though epochs, positive exposures and optimizer updates match.
 
 **Trace one step.** Suppose the positive score is 1 and candidate scores for items `[2,3,4]` are `[.2,1.4,.7]`. Their pairwise losses are approximately `[.371, .913, .554]`. Uniform spreads updates evenly. Degree sampling visits item 3 most often under the worked degrees. A hard draw containing item 3 selects it. If item 3 is actually an undiscovered positive, the strongest gradient can reinforce a wrong assumption.
+
+### How hard is a four-draw pool?
+
+Keep the three fixed candidate scores above: item 2 has .2, item 4 has .7, and item 3 has 1.4. Four independent uniform draws with replacement have **3⁴ = 81 equally likely ordered pools**. Selecting the highest-scoring member gives this distribution:
+
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+  <th>Item · score</th>
+  <th style="text-align:right">Pools</th>
+  <th style="text-align:right">Chance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>2 · score .2</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">1/81</td>
+</tr>
+<tr>
+  <td>4 · score .7</td>
+  <td style="text-align:right">15</td>
+  <td style="text-align:right">15/81</td>
+</tr>
+<tr>
+  <td>3 · score 1.4</td>
+  <td style="text-align:right">65</td>
+  <td style="text-align:right">65/81</td>
+</tr>
+</tbody>
+</table>
+
+The highest-scoring item is absent only if every draw chooses one of the other two: probability `(2/3)⁴ = 16/81`. It therefore wins with probability `1 − 16/81 = 65/81 ≈ .802`. The lowest wins only in the all-item-2 pool. The middle wins in the remaining 15 pools. A four-draw pool is not a guarantee of selecting the hardest eligible item, and it can contain repeated IDs.
+
+**Change the compute budget.** With one draw, each item wins with probability 1/3; with two, the highest wins with probability `1 − (2/3)² = 5/9`. Raising pool size changes the training distribution even with the same scorer, positive examples and epoch count. These probabilities describe a fixed score ordering; they change when training changes that ordering.
+
+**Exercise:** find the expected data loss of the four-draw policy using the three pair losses above. Compare it with the uniform policy; keep the regularizer out of this calculation.
+
+<details><summary>Weight losses by winning-pool counts</summary><p>Pair losses for items 2, 4 and 3 are approximately .3711, .5544 and .9130. The four-draw expectation is (1×.3711 + 15×.5544 + 65×.9130)/81 ≈ .840. The one-draw uniform expectation is approximately .613. This is the intended emphasis on higher-loss comparisons, not proof that those comparisons have correct negative labels.</p></details>
 
 ## 6 · Do not confuse training negatives with evaluation candidates
 

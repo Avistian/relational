@@ -7840,23 +7840,13 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l095-edeba5e61681ba44-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l095-1e2e1b9eec5e1616-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <div class="package-links"><strong>Your tangible win:</strong> turn an interaction table into a typed graph, prove its prediction targets are hidden, and produce a full-catalog recommendation baseline.<br/><a href="https://avistian.github.io/relational/labs/0095-bipartite-graphs.ipynb">Student notebook</a> · <a href="https://avistian.github.io/relational/labs/html/0095-bipartite-graphs.html">Executed lab</a> · <a href="https://avistian.github.io/relational/reference/bipartite-contract.html">Reference sheet</a> · <a href="https://avistian.github.io/relational/labs/l095-reproduction.md">Reproduction contract</a></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l095-9cf05338b8b42959-0">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p><strong>The bridge.</strong> <a href="https://avistian.github.io/relational/lessons/0087-link-prediction.html">L087</a> separated graph input, targets and ranking candidates. <a href="https://avistian.github.io/relational/lessons/0091-r-gcn.html">L091</a> made relation meaning explicit; <a href="https://avistian.github.io/relational/lessons/0094-hin-survey.html">L094</a> separated routes from encoders. Here there are only two entity types, but that simplicity does not choose the target or the evaluation protocol for us. This is the foundation for database recommendation in L138 and L144.</p>
 <p><strong>Core route:</strong> sections 2–6 establish the graph and one prediction. Then complete the three notebook tasks. Sections 7–9 explain the full experiment and evidence. Ask the agent about any step that you cannot trace yourself.</p>
 <!-- depth-walkthrough:start -->
@@ -7967,7 +7957,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l095-180d5955ac0f8463-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l095-6704d98a3224a936-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7977,6 +7967,40 @@ a.anchor-link {
 <p><strong>Recall@10.</strong> For a user, divide the number of relevant items in the top ten by their total number of held-out relevant items. If two relevant items exist and one is retrieved, recall is 1/2. The result rewards finding more of the user's held-out likes.</p>
 <p><strong>NDCG@10.</strong> Discount a relevant item at rank r by 1/log₂(r+1), with ranks starting at one. Sum those contributions over the top ten to get DCG. Divide by the ideal DCG, which would place up to ten relevant items first. NDCG therefore rewards placing relevant items earlier. With two relevant items and only rank one relevant in top two, DCG=1, ideal DCG=1+1/log₂(3), and NDCG≈0.613.</p>
 <p><strong>Macro averaging.</strong> Compute each eligible user's metric, then average users equally. Users with no held-out likes are excluded and counted explicitly; assigning them zero would change the question. We report each official fold and the mean across folds. Deterministic score ties prefer the smaller item ID. These choices are part of the experiment, not evaluator trivia.</p>
+<h3 id="Work-out-who-receives-equal-weight">Work out who receives equal weight<a class="anchor-link" href="#Work-out-who-receives-equal-weight">¶</a></h3><p>Use <strong>k=1</strong> and three users. A has one held-out like and its top item is relevant. B has nine held-out likes and its top item is relevant too. C has no held-out likes.</p>
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+<th>User</th>
+<th style="text-align:right">Likes</th>
+<th style="text-align:right">Found</th>
+<th style="text-align:right">Recall@1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>B</td>
+<td style="text-align:right">9</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1/9</td>
+</tr>
+<tr>
+<td>C</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">Excluded</td>
+</tr>
+</tbody>
+</table>
+<p>The lesson's user-macro recall is <code>(1 + 1/9)/2 = 5/9 ≈ .556</code>. Pooling recovered likes first gives <code>(1 + 1)/(1 + 9) = .20</code>, which gives B nine times A's weight. Neither arithmetic is inherently invalid; they answer different questions, and the protocol declares the first. Assigning C a zero would instead produce <code>(1 + 1/9 + 0)/3 ≈ .370</code>. C has no positive target against which this recall can be measured.</p>
+<p><strong>Try the other metric.</strong> What is user-macro NDCG@1 for these same rankings?</p>
+<details><summary>Compare each ranking with its ideal top one</summary><p>It is 1. Both eligible users have a relevant item at rank 1, and each ideal top-one list also contains one relevant item. NDCG@1 can be perfect while user-macro Recall@1 is 5/9: the metrics ask different questions about the same recommendations.</p></details>
 <p><strong>CHECK before running.</strong> If the top-scoring item was already rated one star in training, is it eligible? No: absence from the likes graph does not erase its observed status. If the target pair already occurs in fitting data, the evaluator rejects the experiment instead of concealing the overlap with a mask.</p>
 </div>
 </div>

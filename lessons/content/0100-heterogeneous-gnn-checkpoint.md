@@ -143,6 +143,27 @@ The experiment asks a narrow question: under this graph, split and fixed trainin
 
 Sampling uses a separately reset epoch RNG: `100000 + 1000×seed + epoch_index`. Matching a seed label alone would be insufficient if different model initializations consumed different amounts of randomness. We also compare actual sample hashes across all eight fits associated with each seed. Uniform HGT copies common initial weights from HGT before training.
 
+### Equal seed labels do not guarantee equal sampled inputs
+
+A pseudorandom generator produces a sequence. Model initialization can consume part of that sequence before sampling begins. This CPU diagnostic uses the same initial seed in both cases:
+
+```python
+torch.manual_seed(17)
+torch.randn(3)                 # stand-in for one initialization
+a = torch.randperm(8)[:3]      # [6, 0, 4]
+torch.manual_seed(17)
+torch.randn(7)                 # stand-in for a larger initialization
+b = torch.randperm(8)[:3]      # [6, 7, 3]
+```
+
+The draw counts are a teaching fixture, not the actual models' parameter counts. The exact IDs are observed in the recorded CPU environment; the important fact is that the generator reaches different positions. Merely writing “seed 17” beside both runs does not establish paired inputs.
+
+Resetting to the sampling seed `100000` immediately before each permutation gives `[1, 2, 4]` in both cases. The actual trainer similarly resets at each epoch, then checks **the resulting seed order, per-type node IDs and global typed edge endpoints**. Its sample hashes compare those contents across arms and rates. Matching counts alone would not establish that the same neighbors were used.
+
+**Exercise:** if one arm gains dropout between sampler batches, does resetting only at the start of the epoch still guarantee paired inputs?
+
+<details><summary>Follow the random draws between batches</summary><p>No. A stochastic model operation can consume the shared generator before the next neighborhood draw. The current experiment has dropout zero. A changed harness would need verified separation of random streams or explicitly shared sampled batches, plus the same content checks. A seed convention is a recipe; matching sampled identities is evidence that the recipe achieved pairing.</p></details>
+
 Equal width, update count and search size do not give equal parameter counts, FLOPs or optimization quality. The MLP still pays sampler overhead in this harness, so elapsed times are pipeline measurements, not isolated model-speed benchmarks. Validation and final test inference use the full graph; this course experiment does not establish a scalable all-sampled deployment.
 
 ## 7 · Inspect the measured evidence

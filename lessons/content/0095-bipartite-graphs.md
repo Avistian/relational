@@ -4,7 +4,7 @@
 
 
 
-<details><summary>Check after attempting</summary><p>A message-passing edge is visible input to an encoder; a prediction label is an outcome whose availability depends on the split. A reversed rating identifies the same user–item event. In an unweighted graph, an off-diagonal two-step product counts connecting length-two walks, such as shared items. Correct recognition is not yet a written defense.</p></details>
+
 
 **The bridge.** [L087](0087-link-prediction.html) separated graph input, targets and ranking candidates. [L091](0091-r-gcn.html) made relation meaning explicit; [L094](0094-hin-survey.html) separated routes from encoders. Here there are only two entity types, but that simplicity does not choose the target or the evaluation protocol for us. This is the foundation for database recommendation in L138 and L144.
 
@@ -124,6 +124,47 @@ A recommender produces an ordered list of eligible item IDs. Here we score all 1
 **NDCG@10.** Discount a relevant item at rank r by 1/log₂(r+1), with ranks starting at one. Sum those contributions over the top ten to get DCG. Divide by the ideal DCG, which would place up to ten relevant items first. NDCG therefore rewards placing relevant items earlier. With two relevant items and only rank one relevant in top two, DCG=1, ideal DCG=1+1/log₂(3), and NDCG≈0.613.
 
 **Macro averaging.** Compute each eligible user's metric, then average users equally. Users with no held-out likes are excluded and counted explicitly; assigning them zero would change the question. We report each official fold and the mean across folds. Deterministic score ties prefer the smaller item ID. These choices are part of the experiment, not evaluator trivia.
+
+### Work out who receives equal weight
+
+Use **k=1** and three users. A has one held-out like and its top item is relevant. B has nine held-out likes and its top item is relevant too. C has no held-out likes.
+
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+  <th>User</th>
+  <th style="text-align:right">Likes</th>
+  <th style="text-align:right">Found</th>
+  <th style="text-align:right">Recall@1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>A</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">1</td>
+</tr>
+<tr>
+  <td>B</td>
+  <td style="text-align:right">9</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">1/9</td>
+</tr>
+<tr>
+  <td>C</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">—</td>
+  <td style="text-align:right">Excluded</td>
+</tr>
+</tbody>
+</table>
+
+The lesson's user-macro recall is `(1 + 1/9)/2 = 5/9 ≈ .556`. Pooling recovered likes first gives `(1 + 1)/(1 + 9) = .20`, which gives B nine times A's weight. Neither arithmetic is inherently invalid; they answer different questions, and the protocol declares the first. Assigning C a zero would instead produce `(1 + 1/9 + 0)/3 ≈ .370`. C has no positive target against which this recall can be measured.
+
+**Try the other metric.** What is user-macro NDCG@1 for these same rankings?
+
+<details><summary>Compare each ranking with its ideal top one</summary><p>It is 1. Both eligible users have a relevant item at rank 1, and each ideal top-one list also contains one relevant item. NDCG@1 can be perfect while user-macro Recall@1 is 5/9: the metrics ask different questions about the same recommendations.</p></details>
 
 **CHECK before running.** If the top-scoring item was already rated one star in training, is it eligible? No: absence from the likes graph does not erase its observed status. If the target pair already occurs in fitting data, the evaluator rejects the experiment instead of concealing the overlap with a mask.
 

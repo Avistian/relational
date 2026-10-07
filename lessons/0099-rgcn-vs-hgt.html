@@ -1,9 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 099 — R-GCN vs HGT: what does a controlled comparison explain?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/architecture-comparison.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0098-hetero-mini-batching.html">Lesson 98</a> · <a href="../reference/architecture-comparison-contract.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 099</p><h1>R-GCN vs HGT: what does a controlled comparison explain?</h1></header><div class="package-links"><strong>Your tangible win:</strong> produce an attribution table that distinguishes an architecture difference, an attention intervention and a budget effect.<br><a href="../labs/0099-rgcn-vs-hgt.ipynb">Student notebook</a> · <a href="../labs/solutions/0099-rgcn-vs-hgt.ipynb">Executed solution</a> · <a href="../labs/html/0099-rgcn-vs-hgt.html">Read the solution</a> · <a href="../labs/l099-reproduction.md">Full reproduction contract</a></div>
 
-
-
-
-
 <p><strong>Route:</strong> about 30 minutes for the explanation, then a separate lab and written defense. This is the synthesis between typed message passing and the <a href="../plan/year-3.md">Q2 checkpoint</a>. It prepares the controlled GNN/graph-transformer comparison in L146 and the mission's demand for defensible relational-model evidence.</p>
 <p><strong>Primary reading:</strong> <a href="https://arxiv.org/abs/1703.06103v4">Schlichtkrull et al., R-GCN, Eq. 2–3 and Table 2</a>, followed by <a href="https://arxiv.org/abs/2003.01332v1">Hu et al., HGT, §3 and Table 2</a>. Read the operators first; do not compare the papers' headline scores across datasets. The <a href="../labs/sources/l099/dgl_han_utils.py">pinned DGL loader</a> defines the ACM venue mapping; our split and training protocol are new.</p>
 <!-- depth-walkthrough:start -->
@@ -140,6 +136,33 @@ aggregate = sum(alpha * message)
 
 <h2 id="6-%C2%B7-Freeze-the-training-and-selection-protocol">6 &#183; Freeze the training and selection protocol<a class="anchor-link" href="#6-%C2%B7-Freeze-the-training-and-selection-protocol">&#182;</a></h2><p>We run <strong>24 fits: four arms × two learning rates × three seeds</strong>, each for all 60 epochs. Learning rates are .003 and .01; Adam uses weight decay .001; dropout is zero; width is 32; depth is two. HGT uses four heads. Full-graph CPU execution uses two threads and deterministic algorithms. Every arm gets both learning rates and all three seeds. No early stopping shortens an arm's update budget.</p>
 <p>At each epoch, save a checkpoint only if validation cross-entropy strictly improves. Ties keep the earliest epoch. After all fits, choose one learning rate per arm by mean best validation CE across the three seeds; a tie chooses the smaller rate. Only then restore selected checkpoints and evaluate test accuracy and macro F1. Seeds do not get their own test-selected learning rates.</p>
+<h3 id="Work-the-selection-rule-before-seeing-test-scores">Work the selection rule before seeing test scores<a class="anchor-link" href="#Work-the-selection-rule-before-seeing-test-scores">&#182;</a></h3><p>Here is a synthetic example for one arm. Each entry is that run's <strong>best validation CE</strong>, already selected from its epoch trace. Lower is better; the three entries correspond to seeds 0, 1 and 2.</p>
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+  <th>LR</th>
+  <th>Seed CEs</th>
+  <th style="text-align:right">Mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>.003</td>
+  <td>.10, .90, .90</td>
+  <td style="text-align:right">.6333</td>
+</tr>
+<tr>
+  <td>.01</td>
+  <td>.40, .40, .40</td>
+  <td style="text-align:right">.4000</td>
+</tr>
+</tbody>
+</table>
+
+<p>The declared rule chooses <strong>.01 for all three seeds</strong>. Selecting the best single run would favor .003 because .10 is smallest, but it ignores the other two runs. Choosing a rate separately for each seed would use <code>.003, .01, .01</code> and report mean validation CE .30. That is a third selection procedure, not the global-per-arm rule used in this comparison. It may be studied if specified in advance, but cannot silently replace the declared rule after inspecting results.</p>
+<p><strong>Exercise:</strong> suppose the two rates have exactly equal mean best validation CE. Which is selected, and would a higher test score change the answer?</p>
+<details><summary>Apply the declared tie rule</summary><p>The smaller rate, .003, wins. Test scores do not enter choose_config at all. Adding test metrics to these records or changing their values must leave the selected rate unchanged.</p></details>
+
 <p>The MLP allocates a paper adapter, two ReLU layers and a classifier. It has no unused auxiliary adapters. Graph models may still have allocated parameters that do not participate in the two-layer paper-only supervised path; the evidence reports both <strong>allocated</strong> and <strong>active</strong> counts. “Active” means autograd reaches the parameter, not that every entry has a nonzero derivative or that all parameters are statistically identifiable.</p>
 <p>Equal width and updates do <strong>not</strong> match parameter count, runtime, memory or FLOPs. We report those differences instead of hiding them behind “fair.” Matching parameters or wall-clock budget would answer a different question and requires a separately frozen follow-up. The two-LR search is intentionally modest; weak optimization in one family is a limit on the conclusion.</p>
 <h2 id="7-%C2%B7-Read-the-measured-evidence-before-writing-the-attribution">7 &#183; Read the measured evidence before writing the attribution<a class="anchor-link" href="#7-%C2%B7-Read-the-measured-evidence-before-writing-the-attribution">&#182;</a></h2><p><strong>Frozen author measurements: all 24 fits and all 1,440 epochs completed.</strong> Accuracy SD is in percentage points, across three seeds. Runtime is measured CPU wall time for training, validation and final gradient audit; it is not a FLOP count or a separate timing benchmark.</p>

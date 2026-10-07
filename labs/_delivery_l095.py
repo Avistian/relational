@@ -14,7 +14,7 @@ with sync_playwright() as p:
     page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
     for width in [1200,375]:
         page.set_viewport_size({'width':width,'height':900});page.goto((R/'lessons'/f'{S}.html').as_uri())
-        assert page.locator('#warmup').inner_text().strip()
+        assert page.locator('#warmup').count()==0
         walk=page.locator('#walk-widget');box=walk.locator('input');out=walk.locator('output')
         assert '0.125' in out.inner_text();box.check();assert '= 0.000' in out.inner_text()
         walk.locator('button').click();assert not box.is_checked() and '= 0.125' in out.inner_text()
@@ -24,13 +24,14 @@ with sync_playwright() as p:
         boundary.locator('button').click();assert boundary.locator('output').inner_text().startswith('PASS')
         assert page.locator('#prediction button').count()>=3 and page.locator('#teachback textarea').count()==1
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
+        page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
         for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
         page.screenshot(path=f'/tmp/l095-top-{width}.png');walk.screenshot(path=f'/tmp/l095-widget-{width}.png')
         page.locator('figure').nth(1).screenshot(path=f'/tmp/l095-pipeline-{width}.png')
         if width==375:
             sc=walk.locator('.figure-scroll');sc.focus();page.keyboard.press('ArrowRight');page.wait_for_timeout(180);assert sc.evaluate('(e)=>e.scrollLeft>0')
     page.set_viewport_size({'width':1200,'height':900});page.emulate_media(media='print');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1');page.emulate_media(media='screen')
-    page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==4
+    page.goto((P/'html'/f'{S}.html').as_uri());assert page.locator('img[src^="data:image/png;base64,"]').count()==6
     for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
     page.locator('img').nth(2).screenshot(path='/tmp/l095-notebook-walk.png')
     nojs=browser.new_page(java_script_enabled=False);nojs.goto((R/'notebooks.html').as_uri());assert nojs.locator('#lab-95 a').count()==4
@@ -44,7 +45,7 @@ assert 'attachment:' not in json.dumps(student)
 assert [c.source for c in student.cells if c.cell_type=='code' and not c.metadata.get('task')]==[c.source for c in solution.cells if c.cell_type=='code' and not c.metadata.get('task')]
 paths=[R/'lessons'/f'{S}.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb',P/'html'/f'{S}.html']
 def hashes():return [hashlib.sha256(x.read_bytes()).hexdigest() for x in paths]
-before=hashes();subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l095.py')],check=True,capture_output=True);assert hashes()==before,'Rebuild changed artifacts'
+before=hashes();subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l095.py')],check=True,capture_output=True);subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert hashes()==before,'Rebuild changed artifacts'
 class Links(HTMLParser):
     def __init__(self):super().__init__();self.links=[]
     def handle_starttag(self,tag,attrs):self.links.extend(v for k,v in attrs if k in ('href','src'))
@@ -73,12 +74,12 @@ with tempfile.TemporaryDirectory(prefix='l095-pages-') as tmp:
             browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote'])
             page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
             page.goto(f'http://127.0.0.1:{server.server_port}/index.html')
-            page.wait_for_selector('a[href="lessons/'+S+'.html"]')
+            page.wait_for_selector('a[href="lessons/'+S+'.html"]',state='attached')
             assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
             page.goto(f'http://127.0.0.1:{server.server_port}/lessons/{S}.html')
             assert '0.125' in page.locator('#walk-widget output').inner_text()
             browser.close()
     finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors
-result={'status':'PASS','browser_widths':[1200,375],'widget_states_checked':4,'keyboard_reset_print':'PASS','portable_figures':4,'solution_code_cells':18,'copied_pages_local_links':checked,'deterministic_rebuild':'EXACT','manifest_navigation_over_http':'PASS','javascript_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+result={'status':'PASS','browser_widths':[1200,375],'widget_states_checked':4,'keyboard_reset_print':'PASS','portable_figures':6,'solution_code_cells':18,'copied_pages_local_links':checked,'deterministic_rebuild':'EXACT','manifest_navigation_over_http':'PASS','javascript_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (P/'_delivery_l095_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

@@ -7850,24 +7850,13 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l098-baed5101881fee22-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l098-da5c768bd66281ed-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <div class="package-links"><strong>Your tangible win:</strong> train a three-type GNN with a real heterogeneous NeighborLoader, then prove which parts of its computation a mini-batch preserves.<br/><a href="https://avistian.github.io/relational/labs/0098-hetero-mini-batching.ipynb">Student notebook</a> · <a href="https://avistian.github.io/relational/labs/solutions/0098-hetero-mini-batching.ipynb">Executed solution</a> · <a href="https://avistian.github.io/relational/labs/html/0098-hetero-mini-batching.html">Read the solution</a> · <a href="https://avistian.github.io/relational/labs/l098-reproduction.md">Full reproduction contract</a></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l098-e901c85915b126c1-0">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-
 <p><a href="https://avistian.github.io/relational/lessons/0096-multi-relational-data.html">Lesson 96</a> gave every row and FK a typed identity. <a href="https://avistian.github.io/relational/lessons/0097-negative-sampling.html">Lesson 97</a> separated training targets from evaluation candidates. Neither tells us how to compute an embedding when the graph is too large for one forward pass. This lesson supplies that missing execution mechanism. Recall the expanding neighborhoods of <a href="https://avistian.github.io/relational/lessons/0083-graphsage.html">GraphSAGE</a> and the partition approach of <a href="https://avistian.github.io/relational/lessons/0089-sampling-at-scale.html">Cluster-GCN</a>: here the unit of work is a set of typed seed nodes and their incoming dependencies.</p>
 <p><strong>Route:</strong> 25 minutes for sections 2–6; a separate lab session for implementation, execution and written defense. The mission connection is direct: RelBench entity models use a heterogeneous neighbor loader to turn database graphs into trainable batches. Our fixture shares that shape, but is not a RelBench dataset or benchmark reproduction. <a href="https://github.com/stanford-star/relbench/blob/584a03d518b2b655580ea8e1cfbbb26bec0a2841/examples/gnn_entity.py">Inspect the pinned RelBench entity example</a>.</p>
 <!-- depth-walkthrough:start -->
@@ -7985,7 +7974,7 @@ logit_v = wᵀ h_v^(2) + b, for customer v
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l098-c3ab4cc25cff1ca5-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l098-98941e2394265390-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8003,6 +7992,32 @@ logit_v = wᵀ h_v^(2) + b, for customer v
 </pre></div>
 <p>PyG places the input seeds first in their type's node store. B counts those queries, while the batch also contains context nodes. Our two-hop buyer fixture does not add other customers beyond its seeds; a richer customer graph or deeper sampling can. Always use the seed prefix anyway. The adversarial CHECK gives a context customer an extreme wrong label and verifies that it produces no direct loss gradient.</p>
 <p>For an audit that compares accumulated mini-batch gradients with one full-graph <strong>mean</strong> loss, multiply each batch mean by B / total_seeds. Do not take an unweighted average of batch means when the final batch is smaller. Also, do not update parameters between audit batches: multiple optimizer steps are a different optimization trajectory from one full-batch step.</p>
+<h3 id="Trace-an-uneven-final-batch">Trace an uneven final batch<a class="anchor-link" href="#Trace-an-uneven-final-batch">¶</a></h3><p>Use a scalar diagnostic with three seed labels <code>[0, 0, 1]</code>. Every logit equals the same parameter θ, initially zero. For binary cross-entropy, the derivative of one example's loss with respect to its logit is <code>sigmoid(θ) − y</code>, so the three derivatives are <code>[.5, .5, −.5]</code>.</p>
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+<th>Batch</th>
+<th style="text-align:right">Seeds</th>
+<th style="text-align:right">Mean gradient</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">+.5</td>
+</tr>
+<tr>
+<td>Last</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">−.5</td>
+</tr>
+</tbody>
+</table>
+<p>The full mean gradient is <code>(.5 + .5 − .5)/3 = 1/6</code>. Averaging the <strong>two batch means</strong> without weighting gives zero and loses the update. Weighting by seed counts gives <code>(2/3)×.5 + (1/3)×(−.5) = 1/6</code>, matching the full loss. This example isolates loss reduction; it does not assume that finite-fanout GNN logits equal full-graph logits.</p>
+<p><strong>Accumulation is also different from taking two optimizer steps.</strong> One SGD step with learning rate .1 on the full mean moves θ from 0 to approximately −.01667. A step on the first batch moves it to −.05; the last batch's gradient is then <code>sigmoid(−.05) − 1 ≈ −.51250</code>, so a second step ends near <strong>+.00125</strong>. The parameter changed between gradient evaluations. For an equivalence audit, accumulate appropriately weighted gradients at fixed parameters, then take one step.</p>
+<p><strong>Exercise:</strong> reverse the two batches and repeat those two SGD steps. Does the answer match either the forward-order result or the full-mean step?</p>
+<details><summary>Check the changing evaluation point</summary><p>The single positive moves θ to +.05. The two negatives then have mean gradient sigmoid(.05) ≈ .51250, giving θ ≈ −.00125. Batch order changes the two-step result. Equal target exposure alone does not establish equal optimization trajectories.</p></details>
 <p>A fanout of 2 is a budget <strong>per destination, per relation, per hop</strong>, not two nodes for the entire graph. Our product and customer reverse relations each supply one predecessor per order. Most approximation therefore comes from sampling only some of the five legal orders per customer. Uniform means without replacement preserve a one-hop mean in expectation, but ReLU and a second layer prevent that observation from proving unbiased final logits or gradients.</p>
 <p><strong>Portable intervention:</strong> run the worked calculation after the implementation.</p>
 <p><strong>Worked route:</strong> products with scalar values 2, 8, −4 send to three separate orders, which send to a customer. Ignore root terms and nonlinearities for this calculation. All three give (2+8−4)/3 = 2; selecting the first two gives 5. The widget uses a deterministic prefix to make arithmetic inspectable. The actual lab uses random uniform native sampling, not prefix sampling.</p>

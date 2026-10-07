@@ -4,7 +4,7 @@
 
 
 
-<details><summary>Check after you have written</summary><p>Identity includes the node type. A binary edge discards event multiplicity and event attributes unless these are explicitly retained elsewhere. Reversing a held-out link still exposes that link. If any answer was uncertain, revisit <a href="0095-bipartite-graphs.html">L095</a> before building.</p></details>
+
 
 **The bridge.** In [L034](0034-relational-data-without-rdl.html), joins and grouped features let a flat model use relational information. [L091](0091-r-gcn.html) gave different edge roles different transformations. Here we decide where those roles and entities come from. This prepares the database-to-graph construction in L122. Our mission is to assess relational learning rigorously; preserving the meaning of the input comes before comparing model scores.
 
@@ -49,12 +49,32 @@ A nullable referrer means there is no referrer edge for that order. It does not 
 
 Our complete, synthetic database contains customers, products, orders and line items. This is a Tier C construction lab, not a sampled extract from a hidden larger benchmark. The question is: **how many units of each product has each customer bought?** First trace the answer by hand; then make SQL and the graph agree.
 
-| Table | Primary key | Other columns | Rows |
-|---|---|---|---:|
-| customer | customer_id | none in this fixture | 3 |
-| product | product_id | none in this fixture | 3 |
-| orders | order_id | buyer_id, nullable referrer_id | 3 |
-| line_item | (order_id, line_no) | product_id, quantity | 4 |
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+  <th>Table · rows</th>
+  <th>Key and other columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>customer · 3</td>
+  <td>Key: <code>customer_id</code>; no other columns</td>
+</tr>
+<tr>
+  <td>product · 3</td>
+  <td>Key: <code>product_id</code>; no other columns</td>
+</tr>
+<tr>
+  <td>orders · 3</td>
+  <td>Key: <code>order_id</code><br>Other: <code>buyer_id</code>, nullable <code>referrer_id</code></td>
+</tr>
+<tr>
+  <td>line_item · 4</td>
+  <td>Key: (<code>order_id</code>, <code>line_no</code>)<br>Other: <code>product_id</code>, <code>quantity</code></td>
+</tr>
+</tbody>
+</table>
 
 Customers are 10, 30 and 90. Products are 10, 50 and 80. Order 100 belongs to customer 10 and was referred by customer 30; order 200 belongs to customer 30; order 300 belongs to customer 10. The last two have no referrer. Order 300 has no lines. Customer 90 and product 80 have no links.
 
@@ -73,7 +93,7 @@ Customers are 10, 30 and 90. Products are 10, 50 and 80. Order 100 belongs to cu
 
 The course mapping is deliberately explicit: one node type per table, one node per row, and one edge role per foreign-key constraint. The relational deep learning paper introduces database graphs as the input to representation learning; here we isolate construction from learning. Read [Fey et al., Relational Deep Learning](https://arxiv.org/abs/2312.04615) for the broader motivation; no result from that paper is a score target in this unit.
 
-| Forward triple: source / role / destination | Number of links | Meaning |
+| Typed link | # | Meaning |
 |---|---:|---|
 | orders / buyer / customer | 3 | Order identifies its buyer |
 | orders / referrer / customer | 1 | Order optionally identifies its referrer |
@@ -128,6 +148,43 @@ GROUP BY c.customer_id, p.product_id;
 Our graph evaluator follows three forward FK lookups from each line and sums its quantity. It does not call SQL or multiply a precomputed answer. The independent oracle creates a fresh SQLite database, inserts the same input rows, and runs the query. We compare full path tuples as well as sums: incorrect paths can accidentally yield the right total.
 
 A plain join retains matching rows unless a query explicitly removes duplicates. Replacing this query with `DISTINCT customer,product` changes its result. For zero-order customers, a LEFT JOIN plus `COUNT(o.order_id)` returns zero; `COUNT(*)` counts the retained outer row. [SQLite SELECT processing](https://www.sqlite.org/lang_select.html).
+
+### An extra join changes what a count measures
+
+Customer 10 has two orders: 100 and 300. Counting orders after joining only customers to orders returns 2. Now extend that query with a **LEFT JOIN to line items**. The same customer produces four rows:
+
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+  <th style="text-align:right">Order</th>
+  <th>Line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">100</td>
+  <td>1</td>
+</tr>
+<tr>
+  <td style="text-align:right">100</td>
+  <td>2</td>
+</tr>
+<tr>
+  <td style="text-align:right">100</td>
+  <td>3</td>
+</tr>
+<tr>
+  <td style="text-align:right">300</td>
+  <td>NULL</td>
+</tr>
+</tbody>
+</table>
+
+`COUNT(o.order_id)` is now **4**, because order 100 is counted once per line and order 300 contributes its retained outer row. The database still has only two orders. `COUNT(l.line_no)` returns **3**, answering a line-count question. For this single-column order key, `COUNT(DISTINCT o.order_id)` restores **2**. Alternatively, compute order counts before adding the line join. The graph query does this by counting the order→buyer edges directly, separately from walking through line nodes.
+
+**Try the isolated customer.** Customer 90 has no orders. What does `COUNT(*)` return after both LEFT JOINs, and what does `COUNT(o.order_id)` return?
+
+<details><summary>Trace the retained outer row</summary><p>COUNT(*) returns 1: the customer survives as a row with NULL order and line columns. COUNT(o.order_id) returns 0 because it ignores the NULL order key. Keep the entity being counted explicit when adding graph paths or SQL joins. The <a href="https://www.sqlite.org/lang_select.html">SQLite SELECT rules</a> define the join and grouping behavior.</p></details>
 
 **Three different answers:** existence of customer 10→product 10 is 1; its number of line paths is 2; its sum of quantities is 5. A binary projection, path count and weighted aggregation answer different questions. A mean message aggregator also does not automatically implement a SQL sum. No generic GNN is promised to reproduce arbitrary SQL semantics.
 

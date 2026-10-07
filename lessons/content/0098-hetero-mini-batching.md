@@ -111,6 +111,40 @@ PyG places the input seeds first in their type's node store. B counts those quer
 
 For an audit that compares accumulated mini-batch gradients with one full-graph **mean** loss, multiply each batch mean by B / total_seeds. Do not take an unweighted average of batch means when the final batch is smaller. Also, do not update parameters between audit batches: multiple optimizer steps are a different optimization trajectory from one full-batch step.
 
+### Trace an uneven final batch
+
+Use a scalar diagnostic with three seed labels `[0, 0, 1]`. Every logit equals the same parameter θ, initially zero. For binary cross-entropy, the derivative of one example's loss with respect to its logit is `sigmoid(θ) − y`, so the three derivatives are `[.5, .5, −.5]`.
+
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+  <th>Batch</th>
+  <th style="text-align:right">Seeds</th>
+  <th style="text-align:right">Mean gradient</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>First</td>
+  <td style="text-align:right">2</td>
+  <td style="text-align:right">+.5</td>
+</tr>
+<tr>
+  <td>Last</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">−.5</td>
+</tr>
+</tbody>
+</table>
+
+The full mean gradient is `(.5 + .5 − .5)/3 = 1/6`. Averaging the **two batch means** without weighting gives zero and loses the update. Weighting by seed counts gives `(2/3)×.5 + (1/3)×(−.5) = 1/6`, matching the full loss. This example isolates loss reduction; it does not assume that finite-fanout GNN logits equal full-graph logits.
+
+**Accumulation is also different from taking two optimizer steps.** One SGD step with learning rate .1 on the full mean moves θ from 0 to approximately −.01667. A step on the first batch moves it to −.05; the last batch's gradient is then `sigmoid(−.05) − 1 ≈ −.51250`, so a second step ends near **+.00125**. The parameter changed between gradient evaluations. For an equivalence audit, accumulate appropriately weighted gradients at fixed parameters, then take one step.
+
+**Exercise:** reverse the two batches and repeat those two SGD steps. Does the answer match either the forward-order result or the full-mean step?
+
+<details><summary>Check the changing evaluation point</summary><p>The single positive moves θ to +.05. The two negatives then have mean gradient sigmoid(.05) ≈ .51250, giving θ ≈ −.00125. Batch order changes the two-step result. Equal target exposure alone does not establish equal optimization trajectories.</p></details>
+
 A fanout of 2 is a budget **per destination, per relation, per hop**, not two nodes for the entire graph. Our product and customer reverse relations each supply one predecessor per order. Most approximation therefore comes from sampling only some of the five legal orders per customer. Uniform means without replacement preserve a one-hop mean in expectation, but ReLU and a second layer prevent that observation from proving unbiased final logits or gradients.
 
 [[INTERVENTION]]

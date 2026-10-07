@@ -7863,24 +7863,13 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l100-a2cc69f86d719501-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l100-6987b204051314a0-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <div class="package-links"><strong>Your deliverable:</strong> defend one trained heterogeneous GNN pipeline from table IDs to final held-out predictions.<br/><a href="https://avistian.github.io/relational/labs/0100-heterogeneous-gnn-checkpoint.ipynb">Student notebook</a> · <a href="https://avistian.github.io/relational/labs/solutions/0100-heterogeneous-gnn-checkpoint.ipynb">Executed solution</a> · <a href="https://avistian.github.io/relational/labs/html/0100-heterogeneous-gnn-checkpoint.html">Read the lab</a> · <a href="https://avistian.github.io/relational/labs/l100-reproduction.md">Reproduction contract</a></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l100-22d8e75abe67b8e6-0">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-
 <p>This is the Year 3 Q2 checkpoint. You already have individual operators, typed graph construction, sampling and comparison discipline. The tangible new skill is joining them into one pipeline whose result survives an audit. This supports the <a href="https://avistian.github.io/relational/MISSION.md">mission</a>: explain learned relational systems without hand-waving, and eventually evaluate them on real relational benchmarks.</p>
 <p>A suggested route is the worked trace first; then the notebook tasks; then the complete experiment and written defense. The experiment can run while you prepare your protocol table. A prepared solution does not demonstrate your mastery.</p>
 <!-- depth-walkthrough:start -->
@@ -8003,7 +7992,7 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l100-59e9c7e09866f5ed-0">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=l100-391191e795df8731-0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8062,6 +8051,18 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
 </table>
 <p><strong>Macro F1</strong> averages per-class F1 scores with equal class weights. For each class, F1 is <code>2TP/(2TP+FP+FN)</code>, with zero for an undefined denominator. <strong>Sample SD</strong> describes variation across these three initialization/sampling seeds. It does not describe variation across datasets or unknown future populations.</p>
 <p>Sampling uses a separately reset epoch RNG: <code>100000 + 1000×seed + epoch_index</code>. Matching a seed label alone would be insufficient if different model initializations consumed different amounts of randomness. We also compare actual sample hashes across all eight fits associated with each seed. Uniform HGT copies common initial weights from HGT before training.</p>
+<h3 id="Equal-seed-labels-do-not-guarantee-equal-sampled-inputs">Equal seed labels do not guarantee equal sampled inputs<a class="anchor-link" href="#Equal-seed-labels-do-not-guarantee-equal-sampled-inputs">¶</a></h3><p>A pseudorandom generator produces a sequence. Model initialization can consume part of that sequence before sampling begins. This CPU diagnostic uses the same initial seed in both cases:</p>
+<div class="highlight"><pre><span></span><span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>                 <span class="c1"># stand-in for one initialization</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="mi">8</span><span class="p">)[:</span><span class="mi">3</span><span class="p">]</span>      <span class="c1"># [6, 0, 4]</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>                 <span class="c1"># stand-in for a larger initialization</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randperm</span><span class="p">(</span><span class="mi">8</span><span class="p">)[:</span><span class="mi">3</span><span class="p">]</span>      <span class="c1"># [6, 7, 3]</span>
+</pre></div>
+<p>The draw counts are a teaching fixture, not the actual models' parameter counts. The exact IDs are observed in the recorded CPU environment; the important fact is that the generator reaches different positions. Merely writing “seed 17” beside both runs does not establish paired inputs.</p>
+<p>Resetting to the sampling seed <code>100000</code> immediately before each permutation gives <code>[1, 2, 4]</code> in both cases. The actual trainer similarly resets at each epoch, then checks <strong>the resulting seed order, per-type node IDs and global typed edge endpoints</strong>. Its sample hashes compare those contents across arms and rates. Matching counts alone would not establish that the same neighbors were used.</p>
+<p><strong>Exercise:</strong> if one arm gains dropout between sampler batches, does resetting only at the start of the epoch still guarantee paired inputs?</p>
+<details><summary>Follow the random draws between batches</summary><p>No. A stochastic model operation can consume the shared generator before the next neighborhood draw. The current experiment has dropout zero. A changed harness would need verified separation of random streams or explicitly shared sampled batches, plus the same content checks. A seed convention is a recipe; matching sampled identities is evidence that the recipe achieved pairing.</p></details>
 <p>Equal width, update count and search size do not give equal parameter counts, FLOPs or optimization quality. The MLP still pays sampler overhead in this harness, so elapsed times are pipeline measurements, not isolated model-speed benchmarks. Validation and final test inference use the full graph; this course experiment does not establish a scalable all-sampled deployment.</p>
 </div>
 </div>

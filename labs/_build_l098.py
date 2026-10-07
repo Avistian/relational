@@ -18,7 +18,7 @@ def prose(portable=False):
   rs=[r for r in result['runs'] if r['fanout']==f]
   vals=[sum(r[k] for r in rs)/len(rs) for k in ['test_accuracy','mean_batch_nodes','mean_batch_edges','mean_abs_sampled_logit_gap']]
   table+=f"| {'all' if f==-1 else f} | {vals[0]:.3f} | {vals[1]:.2f} | {vals[2]:.2f} | {vals[3]:.6f} |\n"
- for key,text in [('WARMUP','Recall typed identity and temporal availability before reading.'),('PREDICT','**Predict first:** with fixed weights and all neighbors, should the seed outputs match a full-graph calculation? Explain before reading the result.'),('TEACHBACK','**Teach back:** explain why a seed count differs from a sampled-node count, and why time filtering is a separate boundary.')]:
+ for key,text in [('PREDICT','**Predict first:** with fixed weights and all neighbors, should the seed outputs match a full-graph calculation? Explain before reading the result.'),('TEACHBACK','**Teach back:** explain why a seed count differs from a sampled-node count, and why time filtering is a separate boundary.')]:
   s=s.replace('[['+key+']]',text if portable else '<div id="l098-'+key.lower()+'"></div>')
  s=s.replace('[[RESULTS]]',f"**Frozen author results:** 96/96 correctness configurations and 9/9 complete fits. Maximum logit error {max(r['max_logit_gap'] for r in result['audit']):.2e}; maximum gradient error {max(r['max_gradient_gap'] for r in result['audit']):.2e}. Native temporal isolation passed. Your notebook recomputes everything.\n\n"+table)
  if portable:

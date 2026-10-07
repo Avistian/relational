@@ -22,13 +22,14 @@ with sync_playwright() as pw:
   select.focus();page.keyboard.press('ArrowDown');assert select.input_value()=='50'
   widget.locator('button').click()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   page.screenshot(path=f'/tmp/l096-top-{width}.png');widget.screenshot(path=f'/tmp/l096-widget-{width}.png')
-  page.locator('figure').screenshot(path=f'/tmp/l096-schema-{width}.png')
+  page.locator('figure').last.screenshot(path=f'/tmp/l096-schema-{width}.png')
  page.emulate_media(media='print');assert page.locator('h1').is_visible();page.emulate_media(media='screen')
  page.goto((P/'html'/f'{S}.html').as_uri())
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
- assert page.locator('img').count()>=1
+ assert page.locator('img[src^="data:image/png;base64,"]').count()==2
  browser.close()
 student=nbformat.read(P/f'{S}.ipynb',as_version=4);solution=nbformat.read(P/'solutions'/f'{S}.ipynb',as_version=4)
 assert sum('raise NotImplementedError' in c.source for c in student.cells if c.cell_type=='code')==3
@@ -37,7 +38,7 @@ assert all(c.execution_count is not None and not any(o.output_type=='error' for 
 assert 'data:image/png;base64,' in json.dumps(solution) and 'attachment:' not in json.dumps(solution)
 paths=[R/'lessons'/f'{S}.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb',P/'html'/f'{S}.html']
 def hashes():return [hashlib.sha256(x.read_bytes()).hexdigest() for x in paths]
-before=hashes();subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l096.py')],check=True,capture_output=True);assert hashes()==before,'Rebuild changed artifacts'
+before=hashes();subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l096.py')],check=True,capture_output=True);subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert hashes()==before,'Rebuild changed artifacts'
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[];self.ids=set()
  def handle_starttag(self,tag,attrs):
@@ -68,11 +69,11 @@ with tempfile.TemporaryDirectory(prefix='l096-pages-') as tmp:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote'])
    page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
-   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]')
+   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]',state='attached')
    assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
    page.goto(f'http://127.0.0.1:{server.server_port}/lessons/{S}.html');assert '10 = 5 units' in page.locator('#schema-intervention output').inner_text()
    browser.close()
  finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors
-report={'status':'PASS','browser_widths':[1200,375],'interactive_fk_change_reset_keyboard':'PASS','print':'CHECKED','portable_figures':1,'solution_code_cells':15,'student_live_tasks':3,'copied_pages_local_links':checked,'deterministic_rebuild':'EXACT','manifest_navigation_over_http':'PASS','javascript_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+report={'status':'PASS','browser_widths':[1200,375],'interactive_fk_change_reset_keyboard':'PASS','print':'CHECKED','portable_figures':2,'solution_code_cells':15,'student_live_tasks':3,'copied_pages_local_links':checked,'deterministic_rebuild':'EXACT','manifest_navigation_over_http':'PASS','javascript_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (P/'_delivery_l096_results.json').write_text(json.dumps(report,indent=2)+'\n');print(report)

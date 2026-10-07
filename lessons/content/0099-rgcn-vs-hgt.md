@@ -138,6 +138,38 @@ We run **24 fits: four arms × two learning rates × three seeds**, each for all
 
 At each epoch, save a checkpoint only if validation cross-entropy strictly improves. Ties keep the earliest epoch. After all fits, choose one learning rate per arm by mean best validation CE across the three seeds; a tie chooses the smaller rate. Only then restore selected checkpoints and evaluate test accuracy and macro F1. Seeds do not get their own test-selected learning rates.
 
+### Work the selection rule before seeing test scores
+
+Here is a synthetic example for one arm. Each entry is that run's **best validation CE**, already selected from its epoch trace. Lower is better; the three entries correspond to seeds 0, 1 and 2.
+
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+  <th>LR</th>
+  <th>Seed CEs</th>
+  <th style="text-align:right">Mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>.003</td>
+  <td>.10, .90, .90</td>
+  <td style="text-align:right">.6333</td>
+</tr>
+<tr>
+  <td>.01</td>
+  <td>.40, .40, .40</td>
+  <td style="text-align:right">.4000</td>
+</tr>
+</tbody>
+</table>
+
+The declared rule chooses **.01 for all three seeds**. Selecting the best single run would favor .003 because .10 is smallest, but it ignores the other two runs. Choosing a rate separately for each seed would use `.003, .01, .01` and report mean validation CE .30. That is a third selection procedure, not the global-per-arm rule used in this comparison. It may be studied if specified in advance, but cannot silently replace the declared rule after inspecting results.
+
+**Exercise:** suppose the two rates have exactly equal mean best validation CE. Which is selected, and would a higher test score change the answer?
+
+<details><summary>Apply the declared tie rule</summary><p>The smaller rate, .003, wins. Test scores do not enter choose_config at all. Adding test metrics to these records or changing their values must leave the selected rate unchanged.</p></details>
+
 The MLP allocates a paper adapter, two ReLU layers and a classifier. It has no unused auxiliary adapters. Graph models may still have allocated parameters that do not participate in the two-layer paper-only supervised path; the evidence reports both **allocated** and **active** counts. “Active” means autograd reaches the parameter, not that every entry has a nonzero derivative or that all parameters are statistically identifiable.
 
 Equal width and updates do **not** match parameter count, runtime, memory or FLOPs. We report those differences instead of hiding them behind “fair.” Matching parameters or wall-clock budget would answer a different question and requires a separately frozen follow-up. The two-LR search is intentionally modest; weak optimization in one family is a limit on the conclusion.

@@ -1,7 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 097 — Negative sampling: which missing links should teach the model?</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/mpnn-lesson.css"><link rel="stylesheet" href="../assets/negative-sampling.css"><link rel="stylesheet" href="../assets/learning-walkthrough.css"><link rel="stylesheet" href="../assets/visual-stories.css"/><link rel="stylesheet" href="../assets/course-visuals.css"/></head><body><article><nav><a href="../index.html">Course</a> · <a href="0096-multi-relational-data.html">Lesson 96</a> · <a href="../reference/negative-sampling-contract.html">Reference</a></nav><header><p>Year 3 · Quarter 2 · Lesson 097</p><h1>Negative sampling: which missing links should teach the model?</h1></header><div class="package-links"><strong>Your tangible win:</strong> implement a typed negative sampler, then separate a training improvement from an easier evaluation.<br><a href="../labs/0097-negative-sampling.ipynb">Student notebook</a> · <a href="../labs/html/0097-negative-sampling.html">Executed solution</a> · <a href="../reference/negative-sampling-contract.html">Reference</a> · <a href="../labs/l097-reproduction.md">Full reproduction contract</a></div>
 
-
-
 <p><strong>The bridge.</strong> <a href="0096-multi-relational-data.html">L096</a> preserved observed database facts in a typed graph. <a href="0087-link-prediction.html">L087</a> scored possible links. Training that scorer needs comparisons: what should score lower than an observed positive? The choice determines which mistakes receive gradient updates. This is part of our mission to test relational models fairly; changing the negatives can change the task while the architecture remains identical.</p>
 <p><strong>Route:</strong> sections 2–6 take about 25 minutes. Implement the three notebook TODOs, then execute the full experiment in section 7; runtime is additional. Sections 8–9 are the interpretation and written defense. Ask the agent for a hint or a slower worked trace whenever a step is unclear.</p>
 <!-- depth-walkthrough:start -->
@@ -100,6 +98,39 @@
 <p>Uniform and degree sampling put different weights on the same possible mistakes. Neither automatically estimates the other's objective. If the desired target distribution is <code>p</code>, an importance-weighted term <code>p(j|u)/q(j|u)</code> gives an unbiased estimate of that target expectation when <code>q</code> covers its support; large ratios can produce high variance. The lab intentionally applies <strong>no</strong> such correction: it measures the effect of changing the training distribution itself.</p>
 <p>The hard arm chooses a candidate using <strong>detached current scores</strong>. Gradients pass through the chosen pair's loss, not through the discrete selection. Because this policy depends on the evolving scorer, it is not the fixed <code>degree</code> distribution. Its four-candidate scoring budget is larger even though epochs, positive exposures and optimizer updates match.</p>
 <p><strong>Trace one step.</strong> Suppose the positive score is 1 and candidate scores for items <code>[2,3,4]</code> are <code>[.2,1.4,.7]</code>. Their pairwise losses are approximately <code>[.371, .913, .554]</code>. Uniform spreads updates evenly. Degree sampling visits item 3 most often under the worked degrees. A hard draw containing item 3 selects it. If item 3 is actually an undiscovered positive, the strongest gradient can reinforce a wrong assumption.</p>
+<h3 id="How-hard-is-a-four-draw-pool?">How hard is a four-draw pool?<a class="anchor-link" href="#How-hard-is-a-four-draw-pool?">&#182;</a></h3><p>Keep the three fixed candidate scores above: item 2 has .2, item 4 has .7, and item 3 has 1.4. Four independent uniform draws with replacement have <strong>3⁴ = 81 equally likely ordered pools</strong>. Selecting the highest-scoring member gives this distribution:</p>
+<table style="border-collapse:separate;border-spacing:.4em .25em">
+<thead>
+<tr>
+  <th>Item · score</th>
+  <th style="text-align:right">Pools</th>
+  <th style="text-align:right">Chance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>2 · score .2</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">1/81</td>
+</tr>
+<tr>
+  <td>4 · score .7</td>
+  <td style="text-align:right">15</td>
+  <td style="text-align:right">15/81</td>
+</tr>
+<tr>
+  <td>3 · score 1.4</td>
+  <td style="text-align:right">65</td>
+  <td style="text-align:right">65/81</td>
+</tr>
+</tbody>
+</table>
+
+<p>The highest-scoring item is absent only if every draw chooses one of the other two: probability <code>(2/3)⁴ = 16/81</code>. It therefore wins with probability <code>1 − 16/81 = 65/81 ≈ .802</code>. The lowest wins only in the all-item-2 pool. The middle wins in the remaining 15 pools. A four-draw pool is not a guarantee of selecting the hardest eligible item, and it can contain repeated IDs.</p>
+<p><strong>Change the compute budget.</strong> With one draw, each item wins with probability 1/3; with two, the highest wins with probability <code>1 − (2/3)² = 5/9</code>. Raising pool size changes the training distribution even with the same scorer, positive examples and epoch count. These probabilities describe a fixed score ordering; they change when training changes that ordering.</p>
+<p><strong>Exercise:</strong> find the expected data loss of the four-draw policy using the three pair losses above. Compare it with the uniform policy; keep the regularizer out of this calculation.</p>
+<details><summary>Weight losses by winning-pool counts</summary><p>Pair losses for items 2, 4 and 3 are approximately .3711, .5544 and .9130. The four-draw expectation is (1×.3711 + 15×.5544 + 65×.9130)/81 ≈ .840. The one-draw uniform expectation is approximately .613. This is the intended emphasis on higher-loss comparisons, not proof that those comparisons have correct negative labels.</p></details>
+
 <h2 id="6-%C2%B7-Do-not-confuse-training-negatives-with-evaluation-candidates">6 &#183; Do not confuse training negatives with evaluation candidates<a class="anchor-link" href="#6-%C2%B7-Do-not-confuse-training-negatives-with-evaluation-candidates">&#182;</a></h2><p>Freeze a scorer with a relevant item at rank 20 in a catalog of 1,000 candidates. Full-catalog Recall@10 is zero. If you keep the relevant item and only nine distractors, it must be in the top ten: Recall@10 becomes one. No model improvement occurred. With 99 uniformly sampled distractors, its expected number of higher-scoring competitors is <code>99 × 19/999 ≈ 1.88</code>; this is an expectation of a count, not an exact expected reciprocal rank.</p>
 <p><a href="https://www.ijcai.org/proceedings/2021/0651.pdf">Krichene &amp; Rendle, On Sampled Metrics for Item Recommendation</a> establish that sampled metrics need not preserve comparisons between recommenders, even in expectation. Read the introduction and inconsistency discussion after tracing the example. Our lab demonstrates candidate sensitivity on its own protocol; it does not reproduce that paper's experiments or correction estimators.</p>
 <p>We evaluate each trained scorer twice:</p>

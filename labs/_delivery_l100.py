@@ -23,11 +23,12 @@ with sync_playwright() as pw:
    assert f'Naive batch mean: {naive:.3f}' in out.inner_text() and 'Weighted mean: 0.600' in out.inner_text()
   widget.locator('button').click();assert select.input_value()=='3'
   select.focus();page.keyboard.press('ArrowDown');assert select.input_value()=='4';widget.locator('button').click()
-  assert page.locator('#l100-warmup').inner_text().strip()
+  assert page.locator('#l100-warmup').count()==0
   pred=page.locator('#l100-predict');assert pred.locator('button').last.is_disabled()
   pred.locator('button').nth(1).click();pred.locator('button').last.click()
   teach=page.locator('#l100-teachback');teach.locator('textarea').fill('The architecture comparison changes attention, residuals and normalization. A paired uniform-attention intervention narrows the mechanism claim, but capacity and optimization still change.');teach.locator('button').first.click()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Page overflow'
+  page.locator('img').evaluate_all("es=>es.forEach(e=>e.loading='eager')");page.wait_for_function("Array.from(document.images).every(e=>e.complete&&e.naturalWidth>0)")
   for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
   page.evaluate('window.scrollTo(0,0)');page.screenshot(path=f'/tmp/l100-top-{width}.png');widget.screenshot(path=f'/tmp/l100-widget-{width}.png');page.locator('figure').first.screenshot(path=f'/tmp/l100-architecture-{width}.png')
  page.emulate_media(media='print');assert page.locator('h1').is_visible();page.emulate_media(media='screen')
@@ -36,7 +37,7 @@ with sync_playwright() as pw:
   assert page.locator('svg').evaluate("s=>{let v=s.viewBox.baseVal;return Array.from(s.querySelectorAll('text')).every(t=>{let b=t.getBBox();return b.x>=0&&b.y>=0&&b.x+b.width<=v.width&&b.y+b.height<=v.height})}"),name+' SVG label exceeds viewBox'
  page.goto((P/'html'/f'{S}.html').as_uri())
  for img in page.locator('img').all():assert img.evaluate('(e)=>e.complete&&e.naturalWidth>0')
- assert page.locator('img').count()>=1
+ assert page.locator('img[src^="data:image/png;base64,"]').count()==6
  browser.close()
 student=nbformat.read(P/f'{S}.ipynb',as_version=4);solution=nbformat.read(P/'solutions'/f'{S}.ipynb',as_version=4)
 assert sum('raise NotImplementedError' in c.source for c in student.cells if c.cell_type=='code')==3
@@ -45,7 +46,7 @@ assert all(c.execution_count is not None and not any(o.output_type=='error' for 
 assert 'data:image/png;base64,' in json.dumps(solution) and 'attachment:' not in json.dumps(solution)
 paths=[R/'lessons'/f'{S}.html',P/f'{S}.ipynb',P/'solutions'/f'{S}.ipynb',P/'html'/f'{S}.html']
 def hashes():return [hashlib.sha256(x.read_bytes()).hexdigest() for x in paths]
-before=hashes();subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l100.py')],check=True,capture_output=True);assert hashes()==before,'Rebuild changed artifacts'
+before=hashes();subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l100.py')],check=True,capture_output=True);subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True);assert hashes()==before,'Rebuild changed artifacts'
 class Links(HTMLParser):
  def __init__(self):super().__init__();self.links=[];self.ids=set()
  def handle_starttag(self,tag,attrs):
@@ -75,11 +76,11 @@ with tempfile.TemporaryDirectory(prefix='l100-pages-') as tmp:
  try:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(headless=True,args=['--disable-gpu','--disable-dev-shm-usage','--no-zygote']);page=browser.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
-   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]')
+   page.goto(f'http://127.0.0.1:{server.server_port}/index.html');page.wait_for_selector('a[href="lessons/'+S+'.html"]',state='attached')
    assert page.locator('a[href="labs/html/'+S+'.html"]').count()>=1
    page.goto(f'http://127.0.0.1:{server.server_port}/lessons/{S}.html');assert 'Weighted mean: 0.600' in page.locator('#batch-weighting output').inner_text()
    browser.close()
  finally:server.shutdown();server.server_close();thread.join()
 assert not errors,errors
-report={'status':'PASS','browser_widths':[1200,375],'all_five_batch_sizes_reset_keyboard':'PASS','print':'CHECKED','portable_figures':4,'solution_code_cells':sum(c.cell_type=='code' for c in solution.cells),'student_live_tasks':3,'copied_pages_local_links':checked,'deterministic_rebuild':'EXACT','manifest_navigation_over_http':'PASS','javascript_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
+report={'status':'PASS','browser_widths':[1200,375],'all_five_batch_sizes_reset_keyboard':'PASS','print':'CHECKED','portable_figures':6,'solution_code_cells':sum(c.cell_type=='code' for c in solution.cells),'student_live_tasks':3,'copied_pages_local_links':checked,'deterministic_rebuild':'EXACT','manifest_navigation_over_http':'PASS','javascript_errors':errors,'live_colab':'NOT_CHECKED','deployment':'NOT_CHECKED'}
 (P/'_delivery_l100_results.json').write_text(json.dumps(report,indent=2)+'\n');print(report)

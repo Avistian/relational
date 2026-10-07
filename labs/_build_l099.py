@@ -21,7 +21,7 @@ def prose(portable=False):
  for i in range(3):paired+=f"| {i} | "+' | '.join(f"{100*result['paired_accuracy_differences'][a][i]:+.2f} pp" for a in ['rgcn','hgt_uniform','mlp'])+' |\n'
  text='**Frozen author measurements: all 24 fits and all 1,440 epochs completed.** Accuracy SD is in percentage points, across three seeds. Runtime is measured CPU wall time for training, validation and final gradient audit; it is not a FLOP count or a separate timing benchmark.\n\n'+table+'\n'+paired+'\n**Observed attribution:** uniform HGT has the higher mean here. The HGT family gap over this R-GCN configuration does not establish a benefit from learned attention. The R-GCN and MLP curves reveal substantial optimization limitations within the fixed 60-epoch budget. No universal family ranking follows.\n'
  s=s.replace('[[RESULTS]]',text)
- for key,text in [('WARMUP','Retrieve the four questions below before reading the feedback.'),('PREDICT','**Predict first:** does replacing HGT attention with uniform weights make it R-GCN? Defend your answer using the trace.'),('TEACHBACK','**Teach back:** distinguish a family comparison from a within-family intervention and state one remaining confound.')]:
+ for key,text in [('PREDICT','**Predict first:** does replacing HGT attention with uniform weights make it R-GCN? Defend your answer using the trace.'),('TEACHBACK','**Teach back:** distinguish a family comparison from a within-family intervention and state one remaining confound.')]:
   s=s.replace('[['+key+']]',text if portable else '<div id="l099-'+key.lower()+'"></div>')
  if portable:
   s=re.sub(r'\]\((00\d\d-[^)]+\.html)\)',r'](https://avistian.github.io/relational/lessons/\1)',s)
