@@ -35,7 +35,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  css=['lesson','atomic-route','checkpoint','lab-access','zero-shot-evaluation'];scripts=['retrieval-pool','retrieval-bank','predict','teachback','zero-shot-evaluation','l175-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in css)+'</head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0174-fine-tuning-protocol.html">Lesson174</a></nav><header><p class="route-kicker">Year5 · Quarter2 · Lesson175</p><h1>'+title+'</h1></header>'+html+'</article>'+''.join('<script src="../assets/'+x+'.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('Zero-shot evaluation',prose(),True))
@@ -121,10 +121,10 @@ student=make(False);solution=make(True);P.joinpath('solutions').mkdir(exist_ok=T
 nb.write(student,P/(S+'.ipynb'))
 solpath=P/'solutions'/(S+'.ipynb')
 if solpath.exists():
- old=nb.read(solpath,4)
+ old=nb.read(solpath,4);solution.metadata=old.metadata
  if [c.source for c in old.cells if c.cell_type=='code']==[c.source for c in solution.cells if c.cell_type=='code']:
   for newcell,oldcell in zip([c for c in solution.cells if c.cell_type=='code'],[c for c in old.cells if c.cell_type=='code']):
-   newcell.outputs=oldcell.outputs;newcell.execution_count=oldcell.execution_count
+   newcell.outputs=oldcell.outputs;newcell.execution_count=oldcell.execution_count;newcell.metadata=oldcell.metadata
 nb.write(solution,solpath)
 (E/'report.md').write_text('# L175 measured audit\n\n'+results()+'\n\n'+finding+'\n')
 print('Built lesson, reference and notebooks:',len(student.cells),'cells')

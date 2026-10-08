@@ -53,6 +53,12 @@ The residual path is `h′ = h + U ReLU(Dh + b) + c`. Here D maps 32→8 and U m
 
 For a two-dimensional worked trace, let `h = [2, −1]`, `D = [1, 0]`, and both biases and U be zero. The bottleneck activation is 2; the initial output is still `[2, −1]`. If the upstream gradient is `[1, −1]`, the gradient of U is `[2, −2]`, while the gradient of D is zero because its chain rule contains U. After U updates, D can receive gradients too. Setting **both** projections to zero would obstruct learning of the residual weights under ReLU.
 
+**Follow the next gradient.** For a transparent arithmetic probe, use SGD with learning rate 0.1 and keep the upstream gradient `[1,−1]` fixed. This probe uses SGD; the full experiment below uses Adam. Include the output bias c in the update:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Before update</th><th>Adapter output</th><th>Gradient of D</th></tr></thead><tbody><tr><td>Step 1</td><td>[2, −1]</td><td>[0, 0]</td></tr><tr><td>Step 2</td><td>[1.5, −0.5]</td><td>[−0.8, 0.4]</td></tr></tbody></table>
+
+After step 1, U is `[−0.2, +0.2]` and c is `[−0.1, +0.1]`; D and b have not moved. Thus `Uᵀ × upstream = −0.4` at step 2, and multiplying by h gives D's gradient `[−0.8, +0.4]`. Zero first-step gradient does not mean a parameter is frozen. **Transfer check:** with learning rate 0.05, the second output is `[1.75, −0.75]` and D's gradient is `[−0.4, +0.2]`, under the same fixed upstream probe.
+
 [[PREDICT]]
 
 [Houlsby et al., ICML 2019](https://proceedings.mlr.press/v97/houlsby19a.html) is the primary reading for adapting a fixed pretrained network with small added modules. Their BERT placement and NLP benchmark results are not reproduced by our single adapter after a pooled relational MLP. This is also not LoRA: we add a nonlinear residual module rather than a low-rank update to an existing weight matrix.

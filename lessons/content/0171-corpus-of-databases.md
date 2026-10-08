@@ -48,6 +48,12 @@ Treat each snapshot as a node. Link two nodes when their declared source familie
 
 [[FIG:holdout]]
 
+**Trace the exclusion frontier.** Name the held-out original A, its identical-byte copy B, the family bridge C, the final relative D, and an unrelated declared source E. The manifest contains edges A–B (same archive), B–C (shared family), C–D (another shared family), and no edge to E:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Step</th><th>Newly reached</th><th>Excluded component</th></tr></thead><tbody><tr><td>Start</td><td>A</td><td>A</td></tr><tr><td>1</td><td>B</td><td>A, B</td></tr><tr><td>2</td><td>C</td><td>A, B, C</td></tr><tr><td>3</td><td>D</td><td>A, B, C, D</td></tr></tbody></table>
+
+The final split is held-out A, quarantine B/C/D, training candidate E. **Transfer check:** re-export B so its byte hash changes, while declaring no family link to A. The manifest algorithm now leaves B/C/D among the training candidates. That exposes missing lineage, not newly independent data: record the common family before accepting the split. Hash identity detects exact copies; it cannot replace provenance.
+
 The other component members need not contain the same rows. Quarantining the entire component is a deliberately conservative policy for source isolation; it may exclude more than a narrower row-overlap policy. It protects only against links represented in the manifest.
 
 [[EXPLORER]]

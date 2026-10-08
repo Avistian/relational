@@ -45,11 +45,13 @@ with sync_playwright() as pw:
         predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
         labels=predict.locator('.predict-option').all_inner_texts();assert len(set(len(x.split()) for x in labels))==1
         predict.locator('[data-value="component"]').click();predict.locator('.predict-reveal').click();assert 'connected component' in predict.locator('.predict-outcome').inner_text()
-        assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
-        assert page.locator('figure img').evaluate_all('(xs)=>xs.length===3&&xs.every(x=>x.complete&&x.naturalWidth>0)')
+        assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
+        page.locator('figure img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+        page.wait_for_function("Array.from(document.querySelectorAll('figure img')).every(x=>x.complete&&x.naturalWidth>0)")
+        assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
         assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),'Page overflows at '+str(width)
         page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l171-top-{width}.png')
-        for i in range(3):page.locator('figure').nth(i).screenshot(path=f'/tmp/l171-figure-{i}-{width}.png')
+        for i in range(4):page.locator('figure').nth(i).screenshot(path=f'/tmp/l171-figure-{i}-{width}.png')
     page.emulate_media(media='print');assert host.locator('.corpus-controls').evaluate('(x)=>getComputedStyle(x).display')=='none'
     context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri())
     assert pg.locator('noscript').count()==1 and '97,606' in pg.locator('body').inner_text()
@@ -86,6 +88,7 @@ paths=[R/'lessons'/(S+'.html'),R/'reference/corpus-of-databases.html',P/(S+'.ipy
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_figures_l171.py')],check=True,capture_output=True)
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l171.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 after=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];assert before==after,'Non-deterministic build'
 result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=3,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l171_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

@@ -44,7 +44,7 @@ assert (missing, dangling) == (1, 1)
     return s
 
 def doc(title,s,interactive=False):
-    body=render(s).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+    body=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(s)).replace('</table>','</table></div>')
     css=['lesson','atomic-route','checkpoint','lab-access','foundation-scope','corpus-holdout']
     scripts=['retrieval-pool','retrieval-bank','predict','teachback','corpus-holdout','l171-evidence','l171-lesson'] if interactive else []
     return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in css)+'</head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0170-fm-design-checkpoint.html">Lesson 170</a></nav><header><p class="route-kicker">Year 5 · Quarter 2 · Lesson 171</p><h1>'+title+'</h1></header>'+body+'</article>'+''.join('<script src="../assets/'+x+'.js"></script>' for x in scripts)+'</body></html>'
@@ -130,10 +130,10 @@ for solution in [False,True]:
     for i,c in enumerate(cells):c.id=f'l171-{i:03d}'
     path=P/('solutions' if solution else '')/(S+'.ipynb')
     if solution and path.exists():
-        old=nb.read(path,4)
-        if [(c.cell_type,c.source) for c in old.cells]==[(c.cell_type,c.source) for c in cells]:
-            book.metadata=old.metadata
-            for c,prior in zip(cells,old.cells):
-                if c.cell_type=='code':c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
+        old=nb.read(path,4);book.metadata=old.metadata
+        previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+        if [c.source for c in previous]==[c.source for c in current]:
+            for prior,c in zip(previous,current):
+                c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
     nb.write(book,path)
 print('Built lesson, reference, report and both portable notebooks')

@@ -24,6 +24,12 @@ Six blocks alternate attention across columns within a row and attention across 
 
 The wrapper's `fit(X_support, y_support)` installs context. It does not run target-task gradient descent. Adding support can change label evidence **and support-fitted preprocessing**. Our estimand—the quantity we intend to measure—is the complete frozen inference pipeline's response to more labeled context. It is not a pure causal estimate of label count with every intermediate representation held fixed.
 
+**Work the preprocessing change before the prediction.** Use one numerical feature and a fixed query value 3. In this tiny illustration, the support expands from `[0,2]` to `[0,2,4,6]`. The released model uses the support population standard deviation:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Support values</th><th>Mean</th><th>SD</th><th>Encoded query</th></tr></thead><tbody><tr><td>0, 2</td><td>1</td><td>1</td><td>(3−1)/1 = 2</td></tr><tr><td>0, 2, 4, 6</td><td>3</td><td>√5</td><td>(3−3)/√5 = 0</td></tr></tbody></table>
+
+The raw query and pretrained weights did not change, but the numerical token supplied to the model did. These sizes make the arithmetic small; they are not additional benchmark runs. **Transfer check:** change only support labels while preserving all feature values. Feature normalization stays fixed, while the label tokens and query's support-label-mean placeholder can change. That separates two input paths without claiming either effect is monotonic.
+
 ## 3 · Keep old examples when adding new ones
 
 Lesson 169 reproduced the released sampler: each size used its own random draw without replacement. Reusing a seed did not make those sets nested. A 128-example result could replace many of the 64 examples, mixing a size change with a composition change.

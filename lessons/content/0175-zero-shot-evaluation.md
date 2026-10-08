@@ -63,6 +63,12 @@ Our approved target was two released checkpoints × three context seeds × all 7
 
 [[FINDING]]
 
+**Inspect one real witness.** In context seed 0, the query for driver 814 has node ID 97930. A sampled cell is `year of races`, on row node 37140. The saved second-resolution timestamps show why comparing dates alone would miss the failure:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Object</th><th>UTC time</th><th>Relative to query</th></tr></thead><tbody><tr><td>Query cutoff</td><td>2011-03-27 00:00</td><td>Boundary</td></tr><tr><td>Sampled race row</td><td>2011-03-27 06:00</td><td>6 hours later</td></tr></tbody></table>
+
+This cell violates the declared row-time bound even though its column is a year and its date matches the query's calendar day. The witness establishes a contract failure; it does not measure how much that cell would change AUROC. **Transfer check:** truncating both timestamps to midnight makes the comparison pass incorrectly. Retain the source's time resolution. Removing just this witness would still leave the rest of the population to audit.
+
 The temporal contract fails before inference. **All six checkpoint evaluations remain `NOT_RUN`; there is no measured AUROC comparison.** We do not shrink the task, quietly fix the sampler, or treat a context audit as a model reproduction. The inference operator refuses the failed audit. Its post-gate GPU path is supplied but unvalidated because the gate blocked execution.
 
 There is a second source limitation: the original preprocessing computes database-column statistics over the entire database table. Task validation/test numeric statistics are replaced with training-task statistics, but database columns and the global datetime statistics have a broader fit population. A source-faithful replay would retain that difference; a strict training-only reconstruction would be a separately named experiment. [Preprocessor](../labs/sources/l175/upstream/rustler/src/pre.rs).

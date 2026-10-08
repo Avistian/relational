@@ -55,6 +55,12 @@ Let task t contain Nₜ training targets and have mean loss Lₜ. A **cell mean*
 
 For uniformly shuffled training examples, assign each task-t example weight `N / (T × Nₜ)`. Average the weighted losses over the minibatch. The expectation is the equal-task objective. **Use frozen whole-training counts**, not counts of tasks that happen to appear in that minibatch. In the example, an A cell weighs 10/18 and a B cell weighs 5. Their total weights are both 5. This balances scalar objective contributions, not necessarily gradient norms.
 
+**Trace a one-cell minibatch.** Keep nine A cells with loss 1 and one B cell with loss 5. Uniform cell sampling picks A with probability 0.9 and B with probability 0.1. Frozen population weights yield:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Sampled task</th><th>Weight</th><th>Weighted loss</th><th>Expected loss</th></tr></thead><tbody><tr><td>A</td><td>5/9</td><td>5/9</td><td>0.9 × 5/9 = 0.5</td></tr><tr><td>B</td><td>5</td><td>25</td><td>0.1 × 25 = 2.5</td></tr></tbody></table>
+
+The expectation is **3**, even though neither possible one-cell batch loss equals 3. Recomputing weights from each one-cell batch would give weight 1 every time and recover the cell mean **1.4** instead. **Transfer check:** duplicate every A cell, producing counts 18 and 1. Frozen weights become 19/36 and 19/2; the expectation is still 3. Equal-task weighting removes task-frequency influence in expectation, not sampling noise or differences in gradient magnitude.
+
 ## 5 · Freeze the comparison before seeing test results
 
 **Named experiment: L173 F1 Multi-task Masked-cell Pretraining.** We reuse the pinned nine-table F1 snapshot and Lesson 172's feature policies. Train before 2005, validate during 2005, and test from 2006 onward. These are course autocomplete splits, not the published RelBench forecasting task splits. Fit normalization and category vocabularies only on training rows. Keys, text, timestamps and every untimed table are excluded from predictive features and targets; the coverage ledger records every exclusion.

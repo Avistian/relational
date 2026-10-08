@@ -2,6 +2,10 @@
 
 [Lesson 171](0171-corpus-of-databases.html) established which database bytes and relationships we have. It did not specify what a model should receive for a cell. Here we build that input contract. Lesson 173 will use such inputs to define training objectives.
 
+## 1 · Separate the value from its role
+
+A model input needs both the observed value and the policy for interpreting it. Reuse the corpus identities from Lesson 171; assigning a token does not change which source supplied the row.
+
 > **In plain terms.** A database stores values. A tokenizer says what each value means, how to represent it, and which information must stay hidden.
 
 
@@ -63,6 +67,12 @@ For this audit, rows in time-bearing tables are admitted only when `date < 2005-
 [[PREDICT]]
 
 All three non-value category states use payload zero. The state tells them apart. Masking has priority even if the source was null. It erases the payload before any value-dependent encoding; changing a hidden raw value must not change the output. This is an input contract, not yet a loss function.
+
+**The same zero, four different meanings.** Fit a numerical column on `[10,20,30]`, and a category column on `red, blue`. Then transform these cells:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Cell</th><th>State</th><th>Payload</th></tr></thead><tbody><tr><td>Observed number 20</td><td>VALUE</td><td>0</td></tr><tr><td>Absent number</td><td>MISSING</td><td>0</td></tr><tr><td>Number 20, hidden</td><td>MASKED</td><td>0</td></tr><tr><td>Observed category green</td><td>UNKNOWN</td><td>0</td></tr></tbody></table>
+
+The first zero is a real standardized value: 20 equals the fitted mean. The other zeros carry no observed value payload. Dropping the state would make these inputs indistinguishable. **Transfer check:** deliberately mask a null cell or the unknown category `green`. Both become MASKED with zero payload, because masking takes priority over source-dependent states. An unseen numerical value, in contrast, can still be VALUE; UNKNOWN here refers to categorical vocabulary membership.
 
 [[STATE_EXPLORER]]
 

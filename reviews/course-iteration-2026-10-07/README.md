@@ -167,3 +167,15 @@ L168: Added equal-database versus row-weighted AUROC differences and third-datab
 L169: Added actual retained/removed/new support counts for F1 seed0 at three doublings; source sampler independently agrees. All 300 evaluations/229,050 predictions, 938 files, complete curves, budget gates and six corruptions checked. No new inference. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
 
 L170: Added an actual test-context selection reversal with a validation-selected negative-result transfer case. Full 229,050-row replay matches, 2,560 claim-gate cases and six corrupted packets rejected. Primary paradigm sources checked. No new inference. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L171: Added connected-component exclusion frontier and missing-lineage transfer. Independent graph closures, complete raw SQL rows and foreign keys checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L172: Added VALUE/MISSING/MASKED/UNKNOWN zero-payload trace. Full 866,746 scalar cells and 227,716 foreign-key references independently checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L173: Added one-cell minibatch example showing why weights use the target population. Full target context and saved predictions audited; 18 selected checkpoint inferences replay exactly. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L174: Added two-step adapter-gradient trace with half-learning-rate transfer. All 120 checkpoint states and full selected prediction population checked; frozen weights remain byte-identical. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L175: Added actual six-hour future-cell witness and date-truncation counterexample. All 2,106 saved contexts and 2,156,544 slots independently audited; inference remains blocked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L176: Added changing support statistics with unchanged-query encoding trace. Both full published and nested saved prediction populations checked; 1,024 nested draws independently regenerated. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
