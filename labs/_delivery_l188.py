@@ -35,7 +35,7 @@ with sync_playwright() as pw:
   pred=page.locator('#predict');assert pred.locator('.predict-reveal').is_disabled()
   assert len(set(len(x.split()) for x in pred.locator('.predict-option').all_inner_texts()))==1
   pred.locator('[data-value=incomplete]').click();pred.locator('.predict-reveal').click();assert '103' in pred.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===1&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),f'Overflow {width}'
   page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l188-top-{width}.png');page.locator('figure').screenshot(path=f'/tmp/l188-figure-{width}.png')
@@ -62,6 +62,7 @@ for name in ['lessons/'+S+'.html','reference/systematic-literature-tracking.html
 outputs=[R/'lessons'/(S+'.html'),R/'reference/systematic-literature-tracking.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'figures/l188/evidence-flow.svg',P/'figures/l188/evidence-flow.png',P/'evidence/l188/paper-log.md']
 before={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs}
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l188.py')],check=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before=={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs},'Nondeterministic build'
 result=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_js=True,print=True,portable_figure=True,inline_source_parity=True,deterministic_build=True,local_links=links,galleries=True,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l188_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

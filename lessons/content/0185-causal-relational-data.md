@@ -86,6 +86,15 @@ The table gives **mean ± sample standard deviation across five independently ge
 
 **A policy has a different baseline.** Setting A=1 for everyone adds **[[POLICY_GAIN]] percentage points** relative to the observed assignments. This is smaller than the 5-point ATE because some customers already receive A. Setting B=1 adds exactly zero. These are purchase-rate gains; costs, capacity, and profit are not modeled, so we do not claim an optimal deployment policy.
 
+**Trace the policy baseline.** In an exact hypothetical population, every customer's action effect is five percentage points. The gain from assigning action to everyone also depends on how many already receive it:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Already treated</th><th>Newly treated</th><th>Policy gain</th></tr></thead><tbody><tr><td>0%</td><td>100%</td><td>5 points</td></tr><tr><td>50%</td><td>50%</td><td>2.5 points</td></tr><tr><td>100%</td><td>0%</td><td>0 points</td></tr></tbody></table>
+
+The arithmetic is `0.05 × fraction currently untreated`. ATE compares everyone treated with everyone untreated; this policy compares everyone treated with the current assignments. Under the declared constant effect, the treatment effect stays the same in all three rows while policy gain shrinks. These exact expected values are separate from the finite-seed results above.
+
+**Transfer the trace.** If 80% already receive the action, predict a one-point expected gain. Then explain why multiplying the overall ATE by 20% can fail when untreated customers have a different treatment effect. The correct policy calculation averages each person's effect multiplied by their untreated indicator; our constant-effect simulator makes the simpler expression valid.
+
+
 The audit independently recomputed **120,000 prediction scores** across all validation/test/model/seed combinations and checked **20,000 paired test customers**. A fresh complete run reproduced every saved table and report exactly in the captured environment. See the [audit](../labs/_verify_l185_results.json), [measured report](../labs/evidence/l185/report.json), and [budget ledger](../labs/evidence/l185/budget.json).
 
 ## 6 · Implement, predict, defend

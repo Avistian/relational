@@ -61,7 +61,7 @@ with sync_playwright() as pw:
   assert len(set(len(x.split()) for x in pred.locator('.predict-option').all_inner_texts()))==1
   pred.locator('[data-value=same]').click();pred.locator('.predict-reveal').click()
   assert 'unchanged' in pred.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===3&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),f'Overflow {width}'
   for i in range(3):page.locator('figure').nth(i).screenshot(path=f'/tmp/l185-figure-{i}-{width}.png')

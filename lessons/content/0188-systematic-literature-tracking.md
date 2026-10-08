@@ -6,7 +6,7 @@ Build a paper log you can explain and regenerate: **what you searched, what you 
 
 
 
-From memory, distinguish validation selection from test evaluation, and saved-evidence replay from fresh training. [Lesson 178](0178-fair-model-comparison.html) showed why model names alone do not define a fair comparison. This lesson moves that discipline earlier: before choosing a paper to implement. [Lesson 187](0187-ethics-privacy-reg.html) showed why a performance result cannot establish every claimed guarantee. Apply that same care when screening sources. This prepares [Lesson 189’s draft shortlist](0189-identify-open-problems.html); that lesson remains under construction, while [Lesson 190](0190-research-gap-checkpoint.html) supplies a worked research checkpoint. The collection log below can be understood independently.
+[Lesson 178](0178-fair-model-comparison.html) showed why model names alone do not define a fair comparison. This lesson moves that discipline earlier: before choosing a paper to implement. [Lesson 187](0187-ethics-privacy-reg.html) showed why a performance result cannot establish every claimed guarantee. Apply that same care when screening sources. This prepares [Lesson 189’s draft shortlist](0189-identify-open-problems.html); that lesson remains under construction, while [Lesson 190](0190-research-gap-checkpoint.html) supplies a worked research checkpoint. The collection log below can be understood independently.
 
 ## 1 · Discovery is a measured process
 
@@ -34,6 +34,15 @@ The collector preserves failed HTTP responses, limits retries and refuses to ove
 Suppose two query responses contain `2607.12345v1` and `2607.12345v2` (synthetic identifiers). Both map to paper identity `2607.12345`; the log retains both version URLs and both query origins. Do not count the second as a new independent paper. Conversely, do not strip arbitrary trailing digits: they are part of the identifier.
 
 Store first-submission date, revision date, retrieval date and exact version separately. The first answers “new this quarter?”; the second “has it changed?”; the third “when did we observe this?”. A response collected today may describe a version updated after the quarter. It cannot by itself establish what readers saw on September 30. The [API manual's version section](https://info.arxiv.org/help/api/user-manual.html#511-a-note-on-article-versions) is the primary reading for this distinction.
+
+**A four-date trace.** Consider a synthetic paper first submitted on July 20, revised as v2 on October 2, and retrieved on October 3. Its v1 and v2 URLs share one identity:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td>New submission in Q3?</td><td>Yes: July 20</td></tr><tr><td>Distinct papers?</td><td>One identity</td></tr><tr><td>Version retrieved?</td><td>v2, October 3</td></tr><tr><td>Q3 content established?</td><td>No: need the version available by September 30</td></tr></tbody></table>
+
+The submission belongs in the Q3 discovery population, but its newly observed v2 claims cannot automatically be attributed to Q3. Preserve version-specific evidence alongside the identity rather than choosing one date to stand for all four questions.
+
+**Transfer the trace.** Move the first submission to June 20 while retaining a September revision. It leaves this new-submission population and enters the revision queue. Then mark its abstract reviewed with a documented baseline rationale: `triage` may admit it to an appropriate reading queue, but `INCLUDE` still does not change reported evidence into reproduced evidence. The Q3-new-submission queue must retain its own date rule.
+
 
 Your notebook implements the identity rule rather than hiding it inside a search library.
 

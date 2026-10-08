@@ -30,7 +30,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="table-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="table-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['retrieval-pool','retrieval-bank','predict','teachback','causal-intervention','l185-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/causal-intervention.css"></head><body class="causal-page"><article><nav><a href="../index.html">Course</a> · <a href="../notebooks.html">Notebooks</a></nav><p class="eyebrow">Year 5 · Lesson 185 · From prediction to action</p><h1>'+title+'</h1>'+html+'</article>'+''.join('<script src="../assets/'+s+'.js"></script>' for s in scripts)+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('A good prediction can suggest a useless action',prose(),True))
@@ -94,6 +94,13 @@ def make(solution):
  code('submission = {"experiment": report["experiment"], "execution": report["status"], "learner": "PENDING_WRITTEN_DEFENSE", "paper_reproduction": "NOT_ESTABLISHED"}\nPath("l185-submission.json").write_text(json.dumps(submission, indent=2)+"\\n")\nprint(submission)',['exit'])
  for i,c in enumerate(cells):c['id']=f'l185-{i:03d}'
  book=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':env['python']}})
+ path=P/'solutions'/(S+'.ipynb')
+ if solution and path.exists():
+  old=nb.read(path,4);book.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prior,c in zip(previous,current):
+    c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  return book
 nb.write(make(False),P/(S+'.ipynb'));nb.write(make(True),P/'solutions'/(S+'.ipynb'))
 (P/'evidence/l185/report.md').write_text('# L185 observed evidence\n\n'+result_table+'\n\n'+seed_table+'\n\nComplete original synthetic experiment. Paper/real-world causal claims NOT_ESTABLISHED.\n')

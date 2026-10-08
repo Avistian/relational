@@ -69,6 +69,7 @@ paths=[R/'lessons'/(S+'.html'),R/'reference/gelgt-temporal-attention.html',P/(S+
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths];saved=(P/'solutions'/(S+'.ipynb')).read_bytes()
 try:
  subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l184.py')],check=True,capture_output=True)
+ subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
  assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 finally:(P/'solutions'/(S+'.ipynb')).write_bytes(saved)
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,python_javascript_parity='PASS',keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=3,local_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')

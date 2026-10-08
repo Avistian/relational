@@ -67,9 +67,18 @@ Here D and D′ are neighbors, `Pr` is probability over the mechanism's hidden r
 
 Each retained result adds one to exactly one bin. A driver's retained rows therefore form a nonnegative vector whose coordinates sum to at most C. Other drivers' vectors are unchanged by removal. The histogram difference has L1 norm at most C. This argument holds for every database in the declared domain; the 2,571 actual deletion checks test the implementation but do not replace the argument.
 
-**Laplace mechanism.** Add independent Laplace noise to every bin with scale `b = C / ε`. This symmetric noise has density proportional to `exp(−|z|/b)` and expected absolute magnitude b. For two neighboring query vectors, the density ratio at any output is at most `exp(||f(D)−f(D′)||₁/b) ≤ exp(ε)`. Integrating over output events yields the required inequality. The scale uses the **whole vector's sensitivity**; this is one vector release, not 211 separately budgeted scalar queries. [Dwork and Roth, Definition 3.4 and Theorem 3.6](https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf#page=34).
+**Laplace mechanism.** Add independent Laplace noise to every bin with scale `b = C / ε`. This symmetric noise has density proportional to `exp(−|z|/b)` and expected absolute magnitude b. For two neighboring query vectors, the density ratio at any output is at most `exp(||f(D)−f(D′)||₁/b) ≤ exp(ε)`. Integrating over output events yields the required inequality. The scale uses the **whole vector's sensitivity**; this is one vector release, not 211 separately budgeted scalar queries. [Dwork and Roth, Definition 3.3 and Theorem 3.6](https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf#page=36).
 
 At C = 2 and ε = 1, the scale is two counts per coordinate. Noise can yield fractional or negative counts. We retain those values in the experiment so their error is transparent. Rounding or clamping an already private release is post-processing, but changes utility. It cannot fix a wrong sensitivity bound.
+
+**Change the protected operation.** Continue the Red/Blue example, with clipped histogram `[2,1]`. Removing A leaves `[0,1]`. Replacing A's contribution by two Blue results instead gives `[0,3]`:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Operation</th><th>New counts</th><th>L1 change</th></tr></thead><tbody><tr><td>Remove A</td><td>[0, 1]</td><td>2</td></tr><tr><td>Replace A</td><td>[0, 3]</td><td>4</td></tr></tbody></table>
+
+Replacement can remove two counts from Red and add two to Blue. At scale 2, the joint density ratio at output `[2,1]` is `exp(4/2) = exp(2)` for these replacement neighbors. That exceeds `exp(1)`: reusing the add/remove calibration would not establish the claimed ε = 1 replacement guarantee. Calibrating to sensitivity 4 requires scale 4 here. This is an analytic density calculation; a single output point has probability zero for continuous noise.
+
+**Transfer the trace.** Increase C to 5. Five Red results replaced by five Blue results have L1 difference 10. Explain why replacing five Red results with five other Red results instead gives zero histogram difference—and why calibration must cover the worst allowed replacement, not just that easy case.
+
 
 [[FIG:noise]]
 

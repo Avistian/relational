@@ -193,3 +193,13 @@ L182: Added foreign-key pairing intervention with identical pooled mean but diff
 L183: Added positive interaction despite harmful pretraining in both backbones, with equal-benefit transfer. Independent SQL joins and MAE on all 7,554 saved predictions, 3,000 temporal cases and rejected mutants checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
 
 L179: No lesson/content/notebook exists in the repository; retained explicit transition from L178 to L180. No newly authored replacement is claimed.
+
+L184: Added signed temporal-projection weights and output trace, with constant-value control. Original source attention/gradients/cache counterexample and all 8,712 SQL labels checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L185: Added policy-gain versus treatment-effect trace and heterogeneous-effect limitation. All five complete synthetic experiments rerun exactly, including 120,000 prediction rows and 20,000 paired outcomes. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L186: Added two-response four-clock calculation and unknown-dependency transfer. All 810,000 simulated responses across 81 scenarios independently reconstructed; 300 batch receipts checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L187: Corrected Laplace mechanism citation from Definition3.4 to3.3. Added removal/replacement sensitivity counterexample; full 2,571 neighboring histograms and 56,970 noise coordinates checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L188: Removed leftover opening retrieval prompt. Added submission/revision/retrieval/historical-content date trace. Full frozen Q3 collection replay and 100 randomized pagination cases checked; collection remains incomplete. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.

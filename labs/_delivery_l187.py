@@ -51,7 +51,7 @@ with sync_playwright() as pw:
         pred=page.locator('#predict');assert pred.locator('.predict-reveal').is_disabled()
         assert len(set(len(s.split()) for s in pred.locator('.predict-option').all_inner_texts()))==1
         pred.locator('[data-value=node]').click();pred.locator('.predict-reveal').click();assert 'Incident edges' in pred.locator('.predict-outcome').inner_text()
-        assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+        assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
         assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
         assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),f'Overflow {width}'
         page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l187-top-{width}.png')
@@ -89,6 +89,7 @@ for path in [R/'lessons'/(S+'.html'),R/'reference/ethics-privacy-reg.html']:
 paths=[R/'lessons'/(S+'.html'),R/'reference/ethics-privacy-reg.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l187/report.md']+sorted((P/'figures/l187').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for script in ['_figures_l187.py','_build_l187.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/script)],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Nondeterministic artifacts'
 result={'status':'PASS','browser_widths':[1200,375],'interactive_states':states,'python_javascript_parity':'PASS',
     'keyboard_reset':'PASS','no_js':'PASS','print':'PASS','inline_source_parity':'PASS','portable_figures':4,

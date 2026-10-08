@@ -36,6 +36,14 @@ These definitions are course policy, with units of milliseconds. The source-age 
 
 A fast cache can contain stale data. Conversely, a request can wait a long time in a queue, then read a recent snapshot at service start: its features are fresh at response but its answer is late. The chosen read point matters; a product requiring a snapshot as of **request arrival** needs a different information contract.
 
+**Compute two responses, one clock at a time.** These hypothetical timestamps use the same millisecond units and limits as the experiment. A cached request arrives at 5,000 and responds at 5,001; its materialization completed at 4,990, but its orders/payments event times are 4,900 and 2,000. A queued request arrives at 4,800, starts at 5,000 and responds at 5,015; it materializes at service start from events at 4,990 and 4,980.
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Response</th><th>Latency</th><th>Source age</th><th>Material age</th></tr></thead><tbody><tr><td>Cached</td><td>1 ms</td><td>3,001 ms</td><td>11 ms</td></tr><tr><td>Queued</td><td>215 ms</td><td>35 ms</td><td>15 ms</td></tr></tbody></table>
+
+The cached response meets the 100 ms deadline but breaches the 2,000 ms freshness limit. Its recent materialization only repackaged old payment information. The queued response meets freshness but misses the deadline: `200 ms wait + 15 ms service = 215 ms`.
+
+**Transfer the trace.** Remove the queued response's payment snapshot. Source age becomes unknown, even though its order snapshot is recent; averaging known timestamps would silently waive a required dependency. Decide which fallback your contract requires in this case.
+
 ## 3 · Freeze the entire experiment
 
 The executable target is **L186 Relational Serving Contract**, a course experiment. Huyen’s reading supplies design concepts, not numerical results to replicate. We run every cell in the frozen grid: **3 policies × 3 request rates × 3 arrival conditions × 3 seeds = 81 scenarios**, each with **10,000 requests**.

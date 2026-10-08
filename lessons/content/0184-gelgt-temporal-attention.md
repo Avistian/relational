@@ -71,6 +71,15 @@ Here `μ` is the center and `σ` is a positive width. The release uses `abs(raw_
 
 **Predict an intervention.** Set projection to zero. The temporal contribution should disappear. Set it to minus one: the preference reverses. This is why a special-case scalar kernel calculation cannot establish an unconditional performance gain or a universal attention-ratio theorem for every trained projection.
 
+**Follow the weights through to the output.** Keep lags `[0,2,4]`, center 2, width 2, equal content scores and values `[1,3,9]` fixed. Change only the scalar projection of the Gaussian feature:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Projection</th><th>Middle weight</th><th>Output</th></tr></thead><tbody><tr><td>+1</td><td>0.48475</td><td>4.03050</td></tr><tr><td>0</td><td>1/3</td><td>4.33333</td></tr><tr><td>−1</td><td>0.20994</td><td>4.58011</td></tr></tbody></table>
+
+For +1, both outer weights are 0.25763, so the output is `0.25763 × 1 + 0.48475 × 3 + 0.25763 × 9`. Favoring the middle value pulls the answer below the uniform average. A negative projection reverses that preference. These are controlled single-head outputs, not fitted model predictions.
+
+**Transfer the trace.** Replace all three values by 7 while preserving the biases. Every output becomes 7 because the weights sum to one. Attention can change substantially without changing the prediction when the retained values agree. Check both interventions with `attention_trace` and explicit weighted sums.
+
+
 ## Reproduction: a failed prerequisite is evidence
 
 [[PREDICT]]
